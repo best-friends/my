@@ -12,7 +12,7 @@ const stack = tv({
   variants: {
     gap: gaps,
     divided: { true: "divide-y divide-border" },
-    marker: { disc: "list-disc ps-6", decimal: "list-decimal ps-6", discInside: "list-inside list-disc" },
+    marker: { disc: "list-disc ps-6", decimal: "list-decimal ps-6", discInside: "list-inside list-disc", decimalInside: "list-inside list-decimal" },
     rowAt: { sm: "@sm:flex-row @sm:items-center", md: "@md:flex-row @md:items-center" },
   },
 });
@@ -22,8 +22,8 @@ type StackOwnProps = FlexLayoutProps & {
   gap?: Space;
   /** Rules between the children (`divide-y divide-border`): the rows of a list, which then take no gap (web-client.md G3). */
   divided?: boolean;
-  /** List markers for a `ul` / `ol` of running text: `disc` and `decimal` hang in `ps-6`, `discInside` sits inside the text. */
-  marker?: "disc" | "decimal" | "discInside";
+  /** List markers for a `ul` / `ol` of running text: `disc` and `decimal` hang in `ps-6`, `discInside` and `decimalInside` sit inside the text. */
+  marker?: "disc" | "decimal" | "discInside" | "decimalInside";
   /** Turns into a row with centered items from this container width up (an ancestor needs `container`). */
   rowAt?: "sm" | "md";
 };

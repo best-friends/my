@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The screens of the blocked and muted accounts and of the follow requests (FR-302, FR-303): a list of
 // accounts, each with its actions, and a button that loads more.
-import { AccountItem, Button, EmptyState } from "@my/ui";
+import { AccountItem, Box, Button, EmptyState, Stack } from "@my/ui";
 import { type ReactNode, useRef } from "react";
 import { useIntl } from "react-intl";
 import { handleOf } from "../../../lib/handle";
@@ -98,21 +98,21 @@ function AccountListView<T>({ list, accountOf, empty, details, actions }: Accoun
   const removed = useFocusAfterRemoval(listRef, ids);
   if (list.items.length === 0) return <EmptyState heading={t(empty)} />;
   return (
-    <div className="flex flex-col gap-4">
-      <ul ref={listRef} className="flex flex-col divide-y divide-border">
+    <Stack gap="4">
+      <Stack as="ul" ref={listRef} divided>
         {list.items.map((item) => {
           const account = accountOf(item);
           return (
-            <li key={account.id} data-row-id={account.id} className="@container py-3">
+            <Box as="li" key={account.id} data-row-id={account.id} container paddingY="3">
               <AccountRow account={account} details={details?.(item)}>
                 {actions(account, () => {
                   removed(account.id);
                 })}
               </AccountRow>
-            </li>
+            </Box>
           );
         })}
-      </ul>
+      </Stack>
       {list.hasMore && (
         <div>
           <Button onPress={list.loadMore} isPending={list.isLoadingMore}>
@@ -120,7 +120,7 @@ function AccountListView<T>({ list, accountOf, empty, details, actions }: Accoun
           </Button>
         </div>
       )}
-    </div>
+    </Stack>
   );
 }
 

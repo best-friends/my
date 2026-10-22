@@ -29,6 +29,7 @@ const text = tv({
     lineClamp: { 2: "line-clamp-2", 3: "line-clamp-3" },
     selectAll: { true: "select-all" },
     shrink: { true: "min-w-0" },
+    inset: { true: "px-1" },
   },
 });
 
@@ -63,6 +64,8 @@ type TextOwnProps = {
   selectAll?: boolean;
   /** Lets the element shrink below its content's width in a row (`min-w-0`). */
   shrink?: boolean;
+  /** A little space at both sides (`px-1`), for the `legend` that interrupts a bordered group's edge. */
+  inset?: boolean;
 };
 
 export type TextProps<E extends TextElement = "span"> = PolymorphicProps<E, TextOwnProps>;
@@ -82,9 +85,10 @@ export function Text<E extends TextElement = "span">({
   lineClamp,
   selectAll,
   shrink,
+  inset,
   ...rest
 }: TextProps<E>) {
-  return createElement(as ?? "span", { ...rest, className: text({ size, tone, weight, wrap, whitespace, numeric, mono, block, align, lineClamp, selectAll, shrink }) });
+  return createElement(as ?? "span", { ...rest, className: text({ size, tone, weight, wrap, whitespace, numeric, mono, block, align, lineClamp, selectAll, shrink, inset }) });
 }
 
 export type HintProps<E extends "p" | "span" | "div" = "p"> = Omit<TextProps<E>, "tone" | "size"> & {

@@ -2,7 +2,19 @@
 // The account page below its heading (FR-008): the archives of the user's data, each with its state, when it was
 // asked for, until when it can be downloaded and its size, and deleting the account, which asks for the password,
 // or for a passkey when the user has no password, in an alert dialog (ConfirmDialog: the deletion cannot be undone). Dates are in the user's locale and time zone.
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, StatusMessage, TextField } from "@my/ui";
+import {
+  Box,
+  Button,
+  ConfirmDialog,
+  DescriptionItem,
+  DescriptionList,
+  EmptyState,
+  Heading,
+  InlineError,
+  Stack,
+  StatusMessage,
+  TextField,
+} from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -23,14 +35,14 @@ export function OwnAccount() {
   const exports = useDataExports();
   const deletion = useAccountDeletion();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <Section title={t("client:settings.account.export.title")}>
         <ExportsView exports={exports} />
       </Section>
       <Section title={t("client:settings.account.delete.title")}>
         <DeletionView deletion={deletion} />
       </Section>
-    </div>
+    </Stack>
   );
 }
 
@@ -38,25 +50,25 @@ export function OwnAccount() {
 function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {title}
-      </h2>
+      </Heading>
       {children}
-    </section>
+    </Stack>
   );
 }
 
 function ExportsView({ exports }: { exports: DataExports }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       <p>{t("client:settings.account.export.description")}</p>
       <StatusMessage tone="success">{exports.status}</StatusMessage>
       {exports.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {exports.error}
-        </p>
+        </InlineError>
       )}
       <div>
         <Button variant="primary" onPress={exports.request} isPending={exports.isRequesting} isDisabled={!exports.canRequest}>
@@ -66,15 +78,15 @@ function ExportsView({ exports }: { exports: DataExports }) {
       {exports.items.length === 0 ? (
         <EmptyState headingLevel={3} heading={t("client:settings.account.export.empty")} />
       ) : (
-        <ul className="flex flex-col divide-y divide-border">
+        <Stack as="ul" divided>
           {exports.items.map((item) => (
-            <li key={item.id} className="@container py-3">
+            <Box as="li" key={item.id} container paddingY="3">
               <ExportRow item={item} exports={exports} />
-            </li>
+            </Box>
           ))}
-        </ul>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -83,10 +95,10 @@ function ExportRow({ item, exports }: { item: DataExport; exports: DataExports }
   const intl = useIntl();
   const requested = intl.formatDate(item.requested_at, dateTimeFormat);
   return (
-    <article aria-labelledby={`export-${item.id}`} className="flex flex-col gap-3">
-      <h3 id={`export-${item.id}`} className="font-semibold">
+    <Stack as="article" aria-labelledby={`export-${item.id}`} gap="3">
+      <Heading level={3} id={`export-${item.id}`}>
         {t("client:settings.account.export.item", { date: requested })}
-      </h3>
+      </Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:settings.account.export.state")}>{t(stateLabels[item.state])}</DescriptionItem>
         {item.state === "ready" && item.expires_at !== undefined && (
@@ -114,7 +126,7 @@ function ExportRow({ item, exports }: { item: DataExport; exports: DataExports }
           </Button>
         </div>
       )}
-    </article>
+    </Stack>
   );
 }
 
@@ -133,7 +145,7 @@ function DeletionView({ deletion }: { deletion: AccountDeletion }) {
     />
   ) : undefined;
   return (
-    <div className="flex flex-col items-start gap-4">
+    <Stack align="start" gap="4">
       <p>{t("client:settings.account.delete.description")}</p>
       <Button variant="danger" onPress={deletion.open}>
         {t("client:settings.account.delete.open")}
@@ -158,6 +170,6 @@ function DeletionView({ deletion }: { deletion: AccountDeletion }) {
       >
         {passwordField}
       </ConfirmDialog>
-    </div>
+    </Stack>
   );
 }
