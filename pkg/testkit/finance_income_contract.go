@@ -23,7 +23,7 @@ import (
 // subscriptions, and provider rules.
 type FakeSupporterDirectory struct {
 	Plans    []appfinance.PlanCount
-	Accounts map[string]string
+	Accounts map[string]appfinance.Subscriber
 	Rules    []appfinance.ProviderRule
 }
 
@@ -35,8 +35,8 @@ func (d *FakeSupporterDirectory) PlanCounts(context.Context) ([]appfinance.PlanC
 }
 
 // SubscriptionAccounts implements appfinance.SupporterDirectory.
-func (d *FakeSupporterDirectory) SubscriptionAccounts(_ context.Context, ids []string) (map[string]string, error) {
-	out := map[string]string{}
+func (d *FakeSupporterDirectory) SubscriptionAccounts(_ context.Context, ids []string) (map[string]appfinance.Subscriber, error) {
+	out := map[string]appfinance.Subscriber{}
 	for _, id := range ids {
 		if acct, ok := d.Accounts[id]; ok {
 			out[id] = acct
@@ -193,7 +193,7 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 	if err := e.svc.RecordIncome(ctx, incomeScenario(t)); err != nil {
 		t.Fatal(err)
 	}
-	e.dir.Accounts = map[string]string{"sub_yearly": "acct_1"}
+	e.dir.Accounts = map[string]appfinance.Subscriber{"sub_yearly": {AccountID: "acct_1", Username: "alice"}}
 	var ids []string
 	before := ""
 	for {
@@ -205,7 +205,7 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 			ids = append(ids, m.ProviderID)
 			switch m.ProviderID {
 			case "txn_refund":
-				if m.ParentProviderID != "txn_yearly" || m.AccountID != "acct_1" || m.Net != financeJPY(-12000) || m.Covers != nil {
+				if m.ParentProviderID != "txn_yearly" || m.Subscriber != (appfinance.Subscriber{AccountID: "acct_1", Username: "alice"}) || m.Net != financeJPY(-12000) || m.Covers != nil {
 					t.Errorf("refund = %+v, want its payment, account, and net", m)
 				}
 			case "txn_yearly":
@@ -213,8 +213,13 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 					t.Errorf("payment = %+v, want its period, gross, and fee", m)
 				}
 			case "txn_fee":
-				if m.SubscriptionID != "" || m.AccountID != "" {
+				if m.SubscriptionID != "" || m.Subscriber != (appfinance.Subscriber{}) {
 					t.Errorf("fee = %+v, want no subscription", m)
+				}
+			case "txn_monthly":
+				// The subscriber's account of sub_monthly is gone: the row keeps its subscription.
+				if m.SubscriptionID != "sub_monthly" || m.Subscriber != (appfinance.Subscriber{}) || m.Net != financeJPY(482) {
+					t.Errorf("payment of a gone account = %+v, want its subscription and no subscriber", m)
 				}
 			}
 		}
@@ -232,6 +237,30 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 	}
 	if len(refunds) != 1 || refunds[0].ProviderID != "txn_partial" {
 		t.Errorf("refunds of May = %+v, want txn_partial", refunds)
+	}
+	// The kind and the dates hold across the pages of the keyset.
+	payments := appfinance.IncomeFilter{From: financeDate(t, "2026-04-01"), To: financeDate(t, "2026-05-31"), Kind: finance.IncomePayment}
+	ids, before = nil, ""
+	for {
+		page, err := e.svc.ListIncome(ctx, payments, before, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(page) == 0 {
+			break
+		}
+		ids = append(ids, page[0].ProviderID)
+		before = page[0].ID
+	}
+	if want := []string{"txn_monthly", "txn_yearly"}; !slices.Equal(ids, want) {
+		t.Errorf("payments of April and May by pages of one = %v, want %v", ids, want)
+	}
+	may, err := e.svc.ListIncome(ctx, appfinance.IncomeFilter{From: financeDate(t, "2026-05-04"), To: financeDate(t, "2026-05-31")}, "", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(may) != 2 || may[0].ProviderID != "txn_fee" || may[1].ProviderID != "txn_partial" {
+		t.Errorf("movements of 2026-05-04..31 = %+v, want txn_fee and txn_partial", may)
 	}
 }
 

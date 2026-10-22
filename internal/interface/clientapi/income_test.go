@@ -19,14 +19,17 @@ import (
 
 // fakeIncome totals a yearly payment of 12,000 yen with a fee of 432 yen on 2026-04-10, which
 // the domain spreads over its year, against costs of 1,000 yen a period, and lists that payment
-// with its subscription, subscriber, and provider ID, which only the administrators may read.
+// with its subscription, subscriber, and provider ID, which only the administrators may read,
+// and its refund, whose subscriber's account is gone.
 type fakeIncome struct {
 	queries []appfinance.IncomeQuery
+	filters []appfinance.IncomeFilter
 }
 
 const (
 	incomeSubscription = "0199f0e0-0000-7000-8000-00000000a5b1"
 	incomeAccount      = "0199f0e0-0000-7000-8000-00000000acc1"
+	incomeUsername     = "patron_secret"
 	incomeProviderID   = "txn_secret_1"
 )
 
@@ -73,22 +76,32 @@ func (f *fakeIncome) IncomeRules() []appfinance.ProviderRule {
 }
 
 func (f *fakeIncome) ListIncome(_ context.Context, filter appfinance.IncomeFilter, _ string, _ int) ([]appfinance.IncomeEntry, error) {
+	f.filters = append(f.filters, filter)
 	covers := finance.DateRange{Start: incomeDate("2026-04-10"), End: incomeDate("2027-04-09")}
 	e := appfinance.IncomeEntry{IncomeRecord: appfinance.IncomeRecord{
 		ID: "0199f0e0-0000-7000-8000-00000000f001", Provider: "stripe", ProviderID: incomeProviderID, Kind: finance.IncomePayment,
 		SubscriptionID: incomeSubscription, OccurredAt: time.Date(2026, 4, 10, 3, 0, 0, 0, time.UTC), OccurredOn: covers.Start,
 		Covers: &covers, Gross: finance.Money{Minor: 12000, Currency: "JPY"}, Fee: finance.Money{Minor: 432, Currency: "JPY"},
 		Net: finance.Money{Minor: 11568, Currency: "JPY"}, RecordedAt: time.Date(2026, 4, 10, 3, 5, 0, 0, time.UTC),
-	}, AccountID: incomeAccount}
-	if filter.Kind != "" && filter.Kind != e.Kind {
-		return nil, nil
+	}, Subscriber: appfinance.Subscriber{AccountID: incomeAccount, Username: incomeUsername}}
+	refund := appfinance.IncomeEntry{IncomeRecord: appfinance.IncomeRecord{
+		ID: "0199f0e0-0000-7000-8000-00000000f002", Provider: "stripe", ProviderID: "txn_refund_1", Kind: finance.IncomeRefund,
+		ParentProviderID: incomeProviderID, SubscriptionID: incomeSubscription, OccurredAt: time.Date(2026, 6, 1, 3, 0, 0, 0, time.UTC),
+		OccurredOn: incomeDate("2026-06-01"), Gross: finance.Money{Minor: -12000, Currency: "JPY"}, Net: finance.Money{Minor: -12000, Currency: "JPY"},
+		Fee: finance.Money{Currency: "JPY"}, RecordedAt: time.Date(2026, 6, 1, 3, 5, 0, 0, time.UTC),
+	}}
+	var out []appfinance.IncomeEntry
+	for _, m := range []appfinance.IncomeEntry{refund, e} {
+		if filter.Kind == "" || filter.Kind == m.Kind {
+			out = append(out, m)
+		}
 	}
-	return []appfinance.IncomeEntry{e}, nil
+	return out, nil
 }
 
 // incomeSecrets are what neither the public totals nor the finance viewers may read: who paid
 // what, and the gross and the fees (ADR-0073 §6, §7).
-var incomeSecrets = []string{incomeSubscription, incomeAccount, incomeProviderID, `"gross"`, `"fee"`, "12000", `"432"`}
+var incomeSecrets = []string{incomeSubscription, incomeAccount, incomeUsername, incomeProviderID, `"gross"`, `"fee"`, "12000", `"432"`}
 
 func newIncomeEnv(t *testing.T) (*authEnv, *fakeIncome) {
 	t.Helper()
@@ -279,9 +292,9 @@ func TestFinanceIncomeTotals(t *testing.T) {
 // TestAdminIncome checks the administrators' income operations (ADR-0073 §6): manage_finance
 // reads the gross, the fees, and each movement with its subscriber; view_finance reads neither.
 func TestAdminIncome(t *testing.T) {
-	e, _ := newIncomeEnv(t)
+	e, income := newIncomeEnv(t)
 	const totals = "/admin/income_totals?granularity=month&from=2026-04-01&to=2026-05-31"
-	const movements = "/admin/income_movements?kind=payment&from=2026-04-01"
+	const movements = "/admin/income_movements?kind=payment&from=2026-04-01&to=2026-04-30"
 	for _, p := range []string{totals, movements} {
 		if res := e.send(t, http.MethodGet, p, "carol-admin", ""); res.StatusCode != http.StatusForbidden {
 			t.Errorf("GET %s with view_finance = %d, want 403", p, res.StatusCode)
@@ -300,9 +313,20 @@ func TestAdminIncome(t *testing.T) {
 		t.Fatalf("movements = %+v", page)
 	}
 	m := page.Items[0]
-	if m.ProviderId != incomeProviderID || m.AccountId == nil || *m.AccountId != incomeAccount || m.SubscriptionId == nil ||
+	if f := income.filters[len(income.filters)-1]; f.Kind != finance.IncomePayment || f.From != incomeDate("2026-04-01") || f.To != incomeDate("2026-04-30") {
+		t.Errorf("filter = %+v, want the payments of April", f)
+	}
+	if m.ProviderId != incomeProviderID || m.AccountId == nil || *m.AccountId != incomeAccount || m.Username == nil || *m.Username != incomeUsername || m.SubscriptionId == nil ||
 		m.Fee.Amount != "432" || m.CoversStartsOn == nil || *m.CoversStartsOn != "2026-04-10" || m.OccurredOn != "2026-04-10" {
 		t.Errorf("movement = %+v", m)
+	}
+	// A movement whose subscriber's account is gone keeps its subscription and shows no account.
+	all := decode[clientapi.IncomeMovementPage](t, e.send(t, http.MethodGet, "/admin/income_movements", "bob-admin", ""))
+	if f := income.filters[len(income.filters)-1]; f.Kind != "" || f.From != finance.MinDate || f.To != finance.MaxDate {
+		t.Errorf("filter = %+v, want every movement", f)
+	}
+	if len(all.Items) != 2 || all.Items[0].SubscriptionId == nil || all.Items[0].AccountId != nil || all.Items[0].Username != nil {
+		t.Errorf("movements = %+v, want the refund without its subscriber's account first", all.Items)
 	}
 	for _, p := range []string{"/admin/income_movements?kind=payout", "/admin/income_movements?from=2026-02-30"} {
 		if res := e.send(t, http.MethodGet, p, "bob-admin", ""); res.StatusCode != http.StatusBadRequest {

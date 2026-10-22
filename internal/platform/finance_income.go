@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/finance"
 	"github.com/best-friends/my/internal/app/supporters"
 )
@@ -58,8 +59,8 @@ func (d supporterDirectory) PlanCounts(ctx context.Context) ([]finance.PlanCount
 	return out, nil
 }
 
-func (d supporterDirectory) SubscriptionAccounts(ctx context.Context, ids []string) (map[string]string, error) {
-	out := map[string]string{}
+func (d supporterDirectory) SubscriptionAccounts(ctx context.Context, ids []string) (map[string]finance.Subscriber, error) {
+	out := map[string]finance.Subscriber{}
 	if d.a.Supporters == nil {
 		return out, nil
 	}
@@ -67,16 +68,21 @@ func (d supporterDirectory) SubscriptionAccounts(ctx context.Context, ids []stri
 	if err != nil || len(users) == 0 {
 		return out, err
 	}
-	userIDs := make([]string, len(users))
-	for i, u := range users {
-		userIDs[i] = u.UserID
-	}
-	accounts, err := supporterUsers(d).AccountIDs(ctx, userIDs)
-	if err != nil {
-		return nil, err
-	}
+	accounts := map[string]finance.Subscriber{}
 	for _, u := range users {
-		if acct, ok := accounts[u.UserID]; ok {
+		acct, read := accounts[u.UserID]
+		if !read {
+			la, err := d.a.Accounts.LocalAccountOfUser(ctx, u.UserID)
+			switch {
+			case errors.Is(err, account.ErrNotFound):
+			case err != nil:
+				return nil, err
+			default:
+				acct = finance.Subscriber{AccountID: la.AccountID, Username: la.Username}
+			}
+			accounts[u.UserID] = acct
+		}
+		if acct.AccountID != "" {
 			out[u.SubscriptionID] = acct
 		}
 	}

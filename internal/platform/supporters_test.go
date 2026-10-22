@@ -407,7 +407,8 @@ func TestSupporterSubscriptionAndList(t *testing.T) {
 	var movements clientapi.IncomeMovementPage
 	e.want(e.do(http.MethodGet, "/admin/income_movements", admin.token, nil, &movements), http.StatusOK, "GET /admin/income_movements")
 	if len(movements.Items) != 1 || movements.Items[0].SubscriptionId == nil || *movements.Items[0].SubscriptionId != co.SubscriptionId ||
-		movements.Items[0].AccountId == nil || movements.Items[0].Net.Amount != "482" {
+		movements.Items[0].AccountId == nil || movements.Items[0].Username == nil || *movements.Items[0].Username != "bob" ||
+		movements.Items[0].Net.Amount != "482" {
 		t.Errorf("income movements = %+v, want bob's payment", movements.Items)
 	}
 	e.want(e.do(http.MethodPatch, "/admin/settings", admin.token, map[string]any{"values": map[string]string{"income_visibility": "plans"}}, nil),
