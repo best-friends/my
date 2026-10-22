@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -58,6 +59,17 @@ func (s *siteverifyStub) count() int {
 // the service (ADR-0042): both check the token, a valid invite does not skip the check, an
 // unreachable service lets sign-ins through and refuses sign-ups, and a failed check counts
 // against the client's address only.
+// cspDirective returns the sources of one directive of a Content-Security-Policy, nil when it is absent.
+func cspDirective(csp, name string) []string {
+	for directive := range strings.SplitSeq(csp, ";") {
+		fields := strings.Fields(directive)
+		if len(fields) > 0 && fields[0] == name {
+			return fields[1:]
+		}
+	}
+	return nil
+}
+
 func TestHumanCheck(t *testing.T) {
 	t.Parallel()
 	stub := &siteverifyStub{}
@@ -79,8 +91,10 @@ func TestHumanCheck(t *testing.T) {
 	t.Run("sign-in", func(t *testing.T) {
 		c := &authClient{t: t, s: s, cookies: map[string]string{}}
 		resp, body := c.do(http.MethodGet, authpages.PathSignIn, nil, nil)
-		if csp := resp.Header.Get("Content-Security-Policy"); !strings.Contains(csp, "script-src https://challenges.cloudflare.com;") ||
-			!strings.Contains(csp, "frame-src https://challenges.cloudflare.com;") || strings.Contains(csp, "unsafe-") {
+		// The page also admits this site's scripts when the embedded web build has the passkey script, which depends
+		// on whether the web client was built before the test.
+		if csp := resp.Header.Get("Content-Security-Policy"); !slices.Contains(cspDirective(csp, "script-src"), "https://challenges.cloudflare.com") ||
+			!slices.Equal(cspDirective(csp, "frame-src"), []string{"https://challenges.cloudflare.com"}) || strings.Contains(csp, "unsafe-") {
 			t.Errorf("Content-Security-Policy = %q", csp)
 		}
 		if !strings.Contains(body, `<div class="cf-turnstile" data-sitekey="site-key" data-action="sign_in" data-language="en" data-theme="auto"></div>`) {
@@ -127,7 +141,7 @@ func TestHumanCheck(t *testing.T) {
 		}
 		c := &authClient{t: t, s: s, cookies: map[string]string{}}
 		resp, body := c.do(http.MethodGet, authpages.PathSignUp, nil, nil)
-		if !strings.Contains(resp.Header.Get("Content-Security-Policy"), "script-src https://challenges.cloudflare.com;") ||
+		if !slices.Contains(cspDirective(resp.Header.Get("Content-Security-Policy"), "script-src"), "https://challenges.cloudflare.com") ||
 			!strings.Contains(body, `data-action="sign_up"`) {
 			t.Errorf("sign-up page lacks the widget: %v\n%s", resp.Header, body)
 		}
