@@ -230,7 +230,7 @@ test.describe("supporters", () => {
     await expect(cancelDialog).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await cancelDialog.getByRole("button", { name: message("admin.supporters.subscription.cancel"), exact: true }).click();
-    await expect(subscriptionsRegion.getByRole("definition").getByText(message("admin.supporters.state.expired"), { exact: true })).toBeVisible();
+    await expect(subscriptionsRegion.getByRole("cell", { name: message("admin.supporters.state.expired"), exact: true })).toBeVisible();
     expect(sent).toContain("cancel");
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);

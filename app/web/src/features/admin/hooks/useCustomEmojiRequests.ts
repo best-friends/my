@@ -9,7 +9,7 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { shellQueryRetry } from "../../../lib/query";
-import { type PagedList, toPagedList } from "../../moderation";
+import { type PagedPages, toPagedList } from "../../moderation";
 import {
   type AdminCustomEmojiRequest,
   adminCustomEmojiRequestsQueryOptions,
@@ -25,7 +25,7 @@ export function requestInText(request: Pick<AdminCustomEmojiRequest, "shortcode"
 }
 
 /** The requests in `state`, newest first. */
-export function useAdminCustomEmojiRequests(state: CustomEmojiRequestState): PagedList<AdminCustomEmojiRequest> {
+export function useAdminCustomEmojiRequests(state: CustomEmojiRequestState): PagedPages<AdminCustomEmojiRequest> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(adminCustomEmojiRequestsQueryOptions(api, state)));
 }

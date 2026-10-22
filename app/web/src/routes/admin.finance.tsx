@@ -15,7 +15,7 @@ import { type CostBasis, type CostGranularity, deviceToday } from "../features/c
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /**
  * `granularity` and `basis` of the totals; omitted, or anything unknown, shows the months amortized. `kind`, `from`
@@ -79,7 +79,7 @@ function FinancePage() {
   const navigate = Route.useNavigate();
   return (
     <>
-      <SettingsHeading>{t("client:admin.finance.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.finance.title")}</PageHeading>
       <FinanceSettings
         granularity={granularity}
         basis={basis}

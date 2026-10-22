@@ -1734,6 +1734,8 @@ export interface MessageArgs {
   "client:admin.finance.movements.parent": {};
   /** ID at {provider} */
   "client:admin.finance.movements.provider_id": { provider: string };
+  /** Payment provider ID */
+  "client:admin.finance.movements.provider_id.header": {};
   /** Subscriber */
   "client:admin.finance.movements.subscriber": {};
   /** Payments and refunds */
@@ -2046,6 +2048,8 @@ export interface MessageArgs {
   "client:admin.jobs.unlisted.description": {};
   /** Worker */
   "client:admin.jobs.worker": {};
+  /** Actions */
+  "client:admin.list.column.actions": {};
   /** Filters */
   "client:admin.list.filters": {};
   /** Show more */
@@ -3436,6 +3440,8 @@ export interface MessageArgs {
   "client:admin.supporters.state.pending": {};
   /** Refunded or charged back */
   "client:admin.supporters.state.revoked": {};
+  /** Account */
+  "client:admin.supporters.subscription.account": {};
   /** End now */
   "client:admin.supporters.subscription.cancel": {};
   /** Could not end the subscription: {reason} */
@@ -3456,6 +3462,8 @@ export interface MessageArgs {
   "client:admin.supporters.subscription.per_month": { amount: string };
   /** {amount} a year */
   "client:admin.supporters.subscription.per_year": { amount: string };
+  /** Period */
+  "client:admin.supporters.subscription.period": {};
   /** Period ends */
   "client:admin.supporters.subscription.period_ends_at": {};
   /** Plan */

@@ -9,7 +9,7 @@ import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { type PagedList, toPagedList } from "../../moderation";
+import { type PagedPages, toPagedList } from "../../moderation";
 import {
   createWebhookMutation,
   deleteWebhookMutation,
@@ -268,7 +268,7 @@ export function useWebhookActions(onDeleted: (id: string) => void): WebhookActio
 }
 
 /** The deliveries of a webhook, newest first. */
-export function useWebhookDeliveries(id: string): PagedList<WebhookDelivery> {
+export function useWebhookDeliveries(id: string): PagedPages<WebhookDelivery> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(webhookDeliveriesQueryOptions(api, id)));
 }

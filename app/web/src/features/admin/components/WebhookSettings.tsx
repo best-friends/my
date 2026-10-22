@@ -5,11 +5,11 @@
 // the last success; it is changed in a dialog, enabled or disabled, sent a test message, given a new secret and
 // deleted after an alert dialog. Its deliveries are on a page of their own. What a change did stays above the list
 // in a StatusMessage (role="status"), and a failure stays there too (role="alert").
-import { Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, InlineError, Link, Stack, StatusMessage, Text } from "@my/ui";
+import { Button, Card, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, InlineError, Link, Stack, StatusMessage, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text } from "@my/ui";
 import { type SubmitEvent, useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
-import { DateTime, DetailSection, RecordList, RequirePermission } from "../../moderation";
+import { DateTime, DetailSection, RecordTable, RequirePermission, wholeList } from "../../moderation";
 import type { Webhook, WebhookStateReason } from "../api/webhooks";
 import {
   draftOf,
@@ -36,7 +36,9 @@ export function WebhookSettings() {
     <RequirePermission permission="manage_webhooks">
       <Stack gap="8">
         <DetailSection title={t("client:admin.webhooks.new.title")}>
-          <NewWebhookForm />
+          <Card>
+            <NewWebhookForm />
+          </Card>
         </DetailSection>
         <DetailSection title={t("client:admin.webhooks.list.title")}>
           <WebhookList />
@@ -65,14 +67,13 @@ function NewWebhookForm() {
 
 function WebhookList() {
   const t = useT();
-  const listRef = useRef<HTMLUListElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   const webhooks = useWebhooks();
   const removed = useFocusAfterRemoval(
-    listRef,
+    tableRef,
     webhooks.map((webhook) => webhook.id),
   );
   const actions = useWebhookActions(removed);
-  const list = { items: webhooks, hasMore: false, isLoadingMore: false, loadMore: () => undefined };
   return (
     <Stack gap="3">
       <StatusMessage>{actions.status}</StatusMessage>
@@ -82,23 +83,25 @@ function WebhookList() {
         </InlineError>
       )}
       {actions.secret !== undefined && <SecretNotice shown={actions.secret} />}
-      <RecordList
-        list={list}
+      <RecordTable
+        list={wholeList(webhooks)}
+        caption={t("client:admin.webhooks.list.title")}
         getId={(webhook) => webhook.id}
-        listRef={listRef}
+        tableRef={tableRef}
         empty={<EmptyState headingLevel={3} heading={t("client:admin.webhooks.empty")} description={t("client:admin.webhooks.empty.description")} />}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.webhooks.url")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.webhooks.events")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.webhooks.state")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.webhooks.updated_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.list.column.actions")}</TableColumnHeader>
+          </>
+        }
       >
         {(webhook) => <WebhookRow webhook={webhook} actions={actions} />}
-      </RecordList>
+      </RecordTable>
     </Stack>
-  );
-}
-
-function WebhookHeading({ webhook }: { webhook: Webhook }) {
-  return (
-    <Heading level={3} wrap="anywhere" shrink>
-      {webhook.description === undefined || webhook.description === "" ? <span dir="ltr">{webhookHost(webhook.url)}</span> : <span dir="auto">{webhook.description}</span>}
-    </Heading>
   );
 }
 
@@ -141,38 +144,73 @@ function WebhookRow({ webhook, actions }: { webhook: Webhook; actions: WebhookAc
   const isPending = actions.pendingId === webhook.id;
   const enabled = webhook.state === "enabled";
   return (
-    <Stack gap="3">
-      <WebhookHeading webhook={webhook} />
-      <WebhookFacts webhook={webhook} />
-      <Cluster gap="2" align="center">
-        <Link href={`/admin/webhooks/${encodeURIComponent(webhook.id)}`} variant="standalone" aria-label={t("client:admin.webhooks.deliveries_of", { name })}>
-          {t("client:admin.webhooks.deliveries")}
-        </Link>
-        <EditWebhook webhook={webhook} actions={actions} isPending={isPending} />
-        <Button
-          size="sm"
-          isPending={isPending}
-          aria-label={t(enabled ? "client:admin.webhooks.disable_webhook" : "client:admin.webhooks.enable_webhook", { name })}
-          onPress={() => {
-            actions.setEnabled(webhook, !enabled);
-          }}
-        >
-          {t(enabled ? "client:admin.webhooks.disable" : "client:admin.webhooks.enable")}
-        </Button>
-        <Button
-          size="sm"
-          isDisabled={isPending || !enabled}
-          aria-label={t("client:admin.webhooks.test_webhook", { name })}
-          onPress={() => {
-            actions.test(webhook);
-          }}
-        >
-          {t("client:admin.webhooks.test")}
-        </Button>
-        <RotateSecret webhook={webhook} actions={actions} isPending={isPending} />
-        <DeleteWebhook webhook={webhook} actions={actions} isPending={isPending} />
-      </Cluster>
-    </Stack>
+    <TableRow data-row-id={webhook.id}>
+      <TableRowHeader wrap="anywhere">
+        <Stack gap="1">
+          <Text weight="semibold" wrap="anywhere">
+            {webhook.description === undefined || webhook.description === "" ? <span dir="ltr">{webhookHost(webhook.url)}</span> : <span dir="auto">{webhook.description}</span>}
+          </Text>
+          <Text size="sm" tone="muted" mono wrap="anywhere" dir="ltr">
+            {webhook.url}
+          </Text>
+        </Stack>
+      </TableRowHeader>
+      <TableCell>{webhook.events.map((event) => t(webhookEventLabels[event])).join(t("client:admin.webhooks.events.separator"))}</TableCell>
+      <TableCell>
+        <Stack gap="1">
+          <span>{t(enabled ? "client:admin.webhooks.state.enabled" : "client:admin.webhooks.state.disabled")}</span>
+          {webhook.state === "disabled" && webhook.state_reason !== "admin" && (
+            <Text size="sm" tone="warning">
+              {t(reasonLabels[webhook.state_reason])}
+            </Text>
+          )}
+          {webhook.failure !== undefined && (
+            <Cluster as="span" gap="1" rowGap="0">
+              <Text size="sm" tone="warning">
+                {t("client:admin.webhooks.failure.count", { count: webhook.failure.consecutive_failures })}
+              </Text>
+              <Text size="sm">{t("client:admin.webhooks.failure.since")}</Text>
+              <Text size="sm">
+                <DateTime value={webhook.failure.first_failed_at} />
+              </Text>
+            </Cluster>
+          )}
+        </Stack>
+      </TableCell>
+      <TableCell>
+        <DateTime value={webhook.updated_at} />
+      </TableCell>
+      <TableCell>
+        <Cluster gap="2" align="center">
+          <Link href={`/admin/webhooks/${encodeURIComponent(webhook.id)}`} variant="standalone" aria-label={t("client:admin.webhooks.deliveries_of", { name })}>
+            {t("client:admin.webhooks.deliveries")}
+          </Link>
+          <EditWebhook webhook={webhook} actions={actions} isPending={isPending} />
+          <Button
+            size="sm"
+            isPending={isPending}
+            aria-label={t(enabled ? "client:admin.webhooks.disable_webhook" : "client:admin.webhooks.enable_webhook", { name })}
+            onPress={() => {
+              actions.setEnabled(webhook, !enabled);
+            }}
+          >
+            {t(enabled ? "client:admin.webhooks.disable" : "client:admin.webhooks.enable")}
+          </Button>
+          <Button
+            size="sm"
+            isDisabled={isPending || !enabled}
+            aria-label={t("client:admin.webhooks.test_webhook", { name })}
+            onPress={() => {
+              actions.test(webhook);
+            }}
+          >
+            {t("client:admin.webhooks.test")}
+          </Button>
+          <RotateSecret webhook={webhook} actions={actions} isPending={isPending} />
+          <DeleteWebhook webhook={webhook} actions={actions} isPending={isPending} />
+        </Cluster>
+      </TableCell>
+    </TableRow>
   );
 }
 

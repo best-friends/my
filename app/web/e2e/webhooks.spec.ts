@@ -136,7 +136,7 @@ test.describe("webhooks", () => {
     await expect(form.getByText(secret, { exact: true })).toBeVisible();
     expect(sent).toEqual(["create https://hooks.example/in report.created"]);
     const list = main.getByRole("region", { name: message("admin.webhooks.list.title"), exact: true });
-    await expect(list.getByRole("heading", { level: 3, name: description, exact: true })).toBeVisible();
+    await expect(list.getByRole("rowheader", { name: description })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 

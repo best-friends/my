@@ -77,12 +77,12 @@ describe("the supporters screen", () => {
     expect(within(retired).queryByRole("button", { name: /Retire/u })).not.toBeInTheDocument();
 
     const subscriptions = screen.getByRole("region", { name: "Subscriptions" });
-    const [active, ended] = within(subscriptions).getAllByRole("listitem");
+    const [active, ended] = within(subscriptions).getAllByRole("row").slice(1);
     if (active === undefined || ended === undefined) throw new Error("two subscriptions expected");
-    expect(within(active).getByRole("heading", { level: 3, name: "@bob" })).toBeInTheDocument();
+    expect(within(active).getByRole("rowheader", { name: "@bob" })).toBeInTheDocument();
     expect(within(active).getByText("¥500 a month")).toBeInTheDocument();
     expect(within(active).getByRole("button", { name: "End the subscription of ⁦@bob⁩ now" })).toBeInTheDocument();
-    expect(within(ended).getByRole("heading", { level: 3, name: "Deleted account" })).toBeInTheDocument();
+    expect(within(ended).getByRole("rowheader", { name: "Deleted account" })).toBeInTheDocument();
     expect(within(ended).queryByRole("button")).not.toBeInTheDocument();
   });
 

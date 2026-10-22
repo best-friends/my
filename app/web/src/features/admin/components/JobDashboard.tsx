@@ -6,7 +6,7 @@
 // the list and focus moves to the next job's button. A queue that cannot list its pending jobs (Cloud Tasks, SQS)
 // says so, and still lists the dead jobs. The tabs follow the WAI-ARIA APG tabs pattern with automatic activation
 // (React Aria Tabs); only the selected panel is mounted.
-import { Box, Button, CodeBlock, DescriptionItem, DescriptionList, EmptyState, Heading, Hint, RegionError, SectionHeader, Spinner, Stack, Tab, TabList, TabPanel, Tabs, Text } from "@my/ui";
+import { Box, Button, Card, CodeBlock, DescriptionItem, DescriptionList, EmptyState, Heading, Hint, RegionError, SectionHeader, Spinner, Stack, Tab, TabList, TabPanel, Tabs, Text } from "@my/ui";
 import { useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -60,7 +60,9 @@ function Dashboard({ filter, onFilterChange }: JobDashboardProps) {
   return (
     <Stack gap="8">
       <DetailSection title={t("client:admin.jobs.queue.heading")}>
-        <QueueSummary queue={queue} />
+        <Card>
+          <QueueSummary queue={queue} />
+        </Card>
       </DetailSection>
       <DetailSection title={t("client:admin.jobs.list.heading")}>
         <Tabs
@@ -82,7 +84,9 @@ function Dashboard({ filter, onFilterChange }: JobDashboardProps) {
               {filter !== "dead" && !queue.pending_listing ? (
                 <EmptyState headingLevel={3} heading={t("client:admin.jobs.unlisted")} description={t("client:admin.jobs.unlisted.description")} />
               ) : (
-                <Jobs filter={filter} />
+                <Card>
+                  <Jobs filter={filter} />
+                </Card>
               )}
             </TabPanel>
           ))}

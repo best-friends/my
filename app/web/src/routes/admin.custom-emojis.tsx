@@ -12,7 +12,7 @@ import {
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /**
  * `tab`: the requests for new emoji (ADR-0070 §2), which an administrator's notification of a request opens; omitted,
@@ -65,7 +65,7 @@ function CustomEmojisPage() {
   };
   return (
     <>
-      <SettingsHeading>{t("client:admin.custom_emojis.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.custom_emojis.title")}</PageHeading>
       <CustomEmojiSettings
         tab={tab}
         onTabChange={(next) => {

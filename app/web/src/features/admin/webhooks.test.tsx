@@ -57,7 +57,7 @@ describe("the webhooks screen", () => {
     expect(sent).toEqual({ url: "https://hooks.example/in", description: "Chat", events: ["report.created", "report.resolved"] });
     expect(within(form).getByRole("textbox", { name: "URL" })).toHaveValue("");
     const list = screen.getByRole("region", { name: "Webhooks of this server" });
-    expect(await within(list).findByRole("heading", { level: 3, name: "Chat" })).toBeInTheDocument();
+    expect(await within(list).findByRole("rowheader", { name: /^Chat/u })).toBeInTheDocument();
   });
 
   test("shows the events the user lacks the permission of on the events", async () => {
@@ -187,7 +187,7 @@ describe("the page of a webhook", () => {
     const { user } = await renderApp({ path: `/admin/webhooks/${webhookId}` });
     const deliveries = await screen.findByRole("region", { name: "Deliveries" });
 
-    expect(within(deliveries).getByRole("heading", { level: 3, name: "A report is filed" })).toBeInTheDocument();
+    expect(within(deliveries).getByRole("rowheader", { name: /^A report is filed/u })).toBeInTheDocument();
     expect(within(deliveries).getByText("Failing")).toBeInTheDocument();
     expect(within(deliveries).getByText("HTTP 503")).toBeInTheDocument();
     await user.click(within(deliveries).getByRole("button", { name: `Send A report is filed ${failing.message_id} again` }));
