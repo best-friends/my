@@ -33,7 +33,7 @@ func runMap(r *repo.Repo, args []string) error {
 		}
 		problems := m.Check(r.Root, paths, checkContexts)
 		for _, p := range problems {
-			fmt.Printf("%s: %s\n", p.Path, p.Msg)
+			fmt.Printf("error: %s: %s\n", p.Path, p.Msg)
 		}
 		if len(problems) > 0 {
 			return exitError{1, fmt.Sprintf("%s: %d problems; add or fix entries (see the comment at its top)", ctxmap.File, len(problems))}

@@ -32,6 +32,15 @@ func TestFailures(t *testing.T) {
 	}
 }
 
+func TestFailuresMapCheck(t *testing.T) {
+	log := "2026-10-22T02:44:27.1Z bin/agentkit map check\n" +
+		"2026-10-22T02:44:27.2Z error: app/web/src/features/supporters/: matches strict pattern \"app/web/src/features/*\" but no entry names it\n" +
+		"2026-10-22T02:44:27.3Z make: *** [Makefile:111: agentkit-check] Error 1\n"
+	if got := strings.Join(Failures(log, 10), "\n"); !strings.Contains(got, "features/supporters/: matches strict pattern") {
+		t.Errorf("Failures lacks the map check problem:\n%s", got)
+	}
+}
+
 func TestFailuresCap(t *testing.T) {
 	log := strings.Repeat("FAIL\tpkg/x\n--- FAIL: TestY\n", 100)
 	if got := Failures(log, 10); len(got) > 12 {

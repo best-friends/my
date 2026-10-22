@@ -264,7 +264,7 @@ type WaitResult struct {
 	Lines []string
 }
 
-var reJob = regexp.MustCompile(`/actions/runs/(\d+)/job/(\d+)`)
+var reJob = regexp.MustCompile(`/actions/runs/\d+/job/(\d+)`)
 
 // Wait polls a pull request until its CI ends, it conflicts, it merges, or the timeout passes. With all false
 // it returns at the first failed check instead of waiting for the others. A failure comes with the failing
@@ -316,12 +316,13 @@ func failureReport(n int, p prState, failed []string, logDir string) []string {
 			continue
 		}
 		shown++
-		out, err := gh.Run("run", "view", m[1], "--job", m[2], "--log-failed", "-R", gh.Repo())
+		// The job's own log is readable as soon as the job ends; `gh run view --log` waits for the whole run.
+		out, err := gh.Run("api", "repos/"+gh.Repo()+"/actions/jobs/"+m[1]+"/logs")
 		if err != nil {
 			lines = append(lines, fmt.Sprintf("== %s: could not read the log: %v", c.name(), err))
 			continue
 		}
-		file := filepath.Join(logDir, fmt.Sprintf("pr-%d-%s.log", n, m[2]))
+		file := filepath.Join(logDir, fmt.Sprintf("pr-%d-%s.log", n, m[1]))
 		_ = os.WriteFile(file, out, 0o600)
 		lines = append(lines, fmt.Sprintf("== %s (full log: %s)", c.name(), file))
 		lines = append(lines, Failures(string(out), 40)...)
