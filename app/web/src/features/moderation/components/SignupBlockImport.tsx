@@ -7,15 +7,27 @@
 // What the import did stays on the page in a StatusMessage (role="status"); the skipped lines are a plain
 // table (the APG table pattern recommends the native element) named by its heading.
 import {
+  Box,
   Button,
   DescriptionItem,
   DescriptionList,
   DurationSelect,
   FileTrigger,
+  Heading,
+  Hint,
+  InlineError,
   Radio,
   RadioGroup,
   ReasonField,
+  Stack,
   StatusMessage,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeader,
+  TableHead,
+  TableRow,
+  Text,
   TextArea,
 } from "@my/ui";
 import { useId, useRef, useState } from "react";
@@ -51,9 +63,9 @@ export function SignupBlockImportForm() {
   const { draft } = form;
   const fileHelpId = useId();
   return (
-    <div className="flex flex-col gap-6">
-      <p className="text-fg-muted">{t("client:admin.signup_blocks.import.description")}</p>
-      <form onSubmit={form.submit} className="flex flex-col gap-6">
+    <Stack gap="6">
+      <Hint size="inherit">{t("client:admin.signup_blocks.import.description")}</Hint>
+      <Stack as="form" onSubmit={form.submit} gap="6">
         <RadioGroup
           label={t("client:admin.signup_blocks.kind")}
           value={draft.kind}
@@ -69,7 +81,7 @@ export function SignupBlockImportForm() {
             </Radio>
           ))}
         </RadioGroup>
-        <div className="flex flex-col gap-3">
+        <Stack gap="3">
           <TextArea
             label={t("client:admin.signup_blocks.import.list")}
             description={t("client:admin.signup_blocks.import.list.description", { max: signupBlockImportValueLimit })}
@@ -85,7 +97,7 @@ export function SignupBlockImportForm() {
             autoComplete="off"
             spellCheck="false"
           />
-          <div className="flex flex-col items-start gap-2">
+          <Stack align="start" gap="2">
             <FileTrigger
               acceptedFileTypes={listFileTypes}
               onSelect={(files) => {
@@ -97,17 +109,11 @@ export function SignupBlockImportForm() {
                 {t("client:admin.signup_blocks.import.file")}
               </Button>
             </FileTrigger>
-            <p id={fileHelpId} className="text-sm text-fg-muted">
-              {t("client:admin.signup_blocks.import.file.description")}
-            </p>
-            {form.file.status === "failed" && (
-              <p role="alert" className="text-sm text-danger">
-                {form.file.message}
-              </p>
-            )}
+            <Hint id={fileHelpId}>{t("client:admin.signup_blocks.import.file.description")}</Hint>
+            {form.file.status === "failed" && <InlineError alert>{form.file.message}</InlineError>}
             <StatusMessage tone="neutral">{form.file.status === "read" ? form.file.message : undefined}</StatusMessage>
-          </div>
-        </div>
+          </Stack>
+        </Stack>
         <RadioGroup
           label={t("client:admin.signup_blocks.severity")}
           value={draft.severity}
@@ -149,15 +155,15 @@ export function SignupBlockImportForm() {
           errorMessage={t("client:admin.signup_blocks.too_long", { max: signupBlockCommentLimit })}
         />
         {form.error !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError alert size="inherit">
             {t("client:admin.signup_blocks.import.failed", { reason: form.error })}
-          </p>
+          </InlineError>
         )}
-        <div>
+        <Box>
           <Button type="submit" variant="primary" isPending={form.isPending}>
             {t("client:admin.signup_blocks.import.submit")}
           </Button>
-        </div>
+        </Box>
         <StatusMessage tone={form.outcome !== undefined && form.outcome.added === 0 ? "neutral" : "success"}>
           {form.outcome === undefined
             ? undefined
@@ -168,10 +174,10 @@ export function SignupBlockImportForm() {
                 severity: t(signupBlockSeverityLabels[form.outcome.severity]),
               })}
         </StatusMessage>
-      </form>
+      </Stack>
       {/* A new import starts the table afresh, with its first rows only (R10). */}
       {form.outcome !== undefined && form.outcome.skipped.length > 0 && <SkippedLines key={form.outcome.id} outcome={form.outcome} />}
-    </div>
+    </Stack>
   );
 }
 
@@ -186,47 +192,39 @@ function SkippedLines({ outcome }: { outcome: SignupBlockImportOutcome }) {
   const { skipped } = outcome;
   const shown = showAll ? skipped : skipped.slice(0, skippedShownAtFirst);
   return (
-    <div className="flex flex-col gap-3">
-      <h3 ref={headingRef} id={headingId} tabIndex={-1} className="font-semibold outline-none">
+    <Stack gap="3">
+      <Heading ref={headingRef} id={headingId} level={3} focusable>
         {t("client:admin.signup_blocks.import.skipped.title")}
-      </h3>
+      </Heading>
       <DescriptionList columns={3}>
         {signupBlockImportSkipReasons.map((reason) => (
           <DescriptionItem key={reason} term={t(skipReasonLabels[reason])}>
-            <span className="tabular-nums">{t("client:admin.signup_blocks.import.skipped.lines", { count: skipped.filter((line) => line.reason === reason).length })}</span>
+            <Text numeric>{t("client:admin.signup_blocks.import.skipped.lines", { count: skipped.filter((line) => line.reason === reason).length })}</Text>
           </DescriptionItem>
         ))}
       </DescriptionList>
-      <table aria-labelledby={headingId} className="w-full table-fixed border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-border-strong">
-            <th scope="col" className="w-16 py-2 pe-3 text-start font-medium">
-              {t("client:admin.signup_blocks.import.skipped.line")}
-            </th>
-            <th scope="col" className="py-2 pe-3 text-start font-medium">
-              {t("client:admin.signup_blocks.import.skipped.value")}
-            </th>
-            <th scope="col" className="w-2/5 py-2 text-start font-medium">
-              {t("client:admin.signup_blocks.import.skipped.reason")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
+      <Table density="compact" aria-labelledby={headingId}>
+        <TableHead>
+          <TableColumnHeader width="narrow">{t("client:admin.signup_blocks.import.skipped.line")}</TableColumnHeader>
+          <TableColumnHeader>{t("client:admin.signup_blocks.import.skipped.value")}</TableColumnHeader>
+          <TableColumnHeader width="wide">{t("client:admin.signup_blocks.import.skipped.reason")}</TableColumnHeader>
+        </TableHead>
+        <TableBody>
           {shown.map((line) => (
-            <tr key={line.line}>
-              <td className="py-2 pe-3 align-top tabular-nums">{t("client:admin.signup_blocks.import.skipped.line_number", { line: line.line })}</td>
+            <TableRow key={line.line}>
+              <TableCell numeric>{t("client:admin.signup_blocks.import.skipped.line_number", { line: line.line })}</TableCell>
               {/* As written in the list, which may be in any script. */}
-              <td dir="auto" className="py-2 pe-3 align-top wrap-anywhere align-match-parent">
+              <TableCell dir="auto" wrap="anywhere" align="matchParent">
                 {line.value}
-              </td>
-              <td className="py-2 align-top">{t(skipReasonLabels[line.reason])}</td>
-            </tr>
+              </TableCell>
+              <TableCell>{t(skipReasonLabels[line.reason])}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
       {!showAll && skipped.length > skippedShownAtFirst && (
-        <div className="flex flex-col items-start gap-2">
-          <p className="text-sm text-fg-muted">{t("client:admin.signup_blocks.import.skipped.shown", { shown: skippedShownAtFirst, count: skipped.length })}</p>
+        <Stack align="start" gap="2">
+          <Hint>{t("client:admin.signup_blocks.import.skipped.shown", { shown: skippedShownAtFirst, count: skipped.length })}</Hint>
           <Button
             size="sm"
             onPress={() => {
@@ -236,8 +234,8 @@ function SkippedLines({ outcome }: { outcome: SignupBlockImportOutcome }) {
           >
             {t("client:admin.signup_blocks.import.skipped.show_all", { count: skipped.length })}
           </Button>
-        </div>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }

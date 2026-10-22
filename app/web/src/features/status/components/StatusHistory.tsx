@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ContentWarning, EmojiText, Link, MediaGrid, PostContent } from "@my/ui";
+import { Box, Cluster, ContentWarning, EmojiText, Heading, Link, MediaGrid, PostContent, Stack, Text } from "@my/ui";
 import { useId } from "react";
 import { type PlainClientMessageKey, useLocale, useT } from "../../../lib/i18n";
 import { type RevisionChange, type RevisionView, type StatusHistoryView, useStatusHistory } from "../hooks/useStatusHistory";
@@ -32,18 +32,18 @@ export function StatusHistory({ id }: StatusHistoryProps) {
   const t = useT();
   const history = useStatusHistory(id);
   return (
-    <div className="flex flex-col">
-      <p className="px-4 pb-2">
+    <Stack>
+      <Box as="p" paddingX="4" paddingBottom="2">
         <Link href={history.postPath}>{t("client:status.history.back")}</Link>
-      </p>
-      <ol aria-label={t("client:status.history.list")} className="divide-y divide-border border-y border-border">
+      </Box>
+      <Stack as="ol" aria-label={t("client:status.history.list")} divided border="y">
         {history.revisions.map((revision) => (
           <li key={revision.number}>
             <Revision revision={revision} history={history} />
           </li>
         ))}
-      </ol>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -73,15 +73,19 @@ function Revision({ revision, history }: RevisionProps) {
       />
     ) : null;
   return (
-    <article aria-labelledby={headingId} className="flex flex-col gap-2 bg-surface px-4 py-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="article" aria-labelledby={headingId} gap="2" background="surface" paddingX="4" paddingY="3">
+      <Heading level={2} id={headingId}>
         <time dateTime={revision.time.dateTime}>{revision.time.absolute}</time>
-      </h2>
+      </Heading>
       {(kind !== null || changes !== null) && (
-        <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-fg-muted">
-          {kind !== null && <span className="font-medium text-fg">{t(kind)}</span>}
+        <Cluster as="p" gap="3" rowGap="1" textSize="sm" tone="muted">
+          {kind !== null && (
+            <Text weight="medium" tone="fg">
+              {t(kind)}
+            </Text>
+          )}
           {changes !== null && <span>{changes}</span>}
-        </p>
+        </Cluster>
       )}
       {revision.contentWarning === null ? (
         <>
@@ -94,6 +98,6 @@ function Revision({ revision, history }: RevisionProps) {
           {media}
         </ContentWarning>
       )}
-    </article>
+    </Stack>
   );
 }

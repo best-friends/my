@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link } from "@my/ui";
+import { Link, Stack } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { AppealDetailView, appealQueryOptions } from "../features/moderation";
@@ -25,12 +25,12 @@ export const Route = createFileRoute("/moderation/appeals_/$id")({
 function AppealHeading() {
   const t = useT();
   return (
-    <div className="flex flex-col items-start gap-1">
+    <Stack align="start" gap="1">
       <PageHeading>{t("client:admin.appeal.title")}</PageHeading>
-      <Link href="/moderation/appeals" variant="standalone" className="text-sm">
+      <Link href="/moderation/appeals" variant="standalone" size="sm">
         {t("client:admin.appeal.back")}
       </Link>
-    </div>
+    </Stack>
   );
 }
 

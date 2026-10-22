@@ -3,7 +3,7 @@
 // URL by the route (web-client.md S3), and the servers of the selected filter, each with its state, since when,
 // and its failures, linking to the server's page with the reasons. The tabs follow the WAI-ARIA APG tabs
 // pattern with automatic activation (React Aria Tabs); only the selected panel is mounted.
-import { DescriptionItem, DescriptionList, EmptyState, Link, Tab, TabList, TabPanel, Tabs } from "@my/ui";
+import { DescriptionItem, DescriptionList, EmptyState, Heading, Link, Stack, Tab, TabList, TabPanel, Tabs } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type InstanceFilter, instanceFilters, type InstanceHealth } from "../api/staff";
 import { useInstances } from "../hooks/useInstances";
@@ -79,12 +79,12 @@ function Instances({ filter }: { filter: InstanceFilter }) {
 function InstanceRow({ health }: { health: InstanceHealth }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className="font-semibold">
-        <Link href={instancePath(health.domain)} variant="standalone" className="wrap-anywhere">
+    <Stack gap="2">
+      <Heading level={2} size="subsection">
+        <Link href={instancePath(health.domain)} variant="standalone" wrap="anywhere">
           <DomainName domain={health.domain} />
         </Link>
-      </h2>
+      </Heading>
       <DescriptionList columns={4}>
         <DescriptionItem term={t("client:admin.instance.state")}>
           <InstanceStateLabel state={health.state} />
@@ -95,6 +95,6 @@ function InstanceRow({ health }: { health: InstanceHealth }) {
           {health.last_failure_day === undefined ? t("client:admin.instance.none") : <Day value={health.last_failure_day} />}
         </DescriptionItem>
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }

@@ -6,7 +6,7 @@
 // after a passkey confirms it. What a change, a setting or a removal did stays on the page in one StatusMessage
 // (role="status") at its top, which stays in place when the page turns from one kind into the other. A wrong current password is that field's error and any other failure an alert next to the form or
 // in the dialog (web-client.md E2, G16).
-import { Button, ConfirmDialog, StatusMessage, TextField } from "@my/ui";
+import { Box, Button, ConfirmDialog, Heading, InlineError, Stack, StatusMessage, TextField } from "@my/ui";
 import { type ReactNode, useId, useState } from "react";
 import { useT } from "../../../lib/i18n";
 import { passwordMaxLength, passwordMinLength } from "../api/password";
@@ -18,7 +18,7 @@ export function PasswordSettings() {
   const form = usePasswordChangeForm(setStatus);
   const removal = usePasswordRemoval(setStatus);
   return (
-    <div className="@container flex flex-col gap-8">
+    <Stack container gap="8">
       <StatusMessage>{status}</StatusMessage>
       {form.hasPassword ? (
         <>
@@ -36,7 +36,7 @@ export function PasswordSettings() {
           {form.isPasskeySupported ? <ChangeForm form={form} /> : <p>{t("client:settings.password.passkeys_unsupported")}</p>}
         </Section>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -44,12 +44,12 @@ export function PasswordSettings() {
 function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {title}
-      </h2>
+      </Heading>
       {children}
-    </section>
+    </Stack>
   );
 }
 
@@ -58,42 +58,44 @@ function ChangeForm({ form }: { form: PasswordChangeForm }) {
   const t = useT();
   const lengths = { min: passwordMinLength, max: passwordMaxLength };
   return (
-    <form onSubmit={form.submit} className="flex flex-col items-start gap-4">
+    <Stack as="form" onSubmit={form.submit} align="start" gap="4">
       {form.hasPassword && (
-        <TextField
-          className="w-full max-w-sm"
-          label={t("client:settings.password.current")}
-          type="password"
-          autoComplete="current-password"
-          value={form.currentPassword}
-          onChange={form.changeCurrentPassword}
-          isRequired
-          isInvalid={form.currentPasswordError !== undefined}
-          errorMessage={form.currentPasswordError ?? t("client:settings.password.current.required")}
-        />
+        <Box width="sm">
+          <TextField
+            label={t("client:settings.password.current")}
+            type="password"
+            autoComplete="current-password"
+            value={form.currentPassword}
+            onChange={form.changeCurrentPassword}
+            isRequired
+            isInvalid={form.currentPasswordError !== undefined}
+            errorMessage={form.currentPasswordError ?? t("client:settings.password.current.required")}
+          />
+        </Box>
       )}
-      <TextField
-        className="w-full max-w-sm"
-        label={t("client:settings.password.new")}
-        description={t("client:settings.password.new.description", lengths)}
-        type="password"
-        autoComplete="new-password"
-        value={form.newPassword}
-        onChange={form.changeNewPassword}
-        isRequired
-        minLength={passwordMinLength}
-        maxLength={passwordMaxLength}
-        errorMessage={t("client:settings.password.new.invalid", lengths)}
-      />
+      <Box width="sm">
+        <TextField
+          label={t("client:settings.password.new")}
+          description={t("client:settings.password.new.description", lengths)}
+          type="password"
+          autoComplete="new-password"
+          value={form.newPassword}
+          onChange={form.changeNewPassword}
+          isRequired
+          minLength={passwordMinLength}
+          maxLength={passwordMaxLength}
+          errorMessage={t("client:settings.password.new.invalid", lengths)}
+        />
+      </Box>
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {form.error}
-        </p>
+        </InlineError>
       )}
       <Button type="submit" variant="primary" isPending={form.isPending}>
         {t(form.hasPassword ? "client:settings.password.submit" : "client:settings.password.set.submit")}
       </Button>
-    </form>
+    </Stack>
   );
 }
 
@@ -103,7 +105,7 @@ function RemovePassword({ removal }: { removal: PasswordRemoval }) {
   if (!removal.hasPasskey) return <p>{t("client:settings.password.remove.no_passkey")}</p>;
   if (!removal.isSupported) return <p>{t("client:settings.password.passkeys_unsupported")}</p>;
   return (
-    <div className="flex flex-col items-start gap-4">
+    <Stack align="start" gap="4">
       <p>{t("client:settings.password.remove.description")}</p>
       <Button variant="danger" onPress={removal.open}>
         {t("client:settings.password.remove.open")}
@@ -124,6 +126,6 @@ function RemovePassword({ removal }: { removal: PasswordRemoval }) {
         isPending={removal.isPending}
         {...(removal.error === undefined ? {} : { errorMessage: removal.error })}
       />
-    </div>
+    </Stack>
   );
 }

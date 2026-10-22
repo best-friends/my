@@ -5,7 +5,7 @@
 // the navigation's entry opens. A screen with things awaiting the moderators (FR-712) shows the count as a badge
 // whose words are in the link's name, so the count is read with the screen and shown by its digits, not by
 // color alone.
-import { Badge, EmptyState, Link } from "@my/ui";
+import { Badge, EmptyState, Heading, Hint, Link, Stack } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { Permission } from "../api/staff";
@@ -29,13 +29,13 @@ const noBadge: StaffPageBadge = () => null;
 function StaffPageList({ shown, idPrefix, badgeOf }: { shown: readonly StaffPage[]; idPrefix: string; badgeOf: StaffPageBadge }) {
   const t = useT();
   return (
-    <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+    <Stack as="ul" divided border="lg">
       {shown.map((page) => {
         const descriptionId = `${idPrefix}-${page.href}`;
         const badge = badgeOf(page);
         return (
-          <li key={page.href} className="flex flex-col px-4 py-3">
-            <Link href={page.href} variant="standalone" aria-describedby={descriptionId} className="gap-2">
+          <Stack as="li" key={page.href} paddingX="4" paddingY="3">
+            <Link href={page.href} variant="standalone" aria-describedby={descriptionId} gap={2}>
               {t(page.label)}
               {badge !== null && badge.count > 0 && (
                 <>
@@ -44,13 +44,13 @@ function StaffPageList({ shown, idPrefix, badgeOf }: { shown: readonly StaffPage
                 </>
               )}
             </Link>
-            <span id={descriptionId} className="text-sm text-fg-muted">
+            <Hint as="span" id={descriptionId}>
               {t(page.description)}
-            </span>
-          </li>
+            </Hint>
+          </Stack>
         );
       })}
-    </ul>
+    </Stack>
   );
 }
 
@@ -62,12 +62,12 @@ export function StaffMenuSection({ title, pages, badgeOf = noBadge }: StaffMenuS
   const shown = useShownStaffPages(pages);
   if (shown.length === 0) return null;
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading id={headingId} level={2}>
         {title}
-      </h2>
+      </Heading>
       <StaffPageList shown={shown} idPrefix={headingId} badgeOf={badgeOf} />
-    </section>
+    </Stack>
   );
 }
 

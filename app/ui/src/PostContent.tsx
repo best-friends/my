@@ -89,7 +89,11 @@ const postContent = tv({
     "[&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6",
     "[&>*+*]:mt-2",
   ],
-  variants: { size: { base: "", lg: "text-lg" }, framed: { true: "rounded-md border border-border p-3" } },
+  variants: {
+    size: { base: "", lg: "text-lg" },
+    framed: { true: "rounded-md border border-border p-3" },
+    lineClamp: { 2: "line-clamp-2", 3: "line-clamp-3" },
+  },
 });
 
 export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "dangerouslySetInnerHTML" | "dir"> & {
@@ -99,6 +103,8 @@ export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "
   size?: "base" | "lg";
   /** Draws a border and padding around the body, for a preview of it in a form or a list of settings. */
   framed?: boolean;
+  /** Cuts the body after this many lines, for a preview. */
+  lineClamp?: 2 | 3;
   /** The language of the post, when the server knows it (a BCP 47 tag). */
   lang?: string | undefined;
   /**
@@ -213,7 +219,7 @@ function emojiDrawer(html: SanitizedHtml, emojis: readonly CustomEmojiImage[], a
  * own pages through its router), and `emojis` to draw its custom emoji. The links to any other page open in a
  * new tab (`ExternalLinkContext`).
  */
-export function PostContent({ html, framed, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, size, className, ref, ...props }: PostContentProps) {
+export function PostContent({ html, framed, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, size, lineClamp, className, ref, ...props }: PostContentProps) {
   const autoplay = use(AutoplayContext);
   const links = use(ExternalLinkContext);
   const emojiMotion = motion ?? autoplay;
@@ -223,7 +229,7 @@ export function PostContent({ html, framed, lang, onLinkClick, emojis = noCustom
       ref={mergeRefs(ref, linkTargetSetter(html, links), linkClickListener(onLinkClick), emojiDrawer(html, emojis, emojiMotion))}
       dir="auto"
       lang={lang}
-      className={postContent({ size, framed, className })}
+      className={postContent({ size, framed, lineClamp, className })}
       dangerouslySetInnerHTML={{ __html: trustedHtml(html) }}
     />
   );

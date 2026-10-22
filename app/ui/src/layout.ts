@@ -52,6 +52,8 @@ export type BoxProps = {
   shrink?: boolean;
   /** Takes the free space of a row (`flex-1`). */
   grow?: boolean;
+  /** Takes a whole line of a wrapping row (`basis-full`). */
+  fullRow?: boolean;
   /** Its own cross-axis alignment in its parent (`self-*`). */
   self?: "start" | "center" | "end";
   /** Padding on every side, in a spacing step. */
@@ -60,11 +62,19 @@ export type BoxProps = {
   paddingX?: Space;
   /** Block padding, in a spacing step. */
   paddingY?: Space;
+  /** Padding on the block start, in a spacing step. */
+  paddingTop?: Space;
+  /** Padding on the block end, in a spacing step. */
+  paddingBottom?: Space;
+  /** Margin on the inline start, in a spacing step: indents a block under the control it describes. */
+  marginStart?: Space;
   /**
-   * A border: `md` / `lg` (a box with `rounded-md` / `rounded-lg`), `y` (the block edges, a list between other content),
+   * A border: `md` / `lg` (a box with `rounded-md` / `rounded-lg`), `y` (the block edges, a list between other content), `bottom` (a rule under a region),
    * `start` (a 2px rule on the inline start with `ps-3`, a quoted or nested block).
    */
-  border?: "md" | "lg" | "y" | "start";
+  border?: "md" | "lg" | "y" | "bottom" | "start";
+  /** The page surface color behind the block (`bg-surface`), for a row that stands on the page background. */
+  background?: "surface";
   /** Text color for everything inside, unless a child sets its own. */
   tone?: "fg" | "muted" | "danger" | "warning";
   /** Text size for everything inside, unless a child sets its own. */
@@ -117,6 +127,7 @@ export const box = tv({
     width: { prose: "max-w-prose", sm: "w-full max-w-sm", xs: "w-full max-w-xs", full: "w-full" },
     shrink: { true: "min-w-0" },
     grow: { true: "flex-1" },
+    fullRow: { true: "basis-full" },
     self: { start: "self-start", center: "self-center", end: "self-end" },
     padding: {
       "0": "p-0",
@@ -151,12 +162,47 @@ export const box = tv({
       "8": "py-8",
       "10": "py-10",
     },
+    paddingTop: {
+      "0": "pt-0",
+      "0.5": "pt-0.5",
+      "1": "pt-1",
+      "2": "pt-2",
+      "3": "pt-3",
+      "4": "pt-4",
+      "6": "pt-6",
+      "8": "pt-8",
+      "10": "pt-10",
+    },
+    paddingBottom: {
+      "0": "pb-0",
+      "0.5": "pb-0.5",
+      "1": "pb-1",
+      "2": "pb-2",
+      "3": "pb-3",
+      "4": "pb-4",
+      "6": "pb-6",
+      "8": "pb-8",
+      "10": "pb-10",
+    },
+    marginStart: {
+      "0": "ms-0",
+      "0.5": "ms-0.5",
+      "1": "ms-1",
+      "2": "ms-2",
+      "3": "ms-3",
+      "4": "ms-4",
+      "6": "ms-6",
+      "8": "ms-8",
+      "10": "ms-10",
+    },
     border: {
       md: "rounded-md border border-border",
       lg: "rounded-lg border border-border",
       y: "border-y border-border",
+      bottom: "border-b border-border",
       start: "border-s-2 border-border ps-3",
     },
+    background: { surface: "bg-surface" },
     tone: { fg: "text-fg", muted: "text-fg-muted", danger: "text-danger", warning: "text-warning" },
     textSize: { xs: "text-xs", sm: "text-sm", base: "text-base", lg: "text-lg" },
   },
@@ -178,16 +224,21 @@ export function splitBox<P extends BoxProps>({
   width,
   shrink,
   grow,
+  fullRow,
   self,
   padding,
   paddingX,
   paddingY,
+  paddingTop,
+  paddingBottom,
+  marginStart,
   border,
+  background,
   tone,
   textSize,
   ...rest
 }: P) {
-  return [{ container, width, shrink, grow, self, padding, paddingX, paddingY, border, tone, textSize }, rest] as const;
+  return [{ container, width, shrink, grow, fullRow, self, padding, paddingX, paddingY, paddingTop, paddingBottom, marginStart, border, background, tone, textSize }, rest] as const;
 }
 
 

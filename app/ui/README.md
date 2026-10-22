@@ -339,6 +339,7 @@ announces only changes made after it is in the page. A failure is not a status; 
 | --- | --- |
 | `Picture`, `AutoplayContext` | An image in the rendition that fits (`srcset` / `sizes` from `ImageSources`). An animation's moving rendition is a `<source>` for `prefers-reduced-motion: no-preference` only, and with `AutoplayContext` off it moves only while pointed at or touched (ADR-0054 §3). `Avatar` (`sources`) and `MediaGrid` (`MediaItem.sources`) use it. |
 | `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
+| `DetailSection` | A titled region of a detail page: a `<section>` named by its `h2`; with `headingRef` the heading takes focus from script. |
 | `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
 | `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-sm border border-border px-1 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
 | `ProfileHeader`, `ProfileHeaderImage`, `ProfileFields` / `ProfileField` | The heading of a profile: header image (or band), overlapping avatar, actions slot, name, handle, badges, tag pills, text, metadata fields, joined line and counts; `ProfileHeaderImage size="preview"` is the 3:1 image of the profile form. |
@@ -386,6 +387,18 @@ weight and the hidden `unreadLabel`), `NotificationOthers` the row of the other 
 around `xs` avatars), and `NotificationLinks` the links that lead on, in the actions slot. `QuoteBlock` is lines with a rule at the
 start (a moderation notice, a reason); `PostExcerpt` is that rule on a link to a post, around a `PostExcerptText` (its direction,
 language and line breaks, cut after three lines). The form's quote of the post being replied to uses the same parts.
+
+### Settings pieces
+
+`IconLabel` is an icon and a word on one line (a page in a list of pages). `Callout` is a raised box with a strong start edge for a
+note and the one button that acts on it. `CodeList` is a raised box of monospaced codes to copy down (recovery codes). `Button`'s
+`size="icon"` is an icon-only button (as wide as tall, a tap target on a coarse pointer); `Text`'s `inset` adds `px-1` to a `legend`
+over a bordered group; `Stack`'s `marker="decimalInside"` puts numbers inside the text.
+
+`BannerImage` is a page-width image capped in height. `Button` takes `variant="subtle"` (ghost in the muted color) and `size="compact"`;
+`Heading` takes `size="meta"`; `Tag` takes `variant="solid"` (the accent mark); `NewItemsButton` takes `sticky`; `PostContent` takes
+`lineClamp`; `Link` takes `size="sm"` and `wrap="anywhere"`. The box props also take `paddingTop`, `paddingBottom`, `marginStart`, `fullRow`,
+`background="surface"` and `border="bottom"`.
 
 ### Account rows
 

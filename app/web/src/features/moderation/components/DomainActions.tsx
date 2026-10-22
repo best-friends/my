@@ -6,22 +6,29 @@
 // The tabs follow the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs), kept in the URL by
 // the route (web-client.md S3); only the selected panel is mounted. Last, the list in Mastodon's CSV (DomainBlockCsv).
 import {
+  Box,
   Button,
   Checkbox,
+  Cluster,
   ConfirmDialog,
   DescriptionItem,
   DescriptionList,
   DurationSelect,
   EmptyState,
+  Heading,
+  InlineError,
   Link,
   Radio,
   RadioGroup,
   ReasonField,
+  SectionHeader,
+  Stack,
   StatusMessage,
   Tab,
   TabList,
   TabPanel,
   Tabs,
+  Text,
   TextField,
 } from "@my/ui";
 import { useRef, useState } from "react";
@@ -90,7 +97,7 @@ export function DomainActions(props: DomainActionsProps) {
   const t = useT();
   return (
     <RequirePermission permission="manage_domains">
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <DetailSection title={t("client:admin.domain_actions.new.title")}>
           {/* Another domain from the URL starts another form (web-client.md R10). */}
           <NewDomainActionForm key={props.domain ?? ""} initialDomain={props.domain ?? ""} />
@@ -101,7 +108,7 @@ export function DomainActions(props: DomainActionsProps) {
         <DetailSection title={t("client:admin.domain_actions.csv.title")}>
           <DomainBlockCsv />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -115,7 +122,7 @@ function NewDomainActionForm({ initialDomain }: { initialDomain: string }) {
   const tooLong = t("client:admin.domain_actions.too_long", { max: domainActionTextLimit });
   return (
     <>
-      <form onSubmit={form.submit} className="flex flex-col gap-6">
+      <Stack as="form" onSubmit={form.submit} gap="6">
       <TextField
         label={t("client:admin.domain_actions.domain")}
         description={t("client:admin.domain_actions.domain.description")}
@@ -187,17 +194,17 @@ function NewDomainActionForm({ initialDomain }: { initialDomain: string }) {
         {t("client:admin.domain_actions.obfuscate")}
       </Checkbox>
       {form.confirmation === null && form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {t("client:admin.domain_actions.issue_failed", { reason: form.error })}
-        </p>
+        </InlineError>
       )}
-      <div>
+      <Box>
         <Button type="submit" variant="primary" isPending={form.isPending && form.confirmation === null}>
           {t("client:admin.domain_actions.submit")}
         </Button>
-      </div>
+      </Box>
       <StatusMessage>{form.status}</StatusMessage>
-      </form>
+      </Stack>
       {/* Outside the form: React sends the dialog's own submit event up its component tree, through a portal too. */}
       <ConfirmDialog
         isOpen={form.confirmation !== null}
@@ -222,14 +229,14 @@ function DomainActionTabs({ filter, domain, onFilterChange, everyDomainHref }: D
   const t = useT();
   const [status, setStatus] = useState<string | undefined>(undefined);
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       {domain !== undefined && (
-        <p className="flex flex-wrap items-baseline gap-x-2">
-          <span className="wrap-anywhere">{t("client:admin.domain_actions.list.of_domain", { domain: domainInText(t, domain) })}</span>
+        <Cluster as="p" align="baseline" gap="2" rowGap="0">
+          <Text wrap="anywhere">{t("client:admin.domain_actions.list.of_domain", { domain: domainInText(t, domain) })}</Text>
           <Link href={everyDomainHref} variant="standalone">
             {t("client:admin.domain_actions.list.every_domain")}
           </Link>
-        </p>
+        </Cluster>
       )}
       <StatusMessage>{status}</StatusMessage>
       <Tabs
@@ -255,7 +262,7 @@ function DomainActionTabs({ filter, domain, onFilterChange, everyDomainHref }: D
           />
         </TabPanel>
       </Tabs>
-    </div>
+    </Stack>
   );
 }
 
@@ -294,12 +301,10 @@ function DomainActionRow({ action, lift }: { action: DomainAction; lift: LiftDom
   const intl = useIntl();
   const kind = t(domainActionKindLabels[action.kind]);
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        <h3 tabIndex={-1} className="font-semibold wrap-anywhere outline-none">
-          <DomainName domain={action.domain} />
-        </h3>
-        {action.state === "active" && (
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          action.state === "active" && (
           <Button
             size="sm"
             isPending={lift.pendingIds.includes(action.id)}
@@ -314,12 +319,17 @@ function DomainActionRow({ action, lift }: { action: DomainAction; lift: LiftDom
           >
             {t("client:admin.domain_actions.lift")}
           </Button>
-        )}
-      </div>
+          )
+        }
+      >
+        <Heading level={3} wrap="anywhere" focusable>
+          <DomainName domain={action.domain} />
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.domain_actions.kind")}>{kind}</DescriptionItem>
         <DescriptionItem term={t("client:admin.domain_actions.state")}>
-          <span className={action.state === "active" ? "font-semibold" : undefined}>{t(stateLabels[action.state])}</span>
+          <Text {...(action.state === "active" ? { weight: "semibold" as const } : {})}>{t(stateLabels[action.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.domain_actions.issued_at")}>
           <DateTime value={action.issued_at} />
@@ -341,20 +351,20 @@ function DomainActionRow({ action, lift }: { action: DomainAction; lift: LiftDom
           {action.public_comment !== undefined && (
             <DescriptionItem term={t("client:admin.domain_actions.public_comment")}>
               {/* Written by a moderator, in any language. */}
-              <span dir="auto" className="whitespace-pre-wrap">
+              <Text dir="auto" whitespace="preWrap">
                 {action.public_comment}
-              </span>
+              </Text>
             </DescriptionItem>
           )}
           {action.private_note !== undefined && (
             <DescriptionItem term={t("client:admin.domain_actions.private_note")}>
-              <span dir="auto" className="whitespace-pre-wrap">
+              <Text dir="auto" whitespace="preWrap">
                 {action.private_note}
-              </span>
+              </Text>
             </DescriptionItem>
           )}
         </DescriptionList>
       )}
-    </div>
+    </Stack>
   );
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button } from "@my/ui";
+import { Button, Stack } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { useInstanceName } from "../../../lib/instanceName";
 import { useSignIn } from "../hooks/useSignIn";
@@ -15,11 +15,11 @@ export function SignInPanel({ returnTo }: SignInPanelProps) {
   const instanceName = useInstanceName();
   const { signIn, isPending } = useSignIn(returnTo);
   return (
-    <div className="flex flex-col items-start gap-4">
+    <Stack align="start" gap="4">
       <p>{t("client:login.body", { instance: instanceName })}</p>
       <Button variant="primary" onPress={signIn} isPending={isPending}>
         {t("client:login.submit")}
       </Button>
-    </div>
+    </Stack>
   );
 }

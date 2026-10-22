@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { AccountItem, Button, EmptyState, ExternalLink, Link, RegionError, Spinner } from "@my/ui";
+import { AccountItem, BannerImage, Button, Cluster, EmptyState, ExternalLink, Heading, Hint, Link, RegionError, Spinner, Stack, Text } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { handleOf } from "../../../lib/handle";
@@ -21,13 +21,13 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
 export function About() {
   const about = useAbout();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       {about.thumbnail !== undefined && <ServerThumbnail thumbnail={about.thumbnail} />}
       {about.summary !== "" && (
         // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
-        <p dir="auto" lang="" className="text-lg">
+        <Text as="p" dir="auto" lang="" size="lg">
           {about.summary}
-        </p>
+        </Text>
       )}
       {about.description.length > 0 && <Description paragraphs={about.description} />}
       {/* What users agree to stands together: the rules, then the terms and policies. */}
@@ -44,7 +44,7 @@ export function About() {
       {about.commerceDisclosureUrl !== undefined && <CommerceDisclosure url={about.commerceDisclosureUrl} />}
       {about.contact !== undefined && <Contact contact={about.contact} />}
       {about.sourceUrl !== undefined && <SourceCode url={about.sourceUrl} />}
-    </div>
+    </Stack>
   );
 }
 
@@ -52,12 +52,12 @@ export function About() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {title}
-      </h2>
+      </Heading>
       {children}
-    </section>
+    </Stack>
   );
 }
 
@@ -67,9 +67,9 @@ function Description({ paragraphs }: { paragraphs: readonly string[] }) {
     <Section title={t("client:about.description.title")}>
       {paragraphs.map((paragraph) => (
         // Paragraphs of one text have no IDs; the text itself is the key (two equal paragraphs are not expected).
-        <p key={paragraph} dir="auto" lang="" className="whitespace-pre-line">
+        <Text as="p" key={paragraph} dir="auto" lang="" whitespace="preLine">
           {paragraph}
-        </p>
+        </Text>
       ))}
     </Section>
   );
@@ -79,22 +79,18 @@ function Rules({ rules }: { rules: ReturnType<typeof useAbout>["rules"] }) {
   const t = useT();
   return (
     <Section title={t("client:about.rules.title")}>
-      <ol className="flex list-decimal flex-col gap-2 ps-6">
+      <Stack as="ol" marker="decimal" gap="2">
         {rules.map((rule) => (
           // The item follows the page's direction, so that its number stays in the list's padding; the rule's text
           // follows its own (dir="auto"); lang="" because the administrator's text has no known language.
           <li key={rule.id} lang="">
-            <p dir="auto" className="font-medium">
+            <Text as="p" dir="auto" weight="medium">
               {rule.text}
-            </p>
-            {rule.hint !== undefined && (
-              <p dir="auto" className="text-sm text-fg-muted">
-                {rule.hint}
-              </p>
-            )}
+            </Text>
+            {rule.hint !== undefined && <Hint dir="auto">{rule.hint}</Hint>}
           </li>
         ))}
-      </ol>
+      </Stack>
     </Section>
   );
 }
@@ -105,14 +101,7 @@ function Rules({ rules }: { rules: ReturnType<typeof useAbout>["rules"] }) {
  */
 export function ServerThumbnail({ thumbnail }: { thumbnail: NonNullable<Instance["thumbnail"]> }) {
   return (
-    <img
-      src={thumbnail.url}
-      alt={thumbnail.alt ?? ""}
-      width={thumbnail.width}
-      height={thumbnail.height}
-      decoding="async"
-      className="h-auto max-h-80 w-full rounded-lg bg-surface-sunken object-cover"
-    />
+    <BannerImage src={thumbnail.url} alt={thumbnail.alt ?? ""} width={thumbnail.width} height={thumbnail.height} />
   );
 }
 
@@ -122,10 +111,12 @@ function Contact({ contact }: { contact: NonNullable<Instance["contact"]> }) {
   const { account, email } = contact;
   return (
     <Section title={t("client:about.contact.title")}>
-      <dl className="flex flex-col gap-3">
+      <Stack as="dl" gap="3">
         {account !== undefined && (
-          <div className="flex flex-col gap-1">
-            <dt className="text-sm text-fg-muted">{t("client:about.contact.account")}</dt>
+          <Stack gap="1">
+            <Text as="dt" size="sm" tone="muted">
+              {t("client:about.contact.account")}
+            </Text>
             <dd>
               <AccountItem
                 name={account.display_name || account.username}
@@ -135,20 +126,24 @@ function Contact({ contact }: { contact: NonNullable<Instance["contact"]> }) {
                 layout="inline"
               />
             </dd>
-          </div>
+          </Stack>
         )}
         {email !== undefined && (
-          <div className="flex flex-col gap-1">
-            <dt className="text-sm text-fg-muted">{t("client:about.contact.email")}</dt>
+          <Stack gap="1">
+            <Text as="dt" size="sm" tone="muted">
+              {t("client:about.contact.email")}
+            </Text>
             <dd>
               {/* An address reads left to right in every locale. */}
-              <Link href={`mailto:${email}`} variant="standalone" className="wrap-anywhere">
-                <span dir="ltr">{email}</span>
+              <Link href={`mailto:${email}`} variant="standalone">
+                <Text dir="ltr" wrap="anywhere">
+                  {email}
+                </Text>
               </Link>
             </dd>
-          </div>
+          </Stack>
         )}
-      </dl>
+      </Stack>
     </Section>
   );
 }
@@ -163,9 +158,9 @@ function Crawlers({ searchIndexing, aiUsage }: { searchIndexing: Instance["searc
     <Section title={t("client:about.crawlers.title")}>
       <p>{t("client:about.crawlers.search", { setting: searchIndexing })}</p>
       <p>{t("client:about.crawlers.ai", { setting: aiUsage })}</p>
-      <p className="text-sm text-fg-muted">{t("client:about.crawlers.how")}</p>
-      <p className="text-sm text-fg-muted">{t("client:about.crawlers.accounts")}</p>
-      <p className="text-sm text-fg-muted">{t("client:about.crawlers.legal")}</p>
+      <Hint>{t("client:about.crawlers.how")}</Hint>
+      <Hint>{t("client:about.crawlers.accounts")}</Hint>
+      <Hint>{t("client:about.crawlers.legal")}</Hint>
     </Section>
   );
 }
@@ -250,13 +245,15 @@ function SourceCode({ url }: { url: string }) {
         <SourceCodeLink url={url} />
       </p>
       {address !== undefined && (
-        <dl className="flex flex-col gap-1">
-          <dt className="text-sm text-fg-muted">{t("client:about.source.address")}</dt>
+        <Stack as="dl" gap="1">
+          <Text as="dt" size="sm" tone="muted">
+            {t("client:about.source.address")}
+          </Text>
           {/* An address reads left to right in every locale. */}
-          <dd dir="ltr" className="text-start wrap-anywhere">
+          <Text as="dd" dir="ltr" align="start" wrap="anywhere">
             {address}
-          </dd>
-        </dl>
+          </Text>
+        </Stack>
       )}
     </Section>
   );
@@ -269,7 +266,7 @@ function ModeratedDomainsSection() {
   if (domains.status === "hidden") return null;
   return (
     <Section title={t("client:about.domains.title")}>
-      <p className="text-sm text-fg-muted">{t("client:about.domains.intro")}</p>
+      <Hint>{t("client:about.domains.intro")}</Hint>
       <ModeratedDomainsBody domains={domains} />
     </Section>
   );
@@ -280,12 +277,12 @@ function ModeratedDomainsBody({ domains }: { domains: Exclude<ModeratedDomains, 
   switch (domains.status) {
     case "signed-in-only":
       return (
-        <p className="flex flex-wrap gap-x-1">
+        <Cluster as="p" gap="1" rowGap="0">
           <span>{t("client:about.domains.signed_in_only")}</span>
           <Link href={`/login?${new URLSearchParams({ return_to: "/about" }).toString()}`} variant="standalone">
             {t("client:about.domains.sign_in")}
           </Link>
-        </p>
+        </Cluster>
       );
     case "loading":
       return (
@@ -307,17 +304,17 @@ function ModeratedDomainsBody({ domains }: { domains: Exclude<ModeratedDomains, 
     case "ready":
       if (domains.items.length === 0) return <EmptyState headingLevel={3} heading={t("client:about.domains.empty")} />;
       return (
-        <div className="flex flex-col gap-4">
+        <Stack gap="4">
           {domains.items.some(({ action }) => action.domain.includes("*")) && (
-            <p className="text-sm text-fg-muted">{t("client:about.domains.obfuscated")}</p>
+            <Hint>{t("client:about.domains.obfuscated")}</Hint>
           )}
-          <ul className="flex flex-col divide-y divide-border">
+          <Stack as="ul" divided>
             {domains.items.map(({ key, action }) => (
-              <li key={key} className="flex flex-col gap-1 py-3">
+              <Stack as="li" key={key} gap="1" paddingY="3">
                 <ModeratedDomain action={action} />
-              </li>
+              </Stack>
             ))}
-          </ul>
+          </Stack>
           {domains.moreError !== undefined && <RegionError heading={t("client:about.domains.more_failed")} reason={domains.moreError} />}
           {domains.hasMore && (
             <div>
@@ -326,7 +323,7 @@ function ModeratedDomainsBody({ domains }: { domains: Exclude<ModeratedDomains, 
               </Button>
             </div>
           )}
-        </div>
+        </Stack>
       );
   }
 }
@@ -340,18 +337,18 @@ function ModeratedDomain({ action }: { action: PublicDomainAction }) {
   const t = useT();
   return (
     <>
-      <p className="flex flex-wrap items-baseline gap-x-3">
+      <Cluster as="p" align="baseline" gap="3" rowGap="0">
         {/* A domain reads left to right in every locale; an obfuscated one is shown as the server sent it. */}
-        <span dir="ltr" className="font-medium wrap-anywhere">
+        <Text dir="ltr" weight="medium" wrap="anywhere">
           {domainToUnicode(action.domain)}
-        </span>
-        <span className="text-sm text-fg-muted">{t(kindLabels[action.kind])}</span>
-      </p>
+        </Text>
+        <Hint as="span">{t(kindLabels[action.kind])}</Hint>
+      </Cluster>
       {action.comment !== undefined && action.comment !== "" && (
         // The moderators' public comment, in any language (web-client.md Y10).
-        <p dir="auto" className="text-sm wrap-anywhere">
+        <Text as="p" dir="auto" size="sm" wrap="anywhere">
           {action.comment}
-        </p>
+        </Text>
       )}
     </>
   );

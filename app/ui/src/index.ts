@@ -219,3 +219,8 @@ export { CodeBlock, type CodeBlockProps } from "./CodeBlock";
 export { PreviewImage, type PreviewImageProps } from "./PreviewImage";
 export { ThemePreview, type ThemePreviewProps } from "./ThemePreview";
 export { ReactionChip, ReactionEmoji, ReactionRow, type ReactionChipProps, type ReactionEmojiProps, type ReactionRowProps } from "./ReactionChip";
+export { DetailSection, type DetailSectionProps } from "./DetailSection";
+export { BannerImage, type BannerImageProps } from "./BannerImage";
+export { IconLabel, type IconLabelProps } from "./IconLabel";
+export { Callout, type CalloutProps } from "./Callout";
+export { CodeList, type CodeListProps } from "./CodeList";

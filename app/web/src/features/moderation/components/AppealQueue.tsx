@@ -3,7 +3,7 @@
 // first. The tabs follow the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs), kept in the
 // URL by the route (web-client.md S3); only the selected panel is mounted. Each row's heading links to the
 // appeal's page, where it is decided.
-import { DescriptionItem, DescriptionList, EmptyState, Link, Tab, TabList, TabPanel, Tabs } from "@my/ui";
+import { DescriptionItem, DescriptionList, EmptyState, Heading, Link, Stack, Tab, TabList, TabPanel, Tabs, Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type Appeal, type AppealFilter, appealFilters } from "../api/appeals";
 import { appealStateLabels, appealTitle, useAppeals } from "../hooks/useAppeals";
@@ -82,12 +82,12 @@ function AppealList({ filter }: { filter: AppealFilter }) {
 function AppealRow({ appeal }: { appeal: Appeal }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className="font-semibold">
-        <Link href={appealPath(appeal.id)} variant="standalone" className="wrap-anywhere">
+    <Stack gap="2">
+      <Heading level={2} size="subsection">
+        <Link href={appealPath(appeal.id)} variant="standalone" wrap="anywhere">
           {appealTitle(t, appeal)}
         </Link>
-      </h2>
+      </Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.appeal.account")}>
           <AccountByIdLabel id={appeal.account_id} />
@@ -99,7 +99,7 @@ function AppealRow({ appeal }: { appeal: Appeal }) {
         {appeal.state !== "pending" && (
           <>
             <DescriptionItem term={t("client:admin.appeal.decision")}>
-              <span className="font-semibold">{t(appealStateLabels[appeal.state])}</span>
+              <Text weight="semibold">{t(appealStateLabels[appeal.state])}</Text>
             </DescriptionItem>
             {appeal.decided_at !== undefined && (
               <DescriptionItem term={t("client:admin.appeal.decided_at")}>
@@ -110,9 +110,9 @@ function AppealRow({ appeal }: { appeal: Appeal }) {
         )}
       </DescriptionList>
       {/* Written by the user who appealed, in any language; the appeal's page shows it whole (Y10). */}
-      <p dir="auto" className="line-clamp-2 text-start wrap-anywhere whitespace-pre-wrap">
+      <Text as="p" dir="auto" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">
         {appeal.text}
-      </p>
-    </div>
+      </Text>
+    </Stack>
   );
 }
