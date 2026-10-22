@@ -546,3 +546,10 @@ Counts in `details` are `<Text numeric>`; several parts under a body are a `<Sta
 | `PreviewImage` | A 16:9 `img` preview of a file the user chose |
 | `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
 | `PostContent` `framed` | A border and padding around a post body shown as a preview |
+
+## Reactions
+
+`ReactionRow` is the wrapping `role="group"` of a post's emoji reactions with the button that lists who reacted (`label`, `listLabel`,
+`onOpenList`; the dialog goes in `after`). Its children are `ReactionChip`s: a toggle named by `label` and described by the formatted
+`count`, outlined and accented while `isSelected`; `onChange={null}` shows it only (an emoji nobody here can react with). The emoji is
+`image` (a custom emoji) or `text`; `ReactionEmoji` draws the same emoji for the rows of the list of reactors.
