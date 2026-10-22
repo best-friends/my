@@ -196,3 +196,18 @@ export {
 export { BackLinkHeading, PageHeading, type BackLinkHeadingProps, type PageHeadingProps } from "./PageHeading";
 export { RouteLoading, StandalonePage, type RouteLoadingProps, type StandalonePageProps } from "./RouteStates";
 export { ServerNameLink, type ServerNameLinkProps } from "./ServerNameLink";
+
+// The display of a poll (FR-112).
+export {
+  Poll,
+  PollChoices,
+  PollHint,
+  PollResults,
+  PollSummary,
+  type PollChoicesProps,
+  type PollHintProps,
+  type PollOptionProps,
+  type PollProps,
+  type PollResultsProps,
+  type PollSummaryProps,
+} from "./Poll";
