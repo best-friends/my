@@ -88,7 +88,7 @@ afterEach(() => {
 describe("the page of the supporter plans", () => {
   test("is in the settings menu only while the program is enabled", async () => {
     await renderApp({ path: "/settings" });
-    const menu = await screen.findByRole("region", { name: "Settings pages" });
+    const menu = await screen.findByRole("navigation", { name: "Settings pages" });
     expect(within(menu).getByRole("link", { name: "Profile" })).toBeInTheDocument();
     expect(within(menu).queryByRole("link", { name: "Supporter plans" })).not.toBeInTheDocument();
   });
@@ -251,7 +251,7 @@ describe("the Tauri app", () => {
     server.use(enabledInstance(), plansHandler());
     await renderApp({ path: "/settings" });
 
-    const menu = await screen.findByRole("region", { name: "Settings pages" });
+    const menu = await screen.findByRole("navigation", { name: "Settings pages" });
     expect(within(menu).getByRole("link", { name: "Profile" })).toBeInTheDocument();
     expect(within(menu).queryByRole("link", { name: "Supporter plans" })).not.toBeInTheDocument();
   });

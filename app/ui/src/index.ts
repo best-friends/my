@@ -132,6 +132,7 @@ export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./theme
 // Layout and text (web-client.md §16.1, §16.2): screens lay themselves out with these instead of classes of their own.
 export { Box, type BoxProps } from "./Box";
 export { Card, type CardElement, type CardProps } from "./Card";
+export { SettingsLayout, type SettingsLayoutProps } from "./SettingsLayout";
 export { FeatureCard, type FeatureCardProps } from "./FeatureCard";
 export { Hero, type HeroProps } from "./Hero";
 export { Cluster, type ClusterProps } from "./Cluster";

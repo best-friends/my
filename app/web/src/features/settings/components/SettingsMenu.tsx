@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Heading, Hint, Link, Stack } from "@my/ui";
-import { useId } from "react";
+import { RailItem, Stack } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type Permission, useViewerPermissions } from "../../moderation";
 import { useSupporterEntry } from "../../supporters";
@@ -28,35 +27,21 @@ const pages: readonly { href: string; label: ClientMessageKey; description: Clie
   { href: "/settings/account", label: "client:settings.account.title", description: "client:settings.account.summary" },
 ];
 
-/** The links to the pages of the settings, each with what it is about. */
-export function SettingsMenu() {
+/** The links to the pages of the settings, as the items of the section menu; the page the user is on is current. */
+export function SettingsMenu({ pathname }: { pathname: string }) {
   const t = useT();
-  const headingId = useId();
   const permissions = useViewerPermissions();
   const supporters = useSupporterEntry();
   const shown = pages.filter(
     (page) => (page.permission === undefined || permissions.includes(page.permission)) && (page.supporters === undefined || supporters),
   );
   return (
-    <Stack as="section" aria-labelledby={headingId} gap="3">
-      <Heading level={2} id={headingId}>
-        {t("client:settings.menu.title")}
-      </Heading>
-      <Stack as="ul" divided border="lg">
-        {shown.map((page) => {
-          const descriptionId = `${headingId}-${page.href}`;
-          return (
-            <Stack as="li" key={page.href} paddingX="4" paddingY="3">
-              <Link href={page.href} variant="standalone" aria-describedby={descriptionId}>
-                {t(page.label)}
-              </Link>
-              <Hint as="span" id={descriptionId}>
-                {t(page.description)}
-              </Hint>
-            </Stack>
-          );
-        })}
-      </Stack>
+    <Stack as="ul" gap="1">
+      {shown.map((page) => (
+        <li key={page.href}>
+          <RailItem form="section" href={page.href} icon={null} label={t(page.label)} current={pathname === page.href} />
+        </li>
+      ))}
     </Stack>
   );
 }

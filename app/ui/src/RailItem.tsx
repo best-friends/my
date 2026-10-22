@@ -39,6 +39,15 @@ const railItem = tv({
         badge: "order-last ms-auto",
         label: "text-start",
       },
+      // A text row of the settings' section menu: the full width of the card, no icon.
+      section: {
+        item: [
+          "min-h-11 w-full gap-2 rounded-lg bg-transparent px-3 text-sm font-bold text-fg data-hovered:bg-surface-sunken",
+          "data-current:rounded-lg data-current:bg-soft data-current:text-accent data-current:data-hovered:bg-soft",
+        ],
+        pill: "hidden",
+        label: "text-start",
+      },
       // A text link of the signed-out top bar.
       top: {
         item: [
@@ -83,8 +92,8 @@ export type RailItemProps = {
   current?: boolean;
   /** The count on the icon's corner (at the end of the row from lg), or nothing for an item without a count now. */
   badge?: RailItemBadge;
-  /** `tab` (default): icon over a small label; `row`: a row of the rail; `top`: a text link of the signed-out top bar. */
-  form?: "tab" | "row" | "top";
+  /** `tab` (default): icon over a small label; `row`: a row of the rail; `top`: a text link of the signed-out top bar; `section`: a text row of the settings' menu. */
+  form?: "tab" | "row" | "top" | "section";
   /** Adjusts the parts to the item's place (the navigation's responsive forms); overrides the form's classes. */
   classNames?: { item?: string; pill?: string; badge?: string; label?: string };
   /** In the top bar, the one call to action (a coral pill). */
