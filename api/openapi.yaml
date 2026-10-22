@@ -12972,6 +12972,12 @@ components:
             The custom emoji request that an `admin_custom_emoji_request` or a
             `custom_emoji_request_decided` is about, as it is now; absent when it no longer exists.
           $ref: '#/components/schemas/CustomEmojiRequest'
+        supporter_subscription:
+          description: |
+            The user's supporter subscription that a `supporter_payment_failed`, a
+            `supporter_subscription_ended`, or a `supporter_plan_retired` is about, as it is now;
+            absent when it no longer exists.
+          $ref: '#/components/schemas/SupporterSubscription'
         relationship_severance:
           $ref: '#/components/schemas/RelationshipSeverance'
         reaction:
@@ -13042,6 +13048,14 @@ components:
         `custom_emoji_request_decided` also comes from the instance: an administrator approved
         or rejected the user's custom emoji request, which `custom_emoji_request` carries with
         its state and the reason of a rejection.
+        The supporter notifications also come from the instance and tell of the user's own
+        supporter subscription, which `supporter_subscription` carries as it is now:
+        `supporter_payment_failed` (a payment failed; the plan's role stays until
+        `grace_ends_at` unless a payment succeeds), `supporter_subscription_ended` (the
+        subscription lost the plan's role; `end_reason` says why), and `supporter_plan_retired`
+        (the administrators retired the plan; the subscription ends with its period). Each is
+        sent once per change of the subscription. A client must not lead from them to
+        subscribing or paying where it offers no way to subscribe.
       type: string
       enum:
         - follow
@@ -13063,6 +13077,9 @@ components:
         - admin_webhook_disabled
         - admin_custom_emoji_request
         - custom_emoji_request_decided
+        - supporter_payment_failed
+        - supporter_subscription_ended
+        - supporter_plan_retired
     OwnCustomEmoji:
       description: A local custom emoji that the user made (ADR-0070 §3).
       type: object
@@ -14703,6 +14720,23 @@ components:
         - not_local
         - email_unverified
         - restricted
+    SupporterEndReason:
+      description: |
+        Why a `lapsed`, `expired`, or `revoked` subscription lost the plan's role; omitted in the
+        other states. `lapsed`: no payment succeeded within 7 days after a payment failed, or the
+        subscription is paused. `reversed`: a payment was refunded in full or charged back.
+        `plan_retired`: the administrators retired the plan. `account_suspended`: the account was
+        suspended. `account_closed`: the account was deleted. `staff`: an administrator canceled
+        it. `canceled`: it was canceled, or it ended at the payment provider.
+      type: string
+      enum:
+        - lapsed
+        - reversed
+        - plan_retired
+        - account_suspended
+        - account_closed
+        - staff
+        - canceled
     SupporterInterval:
       description: How often a subscription renews.
       type: string
@@ -14950,6 +14984,8 @@ components:
           description: When a `past_due` subscription loses the plan's role unless a payment succeeds.
           type: string
           format: date-time
+        end_reason:
+          $ref: '#/components/schemas/SupporterEndReason'
         scheduled_change:
           $ref: '#/components/schemas/SupporterScheduledChange'
         started_at:

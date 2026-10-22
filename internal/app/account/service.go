@@ -607,6 +607,16 @@ func (s *Service) LocalAccountOfUserTx(ctx context.Context, tx uow.Tx, userID st
 	return s.d.Repository.FindLocalAccountByUserTx(ctx, tx, userID)
 }
 
+// LocalAccountIDOfUserTx returns the ID of the local account of a user, read in tx; ErrNotFound
+// without one.
+func (s *Service) LocalAccountIDOfUserTx(ctx context.Context, tx uow.Tx, userID string) (string, error) {
+	la, err := s.d.Repository.FindLocalAccountByUserTx(ctx, tx, userID)
+	if err != nil {
+		return "", err
+	}
+	return la.AccountID, nil
+}
+
 // RemoteProfileURLsTx returns the profile pages of remote accounts as RemoteProfileURLs does,
 // read in tx.
 func (s *Service) RemoteProfileURLsTx(ctx context.Context, tx uow.Tx, accountIDs []string) (map[string]string, error) {

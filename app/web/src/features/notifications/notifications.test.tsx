@@ -3,7 +3,7 @@
 // and QueryClient, with MSW as the server (FR-205).
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vitest";
 import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { notificationsFixture } from "./test/handlers";
@@ -282,6 +282,74 @@ describe("the notifications page", () => {
     expect(within(rejected).getByText("Too close to :blob:.")).toBeInTheDocument();
     expect(within(rejected).getByRole("link", { name: "Open your custom emoji" })).toHaveAttribute("href", "/settings/custom-emojis");
     expect(within(feed).getByRole("article", { name: /Your custom emoji :blobcat: was approved/ })).toBeInTheDocument();
+  });
+
+  describe("of the supporter subscription", () => {
+    const subscription = {
+      id: "0192f0c4-7a8e-7000-8000-0000000000f1",
+      plan_id: "0192f0c4-7a8e-7000-8000-0000000000f2",
+      plan_name: "Gold",
+      interval: "month",
+      price: { amount: "500", currency: "JPY" },
+      started_at: "2026-10-01T00:00:00Z",
+    } as const;
+    const items: Notification[] = [
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000f3",
+        type: "supporter_payment_failed",
+        created_at: "2026-10-16T09:00:00Z",
+        supporter_subscription: { ...subscription, state: "past_due", grace_ends_at: "2026-10-23T09:00:00Z" },
+      },
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000f4",
+        type: "supporter_plan_retired",
+        created_at: "2026-10-16T10:00:00Z",
+        supporter_subscription: { ...subscription, state: "canceling" },
+      },
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000f5",
+        type: "supporter_subscription_ended",
+        created_at: "2026-10-16T11:00:00Z",
+        supporter_subscription: { ...subscription, state: "revoked", end_reason: "reversed" },
+      },
+    ];
+
+    afterEach(() => {
+      delete (globalThis as { isTauri?: unknown }).isTauri;
+    });
+
+    test("names the plan, the end of the grace period, and why it ended, and leads to the supporter page", async () => {
+      server.use(resumableSession());
+      markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+      server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+      await renderApp({ path: "/notifications" });
+
+      const feed = await screen.findByRole("feed", { name: "Notifications" });
+      const failed = within(feed).getByRole("article", { name: /A payment for your supporter plan failed/ });
+      expect(within(failed).getByText("Gold")).toHaveAttribute("dir", "auto");
+      expect(within(failed).getByText(/You keep the plan's benefits until/)).toBeInTheDocument();
+      expect(within(failed).getByRole("link", { name: "Update the payment method" })).toHaveAttribute("href", "/settings/supporter");
+      const retired = within(feed).getByRole("article", { name: /The administrators retired your supporter plan/ });
+      expect(within(retired).getByText(/Your subscription will not renew/)).toBeInTheDocument();
+      expect(within(retired).getByRole("link", { name: "Open your supporter plan" })).toHaveAttribute("href", "/settings/supporter");
+      const ended = within(feed).getByRole("article", { name: /Your supporter plan ended/ });
+      expect(within(ended).getByText("A payment was refunded in full or charged back.")).toBeInTheDocument();
+    });
+
+    test("lead nowhere to pay in the Tauri app", async () => {
+      (globalThis as { isTauri?: unknown }).isTauri = true;
+      server.use(resumableSession());
+      markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+      server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+      await renderApp({ path: "/notifications" });
+
+      const feed = await screen.findByRole("feed", { name: "Notifications" });
+      expect(within(feed).getByRole("article", { name: /A payment for your supporter plan failed/ })).toBeInTheDocument();
+      expect(within(feed).queryByRole("link", { name: "Update the payment method" })).not.toBeInTheDocument();
+      expect(within(feed).queryByRole("link", { name: "Open your supporter plan" })).not.toBeInTheDocument();
+    });
   });
 
   test("names the actor of every type and hides a post behind its content warning", async () => {

@@ -1151,6 +1151,30 @@
     "defaultMessage": "‮ᴚǝsǝʇ ʎonɹ dɐssʍoɹp ɟoɹ {instance}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "mail.supporter_payment_failed.body": {
+    "defaultMessage": "‮∀ dɐʎɯǝuʇ ɟoɹ ʎonɹ snddoɹʇǝɹ dʅɐu “{plan}” ou {instance} ɟɐıʅǝp.\n\n⅄on ʞǝǝd ʇɥǝ dʅɐu's qǝuǝɟıʇs nuʇıʅ {endsAt} (∩⊥Ↄ). Iɟ uo dɐʎɯǝuʇ snɔɔǝǝps qʎ ʇɥǝu, ʇɥǝʎ ǝup. ∩dpɐʇǝ ʎonɹ dɐʎɯǝuʇ ɯǝʇɥop ɥǝɹǝ:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon snqsɔɹıqǝ ʇo ɐ snddoɹʇǝɹ dʅɐu ou {instance}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.supporter_payment_failed.subject": {
+    "defaultMessage": "‮∀ dɐʎɯǝuʇ ɟoɹ ʎonɹ snddoɹʇǝɹ dʅɐu ou {instance} ɟɐıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.supporter_plan_retired.body": {
+    "defaultMessage": "‮⊥ɥǝ ɐpɯıuısʇɹɐʇoɹs oɟ {instance} ɹǝʇıɹǝp ʇɥǝ snddoɹʇǝɹ dʅɐu “{plan}” ʇɥɐʇ ʎon snqsɔɹıqǝ ʇo.\n\n⅄onɹ snqsɔɹıdʇıou ıs ɔɐuɔǝʅǝp ɐup ʍıʅʅ uoʇ ɹǝuǝʍ. ⅄on ʞǝǝd ʇɥǝ dʅɐu's qǝuǝɟıʇs nuʇıʅ ʇɥǝ ǝup oɟ ʇɥǝ dǝɹıop ʎon dɐıp ɟoɹ, nuʅǝss ɐ dɐʎɯǝuʇ ıs oʌǝɹpnǝ.\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon snqsɔɹıqǝ ʇo ɐ snddoɹʇǝɹ dʅɐu ou {instance}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.supporter_plan_retired.subject": {
+    "defaultMessage": "‮⅄onɹ snddoɹʇǝɹ dʅɐu ou {instance} ʍɐs ɹǝʇıɹǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.supporter_subscription_ended.body": {
+    "defaultMessage": "‮⅄onɹ snddoɹʇǝɹ dʅɐu “{plan}” ou {instance} ǝupǝp, ɐup ıʇs qǝuǝɟıʇs ʍıʇɥ ıʇ. {reason,select,account_suspended{⅄onɹ ɐɔɔonuʇ ʍɐs snsdǝupǝp.} lapsed{No dɐʎɯǝuʇ snɔɔǝǝpǝp ʍıʇɥıu 7 pɐʎs ɐɟʇǝɹ ɐ dɐʎɯǝuʇ ɟɐıʅǝp, oɹ ʇɥǝ snqsɔɹıdʇıou ʍɐs dɐnsǝp.} other{⊥ɥǝ snqsɔɹıdʇıou ʍɐs ɔɐuɔǝʅǝp.} plan_retired{⊥ɥǝ ɐpɯıuısʇɹɐʇoɹs ɹǝʇıɹǝp ʇɥǝ dʅɐu.} reversed{∀ dɐʎɯǝuʇ ʍɐs ɹǝɟnupǝp ıu ɟnʅʅ oɹ ɔɥɐɹƃǝp qɐɔʞ.} staff{∀u ɐpɯıuısʇɹɐʇoɹ ɔɐuɔǝʅǝp ʇɥǝ snqsɔɹıdʇıou.}}\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon snqsɔɹıqǝp ʇo ɐ snddoɹʇǝɹ dʅɐu ou {instance}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.supporter_subscription_ended.subject": {
+    "defaultMessage": "‮⅄onɹ snddoɹʇǝɹ dʅɐu ou {instance} ǝupǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "mail.verify_email.body": {
     "defaultMessage": "‮Mǝʅɔoɯǝ ʇo {instance}.\n\nOdǝu ʇɥıs ʅıuʞ ʇo ɔouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss:\n\n{url}\n\n{hours,plural,one{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹ.} other{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɥonɹs.}} Iɟ ʎon pıp uoʇ sıƃu nd ɐʇ {host}, ıƃuoɹǝ ʇɥıs ǝɯɐıʅ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1269,6 +1293,18 @@
   },
   "push.report_resolved": {
     "defaultMessage": "‮∀ ɹǝdoɹʇ ʎon ɟıʅǝp ou {instance} ɥɐs qǝǝu ɹǝsoʅʌǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.supporter_payment_failed": {
+    "defaultMessage": "‮∀ dɐʎɯǝuʇ ɟoɹ ʎonɹ snddoɹʇǝɹ dʅɐu ou {instance} ɟɐıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.supporter_plan_retired": {
+    "defaultMessage": "‮⅄onɹ snddoɹʇǝɹ dʅɐu ou {instance} ʍɐs ɹǝʇıɹǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.supporter_subscription_ended": {
+    "defaultMessage": "‮⅄onɹ snddoɹʇǝɹ dʅɐu ou {instance} ǝupǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   }
 }

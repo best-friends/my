@@ -6367,6 +6367,42 @@
     "defaultMessage": "Your request for a new image of {emoji} was rejected",
     "description": "Notification sentence: an administrator rejected the user's request for a new image of their custom emoji. {emoji} is its :shortcode:."
   },
+  "notifications.type.supporter_payment_failed": {
+    "defaultMessage": "A payment for your supporter plan failed",
+    "description": "Notification sentence: a payment for the user's supporter plan failed and the grace period began."
+  },
+  "notifications.type.supporter_subscription_ended": {
+    "defaultMessage": "Your supporter plan ended",
+    "description": "Notification sentence: the user's supporter subscription ended, and the plan's benefits with it."
+  },
+  "notifications.type.supporter_plan_retired": {
+    "defaultMessage": "The administrators retired your supporter plan",
+    "description": "Notification sentence: the administrators retired the user's supporter plan."
+  },
+  "notifications.supporter.grace": {
+    "defaultMessage": "You keep the plan's benefits until {date}. They end if no payment succeeds by then.",
+    "description": "In the notification of a failed payment for a supporter plan, while the payment is still overdue: when the grace period ends; {date} is a formatted date and time."
+  },
+  "notifications.supporter.ended": {
+    "defaultMessage": "{reason, select, lapsed {No payment succeeded within 7 days after a payment failed, or the subscription was paused.} reversed {A payment was refunded in full or charged back.} plan_retired {The administrators retired the plan.} account_suspended {Your account was suspended.} account_closed {Your account was deleted.} staff {An administrator canceled the subscription.} other {The subscription was canceled.}}",
+    "description": "In the notification of an ended supporter subscription: why it ended. {reason} is the reason code (not shown); each branch says one reason."
+  },
+  "notifications.supporter.retired": {
+    "defaultMessage": "Your subscription will not renew. You keep the plan's benefits until the end of the period you paid for, unless a payment is overdue.",
+    "description": "In the notification of a retired supporter plan: what happens to the user's subscription."
+  },
+  "notifications.link.supporter_payment": {
+    "defaultMessage": "Update the payment method",
+    "description": "Link in the notification of a failed payment for a supporter plan to the supporter page, where the user fixes the payment method. Not shown in the mobile app."
+  },
+  "notifications.link.supporter": {
+    "defaultMessage": "Open your supporter plan",
+    "description": "Link in the notification of an ended supporter subscription or a retired plan to the supporter page. Not shown in the mobile app."
+  },
+  "settings.push.type.supporter": {
+    "defaultMessage": "Your supporter plan",
+    "description": "Checkbox of the push notification kinds: a failed payment for the user's supporter plan, its end, and its retirement. Not shown in the mobile app."
+  },
   "notifications.custom_emoji_request.reason": {
     "defaultMessage": "The administrator's reason:",
     "description": "Label before the reason of a rejected custom emoji request in its notification."

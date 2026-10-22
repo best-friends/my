@@ -1123,7 +1123,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `notifications` | イベント | `id`, `recipient_account_id`, `type`（`enum(follow, follow_request, follow_accepted, mention, boost, favourite, reaction, poll_closed, moderation_notice, appeal_decided, report_resolved, relationships_severed, admin_report, admin_sign_up, admin_appeal, admin_webhook_disabled, admin_custom_emoji_request, custom_emoji_request_decided)`）, `source_account_id`（NULL 可。モデレーションの通知はインスタンス）, `source_domain`（NULL 可。差出人がリモートのアカウントのときのそのドメイン。ドメインのミュートの照合に使う）, `status_id`（NULL 可）, `moderation_action_id`（NULL 可）, `report_id`（NULL 可）, `appeal_id`（NULL 可）, `severance_id`（NULL 可）, `subject_user_id`（NULL 可。`admin_sign_up` の登録者）, `custom_emoji_request_id`（NULL 可。`admin_custom_emoji_request` と `custom_emoji_request_decided` の申請）, `reaction_emoji` / `reaction_custom_emoji_id`（NULL 可。`reaction` の絵文字で、Unicode 絵文字かカスタム絵文字のどちらか一方）, `dedupe_key`, `created_at` | 一意 `(recipient_account_id, dedupe_key)`。インデックス `(recipient_account_id, id)`, `(recipient_account_id, type, id)`, `(status_id)`（保持期間の判定） |
+| `notifications` | イベント | `id`, `recipient_account_id`, `type`（`enum(follow, follow_request, follow_accepted, mention, boost, favourite, reaction, poll_closed, moderation_notice, appeal_decided, report_resolved, relationships_severed, admin_report, admin_sign_up, admin_appeal, admin_webhook_disabled, admin_custom_emoji_request, custom_emoji_request_decided, supporter_payment_failed, supporter_subscription_ended, supporter_plan_retired)`）, `source_account_id`（NULL 可。モデレーションの通知はインスタンス）, `source_domain`（NULL 可。差出人がリモートのアカウントのときのそのドメイン。ドメインのミュートの照合に使う）, `status_id`（NULL 可）, `moderation_action_id`（NULL 可）, `report_id`（NULL 可）, `appeal_id`（NULL 可）, `severance_id`（NULL 可）, `subject_user_id`（NULL 可。`admin_sign_up` の登録者）, `custom_emoji_request_id`（NULL 可。`admin_custom_emoji_request` と `custom_emoji_request_decided` の申請）, `supporter_subscription_id`（NULL 可。サポーターの通知の加入）, `reaction_emoji` / `reaction_custom_emoji_id`（NULL 可。`reaction` の絵文字で、Unicode 絵文字かカスタム絵文字のどちらか一方）, `dedupe_key`, `created_at` | 一意 `(recipient_account_id, dedupe_key)`。インデックス `(recipient_account_id, id)`, `(recipient_account_id, type, id)`, `(status_id)`（保持期間の判定） |
 | `notification_dismissals` | イベント | `notification_id`（PK）, `dismissed_at` | |
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
 | `notification_exclusions` | 投影 | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)`。`graph` のブロック・ミュートのイベントから作る |
@@ -1165,7 +1165,7 @@ flowchart LR
 - 一覧は、消していない、除外されていない、削除された投稿についてでない通知を `id` のキーセットで新しい順に引きます。種類の絞り込み（複数可）は `(recipient_account_id, type, id)` を使います。
 - 既読位置は前にだけ進みます（`last_read_id` より古い通知を指定しても変わりません）。同時に既読位置を送る複数の端末が位置を戻さないためです。指定できるのは自分の通知だけです。
 - 未読数は、一覧に出る通知のうち `id > last_read_id` のものの件数です。既読位置が無ければすべてが未読です。
-- モデレーションの通知は `moderation` と `identity` のドメインイベントから、カスタム絵文字の申請の通知は `content` のドメインイベントから作ります。
+- モデレーションの通知は `moderation` と `identity` のドメインイベントから、カスタム絵文字の申請の通知は `content` のドメインイベントから、サポーターの通知は `supporters` のドメインイベントから作ります。
 
   | ドメインイベント | 種類 | 受け取る人 | `dedupe_key` |
   | --- | --- | --- | --- |
@@ -1179,6 +1179,9 @@ flowchart LR
   | サーバーによる webhook の無効化（`webhook.endpoint_disabled`、ADR-0060） | `admin_webhook_disabled` | ロールが `manage_webhooks` を持つ人 | `admin_webhook_disabled:<state_change_id>` |
   | カスタム絵文字の申請（`content.custom_emoji_request_recorded` の申請、ADR-0070 §9） | `admin_custom_emoji_request` | ロールが `manage_custom_emojis` を持つ人（申請者を除く） | `admin_custom_emoji_request:<request_id>` |
   | カスタム絵文字の申請の承認と却下（同じイベントの承認・却下。取り下げと `lapsed` は通知しない） | `custom_emoji_request_decided` | 申請者 | `custom_emoji_request_decided:<request_id>` |
+  | 加入の遷移のうち `past_due` に入ったもの（`supporters.subscription_transitioned`、ADR-0072 §16） | `supporter_payment_failed` | 加入者のローカルのアカウント | `supporter_payment_failed:<transition_id>` |
+  | 加入の遷移のうちロールのある状態（`active`・`canceling`・`past_due`）から `lapsed`・`expired`・`revoked` に入ったもの（アカウントの削除による終わりは除く） | `supporter_subscription_ended` | 加入者のローカルのアカウント | `supporter_subscription_ended:<transition_id>` |
+  | プランの廃止（`supporters.plan_retired`。`pending` を除く続いている加入） | `supporter_plan_retired` | 加入者のローカルのアカウント | `supporter_plan_retired:<plan_id>:<subscription_id>` |
 
   - 本人は `moderation_notice` から処分の種類・公開理由・対象の投稿・期限を見られ、異議申し立てに進めます（FR-715）。
     クライアント API は通知に処分を本人に見せる形（種類と理由のカテゴリは本人の UI 言語の表示名付き）で埋め込み、`GET /api/v1/moderation/actions` は本人への処分を通知の有無に関わらずすべて新しい順に返します。
@@ -1191,6 +1194,10 @@ flowchart LR
   - `admin_*` の `source_account_id` は NULL で、ブロック・ミュートでは隠しません。`admin_report` は `report_id` を、`admin_sign_up` は `subject_user_id` を持ちます。
     `admin_webhook_disabled` は対象の列を持たず、管理画面の webhook の一覧（無効にした理由が出る）に導きます。
   - `admin_custom_emoji_request` と `custom_emoji_request_decided` の行は `custom_emoji_request_id` を必ず持ち、ほかの種類は持ちません。クライアント API はどちらにも申請をいまの状態（却下の理由を含む）で埋め込みます。
+  - サポーターの通知の行は `supporter_subscription_id` を必ず持ち、`source_account_id` を持ちません。ほかの種類は `supporter_subscription_id` を持ちません。
+    クライアント API は加入をいまの状態（猶予の終わり、終わった理由を含む）で本人にだけ埋め込みます。`past_due` のまま期間の終わりなどが変わった遷移と、`lapsed` から `expired` への遷移は、もう一度は通知しません。
+    新しく作った通知ごとに、同じトランザクションの outbox でメールのジョブ（`notification.supporter_email`、冪等キーは通知の ID）を積み、ジョブは主アドレスへ受け取る人の言語で送ります（課金の有効化はメールを送る構成を要するので、いつも送れます）。
+    Web Push と通知の文面は支払いの画面へ導かず、Web Push は通知の画面を開きます。Web クライアントだけが `/settings/supporter` へのリンクを出します（Tauri のアプリは出さない。ADR-0072 §14）。
   - `admin_report` は、通報を受け付けたトランザクションで対象にほかの未解決の通報が無いときだけ作り（`moderation.report_filed` の `FirstOpen`）、通報者と通報の対象には作りません。
   - `admin_sign_up` は `identity.registration_pending`（登録が `pending` で始まった）から作ります。
   - `user_preferences.email_moderator_notifications` が真の受け取る人には、新しく作った通知ごとに、同じトランザクションの outbox でメールのジョブ（`notification.moderator_email`、冪等キーは通知の ID）を積みます。
@@ -1783,7 +1790,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-902 期間の集計 | S | `cost_item_heads` と §4.12 の項目・改定（読み取りのときに計算し、投影を持たない） |
 | FR-903 費用の公開範囲 | S | `instance_settings`（`finance_visibility`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-904 利用料金の自動取り込み | S | §4.12 の `billing_import_runs`, `imported_cost_revisions`, `imported_cost_heads`, `audit_log_entries`（手動の取り込み） |
-| FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_*` の表 |
+| FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_*` の表, `notifications`（`supporter_*` の種類） |
 | FR-912 課金のロールの安全柵 | S | `managed_roles`, `role_permissions`, `roles` |
 | FR-913 ロールのバッジ | S | `role_badges`, `user_role_badge_displays`, `user_roles` |
 | FR-914 参加者の一覧 | S | `supporter_listings`, `supporter_subscription_heads`, `supporter_plan_heads`, `instance_settings`（`supporter_list_visibility`） |

@@ -8615,6 +8615,14 @@
     "defaultMessage": "‮Odǝu ʇɥǝ ɹǝdoɹʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.link.supporter": {
+    "defaultMessage": "‮Odǝu ʎonɹ snddoɹʇǝɹ dʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.link.supporter_payment": {
+    "defaultMessage": "‮∩dpɐʇǝ ʇɥǝ dɐʎɯǝuʇ ɯǝʇɥop‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.link.webhooks": {
     "defaultMessage": "‮Odǝu ʇɥǝ ʍǝqɥooʞs‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8665,6 +8673,18 @@
   },
   "notifications.signed_out": {
     "defaultMessage": "‮Sıƃu ıu ʇo sǝǝ ʎonɹ uoʇıɟıɔɐʇıous.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.supporter.ended": {
+    "defaultMessage": "‮{reason,select,account_closed{⅄onɹ ɐɔɔonuʇ ʍɐs pǝʅǝʇǝp.} account_suspended{⅄onɹ ɐɔɔonuʇ ʍɐs snsdǝupǝp.} lapsed{No dɐʎɯǝuʇ snɔɔǝǝpǝp ʍıʇɥıu 7 pɐʎs ɐɟʇǝɹ ɐ dɐʎɯǝuʇ ɟɐıʅǝp, oɹ ʇɥǝ snqsɔɹıdʇıou ʍɐs dɐnsǝp.} other{⊥ɥǝ snqsɔɹıdʇıou ʍɐs ɔɐuɔǝʅǝp.} plan_retired{⊥ɥǝ ɐpɯıuısʇɹɐʇoɹs ɹǝʇıɹǝp ʇɥǝ dʅɐu.} reversed{∀ dɐʎɯǝuʇ ʍɐs ɹǝɟnupǝp ıu ɟnʅʅ oɹ ɔɥɐɹƃǝp qɐɔʞ.} staff{∀u ɐpɯıuısʇɹɐʇoɹ ɔɐuɔǝʅǝp ʇɥǝ snqsɔɹıdʇıou.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.supporter.grace": {
+    "defaultMessage": "‮⅄on ʞǝǝd ʇɥǝ dʅɐu's qǝuǝɟıʇs nuʇıʅ {date}. ⊥ɥǝʎ ǝup ıɟ uo dɐʎɯǝuʇ snɔɔǝǝps qʎ ʇɥǝu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.supporter.retired": {
+    "defaultMessage": "‮⅄onɹ snqsɔɹıdʇıou ʍıʅʅ uoʇ ɹǝuǝʍ. ⅄on ʞǝǝd ʇɥǝ dʅɐu's qǝuǝɟıʇs nuʇıʅ ʇɥǝ ǝup oɟ ʇɥǝ dǝɹıop ʎon dɐıp ɟoɹ, nuʅǝss ɐ dɐʎɯǝuʇ ıs oʌǝɹpnǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.title": {
@@ -8745,6 +8765,18 @@
   },
   "notifications.type.report_resolved": {
     "defaultMessage": "‮∀ ɹǝdoɹʇ ʎon ɟıʅǝp ɥɐs qǝǝu ɹǝsoʅʌǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.supporter_payment_failed": {
+    "defaultMessage": "‮∀ dɐʎɯǝuʇ ɟoɹ ʎonɹ snddoɹʇǝɹ dʅɐu ɟɐıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.supporter_plan_retired": {
+    "defaultMessage": "‮⊥ɥǝ ɐpɯıuısʇɹɐʇoɹs ɹǝʇıɹǝp ʎonɹ snddoɹʇǝɹ dʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.supporter_subscription_ended": {
+    "defaultMessage": "‮⅄onɹ snddoɹʇǝɹ dʅɐu ǝupǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.unread": {
@@ -10505,6 +10537,10 @@
   },
   "settings.push.type.reaction": {
     "defaultMessage": "‮Ǝɯoɾı ɹǝɐɔʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.push.type.supporter": {
+    "defaultMessage": "‮⅄onɹ snddoɹʇǝɹ dʅɐu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.push.types.description": {

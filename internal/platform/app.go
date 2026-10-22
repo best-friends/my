@@ -581,6 +581,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock, Staff: moderatorStaff{a},
 	})
 	a.setUpModeratorNotifications(cfg, notifs, moderatorStaff{a}, pusher)
+	a.setUpSupporterNotifications(cfg, notifs, pusher)
 	a.setUpRetention(cfg, retention, statuses)
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,

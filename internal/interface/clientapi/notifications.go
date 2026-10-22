@@ -176,6 +176,10 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 	if err != nil {
 		return nil, err
 	}
+	supporterSubs, err := s.notifiedSupporterSubscriptions(ctx, ns)
+	if err != nil {
+		return nil, err
+	}
 	parts, err := s.statusParts(ctx, views, found...)
 	if err != nil {
 		return nil, err
@@ -218,6 +222,9 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 		}
 		if r, ok := emojiRequests[n.CustomEmojiRequestID]; ok {
 			item.CustomEmojiRequest = &r
+		}
+		if sub, ok := supporterSubs[n.SupporterSubscriptionID]; ok {
+			item.SupporterSubscription = &sub
 		}
 		if sv, ok := severances[n.SeveranceID]; ok {
 			item.RelationshipSeverance = newRelationshipSeverance(sv)
@@ -310,6 +317,33 @@ func (s *Server) notifiedCustomEmojiRequests(ctx context.Context, ns []notificat
 	}
 	for _, r := range reqs {
 		out[r.Request.ID] = newCustomEmojiRequest(r)
+	}
+	return out, nil
+}
+
+// notifiedSupporterSubscriptions presents, by ID, the viewer's supporter subscriptions that the
+// supporter notifications ns tell of, as they are now; one that no longer exists is left out.
+func (s *Server) notifiedSupporterSubscriptions(ctx context.Context, ns []notification.Notification) (map[string]SupporterSubscription, error) {
+	out := map[string]SupporterSubscription{}
+	var ids []string
+	for _, n := range ns {
+		if n.SupporterSubscriptionID != "" {
+			ids = append(ids, n.SupporterSubscriptionID)
+		}
+	}
+	if len(ids) == 0 || s.o.OwnSupporters == nil {
+		return out, nil
+	}
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return out, nil //nolint:nilerr // without a viewer there is no subscription of theirs to present
+	}
+	subs, err := s.o.OwnSupporters.OwnSubscriptionsByID(ctx, v.UserID, ids)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: the supporter subscriptions of the notifications: %w", err)
+	}
+	for _, sub := range subs {
+		out[sub.ID] = newSupporterSubscription(sub)
 	}
 	return out, nil
 }

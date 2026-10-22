@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tansta
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { ApiError, errorMessage } from "../../../lib/errors";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
+import { isTauriApp } from "../../../lib/platform";
 import { shellQueryReader } from "../../../lib/query";
 import { credentialsQueryOptions, instanceQueryOptions, type Permission } from "../api/me";
 import {
@@ -40,6 +41,16 @@ const userGroups: readonly PushAlertGroup[] = [
     types: ["moderation_notice", "appeal_decided", "report_resolved", "relationships_severed", "custom_emoji_request_decided"],
   },
 ];
+
+/**
+ * The supporter notifications (ADR-0072 §16), offered except in the Tauri app, which shows nothing of the supporter
+ * plans (§14).
+ */
+const supporterGroup: PushAlertGroup = {
+  id: "supporter",
+  label: "client:settings.push.type.supporter",
+  types: ["supporter_payment_failed", "supporter_subscription_ended", "supporter_plan_retired"],
+};
 
 /** The moderator notifications, offered to a viewer whose roles get them. */
 const moderatorGroup: PushAlertGroup = {
@@ -159,7 +170,8 @@ export function usePushNotifications(): PushNotifications {
   // The section waits for the subscription of the grant, so that its switch never shows off before it is known.
   if (subscription.isPending) return { status: "hidden" };
 
-  const groups = account.data.permissions.some((p) => moderatorPermissions.includes(p)) ? [...userGroups, moderatorGroup] : userGroups;
+  const everyone = isTauriApp() ? userGroups : [...userGroups, supporterGroup];
+  const groups = account.data.permissions.some((p) => moderatorPermissions.includes(p)) ? [...everyone, moderatorGroup] : everyone;
   const offered = groups.flatMap((group) => group.types);
   const saved = subscription.data ?? null;
   const pending = mutation.isPending ? mutation.variables : undefined;

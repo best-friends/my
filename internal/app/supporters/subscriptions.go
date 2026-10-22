@@ -411,6 +411,36 @@ func (s *Service) Subscription(ctx context.Context, id string) (SubscriptionView
 	return s.view(ctx, rec)
 }
 
+// OwnSubscriptionsByID returns the subscriptions of a user among ids, as they are now; the
+// unknown ones and those of other users are left out. The supporter notifications present
+// theirs with it (ADR-0072 §16).
+func (s *Service) OwnSubscriptionsByID(ctx context.Context, userID string, ids []string) ([]SubscriptionView, error) {
+	out := []SubscriptionView{}
+	seen := map[string]bool{}
+	for _, id := range ids {
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		rec, err := s.d.Repository.FindSubscription(ctx, nil, id)
+		if errors.Is(err, ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		if rec.UserID != userID {
+			continue
+		}
+		v, err := s.view(ctx, rec)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, nil
+}
+
 // CancelByStaff ends a live subscription at once without a refund (ADR-0072 §10): it expires
 // here with the reason staff, which takes the role away, and the provider's subscription is
 // canceled at once after the commit. It fails with ErrNotFound for an unknown subscription and

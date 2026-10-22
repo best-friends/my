@@ -4310,6 +4310,10 @@ export interface MessageArgs {
   "client:notifications.link.registrations": {};
   /** Open the report */
   "client:notifications.link.report": {};
+  /** Open your supporter plan */
+  "client:notifications.link.supporter": {};
+  /** Update the payment method */
+  "client:notifications.link.supporter_payment": {};
   /** Open the webhooks */
   "client:notifications.link.webhooks": {};
   /** Load more notifications */
@@ -4336,6 +4340,12 @@ export interface MessageArgs {
   "client:notifications.sign_in": {};
   /** Sign in to see your notifications. */
   "client:notifications.signed_out": {};
+  /** {reason, select, lapsed {No payment succeeded within 7 days after a payment failed, or the subscription was paused.} reversed {A payment was refunded in full or charged back.} plan_retired {The administrators retired the plan.} account_suspended {Your account was suspended.} account_closed {Your account was deleted.} staff {An administrator canceled the subscription.} other {The subscription was canceled.}} */
+  "client:notifications.supporter.ended": { reason: "account_closed" | "account_suspended" | "lapsed" | "plan_retired" | "reversed" | "staff" | (string & {}) };
+  /** You keep the plan's benefits until {date}. They end if no payment succeeds by then. */
+  "client:notifications.supporter.grace": { date: string };
+  /** Your subscription will not renew. You keep the plan's benefits until the end of the period you paid for, unless a payment is overdue. */
+  "client:notifications.supporter.retired": {};
   /** Notifications */
   "client:notifications.title": {};
   /** A new appeal awaits the moderators */
@@ -4376,6 +4386,12 @@ export interface MessageArgs {
   "client:notifications.type.relationships_severed": {};
   /** A report you filed has been resolved */
   "client:notifications.type.report_resolved": {};
+  /** A payment for your supporter plan failed */
+  "client:notifications.type.supporter_payment_failed": {};
+  /** The administrators retired your supporter plan */
+  "client:notifications.type.supporter_plan_retired": {};
+  /** Your supporter plan ended */
+  "client:notifications.type.supporter_subscription_ended": {};
   /** Unread: */
   "client:notifications.unread": {};
   /** {count, plural, one {# unread} other {# unread}} */
@@ -5256,6 +5272,8 @@ export interface MessageArgs {
   "client:settings.push.type.quote": {};
   /** Emoji reactions */
   "client:settings.push.type.reaction": {};
+  /** Your supporter plan */
+  "client:settings.push.type.supporter": {};
   /** Choose what this device notifies you of. */
   "client:settings.push.types.description": {};
   /** Notify me of */
@@ -6576,6 +6594,18 @@ export interface MessageArgs {
   "server:mail.password_reset.body": { host: string; instance: string; minutes: number; url: string };
   /** Reset your password for {instance} */
   "server:mail.password_reset.subject": { instance: string };
+  /** A payment for your supporter plan “{plan}” on {instance} failed.  You keep the plan's benefits until {endsAt} (UTC). If no payment succeeds by then, they end. Update your payment method here:  {url}  You get this email because you subscribe to a supporter plan on {instance}. */
+  "server:mail.supporter_payment_failed.body": { endsAt: string; instance: string; plan: string; url: string };
+  /** A payment for your supporter plan on {instance} failed */
+  "server:mail.supporter_payment_failed.subject": { instance: string };
+  /** The administrators of {instance} retired the supporter plan “{plan}” that you subscribe to.  Your subscription is canceled and will not renew. You keep the plan's benefits until the end of the period you paid for, unless a payment is overdue.  Open your notifications:  {url}  You get this email because you subscribe to a supporter plan on {instance}. */
+  "server:mail.supporter_plan_retired.body": { instance: string; plan: string; url: string };
+  /** Your supporter plan on {instance} was retired */
+  "server:mail.supporter_plan_retired.subject": { instance: string };
+  /** Your supporter plan “{plan}” on {instance} ended, and its benefits with it. {reason, select, lapsed {No payment succeeded within 7 days after a payment failed, or the subscription was paused.} reversed {A payment was refunded in full or charged back.} plan_retired {The administrators retired the plan.} account_suspended {Your account was suspended.} staff {An administrator canceled the subscription.} other {The subscription was canceled.}}  Open your notifications:  {url}  You get this email because you subscribed to a supporter plan on {instance}. */
+  "server:mail.supporter_subscription_ended.body": { instance: string; plan: string; reason: "account_suspended" | "lapsed" | "plan_retired" | "reversed" | "staff" | (string & {}); url: string };
+  /** Your supporter plan on {instance} ended */
+  "server:mail.supporter_subscription_ended.subject": { instance: string };
   /** Welcome to {instance}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
   "server:mail.verify_email.body": { host: string; hours: number; instance: string; url: string };
   /** Confirm your email address for {instance} */
@@ -6636,6 +6666,12 @@ export interface MessageArgs {
   "server:push.relationships_severed": { instance: string };
   /** A report you filed on {instance} has been resolved */
   "server:push.report_resolved": { instance: string };
+  /** A payment for your supporter plan on {instance} failed */
+  "server:push.supporter_payment_failed": { instance: string };
+  /** Your supporter plan on {instance} was retired */
+  "server:push.supporter_plan_retired": { instance: string };
+  /** Your supporter plan on {instance} ended */
+  "server:push.supporter_subscription_ended": { instance: string };
 }
 
 export type MessageKey = keyof MessageArgs;

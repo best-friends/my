@@ -8215,6 +8215,12 @@ export interface components {
              *     `custom_emoji_request_decided` is about, as it is now; absent when it no longer exists.
              */
             custom_emoji_request?: components["schemas"]["CustomEmojiRequest"];
+            /**
+             * @description The user's supporter subscription that a `supporter_payment_failed`, a
+             *     `supporter_subscription_ended`, or a `supporter_plan_retired` is about, as it is now;
+             *     absent when it no longer exists.
+             */
+            supporter_subscription?: components["schemas"]["SupporterSubscription"];
             relationship_severance?: components["schemas"]["RelationshipSeverance"];
             /** @description The emoji of a `reaction`; omitted for the other types. */
             reaction?: components["schemas"]["ReactionEmoji"];
@@ -8267,9 +8273,17 @@ export interface components {
          *     `custom_emoji_request_decided` also comes from the instance: an administrator approved
          *     or rejected the user's custom emoji request, which `custom_emoji_request` carries with
          *     its state and the reason of a rejection.
+         *     The supporter notifications also come from the instance and tell of the user's own
+         *     supporter subscription, which `supporter_subscription` carries as it is now:
+         *     `supporter_payment_failed` (a payment failed; the plan's role stays until
+         *     `grace_ends_at` unless a payment succeeds), `supporter_subscription_ended` (the
+         *     subscription lost the plan's role; `end_reason` says why), and `supporter_plan_retired`
+         *     (the administrators retired the plan; the subscription ends with its period). Each is
+         *     sent once per change of the subscription. A client must not lead from them to
+         *     subscribing or paying where it offers no way to subscribe.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "quote" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal" | "admin_webhook_disabled" | "admin_custom_emoji_request" | "custom_emoji_request_decided";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "quote" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal" | "admin_webhook_disabled" | "admin_custom_emoji_request" | "custom_emoji_request_decided" | "supporter_payment_failed" | "supporter_subscription_ended" | "supporter_plan_retired";
         /** @description A local custom emoji that the user made (ADR-0070 §3). */
         OwnCustomEmoji: {
             id: components["schemas"]["Id"];
@@ -9289,6 +9303,16 @@ export interface components {
          */
         SupporterIneligibleReason: "not_local" | "email_unverified" | "restricted";
         /**
+         * @description Why a `lapsed`, `expired`, or `revoked` subscription lost the plan's role; omitted in the
+         *     other states. `lapsed`: no payment succeeded within 7 days after a payment failed, or the
+         *     subscription is paused. `reversed`: a payment was refunded in full or charged back.
+         *     `plan_retired`: the administrators retired the plan. `account_suspended`: the account was
+         *     suspended. `account_closed`: the account was deleted. `staff`: an administrator canceled
+         *     it. `canceled`: it was canceled, or it ended at the payment provider.
+         * @enum {string}
+         */
+        SupporterEndReason: "lapsed" | "reversed" | "plan_retired" | "account_suspended" | "account_closed" | "staff" | "canceled";
+        /**
          * @description How often a subscription renews.
          * @enum {string}
          */
@@ -9426,6 +9450,7 @@ export interface components {
              * @description When a `past_due` subscription loses the plan's role unless a payment succeeds.
              */
             grace_ends_at?: string;
+            end_reason?: components["schemas"]["SupporterEndReason"];
             scheduled_change?: components["schemas"]["SupporterScheduledChange"];
             /** Format: date-time */
             started_at: string;

@@ -51,6 +51,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runAdminRetention(args[1:], stdout, stderr)
 	case args[0] == "role":
 		return runAdminRole(args[1:], stdout, stderr)
+	case args[0] == "supporters":
+		return runAdminSupporters(args[1:], stdout, stderr)
 	case args[0] == "signup-block":
 		return runAdminSignupBlock(args[1:], stdin, stdout, stderr)
 	case args[0] != "create":
@@ -199,6 +201,7 @@ func adminUsage(w io.Writer) {
        my admin retention hold|release|list ...   (my admin retention -help)
        my admin role list|grant|revoke ...   (my admin role -help)
        my admin signup-block add|list|lift ...   (my admin signup-block -help)
+       my admin supporters status|enable|disable|plans|subscriptions|cancel ...   (my admin supporters -help)
 
 my admin account, my admin domain, my admin report, and my admin appeal moderate
 accounts and remote domains and handle reports and appeals.
@@ -214,6 +217,8 @@ my admin emoji registers and manages the custom emoji.
 my admin refetch queues the refetch of remote posts from their servers.
 my admin relay joins and leaves the relays that pass public posts between servers.
 my admin signup-block blocks sign-ups by email domain, email address, or IP range.
+my admin supporters enables and disables the supporter program, lists its plans
+and subscriptions, and cancels a subscription.
 
 my admin create creates an administrator: a user with the password, the email address as primary
 address, a local account with the username, and the built-in admin role, in one

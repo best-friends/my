@@ -149,7 +149,7 @@ func (q *Queries) DomainExcluded(ctx context.Context, arg DomainExcludedParams) 
 }
 
 const getNotification = `-- name: GetNotification :one
-SELECT id, recipient_account_id, type, source_account_id, source_domain, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, custom_emoji_request_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at
+SELECT id, recipient_account_id, type, source_account_id, source_domain, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, custom_emoji_request_id, supporter_subscription_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at
 FROM notifications WHERE id = $1
 `
 
@@ -169,6 +169,7 @@ func (q *Queries) GetNotification(ctx context.Context, id string) (Notification,
 		&i.SeveranceID,
 		&i.AppealID,
 		&i.CustomEmojiRequestID,
+		&i.SupporterSubscriptionID,
 		&i.ReactionEmoji,
 		&i.ReactionCustomEmojiID,
 		&i.DedupeKey,
@@ -193,28 +194,29 @@ func (q *Queries) GetNotificationReadMarker(ctx context.Context, accountID strin
 const insertNotification = `-- name: InsertNotification :execrows
 
 
-INSERT INTO notifications (id, recipient_account_id, type, source_account_id, source_domain, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, custom_emoji_request_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+INSERT INTO notifications (id, recipient_account_id, type, source_account_id, source_domain, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, custom_emoji_request_id, supporter_subscription_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 ON CONFLICT (recipient_account_id, dedupe_key) DO NOTHING
 `
 
 type InsertNotificationParams struct {
-	ID                    string
-	RecipientAccountID    string
-	Type                  string
-	SourceAccountID       *string
-	SourceDomain          *string
-	StatusID              *string
-	ModerationActionID    *string
-	ReportID              *string
-	SubjectUserID         *string
-	SeveranceID           *string
-	AppealID              *string
-	CustomEmojiRequestID  *string
-	ReactionEmoji         *string
-	ReactionCustomEmojiID *string
-	DedupeKey             string
-	CreatedAt             time.Time
+	ID                      string
+	RecipientAccountID      string
+	Type                    string
+	SourceAccountID         *string
+	SourceDomain            *string
+	StatusID                *string
+	ModerationActionID      *string
+	ReportID                *string
+	SubjectUserID           *string
+	SeveranceID             *string
+	AppealID                *string
+	CustomEmojiRequestID    *string
+	SupporterSubscriptionID *string
+	ReactionEmoji           *string
+	ReactionCustomEmojiID   *string
+	DedupeKey               string
+	CreatedAt               time.Time
 }
 
 // SPDX-License-Identifier: AGPL-3.0-only
@@ -235,6 +237,7 @@ func (q *Queries) InsertNotification(ctx context.Context, arg InsertNotification
 		arg.SeveranceID,
 		arg.AppealID,
 		arg.CustomEmojiRequestID,
+		arg.SupporterSubscriptionID,
 		arg.ReactionEmoji,
 		arg.ReactionCustomEmojiID,
 		arg.DedupeKey,
@@ -297,7 +300,7 @@ func (q *Queries) InsertNotificationDomainExclusion(ctx context.Context, arg Ins
 
 const listNotifications = `-- name: ListNotifications :many
 SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.source_domain, n.status_id, n.moderation_action_id, n.report_id,
-  n.subject_user_id, n.severance_id, n.appeal_id, n.custom_emoji_request_id, n.reaction_emoji, n.reaction_custom_emoji_id, n.dedupe_key, n.created_at
+  n.subject_user_id, n.severance_id, n.appeal_id, n.custom_emoji_request_id, n.supporter_subscription_id, n.reaction_emoji, n.reaction_custom_emoji_id, n.dedupe_key, n.created_at
 FROM notifications n
 WHERE n.recipient_account_id = $1
   AND ($2::text = '' OR n.id < $2::text)
@@ -358,6 +361,7 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.SeveranceID,
 			&i.AppealID,
 			&i.CustomEmojiRequestID,
+			&i.SupporterSubscriptionID,
 			&i.ReactionEmoji,
 			&i.ReactionCustomEmojiID,
 			&i.DedupeKey,

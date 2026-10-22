@@ -9,6 +9,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/supporters"
 	domainaccount "github.com/best-friends/my/internal/domain/account"
@@ -45,9 +46,46 @@ func (a *App) setUpSupporters(ctx context.Context, cfg *config.Config, repo supp
 	return prov, nil
 }
 
+// setUpSupporterNotifications registers the supporter notifications (ADR-0072 §16): the
+// projectors that create them from the subscriptions' transitions and the plans' retirements,
+// and, unless mail = none, the job that sends them by email. push enqueues their Web Push
+// messages; nil pushes none.
+func (a *App) setUpSupporterNotifications(cfg *config.Config, repo notification.Repository, push *notification.Pusher) {
+	deps := notification.SupporterDeps{Repository: repo, IDs: a.IDs, Push: push}
+	if sendsEmail(cfg) {
+		deps.Outbox = a.Outbox
+		if deps.Outbox == nil {
+			// The inline queue has no transactional enqueue.
+			deps.Outbox = queue.AfterCommit(a.Projectors, a.Jobs, a.Logger)
+		}
+		notification.RegisterSupporterJobs(a.Handlers, notification.SupporterMailDeps{
+			Mailboxes: supporterUsers{a}, Mailer: a.Mailer, Messages: a.Messages, Host: cfg.Host, WebOrigin: cfg.WebOrigin,
+			InstanceName: a.instanceName,
+		})
+	}
+	notification.RegisterSupporterProjectors(a.Projectors, deps)
+}
+
 // supporterUsers reads the subscribers for the supporters module from the account, identity, and
-// moderation modules (ADR-0072 §6).
+// moderation modules (ADR-0072 §6), and their mailboxes for the supporter notifications.
 type supporterUsers struct{ a *App }
+
+// SupporterMailbox implements notification.SupporterMailboxes: the primary address and the
+// locale of the user of a local account.
+func (u supporterUsers) SupporterMailbox(ctx context.Context, accountID string) (notification.Mailbox, bool, error) {
+	userID, err := moderatorStaff(u).userOf(ctx, accountID)
+	if err != nil || userID == "" {
+		return notification.Mailbox{}, false, err
+	}
+	user, err := u.SupporterUser(ctx, userID)
+	if errors.Is(err, supporters.ErrNotFound) {
+		return notification.Mailbox{}, false, nil
+	}
+	if err != nil || !user.EmailVerified {
+		return notification.Mailbox{}, false, err
+	}
+	return notification.Mailbox{Address: user.Email, Locale: user.Locale}, true, nil
+}
 
 // AccountIDs implements supporters.Users.
 func (u supporterUsers) AccountIDs(ctx context.Context, userIDs []string) (map[string]string, error) {

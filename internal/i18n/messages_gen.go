@@ -2020,6 +2020,48 @@ func (l *Localizer) ServerMailPasswordResetSubject(instance string) string {
 	return l.format("server:mail.password_reset.subject", map[string]any{"instance": instance})
 }
 
+// ServerMailSupporterPaymentFailedBody formats "server:mail.supporter_payment_failed.body". Plain-text body of the email to a subscriber whose payment for a supporter plan failed. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {endsAt} the end of the grace period as YYYY-MM-DD HH:MM in UTC; {url} the link to the supporter page of the web client (keep it on its own line).
+//
+//	en: A payment for your supporter plan “{plan}” on {instance} failed.  You keep the plan's benefits until {endsAt} (UTC). If no payment succeeds by then, they end. Update your payment method here:  {url}  You get this email because you subscribe to a supporter plan on {instance}.
+func (l *Localizer) ServerMailSupporterPaymentFailedBody(endsAt string, instance string, plan string, url string) string {
+	return l.format("server:mail.supporter_payment_failed.body", map[string]any{"endsAt": endsAt, "instance": instance, "plan": plan, "url": url})
+}
+
+// ServerMailSupporterPaymentFailedSubject formats "server:mail.supporter_payment_failed.subject". Subject of the email to a subscriber whose payment for a supporter plan failed. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A payment for your supporter plan on {instance} failed
+func (l *Localizer) ServerMailSupporterPaymentFailedSubject(instance string) string {
+	return l.format("server:mail.supporter_payment_failed.subject", map[string]any{"instance": instance})
+}
+
+// ServerMailSupporterPlanRetiredBody formats "server:mail.supporter_plan_retired.body". Plain-text body of the email to a subscriber whose supporter plan the administrators retired. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {url} the link to the notifications (keep it on its own line).
+//
+//	en: The administrators of {instance} retired the supporter plan “{plan}” that you subscribe to.  Your subscription is canceled and will not renew. You keep the plan's benefits until the end of the period you paid for, unless a payment is overdue.  Open your notifications:  {url}  You get this email because you subscribe to a supporter plan on {instance}.
+func (l *Localizer) ServerMailSupporterPlanRetiredBody(instance string, plan string, url string) string {
+	return l.format("server:mail.supporter_plan_retired.body", map[string]any{"instance": instance, "plan": plan, "url": url})
+}
+
+// ServerMailSupporterPlanRetiredSubject formats "server:mail.supporter_plan_retired.subject". Subject of the email to a subscriber whose supporter plan the administrators retired. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: Your supporter plan on {instance} was retired
+func (l *Localizer) ServerMailSupporterPlanRetiredSubject(instance string) string {
+	return l.format("server:mail.supporter_plan_retired.subject", map[string]any{"instance": instance})
+}
+
+// ServerMailSupporterSubscriptionEndedBody formats "server:mail.supporter_subscription_ended.body". Plain-text body of the email to a subscriber whose supporter subscription ended. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {reason} the reason code (not shown), each branch saying why; {url} the link to the notifications (keep it on its own line).
+//
+//	en: Your supporter plan “{plan}” on {instance} ended, and its benefits with it. {reason, select, lapsed {No payment succeeded within 7 days after a payment failed, or the subscription was paused.} reversed {A payment was refunded in full or charged back.} plan_retired {The administrators retired the plan.} account_suspended {Your account was suspended.} staff {An administrator canceled the subscription.} other {The subscription was canceled.}}  Open your notifications:  {url}  You get this email because you subscribed to a supporter plan on {instance}.
+func (l *Localizer) ServerMailSupporterSubscriptionEndedBody(instance string, plan string, reason string, url string) string {
+	return l.format("server:mail.supporter_subscription_ended.body", map[string]any{"instance": instance, "plan": plan, "reason": reason, "url": url})
+}
+
+// ServerMailSupporterSubscriptionEndedSubject formats "server:mail.supporter_subscription_ended.subject". Subject of the email to a subscriber whose supporter subscription ended: a payment kept failing, a payment was refunded, the plan was retired, or it was canceled. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: Your supporter plan on {instance} ended
+func (l *Localizer) ServerMailSupporterSubscriptionEndedSubject(instance string) string {
+	return l.format("server:mail.supporter_subscription_ended.subject", map[string]any{"instance": instance})
+}
+
 // ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.
 //
 //	en: Welcome to {instance}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.
@@ -2228,4 +2270,25 @@ func (l *Localizer) ServerPushRelationshipsSevered(instance string) string {
 //	en: A report you filed on {instance} has been resolved
 func (l *Localizer) ServerPushReportResolved(instance string) string {
 	return l.format("server:push.report_resolved", map[string]any{"instance": instance})
+}
+
+// ServerPushSupporterPaymentFailed formats "server:push.supporter_payment_failed". Web Push notification: a payment for the user's supporter plan failed. It never says where to pay (the app shows no way to pay). {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A payment for your supporter plan on {instance} failed
+func (l *Localizer) ServerPushSupporterPaymentFailed(instance string) string {
+	return l.format("server:push.supporter_payment_failed", map[string]any{"instance": instance})
+}
+
+// ServerPushSupporterPlanRetired formats "server:push.supporter_plan_retired". Web Push notification: the administrators retired the user's supporter plan, whose subscription ends with its period. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: Your supporter plan on {instance} was retired
+func (l *Localizer) ServerPushSupporterPlanRetired(instance string) string {
+	return l.format("server:push.supporter_plan_retired", map[string]any{"instance": instance})
+}
+
+// ServerPushSupporterSubscriptionEnded formats "server:push.supporter_subscription_ended". Web Push notification: the user's supporter subscription ended (a payment kept failing, a refund, a retired plan, or a cancellation). {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: Your supporter plan on {instance} ended
+func (l *Localizer) ServerPushSupporterSubscriptionEnded(instance string) string {
+	return l.format("server:push.supporter_subscription_ended", map[string]any{"instance": instance})
 }

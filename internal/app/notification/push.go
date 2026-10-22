@@ -445,6 +445,14 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 		p.Title, p.Path = l.ServerPushAdminCustomEmojiRequest(instance), "/admin/custom-emojis?tab=requests"
 	case notification.TypeCustomEmojiRequestDecided:
 		p.Title, p.Path = l.ServerPushCustomEmojiRequestDecided(instance), "/settings/custom-emojis"
+	case notification.TypeSupporterPaymentFailed:
+		// The supporter notifications open the notifications, never the subscription screen,
+		// which the Tauri app does not show (ADR-0072 §14).
+		p.Title = l.ServerPushSupporterPaymentFailed(instance)
+	case notification.TypeSupporterSubscriptionEnded:
+		p.Title = l.ServerPushSupporterSubscriptionEnded(instance)
+	case notification.TypeSupporterPlanRetired:
+		p.Title = l.ServerPushSupporterPlanRetired(instance)
 	case notification.TypeReportResolved:
 		p.Title = l.ServerPushReportResolved(instance)
 	case notification.TypeRelationshipsSevered:
