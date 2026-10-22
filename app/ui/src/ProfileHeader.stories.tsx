@@ -169,4 +169,7 @@ export const Narrow: Story = {
 /** The 3:1 preview of a form. */
 export const Preview: StoryObj<typeof ProfileHeaderImage> = {
   render: () => <ProfileHeaderImage sources={header} size="preview" />,
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector("img")).toBeVisible();
+  },
 };

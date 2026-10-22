@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // DialogActions stories: the buttons at the end of a dialog's form, and long labels that wrap onto a second line.
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect } from "storybook/test";
+import { expect, waitFor } from "storybook/test";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
 import { DialogActions } from "./DialogActions";
@@ -64,6 +64,6 @@ export const InDialog: Story = {
   ),
   play: async ({ canvas }) => {
     const dialog = await canvas.findByRole("dialog", { name: "Edit the role" });
-    await expect(dialog).toBeVisible();
+    await waitFor(() => expect(dialog).toBeVisible());
   },
 };

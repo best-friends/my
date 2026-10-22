@@ -3,7 +3,7 @@
 // (storyViewports.ts) and is captured once at it; the other projects add the right-to-left direction and the dark theme.
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { AppNav, AppNavAccount, AppNavItem, AppNavMenu, AppNavMenuLink, AppNavMenuList, AppNavMenuSection, type AppNavBadge } from "./AppNavigation";
 import { AppShell, AsidePanel } from "./AppShell";
 import { Avatar } from "./Avatar";
@@ -208,7 +208,7 @@ export const PhoneMenuOpen: Story = {
   play: async ({ canvas }) => {
     const sheet = await canvas.findByRole("dialog", { name: "Menu" });
     await expect(within(sheet).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
-    await expect(within(sheet).getByRole("link", { name: "Moderation, 12 pending" })).toBeVisible();
+    await waitFor(() => expect(within(sheet).getByRole("link", { name: "Moderation, 12 pending" })).toBeVisible());
   },
 };
 
