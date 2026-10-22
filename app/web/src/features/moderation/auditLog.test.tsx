@@ -234,7 +234,8 @@ describe("the audit log", () => {
       expect(within(row("Account action taken")).getByRole("link", { name: "Show operations by all people" })).toHaveFocus();
     });
     const filters = screen.getByRole("group", { name: "Filters" });
-    expect(within(filters).getByText("Mona")).toBeInTheDocument();
+    // The chosen actor and target are listed under the selects.
+    expect(screen.getAllByRole("definition")[0]).toHaveTextContent("Mona");
 
     await user.click(within(row("Domain action taken")).getByRole("link", { name: `Show only operations on ${isolated("spam.example")}` }));
     await waitFor(() => {
@@ -243,11 +244,11 @@ describe("the audit log", () => {
     await waitFor(() => {
       expect(rows()).toHaveLength(1);
     });
-    expect(within(filters).getByText("spam.example")).toBeInTheDocument();
+    expect(screen.getAllByRole("definition")[1]).toHaveTextContent("spam.example");
     expect(screen.getByRole("button", { name: /Target/ })).toHaveTextContent("Domain");
 
     // Letting go of a filter from the filters keeps focus among them.
-    await user.click(within(filters).getByRole("link", { name: "Show all people" }));
+    await user.click(screen.getByRole("link", { name: "Show all people" }));
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ target_kind: "domain", target: "spam.example" });
     });

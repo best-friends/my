@@ -157,9 +157,9 @@ async function moderatorServer(page: Page) {
   return actions;
 }
 
-/** The rows of the queue: the items with a heading. */
+/** The rows of the queue: the table's body rows, each headed by its report's link. */
 function rows(page: Page) {
-  return page.getByRole("tabpanel").getByRole("listitem").filter({ has: page.getByRole("heading", { level: 2 }) });
+  return page.getByRole("main").getByRole("row").filter({ has: page.getByRole("rowheader") });
 }
 
 test.describe("page /moderation/reports", () => {
@@ -201,21 +201,15 @@ test.describe("reports", () => {
     await expect(rows(page)).toHaveCount(2);
 
     await expect(rows(page).first()).toMatchAriaSnapshot(`
-      - listitem:
-        - heading /@maximiliana/ [level=2]:
+      - row:
+        - rowheader:
           - link /@maximiliana/
-        - term
-        - definition
-        - term
-        - definition: /@instance\\.actor@${longDomain.replaceAll(".", "\\.")}/
-        - term
-        - definition:
+          - paragraph: ${comment}
+        - cell
+        - cell /@instance\\.actor@${longDomain.replaceAll(".", "\\.")}/
+        - cell
+        - cell:
           - time
-        - term
-        - definition
-        - term
-        - definition
-        - paragraph: ${comment}
     `);
 
     // By keyboard: the row's link opens the report's page, whose heading takes focus.

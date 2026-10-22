@@ -181,7 +181,8 @@ test.describe("remote servers", () => {
     await expect(servers.getByRole("rowheader")).toHaveText([longDomain, "flaky.example"]);
     await expect(servers.getByRole("row").nth(1).getByRole("link", { name: longDomain })).toBeVisible();
     await expect(servers.getByRole("row").nth(2).getByRole("link", { name: "flaky.example" })).toBeVisible();
-    await expect(servers.locator("time")).toHaveCount(2);
+    // The first server's state change and the last failure day of each.
+    await expect(servers.locator("time")).toHaveCount(3);
 
     await main.getByRole("link", { name: longDomain }).click();
     await expect(main.getByRole("heading", { level: 1, name: longDomain })).toBeFocused();

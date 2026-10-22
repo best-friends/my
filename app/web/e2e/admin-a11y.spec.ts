@@ -698,7 +698,7 @@ test.describe("handling a report with the keyboard alone", () => {
     await tabTo(page, main.locator('a[href="/moderation/reports"]'));
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/moderation\/reports$/);
-    const queue = main.getByRole("tabpanel");
+    const queue = main.getByRole("table");
     await expect(queue.locator(`a[href="/moderation/reports/${reportId}"]`)).toBeVisible();
     await expectPageReached(page, makeAxeBuilder);
 
