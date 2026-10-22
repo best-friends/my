@@ -3,7 +3,7 @@
 // and the sheet below it. The shell answers to the viewport (web-client.md D2), so each story sets one (storyViewports.ts).
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, within, waitFor } from "storybook/test";
 import { AdminNavBack, AdminNavSection, AdminShell, type AdminShellProps } from "./AdminShell";
 import { BrandMark } from "./BrandMark";
 import { PageHeading } from "./PageHeading";
@@ -94,7 +94,8 @@ export const PhoneMenuOpen: Story = {
   render: () => <Sample startOpen />,
   play: async ({ canvas }) => {
     const sheet = await canvas.findByRole("dialog", { name: "Admin menu" });
-    await expect(within(sheet).getByRole("link", { name: "Back to the app" })).toBeVisible();
+    // The sheet fades in; wait for it rather than catching it mid-transition.
+    await waitFor(() => expect(within(sheet).getByRole("link", { name: "Back to the app" })).toBeVisible());
     await userEvent.keyboard("{Escape}");
   },
 };

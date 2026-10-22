@@ -48,12 +48,13 @@ export const Default: Story = {
   },
 };
 
-/** Tab enters the group on the selected segment, the arrow keys select the next and the previous, and Tab leaves. */
+/** Tab enters the group on the selected segment, the arrow keys select the next and the previous in the writing direction, and Tab leaves. */
 export const Keyboard: Story = {
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await expect(canvas.getByRole("radio", { name: "lg · 3 columns" })).toHaveFocus();
-    await userEvent.keyboard("{ArrowRight}");
+    // The next segment lies in the writing direction: to the left in right-to-left text.
+    await userEvent.keyboard(document.documentElement.dir === "rtl" ? "{ArrowLeft}" : "{ArrowRight}");
     const md = canvas.getByRole("radio", { name: "md · 2 columns" });
     await expect(md).toHaveFocus();
     await userEvent.keyboard(" ");
