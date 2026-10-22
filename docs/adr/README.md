@@ -88,4 +88,5 @@
 | [0074](0074-payment-provider-port.md) | 決済の PaymentProvider ポート（Stripe） | Accepted |
 | [0075](0075-metrics-surface-payments.md) | my.surface に payments を加える | Accepted |
 | [0076](0076-federation-direction.md) | 連合の向きをインスタンス設定で選ぶ（オフ / 受信のみ / 送信のみ / 送受信） | Accepted |
+| [0077](0077-timeline-auto-insert.md) | タイムラインの新着をユーザーの設定で自動で差し込む | Accepted |
 <!-- adr-index:end -->
