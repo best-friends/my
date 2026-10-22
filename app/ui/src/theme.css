@@ -47,6 +47,9 @@
   --palette-cocoa-900: #241f20;
   --palette-cocoa-950: #1c1819;
 
+  /* Rose (decorative: the waveform of AudioPlayer) */
+  --palette-rose-400: #d97c7c;
+
   /* Coral (brand primary) */
   --palette-coral-300: #ffa8a8;
   --palette-coral-350: #ff8585;
@@ -184,6 +187,10 @@
   /* The pressed button of a Segmented: charcoal with white in light, the brand coral with charcoal in dark. */
   --color-pressed: light-dark(var(--palette-charcoal-900), var(--palette-coral-500));
   --color-pressed-fg: light-dark(var(--palette-white), var(--palette-charcoal-900));
+
+  /* Decorative marks on media: the duration chip over a video's poster (with toast-fg text), and AudioPlayer's waveform. */
+  --color-media-chip: #000000a6;
+  --color-wave: var(--palette-rose-400);
 
   /* Role badges (ADR-0071): badge-<color> is the background and badge-<color>-fg the text on it.
      The color only decorates; the badge's name carries its meaning. Server themes cannot override them. */

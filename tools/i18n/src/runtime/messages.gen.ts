@@ -6074,6 +6074,12 @@ export interface MessageArgs {
   "client:timeline.load_more.failed": { reason: string };
   /** Loading posts */
   "client:timeline.loading": {};
+  /** Pause */
+  "client:timeline.media.audio.pause": {};
+  /** Play */
+  "client:timeline.media.audio.play": {};
+  /** Position in the audio */
+  "client:timeline.media.audio.seek": {};
   /** No description */
   "client:timeline.media.no_description": {};
   /** Show sensitive media */

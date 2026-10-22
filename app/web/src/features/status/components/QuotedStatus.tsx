@@ -3,6 +3,7 @@ import { Avatar, ContentWarning, EmojiText, MediaGrid, PostCardAuthorLink, PostC
 import { useT } from "../../../lib/i18n";
 import type { Status, StatusQuote } from "../api/status";
 import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
+import { useAudioPlayerLabels } from "../hooks/useAudioPlayerLabels";
 import { useQuoteView } from "../hooks/useQuoteView";
 import { useStatusView } from "../hooks/useStatusView";
 
@@ -22,6 +23,7 @@ function QuotedPost({ status, notice }: { status: Status; notice: string | null 
   const t = useT();
   const view = useStatusView(status);
   const viewerLabels = useMediaViewerLabels();
+  const audioLabels = useAudioPlayerLabels();
   const body = (
     <>
       <PostContent html={view.html} lang={view.lang} emojis={view.emojis} onLinkClick={view.onLinkClick} />
@@ -32,6 +34,7 @@ function QuotedPost({ status, notice }: { status: Status; notice: string | null 
           noDescriptionLabel={t("client:timeline.media.no_description")}
           revealLabel={t("client:timeline.media.reveal")}
           viewerLabels={viewerLabels}
+          audioLabels={audioLabels}
         />
       )}
     </>

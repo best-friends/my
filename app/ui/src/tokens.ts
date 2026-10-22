@@ -78,9 +78,10 @@ export const colorPairs: readonly ColorPair[] = [
 /**
  * Semantic colors that carry no information on their own, so no contrast minimum applies:
  * border separates regions that are already distinguishable, and overlay is the modal scrim. alt-overlay is the scrim under white text over a
- * picture (MediaViewer's alt text); its contrast depends on the picture.
+ * picture (MediaViewer's alt text); its contrast depends on the picture. media-chip is the chip under a video's duration and wave
+ * the bars of AudioPlayer's waveform: a duration is also in the player's own text, and the bars only decorate.
  */
-export const decorativeColors: readonly string[] = ["border", "overlay", "alt-overlay"];
+export const decorativeColors: readonly string[] = ["border", "overlay", "alt-overlay", "media-chip", "wave"];
 
 /**
  * The kind of value a token of theme.css holds, which decides how a server theme's override of it is

@@ -41,6 +41,8 @@ var themeTokens = []ThemeToken{
 	{Name: "color-alt-overlay", Kind: ThemeTokenColor, Light: "#000000cc", Dark: "#000000cc", Alpha: true},
 	{Name: "color-pressed", Kind: ThemeTokenColor, Light: "#2e2e2e", Dark: "#ff6b6b"},
 	{Name: "color-pressed-fg", Kind: ThemeTokenColor, Light: "#ffffff", Dark: "#2e2e2e"},
+	{Name: "color-media-chip", Kind: ThemeTokenColor, Light: "#000000a6", Dark: "#000000a6", Alpha: true},
+	{Name: "color-wave", Kind: ThemeTokenColor, Light: "#d97c7c", Dark: "#d97c7c"},
 	{Name: "font-sans", Kind: ThemeTokenFontFamily, Default: "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Hiragino Sans\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic UI\", Meiryo, \"PingFang SC\", \"Microsoft YaHei UI\", \"Malgun Gothic\", \"Geeza Pro\", \"Segoe UI Arabic\", Tahoma, \"Noto Sans\", \"Noto Sans CJK JP\", \"Noto Sans JP\", \"Noto Sans Arabic\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Noto Color Emoji\""},
 	{Name: "font-mono", Kind: ThemeTokenFontFamily, Default: "ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\", \"BIZ UDGothic\", \"Osaka-Mono\", \"Noto Sans Mono CJK JP\", monospace"},
 	{Name: "font-serif", Kind: ThemeTokenFontFamily, Default: "Georgia, \"Noto Serif JP\", serif"},

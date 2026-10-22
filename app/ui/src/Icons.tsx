@@ -36,6 +36,8 @@ import {
   PiList,
   PiMagnifyingGlass,
   PiNote,
+  PiPauseFill,
+  PiPlayFill,
   PiPlus,
   PiQuotes,
   PiRepeat,
@@ -109,6 +111,10 @@ export const iconTable = {
   },
   // Quotation marks are not a direction, so they do not mirror.
   QuoteIcon: { off: glyph(PiQuotes, "PiQuotes") },
+  // Playback of audio and video: a triangle pointing along the line would flip, but a play button points to the
+  // end of the line in left-to-right text and the media's time still runs that way, so it does not mirror.
+  PlayIcon: { off: glyph(PiPlayFill, "PiPlayFill") },
+  PauseIcon: { off: glyph(PiPauseFill, "PiPauseFill") },
   // The new-post form.
   ImageIcon: { off: glyph(PiImage, "PiImage") },
   // Filled, the exclamation mark stays cut out of the triangle.
@@ -202,6 +208,16 @@ export function ReplyIcon() {
 /** An arrow up, for the button that shows the new posts waiting above a feed. */
 export function NewItemsIcon() {
   return renderIcon(iconTable.NewItemsIcon);
+}
+
+/** A filled triangle, for the button that plays audio or video. */
+export function PlayIcon() {
+  return renderIcon(iconTable.PlayIcon);
+}
+
+/** Two filled bars, for the button that pauses audio or video. */
+export function PauseIcon() {
+  return renderIcon(iconTable.PauseIcon);
 }
 
 /** An eye struck through, for the button that conceals sensitive media again. */

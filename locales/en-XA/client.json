@@ -12143,6 +12143,18 @@
     "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ ƥǿǿşŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "timeline.media.audio.pause": {
+    "defaultMessage": "[Ƥȧȧŭŭşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.audio.play": {
+    "defaultMessage": "[Ƥŀȧȧẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.audio.seek": {
+    "defaultMessage": "[Ƥǿǿşīŧīǿǿƞ īƞ ŧħḗḗ ȧȧŭŭḓīǿǿ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "timeline.media.no_description": {
     "defaultMessage": "[Ƞǿǿ ḓḗḗşƈřīƥŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
