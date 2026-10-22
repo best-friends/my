@@ -65,6 +65,10 @@ export type BoxProps = {
    * `start` (a 2px rule on the inline start with `ps-3`, a quoted or nested block).
    */
   border?: "md" | "lg" | "y" | "start";
+  /** A background: `sunken` (`bg-surface-sunken`), a well inside a raised surface, such as the quote of the post a form replies to. */
+  surface?: "sunken";
+  /** Moves the element to the inline end of its row (`ms-auto`), whether or not the row wraps. */
+  pushEnd?: boolean;
   /** Text color for everything inside, unless a child sets its own. */
   tone?: "fg" | "muted" | "danger" | "warning";
   /** Text size for everything inside, unless a child sets its own. */
@@ -157,6 +161,8 @@ export const box = tv({
       y: "border-y border-border",
       start: "border-s-2 border-border ps-3",
     },
+    surface: { sunken: "bg-surface-sunken" },
+    pushEnd: { true: "ms-auto" },
     tone: { fg: "text-fg", muted: "text-fg-muted", danger: "text-danger", warning: "text-warning" },
     textSize: { xs: "text-xs", sm: "text-sm", base: "text-base", lg: "text-lg" },
   },
@@ -183,11 +189,13 @@ export function splitBox<P extends BoxProps>({
   paddingX,
   paddingY,
   border,
+  surface,
+  pushEnd,
   tone,
   textSize,
   ...rest
 }: P) {
-  return [{ container, width, shrink, grow, self, padding, paddingX, paddingY, border, tone, textSize }, rest] as const;
+  return [{ container, width, shrink, grow, self, padding, paddingX, paddingY, border, surface, pushEnd, tone, textSize }, rest] as const;
 }
 
 

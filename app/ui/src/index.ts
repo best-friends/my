@@ -219,3 +219,9 @@ export { CodeBlock, type CodeBlockProps } from "./CodeBlock";
 export { PreviewImage, type PreviewImageProps } from "./PreviewImage";
 export { ThemePreview, type ThemePreviewProps } from "./ThemePreview";
 export { ReactionChip, ReactionEmoji, ReactionRow, type ReactionChipProps, type ReactionEmojiProps, type ReactionRowProps } from "./ReactionChip";
+
+// The parts of the post form (FR-101): an image of a draft, a framed group of controls, the floating compose button.
+export { AttachmentItem, type AttachmentItemProps } from "./AttachmentItem";
+export { Fieldset, type FieldsetProps } from "./Fieldset";
+export { FloatingButton, type FloatingButtonProps } from "./FloatingButton";
+export { OutboxItem, type OutboxItemProps } from "./OutboxItem";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, PostContent, serverSanitizedHtml, Spinner } from "@my/ui";
+import { Box, Button, Hint, PostContent, serverSanitizedHtml, Spinner, Stack, Text } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import type { ReplyTarget } from "../hooks/useComposeForm";
 
@@ -24,24 +24,28 @@ export function ReplyContext({ replyTo, onCancel, isDisabled = false, kind = "re
   const t = useT();
   const m = messages[kind];
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-3">
+    <Stack gap="2" border="md" surface="sunken" padding="3">
       {replyTo.status === "loading" && <Spinner size="sm" label={t("client:shell.loading")} />}
-      {replyTo.status === "error" && <p className="text-sm text-fg-muted">{t(m.unavailable)}</p>}
+      {replyTo.status === "error" && <Hint>{t(m.unavailable)}</Hint>}
       {replyTo.status === "ready" && (
         <>
-          <p className="text-sm font-medium">{t(m.label, { name: replyTo.post.account.display_name || `@${replyTo.post.account.acct}` })}</p>
+          <Text as="p" size="sm" weight="medium">
+            {t(m.label, { name: replyTo.post.account.display_name || `@${replyTo.post.account.acct}` })}
+          </Text>
           {replyTo.post.spoiler_text === "" ? (
-            <PostContent html={serverSanitizedHtml(replyTo.post.content)} lang={replyTo.post.language} className="line-clamp-3 text-sm" />
+            <PostContent html={serverSanitizedHtml(replyTo.post.content)} lang={replyTo.post.language} size="sm" lineClamp={3} />
           ) : (
-            <p dir="auto" lang={replyTo.post.language} className="text-sm wrap-anywhere">
+            <Text as="p" dir="auto" lang={replyTo.post.language} size="sm" wrap="anywhere">
               {replyTo.post.spoiler_text}
-            </p>
+            </Text>
           )}
         </>
       )}
-      <Button size="sm" variant="ghost" className="self-start" onPress={onCancel} isDisabled={isDisabled}>
-        {t(m.cancel)}
-      </Button>
-    </div>
+      <Box self="start">
+        <Button size="sm" variant="ghost" onPress={onCancel} isDisabled={isDisabled}>
+          {t(m.cancel)}
+        </Button>
+      </Box>
+    </Stack>
   );
 }
