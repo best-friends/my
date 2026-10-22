@@ -340,6 +340,7 @@ announces only changes made after it is in the page. A failure is not a status; 
 | `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
 | `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
 | `Tag` | A short outlined word that qualifies the value beside it ("Estimated"): `rounded-sm border border-border px-1 text-sm text-fg-muted`. |
+| `Poll`, `PollResults`, `PollChoices`, `PollSummary`, `PollHint` | A poll (FR-112): `Poll` is the named section; `PollResults` the list of shares with a decorative bar (`aria-hidden`; the percentage and the "your vote" word carry the meaning); `PollChoices` the radio or checkbox form with the vote button; `PollSummary` the total and deadline line; `PollHint` a note. Titles take `dir="auto"`, `lang` and custom emoji. |
 
 ## Layout and text
 

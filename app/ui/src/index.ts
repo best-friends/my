@@ -149,3 +149,18 @@ export {
   type TableRowHeaderProps,
   type TableRowProps,
 } from "./Table";
+
+// The display of a poll (FR-112).
+export {
+  Poll,
+  PollChoices,
+  PollHint,
+  PollResults,
+  PollSummary,
+  type PollChoicesProps,
+  type PollHintProps,
+  type PollOptionProps,
+  type PollProps,
+  type PollResultsProps,
+  type PollSummaryProps,
+} from "./Poll";
