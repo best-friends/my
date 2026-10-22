@@ -180,7 +180,8 @@ func (s *Service) applySnapshot(ctx context.Context, provider string, snap Subsc
 // transition records the move of rec to next inside tx with its effects (ADR-0072 §7): the
 // role granted, revoked, or replaced (as the system), the listing removed with the role, the
 // deadline of the Scheduler, the provider's subscription canceled at once when it is revoked,
-// and the role of a retired plan made ordinary once nobody holds it.
+// the role of a retired plan made ordinary once nobody holds it, and SubscriptionTransitioned,
+// which notifies the subscriber of a failed payment and of the end (ADR-0072 §16).
 func (s *Service) transition(ctx context.Context, tx uow.Tx, rec SubscriptionRecord, next supporters.Transition, reason supporters.Reason, now time.Time) error {
 	tr := TransitionRecord{ID: s.d.IDs.NewID(), SubscriptionID: rec.ID, Transition: next, Reason: reason, OccurredAt: now}
 	var dl *Deadline
@@ -188,6 +189,24 @@ func (s *Service) transition(ctx context.Context, tx uow.Tx, rec SubscriptionRec
 		dl = &Deadline{SubscriptionID: rec.ID, Kind: kind, DueAt: at}
 	}
 	if err := s.d.Repository.InsertTransition(ctx, tx, tr, rec.UserID, dl); err != nil {
+		return err
+	}
+	accountID, err := s.accountOf(ctx, tx, rec.UserID)
+	if err != nil {
+		return err
+	}
+	ev := SubscriptionTransitioned{
+		SubscriptionID: rec.ID, TransitionID: tr.ID, UserID: rec.UserID, AccountID: accountID,
+		From: rec.Current.State, To: next, Reason: reason, At: now,
+	}
+	if ev.PaymentFailed() || ev.Ended() {
+		p, err := s.d.Repository.FindPlan(ctx, tx, next.PlanID)
+		if err != nil {
+			return err
+		}
+		ev.PlanName = p.Revision.Name
+	}
+	if err := tx.Emit(ctx, ev); err != nil {
 		return err
 	}
 	change := supporters.RoleChangeOf(rec.Current.Transition, next)

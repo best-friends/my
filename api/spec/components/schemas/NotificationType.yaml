@@ -29,6 +29,14 @@ description: |
   `custom_emoji_request_decided` also comes from the instance: an administrator approved
   or rejected the user's custom emoji request, which `custom_emoji_request` carries with
   its state and the reason of a rejection.
+  The supporter notifications also come from the instance and tell of the user's own
+  supporter subscription, which `supporter_subscription` carries as it is now:
+  `supporter_payment_failed` (a payment failed; the plan's role stays until
+  `grace_ends_at` unless a payment succeeds), `supporter_subscription_ended` (the
+  subscription lost the plan's role; `end_reason` says why), and `supporter_plan_retired`
+  (the administrators retired the plan; the subscription ends with its period). Each is
+  sent once per change of the subscription. A client must not lead from them to
+  subscribing or paying where it offers no way to subscribe.
 type: string
 enum:
   - follow
@@ -50,3 +58,6 @@ enum:
   - admin_webhook_disabled
   - admin_custom_emoji_request
   - custom_emoji_request_decided
+  - supporter_payment_failed
+  - supporter_subscription_ended
+  - supporter_plan_retired

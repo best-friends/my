@@ -556,22 +556,23 @@ type Mute struct {
 }
 
 type Notification struct {
-	ID                    string
-	RecipientAccountID    string
-	Type                  string
-	SourceAccountID       *string
-	SourceDomain          *string
-	StatusID              *string
-	ModerationActionID    *string
-	ReportID              *string
-	SubjectUserID         *string
-	SeveranceID           *string
-	AppealID              *string
-	CustomEmojiRequestID  *string
-	ReactionEmoji         *string
-	ReactionCustomEmojiID *string
-	DedupeKey             string
-	CreatedAt             time.Time
+	ID                      string
+	RecipientAccountID      string
+	Type                    string
+	SourceAccountID         *string
+	SourceDomain            *string
+	StatusID                *string
+	ModerationActionID      *string
+	ReportID                *string
+	SubjectUserID           *string
+	SeveranceID             *string
+	AppealID                *string
+	CustomEmojiRequestID    *string
+	SupporterSubscriptionID *string
+	ReactionEmoji           *string
+	ReactionCustomEmojiID   *string
+	DedupeKey               string
+	CreatedAt               time.Time
 }
 
 type NotificationReadMarker struct {

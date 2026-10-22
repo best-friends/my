@@ -14,8 +14,10 @@ type Type string
 // Notification types. The notification module generates follow, follow_request,
 // follow_accepted, mention, boost, favourite, reaction, quote, and poll_closed from the graph and
 // content events, and moderation_notice, appeal_decided, report_resolved, and
-// relationships_severed from the moderation events, and custom_emoji_request_decided from the
-// custom emoji requests (ADR-0070 §9). admin_report, admin_sign_up, admin_appeal,
+// relationships_severed from the moderation events, custom_emoji_request_decided from the
+// custom emoji requests (ADR-0070 §9), and supporter_payment_failed,
+// supporter_subscription_ended, and supporter_plan_retired from the supporter subscriptions
+// (ADR-0072 §16). admin_report, admin_sign_up, admin_appeal,
 // admin_webhook_disabled, and admin_custom_emoji_request go to the staff whose roles grant the
 // permission they need (ModeratorPermission).
 const (
@@ -49,6 +51,15 @@ const (
 	// TypeCustomEmojiRequestDecided tells the requester that their custom emoji request was
 	// approved or rejected (ADR-0070 §9).
 	TypeCustomEmojiRequestDecided Type = "custom_emoji_request_decided"
+	// TypeSupporterPaymentFailed tells a subscriber that a payment of their supporter
+	// subscription failed and the grace period began (ADR-0072 §16).
+	TypeSupporterPaymentFailed Type = "supporter_payment_failed"
+	// TypeSupporterSubscriptionEnded tells a subscriber that their supporter subscription lost
+	// the plan's role: it lapsed, expired, or was revoked (ADR-0072 §16).
+	TypeSupporterSubscriptionEnded Type = "supporter_subscription_ended"
+	// TypeSupporterPlanRetired tells a subscriber that their plan was retired and their
+	// subscription ends with its period (ADR-0072 §16).
+	TypeSupporterPlanRetired Type = "supporter_plan_retired"
 )
 
 // Types are every notification type, in a stable order.
@@ -57,6 +68,7 @@ var Types = []Type{
 	TypeReaction, TypeQuote, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 	TypeRelationshipsSevered,
 	TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled, TypeAdminCustomEmojiRequest, TypeCustomEmojiRequestDecided,
+	TypeSupporterPaymentFailed, TypeSupporterSubscriptionEnded, TypeSupporterPlanRetired,
 }
 
 // Valid reports whether t is a known notification type.
@@ -65,7 +77,8 @@ func (t Type) Valid() bool {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
 		TypeReaction, TypeQuote, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled,
-		TypeAdminCustomEmojiRequest, TypeCustomEmojiRequestDecided:
+		TypeAdminCustomEmojiRequest, TypeCustomEmojiRequestDecided,
+		TypeSupporterPaymentFailed, TypeSupporterSubscriptionEnded, TypeSupporterPlanRetired:
 		return true
 	}
 	return false
@@ -93,6 +106,9 @@ type Notification struct {
 	// CustomEmojiRequestID is the custom emoji request of an admin_custom_emoji_request or a
 	// custom_emoji_request_decided, "" for the other types.
 	CustomEmojiRequestID string
+	// SupporterSubscriptionID is the supporter subscription of a supporter_payment_failed, a
+	// supporter_subscription_ended, or a supporter_plan_retired, "" for the other types.
+	SupporterSubscriptionID string
 	// ReactionEmoji and ReactionCustomEmojiID are the emoji of a reaction: a Unicode emoji or a
 	// custom emoji (custom_emojis.id), exactly one of them; both "" for the other types.
 	ReactionEmoji         string
@@ -135,6 +151,9 @@ func (n Notification) Validate() error {
 	if (n.Type == TypeAdminCustomEmojiRequest || n.Type == TypeCustomEmojiRequestDecided) != (n.CustomEmojiRequestID != "") {
 		return errors.New("notification: an admin_custom_emoji_request or a custom_emoji_request_decided, and only they, name a custom emoji request")
 	}
+	if n.Type.Supporter() != (n.SupporterSubscriptionID != "") || (n.Type.Supporter() && n.SourceAccountID != "") {
+		return errors.New("notification: the supporter notifications, and only they, name a supporter subscription, and they have no source account")
+	}
 	if hasEmoji := n.ReactionEmoji != "" || n.ReactionCustomEmojiID != ""; (n.Type == TypeReaction) != hasEmoji ||
 		(n.ReactionEmoji != "" && n.ReactionCustomEmojiID != "") {
 		return errors.New("notification: a reaction, and only it, names one emoji")
@@ -149,6 +168,25 @@ func (n Notification) Validate() error {
 		return errors.New("notification: a moderator notification needs its subject and has no source account")
 	}
 	return nil
+}
+
+// Supporter reports whether t is one of the supporter notifications, which tell a subscriber of
+// their supporter subscription (ADR-0072 §16).
+func (t Type) Supporter() bool {
+	return t == TypeSupporterPaymentFailed || t == TypeSupporterSubscriptionEnded || t == TypeSupporterPlanRetired
+}
+
+// SupporterTransitionKey is the dedupe key of a supporter_payment_failed or a
+// supporter_subscription_ended notification: one per transition of the subscription that
+// entered the state.
+func SupporterTransitionKey(t Type, transitionID string) string {
+	return string(t) + ":" + transitionID
+}
+
+// SupporterPlanRetiredKey is the dedupe key of a supporter_plan_retired notification: one per
+// subscription of the plan, which is retired once.
+func SupporterPlanRetiredKey(planID, subscriptionID string) string {
+	return string(TypeSupporterPlanRetired) + ":" + planID + ":" + subscriptionID
 }
 
 // FollowKey is the dedupe key of a follow, follow_request, or follow_accepted notification:

@@ -365,3 +365,26 @@ func TestChangeTiming(t *testing.T) {
 		t.Errorf("same choice: %v", err)
 	}
 }
+
+func TestEndReasonOf(t *testing.T) {
+	for _, tc := range []struct {
+		state  State
+		reason Reason
+		want   EndReason
+	}{
+		{StateLapsed, ReasonGraceExpired, EndLapsed},
+		{StateLapsed, ReasonSynced, EndLapsed},
+		{StateRevoked, ReasonReversed, EndReversed},
+		{StateExpired, ReasonPlanRetired, EndPlanRetired},
+		{StateExpired, ReasonAccountSuspended, EndAccountSuspended},
+		{StateExpired, ReasonAccountClosed, EndAccountClosed},
+		{StateExpired, ReasonStaff, EndStaff},
+		{StateExpired, ReasonSynced, EndCanceled},
+		{StateActive, ReasonSynced, ""},
+		{StateAbandoned, ReasonPlanRetired, ""},
+	} {
+		if got := EndReasonOf(tc.state, tc.reason); got != tc.want {
+			t.Errorf("EndReasonOf(%s, %s) = %q, want %q", tc.state, tc.reason, got, tc.want)
+		}
+	}
+}

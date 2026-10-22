@@ -33,8 +33,8 @@ func (r *NotificationRepository) InsertNotification(ctx context.Context, tx uow.
 		SourceAccountID: toNullString(n.SourceAccountID), SourceDomain: toNullString(n.SourceDomain), StatusID: toNullString(n.StatusID),
 		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID),
 		SubjectUserID: toNullString(n.SubjectUserID), SeveranceID: toNullString(n.SeveranceID), AppealID: toNullString(n.AppealID),
-		CustomEmojiRequestID: toNullString(n.CustomEmojiRequestID),
-		ReactionEmoji:        toNullString(n.ReactionEmoji), ReactionCustomEmojiID: toNullString(n.ReactionCustomEmojiID), DedupeKey: n.DedupeKey, CreatedAt: n.CreatedAt,
+		CustomEmojiRequestID: toNullString(n.CustomEmojiRequestID), SupporterSubscriptionID: toNullString(n.SupporterSubscriptionID),
+		ReactionEmoji: toNullString(n.ReactionEmoji), ReactionCustomEmojiID: toNullString(n.ReactionCustomEmojiID), DedupeKey: n.DedupeKey, CreatedAt: n.CreatedAt,
 	})
 	if err != nil {
 		return false, wrap(err, "insert notification")
@@ -190,8 +190,8 @@ func notificationFrom(row postgresgen.Notification) notification.Notification {
 		SourceAccountID: fromNullString(row.SourceAccountID), SourceDomain: fromNullString(row.SourceDomain), StatusID: fromNullString(row.StatusID),
 		ModerationActionID: fromNullString(row.ModerationActionID), ReportID: fromNullString(row.ReportID),
 		SubjectUserID: fromNullString(row.SubjectUserID), SeveranceID: fromNullString(row.SeveranceID), AppealID: fromNullString(row.AppealID),
-		CustomEmojiRequestID: fromNullString(row.CustomEmojiRequestID),
-		ReactionEmoji:        fromNullString(row.ReactionEmoji), ReactionCustomEmojiID: fromNullString(row.ReactionCustomEmojiID), DedupeKey: row.DedupeKey, CreatedAt: utc(row.CreatedAt),
+		CustomEmojiRequestID: fromNullString(row.CustomEmojiRequestID), SupporterSubscriptionID: fromNullString(row.SupporterSubscriptionID),
+		ReactionEmoji: fromNullString(row.ReactionEmoji), ReactionCustomEmojiID: fromNullString(row.ReactionCustomEmojiID), DedupeKey: row.DedupeKey, CreatedAt: utc(row.CreatedAt),
 	}
 }
 

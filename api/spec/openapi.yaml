@@ -1313,6 +1313,8 @@ components:
       $ref: ./components/schemas/SupporterCheckout.yaml
     SupporterIneligibleReason:
       $ref: ./components/schemas/SupporterIneligibleReason.yaml
+    SupporterEndReason:
+      $ref: ./components/schemas/SupporterEndReason.yaml
     SupporterInterval:
       $ref: ./components/schemas/SupporterInterval.yaml
     SupporterListEntry:

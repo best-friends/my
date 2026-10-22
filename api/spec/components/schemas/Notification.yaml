@@ -39,6 +39,12 @@ properties:
       The custom emoji request that an `admin_custom_emoji_request` or a
       `custom_emoji_request_decided` is about, as it is now; absent when it no longer exists.
     $ref: ./CustomEmojiRequest.yaml
+  supporter_subscription:
+    description: |
+      The user's supporter subscription that a `supporter_payment_failed`, a
+      `supporter_subscription_ended`, or a `supporter_plan_retired` is about, as it is now;
+      absent when it no longer exists.
+    $ref: ./SupporterSubscription.yaml
   relationship_severance:
     $ref: ./RelationshipSeverance.yaml
   reaction:

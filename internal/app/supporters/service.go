@@ -62,10 +62,12 @@ type Users interface {
 	AccountIDs(ctx context.Context, userIDs []string) (map[string]string, error)
 }
 
-// Accounts finds the local account of an account in a transaction: *account.Service
-// implements it.
+// Accounts finds the local account of an account, and the one of a user, in a transaction:
+// *account.Service implements it.
 type Accounts interface {
 	FindByIDTx(ctx context.Context, tx uow.Tx, id string) (account.Actor, error)
+	// LocalAccountIDOfUserTx returns the local account of a user; account.ErrNotFound without one.
+	LocalAccountIDOfUserTx(ctx context.Context, tx uow.Tx, userID string) (string, error)
 }
 
 // Deps are the ports of Service.

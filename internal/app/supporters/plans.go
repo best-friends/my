@@ -344,7 +344,8 @@ func (s *Service) RevisePlan(ctx context.Context, in PlanUpdate) (PlanView, erro
 // RetirePlan retires a plan for good (ADR-0072 §9, R1): it leaves the offer and the lists, and
 // every live subscription of it ends: a pending one at once, a lapsed one at once at the
 // provider, and the others at the end of their period (their scheduled change withdrawn), when
-// the role goes. The role becomes an ordinary one again once nobody holds it. It fails with
+// the role goes. The role becomes an ordinary one again once nobody holds it. PlanRetired tells
+// the subscribers who had paid (ADR-0072 §16). It fails with
 // ErrNotFound for an unknown plan and with ErrPlanRetired for a retired one. Audited.
 func (s *Service) RetirePlan(ctx context.Context, id, byUserID string) error {
 	now := s.now()
@@ -364,10 +365,18 @@ func (s *Service) RetirePlan(ctx context.Context, id, byUserID string) error {
 		if err != nil {
 			return err
 		}
+		retired := PlanRetired{PlanID: id, PlanName: p.Revision.Name, At: now}
 		for _, subID := range subs {
 			rec, err := s.d.Repository.LockSubscription(ctx, tx, subID)
 			if err != nil {
 				return err
+			}
+			if rec.Current.State != supporters.StatePending {
+				accountID, err := s.accountOf(ctx, tx, rec.UserID)
+				if err != nil {
+					return err
+				}
+				retired.Subscriptions = append(retired.Subscriptions, RetiredSubscription{SubscriptionID: rec.ID, UserID: rec.UserID, AccountID: accountID})
 			}
 			switch rec.Current.State {
 			case supporters.StatePending:
@@ -385,6 +394,9 @@ func (s *Service) RetirePlan(ctx context.Context, id, byUserID string) error {
 			}
 		}
 		if _, err := s.d.Roles.UnmanageRole(ctx, tx, p.RoleID); err != nil {
+			return err
+		}
+		if err := tx.Emit(ctx, retired); err != nil {
 			return err
 		}
 		return tx.Emit(ctx, audit(auditID, byUserID, appmoderation.AuditSupporterPlanRetired, appmoderation.AuditTargetSupporterPlan,

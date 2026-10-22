@@ -6367,6 +6367,42 @@
     "defaultMessage": "{emoji} の画像の差し替えの申請が却下されました",
     "description": "Notification sentence: an administrator rejected the user's request for a new image of their custom emoji. {emoji} is its :shortcode:."
   },
+  "notifications.type.supporter_payment_failed": {
+    "defaultMessage": "サポーターのプランの支払いに失敗しました",
+    "description": "Notification sentence: a payment for the user's supporter plan failed and the grace period began."
+  },
+  "notifications.type.supporter_subscription_ended": {
+    "defaultMessage": "サポーターのプランの加入が終わりました",
+    "description": "Notification sentence: the user's supporter subscription ended, and the plan's benefits with it."
+  },
+  "notifications.type.supporter_plan_retired": {
+    "defaultMessage": "管理者が加入しているサポーターのプランを廃止しました",
+    "description": "Notification sentence: the administrators retired the user's supporter plan."
+  },
+  "notifications.supporter.grace": {
+    "defaultMessage": "プランの特典は{date}まで続きます。それまでに支払いが成功しなければ、特典はなくなります。",
+    "description": "In the notification of a failed payment for a supporter plan, while the payment is still overdue: when the grace period ends; {date} is a formatted date and time."
+  },
+  "notifications.supporter.ended": {
+    "defaultMessage": "{reason, select, lapsed {支払いの失敗から 7 日のうちに支払いが成功しなかったか、加入が一時停止されました。} reversed {支払いが全額返金されたか、チャージバックされました。} plan_retired {管理者がプランを廃止しました。} account_suspended {アカウントが凍結されました。} account_closed {アカウントが削除されました。} staff {管理者が加入を解約しました。} other {加入が解約されました。}}",
+    "description": "In the notification of an ended supporter subscription: why it ended. {reason} is the reason code (not shown); each branch says one reason."
+  },
+  "notifications.supporter.retired": {
+    "defaultMessage": "加入は更新されません。支払いが遅れていなければ、支払い済みの期間の終わりまでプランの特典が続きます。",
+    "description": "In the notification of a retired supporter plan: what happens to the user's subscription."
+  },
+  "notifications.link.supporter_payment": {
+    "defaultMessage": "支払い方法を直す",
+    "description": "Link in the notification of a failed payment for a supporter plan to the supporter page, where the user fixes the payment method. Not shown in the mobile app."
+  },
+  "notifications.link.supporter": {
+    "defaultMessage": "サポーターのプランを開く",
+    "description": "Link in the notification of an ended supporter subscription or a retired plan to the supporter page. Not shown in the mobile app."
+  },
+  "settings.push.type.supporter": {
+    "defaultMessage": "サポーターのプラン",
+    "description": "Checkbox of the push notification kinds: a failed payment for the user's supporter plan, its end, and its retirement. Not shown in the mobile app."
+  },
   "notifications.custom_emoji_request.reason": {
     "defaultMessage": "管理者の理由：",
     "description": "Label before the reason of a rejected custom emoji request in its notification."

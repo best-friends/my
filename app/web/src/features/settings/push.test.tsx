@@ -107,6 +107,9 @@ const everyUserType = [
   "report_resolved",
   "relationships_severed",
   "custom_emoji_request_decided",
+  "supporter_payment_failed",
+  "supporter_subscription_ended",
+  "supporter_plan_retired",
 ];
 
 beforeEach(() => {
@@ -176,7 +179,7 @@ describe("push notifications", () => {
       expect(toggle).toBeChecked();
     });
     const kinds = within(section).getByRole("group", { name: "Notify me of" });
-    expect(within(kinds).getAllByRole("checkbox")).toHaveLength(9);
+    expect(within(kinds).getAllByRole("checkbox")).toHaveLength(10);
     expect(within(kinds).getByRole("checkbox", { name: "Boosts" })).toBeChecked();
   });
 

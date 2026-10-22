@@ -96,6 +96,55 @@ func Reasons() []Reason {
 	}
 }
 
+// EndReason is why a subscription lost the plan's role, as the subscriber is told
+// (supporter_subscription_ended, ADR-0072 §16).
+type EndReason string
+
+// The reasons of an end.
+const (
+	// EndLapsed: the payments stopped: a payment failed more than GracePeriod ago, or the
+	// subscription is paused.
+	EndLapsed EndReason = "lapsed"
+	// EndReversed: a payment was refunded in full or charged back.
+	EndReversed EndReason = "reversed"
+	// EndPlanRetired: the plan was retired.
+	EndPlanRetired EndReason = "plan_retired"
+	// EndAccountSuspended: the account was suspended.
+	EndAccountSuspended EndReason = "account_suspended"
+	// EndAccountClosed: the account was deleted.
+	EndAccountClosed EndReason = "account_closed"
+	// EndStaff: an administrator canceled it.
+	EndStaff EndReason = "staff"
+	// EndCanceled: it was canceled, or it ended at the provider.
+	EndCanceled EndReason = "canceled"
+)
+
+// EndReasonOf returns why a transition to state for reason ended the subscription; "" when state
+// is not lapsed, expired, or revoked.
+func EndReasonOf(state State, reason Reason) EndReason {
+	switch state {
+	case StateLapsed:
+		return EndLapsed
+	case StateRevoked:
+		return EndReversed
+	case StateExpired:
+		switch reason {
+		case ReasonPlanRetired:
+			return EndPlanRetired
+		case ReasonAccountSuspended:
+			return EndAccountSuspended
+		case ReasonAccountClosed:
+			return EndAccountClosed
+		case ReasonStaff:
+			return EndStaff
+		case ReasonReversed:
+			return EndReversed
+		}
+		return EndCanceled
+	}
+	return ""
+}
+
 // GracePeriod is how long after the first failed payment a past-due subscription keeps its role
 // (ADR-0072 §7, G1). It does not depend on the provider's retries.
 const GracePeriod = 7 * 24 * time.Hour

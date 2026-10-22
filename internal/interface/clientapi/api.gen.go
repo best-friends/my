@@ -1974,25 +1974,28 @@ func (e ModerationAppealState) Valid() bool {
 
 // Defines values for NotificationType.
 const (
-	NotificationTypeAdminAppeal               NotificationType = "admin_appeal"
-	NotificationTypeAdminCustomEmojiRequest   NotificationType = "admin_custom_emoji_request"
-	NotificationTypeAdminReport               NotificationType = "admin_report"
-	NotificationTypeAdminSignUp               NotificationType = "admin_sign_up"
-	NotificationTypeAdminWebhookDisabled      NotificationType = "admin_webhook_disabled"
-	NotificationTypeAppealDecided             NotificationType = "appeal_decided"
-	NotificationTypeBoost                     NotificationType = "boost"
-	NotificationTypeCustomEmojiRequestDecided NotificationType = "custom_emoji_request_decided"
-	NotificationTypeFavourite                 NotificationType = "favourite"
-	NotificationTypeFollow                    NotificationType = "follow"
-	NotificationTypeFollowAccepted            NotificationType = "follow_accepted"
-	NotificationTypeFollowRequest             NotificationType = "follow_request"
-	NotificationTypeMention                   NotificationType = "mention"
-	NotificationTypeModerationNotice          NotificationType = "moderation_notice"
-	NotificationTypePollClosed                NotificationType = "poll_closed"
-	NotificationTypeQuote                     NotificationType = "quote"
-	NotificationTypeReaction                  NotificationType = "reaction"
-	NotificationTypeRelationshipsSevered      NotificationType = "relationships_severed"
-	NotificationTypeReportResolved            NotificationType = "report_resolved"
+	NotificationTypeAdminAppeal                NotificationType = "admin_appeal"
+	NotificationTypeAdminCustomEmojiRequest    NotificationType = "admin_custom_emoji_request"
+	NotificationTypeAdminReport                NotificationType = "admin_report"
+	NotificationTypeAdminSignUp                NotificationType = "admin_sign_up"
+	NotificationTypeAdminWebhookDisabled       NotificationType = "admin_webhook_disabled"
+	NotificationTypeAppealDecided              NotificationType = "appeal_decided"
+	NotificationTypeBoost                      NotificationType = "boost"
+	NotificationTypeCustomEmojiRequestDecided  NotificationType = "custom_emoji_request_decided"
+	NotificationTypeFavourite                  NotificationType = "favourite"
+	NotificationTypeFollow                     NotificationType = "follow"
+	NotificationTypeFollowAccepted             NotificationType = "follow_accepted"
+	NotificationTypeFollowRequest              NotificationType = "follow_request"
+	NotificationTypeMention                    NotificationType = "mention"
+	NotificationTypeModerationNotice           NotificationType = "moderation_notice"
+	NotificationTypePollClosed                 NotificationType = "poll_closed"
+	NotificationTypeQuote                      NotificationType = "quote"
+	NotificationTypeReaction                   NotificationType = "reaction"
+	NotificationTypeRelationshipsSevered       NotificationType = "relationships_severed"
+	NotificationTypeReportResolved             NotificationType = "report_resolved"
+	NotificationTypeSupporterPaymentFailed     NotificationType = "supporter_payment_failed"
+	NotificationTypeSupporterPlanRetired       NotificationType = "supporter_plan_retired"
+	NotificationTypeSupporterSubscriptionEnded NotificationType = "supporter_subscription_ended"
 )
 
 // Valid indicates whether the value is a known member of the NotificationType enum.
@@ -2035,6 +2038,12 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeRelationshipsSevered:
 		return true
 	case NotificationTypeReportResolved:
+		return true
+	case NotificationTypeSupporterPaymentFailed:
+		return true
+	case NotificationTypeSupporterPlanRetired:
+		return true
+	case NotificationTypeSupporterSubscriptionEnded:
 		return true
 	default:
 		return false
@@ -2491,6 +2500,39 @@ func (e SignupBlockImportSkippedReason) Valid() bool {
 	case SignupBlockImportSkippedReasonDuplicate:
 		return true
 	case SignupBlockImportSkippedReasonInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SupporterEndReason.
+const (
+	SupporterEndReasonAccountClosed    SupporterEndReason = "account_closed"
+	SupporterEndReasonAccountSuspended SupporterEndReason = "account_suspended"
+	SupporterEndReasonCanceled         SupporterEndReason = "canceled"
+	SupporterEndReasonLapsed           SupporterEndReason = "lapsed"
+	SupporterEndReasonPlanRetired      SupporterEndReason = "plan_retired"
+	SupporterEndReasonReversed         SupporterEndReason = "reversed"
+	SupporterEndReasonStaff            SupporterEndReason = "staff"
+)
+
+// Valid indicates whether the value is a known member of the SupporterEndReason enum.
+func (e SupporterEndReason) Valid() bool {
+	switch e {
+	case SupporterEndReasonAccountClosed:
+		return true
+	case SupporterEndReasonAccountSuspended:
+		return true
+	case SupporterEndReasonCanceled:
+		return true
+	case SupporterEndReasonLapsed:
+		return true
+	case SupporterEndReasonPlanRetired:
+		return true
+	case SupporterEndReasonReversed:
+		return true
+	case SupporterEndReasonStaff:
 		return true
 	default:
 		return false
@@ -7081,6 +7123,11 @@ type Notification struct {
 	// may not see it.
 	Status *Status `json:"status,omitempty"`
 
+	// SupporterSubscription The user's supporter subscription that a `supporter_payment_failed`, a
+	// `supporter_subscription_ended`, or a `supporter_plan_retired` is about, as it is now;
+	// absent when it no longer exists.
+	SupporterSubscription *SupporterSubscription `json:"supporter_subscription,omitempty"`
+
 	// Type The kind of a notification. `account` is the account that acted: the follower
 	// (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
 	// (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
@@ -7110,6 +7157,14 @@ type Notification struct {
 	// `custom_emoji_request_decided` also comes from the instance: an administrator approved
 	// or rejected the user's custom emoji request, which `custom_emoji_request` carries with
 	// its state and the reason of a rejection.
+	// The supporter notifications also come from the instance and tell of the user's own
+	// supporter subscription, which `supporter_subscription` carries as it is now:
+	// `supporter_payment_failed` (a payment failed; the plan's role stays until
+	// `grace_ends_at` unless a payment succeeds), `supporter_subscription_ended` (the
+	// subscription lost the plan's role; `end_reason` says why), and `supporter_plan_retired`
+	// (the administrators retired the plan; the subscription ends with its period). Each is
+	// sent once per change of the subscription. A client must not lead from them to
+	// subscribing or paying where it offers no way to subscribe.
 	Type NotificationType `json:"type"`
 }
 
@@ -7169,6 +7224,14 @@ type NotificationPage struct {
 // `custom_emoji_request_decided` also comes from the instance: an administrator approved
 // or rejected the user's custom emoji request, which `custom_emoji_request` carries with
 // its state and the reason of a rejection.
+// The supporter notifications also come from the instance and tell of the user's own
+// supporter subscription, which `supporter_subscription` carries as it is now:
+// `supporter_payment_failed` (a payment failed; the plan's role stays until
+// `grace_ends_at` unless a payment succeeds), `supporter_subscription_ended` (the
+// subscription lost the plan's role; `end_reason` says why), and `supporter_plan_retired`
+// (the administrators retired the plan; the subscription ends with its period). Each is
+// sent once per change of the subscription. A client must not lead from them to
+// subscribing or paying where it offers no way to subscribe.
 type NotificationType string
 
 // OwnCustomEmoji A local custom emoji that the user made (ADR-0070 §3).
@@ -8424,6 +8487,14 @@ type SupporterCheckout struct {
 	SubscriptionId Id `json:"subscription_id"`
 }
 
+// SupporterEndReason Why a `lapsed`, `expired`, or `revoked` subscription lost the plan's role; omitted in the
+// other states. `lapsed`: no payment succeeded within 7 days after a payment failed, or the
+// subscription is paused. `reversed`: a payment was refunded in full or charged back.
+// `plan_retired`: the administrators retired the plan. `account_suspended`: the account was
+// suspended. `account_closed`: the account was deleted. `staff`: an administrator canceled
+// it. `canceled`: it was canceled, or it ended at the payment provider.
+type SupporterEndReason string
+
 // SupporterIneligibleReason Why the user may not subscribe to a supporter plan (ADR-0072 §6): `not_local`, not a user
 // of this server; `email_unverified`, the primary email address is not verified;
 // `restricted`, the account is suspended or its deletion is done or scheduled. Omitted when
@@ -8600,6 +8671,14 @@ type SupporterScheduledChange struct {
 // subscriptions that go on). The plan's name is written by the administrators in any
 // language; render it with `dir="auto"`.
 type SupporterSubscription struct {
+	// EndReason Why a `lapsed`, `expired`, or `revoked` subscription lost the plan's role; omitted in the
+	// other states. `lapsed`: no payment succeeded within 7 days after a payment failed, or the
+	// subscription is paused. `reversed`: a payment was refunded in full or charged back.
+	// `plan_retired`: the administrators retired the plan. `account_suspended`: the account was
+	// suspended. `account_closed`: the account was deleted. `staff`: an administrator canceled
+	// it. `canceled`: it was canceled, or it ended at the payment provider.
+	EndReason *SupporterEndReason `json:"end_reason,omitempty"`
+
 	// GraceEndsAt When a `past_due` subscription loses the plan's role unless a payment succeeds.
 	GraceEndsAt *time.Time `json:"grace_ends_at,omitempty"`
 

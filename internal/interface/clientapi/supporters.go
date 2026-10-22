@@ -54,6 +54,9 @@ type OwnSupporters interface {
 	Listed(ctx context.Context, userID string) (bool, error)
 	SetListed(ctx context.Context, userID string, listed bool) (bool, error)
 	SupporterList(ctx context.Context, f appsupporters.ListingFilter) (appsupporters.SupporterList, error)
+	// OwnSubscriptionsByID returns the user's subscriptions among ids, which the supporter
+	// notifications present.
+	OwnSubscriptionsByID(ctx context.Context, userID string, ids []string) ([]appsupporters.SubscriptionView, error)
 }
 
 // ownSupporters returns the use cases, or the 404 of a server without them.
@@ -115,6 +118,10 @@ func newSupporterSubscription(v appsupporters.SubscriptionView) SupporterSubscri
 	}
 	if cur.Grace != nil {
 		out.GraceEndsAt = utcPtr(cur.Grace.EndsAt)
+	}
+	if r := supporters.EndReasonOf(cur.State, cur.Reason); r != "" {
+		reason := SupporterEndReason(r)
+		out.EndReason = &reason
 	}
 	if sp, plan := v.ScheduledPrice, v.ScheduledPlan; sp != nil && plan != nil && cur.Scheduled != nil {
 		out.ScheduledChange = &SupporterScheduledChange{

@@ -53,6 +53,13 @@ func (f *fakeOwnSupporters) OwnSubscription(_ context.Context, userID string) (a
 	return f.live(userID)
 }
 
+func (f *fakeOwnSupporters) OwnSubscriptionsByID(_ context.Context, userID string, ids []string) ([]appsupporters.SubscriptionView, error) {
+	if f.sub == nil || f.sub.UserID != userID || !slices.Contains(ids, f.sub.ID) {
+		return nil, nil
+	}
+	return []appsupporters.SubscriptionView{*f.sub}, nil
+}
+
 func (f *fakeOwnSupporters) Eligibility(context.Context, string) (appsupporters.Eligibility, error) {
 	return f.ineligible, nil
 }

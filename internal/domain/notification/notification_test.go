@@ -108,6 +108,33 @@ func TestKeys(t *testing.T) {
 	}
 }
 
+func TestValidateSupporterNotifications(t *testing.T) {
+	for _, n := range []Notification{
+		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPaymentFailed, SupporterSubscriptionID: "s", DedupeKey: SupporterTransitionKey(TypeSupporterPaymentFailed, "t")},
+		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterSubscriptionEnded, SupporterSubscriptionID: "s", DedupeKey: SupporterTransitionKey(TypeSupporterSubscriptionEnded, "t")},
+		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPlanRetired, SupporterSubscriptionID: "s", DedupeKey: SupporterPlanRetiredKey("p", "s")},
+	} {
+		if !n.Type.Valid() || !n.Type.Supporter() {
+			t.Errorf("%s: Valid %v, Supporter %v", n.Type, n.Type.Valid(), n.Type.Supporter())
+		}
+		if err := n.Validate(); err != nil {
+			t.Errorf("Validate(%+v) = %v", n, err)
+		}
+	}
+	for _, n := range []Notification{
+		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPaymentFailed, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPlanRetired, SupporterSubscriptionID: "s", SourceAccountID: "b", DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", SupporterSubscriptionID: "s", DedupeKey: "k"},
+	} {
+		if err := n.Validate(); err == nil {
+			t.Errorf("Validate(%+v) = nil, want an error", n)
+		}
+	}
+	if TypeFollow.Supporter() {
+		t.Error("follow is a supporter notification")
+	}
+}
+
 func TestValidateModeratorNotifications(t *testing.T) {
 	for _, n := range []Notification{
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, ReportID: "r", DedupeKey: AdminReportKey("r")},

@@ -1131,6 +1131,30 @@
     "defaultMessage": "{instance} のパスワードの再設定",
     "description": "Subject of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none."
   },
+  "mail.supporter_payment_failed.body": {
+    "defaultMessage": "{instance} のサポーターのプラン「{plan}」の支払いに失敗しました。\n\nプランの特典は {endsAt}（UTC）まで続きます。それまでに支払いが成功しなければ、特典はなくなります。支払い方法はこちらで直せます：\n\n{url}\n\n{instance} のサポーターのプランに加入しているため、このメールが届いています。",
+    "description": "Plain-text body of the email to a subscriber whose payment for a supporter plan failed. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {endsAt} the end of the grace period as YYYY-MM-DD HH:MM in UTC; {url} the link to the supporter page of the web client (keep it on its own line)."
+  },
+  "mail.supporter_payment_failed.subject": {
+    "defaultMessage": "{instance} のサポーターのプランの支払いに失敗しました",
+    "description": "Subject of the email to a subscriber whose payment for a supporter plan failed. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.supporter_plan_retired.body": {
+    "defaultMessage": "{instance} の管理者が、加入しているサポーターのプラン「{plan}」を廃止しました。\n\n加入は解約され、更新されません。支払いが遅れていなければ、支払い済みの期間の終わりまでプランの特典が続きます。\n\n通知を開く：\n\n{url}\n\n{instance} のサポーターのプランに加入しているため、このメールが届いています。",
+    "description": "Plain-text body of the email to a subscriber whose supporter plan the administrators retired. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.supporter_plan_retired.subject": {
+    "defaultMessage": "{instance} のサポーターのプランが廃止されました",
+    "description": "Subject of the email to a subscriber whose supporter plan the administrators retired. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.supporter_subscription_ended.body": {
+    "defaultMessage": "{instance} のサポーターのプラン「{plan}」の加入が終わり、特典もなくなりました。{reason, select, lapsed {支払いの失敗から 7 日のうちに支払いが成功しなかったか、加入が一時停止されました。} reversed {支払いが全額返金されたか、チャージバックされました。} plan_retired {管理者がプランを廃止しました。} account_suspended {アカウントが凍結されました。} staff {管理者が加入を解約しました。} other {加入が解約されました。}}\n\n通知を開く：\n\n{url}\n\n{instance} のサポーターのプランに加入していたため、このメールが届いています。",
+    "description": "Plain-text body of the email to a subscriber whose supporter subscription ended. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {reason} the reason code (not shown), each branch saying why; {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.supporter_subscription_ended.subject": {
+    "defaultMessage": "{instance} のサポーターのプランの加入が終わりました",
+    "description": "Subject of the email to a subscriber whose supporter subscription ended: a payment kept failing, a payment was refunded, the plan was retired, or it was canceled. {instance} is the server's display name, or its domain name when it has none."
+  },
   "mail.verify_email.body": {
     "defaultMessage": "{instance} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。",
     "description": "Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
@@ -1222,6 +1246,18 @@
   "push.report_resolved": {
     "defaultMessage": "{instance} で送った通報への対応が完了しました",
     "description": "Web Push notification: the moderators resolved a report that the user filed. It never says how. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.supporter_payment_failed": {
+    "defaultMessage": "{instance} のサポーターのプランの支払いに失敗しました",
+    "description": "Web Push notification: a payment for the user's supporter plan failed. It never says where to pay (the app shows no way to pay). {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.supporter_plan_retired": {
+    "defaultMessage": "{instance} のサポーターのプランが廃止されました",
+    "description": "Web Push notification: the administrators retired the user's supporter plan, whose subscription ends with its period. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.supporter_subscription_ended": {
+    "defaultMessage": "{instance} のサポーターのプランの加入が終わりました",
+    "description": "Web Push notification: the user's supporter subscription ended (a payment kept failing, a refund, a retired plan, or a cancellation). {instance} is the server's display name, or its domain name when it has none."
   },
   "moderation.action.category": {
     "defaultMessage": "{category, select, spam {スパム} legal {法的な理由} violation {サーバーのルール違反} other {その他}}",

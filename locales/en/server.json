@@ -1131,6 +1131,30 @@
     "defaultMessage": "Reset your password for {instance}",
     "description": "Subject of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none."
   },
+  "mail.supporter_payment_failed.body": {
+    "defaultMessage": "A payment for your supporter plan “{plan}” on {instance} failed.\n\nYou keep the plan's benefits until {endsAt} (UTC). If no payment succeeds by then, they end. Update your payment method here:\n\n{url}\n\nYou get this email because you subscribe to a supporter plan on {instance}.",
+    "description": "Plain-text body of the email to a subscriber whose payment for a supporter plan failed. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {endsAt} the end of the grace period as YYYY-MM-DD HH:MM in UTC; {url} the link to the supporter page of the web client (keep it on its own line)."
+  },
+  "mail.supporter_payment_failed.subject": {
+    "defaultMessage": "A payment for your supporter plan on {instance} failed",
+    "description": "Subject of the email to a subscriber whose payment for a supporter plan failed. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.supporter_plan_retired.body": {
+    "defaultMessage": "The administrators of {instance} retired the supporter plan “{plan}” that you subscribe to.\n\nYour subscription is canceled and will not renew. You keep the plan's benefits until the end of the period you paid for, unless a payment is overdue.\n\nOpen your notifications:\n\n{url}\n\nYou get this email because you subscribe to a supporter plan on {instance}.",
+    "description": "Plain-text body of the email to a subscriber whose supporter plan the administrators retired. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.supporter_plan_retired.subject": {
+    "defaultMessage": "Your supporter plan on {instance} was retired",
+    "description": "Subject of the email to a subscriber whose supporter plan the administrators retired. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.supporter_subscription_ended.body": {
+    "defaultMessage": "Your supporter plan “{plan}” on {instance} ended, and its benefits with it. {reason, select, lapsed {No payment succeeded within 7 days after a payment failed, or the subscription was paused.} reversed {A payment was refunded in full or charged back.} plan_retired {The administrators retired the plan.} account_suspended {Your account was suspended.} staff {An administrator canceled the subscription.} other {The subscription was canceled.}}\n\nOpen your notifications:\n\n{url}\n\nYou get this email because you subscribed to a supporter plan on {instance}.",
+    "description": "Plain-text body of the email to a subscriber whose supporter subscription ended. {instance} is the server's display name, or its domain name when it has none; {plan} the plan's name, written by the administrators; {reason} the reason code (not shown), each branch saying why; {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.supporter_subscription_ended.subject": {
+    "defaultMessage": "Your supporter plan on {instance} ended",
+    "description": "Subject of the email to a subscriber whose supporter subscription ended: a payment kept failing, a payment was refunded, the plan was retired, or it was canceled. {instance} is the server's display name, or its domain name when it has none."
+  },
   "mail.verify_email.body": {
     "defaultMessage": "Welcome to {instance}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",
     "description": "Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
@@ -1222,6 +1246,18 @@
   "push.report_resolved": {
     "defaultMessage": "A report you filed on {instance} has been resolved",
     "description": "Web Push notification: the moderators resolved a report that the user filed. It never says how. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.supporter_payment_failed": {
+    "defaultMessage": "A payment for your supporter plan on {instance} failed",
+    "description": "Web Push notification: a payment for the user's supporter plan failed. It never says where to pay (the app shows no way to pay). {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.supporter_plan_retired": {
+    "defaultMessage": "Your supporter plan on {instance} was retired",
+    "description": "Web Push notification: the administrators retired the user's supporter plan, whose subscription ends with its period. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.supporter_subscription_ended": {
+    "defaultMessage": "Your supporter plan on {instance} ended",
+    "description": "Web Push notification: the user's supporter subscription ended (a payment kept failing, a refund, a retired plan, or a cancellation). {instance} is the server's display name, or its domain name when it has none."
   },
   "moderation.action.category": {
     "defaultMessage": "{category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}}",

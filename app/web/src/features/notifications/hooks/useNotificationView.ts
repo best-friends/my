@@ -8,9 +8,10 @@ import { accountStatusPath, moderationAppealPath, moderationReportPath, followLi
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { useViewer } from "../../session";
 import { statusPath } from "../../status";
-import type { ModerationAction, Notification, NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
+import type { ModerationAction, Notification, NotificationAccount, NotificationStatus, NotificationType, SupporterEndReason } from "../api/notifications";
 import type { NotificationGroup } from "./groupNotifications";
 import { imageSources } from "../../../lib/images";
+import { isTauriApp } from "../../../lib/platform";
 
 /** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
 /** An account a row names: its display name with the custom emoji of its profile, its profile page, and its avatar. */
@@ -33,6 +34,18 @@ export type ModerationNoticeView = {
    * text, null when they gave none). Null for a `moderation_notice`, and while the appeal is pending.
    */
   decision: { sentence: ClientMessageKey; reason: string | null } | null;
+};
+
+/** What a supporter notification tells of the user's supporter subscription, formatted for the row. */
+export type SupporterNoticeView = {
+  /** The plan's name, written by the administrators in any language. */
+  plan: string;
+  /** The line under it: when the grace period ends, why the subscription ended, or what a retirement does; null for none. */
+  detail:
+    | { kind: "grace"; date: { dateTime: string; text: string } }
+    | { kind: "ended"; reason: SupporterEndReason }
+    | { kind: "retired" }
+    | null;
 };
 
 export type NotificationView = {
@@ -82,6 +95,8 @@ export type NotificationView = {
    * null when they gave none or for the other states); null for the other types and when the request is gone.
    */
   emojiRequest: { emoji: string; reason: string | null } | null;
+  /** The subscription that a supporter notification tells of; null for the other types and when it is gone. */
+  supporter: SupporterNoticeView | null;
   /**
    * The pages the row leads to besides the actor's profile and the post, where the user follows up what it
    * tells: the account status, the report, the registrations, or the user's follow lists.
@@ -109,7 +124,33 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   admin_webhook_disabled: "client:notifications.type.admin_webhook_disabled",
   admin_custom_emoji_request: "client:notifications.type.admin_custom_emoji_request",
   custom_emoji_request_decided: "client:notifications.type.custom_emoji_request_decided",
+  supporter_payment_failed: "client:notifications.type.supporter_payment_failed",
+  supporter_subscription_ended: "client:notifications.type.supporter_subscription_ended",
+  supporter_plan_retired: "client:notifications.type.supporter_plan_retired",
 };
+
+/**
+ * What a row shows of the supporter subscription that a supporter notification tells of (ADR-0072 §16), as it is
+ * now: the plan's name (the administrators' text), and for a failed payment that is still overdue, when the grace
+ * period ends; for an end, why; for a retired plan, what happens to the subscription. Null when it is gone.
+ */
+function supporterOf(notification: Notification, formatDate: (value: string) => string): SupporterNoticeView | null {
+  const subscription = notification.supporter_subscription;
+  if (subscription === undefined) return null;
+  const plan = subscription.plan_name;
+  switch (notification.type) {
+    case "supporter_payment_failed": {
+      const ends = subscription.state === "past_due" ? subscription.grace_ends_at : undefined;
+      return { plan, detail: ends === undefined ? null : { kind: "grace", date: { dateTime: ends, text: formatDate(ends) } } };
+    }
+    case "supporter_subscription_ended":
+      return { plan, detail: subscription.end_reason === undefined ? null : { kind: "ended", reason: subscription.end_reason } };
+    case "supporter_plan_retired":
+      return { plan, detail: { kind: "retired" } };
+    default:
+      return null;
+  }
+}
 
 /** The sentences of the custom emoji requests, by what happened to the request and its kind. */
 const emojiRequestSentences = {
@@ -213,6 +254,12 @@ function linksOf(notification: Notification, ownAcct: string | null): Notificati
       return [{ href: "/admin/custom-emojis?tab=requests", label: "client:notifications.link.custom_emoji_requests" }];
     case "custom_emoji_request_decided":
       return [{ href: "/settings/custom-emojis", label: "client:notifications.link.own_custom_emojis" }];
+    // The Tauri app shows no way to subscribe or to pay, and no link to the supporter page (ADR-0072 §14).
+    case "supporter_payment_failed":
+      return isTauriApp() ? [] : [{ href: "/settings/supporter", label: "client:notifications.link.supporter_payment" }];
+    case "supporter_subscription_ended":
+    case "supporter_plan_retired":
+      return isTauriApp() ? [] : [{ href: "/settings/supporter", label: "client:notifications.link.supporter" }];
     case "relationships_severed":
       return ownAcct === null
         ? []
@@ -252,6 +299,7 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
   const groupSentence = groupSentences[notification.type];
   const target = notification.type === "report_resolved" ? notification.report?.target_account : undefined;
   const action = notification.type === "moderation_notice" || notification.type === "appeal_decided" ? notification.moderation_action : undefined;
+  const formatDate = (value: string) => intl.formatDate(value, { dateStyle: "medium", timeStyle: "short" });
   return {
     sentence:
       severed?.sentence ??
@@ -265,9 +313,10 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
     post: status === undefined ? null : postOf(status),
     followBack: notification.type === "follow" && account !== undefined ? account : null,
     severance: severed?.severance ?? null,
-    notice: action === undefined ? null : noticeOf(action, (value) => intl.formatDate(value, { dateStyle: "medium", timeStyle: "short" })),
+    notice: action === undefined ? null : noticeOf(action, formatDate),
     reaction: reactionOf(notification),
     emojiRequest: requested.emojiRequest,
+    supporter: supporterOf(notification, formatDate),
     links: linksOf(notification, viewer.status === "signed-in" ? viewer.account.acct : null),
   };
 }

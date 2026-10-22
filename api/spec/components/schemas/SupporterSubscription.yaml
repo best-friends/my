@@ -29,6 +29,8 @@ properties:
     description: When a `past_due` subscription loses the plan's role unless a payment succeeds.
     type: string
     format: date-time
+  end_reason:
+    $ref: ./SupporterEndReason.yaml
   scheduled_change:
     $ref: ./SupporterScheduledChange.yaml
   started_at:

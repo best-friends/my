@@ -11,8 +11,10 @@
 // and leads to the account's status; an appeal to the moderators leads to the appeal; a
 // resolved report names the reported account; a moderator's new report or registration leads to the report or
 // the registrations; a custom emoji request leads the administrators to the requests and its decision the
-// requester to their custom emoji, with the reason of a rejection; and lost follows lead to the user's lists of
-// followers and follows.
+// requester to their custom emoji, with the reason of a rejection; a supporter notification names the plan and
+// says when the grace period ends or why the subscription ended, and leads to the supporter page except in the
+// Tauri app, which shows no way to pay (ADR-0072 §14); and lost follows lead to the user's lists of followers and
+// follows.
 //
 // A group of the favourites or the boosts of one post is one row: "Alice and 2 others favourited your
 // post", with the avatars of the others in a row above the sentence, so the number of people is in the
@@ -28,7 +30,13 @@ import { useT } from "../../../lib/i18n";
 import { RelationshipActions, useRelationship } from "../../profile";
 import type { NotificationAccount } from "../api/notifications";
 import type { NotificationGroup } from "../hooks/groupNotifications";
-import { type ModerationNoticeView, type NotificationActor, type NotificationView, useNotificationView } from "../hooks/useNotificationView";
+import {
+  type ModerationNoticeView,
+  type NotificationActor,
+  type NotificationView,
+  type SupporterNoticeView,
+  useNotificationView,
+} from "../hooks/useNotificationView";
 
 /** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
 const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
@@ -121,6 +129,8 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
           <ModerationNotice notice={view.notice} />
         ) : view.emojiRequest !== null && view.emojiRequest.reason !== null ? (
           <RejectionReason reason={view.emojiRequest.reason} />
+        ) : view.supporter !== null ? (
+          <SupporterNotice supporter={view.supporter} />
         ) : null
       }
       {...(view.followBack !== null && { actions: <FollowBack account={view.followBack} /> })}
@@ -239,6 +249,40 @@ function RejectionReason({ reason }: { reason: string }) {
       <p dir="auto" className="whitespace-pre-line wrap-anywhere">
         {reason}
       </p>
+    </div>
+  );
+}
+
+/**
+ * What a supporter notification tells of the user's subscription: the plan's name (the administrators' text, in its
+ * own direction and of no known language; Y10), and when the grace period ends, why it ended, or what a retirement
+ * does. It names no way to pay, which the Tauri app does not offer (ADR-0072 §14).
+ */
+function SupporterNotice({ supporter }: { supporter: SupporterNoticeView }) {
+  const t = useT();
+  const intl = useIntl();
+  const { detail } = supporter;
+  return (
+    <div className="flex flex-col gap-1 border-s-2 border-border ps-3">
+      <p dir="auto" lang="" className="font-semibold wrap-anywhere">
+        {supporter.plan}
+      </p>
+      {detail?.kind === "grace" && (
+        <p className="text-sm text-fg-muted">
+          {intl.formatMessage(
+            { id: "client:notifications.supporter.grace" },
+            {
+              date: (
+                <time key="grace" dateTime={detail.date.dateTime}>
+                  {detail.date.text}
+                </time>
+              ),
+            },
+          )}
+        </p>
+      )}
+      {detail?.kind === "ended" && <p className="text-sm text-fg-muted">{t("client:notifications.supporter.ended", { reason: detail.reason })}</p>}
+      {detail?.kind === "retired" && <p className="text-sm text-fg-muted">{t("client:notifications.supporter.retired")}</p>}
     </div>
   );
 }

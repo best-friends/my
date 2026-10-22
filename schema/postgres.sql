@@ -1391,7 +1391,8 @@ CREATE TABLE notifications (
     'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'quote', 'poll_closed',
     'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
-    'admin_appeal', 'admin_webhook_disabled', 'admin_custom_emoji_request', 'custom_emoji_request_decided'
+    'admin_appeal', 'admin_webhook_disabled', 'admin_custom_emoji_request', 'custom_emoji_request_decided',
+    'supporter_payment_failed', 'supporter_subscription_ended', 'supporter_plan_retired'
   )),
   source_account_id text COLLATE "C",
   -- the domain of a remote source account; NULL for a local source or none.
@@ -1408,6 +1409,9 @@ CREATE TABLE notifications (
   appeal_id text COLLATE "C",
   -- admin_custom_emoji_request, custom_emoji_request_decided: the custom_emoji_requests row.
   custom_emoji_request_id text COLLATE "C",
+  -- supporter_payment_failed, supporter_subscription_ended, supporter_plan_retired: the
+  -- supporter_subscriptions row.
+  supporter_subscription_id text COLLATE "C",
   -- reaction: the emoji, a Unicode emoji or the custom emoji (custom_emojis.id).
   reaction_emoji text,
   reaction_custom_emoji_id text COLLATE "C",
@@ -1483,7 +1487,8 @@ CREATE TABLE push_subscription_alerts (
     'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'quote', 'poll_closed',
     'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
-    'admin_appeal', 'admin_webhook_disabled', 'admin_custom_emoji_request', 'custom_emoji_request_decided'
+    'admin_appeal', 'admin_webhook_disabled', 'admin_custom_emoji_request', 'custom_emoji_request_decided',
+    'supporter_payment_failed', 'supporter_subscription_ended', 'supporter_plan_retired'
   )),
   PRIMARY KEY (subscription_id, notification_type)
 );
