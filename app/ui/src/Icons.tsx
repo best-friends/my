@@ -21,6 +21,7 @@ import {
   PiBookmarkSimple,
   PiBookmarkSimpleFill,
   PiCaretLeft,
+  PiCheck,
   PiCaretRight,
   PiChartBarHorizontal,
   PiChartBarHorizontalFill,
@@ -77,6 +78,8 @@ const glyph = (icon: typeof PiX, phosphor: string): Glyph => ({ icon, phosphor }
 export const iconTable = {
   // Actions.
   CloseIcon: { off: glyph(PiX, "PiX") },
+  // Done and succeeded, for a success message and toast; a check does not point anywhere, so it does not mirror.
+  CheckIcon: { off: glyph(PiCheck, "PiCheck") },
   PlusIcon: { off: glyph(PiPlus, "PiPlus") },
   // Regular's dots are too small to read at size-5, so the overflow menu uses Bold's.
   MoreIcon: { off: glyph(PiDotsThreeBold, "PiDotsThreeBold") },
@@ -140,6 +143,11 @@ function renderIcon(entry: IconEntry, on = false) {
 }
 
 // Actions.
+
+/** A check mark, for something that succeeded. */
+export function CheckIcon() {
+  return renderIcon(iconTable.CheckIcon);
+}
 
 /** The × of close and dismiss buttons. */
 export function CloseIcon() {

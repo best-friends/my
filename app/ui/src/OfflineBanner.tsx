@@ -8,14 +8,16 @@
 // more (WCAG 1.4.10; the layout of web-client.md §9).
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { tv } from "tailwind-variants";
+import { WarningIcon } from "./Icons";
 
 const offlineBanner = tv({
   slots: {
     region: "sticky top-0 z-30 short:static",
     bar: [
-      "bg-warning px-[max(1rem,env(safe-area-inset-left),env(safe-area-inset-right))] pt-[calc(0.5rem+env(safe-area-inset-top))] pb-2",
-      "text-center text-sm font-medium text-warning-fg",
+      "flex items-center justify-center gap-2 bg-warning-bg px-[max(1rem,env(safe-area-inset-left),env(safe-area-inset-right))] pt-[calc(0.5rem+env(safe-area-inset-top))] pb-2",
+      "text-center text-sm font-bold text-fg",
     ],
+    icon: "shrink-0 text-warning [&>svg]:size-4.5",
   },
 });
 
@@ -31,7 +33,14 @@ export function OfflineBanner({ isOffline, children, className, ...props }: Offl
   const slots = offlineBanner();
   return (
     <div {...props} role="status" className={slots.region({ className })}>
-      {isOffline && <p className={slots.bar()}>{children}</p>}
+      {isOffline && (
+        <p className={slots.bar()}>
+          <span className={slots.icon()}>
+            <WarningIcon filled />
+          </span>
+          <span>{children}</span>
+        </p>
+      )}
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { createContext, type ReactNode, use, useEffect, useRef, useState } from 
 import { Button } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { useAnnouncer } from "./Announcer";
-import { CloseIcon } from "./Icons";
+import { AboutIcon, CheckIcon, CloseIcon, WarningIcon } from "./Icons";
 
 export type ToastTone = "neutral" | "success" | "danger";
 
@@ -69,17 +69,19 @@ const toast = tv({
       "pb-[max(--spacing(4),env(safe-area-inset-bottom))]",
     ],
     item: [
-      "pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-lg border border-s-4 border-border bg-surface-raised",
-      "py-2 ps-4 pe-2 text-sm text-fg shadow-lg",
+      "pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-xl bg-toast",
+      "py-2 ps-4 pe-2 text-sm text-toast-fg shadow-lg dark:border dark:border-border",
     ],
+    // The tone shows by this icon and not by a colored edge (WCAG 1.4.1).
+    icon: "shrink-0 text-toast-muted [&>svg]:size-5",
     message: "flex-1 py-1",
     action: [
-      "shrink-0 rounded-md px-2 py-1 font-semibold text-accent outline-none data-focus-visible:focus-ring data-hovered:text-accent-hover",
+      "shrink-0 rounded-md px-2 py-1.5 font-extrabold text-toast-action outline-none data-focus-visible:focus-ring",
       "pointer-coarse:min-h-11",
     ],
     dismiss: [
-      "grid size-8 shrink-0 place-items-center rounded-md text-fg-muted outline-none data-focus-visible:focus-ring",
-      "data-hovered:bg-surface-sunken data-hovered:text-fg pointer-coarse:size-11 [&>svg]:size-4",
+      "grid size-8 shrink-0 place-items-center rounded-md text-toast-muted outline-none data-focus-visible:focus-ring",
+      "data-hovered:bg-toast-fg/10 data-hovered:text-toast-fg pointer-coarse:size-11 [&>svg]:size-4",
     ],
   },
   variants: {
@@ -87,9 +89,9 @@ const toast = tv({
       true: { region: "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 short:bottom-[calc(3rem+1px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))] with-compose-fab:bottom-[calc(8rem+env(safe-area-inset-bottom))] with-compose-fab:short:bottom-[calc(6.5rem+env(safe-area-inset-bottom))] with-compose-fab:md:bottom-0" },
     },
     tone: {
-      neutral: { item: "border-s-border-strong" },
-      success: { item: "border-s-success" },
-      danger: { item: "border-s-danger" },
+      neutral: {},
+      success: { icon: "text-toast-success" },
+      danger: { icon: "text-toast-danger" },
     },
   },
 });
@@ -215,6 +217,9 @@ export function ToastProvider({ children, regionLabel, dismissLabel, defaultTime
           <ol className="contents">
             {toasts.map((t) => (
               <li key={t.id} data-toast-id={t.id} className={styles.item({ tone: t.tone ?? "neutral" })}>
+                <span className={styles.icon({ tone: t.tone ?? "neutral" })}>
+                  {t.tone === "success" ? <CheckIcon /> : t.tone === "danger" ? <WarningIcon filled /> : <AboutIcon />}
+                </span>
                 <p className={styles.message()}>{t.message}</p>
                 {t.action !== undefined && (
                   <Button

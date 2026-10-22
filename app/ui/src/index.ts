@@ -67,6 +67,7 @@ export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 // Icons (web-client.md §16.3): Phosphor through react-icons/pi (ADR-0043), decorative, sized by the control around them.
 export {
   AboutIcon,
+  CheckIcon,
   AdminIcon,
   BackIcon,
   BookmarkIcon,
