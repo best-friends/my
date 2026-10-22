@@ -37,7 +37,8 @@ test.describe("the pages of the documents on the server", () => {
     await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(main.getByRole("heading", { level: 2, name: "Accounts" })).toBeVisible();
     await expect(main.getByText("No spam")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: /./ }).getByRole("link", { name: "Accounts" }).first()).toBeAttached();
+    // The table of contents is a collapsed disclosure on a narrow screen, so it is attached but not always visible.
+    await expect(main.locator('nav[aria-label] a[href^="#"]', { hasText: "Accounts" }).first()).toBeAttached();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });
@@ -48,7 +49,9 @@ test.describe("the pages of the documents on the server", () => {
     const missing = await page.goto("/about/commerce");
     expect(missing?.status()).toBeLessThan(500);
     await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveCount(0);
+    // The not-found state has its own heading, and no table of contents.
+    await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveCount(1);
+    await expect(page.getByRole("main").locator("nav")).toHaveCount(0);
   });
 });
 
@@ -140,7 +143,6 @@ test.describe("the terms and policies screen", () => {
     await expect(main).toMatchAriaSnapshot(`
       - main:
         - heading [level=1]
-        - link
         - region:
           - heading [level=2]
           - term
@@ -151,6 +153,13 @@ test.describe("the terms and policies screen", () => {
           - button
         - region:
           - heading [level=2]
+          - term
+          - definition
+          - textbox
+          - button
+        - region:
+          - heading [level=2]
+          - paragraph
           - term
           - definition
           - textbox
