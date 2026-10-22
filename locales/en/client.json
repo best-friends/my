@@ -331,10 +331,6 @@
     "defaultMessage": "Lifted",
     "description": "State of a moderation action that a moderator lifted."
   },
-  "account_status.summary": {
-    "defaultMessage": "Moderation actions on your account, and appealing them",
-    "description": "Description of the account status page in the list of settings pages."
-  },
   "account_status.title": {
     "defaultMessage": "Account status",
     "description": "Heading and document title of the account status page, and its entry in the list of settings pages."
@@ -7207,10 +7203,6 @@
     "defaultMessage": "Download your data",
     "description": "Heading of the section of the account page about archives of the user's data."
   },
-  "settings.account.summary": {
-    "defaultMessage": "Download your data, or delete your account",
-    "description": "Description of the account page in the list of settings pages."
-  },
   "settings.account.title": {
     "defaultMessage": "Your account",
     "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
@@ -7230,10 +7222,6 @@
   "settings.blocks.empty": {
     "defaultMessage": "You have not blocked anyone",
     "description": "Shown when the user blocks no account."
-  },
-  "settings.blocks.summary": {
-    "defaultMessage": "Accounts that cannot follow you or see your posts",
-    "description": "Description of the blocked accounts page in the list of settings pages."
   },
   "settings.blocks.title": {
     "defaultMessage": "Blocked accounts",
@@ -7282,10 +7270,6 @@
   "settings.follow_requests.rejected": {
     "defaultMessage": "You rejected the follow request of {name}.",
     "description": "Announced after a follow request was rejected. {name} is the account's display name."
-  },
-  "settings.follow_requests.summary": {
-    "defaultMessage": "People who asked to follow you",
-    "description": "Description of the follow requests page in the list of settings pages."
   },
   "settings.follow_requests.title": {
     "defaultMessage": "Follow requests",
@@ -7463,10 +7447,6 @@
     "defaultMessage": "Muted accounts",
     "description": "Name of the list of accounts the user mutes, as one kind of CSV file to export or import."
   },
-  "settings.import_export.summary": {
-    "defaultMessage": "Move your follows, blocks, mutes, and bookmarks to or from another server",
-    "description": "Description of the import and export page in the list of settings pages."
-  },
   "custom_emoji_requests.kind": {
     "defaultMessage": "Asks for",
     "description": "Term of the description list of a custom emoji request: what it asks for."
@@ -7526,10 +7506,6 @@
   "custom_emojis.title": {
     "defaultMessage": "Your custom emoji",
     "description": "Title of the settings page of the custom emoji that the user requests and made."
-  },
-  "custom_emojis.summary": {
-    "defaultMessage": "Request custom emoji for this server, and change the ones you made",
-    "description": "Description of the custom emoji page in the settings menu."
   },
   "custom_emojis.description": {
     "defaultMessage": "Your roles let you add custom emoji to this server. An administrator reviews each request before the emoji appears anywhere. You can change and delete the emoji you made while your roles allow it.",
@@ -7807,10 +7783,6 @@
     "defaultMessage": "Notifications hidden too",
     "description": "Under a muted account whose mute also hides its notifications."
   },
-  "settings.mutes.summary": {
-    "defaultMessage": "Accounts whose posts you do not see",
-    "description": "Description of the muted accounts page in the list of settings pages."
-  },
   "settings.mutes.title": {
     "defaultMessage": "Muted accounts",
     "description": "Heading and document title of the settings page with the muted accounts."
@@ -7874,10 +7846,6 @@
   "settings.preferences.autosave": {
     "defaultMessage": "Changes are saved as soon as you make them.",
     "description": "Text at the top of the preferences page."
-  },
-  "settings.preferences.summary": {
-    "defaultMessage": "Language, time zone, theme, the defaults of your posts, and the languages of your timelines",
-    "description": "Description of the preferences page in the list of settings pages."
   },
   "settings.preferences.title": {
     "defaultMessage": "Preferences",
@@ -8006,10 +7974,6 @@
   "settings.profile.saved": {
     "defaultMessage": "Your profile has been saved.",
     "description": "Notification after the profile was saved."
-  },
-  "settings.profile.summary": {
-    "defaultMessage": "Your name, bio, pictures and fields, and who may follow you",
-    "description": "Description of the profile page in the list of settings pages."
   },
   "settings.profile.title": {
     "defaultMessage": "Profile",
@@ -8179,17 +8143,9 @@
     "defaultMessage": "Two-factor authentication",
     "description": "Heading and document title of the settings page of two-factor authentication with an authenticator app, and its item in the settings menu."
   },
-  "settings.two_factor.summary": {
-    "defaultMessage": "Sign in with a code from an authenticator app as well as your password",
-    "description": "Description of the two-factor authentication item in the settings menu."
-  },
   "settings.auto_delete.title": {
     "defaultMessage": "Delete old posts",
     "description": "Heading and document title of the settings page of the automatic deletion of the user's own old posts, and its item in the settings menu."
-  },
-  "settings.auto_delete.summary": {
-    "defaultMessage": "Delete your posts automatically once they are old, except those you choose to keep",
-    "description": "Description of the automatic deletion item in the settings menu."
   },
   "settings.auto_delete.description": {
     "defaultMessage": "Once a post of yours is older than the age you choose, it is deleted here and on the servers it was sent to, as if you had deleted it. Deleted posts cannot be restored. Your boosts are not deleted.",
@@ -8439,10 +8395,6 @@
     "defaultMessage": "Passkeys",
     "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
   },
-  "settings.passkeys.summary": {
-    "defaultMessage": "Sign in with your device's screen lock instead of your password",
-    "description": "Description of the passkeys page in the settings menu."
-  },
   "settings.passkeys.description": {
     "defaultMessage": "A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Once you have a passkey, you can remove your password on the password page.",
     "description": "Explanation at the top of the passkeys settings page."
@@ -8570,10 +8522,6 @@
   "settings.password.title": {
     "defaultMessage": "Password",
     "description": "Title of the settings page that changes the password, and its entry in the settings menu."
-  },
-  "settings.password.summary": {
-    "defaultMessage": "Change, set, or remove the password you sign in with",
-    "description": "Description of the password page in the settings menu."
   },
   "settings.password.description": {
     "defaultMessage": "Changing the password signs you out of every other browser and app. Your passkeys and two-factor authentication stay as they are.",
@@ -10046,10 +9994,6 @@
   "settings.domain_mutes.title": {
     "defaultMessage": "Muted domains",
     "description": "Heading and document title of the settings page with the domains the user mutes."
-  },
-  "settings.domain_mutes.summary": {
-    "defaultMessage": "Servers whose posts and notifications you do not see",
-    "description": "Description of the muted domains page in the list of settings pages."
   },
   "settings.domain_mutes.description": {
     "defaultMessage": "Muting a domain hides the posts of its accounts, and of its subdomains' accounts, from your timelines other than home, their boosts from your home timeline, and their notifications. The accounts you follow stay on your home timeline. Only you are affected, and the server is not told.",
@@ -11778,10 +11722,6 @@
   "supporter.title": {
     "defaultMessage": "Supporter plans",
     "description": "Title of the user's page of the supporter plans, and its entry in the settings menu."
-  },
-  "supporter.summary": {
-    "defaultMessage": "Support this server with a monthly or yearly plan, and manage your subscription.",
-    "description": "Description of the settings menu entry of the supporter plans."
   },
   "supporter.app": {
     "defaultMessage": "This page is not available in the app.",

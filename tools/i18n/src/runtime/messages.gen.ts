@@ -168,8 +168,6 @@ export interface MessageArgs {
   "client:account_status.state.expired": {};
   /** Lifted */
   "client:account_status.state.lifted": {};
-  /** Moderation actions on your account, and appealing them */
-  "client:account_status.summary": {};
   /** Account status */
   "client:account_status.title": {};
   /** Block sign-ups with this email address */
@@ -4160,8 +4158,6 @@ export interface MessageArgs {
   "client:custom_emojis.state.enabled": {};
   /** Request */
   "client:custom_emojis.submit": {};
-  /** Request custom emoji for this server, and change the ones you made */
-  "client:custom_emojis.summary": {};
   /** Your custom emoji */
   "client:custom_emojis.title": {};
   /** {emoji} is saved. */
@@ -4814,8 +4810,6 @@ export interface MessageArgs {
   "client:settings.account.export.state.ready": {};
   /** Download your data */
   "client:settings.account.export.title": {};
-  /** Download your data, or delete your account */
-  "client:settings.account.summary": {};
   /** Your account */
   "client:settings.account.title": {};
   /** Delete posts older than */
@@ -4856,8 +4850,6 @@ export interface MessageArgs {
   "client:settings.auto_delete.saved_off": {};
   /** Saved. Posts older than {days, plural, one {# day} other {# days}} will be deleted, except those you keep. */
   "client:settings.auto_delete.saved_on": { days: number };
-  /** Delete your posts automatically once they are old, except those you choose to keep */
-  "client:settings.auto_delete.summary": {};
   /** {count, plural, one {# time} other {# times}} */
   "client:settings.auto_delete.threshold.count": { count: number };
   /** Don't keep posts for this */
@@ -4884,8 +4876,6 @@ export interface MessageArgs {
   "client:settings.back": {};
   /** You have not blocked anyone */
   "client:settings.blocks.empty": {};
-  /** Accounts that cannot follow you or see your posts */
-  "client:settings.blocks.summary": {};
   /** Blocked accounts */
   "client:settings.blocks.title": {};
   /** Unblock */
@@ -4926,8 +4916,6 @@ export interface MessageArgs {
   "client:settings.domain_mutes.new.title": {};
   /** Muted on {date} */
   "client:settings.domain_mutes.since": { date: string };
-  /** Servers whose posts and notifications you do not see */
-  "client:settings.domain_mutes.summary": {};
   /** Muted domains */
   "client:settings.domain_mutes.title": {};
   /** Unmute */
@@ -4944,8 +4932,6 @@ export interface MessageArgs {
   "client:settings.follow_requests.reject": {};
   /** You rejected the follow request of {name}. */
   "client:settings.follow_requests.rejected": { name: string };
-  /** People who asked to follow you */
-  "client:settings.follow_requests.summary": {};
   /** Follow requests */
   "client:settings.follow_requests.title": {};
   /** Download CSV files in the format Mastodon uses. Mastodon and other servers that read this format can import them. */
@@ -5036,8 +5022,6 @@ export interface MessageArgs {
   "client:settings.import_export.kind.following": {};
   /** Muted accounts */
   "client:settings.import_export.kind.mutes": {};
-  /** Move your follows, blocks, mutes, and bookmarks to or from another server */
-  "client:settings.import_export.summary": {};
   /** Import and export */
   "client:settings.import_export.title": {};
   /** {action}: {name} */
@@ -5062,8 +5046,6 @@ export interface MessageArgs {
   "client:settings.mutes.empty": {};
   /** Notifications hidden too */
   "client:settings.mutes.notifications": {};
-  /** Accounts whose posts you do not see */
-  "client:settings.mutes.summary": {};
   /** Muted accounts */
   "client:settings.mutes.title": {};
   /** Unmute */
@@ -5162,8 +5144,6 @@ export interface MessageArgs {
   "client:settings.passkeys.remove.title": { name: string };
   /** The passkey “{name}” was removed. */
   "client:settings.passkeys.removed": { name: string };
-  /** Sign in with your device's screen lock instead of your password */
-  "client:settings.passkeys.summary": {};
   /** Passkeys */
   "client:settings.passkeys.title": {};
   /** This browser cannot create passkeys. Open this page in a browser that supports them to add one. */
@@ -5220,16 +5200,12 @@ export interface MessageArgs {
   "client:settings.password.set.title": {};
   /** Change password */
   "client:settings.password.submit": {};
-  /** Change, set, or remove the password you sign in with */
-  "client:settings.password.summary": {};
   /** Password */
   "client:settings.password.title": {};
   /** The password is wrong. */
   "client:settings.password.wrong_password": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
-  /** Language, time zone, theme, the defaults of your posts, and the languages of your timelines */
-  "client:settings.preferences.summary": {};
   /** Preferences */
   "client:settings.preferences.title": {};
   /** Deny AI training and use */
@@ -5308,8 +5284,6 @@ export interface MessageArgs {
   "client:settings.profile.save": {};
   /** Your profile has been saved. */
   "client:settings.profile.saved": {};
-  /** Your name, bio, pictures and fields, and who may follow you */
-  "client:settings.profile.summary": {};
   /** Profile */
   "client:settings.profile.title": {};
   /** Use at most {max} characters. */
@@ -5464,8 +5438,6 @@ export interface MessageArgs {
   "client:settings.two_factor.status.on": {};
   /** Current setting */
   "client:settings.two_factor.status.title": {};
-  /** Sign in with a code from an authenticator app as well as your password */
-  "client:settings.two_factor.summary": {};
   /** Two-factor authentication */
   "client:settings.two_factor.title": {};
   /** Mentioned people */
@@ -5986,8 +5958,6 @@ export interface MessageArgs {
   "client:supporter.subscription.title": {};
   /** Withdrew the scheduled change. */
   "client:supporter.subscription.unscheduled": {};
-  /** Support this server with a monthly or yearly plan, and manage your subscription. */
-  "client:supporter.summary": {};
   /** Supporter plans */
   "client:supporter.title": {};
   /** Withdraw the scheduled change */
