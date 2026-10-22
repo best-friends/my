@@ -297,7 +297,7 @@ test("the income on the costs screen, with its money movements", async ({ page, 
   await expect(income.getByRole("table").getByRole("columnheader")).toHaveCount(5);
   await expect(income.getByText("A plan with a rather long name that has to wrap on the narrowest screens")).toHaveAttribute("dir", "auto");
   const movementsRegion = main.getByRole("region", { name: message("admin.finance.movements.title"), exact: true });
-  await expect(movementsRegion.getByRole("listitem")).toHaveCount(2);
+  await expect(movementsRegion.getByRole("row")).toHaveCount(3);
   await expect(movementsRegion.getByText("txn_1PaymentWithARatherLongIdentifierThatDoesNotWrap")).toHaveAttribute("dir", "ltr");
   await expect(movementsRegion.getByText("@a_supporter_with_a_rather_long_username_that_does_not_wrap")).toHaveAttribute("dir", "ltr");
   await expectNoAxeViolations(makeAxeBuilder);
@@ -308,7 +308,7 @@ test("the income on the costs screen, with its money movements", async ({ page, 
   await page.keyboard.press("Enter");
   await page.getByRole("option", { name: message("admin.finance.movements.kind.fee"), exact: true }).press("Enter");
   await expect(page).toHaveURL(/kind=fee/u);
-  await expect(movementsRegion.getByRole("listitem")).toHaveCount(1);
+  await expect(movementsRegion.getByRole("row")).toHaveCount(2);
   await expect(movementsRegion.getByRole("button", { name: message("admin.finance.movements.filter.clear"), exact: true })).toBeVisible();
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);

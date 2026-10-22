@@ -134,7 +134,7 @@ test.describe("relays", () => {
     await form.getByRole("button", { name: message("admin.relays.submit"), exact: true }).click();
 
     const list = main.getByRole("region", { name: message("admin.relays.list.title"), exact: true });
-    await expect(list.getByRole("heading", { level: 3, name: "relay.example", exact: true })).toBeVisible();
+    await expect(list.getByRole("rowheader", { name: /^relay\.example/u })).toBeVisible();
     await expect(list.getByText(message("admin.relays.state.pending"), { exact: true })).toBeVisible();
     expect(sent).toEqual([`create ${relayUrl} auto true`]);
     await expectNoAxeViolations(makeAxeBuilder);

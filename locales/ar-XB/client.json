@@ -3463,6 +3463,10 @@
     "defaultMessage": "‮Iᗡ ɐʇ {provider}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.finance.movements.provider_id.header": {
+    "defaultMessage": "‮Ԁɐʎɯǝuʇ dɹoʌıpǝɹ Iᗡ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.finance.movements.subscriber": {
     "defaultMessage": "‮Snqsɔɹıqǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4085,6 +4089,10 @@
   },
   "admin.jobs.worker": {
     "defaultMessage": "‮Moɹʞǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.list.column.actions": {
+    "defaultMessage": "‮∀ɔʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.list.filters": {
@@ -6867,6 +6875,10 @@
     "defaultMessage": "‮ᴚǝɟnupǝp oɹ ɔɥɐɹƃǝp qɐɔʞ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.supporters.subscription.account": {
+    "defaultMessage": "‮∀ɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.supporters.subscription.cancel": {
     "defaultMessage": "‮Ǝup uoʍ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6905,6 +6917,10 @@
   },
   "admin.supporters.subscription.per_year": {
     "defaultMessage": "‮{amount} ɐ ʎǝɐɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.period": {
+    "defaultMessage": "‮Ԁǝɹıop‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.supporters.subscription.period_ends_at": {

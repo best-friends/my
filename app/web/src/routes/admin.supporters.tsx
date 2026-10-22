@@ -12,7 +12,7 @@ import {
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The subscriptions shown: of a plan (`?plan=`) and in a state (`?state=`); omitted, or anything unknown, shows every one (web-client.md S3). */
 const searchSchema = z.object({
@@ -44,7 +44,7 @@ function SupportersPage() {
   const navigate = Route.useNavigate();
   return (
     <>
-      <SettingsHeading>{t("client:admin.supporters.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.supporters.title")}</PageHeading>
       <SupporterSettings
         filter={filter}
         onFilterChange={(next) => {

@@ -13,7 +13,7 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { ApiError, errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { type CostBasis, type CostCategory, type CostGranularity, type CostTotals, utcDate } from "../../costs";
-import { type PagedList, toPagedList } from "../../moderation";
+import { type PagedList, type PagedPages, toPagedList } from "../../moderation";
 import {
   type AdminIncomeTotals,
   adminIncomeTotalsQueryOptions,
@@ -59,7 +59,7 @@ export function useAdminIncomeTotals(granularity: CostGranularity, basis: CostBa
 }
 
 /** The payment provider's money movements of the income, newest first, narrowed by the filter. */
-export function useIncomeMovements(filter: IncomeMovementFilter): PagedList<IncomeMovement> {
+export function useIncomeMovements(filter: IncomeMovementFilter): PagedPages<IncomeMovement> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(incomeMovementsQueryOptions(api, filter)));
 }

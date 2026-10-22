@@ -7,12 +7,12 @@
 // one at once. The plans' names and descriptions are the administrators' text, shown with dir="auto". What a change did
 // stays in a StatusMessage (role="status"), and a refusal is said in the server's words next to its field or under the
 // form (role="alert"). Retiring a plan and ending a subscription ask first in an alert dialog: neither can be undone.
-import { Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Link, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, Switch, Text, TextArea, TextField } from "@my/ui";
+import { Button, Card, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Link, ListToolbar, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, Switch, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, TextArea, TextField } from "@my/ui";
 import { type SubmitEvent, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFormatMoney } from "../../costs";
-import { DateTime, DetailSection, type Permission, RecordList, RequirePermission } from "../../moderation";
+import { DateTime, DetailSection, type Permission, RecordList, RecordTable, RequirePermission } from "../../moderation";
 import {
   type PaymentReconcileRun,
   type PaymentStatus,
@@ -115,11 +115,15 @@ export function SupporterSettings({ filter, onFilterChange }: SupporterSettingsP
     <RequirePermission permission="manage_supporters">
       <Stack gap="8">
         <DetailSection title={t("client:admin.supporters.program.title")}>
-          <Program />
+          <Card>
+            <Program />
+          </Card>
         </DetailSection>
         <PaymentProvider />
         <DetailSection title={t("client:admin.supporters.new.title")}>
-          <NewPlanForm />
+          <Card>
+            <NewPlanForm />
+          </Card>
         </DetailSection>
         <Plans />
         <DetailSection title={t("client:admin.supporters.subscriptions.title")}>
@@ -193,7 +197,9 @@ function PaymentProvider() {
   if (provider === undefined) return null;
   return (
     <DetailSection title={t("client:admin.supporters.payment.title")}>
-      <PaymentStatusView />
+      <Card>
+        <PaymentStatusView />
+      </Card>
     </DetailSection>
   );
 }
@@ -460,20 +466,24 @@ function Plans() {
               {t("client:admin.supporters.plan.change_failed", { reason: actions.error })}
             </InlineError>
           )}
-          <RecordList
-            list={list(active)}
-            getId={(plan) => plan.id}
-            empty={<EmptyState headingLevel={3} heading={t("client:admin.supporters.plans.empty")} description={t("client:admin.supporters.plans.empty.description")} />}
-          >
-            {(plan) => <PlanRow plan={plan} actions={actions} />}
-          </RecordList>
+          <Card>
+            <RecordList
+              list={list(active)}
+              getId={(plan) => plan.id}
+              empty={<EmptyState headingLevel={3} heading={t("client:admin.supporters.plans.empty")} description={t("client:admin.supporters.plans.empty.description")} />}
+            >
+              {(plan) => <PlanRow plan={plan} actions={actions} />}
+            </RecordList>
+          </Card>
         </Stack>
       </DetailSection>
       {retired.length > 0 && (
         <DetailSection title={t("client:admin.supporters.retired.title")}>
-          <RecordList list={list(retired)} getId={(plan) => plan.id} empty={null}>
-            {(plan) => <PlanRow plan={plan} actions={actions} />}
-          </RecordList>
+          <Card>
+            <RecordList list={list(retired)} getId={(plan) => plan.id} empty={null}>
+              {(plan) => <PlanRow plan={plan} actions={actions} />}
+            </RecordList>
+          </Card>
         </DetailSection>
       )}
     </>
@@ -637,9 +647,10 @@ function Subscriptions({ filter, onFilterChange }: SupporterSettingsProps) {
   ];
   return (
     <Stack gap="4">
-      <Cluster gap="4">
+      <ListToolbar label={t("client:admin.list.filters")}>
         <Select
-          label={t("client:admin.supporters.filter.plan")}
+          variant="toolbar"
+          aria-label={t("client:admin.supporters.filter.plan")}
           value={filter.planId ?? anyChoice}
           onChange={(key) => {
             onFilterChange({ ...filter, planId: key === anyChoice || typeof key !== "string" ? undefined : key });
@@ -653,7 +664,8 @@ function Subscriptions({ filter, onFilterChange }: SupporterSettingsProps) {
           )}
         </Select>
         <Select
-          label={t("client:admin.supporters.filter.state")}
+          variant="toolbar"
+          aria-label={t("client:admin.supporters.filter.state")}
           value={filter.state ?? anyChoice}
           onChange={(key) => {
             const state = supporterSubscriptionStates.find((s) => s === key);
@@ -667,15 +679,29 @@ function Subscriptions({ filter, onFilterChange }: SupporterSettingsProps) {
             </SelectItem>
           )}
         </Select>
-      </Cluster>
+      </ListToolbar>
       <StatusMessage>{actions.status}</StatusMessage>
-      <RecordList
+      {/* Another filter is another list: it starts at its first page. */}
+      <RecordTable
+        key={`${filter.planId ?? anyChoice}:${filter.state ?? anyChoice}`}
         list={list}
+        caption={t("client:admin.supporters.subscriptions.title")}
         getId={(subscription) => subscription.id}
         empty={<EmptyState headingLevel={3} heading={t("client:admin.supporters.subscriptions.empty")} />}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.supporters.subscription.account")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.supporters.subscription.state")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.supporters.subscription.plan")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.supporters.subscription.price")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.supporters.subscription.started_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.supporters.subscription.period")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.list.column.actions")}</TableColumnHeader>
+          </>
+        }
       >
         {(subscription) => <SubscriptionRow subscription={subscription} actions={actions} />}
-      </RecordList>
+      </RecordTable>
     </Stack>
   );
 }
@@ -685,43 +711,46 @@ function SubscriptionRow({ subscription, actions }: { subscription: SupporterSub
   const format = useFormatMoney();
   const who = subscription.username === undefined ? t("client:admin.supporters.subscription.deleted_account") : `@${subscription.username}`;
   return (
-    <Stack gap="3">
-      <Heading level={3} wrap="anywhere" shrink>
+    <TableRow data-row-id={subscription.id}>
+      <TableRowHeader wrap="anywhere">
         <span dir="ltr">{who}</span>
-      </Heading>
-      <DescriptionList columns={2}>
-        <DescriptionItem term={t("client:admin.supporters.subscription.state")}>{t(stateLabels[subscription.state])}</DescriptionItem>
-        <DescriptionItem term={t("client:admin.supporters.subscription.plan")}>
-          <span dir="auto" lang="">
-            {subscription.plan_name}
-          </span>
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.supporters.subscription.price")}>
-          {t(subscription.interval === "year" ? "client:admin.supporters.subscription.per_year" : "client:admin.supporters.subscription.per_month", {
-            amount: format(subscription.price),
-          })}
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.supporters.subscription.started_at")}>
-          <DateTime value={subscription.started_at} />
-        </DescriptionItem>
-        {subscription.period_ends_at !== undefined && (
-          <DescriptionItem term={t("client:admin.supporters.subscription.period_ends_at")}>
-            <DateTime value={subscription.period_ends_at} />
-          </DescriptionItem>
-        )}
-        {subscription.grace_ends_at !== undefined && (
-          <DescriptionItem term={t("client:admin.supporters.subscription.grace_ends_at")}>
-            <DateTime value={subscription.grace_ends_at} />
-          </DescriptionItem>
-        )}
-        {subscription.scheduled_interval !== undefined && (
-          <DescriptionItem term={t("client:admin.supporters.subscription.scheduled")}>
-            {t(subscription.scheduled_interval === "year" ? "client:admin.supporters.subscription.scheduled_year" : "client:admin.supporters.subscription.scheduled_month")}
-          </DescriptionItem>
-        )}
-      </DescriptionList>
-      {isLive(subscription.state) && <CancelSubscription subscription={subscription} who={who} actions={actions} />}
-    </Stack>
+      </TableRowHeader>
+      <TableCell>{t(stateLabels[subscription.state])}</TableCell>
+      <TableCell wrap="anywhere">
+        <span dir="auto" lang="">
+          {subscription.plan_name}
+        </span>
+      </TableCell>
+      <TableCell numeric>
+        {t(subscription.interval === "year" ? "client:admin.supporters.subscription.per_year" : "client:admin.supporters.subscription.per_month", {
+          amount: format(subscription.price),
+        })}
+      </TableCell>
+      <TableCell>
+        <DateTime value={subscription.started_at} />
+      </TableCell>
+      <TableCell>
+        <Stack gap="1">
+          {subscription.period_ends_at !== undefined && (
+            <span>
+              {t("client:admin.supporters.subscription.period_ends_at")} <DateTime value={subscription.period_ends_at} />
+            </span>
+          )}
+          {subscription.grace_ends_at !== undefined && (
+            <span>
+              {t("client:admin.supporters.subscription.grace_ends_at")} <DateTime value={subscription.grace_ends_at} />
+            </span>
+          )}
+          {subscription.scheduled_interval !== undefined && (
+            <Cluster as="span" gap="1" rowGap="0">
+              <span>{t("client:admin.supporters.subscription.scheduled")}</span>
+              <span>{t(subscription.scheduled_interval === "year" ? "client:admin.supporters.subscription.scheduled_year" : "client:admin.supporters.subscription.scheduled_month")}</span>
+            </Cluster>
+          )}
+        </Stack>
+      </TableCell>
+      <TableCell>{isLive(subscription.state) && <CancelSubscription subscription={subscription} who={who} actions={actions} />}</TableCell>
+    </TableRow>
   );
 }
 

@@ -52,9 +52,9 @@ describe("the relays screen", () => {
     await renderApp({ path: "/admin/relays" });
     const list = await screen.findByRole("region", { name: "Relays of this server" });
 
-    const [joinedRow, rejectedRow] = within(list).getAllByRole("listitem");
+    const [joinedRow, rejectedRow] = within(list).getAllByRole("row").slice(1);
     if (joinedRow === undefined || rejectedRow === undefined) throw new Error("two relays expected");
-    expect(within(joinedRow).getByRole("heading", { level: 3, name: "relay.example" })).toBeInTheDocument();
+    expect(within(joinedRow).getByRole("rowheader", { name: /^relay\.example/u })).toBeInTheDocument();
     expect(within(joinedRow).getByText("Joined")).toBeInTheDocument();
     expect(within(joinedRow).getByText("https://relay.example/actor")).toBeInTheDocument();
     expect(within(joinedRow).getByText("120 activities")).toBeInTheDocument();

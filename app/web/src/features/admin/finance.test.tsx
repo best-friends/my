@@ -542,16 +542,18 @@ describe("the income on the costs screen", () => {
     await renderApp({ path: "/admin/finance" });
 
     const region = await screen.findByRole("region", { name: "Payments and refunds" });
-    const rows = within(region).getAllByRole("listitem");
-    expect(within(rows[0] as HTMLElement).getByRole("heading", { level: 3 })).toHaveTextContent("Payment¥11,568");
-    expect(rows[0]).toHaveTextContent("Gross¥12,000");
-    expect(rows[0]).toHaveTextContent("Fees¥432");
+    const rows = within(region).getAllByRole("row").slice(1);
+    expect(within(rows[0] as HTMLElement).getByRole("rowheader")).toHaveTextContent("Payment");
+    expect(rows[0]).toHaveTextContent("¥11,568");
+    expect(rows[0]).toHaveTextContent("¥12,000");
+    expect(rows[0]).toHaveTextContent("¥432");
     expect(within(rows[0] as HTMLElement).getByRole("link", { name: "@alice" })).toHaveAttribute("href", `/moderation/accounts/${String(movement.account_id)}`);
     expect(within(rows[0] as HTMLElement).getByText("@alice")).toHaveAttribute("dir", "ltr");
     expect(rows[0]).not.toHaveTextContent(String(movement.account_id));
     expect(within(rows[0] as HTMLElement).getByText("txn_1")).toHaveAttribute("dir", "ltr");
-    expect(rows[1]).toHaveTextContent("Provider fee-¥84");
-    expect(rows[1]).toHaveTextContent("SubscriberNone");
+    expect(rows[1]).toHaveTextContent("Provider fee");
+    expect(rows[1]).toHaveTextContent("-¥84");
+    expect(rows[1]).toHaveTextContent("None");
   });
 
   test("shows the username without a link to a viewer who may not open the accounts, and a deleted subscriber's account as deleted", async () => {
@@ -561,12 +563,13 @@ describe("the income on the costs screen", () => {
     await renderApp({ path: "/admin/finance" });
 
     const region = await screen.findByRole("region", { name: "Payments and refunds" });
-    const rows = within(region).getAllByRole("listitem");
-    expect(rows[0]).toHaveTextContent("Subscriber@alice");
+    const rows = within(region).getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("@alice");
     expect(within(rows[0] as HTMLElement).queryByRole("link")).not.toBeInTheDocument();
-    expect(within(rows[1] as HTMLElement).getByRole("heading", { level: 3 })).toHaveTextContent("Refund-¥500");
-    expect(rows[1]).toHaveTextContent("SubscriberDeleted account");
-    expect(rows[1]).toHaveTextContent("Of the paymenttxn_0");
+    expect(within(rows[1] as HTMLElement).getByRole("rowheader")).toHaveTextContent("Refund");
+    expect(rows[1]).toHaveTextContent("-¥500");
+    expect(rows[1]).toHaveTextContent("Deleted account");
+    expect(rows[1]).toHaveTextContent("Of the payment txn_0");
   });
 
   test("narrows the money movements to a kind and a range of dates, kept in the URL", async () => {
@@ -576,7 +579,7 @@ describe("the income on the costs screen", () => {
     const { user, router } = await renderApp({ path: "/admin/finance?basis=cash" });
 
     const region = await screen.findByRole("region", { name: "Payments and refunds" });
-    expect(within(region).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(region).getAllByRole("row")).toHaveLength(3);
     expect(movements.queries[0]).toEqual({});
 
     await user.click(within(region).getByRole("button", { name: /Kind/u }));
@@ -586,7 +589,7 @@ describe("the income on the costs screen", () => {
     });
     expect(movements.queries.at(-1)).toEqual({ kind: "refund" });
     await waitFor(() => {
-      expect(within(region).getAllByRole("listitem")).toHaveLength(1);
+      expect(within(region).getAllByRole("row")).toHaveLength(2);
     });
 
     // A last date before the first is not applied.
@@ -616,7 +619,7 @@ describe("the income on the costs screen", () => {
     });
     expect(within(region).getByRole("button", { name: /Kind/u })).toHaveFocus();
     expect(from).toHaveValue("");
-    expect(await within(region).findAllByRole("listitem")).toHaveLength(2);
+    expect(await within(region).findAllByRole("row")).toHaveLength(3);
   });
 
   test("reads the movements' filter from the URL and ignores what it does not know", async () => {
@@ -627,7 +630,7 @@ describe("the income on the costs screen", () => {
 
     const region = await screen.findByRole("region", { name: "Payments and refunds" });
     expect(movements.queries[0]).toEqual({ kind: "payment", from: "2026-10-01" });
-    expect(within(region).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(region).getAllByRole("row")).toHaveLength(2);
     expect(within(region).getByLabelText("Counted from")).toHaveValue("2026-10-01");
     expect(within(region).getByLabelText("Counted until")).toHaveValue("");
     expect(within(region).getByRole("button", { name: "Clear the filters" })).toBeInTheDocument();

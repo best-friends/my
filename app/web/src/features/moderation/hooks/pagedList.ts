@@ -38,6 +38,11 @@ export function toPagedList<T>(query: InfiniteList<{ items: T[] }>): PagedPages<
   };
 }
 
+/** A list that is all there is, in one page, for a table of records the API returns whole. */
+export function wholeList<T>(items: T[]): PagedPages<T> {
+  return { items, pages: items.length > 0 ? [items] : [], hasMore: false, isLoadingMore: false, loadMore: () => undefined };
+}
+
 export type ListPages<T> = {
   /** The rows of the page on screen. */
   items: T[];

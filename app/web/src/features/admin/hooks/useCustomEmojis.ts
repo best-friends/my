@@ -8,7 +8,7 @@ import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type Translate, useT } from "../../../lib/i18n";
-import { type PagedList, toPagedList } from "../../moderation";
+import { type PagedPages, toPagedList } from "../../moderation";
 import { MediaProcessingError } from "../../settings";
 import {
   type AdminCustomEmoji,
@@ -44,7 +44,7 @@ function failure(t: Translate, error: unknown): string {
 }
 
 /** The custom emoji under `filter`, newest first. */
-export function useAdminCustomEmojis(filter: CustomEmojiFilter): PagedList<AdminCustomEmoji> {
+export function useAdminCustomEmojis(filter: CustomEmojiFilter): PagedPages<AdminCustomEmoji> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(adminCustomEmojisQueryOptions(api, filter)));
 }

@@ -3,9 +3,9 @@
 // 14 days, newest first, each with its event, whether it succeeded, how many times it was sent and its last attempt,
 // and a button that sends it again with the same webhook-id. What a redelivery did stays above the list in a
 // StatusMessage, and a failure in an alert.
-import { Button, Cluster, DescriptionItem, DescriptionList, EmptyState, Heading, Hint, InlineError, Stack, StatusMessage, Text } from "@my/ui";
+import { Button, Card, Cluster, EmptyState, Hint, InlineError, Stack, StatusMessage, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
-import { DateTime, DetailSection, RecordList, RequirePermission } from "../../moderation";
+import { DateTime, DetailSection, RecordTable, RequirePermission } from "../../moderation";
 import type { WebhookAttemptOutcome, WebhookDelivery, WebhookDeliveryStatus } from "../api/webhooks";
 import { useRedeliver, useWebhook, useWebhookDeliveries } from "../hooks/useWebhooks";
 import { webhookEventLabels } from "./webhookParts";
@@ -42,7 +42,11 @@ export function WebhookDeliveries({ id }: { id: string }) {
 }
 
 function Facts({ id }: { id: string }) {
-  return <WebhookFacts webhook={useWebhook(id)} />;
+  return (
+    <Card>
+      <WebhookFacts webhook={useWebhook(id)} />
+    </Card>
+  );
 }
 
 function DeliveryList({ id }: { id: string }) {
@@ -58,7 +62,22 @@ function DeliveryList({ id }: { id: string }) {
           {t("client:admin.webhooks.deliveries.redeliver_failed", { reason: redeliver.error })}
         </InlineError>
       )}
-      <RecordList list={list} getId={(delivery) => delivery.id} empty={<EmptyState headingLevel={3} heading={t("client:admin.webhooks.deliveries.empty")} />}>
+      <RecordTable
+        list={list}
+        caption={t("client:admin.webhooks.deliveries.title")}
+        getId={(delivery) => delivery.id}
+        empty={<EmptyState headingLevel={3} heading={t("client:admin.webhooks.deliveries.empty")} />}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.webhooks.events")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.webhooks.deliveries.status")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.webhooks.deliveries.attempts")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.webhooks.deliveries.created_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.webhooks.deliveries.last_attempt")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.list.column.actions")}</TableColumnHeader>
+          </>
+        }
+      >
         {(delivery) => (
           <DeliveryRow
             delivery={delivery}
@@ -68,7 +87,7 @@ function DeliveryList({ id }: { id: string }) {
             }}
           />
         )}
-      </RecordList>
+      </RecordTable>
     </Stack>
   );
 }
@@ -78,36 +97,36 @@ function DeliveryRow({ delivery, isPending, onRedeliver }: { delivery: WebhookDe
   const event = t(webhookEventLabels[delivery.event_type]);
   const last = delivery.last_attempt;
   return (
-    <Stack gap="3">
-      <Heading level={3}>{event}</Heading>
-      <DescriptionList columns={2}>
-        <DescriptionItem term={t("client:admin.webhooks.deliveries.status")}>
-          <Text {...(delivery.status === "failing" && { tone: "warning" as const })}>{t(statusLabels[delivery.status])}</Text>
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.webhooks.deliveries.attempts")}>{t("client:admin.webhooks.deliveries.attempts.count", { count: delivery.attempts })}</DescriptionItem>
-        <DescriptionItem term={t("client:admin.webhooks.deliveries.created_at")}>
-          <DateTime value={delivery.created_at} />
-        </DescriptionItem>
-        {last !== undefined && (
-          <DescriptionItem term={t("client:admin.webhooks.deliveries.last_attempt")}>
-            <Cluster as="span" gap="1" rowGap="0">
-              <span>{t(outcomeLabels[last.outcome])}</span>
-              {last.status_code !== undefined && <span dir="ltr">{t("client:admin.webhooks.deliveries.status_code", { code: String(last.status_code) })}</span>}
-              <DateTime value={last.attempted_at} />
-            </Cluster>
-          </DescriptionItem>
-        )}
-        <DescriptionItem term={t("client:admin.webhooks.deliveries.message_id")}>
-          <Text wrap="anywhere" mono dir="ltr">
+    <TableRow data-row-id={delivery.id}>
+      <TableRowHeader wrap="anywhere">
+        <Stack gap="1">
+          <Text weight="semibold">{event}</Text>
+          <Text size="sm" tone="muted" mono wrap="anywhere" dir="ltr">
             {delivery.message_id}
           </Text>
-        </DescriptionItem>
-      </DescriptionList>
-      <div>
+        </Stack>
+      </TableRowHeader>
+      <TableCell>
+        <Text {...(delivery.status === "failing" && { tone: "warning" as const })}>{t(statusLabels[delivery.status])}</Text>
+      </TableCell>
+      <TableCell numeric>{t("client:admin.webhooks.deliveries.attempts.count", { count: delivery.attempts })}</TableCell>
+      <TableCell>
+        <DateTime value={delivery.created_at} />
+      </TableCell>
+      <TableCell>
+        {last !== undefined && (
+          <Cluster as="span" gap="1" rowGap="0">
+            <span>{t(outcomeLabels[last.outcome])}</span>
+            {last.status_code !== undefined && <span dir="ltr">{t("client:admin.webhooks.deliveries.status_code", { code: String(last.status_code) })}</span>}
+            <DateTime value={last.attempted_at} />
+          </Cluster>
+        )}
+      </TableCell>
+      <TableCell>
         <Button size="sm" isPending={isPending} aria-label={t("client:admin.webhooks.deliveries.redeliver_of", { event, id: delivery.message_id })} onPress={onRedeliver}>
           {t("client:admin.webhooks.deliveries.redeliver")}
         </Button>
-      </div>
-    </Stack>
+      </TableCell>
+    </TableRow>
   );
 }

@@ -3035,6 +3035,10 @@
     "defaultMessage": "Next",
     "description": "Button under a list of an admin screen that shows the next page, loading it if needed."
   },
+  "admin.list.column.actions": {
+    "defaultMessage": "Actions",
+    "description": "Header of the column of buttons in the table of an admin list."
+  },
   "admin.reports.column.report": {
     "defaultMessage": "Report",
     "description": "Header of the column of the reports table that names the reported account and links to the report."
@@ -10251,6 +10255,10 @@
     "defaultMessage": "ID at {provider}",
     "description": "Term of the payment provider's ID of a money movement. {provider} is the provider, such as stripe."
   },
+  "admin.finance.movements.provider_id.header": {
+    "defaultMessage": "Payment provider ID",
+    "description": "Header of the column of the payment provider's ids in the table of income movements."
+  },
   "costs.basis": {
     "defaultMessage": "How payments are counted",
     "description": "Label of the choice between spreading long payments over the days they cover and counting each payment on its date, on the costs screen and the public costs page."
@@ -11558,6 +11566,14 @@
   "admin.supporters.subscription.state": {
     "defaultMessage": "State",
     "description": "Term of the state of a subscription."
+  },
+  "admin.supporters.subscription.account": {
+    "defaultMessage": "Account",
+    "description": "Header of the account column in the table of supporter subscriptions."
+  },
+  "admin.supporters.subscription.period": {
+    "defaultMessage": "Period",
+    "description": "Header of the period column in the table of supporter subscriptions."
   },
   "admin.supporters.subscription.plan": {
     "defaultMessage": "Plan",

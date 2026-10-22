@@ -6,11 +6,11 @@
 // enabled or disabled, or copied into one of this server under a shortcode chosen in a dialog. What a change did stays above the list in a StatusMessage (role="status"), and a
 // failure stays there too (role="alert"). A second tab (kept in the URL too) holds the requests of the holders of
 // create_custom_emojis (ADR-0070 §2), with the number of the pending ones in its name (ADR-0070 §9).
-import { Badge, Button, Checkbox, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmojiTile, EmptyState, FileTrigger, Heading, Hint, InlineError, Stack, StatusMessage, Tab, TabList, TabPanel, Tabs, Text, TextField } from "@my/ui";
+import { Badge, Button, Card, Checkbox, Cluster, ConfirmDialog, Dialog, DialogTrigger, EmojiTile, EmptyState, FileTrigger, Hint, InlineError, Stack, StatusMessage, Tab, TableCell, TableColumnHeader, TableRow, TableRowHeader, TabList, TabPanel, Tabs, Text, TextField } from "@my/ui";
 import { type SubmitEvent, useId, useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
-import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "../../moderation";
+import { DateTime, DetailSection, DomainName, RecordTable, RequirePermission } from "../../moderation";
 import {
   acceptedEmojiTypes,
   type AdminCustomEmoji,
@@ -97,7 +97,9 @@ function ScreenTabs({ tab, onTabChange, requestState, onRequestStateChange, ...l
       </TabList>
       <TabPanel id="emoji" gap="8" offset="4">
         <DetailSection title={t("client:admin.custom_emojis.new.title")}>
-          <NewCustomEmojiForm />
+          <Card>
+            <NewCustomEmojiForm />
+          </Card>
         </DetailSection>
         <DetailSection title={t("client:admin.custom_emojis.list.title")}>
           <CustomEmojiTabs {...list} />
@@ -284,10 +286,10 @@ function SearchForm({ filter, onFilterChange }: EmojiListProps) {
 
 function CustomEmojiList({ filter }: { filter: CustomEmojiFilter }) {
   const t = useT();
-  const listRef = useRef<HTMLUListElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   const list = useAdminCustomEmojis(filter);
   const removed = useFocusAfterRemoval(
-    listRef,
+    tableRef,
     list.items.map((emoji) => emoji.id),
   );
   const actions = useCustomEmojiActions(removed);
@@ -307,9 +309,32 @@ function CustomEmojiList({ filter }: { filter: CustomEmojiFilter }) {
           {t("client:admin.custom_emojis.change_failed", { reason: actions.error })}
         </InlineError>
       )}
-      <RecordList list={list} getId={(emoji) => emoji.id} listRef={listRef} empty={empty}>
+      <RecordTable
+        list={list}
+        caption={t("client:admin.custom_emojis.list.title")}
+        getId={(emoji) => emoji.id}
+        tableRef={tableRef}
+        empty={empty}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.custom_emojis.shortcode")}</TableColumnHeader>
+            {filter.origin === "remote" && <TableColumnHeader>{t("client:admin.custom_emojis.domain")}</TableColumnHeader>}
+            <TableColumnHeader>{t("client:admin.custom_emojis.state")}</TableColumnHeader>
+            {filter.origin === "local" && (
+              <>
+                <TableColumnHeader>{t("client:admin.custom_emojis.picker")}</TableColumnHeader>
+                <TableColumnHeader>{t("client:admin.custom_emojis.category")}</TableColumnHeader>
+                <TableColumnHeader>{t("client:admin.custom_emojis.aliases")}</TableColumnHeader>
+                <TableColumnHeader>{t("client:admin.custom_emojis.created_by")}</TableColumnHeader>
+              </>
+            )}
+            <TableColumnHeader>{t("client:admin.custom_emojis.updated_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.list.column.actions")}</TableColumnHeader>
+          </>
+        }
+      >
         {(emoji) => <CustomEmojiRow emoji={emoji} actions={actions} />}
-      </RecordList>
+      </RecordTable>
     </Stack>
   );
 }
@@ -320,38 +345,31 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
   const heading = `:${emoji.shortcode}:`;
   const isPending = actions.pendingId === emoji.id;
   return (
-    <Stack gap="3">
-      <Cluster gap="3" align="center" wrap={false}>
-        {/* The heading names the emoji; the image beside it repeats it. */}
-<EmojiTile emoji={emoji.url !== undefined && emoji.static_url !== undefined ? { shortcode: emoji.shortcode, url: emoji.url, static_url: emoji.static_url } : undefined} />
-        <Heading level={3} wrap="anywhere" mono shrink>
-          <span dir="ltr">{heading}</span>
-        </Heading>
-      </Cluster>
-      <DescriptionList columns={2}>
-        {emoji.domain !== undefined && (
-          <DescriptionItem term={t("client:admin.custom_emojis.domain")}>
-            <DomainName domain={emoji.domain} />
-          </DescriptionItem>
-        )}
-        <DescriptionItem term={t("client:admin.custom_emojis.state")}>
-          {t(emoji.enabled ? "client:admin.custom_emojis.state.enabled" : "client:admin.custom_emojis.state.disabled")}
-        </DescriptionItem>
-        {emoji.local && (
-          <>
-            <DescriptionItem term={t("client:admin.custom_emojis.picker")}>
-              {t(emoji.visible_in_picker ? "client:admin.custom_emojis.picker.shown" : "client:admin.custom_emojis.picker.hidden")}
-            </DescriptionItem>
-            <DescriptionItem term={t("client:admin.custom_emojis.category")}>
-              {emoji.category === undefined ? t("client:admin.custom_emojis.none") : <span dir="auto">{emoji.category}</span>}
-            </DescriptionItem>
-            <DescriptionItem term={t("client:admin.custom_emojis.aliases")}>
-              {emoji.aliases.length === 0 ? t("client:admin.custom_emojis.none") : <span dir="ltr">{emoji.aliases.join(", ")}</span>}
-            </DescriptionItem>
-          </>
-        )}
-        {emoji.local && (
-          <DescriptionItem term={t("client:admin.custom_emojis.created_by")}>
+    <TableRow data-row-id={emoji.id}>
+      <TableRowHeader wrap="anywhere">
+        <Cluster gap="3" align="center" wrap={false}>
+          {/* The name of the emoji; the image beside it repeats it. */}
+          <EmojiTile emoji={emoji.url !== undefined && emoji.static_url !== undefined ? { shortcode: emoji.shortcode, url: emoji.url, static_url: emoji.static_url } : undefined} />
+          <Stack gap="1">
+            <Text weight="semibold" mono wrap="anywhere" dir="ltr">
+              {heading}
+            </Text>
+            {emoji.url === undefined && (
+              <Text size="sm" tone="muted">
+                {t("client:admin.custom_emojis.no_image")}
+              </Text>
+            )}
+          </Stack>
+        </Cluster>
+      </TableRowHeader>
+      {!emoji.local && <TableCell wrap="anywhere">{emoji.domain !== undefined && <DomainName domain={emoji.domain} />}</TableCell>}
+      <TableCell>{t(emoji.enabled ? "client:admin.custom_emojis.state.enabled" : "client:admin.custom_emojis.state.disabled")}</TableCell>
+      {emoji.local && (
+        <>
+          <TableCell>{t(emoji.visible_in_picker ? "client:admin.custom_emojis.picker.shown" : "client:admin.custom_emojis.picker.hidden")}</TableCell>
+          <TableCell wrap="anywhere">{emoji.category === undefined ? t("client:admin.custom_emojis.none") : <span dir="auto">{emoji.category}</span>}</TableCell>
+          <TableCell wrap="anywhere">{emoji.aliases.length === 0 ? t("client:admin.custom_emojis.none") : <span dir="ltr">{emoji.aliases.join(", ")}</span>}</TableCell>
+          <TableCell wrap="anywhere">
             {emoji.created_by !== undefined ? (
               <AccountLink acct={emoji.created_by.acct} />
             ) : emoji.created_by_deleted ? (
@@ -359,13 +377,13 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
             ) : (
               t("client:admin.custom_emojis.created_by.none")
             )}
-          </DescriptionItem>
-        )}
-        {emoji.url === undefined && <DescriptionItem term={t("client:admin.custom_emojis.image")}>{t("client:admin.custom_emojis.no_image")}</DescriptionItem>}
-        <DescriptionItem term={t("client:admin.custom_emojis.updated_at")}>
-          <DateTime value={emoji.updated_at} />
-        </DescriptionItem>
-      </DescriptionList>
+          </TableCell>
+        </>
+      )}
+      <TableCell>
+        <DateTime value={emoji.updated_at} />
+      </TableCell>
+      <TableCell>
       <Cluster gap="2">
         {emoji.local ? (
           <>
@@ -399,7 +417,8 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
           </>
         )}
       </Cluster>
-    </Stack>
+      </TableCell>
+    </TableRow>
   );
 }
 

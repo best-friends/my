@@ -4,7 +4,7 @@ import { WebhookSettings, webhooksQueryOptions } from "../features/admin";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The server's webhooks (ADR-0060, FR-722): setting them up, changing, testing and deleting them, for manage_webhooks. */
 export const Route = createFileRoute("/admin/webhooks")({
@@ -20,7 +20,7 @@ function WebhooksPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.webhooks.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.webhooks.title")}</PageHeading>
       <WebhookSettings />
     </>
   );

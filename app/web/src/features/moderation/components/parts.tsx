@@ -141,6 +141,8 @@ export type RecordTableProps<T> = {
   empty: ReactNode;
   /** Why the next page failed to load (a `RegionError` without a retry of its own), above the pagination, whose next tries again. */
   moreError?: ReactNode;
+  /** The `<table>`, for lists whose rows go away (useFocusAfterRemoval). */
+  tableRef?: Ref<HTMLTableElement>;
 };
 
 /**
@@ -149,14 +151,14 @@ export type RecordTableProps<T> = {
  * previous and next only; next past the loaded pages loads one more (useListPages). Key the component by whatever
  * the list is of (the filter), so that another list starts at its first page.
  */
-export function RecordTable<T>({ list, caption, head, getId, children, empty, moreError }: RecordTableProps<T>) {
+export function RecordTable<T>({ list, caption, head, getId, children, empty, moreError, tableRef }: RecordTableProps<T>) {
   const t = useT();
   const pages = useListPages(list);
   if (list.items.length === 0) return empty;
   return (
     <Stack gap="4">
       <Card padding="0">
-        <Table caption={caption}>
+        <Table ref={tableRef} caption={caption}>
           <TableHead>{head}</TableHead>
           <TableBody>
             {pages.items.map((item) => (

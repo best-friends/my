@@ -10,7 +10,7 @@
 // in the URL (web-client.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
 // memos are the operator's words, shown with dir="auto". What a change did stays in a StatusMessage above the list;
 // a failure stays there too (role="alert", web-client.md E2).
-import { Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Link, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, Text, TextArea, TextField } from "@my/ui";
+import { Box, Button, Card, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Link, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, TextArea, TextField } from "@my/ui";
 import { type ReactNode, useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
@@ -31,7 +31,7 @@ import {
   useFormatTotals,
   utcDate,
 } from "../../costs";
-import { DateTime, DetailSection, RecordList, RequirePermission, useHasPermission } from "../../moderation";
+import { DateTime, DetailSection, RecordList, RecordTable, RequirePermission, useHasPermission } from "../../moderation";
 import { instanceQueryOptions } from "../api/documents";
 import {
   type BillingImport,
@@ -124,16 +124,24 @@ export function FinanceSettings(props: FinanceSettingsProps) {
           <ViewerSettings granularity={props.granularity} basis={props.basis} today={props.today} />
         </Stack>
         <DetailSection title={t("client:admin.finance.totals.title")}>
-          <TotalsSection {...props} />
+          <Card>
+            <TotalsSection {...props} />
+          </Card>
         </DetailSection>
         <DetailSection title={t("client:admin.finance.new.title")}>
-          <NewCostItemForm />
+          <Card>
+            <NewCostItemForm />
+          </Card>
         </DetailSection>
         <DetailSection title={t("client:admin.finance.list.title")}>
-          <CostItemList today={props.today} />
+          <Card>
+            <CostItemList today={props.today} />
+          </Card>
         </DetailSection>
         <DetailSection title={t("client:admin.finance.imports.title")}>
-          <BillingImports />
+          <Card>
+            <BillingImports />
+          </Card>
         </DetailSection>
         <DetailSection title={t("client:admin.finance.movements.title")}>
           <IncomeMovements filter={props.movements} onFilterChange={props.onMovementsChange} />
@@ -897,9 +905,22 @@ function IncomeMovements({ filter, onFilterChange }: { filter: IncomeMovementFil
         </Stack>
         {filtered && <div>{clearButton}</div>}
       </Stack>
-      <RecordList
+      <RecordTable
+        key={`${filter.kind ?? anyKind}:${filter.from ?? ""}:${filter.to ?? ""}`}
         list={list}
+        caption={t("client:admin.finance.movements.title")}
         getId={(movement) => movement.id}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.finance.movements.filter.kind")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.finance.movements.occurred_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:income.totals.gross")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:income.totals.fee")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:income.totals.net")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.finance.movements.subscriber")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.finance.movements.provider_id.header")}</TableColumnHeader>
+          </>
+        }
         empty={
           filtered ? (
             <EmptyState
@@ -914,7 +935,7 @@ function IncomeMovements({ filter, onFilterChange }: { filter: IncomeMovementFil
         }
       >
         {(movement) => <IncomeMovementRow movement={movement} />}
-      </RecordList>
+      </RecordTable>
     </Stack>
   );
 }
@@ -950,42 +971,54 @@ function IncomeMovementRow({ movement }: { movement: IncomeMovement }) {
   const format = useFormatMoney();
   const formatDay = useFormatDay();
   return (
-    <Stack gap="3">
-      <Heading level={3}>
-        <Cluster as="span" gap="2" rowGap="0">
+    <TableRow data-row-id={movement.id}>
+      <TableRowHeader wrap="anywhere">
+        <Stack gap="1">
           <span>{t(incomeKindLabels[movement.kind])}</span>
-          <Text numeric>{format(movement.net)}</Text>
-        </Cluster>
-      </Heading>
-      <DescriptionList columns={2}>
-        <DescriptionItem term={t("client:admin.finance.movements.occurred_at")}>
+          {movement.covers_starts_on !== undefined && movement.covers_ends_on !== undefined && (
+            <Cluster as="span" gap="1" rowGap="0">
+              <Text size="sm" tone="muted">
+                {t("client:admin.finance.movements.covers")}
+              </Text>
+              <Text size="sm" tone="muted">
+                {intl.formatDateTimeRange(utcDate(movement.covers_starts_on), utcDate(movement.covers_ends_on), { dateStyle: "medium", timeZone: "UTC" })}
+              </Text>
+            </Cluster>
+          )}
+        </Stack>
+      </TableRowHeader>
+      <TableCell>
+        <Stack gap="1">
           <DateTime value={movement.occurred_at} />
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.finance.movements.occurred_on")}>{formatDay(movement.occurred_on)}</DescriptionItem>
-        <DescriptionItem term={t("client:income.totals.gross")}>{format(movement.gross)}</DescriptionItem>
-        <DescriptionItem term={t("client:income.totals.fee")}>{format(movement.fee)}</DescriptionItem>
-        <DescriptionItem term={t("client:income.totals.net")}>{format(movement.net)}</DescriptionItem>
-        {movement.covers_starts_on !== undefined && movement.covers_ends_on !== undefined && (
-          <DescriptionItem term={t("client:admin.finance.movements.covers")}>
-            {intl.formatDateTimeRange(utcDate(movement.covers_starts_on), utcDate(movement.covers_ends_on), { dateStyle: "medium", timeZone: "UTC" })}
-          </DescriptionItem>
-        )}
-        {movement.parent_provider_id !== undefined && (
-          <DescriptionItem term={t("client:admin.finance.movements.parent")}>
-            <Text wrap="anywhere" dir="ltr">
-              {movement.parent_provider_id}
-            </Text>
-          </DescriptionItem>
-        )}
-        <DescriptionItem term={t("client:admin.finance.movements.subscriber")}>
-          <Subscriber movement={movement} />
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.finance.movements.provider_id", { provider: movement.provider })}>
-          <Text wrap="anywhere" dir="ltr">
+          <Text size="sm" tone="muted">
+            {formatDay(movement.occurred_on)}
+          </Text>
+        </Stack>
+      </TableCell>
+      <TableCell numeric wrap="anywhere">
+        {format(movement.gross)}
+      </TableCell>
+      <TableCell numeric wrap="anywhere">
+        {format(movement.fee)}
+      </TableCell>
+      <TableCell numeric wrap="anywhere">
+        {format(movement.net)}
+      </TableCell>
+      <TableCell wrap="anywhere">
+        <Subscriber movement={movement} />
+      </TableCell>
+      <TableCell wrap="anywhere">
+        <Stack gap="1">
+          <Text size="sm" mono wrap="anywhere" dir="ltr">
             {movement.provider_id}
           </Text>
-        </DescriptionItem>
-      </DescriptionList>
-    </Stack>
+          {movement.parent_provider_id !== undefined && (
+            <Text size="sm" tone="muted" mono wrap="anywhere" dir="ltr">
+              {t("client:admin.finance.movements.parent")} {movement.parent_provider_id}
+            </Text>
+          )}
+        </Stack>
+      </TableCell>
+    </TableRow>
   );
 }
