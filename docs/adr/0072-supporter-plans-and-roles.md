@@ -279,7 +279,7 @@ ADR-0071 との契約:
 | `supporter_plan_revisions` | イベント（版） | `id`, `plan_id`, `name`（`string(50)`）, `description`（`string(1000)`）, `rank`（`int`）, `monthly_amount_minor`（`bigint`）, `annual_discount_percent`（`int`、0〜90。`CHECK`）, `emoji_limit`（`int`、0〜10000）, `visibility`（`enum(public, hidden)`）, `revised_by_user_id`（NULL 可）, `revised_at` | インデックス `(plan_id, id DESC)` |
 | `supporter_plan_retirements` | イベント | `plan_id`（PK）, `retired_by_user_id`（NULL 可）, `retired_at` | |
 | `supporter_plan_heads` | 投影 | `plan_id`（PK）, `revision_id`, `rank`, `visibility` | 廃止していないプランだけ。一意 `(rank)` |
-| `supporter_plan_prices` | リソース | `id`, `plan_id`, `interval`（`enum(month, year)`）, `amount_minor`, `currency`, `provider`, `provider_price_id`, `created_at` | 一意 `(provider, provider_price_id)`, `(plan_id, interval, amount_minor, provider)` |
+| `supporter_plan_prices` | リソース | `id`, `plan_id`, `interval`（`enum(month, year)`）, `amount_minor`, `currency`, `provider`, `provider_price_id`, `created_at` | 一意 `(provider, provider_price_id)` |
 | `supporter_plan_price_heads` | 投影 | `plan_id`, `interval`, `price_id` | PK `(plan_id, interval)`。新しい加入と変更に使う価格 |
 | `supporter_plan_price_archivals` | イベント | `price_id`（PK）, `archived_at` | 事業者でアーカイブした価格 |
 | `supporter_customers` | リソース | `id`, `user_id`, `provider`, `provider_customer_id`, `created_at` | 一意 `(provider, user_id)`, `(provider, provider_customer_id)` |
