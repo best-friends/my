@@ -61,6 +61,8 @@ export { RegionError, type RegionErrorProps } from "./RegionError";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { AccountRowSkeleton, NotificationRowSkeleton, PostSkeleton, type SkeletonRowProps } from "./SkeletonRows";
 export { Spinner, type SpinnerProps } from "./Spinner";
+export { BrandMark, type BrandMarkProps } from "./BrandMark";
+export { Wordmark, type WordmarkProps } from "./Wordmark";
 export { StatusMessage, type StatusMessageProps } from "./StatusMessage";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 

@@ -223,6 +223,22 @@ Icons are part of the kit, so that every screen draws the same shapes at the sam
 - Icons with a direction (reply, back, external link) mirror in right-to-left text with `rtl:-scale-x-100`; Phosphor's
   `mirrored` ignores the writing direction, so it is not used.
 
+## Logo
+
+The wordmark is the hand-lettered artwork of `design/assets/Logos`, used as given and never redrawn or recolored
+(`src/logos/` holds the copies the kit imports):
+
+- **The inks are fixed SVG fills, not tokens.** The logo is a brand mark, not UI: its colors (`coral`, `logo-red`, the three
+  spark inks) must not follow a server theme override, and an `<img>` of the file cannot take a token anyway. The parts load the
+  files with `<img>`, so no `<svg>` is drawn in JSX and the token check has nothing to inspect.
+- `Wordmark` picks the variant by ground: `Wordmark-Primary-Color` on light, `Wordmark-DarkBg` on dark (the `dark:` variant,
+  so `data-theme` wins over the OS setting), `tone="monochrome"` for the single charcoal ink. `Wordmark-LightBg` (red letters
+  for light grounds where coral looks weak) is not bundled; add it with a `tone` when a screen needs it.
+- It is sized by height (`sm` / `md` / `lg`); the width follows the 1250 x 700 artwork. `name` is the accessible name ("my",
+  from the locale files); `decorative` is required, and `true` gives `alt=""` when the server name is shown next to it.
+- `BrandMark` is the wordmark next to the server name (`instanceName`, `dir="auto"`, truncated when long).
+- The favicon and PWA icons in `app/web/public` are made from `App-Icon.svg`.
+
 ## States of a region
 
 The kit gives every region of data the same four states
