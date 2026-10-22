@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { CSSProperties } from "react";
 import { ThemePreview } from "./ThemePreview";
 
 const meta = {
@@ -22,4 +23,4 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 /** The overrides apply to the preview alone. */
-export const Overridden: Story = { args: { tokens: { "--color-accent": "#0d9488", "--color-surface": "#fdf6e3" } } };
+export const Overridden: Story = { args: { tokens: { "--color-accent": "#0d9488", "--color-surface": "#fdf6e3" } as CSSProperties } };
