@@ -87,4 +87,5 @@
 | [0073](0073-income-records-and-publication.md) | 収入の記録と公開 | Accepted |
 | [0074](0074-payment-provider-port.md) | 決済の PaymentProvider ポート（Stripe） | Accepted |
 | [0075](0075-metrics-surface-payments.md) | my.surface に payments を加える | Accepted |
+| [0076](0076-federation-direction.md) | 連合の向きをインスタンス設定で選ぶ（オフ / 受信のみ / 送信のみ / 送受信） | Accepted |
 <!-- adr-index:end -->
