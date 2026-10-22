@@ -24,12 +24,12 @@ const select = tv({
     value: "truncate data-placeholder:text-fg-muted **:[[slot=description]]:hidden",
     chevron: "size-4 shrink-0 fill-none stroke-current stroke-2 text-fg-muted",
     // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client.md §9).
-    popover: "min-w-(--trigger-width) overflow-auto overscroll-contain rounded-md border border-border bg-surface-raised p-1 shadow-md",
+    popover: "min-w-(--trigger-width) overflow-auto overscroll-contain rounded-lg border border-border bg-surface-raised p-1 shadow-md",
     listBox: "outline-hidden",
   },
   variants: {
     variant: {
-      field: { trigger: [fieldControl(), "justify-between group-data-invalid:border-danger data-pressed:bg-surface-raised"] },
+      field: { trigger: [fieldControl(), "justify-between group-data-invalid:border-danger group-data-invalid:ring-1 group-data-invalid:ring-danger data-pressed:bg-surface-raised"] },
       // Looks like a ghost Button of the `toolbar` size, with its icon as large, so that it lines up with the buttons beside it.
       toolbar: {
         root: "min-w-0 flex-row items-center",
@@ -92,7 +92,7 @@ export function Select<T extends object>({ label, description, errorMessage, ite
 const selectItem = tv({
   slots: {
     root: [
-      "flex min-h-8 cursor-default items-center gap-2 rounded-sm px-2 py-1 text-base text-fg outline-hidden",
+      "flex min-h-8.5 cursor-default items-center gap-2 rounded-md px-2 py-1 text-base text-fg outline-hidden",
       "data-disabled:opacity-50 data-focus-visible:focus-ring data-focused:bg-surface-sunken pointer-coarse:min-h-11",
     ],
     check: "size-4 shrink-0 fill-none stroke-current stroke-3 text-accent",

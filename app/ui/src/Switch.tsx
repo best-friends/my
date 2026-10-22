@@ -13,15 +13,15 @@ const switchStyles = tv({
     ],
     // The thumb sits at the start and moves to the end with justify-content, so it follows the direction.
     track: [
-      "flex h-6 w-10 shrink-0 items-center justify-start rounded-full border-2 border-border-strong bg-surface-sunken px-0.5",
+      "flex h-6.5 w-11 shrink-0 items-center justify-start rounded-full bg-border-strong px-1",
       "motion-safe:transition-colors",
     ],
-    thumb: "size-4 rounded-full bg-border-strong",
-    // Aligns the description and error with the label text: the track (2.5rem) plus the gap (0.75rem).
-    text: "ms-13",
+    thumb: "size-4.5 rounded-full bg-surface-raised",
+    // Aligns the description and error with the label text: the track (2.75rem) plus the gap (0.75rem).
+    text: "ms-14",
   },
   variants: {
-    isSelected: { true: { track: "justify-end border-accent bg-accent", thumb: "bg-accent-fg" } },
+    isSelected: { true: { track: "justify-end bg-accent" } },
     isFocusVisible: { true: { track: "focus-ring" } },
   },
 });
