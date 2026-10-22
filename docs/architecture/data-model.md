@@ -1279,8 +1279,8 @@ flowchart LR
 - 文章は管理者が好きな言語で書く 1 つの値で、読み手のロケールによらず同じ値を返します。空の文章は無いものとして扱います。
   書かれた言語は記録しないので、表示する側は `dir="auto"` と `lang=""`（言語が不明）で出します。
 - `terms`（利用規約）と `privacy_policy`（プライバシーポリシー）は Markdown の文書で、ほかの文章はプレーンテキストです。
-  文書は版に Markdown のまま記録し、公開ページ（`/auth/terms`・`/auth/privacy`）が読むたびに HTML にしてサニタイズします（`instance.DocumentRenderer`）。HTML は保存しません。
-  文書が無ければ、公開ページは 404 で、登録の画面・各画面のフッター・`GET /api/v1/instance` の `terms_url` / `privacy_policy_url` もそれを指しません。
+  文書は版に Markdown のまま記録し、文書の API（`GET /instance/documents/{kind}`）が読むたびに HTML にしてサニタイズします（`instance.DocumentRenderer`）。HTML は保存しません。
+  文書が無ければ、文書の API は 404 で、登録の画面・各画面のフッター・`GET /api/v1/instance` の `terms_url` / `privacy_policy_url` もそれを指しません。
 - 環境変数・設定ファイルによる設定（ADR-0010）とインスタンス設定は、同じキーを持ちません。
   再起動で反映するデプロイの構成（アダプタ・接続先・ホスト名・秘密情報）は設定に、運営者が稼働中に変える方針と文章はこの表に置きます。
   どちらかがもう一方を上書きすることはありません（[設定リファレンス](../reference/configuration.md)、[運用手順](../operations/instance-settings.md)）。

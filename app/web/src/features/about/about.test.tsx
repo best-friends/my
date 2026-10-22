@@ -22,8 +22,8 @@ describe("the information page", () => {
       short_description: "A small server for gardeners.",
       description: "We grow vegetables.\n\nEveryone is welcome.",
       rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", hint: "No insults." }],
-      terms_url: "http://localhost:3000/auth/terms",
-      privacy_policy_url: "http://localhost:3000/auth/privacy",
+      terms_url: "http://localhost:3000/about/terms",
+      privacy_policy_url: "http://localhost:3000/about/privacy",
     });
     await renderApp({ path: "/about" });
 
@@ -49,8 +49,8 @@ describe("the information page", () => {
 
     const documents = screen.getByRole("region", { name: "Terms and policies" });
     expect(within(documents).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      "http://localhost:3000/auth/terms",
-      "http://localhost:3000/auth/privacy",
+      "http://localhost:3000/about/terms",
+      "http://localhost:3000/about/privacy",
     ]);
   });
 
@@ -59,8 +59,8 @@ describe("the information page", () => {
       description: "We grow vegetables.",
       rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind" }],
       contact: { email: "admin@my.example" },
-      terms_url: "http://localhost:3000/auth/terms",
-      privacy_policy_url: "http://localhost:3000/auth/privacy",
+      terms_url: "http://localhost:3000/about/terms",
+      privacy_policy_url: "http://localhost:3000/about/privacy",
     });
     await renderApp({ path: "/about" });
 

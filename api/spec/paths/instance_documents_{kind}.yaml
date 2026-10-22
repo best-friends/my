@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getInstanceDocument
+  summary: Get a document of the instance
+  description: |
+    The body of the terms of service (`terms`), the privacy policy (`privacy_policy`) or the
+    commerce disclosures of the supporter plans (`commerce_disclosure`) that the instance
+    has published, as sanitized HTML with the time of its last revision. A 404 when the
+    instance has not published the document (`Instance.terms_url`,
+    `Instance.privacy_policy_url` and `Instance.commerce_disclosure_url` are omitted then),
+    and for an unknown kind. The web client shows it at `/about/terms`, `/about/privacy`
+    and `/about/commerce`.
+  tags: [instance]
+  security: []
+  parameters:
+    - $ref: ../components/parameters/InstanceDocumentKind.yaml
+  responses:
+    "200":
+      description: The document.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/InstanceDocument.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -277,32 +277,11 @@ func (l *Localizer) ServerAuthDocumentTitle(instance string, page string) string
 	return l.format("server:auth.document_title", map[string]any{"instance": instance, "page": page})
 }
 
-// ServerAuthDocumentCommerceMissing formats "server:auth.document.commerce_missing". Error page (HTTP 404) at the page of the commerce disclosures of the supporter plans (ADR-0072 §13) when the administrators have not written them.
-//
-//	en: This server has not published commerce disclosures.
-func (l *Localizer) ServerAuthDocumentCommerceMissing() string {
-	return l.format("server:auth.document.commerce_missing", nil)
-}
-
-// ServerAuthDocumentCommerceTitle formats "server:auth.document.commerce_title". Title and heading of the public page of the disclosures that the law asks of the seller of the supporter plans (in Japan, 特定商取引法に基づく表記), and the text of links to it.
-//
-//	en: Commerce disclosures
-func (l *Localizer) ServerAuthDocumentCommerceTitle() string {
-	return l.format("server:auth.document.commerce_title", nil)
-}
-
 // ServerAuthDocumentFooterLabel formats "server:auth.document.footer_label". Accessible name of the navigation in the footer of the server-rendered pages that links to the terms of service and the privacy policy.
 //
 //	en: Terms and policies
 func (l *Localizer) ServerAuthDocumentFooterLabel() string {
 	return l.format("server:auth.document.footer_label", nil)
-}
-
-// ServerAuthDocumentPrivacyMissing formats "server:auth.document.privacy_missing". Error page (HTTP 404) at the privacy policy page when the administrators have not written a privacy policy.
-//
-//	en: This server has not published a privacy policy.
-func (l *Localizer) ServerAuthDocumentPrivacyMissing() string {
-	return l.format("server:auth.document.privacy_missing", nil)
 }
 
 // ServerAuthDocumentPrivacyTitle formats "server:auth.document.privacy_title". Title and heading of the public page of the instance's privacy policy, and the text of links to it.
@@ -312,25 +291,11 @@ func (l *Localizer) ServerAuthDocumentPrivacyTitle() string {
 	return l.format("server:auth.document.privacy_title", nil)
 }
 
-// ServerAuthDocumentTermsMissing formats "server:auth.document.terms_missing". Error page (HTTP 404) at the terms of service page when the administrators have not written terms of service.
-//
-//	en: This server has not published terms of service.
-func (l *Localizer) ServerAuthDocumentTermsMissing() string {
-	return l.format("server:auth.document.terms_missing", nil)
-}
-
 // ServerAuthDocumentTermsTitle formats "server:auth.document.terms_title". Title and heading of the public page of the instance's terms of service, and the text of links to it.
 //
 //	en: Terms of service
 func (l *Localizer) ServerAuthDocumentTermsTitle() string {
 	return l.format("server:auth.document.terms_title", nil)
-}
-
-// ServerAuthDocumentUpdated formats "server:auth.document.updated". Line under the heading of a terms of service or privacy policy page. {date} is the date of the last revision as YYYY-MM-DD.
-//
-//	en: Last updated: {date}
-func (l *Localizer) ServerAuthDocumentUpdated(date string) string {
-	return l.format("server:auth.document.updated", map[string]any{"date": date})
 }
 
 // ServerAuthErrorTitle formats "server:auth.error.title". Title and heading of the sign-in screens' error pages.

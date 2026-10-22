@@ -6160,22 +6160,12 @@ export interface MessageArgs {
   "server:auth.cross_origin": {};
   /** {page} – {instance} */
   "server:auth.document_title": { instance: string; page: string };
-  /** This server has not published commerce disclosures. */
-  "server:auth.document.commerce_missing": {};
-  /** Commerce disclosures */
-  "server:auth.document.commerce_title": {};
   /** Terms and policies */
   "server:auth.document.footer_label": {};
-  /** This server has not published a privacy policy. */
-  "server:auth.document.privacy_missing": {};
   /** Privacy policy */
   "server:auth.document.privacy_title": {};
-  /** This server has not published terms of service. */
-  "server:auth.document.terms_missing": {};
   /** Terms of service */
   "server:auth.document.terms_title": {};
-  /** Last updated: {date} */
-  "server:auth.document.updated": { date: string };
   /** Something went wrong */
   "server:auth.error.title": {};
   /** Email address */

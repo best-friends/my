@@ -166,8 +166,8 @@ type Options struct {
 	// words it in the request's.
 	Moderation  Moderation
 	UserLocales UserLocales
-	// Documents serves the pages of the terms of service and the privacy policy (documents.go);
-	// nil leaves them unpublished.
+	// Documents tells which of the terms of service and the privacy policy are published, for the links to
+	// them (documents.go); nil links to none.
 	Documents Documents
 	// HumanCheck is the CAPTCHA widget of the sign-in and registration forms (humancheck.go);
 	// nil, as with the captcha setting none, renders none.
@@ -203,7 +203,6 @@ const (
 	pageVerifyEmail = "verify_email"
 	pageVerified    = "verified"
 	pageAuthorize   = "authorize"
-	pageDocument    = "document"
 	// The pages of password_reset.go.
 	pageForgotPassword = "forgot_password"
 	pageResetPassword  = "reset_password"
@@ -216,7 +215,7 @@ func New(o Options) *Handler {
 		o.Logger = slog.Default()
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
-	for _, name := range []string{pageSignIn, pageTwoFactor, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize, pageDocument,
+	for _, name := range []string{pageSignIn, pageTwoFactor, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize,
 		pageForgotPassword, pageResetPassword, pagePasswordReset} {
 		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/human_check.html", "templates/"+name+".html"))
 	}
@@ -250,9 +249,6 @@ func (h *Handler) Register(r Router) {
 		r.Handle("POST "+PathForgotPassword, h.cop.Handler(http.HandlerFunc(h.forgotPassword)))
 		r.Handle("GET "+PathResetPassword, http.HandlerFunc(h.resetPasswordPage))
 		r.Handle("POST "+PathResetPassword, h.cop.Handler(http.HandlerFunc(h.resetPassword)))
-	}
-	for i, d := range documentPages {
-		r.Handle("GET "+d.path, h.documentPage(i))
 	}
 	if h.o.OAuth != nil {
 		r.Handle("GET "+PathAuthorize, http.HandlerFunc(h.authorizePage))
@@ -295,8 +291,6 @@ type page struct {
 	NewPassword    *newPasswordView
 	// Consent is the authorization request on the consent page.
 	Consent *consent
-	// Document is the document on its page.
-	Document *documentView
 	// HumanCheck is the CAPTCHA widget of the form; the page's Content-Security-Policy admits
 	// the service when it is set.
 	HumanCheck *humanCheckView
@@ -306,8 +300,6 @@ type page struct {
 	// Documents are the links to the published documents, in the footer of every page and on
 	// the registration form; render fills them.
 	Documents []documentLink
-	// cache is the Cache-Control of the page; empty means no-store.
-	cache string
 	// formAction lists origins the page's forms may be redirected to besides
 	// Options.FormActionOrigins.
 	formAction []string
@@ -335,11 +327,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 		widget = h.humanCheckCSP()
 	}
 	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...), widget, p.Passkey != nil))
-	cache := p.cache
-	if cache == "" {
-		cache = "no-store"
-	}
-	hd.Set("Cache-Control", cache)
+	hd.Set("Cache-Control", "no-store")
 	hd.Add("Vary", "Accept-Language, Cookie")
 	if h.o.InstanceName != nil {
 		p.InstanceName = h.o.InstanceName(r.Context())

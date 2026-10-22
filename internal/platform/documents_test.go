@@ -14,10 +14,11 @@ import (
 	"github.com/best-friends/my/internal/platform"
 )
 
-// TestDocumentPages publishes the terms of service written in Markdown on the real database:
-// the public page renders and sanitizes them, the registration page asks to agree to them, and
-// GET /instance links to them; the privacy policy, which has no text, is a 404 and unlinked.
-func TestDocumentPages(t *testing.T) {
+// TestInstanceDocuments publishes the terms of service written in Markdown on the real database:
+// GET /instance/documents/terms renders and sanitizes them, the registration page asks to agree
+// to them, and GET /instance links to the web client's page of them; the privacy policy, which
+// has no text, is a 404 and unlinked.
+func TestInstanceDocuments(t *testing.T) {
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		_, err := a.Instance.SetText(t.Context(), appinstance.SetTextInput{
@@ -30,31 +31,44 @@ func TestDocumentPages(t *testing.T) {
 	c := &authClient{t: t, s: s, cookies: map[string]string{}}
 	ja := map[string]string{"Accept-Language": "ja"}
 
-	resp, body := c.do(http.MethodGet, authpages.PathTerms, nil, ja)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("GET terms = %d\n%s", resp.StatusCode, body)
+	resp, body := c.do(http.MethodGet, "/api/v1/instance/documents/terms", nil, ja)
+	var doc struct {
+		Kind      string `json:"kind"`
+		HTML      string `json:"html"`
+		RevisedAt string `json:"revised_at"`
 	}
-	for _, want := range []string{`<h1>利用規約</h1>`, `<div class="document" lang="" dir="auto">`, `<h2>第1条</h2>`, `<strong>親切に</strong>`} {
-		if !strings.Contains(body, want) {
-			t.Errorf("terms page lacks %s:\n%s", want, body)
+	if err := json.Unmarshal([]byte(body), &doc); err != nil || resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET terms = %d %v\n%s", resp.StatusCode, err, body)
+	}
+	if doc.Kind != "terms" || doc.RevisedAt == "" || resp.Header.Get("Cache-Control") != "public, max-age=60" {
+		t.Errorf("terms = %+v, Cache-Control %q", doc, resp.Header.Get("Cache-Control"))
+	}
+	for _, want := range []string{`<h2>第1条</h2>`, `<strong>親切に</strong>`} {
+		if !strings.Contains(doc.HTML, want) {
+			t.Errorf("terms HTML lacks %s:\n%s", want, doc.HTML)
 		}
 	}
-	for _, unwanted := range []string{"<script", "javascript:", authpages.PathPrivacyPolicy} {
-		if strings.Contains(body, unwanted) {
-			t.Errorf("terms page has %s:\n%s", unwanted, body)
+	for _, unwanted := range []string{"<script", "javascript:"} {
+		if strings.Contains(doc.HTML, unwanted) {
+			t.Errorf("terms HTML has %s:\n%s", unwanted, doc.HTML)
 		}
 	}
-	if resp, _ := c.do(http.MethodGet, authpages.PathPrivacyPolicy, nil, ja); resp.StatusCode != http.StatusNotFound {
-		t.Errorf("GET privacy without a policy = %d, want 404", resp.StatusCode)
+	if resp, _ := c.do(http.MethodGet, "/api/v1/instance/documents/privacy_policy", nil, ja); resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET privacy_policy without a policy = %d, want 404", resp.StatusCode)
 	}
-	// A reader of another locale finds the same terms.
-	if resp, body := c.do(http.MethodGet, authpages.PathTerms, nil, map[string]string{"Accept-Language": "en"}); resp.StatusCode != http.StatusOK ||
-		!strings.Contains(body, `<h2>第1条</h2>`) {
-		t.Errorf("GET terms in en = %d, want the same terms:\n%s", resp.StatusCode, body)
+
+	// The old server-rendered pages are gone: the paths belong to the SPA and the shell, or are
+	// reserved by the authentication pages.
+	if resp, _ := c.do(http.MethodGet, "/auth/terms", nil, ja); resp.StatusCode != http.StatusNotFound {
+		t.Errorf("GET /auth/terms = %d, want 404", resp.StatusCode)
+	}
+
+	if resp, _ := c.do(http.MethodGet, "/about/terms", nil, ja); resp.StatusCode != http.StatusOK {
+		t.Errorf("GET /about/terms = %d, want the SPA shell", resp.StatusCode)
 	}
 
 	if _, body := c.do(http.MethodGet, authpages.PathSignUp, nil, ja); !strings.Contains(body, `id="sign-up-agreement"`) ||
-		!strings.Contains(body, `<a href="/auth/terms">利用規約</a>`) {
+		!strings.Contains(body, `<a href="/about/terms"`) {
 		t.Errorf("sign-up page lacks the agreement:\n%s", body)
 	}
 
@@ -66,7 +80,7 @@ func TestDocumentPages(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &got); err != nil || resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET /instance = %d %v\n%s", resp.StatusCode, err, body)
 	}
-	if got.TermsURL != cfg.ServerOrigin()+authpages.PathTerms || got.PrivacyURL != "" {
+	if got.TermsURL != cfg.ServerOrigin()+"/about/terms" || got.PrivacyURL != "" {
 		t.Errorf("instance links = %+v, want the terms only", got)
 	}
 }

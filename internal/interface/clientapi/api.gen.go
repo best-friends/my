@@ -1657,6 +1657,27 @@ func (e IncomeVisibility) Valid() bool {
 	}
 }
 
+// Defines values for InstanceDocumentKind.
+const (
+	InstanceDocumentKindCommerceDisclosure InstanceDocumentKind = "commerce_disclosure"
+	InstanceDocumentKindPrivacyPolicy      InstanceDocumentKind = "privacy_policy"
+	InstanceDocumentKindTerms              InstanceDocumentKind = "terms"
+)
+
+// Valid indicates whether the value is a known member of the InstanceDocumentKind enum.
+func (e InstanceDocumentKind) Valid() bool {
+	switch e {
+	case InstanceDocumentKindCommerceDisclosure:
+		return true
+	case InstanceDocumentKindPrivacyPolicy:
+		return true
+	case InstanceDocumentKindTerms:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceDomainActionKind.
 const (
 	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
@@ -3959,7 +3980,7 @@ type AdminInstanceText struct {
 	// Key The key of an instance text: the name (one line), the short and full descriptions,
 	// the terms of service and the privacy policy (Markdown), the alternative texts of the
 	// preview image and the thumbnail, and the commerce disclosures of the supporter plans
-	// (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
+	// (Markdown, shown at `/about/commerce`; the server does not vouch for what they say).
 	Key InstanceTextKey `json:"key"`
 
 	// RevisedAt When the revision was recorded.
@@ -6466,8 +6487,9 @@ type Instance struct {
 	// instance allows (`ai_opt_out`), never the reverse.
 	AiUsage AIUsage `json:"ai_usage"`
 
-	// CommerceDisclosureUrl The public page of the commerce disclosures of the supporter plans (`/about/commerce`),
-	// which needs no sign-in; omitted when the instance has none.
+	// CommerceDisclosureUrl The web client's page of the commerce disclosures of the supporter plans (`/about/commerce`,
+	// the URL that the operators give the payment provider), which needs no sign-in and shows
+	// `GET /instance/documents/commerce_disclosure`; omitted when the instance has none.
 	CommerceDisclosureUrl *string `json:"commerce_disclosure_url,omitempty"`
 
 	// Contact How people reach the instance's operators (the instance settings `contact_account` and
@@ -6505,8 +6527,9 @@ type Instance struct {
 	// Name The display name of the instance; the domain when the instance has none.
 	Name string `json:"name"`
 
-	// PrivacyPolicyUrl The public page of the instance's privacy policy, which needs no sign-in; omitted
-	// when the instance has none.
+	// PrivacyPolicyUrl The web client's page of the instance's privacy policy (`/about/privacy`), which needs no
+	// sign-in and shows `GET /instance/documents/privacy_policy`; omitted when the instance has
+	// none.
 	PrivacyPolicyUrl *string `json:"privacy_policy_url,omitempty"`
 
 	// PushServerKey The instance's VAPID public key (RFC 8292), an uncompressed P-256 point in unpadded
@@ -6546,8 +6569,9 @@ type Instance struct {
 	// and the subscriptions show only then.
 	SupportersEnabled bool `json:"supporters_enabled"`
 
-	// TermsUrl The public page of the instance's terms of service, which needs no sign-in; omitted
-	// when the instance has none, so that clients do not link to it.
+	// TermsUrl The web client's page of the instance's terms of service (`/about/terms`), which needs no
+	// sign-in and shows `GET /instance/documents/terms`; omitted when the instance has none,
+	// so that clients do not link to it.
 	TermsUrl *string `json:"terms_url,omitempty"`
 
 	// Theme The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
@@ -6577,6 +6601,29 @@ type InstanceContact struct {
 	// Email The email address to contact; omitted when there is none.
 	Email *string `json:"email,omitempty"`
 }
+
+// InstanceDocument A document that the instance has published, rendered for reading. The administrators write
+// it once, in any language, so every locale gets the same text.
+type InstanceDocument struct {
+	// Html The document as HTML, which the server renders from the administrators' Markdown and
+	// sanitizes (headings from `h2`, paragraphs, lists, quotes, code, rules, tables, and links
+	// to `http`, `https` and `mailto`; no raw HTML, scripts or images). Clients put it in the
+	// page as it is. The language of the text is unknown: mark it `lang=""`.
+	Html string `json:"html"`
+
+	// Kind The kind of an instance document: the terms of service, the privacy policy, and the
+	// commerce disclosures of the supporter plans. Each is the instance text of the same name
+	// (`terms`, `privacy_policy`, `commerce_disclosure`).
+	Kind InstanceDocumentKind `json:"kind"`
+
+	// RevisedAt When the current revision of the document was recorded.
+	RevisedAt time.Time `json:"revised_at"`
+}
+
+// InstanceDocumentKind The kind of an instance document: the terms of service, the privacy policy, and the
+// commerce disclosures of the supporter plans. Each is the instance text of the same name
+// (`terms`, `privacy_policy`, `commerce_disclosure`).
+type InstanceDocumentKind string
 
 // InstanceDomainAction A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718).
 type InstanceDomainAction struct {
@@ -6703,7 +6750,7 @@ type InstanceSettingKind string
 // InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
 // the terms of service and the privacy policy (Markdown), the alternative texts of the
 // preview image and the thumbnail, and the commerce disclosures of the supporter plans
-// (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
+// (Markdown, shown at `/about/commerce`; the server does not vouch for what they say).
 type InstanceTextKey string
 
 // InstanceTheme The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
@@ -10656,6 +10703,9 @@ type ServerInterface interface {
 	// GetInstanceCostTotals Total the instance's public costs by period
 	// (GET /instance/cost_totals)
 	GetInstanceCostTotals(w http.ResponseWriter, r *http.Request, params GetInstanceCostTotalsParams)
+	// GetInstanceDocument Get a document of the instance
+	// (GET /instance/documents/{kind})
+	GetInstanceDocument(w http.ResponseWriter, r *http.Request, kind InstanceDocumentKind)
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(w http.ResponseWriter, r *http.Request, params ListInstanceDomainActionsParams)
@@ -16093,6 +16143,32 @@ func (siw *ServerInterfaceWrapper) GetInstanceCostTotals(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// GetInstanceDocument operation middleware
+func (siw *ServerInterfaceWrapper) GetInstanceDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kind" -------------
+	var kind InstanceDocumentKind
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", r.PathValue("kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInstanceDocument(w, r, kind)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListInstanceDomainActions operation middleware
 func (siw *ServerInterfaceWrapper) ListInstanceDomainActions(w http.ResponseWriter, r *http.Request) {
 
@@ -18072,6 +18148,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/custom_emoji_requests", wrapper.ListCustomEmojiRequests)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/custom_emoji_requests", wrapper.CreateCustomEmojiRequest)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/custom_emoji_requests/{id}/withdraw", wrapper.WithdrawCustomEmojiRequest)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/documents/{kind}", wrapper.GetInstanceDocument)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/domain_actions", wrapper.ListInstanceDomainActions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/cost_totals", wrapper.GetInstanceCostTotals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/income_totals", wrapper.GetInstanceIncomeTotals)
@@ -28920,6 +28997,68 @@ func (response GetInstanceCostTotalsdefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type GetInstanceDocumentRequestObject struct {
+	Kind InstanceDocumentKind `json:"kind"`
+}
+
+type GetInstanceDocumentResponseObject interface {
+	VisitGetInstanceDocumentResponse(w http.ResponseWriter) error
+}
+
+type GetInstanceDocument200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetInstanceDocument200JSONResponse struct {
+	Body    InstanceDocument
+	Headers GetInstanceDocument200ResponseHeaders
+}
+
+func (response GetInstanceDocument200JSONResponse) VisitGetInstanceDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceDocumentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetInstanceDocumentdefaultApplicationProblemPlusJSONResponse) VisitGetInstanceDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListInstanceDomainActionsRequestObject struct {
 	Params ListInstanceDomainActionsParams
 }
@@ -33626,6 +33765,9 @@ type StrictServerInterface interface {
 	// GetInstanceCostTotals Total the instance's public costs by period
 	// (GET /instance/cost_totals)
 	GetInstanceCostTotals(ctx context.Context, request GetInstanceCostTotalsRequestObject) (GetInstanceCostTotalsResponseObject, error)
+	// GetInstanceDocument Get a document of the instance
+	// (GET /instance/documents/{kind})
+	GetInstanceDocument(ctx context.Context, request GetInstanceDocumentRequestObject) (GetInstanceDocumentResponseObject, error)
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(ctx context.Context, request ListInstanceDomainActionsRequestObject) (ListInstanceDomainActionsResponseObject, error)
@@ -38610,6 +38752,32 @@ func (sh *strictHandler) GetInstanceCostTotals(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetInstanceCostTotalsResponseObject); ok {
 		if err := validResponse.VisitGetInstanceCostTotalsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInstanceDocument operation middleware
+func (sh *strictHandler) GetInstanceDocument(w http.ResponseWriter, r *http.Request, kind InstanceDocumentKind) {
+	var request GetInstanceDocumentRequestObject
+
+	request.Kind = kind
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInstanceDocument(ctx, request.(GetInstanceDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInstanceDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInstanceDocumentResponseObject); ok {
+		if err := validResponse.VisitGetInstanceDocumentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

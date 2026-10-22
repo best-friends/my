@@ -7,7 +7,8 @@ put:
     the administrator writes it once, in any language, and readers of every locale see the
     same value. An empty `body` clears the text. The revision and the change are kept
     (`instance_text_revisions`, the audit log's `text_changed`). The terms of service and the privacy policy are Markdown, which the server renders and
-    sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
+    sanitizes for the web client's pages of them (`GET /instance/documents/{kind}`, linked from
+    `Instance.terms_url`, `Instance.privacy_policy_url` and `Instance.commerce_disclosure_url`);
     the other texts are plain text. The display name (`name`) names the instance to people
     in place of its domain: the web client's navigation and tab title, the server-rendered
     pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;

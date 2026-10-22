@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The kind of an instance document: the terms of service, the privacy policy, and the
+  commerce disclosures of the supporter plans. Each is the instance text of the same name
+  (`terms`, `privacy_policy`, `commerce_disclosure`).
+type: string
+enum: [terms, privacy_policy, commerce_disclosure]

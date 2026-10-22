@@ -28,8 +28,8 @@ describe("the landing page", () => {
       short_description: "A small server for gardeners.",
       description: "We grow vegetables.\n\nEveryone is welcome.",
       rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", hint: "No insults." }],
-      terms_url: "http://localhost:3000/auth/terms",
-      privacy_policy_url: "http://localhost:3000/auth/privacy",
+      terms_url: "http://localhost:3000/about/terms",
+      privacy_policy_url: "http://localhost:3000/about/privacy",
     });
     const { router } = await renderApp({ path: "/" });
 
@@ -63,8 +63,8 @@ describe("the landing page", () => {
     serveInstance({
       description: "We grow vegetables.",
       rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind" }],
-      terms_url: "http://localhost:3000/auth/terms",
-      privacy_policy_url: "http://localhost:3000/auth/privacy",
+      terms_url: "http://localhost:3000/about/terms",
+      privacy_policy_url: "http://localhost:3000/about/privacy",
     });
     await renderApp({ path: "/" });
 

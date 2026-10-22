@@ -49,20 +49,23 @@ properties:
       $ref: ./InstanceRule.yaml
   terms_url:
     description: |
-      The public page of the instance's terms of service, which needs no sign-in; omitted
-      when the instance has none, so that clients do not link to it.
+      The web client's page of the instance's terms of service (`/about/terms`), which needs no
+      sign-in and shows `GET /instance/documents/terms`; omitted when the instance has none,
+      so that clients do not link to it.
     type: string
     format: uri
   privacy_policy_url:
     description: |
-      The public page of the instance's privacy policy, which needs no sign-in; omitted
-      when the instance has none.
+      The web client's page of the instance's privacy policy (`/about/privacy`), which needs no
+      sign-in and shows `GET /instance/documents/privacy_policy`; omitted when the instance has
+      none.
     type: string
     format: uri
   commerce_disclosure_url:
     description: |
-      The public page of the commerce disclosures of the supporter plans (`/about/commerce`),
-      which needs no sign-in; omitted when the instance has none.
+      The web client's page of the commerce disclosures of the supporter plans (`/about/commerce`,
+      the URL that the operators give the payment provider), which needs no sign-in and shows
+      `GET /instance/documents/commerce_disclosure`; omitted when the instance has none.
     type: string
     format: uri
   supporters_enabled:

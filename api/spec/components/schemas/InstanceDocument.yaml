@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A document that the instance has published, rendered for reading. The administrators write
+  it once, in any language, so every locale gets the same text.
+type: object
+required: [kind, html, revised_at]
+properties:
+  kind:
+    $ref: ./InstanceDocumentKind.yaml
+  html:
+    description: |
+      The document as HTML, which the server renders from the administrators' Markdown and
+      sanitizes (headings from `h2`, paragraphs, lists, quotes, code, rules, tables, and links
+      to `http`, `https` and `mailto`; no raw HTML, scripts or images). Clients put it in the
+      page as it is. The language of the text is unknown: mark it `lang=""`.
+    type: string
+  revised_at:
+    description: When the current revision of the document was recorded.
+    type: string
+    format: date-time

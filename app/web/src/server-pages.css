@@ -78,11 +78,6 @@
     @apply text-center text-lg font-extrabold break-words text-fg;
   }
 
-  /* A document (terms of service, privacy policy) gets a line length for reading. */
-  .page-document {
-    @apply max-w-3xl;
-  }
-
   .card {
     @apply flex flex-col gap-5 rounded-xl border border-border bg-surface-raised p-5 shadow-card sm:p-8;
   }
@@ -193,72 +188,6 @@
   /* The agreement on the registration form, above its submit button. */
   .agreement {
     @apply flex flex-col gap-2 text-sm;
-  }
-
-  /*
-   * A document's Markdown, rendered and sanitized by the server (internal/adapter/markdown):
-   * headings from h2, paragraphs, lists, quotes, code, rules, and tables.
-   */
-  .document {
-    @apply flex flex-col gap-4 leading-relaxed wrap-anywhere text-fg;
-    text-align: match-parent;
-  }
-
-  .document h2 {
-    @apply mt-4 text-xl font-bold;
-  }
-
-  .document h3 {
-    @apply mt-2 text-lg font-semibold;
-  }
-
-  .document h4,
-  .document h5,
-  .document h6 {
-    @apply font-semibold;
-  }
-
-  .document ul,
-  .document ol {
-    @apply flex flex-col gap-1 ps-6;
-  }
-
-  .document ul {
-    list-style: disc;
-  }
-
-  .document ol {
-    list-style: decimal;
-  }
-
-  .document blockquote {
-    @apply border-s-4 border-border-strong ps-4;
-  }
-
-  .document code {
-    @apply rounded-sm bg-surface-sunken px-1 font-mono text-sm;
-  }
-
-  .document pre {
-    @apply overflow-x-auto rounded-md bg-surface-sunken p-4;
-  }
-
-  .document pre code {
-    @apply bg-transparent p-0;
-  }
-
-  .document hr {
-    @apply border-border;
-  }
-
-  /* Wide tables scroll inside the document, never the page (web-client.md D3). */
-  .document table {
-    @apply block max-w-full overflow-x-auto border-collapse text-sm;
-  }
-
-  .document th,
-  .document td {
-    @apply border border-border px-3 py-2 text-start align-top;
   }
 
   /* The footer of every page: links to the published documents. */

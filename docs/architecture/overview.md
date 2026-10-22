@@ -222,7 +222,7 @@ internal/
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
     media/           # 公開メディア（Blob のキー media/...）の配信 /media/
     payments/        # 決済の事業者が呼ぶ webhook の受け口 POST /payments/webhooks/{provider}（クライアント API の外。ADR-0074 §3）
-    authpages/       # ログイン・ログアウト・登録・メール確認の画面と、利用規約・プライバシーポリシーの公開ページ（html/template、JavaScript なし。ADR-0030。CAPTCHA を有効にしたときだけ、ログインと登録の画面がサービスのウィジェットを読む。ADR-0042。ログインの画面は、パスキーに対応したブラウザでだけパスキーのボタンを出す Web ビルドのスクリプトを読む。FR-004）
+    authpages/       # ログイン・ログアウト・登録・メール確認の画面（html/template、JavaScript なし。ADR-0030。CAPTCHA を有効にしたときだけ、ログインと登録の画面がサービスのウィジェットを読む。ADR-0042。ログインの画面は、パスキーに対応したブラウザでだけパスキーのボタンを出す Web ビルドのスクリプトを読む。FR-004）
     web/             # Web クライアントの HTML の外枠（ランディングページ・インスタンスの情報ページ・プロフィール・投稿のリンクプレビューを含む）・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
   adapter/
     db/{sqlite,libsql,postgres}/
