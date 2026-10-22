@@ -58,6 +58,7 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     default_post_language: "und",
     require_media_description: false,
     email_moderator_notifications: false,
+    timeline_auto_insert: false,
     timeline_languages: [] as string[],
   };
   let autoDeletePolicy = {

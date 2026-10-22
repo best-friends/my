@@ -22,7 +22,7 @@ func (q *Queries) DeleteUserTimelineLanguages(ctx context.Context, userID string
 
 const getUserPreferences = `-- name: GetUserPreferences :one
 SELECT user_id, locale, default_visibility, default_quote_policy, default_post_language, require_media_description,
-  email_moderator_notifications, updated_at
+  email_moderator_notifications, timeline_auto_insert, updated_at
 FROM user_preferences WHERE user_id = ?
 `
 
@@ -37,6 +37,7 @@ func (q *Queries) GetUserPreferences(ctx context.Context, userID string) (UserPr
 		&i.DefaultPostLanguage,
 		&i.RequireMediaDescription,
 		&i.EmailModeratorNotifications,
+		&i.TimelineAutoInsert,
 		&i.UpdatedAt,
 	)
 	return i, err
@@ -57,8 +58,8 @@ const insertUserPreferences = `-- name: InsertUserPreferences :exec
 
 INSERT INTO user_preferences (
   user_id, locale, default_visibility, default_quote_policy, default_post_language, require_media_description,
-  email_moderator_notifications, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  email_moderator_notifications, timeline_auto_insert, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertUserPreferencesParams struct {
@@ -69,6 +70,7 @@ type InsertUserPreferencesParams struct {
 	DefaultPostLanguage         string
 	RequireMediaDescription     int64
 	EmailModeratorNotifications int64
+	TimelineAutoInsert          int64
 	UpdatedAt                   int64
 }
 
@@ -82,6 +84,7 @@ func (q *Queries) InsertUserPreferences(ctx context.Context, arg InsertUserPrefe
 		arg.DefaultPostLanguage,
 		arg.RequireMediaDescription,
 		arg.EmailModeratorNotifications,
+		arg.TimelineAutoInsert,
 		arg.UpdatedAt,
 	)
 	return err
@@ -131,7 +134,7 @@ func (q *Queries) ListUserTimelineLanguages(ctx context.Context, userID string) 
 const updateUserPreferences = `-- name: UpdateUserPreferences :execrows
 UPDATE user_preferences SET
   locale = ?, default_visibility = ?, default_quote_policy = ?, default_post_language = ?,
-  require_media_description = ?, email_moderator_notifications = ?, updated_at = ?
+  require_media_description = ?, email_moderator_notifications = ?, timeline_auto_insert = ?, updated_at = ?
 WHERE user_id = ?
 `
 
@@ -142,6 +145,7 @@ type UpdateUserPreferencesParams struct {
 	DefaultPostLanguage         string
 	RequireMediaDescription     int64
 	EmailModeratorNotifications int64
+	TimelineAutoInsert          int64
 	UpdatedAt                   int64
 	UserID                      string
 }
@@ -154,6 +158,7 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 		arg.DefaultPostLanguage,
 		arg.RequireMediaDescription,
 		arg.EmailModeratorNotifications,
+		arg.TimelineAutoInsert,
 		arg.UpdatedAt,
 		arg.UserID,
 	)

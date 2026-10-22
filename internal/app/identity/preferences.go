@@ -58,6 +58,8 @@ type PreferencesInput struct {
 	RequireMediaDescription bool
 	// EmailModeratorNotifications sends the user's moderator notifications also by email.
 	EmailModeratorNotifications bool
+	// TimelineAutoInsert inserts new timeline posts without asking (ADR-0077).
+	TimelineAutoInsert bool
 }
 
 // Preferences returns the preferences of a user. It fails with an error wrapping ErrNotFound
@@ -115,6 +117,7 @@ func (s *Service) SetPreferences(ctx context.Context, userID string, in Preferen
 		DefaultPostLanguage:         postLang,
 		RequireMediaDescription:     in.RequireMediaDescription,
 		EmailModeratorNotifications: in.EmailModeratorNotifications,
+		TimelineAutoInsert:          in.TimelineAutoInsert,
 		UpdatedAt:                   s.d.Clock.Now(),
 	}
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.d.Repository.UpdatePreferences(ctx, tx, p) })
@@ -156,6 +159,8 @@ type PreferencesUpdate struct {
 	RequireMediaDescription *bool
 	// EmailModeratorNotifications sends the user's moderator notifications also by email.
 	EmailModeratorNotifications *bool
+	// TimelineAutoInsert is the preference of that name (ADR-0077).
+	TimelineAutoInsert *bool
 	// TimelineLanguages replace the languages timelines show; empty shows every language.
 	TimelineLanguages *[]string
 }
@@ -273,6 +278,9 @@ func (in PreferencesUpdate) applyTo(cur UserPreferences) UserPreferences {
 	}
 	if in.EmailModeratorNotifications != nil {
 		p.EmailModeratorNotifications = *in.EmailModeratorNotifications
+	}
+	if in.TimelineAutoInsert != nil {
+		p.TimelineAutoInsert = *in.TimelineAutoInsert
 	}
 	if in.TimelineLanguages != nil {
 		p.TimelineLanguages = *in.TimelineLanguages

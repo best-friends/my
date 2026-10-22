@@ -1091,6 +1091,7 @@ type UserPreference struct {
 	DefaultPostLanguage         string
 	RequireMediaDescription     int64
 	EmailModeratorNotifications int64
+	TimelineAutoInsert          int64
 	UpdatedAt                   int64
 }
 

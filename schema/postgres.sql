@@ -659,6 +659,8 @@ CREATE TABLE user_preferences (
   require_media_description boolean NOT NULL,
   -- Whether the moderator notifications (admin_report, admin_sign_up) also come by email.
   email_moderator_notifications boolean NOT NULL,
+  -- Whether the web client inserts new timeline posts without asking (ADR-0077).
+  timeline_auto_insert boolean NOT NULL DEFAULT false,
   updated_at timestamptz NOT NULL
 );
 
