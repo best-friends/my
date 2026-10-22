@@ -161,6 +161,7 @@ export {
   type ProfileHeaderProps,
 } from "./ProfileHeader";
 export { AccountItem, type AccountItemProps } from "./AccountItem";
+export {
   PostCardAuthorLink,
   PostCardAvatarLink,
   PostCardBoostContext,
@@ -211,3 +212,7 @@ export {
   type PollResultsProps,
   type PollSummaryProps,
 } from "./Poll";
+export { EmojiTile, type EmojiTileProps } from "./EmojiTile";
+export { CodeBlock, type CodeBlockProps } from "./CodeBlock";
+export { PreviewImage, type PreviewImageProps } from "./PreviewImage";
+export { ThemePreview, type ThemePreviewProps } from "./ThemePreview";

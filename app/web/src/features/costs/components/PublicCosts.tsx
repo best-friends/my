@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { EmptyState, Link, RegionError, Spinner } from "@my/ui";
+import { EmptyState, Hint, Link, RegionError, Spinner, Stack } from "@my/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { useT } from "../../../lib/i18n";
@@ -45,13 +45,13 @@ export function PublicCosts({ today, ...panel }: PublicCostsProps) {
     );
   }
   return (
-    <div className="flex flex-col gap-6">
+    <Stack gap="6">
       <p>{t("client:costs.public.description")}</p>
       <CostTotalsPanel {...panel}>
-        <div className="flex flex-col gap-8">
+        <Stack gap="8">
           {costs.status !== "hidden" && (
             <DetailSection title={t("client:costs.public.costs")}>
-              {instance?.finance_visibility === "totals" && <p className="text-fg-muted">{t("client:costs.public.totals_only")}</p>}
+              {instance?.finance_visibility === "totals" && <Hint size="inherit">{t("client:costs.public.totals_only")}</Hint>}
               {costs.status === "loading" && (
                 <div aria-busy="true">
                   <Spinner label={t("client:costs.public.loading")} />
@@ -72,12 +72,12 @@ export function PublicCosts({ today, ...panel }: PublicCostsProps) {
           {income.status !== "hidden" && (
             <DetailSection title={t("client:income.title")}>
               {/* The balance would tell the costs that the instance keeps to itself (ADR-0073 §7). */}
-              {costs.status === "hidden" && <p className="text-fg-muted">{t("client:income.public.no_balance")}</p>}
+              {costs.status === "hidden" && <Hint size="inherit">{t("client:income.public.no_balance")}</Hint>}
               <IncomeState income={income} />
             </DetailSection>
           )}
-        </div>
+        </Stack>
       </CostTotalsPanel>
-    </div>
+    </Stack>
   );
 }

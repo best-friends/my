@@ -6,23 +6,7 @@
 // built-in role, and never one that someone holds). A role above the viewer's says why it has no buttons.
 // Roles are granted on an account's admin page. What a change did stays above the list in a StatusMessage; a refusal
 // stays in the form or the dialog.
-import {
-  type BadgeColor,
-  badgeColors,
-  Button,
-  Checkbox,
-  ConfirmDialog,
-  DescriptionItem,
-  DescriptionList,
-  Dialog,
-  DialogTrigger,
-  Link,
-  Radio,
-  RadioGroup,
-  RoleBadge,
-  StatusMessage,
-  TextField,
-} from "@my/ui";
+import { type BadgeColor, badgeColors, Button, Checkbox, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, Grid, Heading, Hint, InlineError, Link, Radio, RadioGroup, RoleBadge, SectionHeader, Stack, StatusMessage, Text, TextField } from "@my/ui";
 import { type SubmitEvent, useId, useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
@@ -86,9 +70,9 @@ const categoryLabels: Readonly<Record<"moderation" | "server" | "member", Client
 /** A role's key, an identifier that reads left to right in every locale. */
 function RoleKey({ value }: { value: string }) {
   return (
-    <span dir="ltr" className="wrap-anywhere">
+    <Text wrap="anywhere" dir="ltr">
       {value}
-    </span>
+    </Text>
   );
 }
 
@@ -104,29 +88,29 @@ function RoleScreen() {
   const t = useT();
   const { rows, rights } = useRoleSettings();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <DetailSection title={t("client:admin.roles.new.title")}>
         <NewRoleForm rights={rights} />
       </DetailSection>
       <DetailSection title={t("client:admin.roles.list.title")}>
         <RoleList rows={rows} rights={rights} />
       </DetailSection>
-    </div>
+    </Stack>
   );
 }
 
 function NewRoleForm({ rights }: { rights: RoleRights }) {
   const t = useT();
   const form = useNewRoleForm(rights);
-  if (rights.top === undefined) return <p className="text-fg-muted">{t("client:admin.roles.new.no_role")}</p>;
+  if (rights.top === undefined) return <Hint size="inherit">{t("client:admin.roles.new.no_role")}</Hint>;
   return (
-    <form onSubmit={form.submit} className="@container flex flex-col gap-6" noValidate>
-      <div className="flex flex-col items-start gap-1">
-        <p className="text-sm text-fg-muted">{t("client:admin.roles.new.description")}</p>
+    <Stack as="form" container gap="6" onSubmit={form.submit} noValidate>
+      <Stack gap="1" align="start">
+        <Hint>{t("client:admin.roles.new.description")}</Hint>
         <Link href="/moderation/accounts" variant="standalone">
           {t("client:admin.roles.new.accounts")}
         </Link>
-      </div>
+      </Stack>
       <TextField
         label={t("client:admin.roles.key")}
         description={t("client:admin.roles.key.description", { max: String(roleKeyLimit) })}
@@ -147,7 +131,7 @@ function NewRoleForm({ rights }: { rights: RoleRights }) {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -179,9 +163,9 @@ function RoleFields({ draft, change, error, rights, autoFocus = false }: RoleFie
         autoFocus={autoFocus}
         {...(error?.field === "position" ? { isInvalid: true, errorMessage: error.message } : {})}
       />
-      <p id={hintId} className="text-sm text-fg-muted">
+      <Hint id={hintId}>
         {t("client:admin.roles.permissions.description")}
-      </p>
+      </Hint>
       {permissionCategories.map(({ category, permissions }) => (
         <PermissionGroup
           key={category}
@@ -194,15 +178,15 @@ function RoleFields({ draft, change, error, rights, autoFocus = false }: RoleFie
         />
       ))}
       {error?.field === "permissions" && (
-        <div id={errorId} role="alert" className="flex flex-col gap-1 text-sm text-danger">
+        <Stack gap="1" tone="danger" textSize="sm" id={errorId} role="alert">
           <p>{error.message}</p>
           {error.missing.length > 0 && <p>{t("client:admin.roles.missing_permissions", { permissions: `⁦${error.missing.join(", ")}⁩` })}</p>}
-        </div>
+        </Stack>
       )}
       {error?.field === "form" && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.roles.save_failed", { reason: error.message })}
-        </p>
+        </InlineError>
       )}
     </>
   );
@@ -222,11 +206,11 @@ function PermissionGroup({ label, permissions, draft, change, rights, describedB
   const t = useT();
   const labelId = useId();
   return (
-    <div role="group" aria-labelledby={labelId} aria-describedby={describedBy} className="flex flex-col gap-2">
-      <span id={labelId} className="text-sm font-medium text-fg">
+    <Stack gap="2" role="group" aria-labelledby={labelId} aria-describedby={describedBy}>
+      <Text size="sm" tone="fg" weight="medium" id={labelId}>
         {label}
-      </span>
-      <div className="grid gap-2 @md:grid-cols-2">
+      </Text>
+      <Grid at="md" gap="2">
         {permissions.map((permission) => (
           <Checkbox
             key={permission}
@@ -239,8 +223,8 @@ function PermissionGroup({ label, permissions, draft, change, rights, describedB
             {t(permissionLabels[permission])}
           </Checkbox>
         ))}
-      </div>
-    </div>
+      </Grid>
+    </Stack>
   );
 }
 
@@ -253,12 +237,12 @@ function RoleList({ rows, rights }: { rows: RoleRow[]; rights: RoleRights }) {
   const actions = useRoleActions(rights, removed);
   const list = { items: rows, hasMore: false, isLoadingMore: false, loadMore: () => undefined };
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{actions.status}</StatusMessage>
       <RecordList list={list} getId={(row) => row.role.id} listRef={listRef} empty={null}>
         {(row) => <RoleItem row={row} rights={rights} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -278,19 +262,22 @@ function RoleItem({ row, rights, actions }: { row: RoleRow; rights: RoleRights; 
         ? t("client:admin.roles.builtin.moderator")
         : undefined;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        <h3 className="font-semibold">
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          (row.canChange || row.canChangeBadge || row.canDelete) && (
+            <>
+              {row.canChange && <EditRole role={role} rights={rights} actions={actions} />}
+              {row.canChangeBadge && <EditBadge role={role} actions={actions} />}
+              {row.canDelete && <DeleteRole role={role} actions={actions} />}
+            </>
+          )
+        }
+      >
+        <Heading level={3}>
           <RoleKey value={role.key} />
-        </h3>
-        {(row.canChange || row.canChangeBadge || row.canDelete) && (
-          <div className="flex flex-wrap gap-2">
-            {row.canChange && <EditRole role={role} rights={rights} actions={actions} />}
-            {row.canChangeBadge && <EditBadge role={role} actions={actions} />}
-            {row.canDelete && <DeleteRole role={role} actions={actions} />}
-          </div>
-        )}
-      </div>
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.roles.position")}>{role.position}</DescriptionItem>
         {permissionCategories.map(({ category, permissions }) => (
@@ -306,11 +293,11 @@ function RoleItem({ row, rights, actions }: { row: RoleRow; rights: RoleRights; 
           )}
         </DescriptionItem>
       </DescriptionList>
-      {builtin !== undefined && <p className="text-sm text-fg-muted">{builtin}</p>}
+      {builtin !== undefined && <Hint>{builtin}</Hint>}
       {outrankedBy !== undefined && (
-        <p className="text-sm text-fg-muted">{t("client:admin.roles.outranked", { role: isolatedRoleKey(outrankedBy.key) })}</p>
+        <Hint>{t("client:admin.roles.outranked", { role: isolatedRoleKey(outrankedBy.key) })}</Hint>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -346,7 +333,7 @@ function EditRoleForm({ role, rights, actions, close }: { role: AdminRole; right
     });
   };
   return (
-    <form onSubmit={onSubmit} className="@container flex flex-col gap-4" noValidate>
+    <Stack as="form" container gap="4" onSubmit={onSubmit} noValidate>
       <RoleFields
         draft={draft}
         change={(change) => {
@@ -356,13 +343,13 @@ function EditRoleForm({ role, rights, actions, close }: { role: AdminRole; right
         rights={rights}
         autoFocus
       />
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:admin.roles.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:admin.roles.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -398,15 +385,13 @@ function EditBadgeForm({ role, actions, close }: { role: AdminRole; actions: Rol
   };
   const sample = draft.label.trim();
   return (
-    <form
+    <Stack as="form" container gap="4"
       onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         send(draft);
       }}
-      className="@container flex flex-col gap-4"
-      noValidate
-    >
-      <p className="text-sm text-fg-muted">{t("client:admin.roles.badge.description")}</p>
+      noValidate>
+      <Hint>{t("client:admin.roles.badge.description")}</Hint>
       <TextField
         label={t("client:admin.roles.badge.label")}
         description={t("client:admin.roles.badge.label.description", { max: String(badgeLabelLimit) })}
@@ -435,20 +420,20 @@ function EditBadgeForm({ role, actions, close }: { role: AdminRole; actions: Rol
           </Radio>
         ))}
       </RadioGroup>
-      <div className="flex flex-col items-start gap-1">
-        <span className="text-sm font-medium text-fg">{t("client:admin.roles.badge.sample")}</span>
+      <Stack gap="1" align="start">
+        <Text size="sm" tone="fg" weight="medium">{t("client:admin.roles.badge.sample")}</Text>
         {sample === "" ? (
-          <span className="text-sm text-fg-muted">{t("client:admin.roles.badge.sample.empty")}</span>
+          <Hint as="span">{t("client:admin.roles.badge.sample.empty")}</Hint>
         ) : (
           <RoleBadge label={sample} color={draft.color} />
         )}
-      </div>
+      </Stack>
       {error?.field === "form" && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.roles.save_failed", { reason: error.message })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         {role.badge !== undefined && (
           <Button
             variant="danger"
@@ -465,8 +450,8 @@ function EditBadgeForm({ role, actions, close }: { role: AdminRole; actions: Rol
         <Button type="submit" variant="primary" isPending={pending === "save"} isDisabled={pending === "remove"}>
           {t("client:admin.roles.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 

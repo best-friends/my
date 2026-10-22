@@ -89,7 +89,7 @@ const postContent = tv({
     "[&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6",
     "[&>*+*]:mt-2",
   ],
-  variants: { size: { base: "", lg: "text-lg" } },
+  variants: { size: { base: "", lg: "text-lg" }, framed: { true: "rounded-md border border-border p-3" } },
 });
 
 export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "dangerouslySetInnerHTML" | "dir"> & {
@@ -97,6 +97,8 @@ export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "
   html: SanitizedHtml;
   /** `lg` for the post a page is about, in larger text; `base` by default. */
   size?: "base" | "lg";
+  /** Draws a border and padding around the body, for a preview of it in a form or a list of settings. */
+  framed?: boolean;
   /** The language of the post, when the server knows it (a BCP 47 tag). */
   lang?: string | undefined;
   /**
@@ -211,7 +213,7 @@ function emojiDrawer(html: SanitizedHtml, emojis: readonly CustomEmojiImage[], a
  * own pages through its router), and `emojis` to draw its custom emoji. The links to any other page open in a
  * new tab (`ExternalLinkContext`).
  */
-export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, size, className, ref, ...props }: PostContentProps) {
+export function PostContent({ html, framed, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, size, className, ref, ...props }: PostContentProps) {
   const autoplay = use(AutoplayContext);
   const links = use(ExternalLinkContext);
   const emojiMotion = motion ?? autoplay;
@@ -221,7 +223,7 @@ export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, 
       ref={mergeRefs(ref, linkTargetSetter(html, links), linkClickListener(onLinkClick), emojiDrawer(html, emojis, emojiMotion))}
       dir="auto"
       lang={lang}
-      className={postContent({ size, className })}
+      className={postContent({ size, framed, className })}
       dangerouslySetInnerHTML={{ __html: trustedHtml(html) }}
     />
   );

@@ -270,7 +270,7 @@ string through props or children.
 | --- | --- | --- |
 | `Button` | `Button` | `variant`: `primary` / `secondary` (default) / `ghost` / `danger`; `size`: `sm` / `md` (default); `isPending` |
 | `Link` | `Link` | `variant`: `inline` (default, underlined in running text) / `standalone` |
-| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder` |
+| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder`; `grow` takes the room left in a row |
 | `TextArea` | `TextField` + `TextArea` | as `TextField`, plus `rows` and the character count below |
 | `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
 | `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
@@ -342,7 +342,6 @@ announces only changes made after it is in the page. A failure is not a status; 
 | `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
 | `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-sm border border-border px-1 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
 | `ProfileHeader`, `ProfileHeaderImage`, `ProfileFields` / `ProfileField` | The heading of a profile: header image (or band), overlapping avatar, actions slot, name, handle, badges, tag pills, text, metadata fields, joined line and counts; `ProfileHeaderImage size="preview"` is the 3:1 image of the profile form. |
-| `Tag` | A short outlined word that qualifies the value beside it ("Estimated"): `rounded-sm border border-border px-1 text-sm text-fg-muted`. |
 | `Poll`, `PollResults`, `PollChoices`, `PollSummary`, `PollHint` | A poll (FR-112): `Poll` is the named section; `PollResults` the list of shares with a decorative bar (`aria-hidden`; the percentage and the "your vote" word carry the meaning); `PollChoices` the radio or checkbox form with the vote button; `PollSummary` the total and deadline line; `PollHint` a note. Titles take `dir="auto"`, `lang` and custom emoji. |
 
 ## Layout and text
@@ -356,12 +355,12 @@ arbitrary value. A look that no prop gives is a new prop or component in the kit
 | Component | Renders | Its own props |
 | --- | --- | --- |
 | `Stack` | `flex flex-col` | `gap`; `align` (`stretch` default / `start` / `center` / `end` / `baseline`); `justify` (`start` / `center` / `end` / `between`); `divided` (`divide-y divide-border`: rows of a list, no gap, G3); `marker` (`disc` / `decimal` with `ps-6`, `discInside`); `rowAt` (`sm` / `md`: a row with centered items from that container width) |
-| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line |
+| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line; `inline` (`inline-flex`, in the line of the text around it) |
 | `Grid` | `grid grid-cols-1`, then `columns` (`2` default / `3`) from the container width `at` (`sm` default / `md`) | `columns`; `at`; `gap` (both axes); `rowGap` |
 | `Box` | A block with no layout of its own | Only the box props below |
 | `SectionHeader` | The heading (children) and `actions` (in a `flex flex-wrap gap-2` row): stacked with `items-start gap-2`, on one line with `justify-between` from `@md` | `actions` (nothing, `null` or `false` leaves the heading alone) |
 | `DialogActions` | `flex flex-wrap justify-end gap-2`: the buttons at the end of a dialog, cancel first | — |
-| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
+| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium` / `medium` `font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
 | `Text` | A `span` (or `as`: `p`, `div`, `li`, `dt`, `dd`, `code`, `time`, `strong`, `small`, `label`, `legend`) | `size` (`xs` / `sm` / `base` / `lg`), `tone` (`fg` / `muted` / `danger` / `warning` / `success` / `accent`), `weight` (`normal` / `medium` / `semibold`), each inherited when unset; `wrap` (`anywhere` / `truncate` / `pretty`); `whitespace` (`preWrap` / `preLine`); `numeric` (`tabular-nums`); `mono`; `block`; `align` (`start` / `center` / `matchParent`); `lineClamp` (`2` / `3`); `selectAll`; `shrink` |
 | `Hint` | Secondary text (G6), a `p` (or `as` `span` / `div`): `text-sm text-fg-muted` | `size="inherit"` drops `text-sm`; the other props of `Text` but `tone` |
 | `InlineError` | An error in place, a `p` (or `as` `span` / `div`): `text-sm text-danger` | `size="inherit"` drops `text-sm`; `alert` (`role="alert"`, only for the result of the user's own action, G16); the other props of `Text` but `tone` |
@@ -537,3 +536,13 @@ The test procedure is in [web-client.md §7](../../docs/architecture/web-client.
 | `PostCardOrigin` | `actions` | The link from a post of another server to its own page (`href`, `host`, `label`). |
 
 Counts in `details` are `<Text numeric>`; several parts under a body are a `<Stack gap="3" shrink>`; `PostContent` takes `size="lg"` for the post a page is about.
+
+### Screen-specific pieces
+
+| Component | Renders |
+| --- | --- |
+| `EmojiTile` | A custom emoji (`emoji`) on a 3rem tile, hidden from assistive technology, beside the heading that names it |
+| `CodeBlock` | `pre` > `code` on a sunken surface, wrapping anywhere (a payload, a log) |
+| `PreviewImage` | A 16:9 `img` preview of a file the user chose |
+| `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
+| `PostContent` `framed` | A border and padding around a post body shown as a preview |

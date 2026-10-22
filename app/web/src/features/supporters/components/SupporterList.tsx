@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { AccountItem, Button, EmptyState, Link, RegionError, Spinner, Switch } from "@my/ui";
+import { AccountItem, Button, Cluster, EmptyState, Heading, Hint, Link, RegionError, Spinner, Stack, Switch, Text } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { handleOf } from "../../../lib/handle";
 import { useT } from "../../../lib/i18n";
@@ -13,12 +13,12 @@ import { type SupporterGroup, useAboutSupporters, useSupporterList, useSupporter
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" gap="3" aria-labelledby={headingId}>
+      <Heading level={2} id={headingId}>
         {title}
-      </h2>
+      </Heading>
       {children}
-    </section>
+    </Stack>
   );
 }
 
@@ -44,12 +44,12 @@ export function SupporterListView() {
       );
     case "signed-in-only":
       return (
-        <p className="flex flex-wrap gap-x-1">
+        <Cluster as="p" gap="1" rowGap="0">
           <span>{t("client:supporters.list.signed_in_only")}</span>
           <Link href={`/login?${new URLSearchParams({ return_to: "/about/supporters" }).toString()}`} variant="standalone">
             {t("client:supporters.list.sign_in")}
           </Link>
-        </p>
+        </Cluster>
       );
     case "loading":
       return (
@@ -69,8 +69,8 @@ export function SupporterListView() {
       );
     case "ready":
       return (
-        <div className="flex flex-col gap-8">
-          <p className="text-fg-muted">{t("client:supporters.list.description")}</p>
+        <Stack gap="8">
+          <Hint size="inherit">{t("client:supporters.list.description")}</Hint>
           {list.groups.length === 0 ? (
             <EmptyState heading={t("client:supporters.list.empty")} />
           ) : (
@@ -84,7 +84,7 @@ export function SupporterListView() {
               </Button>
             </div>
           )}
-        </div>
+        </Stack>
       );
   }
 }
@@ -92,19 +92,19 @@ export function SupporterListView() {
 function PlanGroup({ group }: { group: SupporterGroup }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+    <Stack as="section" gap="3" aria-labelledby={headingId}>
       {/* The administrators' name of the plan, in a language the app does not know (web-client.md Y10). */}
-      <h2 id={headingId} dir="auto" lang="" className="text-lg font-semibold">
+      <Heading level={2} id={headingId} dir="auto" lang="">
         {group.plan.name}
-      </h2>
-      <ul className="flex flex-col gap-3">
+      </Heading>
+      <Stack as="ul" gap="3">
         {group.members.map((member) => (
           <li key={member.account.id}>
             <Member member={member} />
           </li>
         ))}
-      </ul>
-    </section>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -138,26 +138,26 @@ export function AboutSupportersSection() {
       {plans !== undefined && plans.length > 0 && (
         <>
           <p>{t("client:supporters.about.description")}</p>
-          <ul className="flex flex-col gap-3">
+          <Stack as="ul" gap="3">
             {plans.map((plan) => (
-              <li key={plan.id} className="flex flex-col gap-1">
-                <span dir="auto" lang="" className="font-medium">
+              <Stack as="li" gap="1" key={plan.id}>
+                <Text weight="medium" dir="auto" lang="">
                   {plan.name}
-                </span>
-                <span className="text-sm text-fg-muted">
+                </Text>
+                <Hint as="span">
                   {t("client:supporter.plans.prices", {
                     monthly: t("client:supporter.per_month", { amount: format(plan.monthly_price) }),
                     yearly: t("client:supporter.per_year", { amount: format(plan.yearly_price) }),
                   })}
-                </span>
+                </Hint>
                 {plan.description !== "" && (
-                  <span dir="auto" lang="" className="text-sm whitespace-pre-line">
+                  <Text size="sm" whitespace="preLine" dir="auto" lang="">
                     {plan.description}
-                  </span>
+                  </Text>
                 )}
-              </li>
+              </Stack>
             ))}
-          </ul>
+          </Stack>
           <p>
             <Link href="/settings/supporter" variant="standalone">
               {t("client:supporters.about.subscribe")}
@@ -186,7 +186,7 @@ export function SupporterListingSettings() {
   if (listing === undefined) return null;
   return (
     <Section title={t("client:supporter.listing.title")}>
-      <p className="text-sm text-fg-muted">{t("client:supporter.listing.description")}</p>
+      <Hint>{t("client:supporter.listing.description")}</Hint>
       <Switch
         isSelected={listing.listed}
         onChange={listing.onChange}
