@@ -125,6 +125,7 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
         name={accountName(account.account)}
         handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
         avatar={imageSources(account.account.avatar)}
+        avatarSeed={account.account.id}
       />
       <Cluster as="ul" gap="4" rowGap="1">
         {account.state !== "deleted" && (

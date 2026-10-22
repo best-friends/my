@@ -405,11 +405,12 @@ describe("a status card", () => {
     const players = Array.from(article.querySelectorAll("video, audio"));
     expect(players.map((p) => [p.tagName, p.getAttribute("src"), p.getAttribute("poster"), p.hasAttribute("controls"), p.hasAttribute("autoplay")])).toEqual([
       ["VIDEO", "https://my.example/media/large-animated.mp4", "https://my.example/media/l.jpg", true, false],
-      ["AUDIO", "https://my.example/media/large-animated.ogg", null, true, false],
+      ["AUDIO", "https://my.example/media/large-animated.ogg", null, false, false],
       ["VIDEO", "https://my.example/proxy/media/m5/full", null, true, false],
     ]);
     expect(players[0]).toHaveAccessibleName("A cat jumps");
-    expect(players[1]).toHaveAccessibleName("No description");
+    // An audio file is played by the kit's player, named by the description, not by the browser's controls.
+    expect(within(article).getByRole("group", { name: "No description" })).toBeInTheDocument();
     expect(players[2]).toHaveAccessibleName("A remote clip");
   });
 

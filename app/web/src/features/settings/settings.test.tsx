@@ -785,7 +785,7 @@ describe("the settings page", () => {
   test("lists the settings pages", async () => {
     await renderApp({ path: "/settings" });
 
-    const menu = await screen.findByRole("region", { name: "Settings pages" });
+    const menu = await screen.findByRole("navigation", { name: "Settings pages" });
     expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/settings/profile",
       "/settings/preferences",
@@ -801,6 +801,5 @@ describe("the settings page", () => {
       "/settings/account-status",
       "/settings/account",
     ]);
-    expect(within(menu).getByRole("link", { name: "Blocked accounts" })).toHaveAccessibleDescription("Accounts that cannot follow you or see your posts");
   });
 });

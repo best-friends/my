@@ -2,7 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
 import { spacing } from "./storySpacing";
-import { Button } from "./Button";
+import { Button, ButtonLink } from "./Button";
 import { CloseIcon, MoreIcon, PlusIcon, ReplyIcon, StarIcon } from "./Icons";
 import { ToggleButton } from "./ToggleButton";
 
@@ -19,6 +19,17 @@ export const Primary: Story = { args: { variant: "primary" } };
 export const Secondary: Story = { args: { variant: "secondary" } };
 export const Outline: Story = { args: { variant: "outline", children: "Follow" } };
 export const Ghost: Story = { args: { variant: "ghost" } };
+/** `size="lg"`: the calls to action of a hero. */
+export const Large: Story = { args: { variant: "primary", size: "lg", children: "Create an account" } };
+
+/** A link that looks like a button: it opens another page. */
+export const AsLink: Story = {
+  render: () => (
+    <ButtonLink href="/auth/sign_up" variant="primary" size="lg">
+      Create an account
+    </ButtonLink>
+  ),
+};
 export const Danger: Story = { args: { variant: "danger", children: "Delete post" } };
 
 const variants = ["primary", "secondary", "outline", "ghost", "danger"] as const;

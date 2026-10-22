@@ -3,6 +3,7 @@ import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-route
 import { About, instanceQueryOptions, publicDomainActionsQueryOptions } from "../features/about";
 import { useT } from "../lib/i18n";
 import { useInstanceName } from "../lib/instanceName";
+import { InfoLayout } from "./-layout/InfoLayout";
 import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
 
@@ -27,10 +28,9 @@ export const Route = createFileRoute("/about")({
 
 function AboutPage() {
   return (
-    <>
-      <AboutHeading />
+    <InfoLayout heading={<AboutHeading />}>
       <About />
-    </>
+    </InfoLayout>
   );
 }
 

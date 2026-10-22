@@ -23,6 +23,7 @@ import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
 import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
+import { useAudioPlayerLabels } from "../hooks/useAudioPlayerLabels";
 import { useStatusView } from "../hooks/useStatusView";
 import { StatusActions } from "./StatusActions";
 import { QuotedStatus } from "./QuotedStatus";
@@ -61,6 +62,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
   const intl = useIntl();
   const view = useStatusView(status);
   const viewerLabels = useMediaViewerLabels();
+  const audioLabels = useAudioPlayerLabels();
 
   const card =
     view.card === null ? undefined : (
@@ -89,6 +91,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         noDescriptionLabel={t("client:timeline.media.no_description")}
         revealLabel={t("client:timeline.media.reveal")}
         viewerLabels={viewerLabels}
+        audioLabels={audioLabels}
       />
     ) : (
       card
@@ -165,7 +168,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
       })}
       avatar={
         <PostCardAvatarLink href={view.author.href}>
-          <Avatar sources={view.author.avatar} name={view.author.name} decorative />
+          <Avatar sources={view.author.avatar} name={view.author.name} seed={view.author.id} decorative />
         </PostCardAvatarLink>
       }
       author={<PostCardAuthorLink href={view.author.href} name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />}

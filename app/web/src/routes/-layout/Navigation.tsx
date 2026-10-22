@@ -294,7 +294,7 @@ function ViewerLink() {
   return (
     <AppNavAccount
       href={profilePath(account.acct)}
-      avatar={<Avatar sources={imageSources(account.avatar)} name={name} size="sm" decorative />}
+      avatar={<Avatar sources={imageSources(account.avatar)} name={name} seed={account.id} size="sm" decorative />}
       name={name}
       handle={handleOf(account.acct)}
       description={t("client:shell.nav.viewer")}

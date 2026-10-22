@@ -66,6 +66,8 @@ Colors have two layers in [src/theme.css](src/theme.css):
 | `focus` | The focus ring |
 | `overlay` | The translucent scrim behind modal dialogs and sheets |
 | `alt-overlay` | The translucent scrim under the alt text over a picture (`MediaViewer`); decorative, its contrast depends on the picture |
+| `avatar-<tint>` / `avatar-<tint>-fg` | The fill and the initial of an `Avatar` without a picture, for each of `lilac`, `peach`, `mint`, `lavender`, `yellow` (`avatarTints`); the same in both themes, fixed |
+| `pressed` / `pressed-fg` | The pressed button of `Segmented`: charcoal with white in light, coral with charcoal in dark |
 | `badge-<color>` / `badge-<color>-fg` | The background and the text of a role badge (`RoleBadge`, ADR-0071), for each of `neutral`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`, `pink` (`badgeColors`) |
 
 ### Contrast pairs
@@ -390,7 +392,8 @@ announces only changes made after it is in the page. A failure is not a status; 
 | `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
 | `DetailSection` | A titled region of a detail page: a `<section>` named by its `h2`; with `headingRef` the heading takes focus from script. |
 | `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
-| `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-sm border border-border px-1 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
+| `Segmented`, `SegmentedItem` | A pill switcher for two to four views of the same content (`value` / `onChange` by segment `id`): a React Aria single-selection `ToggleButtonGroup`, so a radiogroup that the arrow keys move through; pressed is `pressed` / `pressed-fg`. |
+| `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-full border border-border px-2 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
 | `ProfileHeader`, `ProfileHeaderImage`, `ProfileFields` / `ProfileField` | The heading of a profile: header image (or band), overlapping avatar, actions slot, name, handle, badges, tag pills, text, metadata fields, joined line and counts; `ProfileHeaderImage size="preview"` is the 3:1 image of the profile form. |
 | `Poll`, `PollResults`, `PollChoices`, `PollSummary`, `PollHint` | A poll (FR-112): `Poll` is the named section; `PollResults` the list of shares with a decorative bar (`aria-hidden`; the percentage and the "your vote" word carry the meaning); `PollChoices` the radio or checkbox form with the vote button; `PollSummary` the total and deadline line; `PollHint` a note. Titles take `dir="auto"`, `lang` and custom emoji. |
 
@@ -538,7 +541,7 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 | `line-clamp-2 text-start wrap-anywhere whitespace-pre-wrap` (`p`) | `<Text as="p" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">` |
 | `truncate text-start font-semibold` / `truncate text-start text-sm text-fg-muted` (`span`) | `<Text wrap="truncate" align="start" weight="semibold">` / `<Text wrap="truncate" align="start" size="sm" tone="muted">` |
 | `text-start text-sm font-normal wrap-anywhere text-fg-muted` (`span`) | `<Text align="start" size="sm" weight="normal" wrap="anywhere" tone="muted">` |
-| `rounded-sm border border-border px-1 text-sm text-fg-muted` (`span`) | `<Tag>` |
+| `rounded-full border border-border px-2 text-sm text-fg-muted` (`span`) | `<Tag>` |
 | `<table className="w-full text-start">`, `th` `py-2 pe-3 text-start font-semibold`, rows `border-b border-border align-top` | `<Table caption={…}>` with `TableHead` › `TableColumnHeader`, `TableBody` › `TableRow` › `TableRowHeader` / `TableCell` |
 | `<table className="w-full table-fixed border-collapse text-sm">` with `tbody` `divide-y` | `<Table density="compact" aria-labelledby={…}>`, `TableColumnHeader width="narrow"` / `"wide"` for `w-16` / `w-2/5` |
 | `sr-only` | `VisuallyHidden` |

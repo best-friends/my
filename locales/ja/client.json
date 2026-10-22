@@ -331,10 +331,6 @@
     "defaultMessage": "解除済み",
     "description": "State of a moderation action that a moderator lifted."
   },
-  "account_status.summary": {
-    "defaultMessage": "アカウントへの処分の確認と異議申し立て",
-    "description": "Description of the account status page in the list of settings pages."
-  },
   "account_status.title": {
     "defaultMessage": "アカウントの状態",
     "description": "Heading and document title of the account status page, and its entry in the list of settings pages."
@@ -6139,6 +6135,10 @@
     "defaultMessage": "注意書き（CW）を付ける",
     "description": "Toggle button (an icon) that adds a content warning: a short text shown instead of the post until the reader opens it."
   },
+  "info.contents": {
+    "defaultMessage": "このページの内容",
+    "description": "Title and accessible name of the table of contents of an information page (about, costs, supporters): links to the page's sections."
+  },
   "documents.label": {
     "defaultMessage": "規約とポリシー",
     "description": "Accessible name of the links to the server's terms of service and privacy policy (in the third column, the menu, the settings, and the sign-in page), and the heading of their section in the settings."
@@ -6218,6 +6218,38 @@
   "landing.posts.empty": {
     "defaultMessage": "まだ投稿はありません",
     "description": "Heading shown in place of the recent posts of the landing page when there are none."
+  },
+  "landing.hero.eyebrow": {
+    "defaultMessage": "Welcome to my",
+    "description": "Small line above the landing page's heading; uppercase Latin letters in both languages (the product's name is not translated)."
+  },
+  "landing.features.title": {
+    "defaultMessage": "my でできること",
+    "description": "Heading of the landing page's section with three cards about the software's features."
+  },
+  "landing.features.federation.title": {
+    "defaultMessage": "このサーバーの外ともつながる",
+    "description": "Title of the landing page's card about federation."
+  },
+  "landing.features.federation.body": {
+    "defaultMessage": "Mastodon や Misskey など、ActivityPub に対応したサーバーの人をフォローして、話せます。",
+    "description": "Text of the landing page's card about federation."
+  },
+  "landing.features.emoji.title": {
+    "defaultMessage": "絵文字で気持ちを伝える",
+    "description": "Title of the landing page's card about custom emoji and reactions."
+  },
+  "landing.features.emoji.body": {
+    "defaultMessage": "ほかのサーバーのものも含め、カスタム絵文字で投稿にリアクションできます。",
+    "description": "Text of the landing page's card about custom emoji and reactions."
+  },
+  "landing.features.language.title": {
+    "defaultMessage": "あなたの言葉で",
+    "description": "Title of the landing page's card about languages."
+  },
+  "landing.features.language.body": {
+    "defaultMessage": "画面は日本語と英語で使え、投稿には言語を付けられます。",
+    "description": "Text of the landing page's card about languages."
   },
   "local.title": {
     "defaultMessage": "ローカルタイムライン",
@@ -7171,10 +7203,6 @@
     "defaultMessage": "データのダウンロード",
     "description": "Heading of the section of the account page about archives of the user's data."
   },
-  "settings.account.summary": {
-    "defaultMessage": "データのダウンロードとアカウントの削除",
-    "description": "Description of the account page in the list of settings pages."
-  },
   "settings.account.title": {
     "defaultMessage": "アカウント",
     "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
@@ -7194,10 +7222,6 @@
   "settings.blocks.empty": {
     "defaultMessage": "ブロックしているアカウントはありません",
     "description": "Shown when the user blocks no account."
-  },
-  "settings.blocks.summary": {
-    "defaultMessage": "あなたをフォローできず、投稿も見られないアカウント",
-    "description": "Description of the blocked accounts page in the list of settings pages."
   },
   "settings.blocks.title": {
     "defaultMessage": "ブロックしたアカウント",
@@ -7246,10 +7270,6 @@
   "settings.follow_requests.rejected": {
     "defaultMessage": "{name} さんのフォローリクエストを拒否しました。",
     "description": "Announced after a follow request was rejected. {name} is the account's display name."
-  },
-  "settings.follow_requests.summary": {
-    "defaultMessage": "あなたをフォローしたい人",
-    "description": "Description of the follow requests page in the list of settings pages."
   },
   "settings.follow_requests.title": {
     "defaultMessage": "フォローリクエスト",
@@ -7427,10 +7447,6 @@
     "defaultMessage": "ミュートしたアカウント",
     "description": "Name of the list of accounts the user mutes, as one kind of CSV file to export or import."
   },
-  "settings.import_export.summary": {
-    "defaultMessage": "フォロー・ブロック・ミュート・ブックマークをほかのサーバーと移し合います",
-    "description": "Description of the import and export page in the list of settings pages."
-  },
   "custom_emoji_requests.kind": {
     "defaultMessage": "申請の内容",
     "description": "Term of the description list of a custom emoji request: what it asks for."
@@ -7490,10 +7506,6 @@
   "custom_emojis.title": {
     "defaultMessage": "あなたのカスタム絵文字",
     "description": "Title of the settings page of the custom emoji that the user requests and made."
-  },
-  "custom_emojis.summary": {
-    "defaultMessage": "このサーバーのカスタム絵文字の申請と、あなたが作った絵文字の変更",
-    "description": "Description of the custom emoji page in the settings menu."
   },
   "custom_emojis.description": {
     "defaultMessage": "あなたのロールでは、このサーバーにカスタム絵文字を足せます。申請は管理者が審査し、承認されるまで絵文字はどこにも出ません。ロールが許す間は、作った絵文字を変更・削除できます。",
@@ -7771,10 +7783,6 @@
     "defaultMessage": "通知も非表示",
     "description": "Under a muted account whose mute also hides its notifications."
   },
-  "settings.mutes.summary": {
-    "defaultMessage": "投稿を表示しないアカウント",
-    "description": "Description of the muted accounts page in the list of settings pages."
-  },
   "settings.mutes.title": {
     "defaultMessage": "ミュートしたアカウント",
     "description": "Heading and document title of the settings page with the muted accounts."
@@ -7838,10 +7846,6 @@
   "settings.preferences.autosave": {
     "defaultMessage": "変更はすぐに保存されます。",
     "description": "Text at the top of the preferences page."
-  },
-  "settings.preferences.summary": {
-    "defaultMessage": "表示言語・タイムゾーン・テーマ・投稿の既定・タイムラインの言語",
-    "description": "Description of the preferences page in the list of settings pages."
   },
   "settings.preferences.title": {
     "defaultMessage": "表示と投稿",
@@ -7970,10 +7974,6 @@
   "settings.profile.saved": {
     "defaultMessage": "プロフィールを保存しました。",
     "description": "Notification after the profile was saved."
-  },
-  "settings.profile.summary": {
-    "defaultMessage": "名前・自己紹介・画像・補足情報と、フォローの承認",
-    "description": "Description of the profile page in the list of settings pages."
   },
   "settings.profile.title": {
     "defaultMessage": "プロフィール",
@@ -8143,17 +8143,9 @@
     "defaultMessage": "二要素認証",
     "description": "Heading and document title of the settings page of two-factor authentication with an authenticator app, and its item in the settings menu."
   },
-  "settings.two_factor.summary": {
-    "defaultMessage": "パスワードに加えて、認証アプリのコードでログインします",
-    "description": "Description of the two-factor authentication item in the settings menu."
-  },
   "settings.auto_delete.title": {
     "defaultMessage": "古い投稿の自動削除",
     "description": "Heading and document title of the settings page of the automatic deletion of the user's own old posts, and its item in the settings menu."
-  },
-  "settings.auto_delete.summary": {
-    "defaultMessage": "古くなった自分の投稿を、残すものを除いて自動で削除します",
-    "description": "Description of the automatic deletion item in the settings menu."
   },
   "settings.auto_delete.description": {
     "defaultMessage": "選んだ日数より古くなった自分の投稿を、自分で削除したときと同じく、このサーバーと投稿が届いたサーバーから削除します。削除した投稿は元に戻せません。ブーストは削除しません。",
@@ -8403,10 +8395,6 @@
     "defaultMessage": "パスキー",
     "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
   },
-  "settings.passkeys.summary": {
-    "defaultMessage": "パスワードの代わりに、端末の画面ロックでログインします",
-    "description": "Description of the passkeys page in the settings menu."
-  },
   "settings.passkeys.description": {
     "defaultMessage": "パスキーを使うと、パスワードの代わりに、端末やパスワードマネージャーのロックを解除する指紋・顔・PIN でログインできます。二要素認証を有効にしている場合は、パスキーでログインしたあとにも認証コードを求められます。パスキーがあれば、パスワードのページでパスワードを削除できます。",
     "description": "Explanation at the top of the passkeys settings page."
@@ -8534,10 +8522,6 @@
   "settings.password.title": {
     "defaultMessage": "パスワード",
     "description": "Title of the settings page that changes the password, and its entry in the settings menu."
-  },
-  "settings.password.summary": {
-    "defaultMessage": "ログインに使うパスワードを変更・設定・削除する",
-    "description": "Description of the password page in the settings menu."
   },
   "settings.password.description": {
     "defaultMessage": "パスワードを変えると、ほかのすべてのブラウザーとアプリからログアウトします。パスキーと二要素認証はそのまま残ります。",
@@ -9307,6 +9291,18 @@
     "defaultMessage": "センシティブなメディアを表示",
     "description": "Toggle button over the pictures of a post that the author marked sensitive; it shows or hides them."
   },
+  "timeline.media.audio.play": {
+    "defaultMessage": "再生",
+    "description": "Accessible name of the play button of the audio player of a post's audio attachment."
+  },
+  "timeline.media.audio.pause": {
+    "defaultMessage": "一時停止",
+    "description": "Accessible name of the pause button of the audio player of a post's audio attachment, shown while the audio plays."
+  },
+  "timeline.media.audio.seek": {
+    "defaultMessage": "再生位置",
+    "description": "Accessible name of the seek slider of the audio player of a post's audio attachment; arrow keys move the playback position."
+  },
   "timeline.media.viewer.title": {
     "defaultMessage": "画像 {position, number} / {count, number}",
     "description": "Heading of the image viewer, the dialog that shows a picture of a post at its original size when it is pressed. {position} is the place of the picture among the post's pictures, from 1; {count} is how many there are."
@@ -9322,6 +9318,14 @@
   "timeline.media.viewer.next": {
     "defaultMessage": "次の画像",
     "description": "Accessible name of the icon button of the image viewer that shows the post's next picture."
+  },
+  "timeline.media.viewer.position": {
+    "defaultMessage": "{position, number} / {count, number}",
+    "description": "Position of the picture shown in the image viewer among the post's pictures, between its previous and next buttons. {position} is the place of the picture, from 1; {count} is how many there are."
+  },
+  "timeline.media.viewer.alt_text": {
+    "defaultMessage": "代替テキスト",
+    "description": "Accessible name of the note button of the image viewer that shows or hides the picture's description (alt text) over the picture. The button exists only for a picture that has a description."
   },
   "timeline.card.author": {
     "defaultMessage": "作者：{author}",
@@ -9990,10 +9994,6 @@
   "settings.domain_mutes.title": {
     "defaultMessage": "ミュートしたドメイン",
     "description": "Heading and document title of the settings page with the domains the user mutes."
-  },
-  "settings.domain_mutes.summary": {
-    "defaultMessage": "投稿と通知を表示しないサーバー",
-    "description": "Description of the muted domains page in the list of settings pages."
   },
   "settings.domain_mutes.description": {
     "defaultMessage": "ドメインをミュートすると、そのドメインとサブドメインのアカウントの投稿をホーム以外のタイムラインから、そのブーストをホームから、その通知を隠します。フォローしているアカウントはホームに残ります。変わるのはあなたの表示だけで、相手のサーバーには伝わりません。",
@@ -11722,10 +11722,6 @@
   "supporter.title": {
     "defaultMessage": "サポーターのプラン",
     "description": "Title of the user's page of the supporter plans, and its entry in the settings menu."
-  },
-  "supporter.summary": {
-    "defaultMessage": "月払いか年払いのプランでこのサーバーを支え、加入を管理します。",
-    "description": "Description of the settings menu entry of the supporter plans."
   },
   "supporter.app": {
     "defaultMessage": "このページはアプリでは使えません。",

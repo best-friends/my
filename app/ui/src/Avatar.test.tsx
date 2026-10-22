@@ -4,6 +4,18 @@ import { describe, expect, it } from "vitest";
 import { Avatar } from "./Avatar";
 
 describe("Avatar", () => {
+  it("picks the same tint for the same seed, whatever the name", () => {
+    const tint = (name: string, seed: string) => {
+      const { unmount } = render(<Avatar name={name} seed={seed} decorative={false} />);
+      const found = [...screen.getByRole("img", { name }).classList].find((c) => c.startsWith("bg-avatar-"));
+      unmount();
+      return found;
+    };
+    expect(tint("Alice", "109")).toBeDefined();
+    expect(tint("Alice", "109")).toBe(tint("Alicia", "109"));
+    expect(new Set(Array.from({ length: 20 }, (_, i) => tint("A", String(i)))).size).toBeGreaterThan(2);
+  });
+
   it("is an image named after the account when standalone", () => {
     render(<Avatar src="/a.png" name="Alice" decorative={false} />);
     expect(screen.getByRole("img", { name: "Alice" })).toHaveAttribute("src", "/a.png");

@@ -29,8 +29,8 @@
   /* Forms keep the native constraint validation, so they work without JavaScript. */
   input,
   textarea {
-    @apply block w-full min-w-0 rounded-md border border-border-strong bg-surface-sunken px-3 py-2 text-base text-fg;
-    @apply pointer-coarse:min-h-11;
+    @apply block w-full min-w-0 rounded-md border border-border-strong bg-surface-sunken px-3 py-2 text-base text-fg placeholder:text-fg-muted;
+    @apply pointer-coarse:min-h-11 motion-safe:transition-colors;
   }
 
   input:focus-visible,
@@ -40,7 +40,7 @@
 
   input[aria-invalid="true"],
   textarea[aria-invalid="true"] {
-    @apply border-danger;
+    @apply border-danger ring-1 ring-danger;
   }
 
   textarea {
@@ -55,8 +55,27 @@
   }
 
   /* The instance's name above the card, in the administrator's words (any language). */
+  .site-header {
+    @apply flex flex-col items-center gap-2;
+  }
+
+  /*
+   * The wordmark, decorative because the server name is text beside it. It is a background image so that
+   * the file is emitted next to the stylesheet (same origin, CSP img-src 'self', ADR-0019); the coral
+   * artwork on a light ground, the white one on a dark ground (same rule as `dark:`).
+   */
+  .site-logo {
+    @apply block h-16 bg-contain bg-center bg-no-repeat;
+    aspect-ratio: 1250 / 700;
+    background-image: url("../../ui/src/logos/Wordmark-Primary-Color.svg");
+
+    @variant dark {
+      background-image: url("../../ui/src/logos/Wordmark-DarkBg.svg");
+    }
+  }
+
   .site-name {
-    @apply text-center text-lg font-semibold break-words text-fg;
+    @apply text-center text-lg font-extrabold break-words text-fg;
   }
 
   /* A document (terms of service, privacy policy) gets a line length for reading. */
@@ -65,7 +84,7 @@
   }
 
   .card {
-    @apply flex flex-col gap-5 rounded-lg border border-border bg-surface-raised p-5 shadow-sm sm:p-8;
+    @apply flex flex-col gap-5 rounded-xl border border-border bg-surface-raised p-5 shadow-card sm:p-8;
   }
 
   .card h1 {
@@ -104,11 +123,11 @@
   }
 
   .alert {
-    @apply border-danger font-semibold text-danger;
+    @apply border-danger bg-danger-bg font-semibold text-danger;
   }
 
   .notice {
-    @apply border-success text-success;
+    @apply border-success bg-success-bg text-success;
   }
 
   .actions {
@@ -116,9 +135,9 @@
   }
 
   .button {
-    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md border border-transparent bg-accent px-4 py-2 text-base font-semibold text-accent-fg hover:bg-accent-hover;
+    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full border border-transparent bg-accent-fill px-4 py-2 text-center text-base font-extrabold text-accent-fill-fg hover:bg-accent-fill-hover;
     @apply pointer-coarse:min-h-11;
-    @apply motion-safe:transition-colors;
+    @apply motion-safe:transition-[color,background-color,translate] motion-safe:hover:-translate-y-px;
   }
 
   .button:focus-visible {
@@ -126,7 +145,7 @@
   }
 
   .button-secondary {
-    @apply border-border-strong bg-surface-raised text-fg hover:bg-surface-sunken;
+    @apply border-transparent bg-soft text-accent hover:bg-soft hover:text-accent-hover;
   }
 
   .links {

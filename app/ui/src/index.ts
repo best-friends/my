@@ -11,7 +11,7 @@ export { Center, type CenterProps } from "./Center";
 export { I18nProvider, type I18nProviderProps, RouterProvider } from "react-aria-components";
 
 // Form controls.
-export { Button, type ButtonProps } from "./Button";
+export { Button, ButtonLink, type ButtonLinkProps, type ButtonProps } from "./Button";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
 export { DurationSelect, type DurationSelectProps } from "./DurationSelect";
 export type { FieldErrorMessage, FieldTextProps } from "./Field";
@@ -26,6 +26,7 @@ export { Switch, type SwitchProps } from "./Switch";
 export { TextArea, type TextAreaProps } from "./TextArea";
 export { TextField, type TextFieldProps } from "./TextField";
 export { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
+export { Segmented, SegmentedItem, type SegmentedItemProps, type SegmentedProps } from "./Segmented";
 
 // Overlays, tabs and announcements.
 export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog";
@@ -73,6 +74,7 @@ export {
   AboutIcon,
   CheckIcon,
   AdminIcon,
+  AltTextIcon,
   BackIcon,
   BookmarkIcon,
   BoostIcon,
@@ -113,6 +115,7 @@ export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, t
 export { EmojiPicker, type EmojiPickerLabels, type EmojiPickerProps, type PickerEmoji } from "./EmojiPicker";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { LinkCard, type LinkCardImage, type LinkCardProps } from "./LinkCard";
+export { AudioPlayer, type AudioPlayerLabels, type AudioPlayerProps } from "./AudioPlayer";
 export { MediaGrid, type MediaGridProps, type MediaItem, type MediaPlayback } from "./MediaGrid";
 export type { MediaViewerLabels } from "./MediaViewer";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
@@ -130,7 +133,11 @@ export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./theme
 // Layout and text (web-client.md §16.1, §16.2): screens lay themselves out with these instead of classes of their own.
 export { Box, type BoxProps } from "./Box";
 export { Card, type CardElement, type CardProps } from "./Card";
+export { SettingsLayout, type SettingsLayoutProps } from "./SettingsLayout";
+export { FeatureCard, type FeatureCardProps } from "./FeatureCard";
+export { Hero, type HeroProps } from "./Hero";
 export { Cluster, type ClusterProps } from "./Cluster";
+export { InfoPage, type InfoPageProps } from "./InfoPage";
 export { Grid, type GridProps } from "./Grid";
 export type { LayoutElement, Space } from "./layout";
 export { Stack, type StackProps } from "./Stack";

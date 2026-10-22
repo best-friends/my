@@ -5,6 +5,7 @@ import { instanceQueryOptions } from "../features/about";
 import { type CostBasis, type CostGranularity, deviceToday, PublicCosts, publicCostTotalsQueryOptions, publicIncomeTotalsQueryOptions } from "../features/costs";
 import { useT } from "../lib/i18n";
 import { useInstanceName } from "../lib/instanceName";
+import { InfoLayout } from "./-layout/InfoLayout";
 import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
 
@@ -46,8 +47,7 @@ function CostsPage() {
   const { granularity, basis, today } = Route.useLoaderDeps();
   const navigate = Route.useNavigate();
   return (
-    <>
-      <CostsHeading />
+    <InfoLayout heading={<CostsHeading />}>
       <PublicCosts
         granularity={granularity}
         basis={basis}
@@ -61,7 +61,7 @@ function CostsPage() {
           });
         }}
       />
-    </>
+    </InfoLayout>
   );
 }
 

@@ -92,6 +92,7 @@ function ReactorsDialog({ statusId, isOpen, onOpenChange }: ReactorsDialogProps)
                     nameContent={<EmojiText text={item.name} emojis={item.emojis} />}
                     handle={item.handle}
                     avatar={item.avatar}
+                    avatarSeed={item.id}
                     href={item.href}
                     trailing={<Emoji emoji={item.emoji} text={item.emojiText} />}
                   />

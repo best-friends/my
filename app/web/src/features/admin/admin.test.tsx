@@ -31,7 +31,7 @@ describe("the staff's menus on the settings page", () => {
   test("are not there for a user without staff permissions", async () => {
     await renderApp({ path: "/settings" });
 
-    expect(await screen.findByRole("region", { name: "Settings pages" })).toBeInTheDocument();
+    expect(await screen.findByRole("navigation", { name: "Settings pages" })).toBeInTheDocument();
     // The account section loads with the viewer; the menus would be shown by then.
     expect(await within(screen.getByRole("main")).findByText("@alice")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Moderation" })).not.toBeInTheDocument();

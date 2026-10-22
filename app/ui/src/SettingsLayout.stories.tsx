@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect } from "storybook/test";
+import { RailItem } from "./RailItem";
+import { SettingsLayout } from "./SettingsLayout";
+import { Stack } from "./Stack";
+import { Text } from "./Text";
+
+const menu = (
+  <Stack as="ul" gap="1">
+    <li>
+      <RailItem form="section" href="#profile" icon={null} label="Profile" current />
+    </li>
+    <li>
+      <RailItem form="section" href="#account" icon={null} label="Account" />
+    </li>
+  </Stack>
+);
+
+const meta = {
+  title: "Shell/SettingsLayout",
+  component: SettingsLayout,
+  parameters: { layout: "fullscreen" },
+  args: {
+    menu,
+    menuLabel: "Settings sections",
+    view: "pane",
+    children: <Text as="p">The section.</Text>,
+  },
+} satisfies Meta<typeof SettingsLayout>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+/** A section's page: the menu beside it from `md`, the current section is `aria-current`. */
+export const Section: Story = {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("navigation", { name: "Settings sections" })).toBeInTheDocument();
+    await expect(canvas.getByRole("link", { name: "Profile" })).toHaveAttribute("aria-current", "page");
+  },
+};
+
+/** The page of the settings: the menu leads; below `md` it is all there is. */
+export const MenuPage: Story = { args: { view: "menu", children: <Text as="p">What is left on the settings page.</Text> } };

@@ -38,7 +38,7 @@ const pictures: readonly MediaItem[] = [
 const meta = {
   title: "Timeline/MediaGrid",
   component: MediaGrid,
-  args: { items: pictures.slice(0, 1), noDescriptionLabel: "No description", revealLabel: "Show sensitive media", onRevealedChange: fn() },
+  args: { items: pictures.slice(0, 1), noDescriptionLabel: "No description", revealLabel: "Show sensitive media", audioLabels: { play: "Play", pause: "Pause", seek: "Position" }, onRevealedChange: fn() },
 } satisfies Meta<typeof MediaGrid>;
 
 export default meta;
@@ -110,6 +110,8 @@ export const Viewer: Story = {
     viewerLabels: {
       title: (position, count) => `Image ${String(position)} of ${String(count)}`,
       close: "Close",
+      position: (position: number, count: number) => `${String(position)} / ${String(count)}`,
+      altText: "Description",
       previous: "Previous image",
       next: "Next image",
     },
@@ -159,7 +161,7 @@ const playables: readonly MediaItem[] = [
 ];
 
 /**
- * Videos and audio files play in their cells with the browser's controls and never start by themselves; each player
+ * A video plays in its cell with the browser's controls under a play disc, an audio file in an AudioPlayer, and neither starts by itself; each player
  * is named by its description. These stories take no screenshots: the browser's media controls draw the time once the
  * file has loaded, which a screenshot cannot wait for.
  */
@@ -175,7 +177,15 @@ export const Video: Story = {
   },
 };
 
-export const Audio: Story = { args: { items: playables.slice(1, 3) }, tags: ["no-screenshot"] };
+/** An audio file plays in an AudioPlayer, not the browser's controls, and never starts by itself. */
+export const Audio: Story = {
+  args: { items: playables.slice(1, 3) },
+  tags: ["no-screenshot"],
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvasElement.querySelector("audio[controls]")).toBeNull();
+    await expect(canvas.getAllByRole("button", { name: "Play" })).toHaveLength(2);
+  },
+};
 
 /** A gifv loops by itself without controls, unless animations do not play by themselves or motion is reduced. */
 export const Gifv: Story = { args: { items: playables.slice(3) }, tags: ["no-screenshot"] };
