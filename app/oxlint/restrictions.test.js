@@ -35,6 +35,7 @@ const files = {
   component: "ui/src/Button.tsx",
   svgControl: "ui/src/Checkbox.tsx",
   postContent: "ui/src/PostContent.tsx",
+  shell: "ui/src/AppShell.tsx",
   story: "ui/src/EmptyState.stories.tsx",
 };
 
@@ -58,6 +59,10 @@ describe("where the restrictions apply", () => {
   it("keeps the Trusted Types sinks to PostContent and the tests (A8)", () => {
     for (const file of [files.route, files.lib, files.featureHook, files.component, files.story]) assert.ok(ruleOptions("restrict/html", file).length > 0);
     for (const file of [files.postContent, files.featureTest, files.featureComponentTest]) assert.equal(ruleValue("restrict/html", file), "off");
+  });
+  it("allows viewport breakpoints in the app shell's components of the kit, and not in its other components (D2)", () => {
+    assert.deepEqual(ruleValue("better-tailwindcss/no-restricted-classes", files.shell), ruleValue("better-tailwindcss/no-restricted-classes", files.route));
+    assert.notDeepEqual(ruleValue("better-tailwindcss/no-restricted-classes", files.component), ruleValue("better-tailwindcss/no-restricted-classes", files.route));
   });
   it("allows the API client and fetch in features/<x>/api and lib/ (S1)", () => {
     for (const file of [files.featureApi, files.lib]) {

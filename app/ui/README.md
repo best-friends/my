@@ -456,6 +456,28 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 | `<table className="w-full table-fixed border-collapse text-sm">` with `tbody` `divide-y` | `<Table density="compact" aria-labelledby={…}>`, `TableColumnHeader width="narrow"` / `"wide"` for `w-16` / `w-2/5` |
 | `sr-only` | `VisuallyHidden` |
 
+## App shell
+
+The frame around every page ([web-client.md §9](../../docs/architecture/web-client.md#9-アプリの外枠)). The app decides what goes in each slot
+(the items, their permissions and counts, the strings); the look is here. `AppShell` and `AppNavigation` are the kit's only components that
+answer to the viewport (`md:`, `lg:`, `xl:` and the `short:` variant of [theme.css](src/theme.css)), because they lay out the screen itself
+(D2); the lint exempts those two files from the rule against viewport breakpoints.
+
+| Component | What it draws | Its props |
+| --- | --- | --- |
+| `AppShell` | The skip link, the navigation, `main` (padded at its end for the tab bar and the floating button) and the third column (xl) or the floating slot | `navigation`, `children`, `skipLinkLabel`, `mainId`, `mainRef`, `aside` (only where the third column shows), `floating`, `floatingVisible` (sets `data-compose-fab` on `main`, which `with-compose-fab:` and the app's `scroll-padding-block-end` follow) |
+| `AsidePanel` | A section of the third column: an `aside` named by its small muted `h2` | `heading`, `children` |
+| `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` and `footer` (sidebar only), the items as children |
+| `AppNavItem` | An item: the icon in a pill (filled when current), the label, the count's `Badge` | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
+| `AppNavMenu` | The tab bar's last item, a button that opens a `Sheet` | `label`, `badge`, `isOpen`, `onOpenChange`, `title`, `closeLabel`, the sheet's content |
+| `AppNavMenuList`, `AppNavMenuLink`, `AppNavMenuSection` | The sheet's list and its rows; a block under them, with a line above (`separator` `"3"` / `"4"`) or without | as `AppNavItem` but `shows`; `separator` |
+| `AppNavAccount` | The sidebar's signed-in account: avatar, display name and handle | `href`, `avatar`, `name`, `handle`, `description` |
+| `ServerNameLink` | The server's name as the link to `/`, in a `dir="auto"` paragraph | `name`, `description`, `current`, `size` (`lg` at the head of a column) |
+| `PageHeading` | The page's `h1`, focusable by script | `id`, `visuallyHidden` (`sr-only`) |
+| `BackLinkHeading` | A heading with the way back under it (a page of the settings) | `backHref`, `backLabel`, the heading as children |
+| `RouteLoading` | A large spinner in the page's column | `label` |
+| `StandalonePage` | A `main` without the shell, centered, prose width (the layout's own error) | `children` |
+
 ## Component tests
 
 Each component has Testing Library tests next to it (`src/<Component>.test.tsx`) that find elements by role and drive them with
@@ -477,7 +499,9 @@ shadow and the focus ring. [src/storybook.css](src/storybook.css) is the Storybo
 
 Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `make ui-test` runs each story in Chromium in
 `en` and `ar-XB`, light and dark (four projects); a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
-1024 px container widths. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
+1024 px container widths. A story of the app shell sets a viewport instead (`globals: atViewport("phone")` with
+`parameters: shellParameters`, [src/storyViewports.ts](src/storyViewports.ts)), since the shell answers to the viewport, and is captured
+once at it; its content stays within the viewport's height. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
 anything in it still animates then; stories render and run their `play` functions (which find elements by role, with
 `storybook/test`) without it. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
 them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
