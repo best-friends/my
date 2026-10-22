@@ -3903,6 +3903,10 @@
     "defaultMessage": "会計の閲覧",
     "description": "Name of the permission view_finance: reading the totals of the instance's costs on the finances page, without recording or changing them."
   },
+  "admin.roles.permission.create_custom_emojis": {
+    "defaultMessage": "カスタム絵文字の作成の申請",
+    "description": "Name of the permission create_custom_emojis: requesting new custom emoji, which an administrator approves, and changing and deleting the ones the user made."
+  },
   "admin.roles.permission.manage_supporters": {
     "defaultMessage": "サポーター",
     "description": "Name of the permission manage_supporters: the supporter program, its plans, and their subscriptions."
@@ -6175,6 +6179,14 @@
     "defaultMessage": "webhook を開く",
     "description": "Link in an administrator's notification of a disabled webhook to the webhooks screen."
   },
+  "notifications.link.custom_emoji_requests": {
+    "defaultMessage": "申請を確認する",
+    "description": "Link in an administrator's notification of a custom emoji request to the requests tab of the custom emoji screen."
+  },
+  "notifications.link.own_custom_emojis": {
+    "defaultMessage": "あなたのカスタム絵文字を開く",
+    "description": "Link in the notification of a decided custom emoji request to the user's custom emoji page."
+  },
   "notifications.load_more": {
     "defaultMessage": "さらに通知を読み込む",
     "description": "Button at the end of the notifications that loads older ones."
@@ -6242,6 +6254,42 @@
   "notifications.type.admin_webhook_disabled": {
     "defaultMessage": "サーバーが失敗の続いた webhook を無効にしました",
     "description": "Notification sentence to an administrator: the server disabled a webhook whose endpoint kept failing or answered that it is gone."
+  },
+  "notifications.type.admin_custom_emoji_request": {
+    "defaultMessage": "カスタム絵文字の申請が審査を待っています",
+    "description": "Notification sentence to an administrator when the request it is about is no longer known."
+  },
+  "notifications.type.custom_emoji_request_decided": {
+    "defaultMessage": "管理者があなたのカスタム絵文字の申請を審査しました",
+    "description": "Notification sentence of a decided custom emoji request when the request is no longer known."
+  },
+  "notifications.custom_emoji_request.submitted.create": {
+    "defaultMessage": "利用者がカスタム絵文字 {emoji} を申請しました",
+    "description": "Notification sentence to an administrator: a user requested a new custom emoji. {emoji} is its :shortcode:."
+  },
+  "notifications.custom_emoji_request.submitted.image": {
+    "defaultMessage": "利用者がカスタム絵文字 {emoji} の画像の差し替えを申請しました",
+    "description": "Notification sentence to an administrator: a user requested a new image of a custom emoji they made. {emoji} is its :shortcode:."
+  },
+  "notifications.custom_emoji_request.approved.create": {
+    "defaultMessage": "カスタム絵文字 {emoji} の申請が承認されました",
+    "description": "Notification sentence: an administrator approved the user's request for a new custom emoji. {emoji} is its :shortcode:."
+  },
+  "notifications.custom_emoji_request.approved.image": {
+    "defaultMessage": "カスタム絵文字 {emoji} の画像の差し替えが承認されました",
+    "description": "Notification sentence: an administrator approved the user's request for a new image of their custom emoji. {emoji} is its :shortcode:."
+  },
+  "notifications.custom_emoji_request.rejected.create": {
+    "defaultMessage": "カスタム絵文字 {emoji} の申請が却下されました",
+    "description": "Notification sentence: an administrator rejected the user's request for a new custom emoji. {emoji} is its :shortcode:."
+  },
+  "notifications.custom_emoji_request.rejected.image": {
+    "defaultMessage": "{emoji} の画像の差し替えの申請が却下されました",
+    "description": "Notification sentence: an administrator rejected the user's request for a new image of their custom emoji. {emoji} is its :shortcode:."
+  },
+  "notifications.custom_emoji_request.reason": {
+    "defaultMessage": "管理者の理由：",
+    "description": "Label before the reason of a rejected custom emoji request in its notification."
   },
   "notifications.type.appeal_decided": {
     "defaultMessage": "あなたの異議申し立てが審査されました",
@@ -7174,6 +7222,298 @@
   "settings.import_export.summary": {
     "defaultMessage": "フォロー・ブロック・ミュート・ブックマークをほかのサーバーと移し合います",
     "description": "Description of the import and export page in the list of settings pages."
+  },
+  "custom_emoji_requests.kind": {
+    "defaultMessage": "申請の内容",
+    "description": "Term of the description list of a custom emoji request: what it asks for."
+  },
+  "custom_emoji_requests.kind.create": {
+    "defaultMessage": "新しい絵文字",
+    "description": "What a custom emoji request asks for: a new emoji."
+  },
+  "custom_emoji_requests.kind.image": {
+    "defaultMessage": "画像の差し替え",
+    "description": "What a custom emoji request asks for: a new image of an emoji the requester made."
+  },
+  "custom_emoji_requests.state": {
+    "defaultMessage": "状態",
+    "description": "Term of the description list of a custom emoji request: its state."
+  },
+  "custom_emoji_requests.state.pending": {
+    "defaultMessage": "審査待ち",
+    "description": "State of a custom emoji request that no administrator has decided yet."
+  },
+  "custom_emoji_requests.state.approved": {
+    "defaultMessage": "承認",
+    "description": "State of an approved custom emoji request."
+  },
+  "custom_emoji_requests.state.rejected": {
+    "defaultMessage": "却下",
+    "description": "State of a rejected custom emoji request."
+  },
+  "custom_emoji_requests.state.withdrawn": {
+    "defaultMessage": "取り下げ",
+    "description": "State of a custom emoji request that its requester withdrew."
+  },
+  "custom_emoji_requests.state.lapsed": {
+    "defaultMessage": "失効（絵文字が削除されました）",
+    "description": "State of a request for a new image of a custom emoji that was deleted before the request was decided."
+  },
+  "custom_emoji_requests.created_at": {
+    "defaultMessage": "申請した日時",
+    "description": "Term of the description list of a custom emoji request: when it was made."
+  },
+  "custom_emoji_requests.decided_at": {
+    "defaultMessage": "終わった日時",
+    "description": "Term of the description list of a custom emoji request: when it was approved, rejected, withdrawn, or lapsed."
+  },
+  "custom_emoji_requests.reason": {
+    "defaultMessage": "却下の理由",
+    "description": "Term of the description list of a rejected custom emoji request: the administrator's reason."
+  },
+  "custom_emoji_requests.image": {
+    "defaultMessage": "画像",
+    "description": "Term of the description list of a custom emoji request whose image cannot be shown."
+  },
+  "custom_emoji_requests.no_image": {
+    "defaultMessage": "残っていません",
+    "description": "Value of the image of a custom emoji request whose uploaded image was deleted after the request ended."
+  },
+  "custom_emojis.title": {
+    "defaultMessage": "あなたのカスタム絵文字",
+    "description": "Title of the settings page of the custom emoji that the user requests and made."
+  },
+  "custom_emojis.summary": {
+    "defaultMessage": "このサーバーのカスタム絵文字の申請と、あなたが作った絵文字の変更",
+    "description": "Description of the custom emoji page in the settings menu."
+  },
+  "custom_emojis.description": {
+    "defaultMessage": "あなたのロールでは、このサーバーにカスタム絵文字を足せます。申請は管理者が審査し、承認されるまで絵文字はどこにも出ません。ロールが許す間は、作った絵文字を変更・削除できます。",
+    "description": "Explanation at the top of the user's custom emoji page (ADR-0070)."
+  },
+  "custom_emojis.new.title": {
+    "defaultMessage": "カスタム絵文字を申請する",
+    "description": "Heading of the region of the form that requests a new custom emoji."
+  },
+  "custom_emojis.usage": {
+    "defaultMessage": "{used, plural, other {カスタム絵文字を {limit} 個のうち # 個使っています（審査中の申請を含みます）。}}",
+    "description": "How many custom emoji the user has against their limit. {used} counts the user's emoji and pending requests to create one; {limit} is how many they may have."
+  },
+  "custom_emojis.usage.unlimited": {
+    "defaultMessage": "{used, plural, other {カスタム絵文字を # 個使っています（審査中の申請を含みます）。上限はありません。}}",
+    "description": "How many custom emoji the user has when their roles set no limit. {used} counts the user's emoji and pending requests to create one."
+  },
+  "custom_emojis.image": {
+    "defaultMessage": "画像",
+    "description": "Label of the image of a requested custom emoji."
+  },
+  "custom_emojis.image.description": {
+    "defaultMessage": "PNG・GIF・WebP で、縦横 1024 ピクセルまで。256 ピクセルの中に縮めて表示します。アニメーション PNG は最初のコマだけを表示します。",
+    "description": "Rules of the image of a requested custom emoji."
+  },
+  "custom_emojis.image.choose": {
+    "defaultMessage": "画像を選ぶ",
+    "description": "Button that opens the file picker for the image of a requested custom emoji."
+  },
+  "custom_emojis.image.chosen": {
+    "defaultMessage": "選んだ画像：{name}",
+    "description": "The chosen image file. {name} is its file name."
+  },
+  "custom_emojis.image.large_hint": {
+    "defaultMessage": "この画像は 100 KB より大きいです。これより大きいカスタム絵文字を表示しないサーバー（既定の GoToSocial など）があります。",
+    "description": "Hint for an image of a requested custom emoji larger than 100 KB."
+  },
+  "custom_emojis.image.required": {
+    "defaultMessage": "画像を選んでください。",
+    "description": "Error of a request without an image."
+  },
+  "custom_emojis.image_failed": {
+    "defaultMessage": "サーバーが画像を処理できませんでした。",
+    "description": "Error when the server could not process the uploaded image of a custom emoji request."
+  },
+  "custom_emojis.shortcode": {
+    "defaultMessage": "ショートコード",
+    "description": "Label of the shortcode of a requested custom emoji."
+  },
+  "custom_emojis.shortcode.description": {
+    "defaultMessage": "2〜30 文字の英字（A〜Z）・数字・アンダースコアで、大文字と小文字を区別します。投稿ではショートコードの前後をコロンで囲んで入力します。後から変えられません。",
+    "description": "Rules of the shortcode of a requested custom emoji."
+  },
+  "custom_emojis.shortcode.invalid": {
+    "defaultMessage": "2〜30 文字の英字（A〜Z）・数字・アンダースコアにしてください。",
+    "description": "Error of a shortcode that breaks the rules."
+  },
+  "custom_emojis.submit": {
+    "defaultMessage": "申請する",
+    "description": "Button that sends a request for a new custom emoji."
+  },
+  "custom_emojis.requested": {
+    "defaultMessage": "{emoji} を申請しました。管理者が審査します。",
+    "description": "Status after requesting a custom emoji. {emoji} is its :shortcode:."
+  },
+  "custom_emojis.request_failed": {
+    "defaultMessage": "申請できませんでした：{reason}",
+    "description": "Error of a custom emoji request that failed. {reason} is the server's explanation, such as a taken shortcode or a reached limit."
+  },
+  "custom_emojis.requests.title": {
+    "defaultMessage": "あなたの申請",
+    "description": "Heading of the region of the user's custom emoji requests."
+  },
+  "custom_emojis.requests.empty": {
+    "defaultMessage": "申請はまだありません",
+    "description": "Empty state of the user's custom emoji requests."
+  },
+  "custom_emojis.withdraw": {
+    "defaultMessage": "取り下げる",
+    "description": "Button that withdraws a pending custom emoji request."
+  },
+  "custom_emojis.withdraw_request": {
+    "defaultMessage": "{emoji} の申請を取り下げる",
+    "description": "Accessible name of the button that withdraws a pending custom emoji request. {emoji} is the :shortcode: of the requested emoji."
+  },
+  "custom_emojis.withdrawn": {
+    "defaultMessage": "{emoji} の申請を取り下げました。",
+    "description": "Status after withdrawing a custom emoji request."
+  },
+  "custom_emojis.withdraw_failed": {
+    "defaultMessage": "申請を取り下げられませんでした：{reason}",
+    "description": "Error after withdrawing a custom emoji request failed. {reason} is the server's explanation."
+  },
+  "custom_emojis.list.title": {
+    "defaultMessage": "あなたが作ったカスタム絵文字",
+    "description": "Heading of the region of the custom emoji that the user made."
+  },
+  "custom_emojis.empty": {
+    "defaultMessage": "作ったカスタム絵文字はまだありません",
+    "description": "Empty state of the custom emoji that the user made."
+  },
+  "custom_emojis.empty.description": {
+    "defaultMessage": "承認された申請がここに出ます。",
+    "description": "Description of the empty state of the custom emoji that the user made."
+  },
+  "custom_emojis.state": {
+    "defaultMessage": "状態",
+    "description": "Term of the description list of the user's custom emoji: whether it is shown."
+  },
+  "custom_emojis.state.enabled": {
+    "defaultMessage": "有効",
+    "description": "State of an enabled custom emoji."
+  },
+  "custom_emojis.state.disabled": {
+    "defaultMessage": "管理者が無効にしました（文字で表示）",
+    "description": "State of a custom emoji that an administrator disabled."
+  },
+  "custom_emojis.picker": {
+    "defaultMessage": "ピッカー",
+    "description": "Term of the description list of the user's custom emoji: whether the picker offers it."
+  },
+  "custom_emojis.picker.shown": {
+    "defaultMessage": "出す",
+    "description": "The picker offers the emoji."
+  },
+  "custom_emojis.picker.hidden": {
+    "defaultMessage": "出さない",
+    "description": "The picker does not offer the emoji."
+  },
+  "custom_emojis.category": {
+    "defaultMessage": "カテゴリ",
+    "description": "Label of the category of a custom emoji."
+  },
+  "custom_emojis.category.description": {
+    "defaultMessage": "ピッカーで絵文字をまとめる見出しです。任意で、{max} 文字まで。",
+    "description": "Description of the category of a custom emoji. {max} is the limit."
+  },
+  "custom_emojis.aliases": {
+    "defaultMessage": "別名",
+    "description": "Label of the other names of a custom emoji."
+  },
+  "custom_emojis.aliases.description": {
+    "defaultMessage": "ピッカーの検索で絵文字が見つかるほかの名前です。空白かカンマで区切り、{max} 個まで。それぞれショートコードと同じ文字で書きます。",
+    "description": "Description of the other names of a custom emoji. {max} is the limit."
+  },
+  "custom_emojis.aliases.too_many": {
+    "defaultMessage": "別名は {max} 個までです。",
+    "description": "Error of too many other names."
+  },
+  "custom_emojis.visible_in_picker": {
+    "defaultMessage": "ピッカーに出す",
+    "description": "Checkbox: whether the picker offers the emoji."
+  },
+  "custom_emojis.visible_in_picker.description": {
+    "defaultMessage": "ピッカーに出さない絵文字も、ショートコードをコロンで囲んで入力すれば使えます。",
+    "description": "Description of the checkbox of the picker."
+  },
+  "custom_emojis.none": {
+    "defaultMessage": "なし",
+    "description": "Value of an empty category or empty other names."
+  },
+  "custom_emojis.updated_at": {
+    "defaultMessage": "画像を設定した日時",
+    "description": "Term of the description list of the user's custom emoji: when its current image was set."
+  },
+  "custom_emojis.edit": {
+    "defaultMessage": "編集する",
+    "description": "Button that opens the dialog of the settings of the user's custom emoji."
+  },
+  "custom_emojis.edit_emoji": {
+    "defaultMessage": "{emoji} を編集する",
+    "description": "Accessible name of the edit button. {emoji} is the emoji's :shortcode:."
+  },
+  "custom_emojis.edit.title": {
+    "defaultMessage": "{emoji} の編集",
+    "description": "Title of the dialog of the settings of the user's custom emoji."
+  },
+  "custom_emojis.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Close button of the edit dialog."
+  },
+  "custom_emojis.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves the settings of the user's custom emoji."
+  },
+  "custom_emojis.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes a dialog of the user's custom emoji."
+  },
+  "custom_emojis.updated": {
+    "defaultMessage": "{emoji} を保存しました。",
+    "description": "Status after saving the settings of the user's custom emoji."
+  },
+  "custom_emojis.request_image": {
+    "defaultMessage": "画像の差し替えを申請",
+    "description": "Button that picks a new image of the user's custom emoji and requests it."
+  },
+  "custom_emojis.request_image_of": {
+    "defaultMessage": "{emoji} の画像の差し替えを申請",
+    "description": "Accessible name of the button that requests a new image. {emoji} is the emoji's :shortcode:."
+  },
+  "custom_emojis.image_requested": {
+    "defaultMessage": "{emoji} の画像の差し替えを申請しました。管理者が審査するまで、絵文字はいまの画像のままです。",
+    "description": "Status after requesting a new image of the user's custom emoji."
+  },
+  "custom_emojis.delete": {
+    "defaultMessage": "削除する",
+    "description": "Button that deletes the user's custom emoji, and the confirm button of its dialog."
+  },
+  "custom_emojis.delete_emoji": {
+    "defaultMessage": "{emoji} を削除する",
+    "description": "Accessible name of the delete button. {emoji} is the emoji's :shortcode:."
+  },
+  "custom_emojis.delete.title": {
+    "defaultMessage": "{emoji} を削除しますか？",
+    "description": "Title of the dialog that confirms deleting the user's custom emoji."
+  },
+  "custom_emojis.delete.description": {
+    "defaultMessage": "この絵文字を使った投稿とプロフィールには {emoji} が文字で出ます。上限の数からは外れます。元に戻せません。",
+    "description": "Description of the dialog that confirms deleting the user's custom emoji."
+  },
+  "custom_emojis.deleted": {
+    "defaultMessage": "{emoji} を削除しました。",
+    "description": "Status after deleting the user's custom emoji."
+  },
+  "custom_emojis.change_failed": {
+    "defaultMessage": "カスタム絵文字を変更できませんでした：{reason}",
+    "description": "Error after a change of the user's custom emoji failed. {reason} is the server's explanation."
   },
   "settings.import_export.title": {
     "defaultMessage": "インポートとエクスポート",
@@ -8935,6 +9275,126 @@
     "defaultMessage": "ピッカーに出さない絵文字も、ショートコードをコロンで囲んで入力すれば使えます。",
     "description": "Help of the checkbox of whether the picker offers a custom emoji. :shortcode: is not translated."
   },
+  "admin.custom_emojis.created_by": {
+    "defaultMessage": "作った人",
+    "description": "Term of the description list of a local custom emoji: the account of the user who made it."
+  },
+  "admin.custom_emojis.created_by.deleted": {
+    "defaultMessage": "削除されたアカウント",
+    "description": "Value of 'Made by' for a custom emoji whose creator's account is deleted."
+  },
+  "admin.custom_emojis.created_by.none": {
+    "defaultMessage": "コマンドライン",
+    "description": "Value of 'Made by' for a custom emoji registered with the my command, not by a user."
+  },
+  "admin.custom_emojis.tabs.label": {
+    "defaultMessage": "カスタム絵文字の画面",
+    "description": "Accessible name of the tab list of the custom emoji screen: the emoji and the requests for new ones."
+  },
+  "admin.custom_emojis.tabs.emoji": {
+    "defaultMessage": "絵文字",
+    "description": "Tab of the custom emoji screen: registering and managing the emoji."
+  },
+  "admin.custom_emojis.tabs.requests": {
+    "defaultMessage": "申請",
+    "description": "Tab of the custom emoji screen: the requests of users for new custom emoji, which administrators approve or reject."
+  },
+  "admin.custom_emojis.tabs.pending": {
+    "defaultMessage": "{count, plural, other {審査を待つ申請 # 件}}",
+    "description": "Accessible name of the count on the Requests tab: how many custom emoji requests await review."
+  },
+  "admin.custom_emojis.tabs.pending_more": {
+    "defaultMessage": "{count, plural, other {審査を待つ申請 # 件以上}}",
+    "description": "Accessible name of the count on the Requests tab when there are more pending requests than one page shows."
+  },
+  "admin.custom_emoji_requests.title": {
+    "defaultMessage": "カスタム絵文字の申請",
+    "description": "Heading of the region of the requests tab of the custom emoji screen."
+  },
+  "admin.custom_emoji_requests.description": {
+    "defaultMessage": "ロールでカスタム絵文字の作成を許された利用者が、新しい絵文字と、自分が作った絵文字の画像の差し替えを申請します。承認するまで申請は絵文字ではなく、画像はどこにも出ません。承認すると絵文字ができてピッカーに出ます。却下するとショートコードが空き、申請者に理由が見えます。",
+    "description": "Explanation at the top of the requests tab of the custom emoji screen (ADR-0070)."
+  },
+  "admin.custom_emoji_requests.state": {
+    "defaultMessage": "表示する申請",
+    "description": "Label of the select of the state of the listed custom emoji requests."
+  },
+  "admin.custom_emoji_requests.empty.pending": {
+    "defaultMessage": "審査を待つ申請はありません",
+    "description": "Empty state of the pending custom emoji requests."
+  },
+  "admin.custom_emoji_requests.empty": {
+    "defaultMessage": "この状態の申請はありません",
+    "description": "Empty state of the custom emoji requests in a state other than pending."
+  },
+  "admin.custom_emoji_requests.requester": {
+    "defaultMessage": "申請者",
+    "description": "Term of the description list of a custom emoji request: the requester's account."
+  },
+  "admin.custom_emoji_requests.requester.deleted": {
+    "defaultMessage": "削除されたアカウント",
+    "description": "Value of 'Requested by' when the requester's account is deleted."
+  },
+  "admin.custom_emoji_requests.approve": {
+    "defaultMessage": "承認する",
+    "description": "Button that approves a custom emoji request."
+  },
+  "admin.custom_emoji_requests.approve_request": {
+    "defaultMessage": "{emoji} の申請を承認する",
+    "description": "Accessible name of the button that approves a custom emoji request. {emoji} is the :shortcode: of the requested emoji."
+  },
+  "admin.custom_emoji_requests.approved": {
+    "defaultMessage": "{emoji} の申請を承認しました。",
+    "description": "Status after approving a custom emoji request. {emoji} is the :shortcode: of the emoji."
+  },
+  "admin.custom_emoji_requests.reject": {
+    "defaultMessage": "却下する",
+    "description": "Button that rejects a custom emoji request, and the confirm button of its dialog."
+  },
+  "admin.custom_emoji_requests.reject_request": {
+    "defaultMessage": "{emoji} の申請を却下する",
+    "description": "Accessible name of the button that rejects a custom emoji request. {emoji} is the :shortcode: of the requested emoji."
+  },
+  "admin.custom_emoji_requests.reject.title": {
+    "defaultMessage": "{emoji} の申請を却下しますか？",
+    "description": "Title of the dialog that confirms rejecting a custom emoji request."
+  },
+  "admin.custom_emoji_requests.reject.description": {
+    "defaultMessage": "申請者に通知し、理由を書けばそれも見えます。ショートコードは空きます。",
+    "description": "Description of the dialog that confirms rejecting a custom emoji request."
+  },
+  "admin.custom_emoji_requests.rejected": {
+    "defaultMessage": "{emoji} の申請を却下しました。",
+    "description": "Status after rejecting a custom emoji request. {emoji} is the :shortcode: of the emoji."
+  },
+  "admin.custom_emoji_requests.reason": {
+    "defaultMessage": "理由",
+    "description": "Label of the optional reason of a rejection of a custom emoji request."
+  },
+  "admin.custom_emoji_requests.reason.description": {
+    "defaultMessage": "任意です。申請者に見えます。",
+    "description": "Description of the reason of a rejection of a custom emoji request."
+  },
+  "admin.custom_emoji_requests.reason.too_long": {
+    "defaultMessage": "理由は {max} 文字までです。",
+    "description": "Error of a reason of a rejection that is too long. {max} is the limit."
+  },
+  "admin.custom_emoji_requests.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Characters left in the reason of a rejection of a custom emoji request."
+  },
+  "admin.custom_emoji_requests.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Characters over the limit of the reason of a rejection of a custom emoji request."
+  },
+  "admin.custom_emoji_requests.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes the dialog that rejects a custom emoji request."
+  },
+  "admin.custom_emoji_requests.decide_failed": {
+    "defaultMessage": "申請を処理できませんでした：{reason}",
+    "description": "Error after approving or rejecting a custom emoji request failed. {reason} is the server's explanation."
+  },
   "admin.custom_emojis.submit": {
     "defaultMessage": "登録する",
     "description": "Button that registers a new custom emoji."
@@ -10082,6 +10542,26 @@
   "admin.audit_log.target_kind.supporter_subscription": {
     "defaultMessage": "加入",
     "description": "Kind of target of an audited operation: a subscription to a supporter plan, shown by the plan's name and the subscriber's handle."
+  },
+  "admin.audit_log.action.custom_emoji_request_submitted": {
+    "defaultMessage": "カスタム絵文字の申請",
+    "description": "Kind of an audited operation: a holder of create_custom_emojis requested a custom emoji or a new image of one they made."
+  },
+  "admin.audit_log.action.custom_emoji_request_withdrawn": {
+    "defaultMessage": "カスタム絵文字の申請の取り下げ",
+    "description": "Kind of an audited operation: the requester withdrew a pending custom emoji request."
+  },
+  "admin.audit_log.action.custom_emoji_request_approved": {
+    "defaultMessage": "カスタム絵文字の申請の承認",
+    "description": "Kind of an audited operation: an administrator approved a custom emoji request, which made the emoji or gave it the new image."
+  },
+  "admin.audit_log.action.custom_emoji_request_rejected": {
+    "defaultMessage": "カスタム絵文字の申請の却下",
+    "description": "Kind of an audited operation: an administrator rejected a custom emoji request."
+  },
+  "admin.audit_log.target_kind.custom_emoji_request": {
+    "defaultMessage": "カスタム絵文字の申請",
+    "description": "Kind of target of an audited operation: a request for a custom emoji or a new image of one, shown as the :shortcode: of the emoji."
   },
   "admin.supporters.title": {
     "defaultMessage": "サポーター",

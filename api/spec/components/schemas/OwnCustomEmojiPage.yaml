@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A page of the custom emoji that the user made, with what the user used of their limit
+  (ADR-0070 §4): `used` counts the user's local emoji and their pending requests to create
+  one, and `limit` is how many they may have, absent for no limit.
+allOf:
+  - $ref: ./PageInfo.yaml
+  - type: object
+    required: [items, used]
+    properties:
+      items:
+        type: array
+        items:
+          $ref: ./OwnCustomEmoji.yaml
+      used:
+        description: The user's local emoji and pending requests to create one.
+        type: integer
+        minimum: 0
+      limit:
+        description: How many the user may have; absent for no limit.
+        type: integer
+        minimum: 0

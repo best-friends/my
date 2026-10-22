@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A custom emoji request as the administrators review it, with the requester.
+allOf:
+  - $ref: ./CustomEmojiRequest.yaml
+  - type: object
+    properties:
+      requester:
+        description: The account of the requester; absent when it is deleted.
+        allOf:
+          - $ref: ./Account.yaml

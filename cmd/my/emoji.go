@@ -36,6 +36,9 @@ func runAdminEmoji(args []string, stdout, stderr io.Writer) int {
 		adminEmojiUsage(stderr)
 		return 2
 	}
+	if args[0] == "requests" {
+		return runAdminEmojiRequests(args[1:], stdout, stderr)
+	}
 	sub, code := dispatch("admin emoji", args, []string{"create", "list", "update", "replace-image", "enable", "disable", "copy", "delete"}, stderr, adminEmojiUsage)
 	if code >= 0 {
 		return code
@@ -264,6 +267,9 @@ func describeEmojiError(err error, arg string) string {
 			content.EmojiFetchFailed:       "the image could not be fetched from the emoji's server",
 			content.EmojiMediaNotFound:     "the image was not found",
 			content.EmojiMediaNotReady:     "the image is not processed yet",
+			content.EmojiLimitReached:      "the user has as many custom emoji and pending requests as their limit",
+			content.EmojiRequestPending:    "the emoji already has a pending request for a new image",
+			content.EmojiInvalidReason:     "a reason is at most 500 characters",
 		}[ce.Reason] + "; nothing was changed"
 	case errors.Is(err, appcontent.ErrNotFound):
 		return fmt.Sprintf("no custom emoji has the ID %q", arg)
@@ -312,6 +318,7 @@ func adminEmojiUsage(w io.Writer) {
   my admin emoji enable|disable [-config <file>] <emoji id>
   my admin emoji copy [-shortcode <name>] [-config <file>] <emoji id>
   my admin emoji delete [-config <file>] <emoji id>
+  my admin emoji requests list|approve|reject ...   (see my admin emoji requests -h)
 
 The custom emoji of this instance (ADR-0051), which posts and profiles use as
 :shortcode:, and those of other servers that posts and profiles brought in.
@@ -336,5 +343,8 @@ good; the posts that used it show its :shortcode: as text.
 
 Every operation is recorded in the audit log as the CLI's, as the same operation
 of the admin screen and the admin API (/api/v1/admin/custom_emojis) is.
+
+requests reviews the requests of the users whose roles grant
+create_custom_emojis (ADR-0070).
 `)
 }

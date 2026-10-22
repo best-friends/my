@@ -3,7 +3,7 @@ description: |
   A custom emoji as the administrators manage it (ADR-0051 §4): a local one, or a remote
   one recorded from the posts and profiles of another server.
 type: object
-required: [id, shortcode, local, enabled, visible_in_picker, aliases, created_at, updated_at]
+required: [id, shortcode, local, enabled, visible_in_picker, aliases, created_by_deleted, created_at, updated_at]
 properties:
   id:
     $ref: ./Id.yaml
@@ -46,6 +46,16 @@ properties:
     type: array
     items:
       type: string
+  created_by:
+    description: |
+      The account of the user who made a local emoji (ADR-0070 §7): the requester of an
+      approved request, or the administrator who registered or copied it. Absent for an emoji
+      made with the CLI, a remote one, and one whose creator's account is deleted
+      (`created_by_deleted`).
+    $ref: ./Account.yaml
+  created_by_deleted:
+    description: Whether a user made the emoji whose account no longer exists.
+    type: boolean
   created_at:
     description: When the emoji was registered or first seen.
     type: string

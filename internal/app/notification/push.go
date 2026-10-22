@@ -441,6 +441,10 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 		p.Title, p.Path = l.ServerPushAdminAppeal(instance), "/moderation/appeals/"+job.AppealID
 	case notification.TypeAdminWebhookDisabled:
 		p.Title, p.Path = l.ServerPushAdminWebhookDisabled(instance), "/admin/webhooks"
+	case notification.TypeAdminCustomEmojiRequest:
+		p.Title, p.Path = l.ServerPushAdminCustomEmojiRequest(instance), "/admin/custom-emojis?tab=requests"
+	case notification.TypeCustomEmojiRequestDecided:
+		p.Title, p.Path = l.ServerPushCustomEmojiRequestDecided(instance), "/settings/custom-emojis"
 	case notification.TypeReportResolved:
 		p.Title = l.ServerPushReportResolved(instance)
 	case notification.TypeRelationshipsSevered:

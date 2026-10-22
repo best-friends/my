@@ -417,6 +417,14 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   見出し（`h1`）は「会計」で、ナビゲーションの項目の画面なので見た目からは消す。`GET /finance/cost_totals`（スコープ `read:finance`。`admin:*` を要さない）を読み、運営の費用のページと同じ部品（`CostTotalsPanel`・`CostTotalsView`）で、計上のしかたと週・月・年のタブ（URL に置く。S3）、合計の表、今の期間の事業者・区分ごとの内訳（設定によらずいつも）、期間の区切りの規則を「費用」の区画（`h2` の `section`）に出す。
   インスタンス設定 `finance_viewer_item_names`・`finance_viewer_item_memos` のどちらかが有効なら、今の期間の項目の行（名前・事業者・区分・額・メモ。名前とメモはサーバーが返したときだけ。`dir="auto"`）を内訳の下に出し、画面の説明の下に、項目の名前とメモのどちらを見せているかを書く。`manage_finance` を持つ人にはサーバーがすべての行を返すので、この文を出さない。
   収入（`finance_viewer_income`）はまだ出さない。権限のない閲覧者には、要求を送らずに理由（権限の名前）を出す。loader は閲覧者を待ち、権限があるときだけ合計を待つが、合計の失敗はページの失敗にはせず、タブの中に出す。
+- **自分のカスタム絵文字**（`/settings/custom-emojis`、`routes/settings.custom-emojis.tsx`、`features/custom-emojis` の `OwnCustomEmojis`、[ADR-0070](../adr/0070-permission-split-emoji-finance.md) §1〜§4）: `create_custom_emojis` を持つ人の設定の画面で、ナビゲーションの項目を増やさず、設定のメニューにその人にだけ「あなたのカスタム絵文字」を出す。
+  権限のない閲覧者には、要求を送らずに理由（権限の名前）を出す。loader は権限があるときだけ自分の絵文字（`GET /custom_emojis/mine`）と申請（`GET /custom_emoji_requests`）を待つ（スコープ `read:custom_emojis` / `write:custom_emojis`。`admin:*` を要さない）。
+  「カスタム絵文字を申請する」「あなたの申請」「あなたが作ったカスタム絵文字」の 3 つの区画（`h2` の `section`）を並べる。
+  - **申請**: 使った数と上限（「{上限} 個のうち {使った数} 個。審査中の申請を含む」、上限がなければそのこと）と、画像（`FileTrigger`）と shortcode のフォーム。管理画面の登録と同じく画像を `POST /media`（`purpose=emoji`）で送って処理を待ち、`POST /custom_emoji_requests`（`kind=create`）を送る。
+    サーバーの拒否（422 `invalid-custom-emoji`。上限の `limit_reached` も）は `detail` をフォームの下（`role="alert"`）に出して入力を残す。成功したら入力を空にし、申請と自分の絵文字（使った数）に無効化の印を付けてから、結果を `StatusMessage` に出す。
+  - **申請の一覧**: 新しい順。各申請は画像と見出し（`:shortcode:`、`dir="ltr"`）と、内容（新しい絵文字・画像の差し替え）・状態・申請した日時・終わった日時・却下の理由（`dir="auto"`）の説明リスト。審査中の申請は「取り下げる」を持ち、応答で行を置き換える。
+  - **自分の絵文字**: 新しい順。各絵文字は管理画面の行と同じ説明リストで、「編集する」（カテゴリ・別名・ピッカーに出すかのダイアログ。有効・無効は管理者だけが変える）・「画像の差し替えを申請」（`FileTrigger` で選ぶとすぐに `kind=image` の申請を送る。承認まで絵文字は今の画像のまま）・「削除する」（`ConfirmDialog`）を持つ。
+    変えた絵文字は応答で行を置き換え、消した絵文字は一覧から除いてフォーカスを次の行のボタンに移し、使った数・申請（画像の申請が失効する）・ピッカーの絵文字に無効化の印を付ける。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。サーバーの名前が変わったときも作り直す（フォーカスは動かさない）。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
   ナビゲーションの項目の画面で、見出しが場所を言うだけのもの（ホーム・ローカル・連合・通知・検索・ブックマーク・設定・会計・モデレーション・サーバー管理）は、
@@ -703,7 +711,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の管理の操作、タグ `admin-moderation` / `admin-server`）、Web の経路とは一致しない。
 
 - **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` がジョブのキュー、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がロールの画面とアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマとリレーの画面、`manage_custom_emojis` がカスタム絵文字の画面、`manage_announcements` がお知らせの画面、`manage_webhooks` が webhook の画面、`manage_finance` が費用の画面に要る。
-  利用者の機能の区分の権限（`view_finance`）はスタッフの画面を出さず、ナビゲーションの「会計」と会計のページ（`/finance`、§9）を出す。
+  利用者の機能の区分の権限はスタッフの画面を出さず、`view_finance` はナビゲーションの「会計」と会計のページ（`/finance`、§9）を、`create_custom_emojis` は設定のメニューの「あなたのカスタム絵文字」と自分のカスタム絵文字の画面（`/settings/custom-emojis`、§9）を出す。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -745,7 +753,8 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     サーバーの失敗はフォームの下（`role="alert"`）に出して入力を残す。成功したら種類・効果・期間を残して一覧とメモを空にし、拒否の一覧と監査ログを取り直してから、追加した件数と追加しなかった行の数をフォームの `StatusMessage` に出す。
     追加しなかった行は、見出し（`h3`「追加しなかった行」）・理由ごとの行数の説明リスト・その見出しが名前を与える表（行番号・一覧に書かれたままの値（`dir="auto"`）・理由（`invalid`・`duplicate`・`already_blocked` を文言にしたもの））で、行の順に出す。
     表は最初の 100 行だけを出し、残りは「すべて表示する」で出す。ボタンは消えるので、フォーカスを表の見出しに移す。次の追加では表を最初の 100 行に戻す（`key`、R10）。
-- **カスタム絵文字**（`/admin/custom-emojis`、`manage_custom_emojis`、FR-111、[ADR-0051](../adr/0051-custom-emoji.md)）: 「カスタム絵文字を登録する」と「登録されたカスタム絵文字」の 2 つの区画（`h2` の `section`）。
+- **カスタム絵文字**（`/admin/custom-emojis`、`manage_custom_emojis`、FR-111、[ADR-0051](../adr/0051-custom-emoji.md)・[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）: 「絵文字」と「申請」のタブ（`?tab=requests`、URL に置く。S3）。
+  「絵文字」は「カスタム絵文字を登録する」と「登録されたカスタム絵文字」の 2 つの区画（`h2` の `section`）、「申請」は「カスタム絵文字の申請」の区画で、タブの名前に審査中の申請の数（`Badge`。最初のページより多ければ「N+」）を付ける（ADR-0070 §9。ナビゲーションの「管理」には付けない）。
   - **登録**: 画像（React Aria の `FileTrigger`、PNG・GIF・WebP）・shortcode（必須、`[A-Za-z0-9_]{2,30}` をブラウザの制約検証で確かめる）・カテゴリ（64 文字まで）・別名（空白かカンマで区切り、10 個まで）・ピッカーに出すか（`Checkbox`、既定は出す）のフォーム。
     100 KB を超える画像には、GoToSocial などが表示しないことがある旨を出す（ADR-0051 §2。登録は止めない）。送ると、画像を `POST /media`（`purpose=emoji`）で送って処理が終わるまで `GET /media/{id}` をポーリングし、`POST /admin/custom_emojis` で登録する。
     サーバーの拒否（422 `invalid-custom-emoji`、`reason` に理由）は `detail` をフォームの下（`role="alert"`）に出して入力を残す。成功したら入力を空にし、一覧・ピッカーの絵文字（`GET /custom_emojis`）・監査ログに無効化の印を付けてから、結果をフォームの `StatusMessage` に出す。
@@ -753,6 +762,11 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     このサーバーの絵文字は「編集する」（カテゴリ・別名・ピッカーに出すか・有効にするかのダイアログ。保存したら閉じ、失敗はダイアログの中に出す）・「画像を差し替える」（`FileTrigger` で選ぶとすぐに送る）・「削除する」（元に戻せないので `ConfirmDialog` で確かめる）、ほかのサーバーの絵文字は「無効にする」「有効にする」を持つ。
     ボタンのアクセシブルネームは絵文字（`:shortcode:`、ほかのサーバーは `@domain` を付け、U+2066 / U+2069 で囲む）を含める。変えた絵文字は応答で行を置き換え、消した絵文字は一覧から除いてフォーカスを次の行のボタンに移す（`lib/useFocusAfterRemoval.ts`）。
     結果は一覧の上の `StatusMessage` に出し、失敗は同じ場所（`role="alert"`）に出す。どの変更も、ピッカーの絵文字と監査ログに無効化の印を付ける。
+    このサーバーの絵文字の説明リストには、作った人（`created_by` のプロフィールへのリンク。アカウントが消えていれば「削除されたアカウント」、CLI で登録した絵文字は「コマンドライン」）も出す。
+  - **申請**（`GET /admin/custom_emoji_requests`）: 状態（`Select`。既定は審査中、ほかは `?state=` に置く）の申請を新しい順に出す。各申請は画像と見出し（`:shortcode:`、`dir="ltr"`）と、内容・状態・申請者（プロフィールへのリンク、消えていれば「削除されたアカウント」）・申請した日時・終わった日時・却下の理由の説明リスト。
+    審査中の申請は「承認する」（確かめずに `POST .../approve`）と「却下する」（申請者に見える任意の理由（500 文字まで、`ReasonField`）を入れる `ConfirmDialog` で `POST .../reject`）を持ち、ボタンのアクセシブルネームは申請の `:shortcode:`（U+2066 / U+2069 で囲む）を含める。
+    決めた申請は審査中の一覧から除いてフォーカスを次の行に移し、ほかの状態の一覧と監査ログ（承認なら絵文字の一覧とピッカーの絵文字も）に無効化の印を付けてから、結果を一覧の上の `StatusMessage` に出す。
+    決められない申請（409 `custom-emoji-request-conflict`。申請者が権限を失った・shortcode が使われている・すでに決まった）はサーバーの `detail` を同じ場所（`role="alert"`）に出し、行を残す。
 - **お知らせ**（`/admin/announcements`、`manage_announcements`、FR-726）: 「お知らせを書く」と「すべてのお知らせ」の 2 つの区画（`h2` の `section`）。変更はすべて監査ログに残り、一覧・利用者のお知らせ・監査ログに無効化の印を付ける。
   - **書く**: 本文（Markdown、5,000 文字まで、`TextArea` の文字数）・掲載する期間（`DurationSelect`。1・3・7・14・30 日と「取り下げるまで」。送った時から数え、`ends_at` にする）・「すぐに公開する」（`Checkbox`、既定で選ぶ。外すと下書き）のフォーム。
     送信のボタンの名前は、公開するか下書きかで変える。本文が空か長すぎるときは送らずに項目のエラーを出す。結果はフォームの `StatusMessage` に出し、本文を空にする。
@@ -988,6 +1002,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
 - **サーバーからの通知**（`features/notifications`）: 行為者のいない通知とモデレーターへの通知は、行の操作の列に、その後を確かめる画面へのリンクを置く。
   `moderation_notice` と `appeal_decided` は処分の種類と理由の区分（サーバーが訳した `kind_label` / `reason_category_label`）・モデレーターの説明（`dir="auto"`）・終わる日時（`appeal_decided` は異議申し立てへの決定とその理由も）を本文に出し、アカウントの状態の画面（`/settings/account-status`、FR-715）へ、
   `report_resolved` は通報したアカウントの名前（そのプロフィールへのリンク、アバターなし）を文に入れ、`admin_report` は通報（`/moderation/reports/{id}`）へ、`admin_sign_up` は登録の審査（`/moderation/registrations`）へ、`admin_appeal` は異議申し立て（`/moderation/appeals/{id}`）へ、
+  `admin_custom_emoji_request` は申請の `:shortcode:`（`dir="ltr"`）と内容を文に入れてカスタム絵文字の画面の申請のタブ（`/admin/custom-emojis?tab=requests`）へ、`custom_emoji_request_decided` は承認か却下かと `:shortcode:` を文に、却下の理由（`dir="auto"`）を本文に出して自分のカスタム絵文字の画面（`/settings/custom-emojis`）へリンクし、
   `relationships_severed` は自分のフォロワーとフォローの一覧へリンクする。
 
 ## 15. 検索とほかのサーバーのアカウントのフォロー

@@ -24,8 +24,7 @@ import (
 // makes the prices at the provider: a plan takes subscriptions once it has both.
 
 // PermCreateCustomEmojis is the member permission that lets its holders create custom emoji
-// (ADR-0070 §1, §4), whose limit a plan sets. The identity module adds it with #916; until then
-// no role has it, and EmojiLimit limits nobody.
+// (ADR-0070 §1, §4), whose limit a plan sets: the identity module's PermCreateCustomEmojis.
 const PermCreateCustomEmojis = "create_custom_emojis"
 
 // JobEnsurePrices makes the prices of a plan's current terms at the provider and archives the

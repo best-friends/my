@@ -854,6 +854,14 @@ export interface MessageArgs {
   "client:admin.audit_log.action.custom_emoji_enabled": {};
   /** Custom emoji image replaced */
   "client:admin.audit_log.action.custom_emoji_image_replaced": {};
+  /** Custom emoji request approved */
+  "client:admin.audit_log.action.custom_emoji_request_approved": {};
+  /** Custom emoji request rejected */
+  "client:admin.audit_log.action.custom_emoji_request_rejected": {};
+  /** Custom emoji requested */
+  "client:admin.audit_log.action.custom_emoji_request_submitted": {};
+  /** Custom emoji request withdrawn */
+  "client:admin.audit_log.action.custom_emoji_request_withdrawn": {};
   /** Custom emoji changed */
   "client:admin.audit_log.action.custom_emoji_updated": {};
   /** Domain action taken */
@@ -1018,6 +1026,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.cost_item": {};
   /** Custom emoji */
   "client:admin.audit_log.target_kind.custom_emoji": {};
+  /** Custom emoji request */
+  "client:admin.audit_log.target_kind.custom_emoji_request": {};
   /** Domain */
   "client:admin.audit_log.target_kind.domain": {};
   /** Invite */
@@ -1048,6 +1058,50 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.webhook": {};
   /** Audit log */
   "client:admin.audit_log.title": {};
+  /** Approve */
+  "client:admin.custom_emoji_requests.approve": {};
+  /** Approve the request for {emoji} */
+  "client:admin.custom_emoji_requests.approve_request": { emoji: string };
+  /** The request for {emoji} is approved. */
+  "client:admin.custom_emoji_requests.approved": { emoji: string };
+  /** Cancel */
+  "client:admin.custom_emoji_requests.cancel": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.custom_emoji_requests.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.custom_emoji_requests.characters_over": { count: number };
+  /** Could not decide the request: {reason} */
+  "client:admin.custom_emoji_requests.decide_failed": { reason: string };
+  /** Users whose roles let them create custom emoji request new emoji and new images of the ones they made. A request is no emoji until it is approved: nothing shows its image. Approving makes the emoji, in the picker; rejecting frees its shortcode, and the requester sees the reason. */
+  "client:admin.custom_emoji_requests.description": {};
+  /** No requests in this state */
+  "client:admin.custom_emoji_requests.empty": {};
+  /** No requests await review */
+  "client:admin.custom_emoji_requests.empty.pending": {};
+  /** Reason */
+  "client:admin.custom_emoji_requests.reason": {};
+  /** Optional. The requester sees it. */
+  "client:admin.custom_emoji_requests.reason.description": {};
+  /** A reason is at most {max} characters. */
+  "client:admin.custom_emoji_requests.reason.too_long": { max: string };
+  /** Reject */
+  "client:admin.custom_emoji_requests.reject": {};
+  /** Reject the request for {emoji} */
+  "client:admin.custom_emoji_requests.reject_request": { emoji: string };
+  /** The requester is notified and sees the reason, if you give one. The shortcode becomes free again. */
+  "client:admin.custom_emoji_requests.reject.description": {};
+  /** Reject the request for {emoji}? */
+  "client:admin.custom_emoji_requests.reject.title": { emoji: string };
+  /** The request for {emoji} is rejected. */
+  "client:admin.custom_emoji_requests.rejected": { emoji: string };
+  /** Requested by */
+  "client:admin.custom_emoji_requests.requester": {};
+  /** A deleted account */
+  "client:admin.custom_emoji_requests.requester.deleted": {};
+  /** Show */
+  "client:admin.custom_emoji_requests.state": {};
+  /** Requests for custom emoji */
+  "client:admin.custom_emoji_requests.title": {};
   /** Other names */
   "client:admin.custom_emojis.aliases": {};
   /** Names that the picker's search also finds the emoji by, separated by spaces or commas; up to {max}, each like a shortcode. */
@@ -1080,6 +1134,12 @@ export interface MessageArgs {
   "client:admin.custom_emojis.create_failed": { reason: string };
   /** {emoji} is registered. */
   "client:admin.custom_emojis.created": { emoji: string };
+  /** Made by */
+  "client:admin.custom_emojis.created_by": {};
+  /** A deleted account */
+  "client:admin.custom_emojis.created_by.deleted": {};
+  /** The command line */
+  "client:admin.custom_emojis.created_by.none": {};
   /** Delete */
   "client:admin.custom_emojis.delete": {};
   /** Delete {emoji} */
@@ -1192,6 +1252,16 @@ export interface MessageArgs {
   "client:admin.custom_emojis.submit": {};
   /** Register this server's custom emoji, and disable those of other servers. */
   "client:admin.custom_emojis.summary": {};
+  /** Emoji */
+  "client:admin.custom_emojis.tabs.emoji": {};
+  /** Custom emoji screen */
+  "client:admin.custom_emojis.tabs.label": {};
+  /** {count, plural, one {# request awaits review} other {# requests await review}} */
+  "client:admin.custom_emojis.tabs.pending": { count: number };
+  /** {count, plural, one {More than # request awaits review} other {More than # requests await review}} */
+  "client:admin.custom_emojis.tabs.pending_more": { count: number };
+  /** Requests */
+  "client:admin.custom_emojis.tabs.requests": {};
   /** Custom emoji */
   "client:admin.custom_emojis.title": {};
   /** {emoji} is saved. */
@@ -2412,6 +2482,8 @@ export interface MessageArgs {
   "client:admin.roles.new.title": {};
   /** Above your highest role, {role}, so you cannot change it. */
   "client:admin.roles.outranked": { role: string };
+  /** Request custom emoji */
+  "client:admin.roles.permission.create_custom_emojis": {};
   /** Accounts and registrations */
   "client:admin.roles.permission.manage_accounts": {};
   /** Announcements */
@@ -3758,6 +3830,152 @@ export interface MessageArgs {
   "client:costs.totals.plus": { amount: string; sum: string };
   /** Total */
   "client:costs.totals.total": {};
+  /** Requested */
+  "client:custom_emoji_requests.created_at": {};
+  /** Ended */
+  "client:custom_emoji_requests.decided_at": {};
+  /** Image */
+  "client:custom_emoji_requests.image": {};
+  /** Asks for */
+  "client:custom_emoji_requests.kind": {};
+  /** A new emoji */
+  "client:custom_emoji_requests.kind.create": {};
+  /** A new image */
+  "client:custom_emoji_requests.kind.image": {};
+  /** No longer kept */
+  "client:custom_emoji_requests.no_image": {};
+  /** Reason of the rejection */
+  "client:custom_emoji_requests.reason": {};
+  /** State */
+  "client:custom_emoji_requests.state": {};
+  /** Approved */
+  "client:custom_emoji_requests.state.approved": {};
+  /** Lapsed: the emoji was deleted */
+  "client:custom_emoji_requests.state.lapsed": {};
+  /** Awaiting review */
+  "client:custom_emoji_requests.state.pending": {};
+  /** Rejected */
+  "client:custom_emoji_requests.state.rejected": {};
+  /** Withdrawn */
+  "client:custom_emoji_requests.state.withdrawn": {};
+  /** Other names */
+  "client:custom_emojis.aliases": {};
+  /** Names that the picker's search also finds the emoji by, separated by spaces or commas; up to {max}, each like a shortcode. */
+  "client:custom_emojis.aliases.description": { max: string };
+  /** Up to {max} other names. */
+  "client:custom_emojis.aliases.too_many": { max: string };
+  /** Cancel */
+  "client:custom_emojis.cancel": {};
+  /** Category */
+  "client:custom_emojis.category": {};
+  /** Groups the emoji in the picker. Optional, up to {max} characters. */
+  "client:custom_emojis.category.description": { max: string };
+  /** Could not change the custom emoji: {reason} */
+  "client:custom_emojis.change_failed": { reason: string };
+  /** Delete */
+  "client:custom_emojis.delete": {};
+  /** Delete {emoji} */
+  "client:custom_emojis.delete_emoji": { emoji: string };
+  /** Posts and profiles that use it show {emoji} as text, and it no longer counts against your limit. This cannot be undone. */
+  "client:custom_emojis.delete.description": { emoji: string };
+  /** Delete {emoji}? */
+  "client:custom_emojis.delete.title": { emoji: string };
+  /** {emoji} is deleted. */
+  "client:custom_emojis.deleted": { emoji: string };
+  /** Your roles let you add custom emoji to this server. An administrator reviews each request before the emoji appears anywhere. You can change and delete the emoji you made while your roles allow it. */
+  "client:custom_emojis.description": {};
+  /** Edit */
+  "client:custom_emojis.edit": {};
+  /** Edit {emoji} */
+  "client:custom_emojis.edit_emoji": { emoji: string };
+  /** Close */
+  "client:custom_emojis.edit.close": {};
+  /** Edit {emoji} */
+  "client:custom_emojis.edit.title": { emoji: string };
+  /** You have made no custom emoji yet */
+  "client:custom_emojis.empty": {};
+  /** An approved request appears here. */
+  "client:custom_emojis.empty.description": {};
+  /** Image */
+  "client:custom_emojis.image": {};
+  /** The server could not process the image. */
+  "client:custom_emojis.image_failed": {};
+  /** A new image of {emoji} is requested. An administrator reviews it; the emoji keeps its image until then. */
+  "client:custom_emojis.image_requested": { emoji: string };
+  /** Choose an image */
+  "client:custom_emojis.image.choose": {};
+  /** Chosen: {name} */
+  "client:custom_emojis.image.chosen": { name: string };
+  /** PNG, GIF, or WebP, at most 1,024 pixels on each side. It is shown within 256 pixels; an animated PNG shows its first frame only. */
+  "client:custom_emojis.image.description": {};
+  /** This image is larger than 100 KB. Some servers (GoToSocial by default) do not show custom emoji that large. */
+  "client:custom_emojis.image.large_hint": {};
+  /** Choose an image. */
+  "client:custom_emojis.image.required": {};
+  /** Custom emoji you made */
+  "client:custom_emojis.list.title": {};
+  /** Request a custom emoji */
+  "client:custom_emojis.new.title": {};
+  /** None */
+  "client:custom_emojis.none": {};
+  /** Picker */
+  "client:custom_emojis.picker": {};
+  /** Hidden */
+  "client:custom_emojis.picker.hidden": {};
+  /** Shown */
+  "client:custom_emojis.picker.shown": {};
+  /** Could not send the request: {reason} */
+  "client:custom_emojis.request_failed": { reason: string };
+  /** Request a new image */
+  "client:custom_emojis.request_image": {};
+  /** Request a new image of {emoji} */
+  "client:custom_emojis.request_image_of": { emoji: string };
+  /** {emoji} is requested. An administrator reviews it. */
+  "client:custom_emojis.requested": { emoji: string };
+  /** No requests yet */
+  "client:custom_emojis.requests.empty": {};
+  /** Your requests */
+  "client:custom_emojis.requests.title": {};
+  /** Save */
+  "client:custom_emojis.save": {};
+  /** Shortcode */
+  "client:custom_emojis.shortcode": {};
+  /** 2 to 30 letters (A to Z), digits, and underscores; capitals count. People type it between colons, like :blobcat:. It cannot be changed later. */
+  "client:custom_emojis.shortcode.description": {};
+  /** Use 2 to 30 letters (A to Z), digits, and underscores. */
+  "client:custom_emojis.shortcode.invalid": {};
+  /** State */
+  "client:custom_emojis.state": {};
+  /** Disabled by an administrator: shown as text */
+  "client:custom_emojis.state.disabled": {};
+  /** Enabled */
+  "client:custom_emojis.state.enabled": {};
+  /** Request */
+  "client:custom_emojis.submit": {};
+  /** Request custom emoji for this server, and change the ones you made */
+  "client:custom_emojis.summary": {};
+  /** Your custom emoji */
+  "client:custom_emojis.title": {};
+  /** {emoji} is saved. */
+  "client:custom_emojis.updated": { emoji: string };
+  /** Image set */
+  "client:custom_emojis.updated_at": {};
+  /** {used, plural, one {You have # of {limit} custom emoji, counting your pending requests.} other {You have # of {limit} custom emoji, counting your pending requests.}} */
+  "client:custom_emojis.usage": { limit: string; used: number };
+  /** {used, plural, one {You have # custom emoji, counting your pending requests. Your roles set no limit.} other {You have # custom emoji, counting your pending requests. Your roles set no limit.}} */
+  "client:custom_emojis.usage.unlimited": { used: number };
+  /** Show in the picker */
+  "client:custom_emojis.visible_in_picker": {};
+  /** An emoji hidden from the picker can still be typed as its :shortcode:. */
+  "client:custom_emojis.visible_in_picker.description": {};
+  /** Withdraw */
+  "client:custom_emojis.withdraw": {};
+  /** Could not withdraw the request: {reason} */
+  "client:custom_emojis.withdraw_failed": { reason: string };
+  /** Withdraw the request for {emoji} */
+  "client:custom_emojis.withdraw_request": { emoji: string };
+  /** The request for {emoji} is withdrawn. */
+  "client:custom_emojis.withdrawn": { emoji: string };
   /** Terms and policies */
   "client:documents.label": {};
   /** Privacy policy */
@@ -3848,6 +4066,20 @@ export interface MessageArgs {
   "client:notifications.appeal.overturned": {};
   /** Your appeal was not granted, and the action stays. */
   "client:notifications.appeal.upheld": {};
+  /** Your custom emoji {emoji} was approved */
+  "client:notifications.custom_emoji_request.approved.create": { emoji: string };
+  /** The new image of your custom emoji {emoji} was approved */
+  "client:notifications.custom_emoji_request.approved.image": { emoji: string };
+  /** The administrator's reason: */
+  "client:notifications.custom_emoji_request.reason": {};
+  /** Your request for the custom emoji {emoji} was rejected */
+  "client:notifications.custom_emoji_request.rejected.create": { emoji: string };
+  /** Your request for a new image of {emoji} was rejected */
+  "client:notifications.custom_emoji_request.rejected.image": { emoji: string };
+  /** A user requested the custom emoji {emoji} */
+  "client:notifications.custom_emoji_request.submitted.create": { emoji: string };
+  /** A user requested a new image of the custom emoji {emoji} */
+  "client:notifications.custom_emoji_request.submitted.image": { emoji: string };
   /** No notifications yet */
   "client:notifications.empty.all": {};
   /** When someone follows you, mentions you or reacts to your posts, it shows up here. */
@@ -3876,10 +4108,14 @@ export interface MessageArgs {
   "client:notifications.link.account_status": {};
   /** Open the appeal */
   "client:notifications.link.appeal": {};
+  /** Review the requests */
+  "client:notifications.link.custom_emoji_requests": {};
   /** View your followers */
   "client:notifications.link.followers": {};
   /** View the accounts you follow */
   "client:notifications.link.following": {};
+  /** Open your custom emoji */
+  "client:notifications.link.own_custom_emojis": {};
   /** Review registrations */
   "client:notifications.link.registrations": {};
   /** Open the report */
@@ -3914,6 +4150,8 @@ export interface MessageArgs {
   "client:notifications.title": {};
   /** A new appeal awaits the moderators */
   "client:notifications.type.admin_appeal": {};
+  /** A custom emoji request awaits review */
+  "client:notifications.type.admin_custom_emoji_request": {};
   /** A new report awaits the moderators */
   "client:notifications.type.admin_report": {};
   /** {name} signed up and awaits approval */
@@ -3924,6 +4162,8 @@ export interface MessageArgs {
   "client:notifications.type.appeal_decided": {};
   /** {name} boosted your post */
   "client:notifications.type.boost": { name: string };
+  /** An administrator reviewed your custom emoji request */
+  "client:notifications.type.custom_emoji_request_decided": {};
   /** {name} favourited your post */
   "client:notifications.type.favourite": { name: string };
   /** {name} followed you */
@@ -5376,6 +5616,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_blocks": {};
   /** Read your bookmarks */
   "server:auth.authorize.scope.read_bookmarks": {};
+  /** Read the custom emoji you made and your requests for new ones */
+  "server:auth.authorize.scope.read_custom_emojis": {};
   /** Read your favourites */
   "server:auth.authorize.scope.read_favourites": {};
   /** Read the totals of the instance's costs, as far as your roles allow */
@@ -5398,6 +5640,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_blocks": {};
   /** Add and remove bookmarks */
   "server:auth.authorize.scope.write_bookmarks": {};
+  /** Request new custom emoji, and change and delete the ones you made */
+  "server:auth.authorize.scope.write_custom_emojis": {};
   /** Add and remove favourites and emoji reactions */
   "server:auth.authorize.scope.write_favourites": {};
   /** Follow and unfollow accounts and answer follow requests */
@@ -5662,6 +5906,10 @@ export interface MessageArgs {
   "server:errors.blocking": {};
   /** The request conflicts with the current state of the resource. */
   "server:errors.conflict": {};
+  /** The custom emoji request cannot be decided as it is. */
+  "server:errors.custom_emoji_request_conflict": {};
+  /** {reason, select, not_pending {The request was already approved, rejected, or withdrawn.} requester_cannot_create {The requester can no longer create custom emoji. Reject the request instead.} shortcode_taken {A custom emoji of this server already has this shortcode. Reject the request instead.} other {The request cannot be decided as it is.}} */
+  "server:errors.custom_emoji_request_conflict_detail": { reason: "not_pending" | "requester_cannot_create" | "shortcode_taken" | (string & {}) };
   /** You already mute the most domains allowed. Unmute one first. */
   "server:errors.domain_mutes.too_many": {};
   /** An archive of your data is already being prepared. Wait until it is ready. */
@@ -5684,8 +5932,8 @@ export interface MessageArgs {
   "server:errors.internal": {};
   /** The custom emoji cannot be saved. */
   "server:errors.invalid_custom_emoji": {};
-  /** {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} local_emoji {This can be done only with the custom emoji of other servers.} fetch_failed {The image of the custom emoji could not be fetched from its server.} other {The custom emoji breaks a rule.}} */
-  "server:errors.invalid_custom_emoji_detail": { reason: "fetch_failed" | "invalid_alias" | "invalid_category" | "invalid_shortcode" | "local_emoji" | "media_not_found" | "media_not_ready" | "remote_emoji" | "shortcode_taken" | "too_big" | "too_large" | "unsupported_format" | (string & {}) };
+  /** {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} local_emoji {This can be done only with the custom emoji of other servers.} fetch_failed {The image of the custom emoji could not be fetched from its server.} limit_reached {You already have as many custom emoji and pending requests as your limit.} request_pending {This custom emoji already has a pending request for a new image.} invalid_reason {A reason is at most 500 characters.} other {The custom emoji breaks a rule.}} */
+  "server:errors.invalid_custom_emoji_detail": { reason: "fetch_failed" | "invalid_alias" | "invalid_category" | "invalid_reason" | "invalid_shortcode" | "limit_reached" | "local_emoji" | "media_not_found" | "media_not_ready" | "remote_emoji" | "request_pending" | "shortcode_taken" | "too_big" | "too_large" | "unsupported_format" | (string & {}) };
   /** The parameter {name} has an invalid value. */
   "server:errors.invalid_parameter": { name: string };
   /** The theme cannot be saved. */
@@ -5870,6 +6118,10 @@ export interface MessageArgs {
   "server:mail.admin_appeal.body": { instance: string; url: string };
   /** A new appeal awaits the moderators of {instance} */
   "server:mail.admin_appeal.subject": { instance: string };
+  /** A user of {instance} requested a custom emoji, or a new image of one, and the request awaits review.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_custom_emoji_request.body": { instance: string; url: string };
+  /** A custom emoji request awaits review on {instance} */
+  "server:mail.admin_custom_emoji_request.subject": { instance: string };
   /** A new report awaits the moderators of {instance}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
   "server:mail.admin_report.body": { instance: string; url: string };
   /** A new report awaits the moderators of {instance} */
@@ -5916,6 +6168,8 @@ export interface MessageArgs {
   "server:preview.title": { handle: string; name: string };
   /** A new appeal awaits the moderators of {instance} */
   "server:push.admin_appeal": { instance: string };
+  /** A custom emoji request awaits review on {instance} */
+  "server:push.admin_custom_emoji_request": { instance: string };
   /** A new report awaits the moderators of {instance} */
   "server:push.admin_report": { instance: string };
   /** A new sign-up awaits approval on {instance} */
@@ -5926,6 +6180,8 @@ export interface MessageArgs {
   "server:push.appeal_decided": { instance: string };
   /** {name} boosted your post */
   "server:push.boost": { name: string };
+  /** The administrators of {instance} reviewed your custom emoji request */
+  "server:push.custom_emoji_request_decided": { instance: string };
   /** {name} favourited your post */
   "server:push.favourite": { name: string };
   /** {name} followed you */

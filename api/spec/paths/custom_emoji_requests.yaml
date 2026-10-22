@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listCustomEmojiRequests
+  summary: List the user's custom emoji requests
+  description: |
+    The user's requests for new custom emoji and new images of their own (ADR-0070 §6),
+    newest first, in every state. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+  tags: [custom-emojis]
+  security:
+    - oauth2: ["read:custom_emojis"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the requests.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CustomEmojiRequestPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createCustomEmojiRequest
+  summary: Request a custom emoji or a new image of one
+  description: |
+    Requests a new local custom emoji (`create`) or a new image of a local emoji that the user
+    made (`image`), which a holder of `manage_custom_emojis` approves or rejects (ADR-0070 §2,
+    §3). Until then, the request is no emoji: nothing shows its image. A pending `create`
+    request reserves its shortcode. The image follows the rules of `POST /admin/custom_emojis`.
+    A shortcode or an image that breaks the rules, a shortcode that a local emoji has or a
+    pending request reserves, a `create` request once the user's emoji and pending `create`
+    requests are as many as their limit (`limit_reached`), and a second pending `image`
+    request for an emoji (`request_pending`) are a 422
+    `/api/v1/problems/invalid-custom-emoji` whose `reason` says which. A `create` request
+    without `shortcode` and an `image` request without `emoji_id` are a 422 naming the
+    property, and an `image` request for an emoji that is not one the user made is a 404.
+    The request is recorded in the audit log and notified to the holders of
+    `manage_custom_emojis`. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+  tags: [custom-emojis]
+  security:
+    - oauth2: ["write:custom_emojis"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/NewCustomEmojiRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/CustomEmojiRequest.yaml
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

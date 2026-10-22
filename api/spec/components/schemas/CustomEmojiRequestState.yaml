@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The state of a custom emoji request: `pending` until an administrator decides it, then
+  `approved` or `rejected`; `withdrawn` by the requester before that; or `lapsed`, a request
+  for a new image of an emoji that was deleted.
+type: string
+enum:
+  - pending
+  - approved
+  - rejected
+  - withdrawn
+  - lapsed

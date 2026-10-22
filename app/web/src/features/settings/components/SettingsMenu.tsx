@@ -2,9 +2,13 @@
 import { Link } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
+import { type Permission, useViewerPermissions } from "../../moderation";
 
-/** The pages of the settings, in the order of the menu. */
-const pages: readonly { href: string; label: ClientMessageKey; description: ClientMessageKey }[] = [
+/**
+ * The pages of the settings, in the order of the menu; a page with a `permission` (a member permission, ADR-0070 §1)
+ * is listed only for a viewer whose roles have it.
+ */
+const pages: readonly { href: string; label: ClientMessageKey; description: ClientMessageKey; permission?: Permission }[] = [
   { href: "/settings/profile", label: "client:settings.profile.title", description: "client:settings.profile.summary" },
   { href: "/settings/preferences", label: "client:settings.preferences.title", description: "client:settings.preferences.summary" },
   { href: "/settings/password", label: "client:settings.password.title", description: "client:settings.password.summary" },
@@ -16,6 +20,7 @@ const pages: readonly { href: string; label: ClientMessageKey; description: Clie
   { href: "/settings/mutes", label: "client:settings.mutes.title", description: "client:settings.mutes.summary" },
   { href: "/settings/domain-mutes", label: "client:settings.domain_mutes.title", description: "client:settings.domain_mutes.summary" },
   { href: "/settings/import-export", label: "client:settings.import_export.title", description: "client:settings.import_export.summary" },
+  { href: "/settings/custom-emojis", label: "client:custom_emojis.title", description: "client:custom_emojis.summary", permission: "create_custom_emojis" },
   { href: "/settings/account-status", label: "client:account_status.title", description: "client:account_status.summary" },
   { href: "/settings/account", label: "client:settings.account.title", description: "client:settings.account.summary" },
 ];
@@ -24,13 +29,15 @@ const pages: readonly { href: string; label: ClientMessageKey; description: Clie
 export function SettingsMenu() {
   const t = useT();
   const headingId = useId();
+  const permissions = useViewerPermissions();
+  const shown = pages.filter((page) => page.permission === undefined || permissions.includes(page.permission));
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <h2 id={headingId} className="text-lg font-semibold">
         {t("client:settings.menu.title")}
       </h2>
       <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
-        {pages.map((page) => {
+        {shown.map((page) => {
           const descriptionId = `${headingId}-${page.href}`;
           return (
             <li key={page.href} className="flex flex-col px-4 py-3">

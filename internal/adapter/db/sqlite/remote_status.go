@@ -237,7 +237,8 @@ func (r *StatusRepository) FindPollTallies(ctx context.Context, pollID string) (
 
 func customEmojiFrom(row sqlitegen.CustomEmoji) content.CustomEmoji {
 	return content.CustomEmoji{
-		ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: row.Uri.String, CreatedAt: fromMillis(row.CreatedAt),
+		ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: row.Uri.String, CreatedByUserID: row.CreatedByUserID.String,
+		CreatedAt: fromMillis(row.CreatedAt),
 	}
 }
 

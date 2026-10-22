@@ -253,4 +253,15 @@ my admin emoji disable <emoji id>                                               
 my admin emoji list -remote -domain mastodon.example                              # ほかのサーバーの絵文字を出す
 my admin emoji copy [-shortcode <name>] <emoji id>                                # リモートの絵文字をローカルへ複製する
 my admin emoji delete <emoji id>                                                  # 削除する
+my admin emoji requests list [-state pending|approved|rejected|withdrawn|lapsed|all] # 作成の申請を出す（既定は審査中）
+my admin emoji requests approve <request id>                                      # 申請を承認する
+my admin emoji requests reject [-reason <text>] <request id>                      # 申請を却下する（理由は申請者に見える）
 ```
+
+- ロールの権限 `create_custom_emojis`（利用者の機能。[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）を持つ人は、設定の「カスタム絵文字」（`/settings/custom-emojis`）から
+  絵文字の作成を申請し、自分が作った絵文字の別名・カテゴリ・ピッカーに出すかを変え、削除できます。画像の差し替えも申請です。
+  申請は `manage_custom_emojis` を持つ人が承認するまで、どこにも出ません（ピッカー・投稿・リアクション・連合）。管理画面の「カスタム絵文字」の「申請」のタブ、クライアント API（`/api/v1/admin/custom_emoji_requests`）、上の CLI で承認・却下します。
+  申請は `manage_custom_emojis` を持つ人に通知され（`admin_custom_emoji_request`）、承認と却下は申請者に通知されます。申請・取り下げ・承認・却下は監査ログ（対象 `custom_emoji_request`）に残ります。
+- 審査中の作成の申請は shortcode を予約します。同じ shortcode の申請と絵文字の登録は、却下か取り下げまでできません。承認した絵文字の画像はインスタンスの Actor のアップロードとして複製するので、申請者のアカウントを消しても残ります。
+- 作成者は、`create_custom_emojis` を持つ間だけ自分の絵文字を変えられます。ロールを外しても絵文字は残ります。管理者は作成者にかかわらずすべての絵文字を変更・削除できます。
+- 作成数の上限は、ロールがサポーターのプランから来るときプランの「絵文字の上限」（[ADR-0072](../adr/0072-supporter-plans-and-roles.md)）で、作った絵文字と審査中の作成の申請の合計を数えます。管理者が手で付けたロールと、サポーター制度が無効のときは上限がありません。

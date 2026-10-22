@@ -10,7 +10,9 @@
 // a moderation notice (and the decision on an appeal of it) says what the action does, why, and until when,
 // and leads to the account's status; an appeal to the moderators leads to the appeal; a
 // resolved report names the reported account; a moderator's new report or registration leads to the report or
-// the registrations; and lost follows lead to the user's lists of followers and follows.
+// the registrations; a custom emoji request leads the administrators to the requests and its decision the
+// requester to their custom emoji, with the reason of a rejection; and lost follows lead to the user's lists of
+// followers and follows.
 //
 // A group of the favourites or the boosts of one post is one row: "Alice and 2 others favourited your
 // post", with the avatars of the others in a row above the sentence, so the number of people is in the
@@ -92,7 +94,15 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
                   followers: view.severance?.followers ?? 0,
                   following: view.severance?.following ?? 0,
                   // The emoji is the reacting user's choice, isolated from the sentence around it (Y10).
-                  emoji: view.reaction === null ? null : <bdi key="emoji">{view.reaction}</bdi>,
+                  // A requested emoji's shortcode is no running text either.
+                  emoji:
+                    view.reaction !== null ? (
+                      <bdi key="emoji">{view.reaction}</bdi>
+                    ) : view.emojiRequest === null ? null : (
+                      <bdi key="emoji" dir="ltr">
+                        {view.emojiRequest.emoji}
+                      </bdi>
+                    ),
                 },
               )}
             </span>
@@ -104,7 +114,15 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
           {view.time.relative}
         </time>
       }
-      content={view.post !== null ? <PostQuote post={view.post} /> : view.notice !== null ? <ModerationNotice notice={view.notice} /> : null}
+      content={
+        view.post !== null ? (
+          <PostQuote post={view.post} />
+        ) : view.notice !== null ? (
+          <ModerationNotice notice={view.notice} />
+        ) : view.emojiRequest !== null && view.emojiRequest.reason !== null ? (
+          <RejectionReason reason={view.emojiRequest.reason} />
+        ) : null
+      }
       {...(view.followBack !== null && { actions: <FollowBack account={view.followBack} /> })}
       {...(view.links.length > 0 && {
         actions: (
@@ -208,6 +226,19 @@ function ModerationNotice({ notice }: { notice: ModerationNoticeView }) {
           )}
         </p>
       )}
+    </div>
+  );
+}
+
+/** The administrator's reason of a rejected custom emoji request: their own text, in its own direction (Y10). */
+function RejectionReason({ reason }: { reason: string }) {
+  const t = useT();
+  return (
+    <div className="flex flex-col gap-1 border-s-2 border-border ps-3">
+      <p className="text-sm text-fg-muted">{t("client:notifications.custom_emoji_request.reason")}</p>
+      <p dir="auto" className="whitespace-pre-line wrap-anywhere">
+        {reason}
+      </p>
     </div>
   );
 }

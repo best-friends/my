@@ -41,7 +41,8 @@ type CustomEmojiFactory func(t *testing.T, opts uow.Options) CustomEmojiHarness
 // remote emoji copied into local ones through the media proxy, and copies refused without a
 // trace when the image cannot be fetched or does not qualify;
 // the administrators' list with its filters
-// and pages; and every operation audited by an event in its transaction.
+// and pages; every operation audited by an event in its transaction; and the requests of the
+// holders of create_custom_emojis (custom_emoji_request_contract.go, ADR-0070).
 func CustomEmojiRepositoryContract(t *testing.T, newHarness CustomEmojiFactory) {
 	t.Helper()
 	cases := []struct {
@@ -59,6 +60,12 @@ func CustomEmojiRepositoryContract(t *testing.T, newHarness CustomEmojiFactory) 
 		{"ReadsAnEmojiInATransaction", emojiReadsInTransaction},
 		{"CopiesRemoteEmoji", emojiCopiesRemote},
 		{"RefusesCopiesWithoutATrace", emojiRefusesCopies},
+		{"HidesRequestsUntilApproved", requestHidesUntilApproved},
+		{"RejectsAndWithdrawsRequests", requestRejectsAndWithdraws},
+		{"ReservesTheShortcodesOfPendingRequests", requestReservesShortcodes},
+		{"LimitsCreatorsToTheirOwnEmoji", requestLimitsCreatorsToTheirOwn},
+		{"LapsesImageRequestsWithTheirEmoji", requestLapsesWithItsEmoji},
+		{"AppliesTheLimitOfTheCreators", requestAppliesTheLimit},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newEmojiEnv(t, newHarness)) })

@@ -83,6 +83,9 @@ const (
 	// AuditTargetSupporterSubscription is a subscription to a supporter plan; its label is the
 	// plan's name and the subscriber's handle.
 	AuditTargetSupporterSubscription AuditTargetKind = "supporter_subscription"
+	// AuditTargetCustomEmojiRequest is a request of a holder of create_custom_emojis (ADR-0070
+	// §8); its label is the :shortcode: of the requested emoji.
+	AuditTargetCustomEmojiRequest AuditTargetKind = "custom_emoji_request"
 )
 
 var auditTargetKinds = []AuditTargetKind{
@@ -90,7 +93,7 @@ var auditTargetKinds = []AuditTargetKind{
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
 	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite, AuditTargetRelay,
 	AuditTargetBillingSource, AuditTargetCostItem, AuditTargetSupporterProgram, AuditTargetSupporterPlan,
-	AuditTargetSupporterSubscription,
+	AuditTargetSupporterSubscription, AuditTargetCustomEmojiRequest,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -263,6 +266,16 @@ const (
 	// AuditSupporterSubscriptionCanceled: an administrator canceled a subscription at once,
 	// without a refund (supporter_subscription_transitions, ADR-0072 §10).
 	AuditSupporterSubscriptionCanceled AuditAction = "supporter_subscription_canceled"
+	// AuditCustomEmojiRequestSubmitted, AuditCustomEmojiRequestWithdrawn,
+	// AuditCustomEmojiRequestApproved, and AuditCustomEmojiRequestRejected: a holder of
+	// create_custom_emojis requested a custom emoji or a new image of one
+	// (custom_emoji_requests), withdrew the request, or a holder of manage_custom_emojis approved
+	// or rejected it (custom_emoji_request_outcomes, ADR-0070 §8). An approval also records the
+	// custom_emoji_created or custom_emoji_image_replaced of the emoji.
+	AuditCustomEmojiRequestSubmitted AuditAction = "custom_emoji_request_submitted"
+	AuditCustomEmojiRequestWithdrawn AuditAction = "custom_emoji_request_withdrawn"
+	AuditCustomEmojiRequestApproved  AuditAction = "custom_emoji_request_approved"
+	AuditCustomEmojiRequestRejected  AuditAction = "custom_emoji_request_rejected"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -340,6 +353,10 @@ var auditActions = []struct {
 	{AuditSupporterPlanRevised, AuditTargetSupporterPlan},
 	{AuditSupporterPlanRetired, AuditTargetSupporterPlan},
 	{AuditSupporterSubscriptionCanceled, AuditTargetSupporterSubscription},
+	{AuditCustomEmojiRequestSubmitted, AuditTargetCustomEmojiRequest},
+	{AuditCustomEmojiRequestWithdrawn, AuditTargetCustomEmojiRequest},
+	{AuditCustomEmojiRequestApproved, AuditTargetCustomEmojiRequest},
+	{AuditCustomEmojiRequestRejected, AuditTargetCustomEmojiRequest},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

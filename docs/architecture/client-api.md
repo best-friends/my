@@ -218,7 +218,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 ハンドラが最初に `Server.requirePermission` で `Options.Permissions`（`identity.Service.HasPermission`）に問い合わせ、持たなければ 403 にします。
 権限は spec の `security` に書けないので、操作の `description` に書きます。
 経路とスコープは区分で分けません（[ADR-0058](../adr/0058-moderation-admin-separation.md)）。新しい操作は区分によらず `/admin/<資源>` に置き、タグで区分を示します。
-利用者の機能の区分の権限（`view_finance` など、[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）を要する操作は `/admin/*` に置かず、利用者の名前空間（`GET /finance/cost_totals` など）に置いて、`admin:*` ではなく `read:*` / `write:*` のスコープ（`read:finance` など）と、ハンドラの `Server.requirePermission` の検査を要します。スタッフでない利用者のトークンに `admin:*` を求めないためです。
+利用者の機能の区分の権限（`view_finance` など、[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）を要する操作は `/admin/*` に置かず、利用者の名前空間（`GET /finance/cost_totals`、`/custom_emoji_requests`、`/custom_emojis/mine` など）に置いて、`admin:*` ではなく `read:*` / `write:*` のスコープ（`read:finance`、`read:custom_emojis`・`write:custom_emojis` など）と、ハンドラの `Server.requirePermission` の検査を要します。スタッフでない利用者のトークンに `admin:*` を求めないためです。
 クライアントが管理の画面を出し分けられるように、`GET /accounts/verify_credentials` の `CredentialAccount.permissions` が利用者のロールの権限を返します（`identity.Service.Permissions`。ロールがなければ空）。画面を隠すのは案内のためだけで、守るのは各操作の検査です。
 
 応答:

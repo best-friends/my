@@ -61,6 +61,13 @@ tags:
     description: Real-time updates of the home timeline, the notifications, and the announcements.
   - name: announcements
     description: The server's announcements to every local user and which of them the user has read.
+  - name: custom-emojis
+    description: |
+      The custom emoji that the holders of the `create_custom_emojis` permission request and
+      made (ADR-0070 §6): their requests for new emoji and new images, which a holder of
+      `manage_custom_emojis` approves, and the emoji they made. The operations need a
+      `read:custom_emojis` or `write:custom_emojis` scope and the `create_custom_emojis`
+      permission, never an `admin` scope.
   - name: finance
     description: |
       The instance's finances as the holders of the `view_finance` permission read them, as far
@@ -129,6 +136,167 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PickerCustomEmojiList'
+        default:
+          $ref: '#/components/responses/Problem'
+  /custom_emojis/mine:
+    get:
+      operationId: listOwnCustomEmojis
+      summary: List the custom emoji that the user made
+      description: |
+        The local custom emoji that the user made (ADR-0070 §6), newest first, with what the user
+        used of their limit: their emoji and their pending requests to create one, and the limit,
+        which a supporter plan sets and which is absent for no limit (ADR-0070 §4). Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+      tags:
+        - custom-emojis
+      security:
+        - oauth2:
+            - read:custom_emojis
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of the emoji.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnCustomEmojiPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /custom_emojis/mine/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CustomEmojiId'
+    patch:
+      operationId: updateOwnCustomEmoji
+      summary: Change a custom emoji that the user made
+      description: |
+        Changes the aliases, the category, and the place in the picker of a local emoji that the
+        user made, and keeps the rest (ADR-0070 §3); a new image is a request
+        (`POST /custom_emoji_requests`). The rules of `PATCH /admin/custom_emojis/{id}` apply, and
+        the change is recorded in the audit log. An emoji that is not one the user made is a 404.
+        Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+      tags:
+        - custom-emojis
+      security:
+        - oauth2:
+            - write:custom_emojis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOwnCustomEmojiRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OwnCustomEmoji'
+        '422':
+          $ref: '#/components/responses/CustomEmojiProblem'
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      operationId: deleteOwnCustomEmoji
+      summary: Delete a custom emoji that the user made
+      description: |
+        Deletes a local emoji that the user made for good, as `DELETE /admin/custom_emojis/{id}`
+        does, which frees a place of the user's limit; a pending request for a new image of it
+        lapses. The deletion is recorded in the audit log. An emoji that is not one the user made
+        is a 404. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+      tags:
+        - custom-emojis
+      security:
+        - oauth2:
+            - write:custom_emojis
+      responses:
+        '204':
+          description: The emoji is deleted.
+        default:
+          $ref: '#/components/responses/Problem'
+  /custom_emoji_requests:
+    get:
+      operationId: listCustomEmojiRequests
+      summary: List the user's custom emoji requests
+      description: |
+        The user's requests for new custom emoji and new images of their own (ADR-0070 §6),
+        newest first, in every state. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+      tags:
+        - custom-emojis
+      security:
+        - oauth2:
+            - read:custom_emojis
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of the requests.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomEmojiRequestPage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      operationId: createCustomEmojiRequest
+      summary: Request a custom emoji or a new image of one
+      description: |
+        Requests a new local custom emoji (`create`) or a new image of a local emoji that the user
+        made (`image`), which a holder of `manage_custom_emojis` approves or rejects (ADR-0070 §2,
+        §3). Until then, the request is no emoji: nothing shows its image. A pending `create`
+        request reserves its shortcode. The image follows the rules of `POST /admin/custom_emojis`.
+        A shortcode or an image that breaks the rules, a shortcode that a local emoji has or a
+        pending request reserves, a `create` request once the user's emoji and pending `create`
+        requests are as many as their limit (`limit_reached`), and a second pending `image`
+        request for an emoji (`request_pending`) are a 422
+        `/api/v1/problems/invalid-custom-emoji` whose `reason` says which. A `create` request
+        without `shortcode` and an `image` request without `emoji_id` are a 422 naming the
+        property, and an `image` request for an emoji that is not one the user made is a 404.
+        The request is recorded in the audit log and notified to the holders of
+        `manage_custom_emojis`. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+      tags:
+        - custom-emojis
+      security:
+        - oauth2:
+            - write:custom_emojis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewCustomEmojiRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CustomEmojiRequest'
+        '422':
+          $ref: '#/components/responses/CustomEmojiProblem'
+        default:
+          $ref: '#/components/responses/Problem'
+  /custom_emoji_requests/{id}/withdraw:
+    parameters:
+      - $ref: '#/components/parameters/CustomEmojiRequestId'
+    post:
+      operationId: withdrawCustomEmojiRequest
+      summary: Withdraw a custom emoji request
+      description: |
+        Withdraws a pending request of the user, which frees its shortcode; the withdrawal is
+        recorded in the audit log. A request that is not pending is a 409
+        `/api/v1/problems/custom-emoji-request-conflict` (`not_pending`), and an unknown request
+        or one of another user a 404. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+      tags:
+        - custom-emojis
+      security:
+        - oauth2:
+            - write:custom_emojis
+      responses:
+        '200':
+          $ref: '#/components/responses/CustomEmojiRequest'
+        '409':
+          $ref: '#/components/responses/CustomEmojiRequestProblem'
         default:
           $ref: '#/components/responses/Problem'
   /instance/domain_actions:
@@ -1765,7 +1933,8 @@ paths:
         The user's notifications, newest first. Dismissed notifications, notifications about
         deleted posts, and notifications from accounts that the user blocks, is blocked by, or
         mutes with notifications hidden are left out, also those that came before the block or
-        mute. The moderator notifications (`admin_report`, `admin_sign_up`) are left out once
+        mute. The moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`,
+        `admin_webhook_disabled`, `admin_custom_emoji_request`) are left out once
         the user's roles no longer grant the permission they need.
       tags:
         - notifications
@@ -4374,6 +4543,102 @@ paths:
           $ref: '#/components/responses/CustomEmojiProblem'
         default:
           $ref: '#/components/responses/Problem'
+  /admin/custom_emoji_requests:
+    get:
+      operationId: listAdminCustomEmojiRequests
+      summary: List the custom emoji requests
+      description: |
+        The custom emoji requests of the holders of `create_custom_emojis` (ADR-0070 §6), newest
+        first, with their requesters: the pending ones unless `state` names another state. Needs the `manage_custom_emojis` permission.
+      tags:
+        - admin-server
+      security:
+        - oauth2:
+            - admin:read
+      parameters:
+        - name: state
+          in: query
+          required: false
+          description: Keep the requests in this state; `pending` by default.
+          schema:
+            $ref: '#/components/schemas/CustomEmojiRequestState'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of the requests.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCustomEmojiRequestPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /admin/custom_emoji_requests/{id}/approve:
+    parameters:
+      - $ref: '#/components/parameters/CustomEmojiRequestId'
+    post:
+      operationId: approveCustomEmojiRequest
+      summary: Approve a custom emoji request
+      description: |
+        Approves a pending request (ADR-0070 §2): a `create` request makes the local emoji,
+        without a category, in the picker, and enabled, whose creator is the requester; an `image`
+        request gives the emoji the requested image. The image is copied as an upload of the
+        instance. The approval and the emoji's registration or new image are recorded in the
+        audit log, and the requester is notified. A request that is not pending, whose requester
+        no longer may create custom emoji, or whose shortcode a local emoji has is a 409
+        `/api/v1/problems/custom-emoji-request-conflict` whose `reason` says which (reject it
+        instead); an image that no longer qualifies is a 422. An unknown request is a 404.
+        Needs the `manage_custom_emojis` permission.
+      tags:
+        - admin-server
+      security:
+        - oauth2:
+            - admin:write
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminCustomEmojiRequest'
+        '409':
+          $ref: '#/components/responses/CustomEmojiRequestProblem'
+        '422':
+          $ref: '#/components/responses/CustomEmojiProblem'
+        default:
+          $ref: '#/components/responses/Problem'
+  /admin/custom_emoji_requests/{id}/reject:
+    parameters:
+      - $ref: '#/components/parameters/CustomEmojiRequestId'
+    post:
+      operationId: rejectCustomEmojiRequest
+      summary: Reject a custom emoji request
+      description: |
+        Rejects a pending request, with an optional reason that the requester sees, which frees
+        its shortcode (ADR-0070 §2). The rejection is recorded in the audit log, and the requester
+        is notified. A reason longer than 500 characters is a 422 with the reason
+        `invalid_reason`; a request that is not pending is a 409
+        `/api/v1/problems/custom-emoji-request-conflict` (`not_pending`). An unknown request is a
+        404. Needs the `manage_custom_emojis` permission.
+      tags:
+        - admin-server
+      security:
+        - oauth2:
+            - admin:write
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectCustomEmojiRequestRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminCustomEmojiRequest'
+        '409':
+          $ref: '#/components/responses/CustomEmojiRequestProblem'
+        '422':
+          $ref: '#/components/responses/CustomEmojiProblem'
+        default:
+          $ref: '#/components/responses/Problem'
   /admin/instance_texts:
     get:
       operationId: listInstanceTexts
@@ -6110,6 +6375,7 @@ components:
             read:blocks: Read the accounts the user blocks.
             read:bookmarks: Read the user's bookmarks.
             read:favourites: Read the user's favourites.
+            read:custom_emojis: Read the custom emoji the user made and their requests for new ones.
             read:finance: Read the totals of the instance's costs, as far as the user's roles allow.
             read:follows: Read follows and follow requests.
             read:mutes: Read the accounts and domains the user mutes.
@@ -6119,6 +6385,7 @@ components:
             write:accounts: Change the user's profile and preferences.
             write:blocks: Block and unblock accounts.
             write:bookmarks: Bookmark posts and remove bookmarks.
+            write:custom_emojis: Request new custom emoji, and change and delete the ones the user made.
             write:favourites: Favourite posts and react to them with emoji, and take both back.
             write:follows: Follow and unfollow accounts and answer follow requests.
             write:media: Upload media and change their descriptions.
@@ -6193,6 +6460,13 @@ components:
       in: path
       required: true
       description: The ID of the custom emoji.
+      schema:
+        $ref: '#/components/schemas/Id'
+    CustomEmojiRequestId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the custom emoji request.
       schema:
         $ref: '#/components/schemas/Id'
     DomainActionId:
@@ -6383,6 +6657,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AdminCustomEmoji'
+    AdminCustomEmojiRequest:
+      description: The custom emoji request with its requester.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AdminCustomEmojiRequest'
     AdminDomainAction:
       description: The domain action.
       headers:
@@ -6549,6 +6832,37 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/CustomEmojiProblem'
+    CustomEmojiRequest:
+      description: The custom emoji request.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CustomEmojiRequest'
+    CustomEmojiRequestProblem:
+      description: The request cannot be decided or withdrawn as it is; nothing was changed.
+      headers:
+        Content-Language:
+          description: The locale of `title` and `detail`.
+          schema:
+            type: string
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/CustomEmojiRequestProblem'
+    OwnCustomEmoji:
+      description: The custom emoji.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OwnCustomEmoji'
     Problem:
       description: An error, as an RFC 9457 problem document.
       headers:
@@ -7361,7 +7675,11 @@ components:
         `supporter_plan`: `supporter_plan_created`, `supporter_plan_revised`, and
         `supporter_plan_retired`; the label is the plan's name. On a `supporter_subscription`:
         `supporter_subscription_canceled`, an administrator's cancellation without a refund; the
-        label is the plan's name and the subscriber's handle.
+        label is the plan's name and the subscriber's handle. On a `custom_emoji_request`:
+        `custom_emoji_request_submitted` and `custom_emoji_request_withdrawn` by the requester, and
+        `custom_emoji_request_approved` (which also records the emoji's `custom_emoji_created` or
+        `custom_emoji_image_replaced`) and `custom_emoji_request_rejected`; the label is the
+        `:shortcode:` of the request.
       type: string
       enum:
         - account_action_issued
@@ -7434,6 +7752,10 @@ components:
         - supporter_plan_revised
         - supporter_plan_retired
         - supporter_subscription_canceled
+        - custom_emoji_request_submitted
+        - custom_emoji_request_withdrawn
+        - custom_emoji_request_approved
+        - custom_emoji_request_rejected
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -7540,6 +7862,7 @@ components:
         - supporter_program
         - supporter_plan
         - supporter_subscription
+        - custom_emoji_request
     AdminAvailabilityEvent:
       description: The time a remote server was marked unavailable or available again, and why.
       type: object
@@ -7614,6 +7937,7 @@ components:
         - enabled
         - visible_in_picker
         - aliases
+        - created_by_deleted
         - created_at
         - updated_at
       properties:
@@ -7658,6 +7982,16 @@ components:
           type: array
           items:
             type: string
+        created_by:
+          description: |
+            The account of the user who made a local emoji (ADR-0070 §7): the requester of an
+            approved request, or the administrator who registered or copied it. Absent for an emoji
+            made with the CLI, a remote one, and one whose creator's account is deleted
+            (`created_by_deleted`).
+          $ref: '#/components/schemas/Account'
+        created_by_deleted:
+          description: Whether a user made the emoji whose account no longer exists.
+          type: boolean
         created_at:
           description: When the emoji was registered or first seen.
           type: string
@@ -7678,6 +8012,28 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/AdminCustomEmoji'
+    AdminCustomEmojiRequest:
+      description: A custom emoji request as the administrators review it, with the requester.
+      allOf:
+        - $ref: '#/components/schemas/CustomEmojiRequest'
+        - type: object
+          properties:
+            requester:
+              description: The account of the requester; absent when it is deleted.
+              allOf:
+                - $ref: '#/components/schemas/Account'
+    AdminCustomEmojiRequestPage:
+      description: A page of custom emoji requests with their requesters.
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required:
+            - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/AdminCustomEmojiRequest'
     AdminDomainAction:
       description: A moderation action on a remote domain and its subdomains (FR-702).
       type: object
@@ -10131,6 +10487,9 @@ components:
         `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
         for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
         fetched (its server did not return it, or the instance rejects the media of its domain).
+        `limit_reached`: the user's custom emoji and pending requests to create one are as many as
+        their limit. `request_pending`: the emoji already has a pending request for a new image.
+        `invalid_reason`: the reason of a rejection is longer than 500 characters or not text.
       type: string
       enum:
         - invalid_shortcode
@@ -10145,6 +10504,116 @@ components:
         - remote_emoji
         - local_emoji
         - fetch_failed
+        - limit_reached
+        - request_pending
+        - invalid_reason
+    CustomEmojiRequest:
+      description: |
+        A request of a holder of `create_custom_emojis` for a new local custom emoji, or for a new
+        image of one they made, which a holder of `manage_custom_emojis` approves or rejects
+        (ADR-0070 §2). A request is not an emoji: no picker, post, reaction, or other server shows
+        its image until it is approved.
+      type: object
+      required:
+        - id
+        - kind
+        - state
+        - shortcode
+        - created_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        kind:
+          $ref: '#/components/schemas/CustomEmojiRequestKind'
+        state:
+          $ref: '#/components/schemas/CustomEmojiRequestState'
+        shortcode:
+          description: |
+            The shortcode of the new emoji, without the colons around it, or of the emoji whose image
+            the request replaces.
+          type: string
+        emoji_id:
+          description: |
+            The emoji of an `image` request, and the emoji that an approved `create` request made;
+            absent otherwise.
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        url:
+          description: |
+            The URL of the requested image, animated when it is; absent once it cannot be shown (the
+            upload of a request that ended goes with the unattached uploads).
+          type: string
+          format: uri
+        static_url:
+          description: The URL of a still image of the requested image; absent with `url`.
+          type: string
+          format: uri
+        reason:
+          description: The reason of a rejection that the administrator gave; absent for none.
+          type: string
+        created_at:
+          description: When the request was made.
+          type: string
+          format: date-time
+        decided_at:
+          description: |
+            When the request was approved, rejected, withdrawn, or lapsed; absent while it is
+            pending.
+          type: string
+          format: date-time
+    CustomEmojiRequestConflictReason:
+      description: |
+        Why a custom emoji request cannot be decided or withdrawn. `not_pending`: it was already
+        approved, rejected, withdrawn, or lapsed. `requester_cannot_create`: the requester no longer
+        holds `create_custom_emojis` or can no longer use the server. `shortcode_taken`: a local
+        emoji has the shortcode of the request. The last two can only be rejected.
+      type: string
+      enum:
+        - not_pending
+        - requester_cannot_create
+        - shortcode_taken
+    CustomEmojiRequestKind:
+      description: |
+        What a custom emoji request asks for (ADR-0070 §2, §3): `create` a new local custom emoji,
+        or `image` a new image of a local emoji that the requester made.
+      type: string
+      enum:
+        - create
+        - image
+    CustomEmojiRequestPage:
+      description: A page of custom emoji requests.
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required:
+            - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/CustomEmojiRequest'
+    CustomEmojiRequestProblem:
+      description: |
+        The problem of a custom emoji request that cannot be decided or withdrawn (409,
+        `/api/v1/problems/custom-emoji-request-conflict`); `reason` says why.
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            reason:
+              $ref: '#/components/schemas/CustomEmojiRequestConflictReason'
+    CustomEmojiRequestState:
+      description: |
+        The state of a custom emoji request: `pending` until an administrator decides it, then
+        `approved` or `rejected`; `withdrawn` by the requester before that; or `lapsed`, a request
+        for a new image of an emoji that was deleted.
+      type: string
+      enum:
+        - pending
+        - approved
+        - rejected
+        - withdrawn
+        - lapsed
     DataExport:
       description: A request for an archive of the user's data.
       type: object
@@ -11565,6 +12034,30 @@ components:
           description: When the mute ends; left out for a mute until unmuted.
           type: string
           format: date-time
+    NewCustomEmojiRequest:
+      description: |
+        A new custom emoji request: `create` takes the `shortcode` of the new emoji, and `image` the
+        `emoji_id` of a local emoji that the user made. `media_id` is an upload of the user that
+        finished processing (upload it with the `emoji` purpose), under the rules of the image of a
+        custom emoji.
+      type: object
+      required:
+        - kind
+        - media_id
+      properties:
+        kind:
+          $ref: '#/components/schemas/CustomEmojiRequestKind'
+        shortcode:
+          description: For `create`, 2 to 30 letters (A to Z, a to z), digits, and underscores; case matters.
+          type: string
+          minLength: 2
+          maxLength: 30
+        emoji_id:
+          description: For `image`, the emoji whose image the request replaces.
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        media_id:
+          $ref: '#/components/schemas/Id'
     Notification:
       description: A notification of something that happened to the authenticated user.
       type: object
@@ -11604,6 +12097,11 @@ components:
           description: The appeal that an `admin_appeal` is about.
           allOf:
             - $ref: '#/components/schemas/Id'
+        custom_emoji_request:
+          description: |
+            The custom emoji request that an `admin_custom_emoji_request` or a
+            `custom_emoji_request_decided` is about, as it is now; absent when it no longer exists.
+          $ref: '#/components/schemas/CustomEmojiRequest'
         relationship_severance:
           $ref: '#/components/schemas/RelationshipSeverance'
         reaction:
@@ -11668,7 +12166,12 @@ components:
         approval; `account` is the new user's account) to those with `manage_accounts`, and
         `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
         `manage_accounts`, and `admin_webhook_disabled` (the server disabled a webhook that
-        answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`.
+        answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`, and
+        `admin_custom_emoji_request` (a user requested a custom emoji or a new image of one;
+        `custom_emoji_request` is the request) to those with `manage_custom_emojis`.
+        `custom_emoji_request_decided` also comes from the instance: an administrator approved
+        or rejected the user's custom emoji request, which `custom_emoji_request` carries with
+        its state and the reason of a rejection.
       type: string
       enum:
         - follow
@@ -11688,6 +12191,81 @@ components:
         - appeal_decided
         - admin_appeal
         - admin_webhook_disabled
+        - admin_custom_emoji_request
+        - custom_emoji_request_decided
+    OwnCustomEmoji:
+      description: A local custom emoji that the user made (ADR-0070 §3).
+      type: object
+      required:
+        - id
+        - shortcode
+        - enabled
+        - visible_in_picker
+        - aliases
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        shortcode:
+          description: The shortcode, without the colons around it.
+          type: string
+        url:
+          description: The URL of the image, animated when the emoji is; absent when it cannot be shown.
+          type: string
+          format: uri
+        static_url:
+          description: The URL of a still image of the emoji; absent with `url`.
+          type: string
+          format: uri
+        enabled:
+          description: |
+            Whether the emoji is shown; an administrator disables and enables it, and a disabled one
+            stays `:shortcode:` text.
+          type: boolean
+        visible_in_picker:
+          description: Whether the picker offers the emoji.
+          type: boolean
+        category:
+          description: The category of the emoji in the picker; absent for none.
+          type: string
+        aliases:
+          description: The other names that the picker finds the emoji by.
+          type: array
+          items:
+            type: string
+        created_at:
+          description: When the emoji was made.
+          type: string
+          format: date-time
+        updated_at:
+          description: When its current image was set.
+          type: string
+          format: date-time
+    OwnCustomEmojiPage:
+      description: |
+        A page of the custom emoji that the user made, with what the user used of their limit
+        (ADR-0070 §4): `used` counts the user's local emoji and their pending requests to create
+        one, and `limit` is how many they may have, absent for no limit.
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required:
+            - items
+            - used
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/OwnCustomEmoji'
+            used:
+              description: The user's local emoji and pending requests to create one.
+              type: integer
+              minimum: 0
+            limit:
+              description: How many the user may have; absent for no limit.
+              type: integer
+              minimum: 0
     PageInfo:
       description: The pagination of a collection page; collection responses embed it with allOf.
       type: object
@@ -11827,7 +12405,10 @@ components:
         the state of the billing imports (only the built-in admin role by default). `view_finance`:
         reading the totals of the instance's costs on `GET /finance/cost_totals`, a member
         permission outside the staff's areas (ADR-0070). `manage_supporters`: the supporter program, its plans, and their
-        subscriptions (only the built-in admin role by default). The others guard no client API operation
+        subscriptions (only the built-in admin role by default). `create_custom_emojis`: requesting
+        new local custom emoji, which a holder of `manage_custom_emojis` approves, and changing and
+        deleting the ones the user made, on `/custom_emoji_requests` and `/custom_emojis/mine`, a
+        member permission (ADR-0070). The others guard no client API operation
         yet.
       type: string
       enum:
@@ -11847,6 +12428,7 @@ components:
         - manage_finance
         - view_finance
         - manage_supporters
+        - create_custom_emojis
     PickerCustomEmoji:
       description: |
         A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
@@ -12042,8 +12624,9 @@ components:
           type: boolean
         email_moderator_notifications:
           description: |
-            Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
-            also come by email, to the primary address. Off for a new user.
+            Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`,
+            `admin_webhook_disabled`, `admin_custom_emoji_request`) also come by email, to the
+            primary address. Off for a new user.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, sorted; empty shows every language.
@@ -12372,6 +12955,14 @@ components:
         - pending
         - approved
         - rejected
+    RejectCustomEmojiRequestRequest:
+      description: The rejection of a custom emoji request.
+      type: object
+      properties:
+        reason:
+          description: Why, up to 500 characters, which the requester sees; empty or absent for none.
+          type: string
+          maxLength: 500
     Relationship:
       description: |
         The viewer's relationship with an account. It never says whether the account blocks
@@ -13425,6 +14016,25 @@ components:
           additionalProperties:
             type: string
             maxLength: 320
+    UpdateOwnCustomEmojiRequest:
+      description: The settings of a custom emoji that the user made to change; absent ones stay.
+      type: object
+      properties:
+        visible_in_picker:
+          description: Whether the picker offers the emoji.
+          type: boolean
+        category:
+          description: The category in the picker, up to 64 characters; empty removes it.
+          type: string
+          maxLength: 64
+        aliases:
+          description: The new aliases, each following the rules of a shortcode; at most 10.
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            minLength: 2
+            maxLength: 30
     UpdatePreferencesRequest:
       description: A change of the preferences; properties left out keep their current values.
       type: object

@@ -55,6 +55,10 @@
     "defaultMessage": "‮ᴚǝɐp ʎonɹ qooʞɯɐɹʞs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.read_custom_emojis": {
+    "defaultMessage": "‮ᴚǝɐp ʇɥǝ ɔnsʇoɯ ǝɯoɾı ʎon ɯɐpǝ ɐup ʎonɹ ɹǝbnǝsʇs ɟoɹ uǝʍ ouǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.read_favourites": {
     "defaultMessage": "‮ᴚǝɐp ʎonɹ ɟɐʌonɹıʇǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -97,6 +101,10 @@
   },
   "auth.authorize.scope.write_bookmarks": {
     "defaultMessage": "‮∀pp ɐup ɹǝɯoʌǝ qooʞɯɐɹʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.write_custom_emojis": {
+    "defaultMessage": "‮ᴚǝbnǝsʇ uǝʍ ɔnsʇoɯ ǝɯoɾı, ɐup ɔɥɐuƃǝ ɐup pǝʅǝʇǝ ʇɥǝ ouǝs ʎon ɯɐpǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_favourites": {
@@ -627,6 +635,14 @@
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔouɟʅıɔʇs ʍıʇɥ ʇɥǝ ɔnɹɹǝuʇ sʇɐʇǝ oɟ ʇɥǝ ɹǝsonɹɔǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.custom_emoji_request_conflict": {
+    "defaultMessage": "‮⊥ɥǝ ɔnsʇoɯ ǝɯoɾı ɹǝbnǝsʇ ɔɐuuoʇ qǝ pǝɔıpǝp ɐs ıʇ ıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.custom_emoji_request_conflict_detail": {
+    "defaultMessage": "‮{reason,select,not_pending{⊥ɥǝ ɹǝbnǝsʇ ʍɐs ɐʅɹǝɐpʎ ɐddɹoʌǝp, ɹǝɾǝɔʇǝp, oɹ ʍıʇɥpɹɐʍu.} other{⊥ɥǝ ɹǝbnǝsʇ ɔɐuuoʇ qǝ pǝɔıpǝp ɐs ıʇ ıs.} requester_cannot_create{⊥ɥǝ ɹǝbnǝsʇǝɹ ɔɐu uo ʅouƃǝɹ ɔɹǝɐʇǝ ɔnsʇoɯ ǝɯoɾı. ᴚǝɾǝɔʇ ʇɥǝ ɹǝbnǝsʇ ıusʇǝɐp.} shortcode_taken{∀ ɔnsʇoɯ ǝɯoɾı oɟ ʇɥıs sǝɹʌǝɹ ɐʅɹǝɐpʎ ɥɐs ʇɥıs sɥoɹʇɔopǝ. ᴚǝɾǝɔʇ ʇɥǝ ɹǝbnǝsʇ ıusʇǝɐp.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.domain_mutes.too_many": {
     "defaultMessage": "‮⅄on ɐʅɹǝɐpʎ ɯnʇǝ ʇɥǝ ɯosʇ poɯɐıus ɐʅʅoʍǝp. ∩uɯnʇǝ ouǝ ɟıɹsʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -672,7 +688,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.invalid_custom_emoji_detail": {
-    "defaultMessage": "‮{reason,select,fetch_failed{⊥ɥǝ ıɯɐƃǝ oɟ ʇɥǝ ɔnsʇoɯ ǝɯoɾı ɔonʅp uoʇ qǝ ɟǝʇɔɥǝp ɟɹoɯ ıʇs sǝɹʌǝɹ.} invalid_alias{∀u ɐʅıɐs ıs 2 ʇo 30 ʅǝʇʇǝɹs (∀ ʇo Z), pıƃıʇs, ɐup nupǝɹsɔoɹǝs, ɐup ɐu ǝɯoɾı ɥɐs ɐʇ ɯosʇ 10.} invalid_category{∀ ɔɐʇǝƃoɹʎ ıs ɐʇ ɯosʇ 64 ɔɥɐɹɐɔʇǝɹs.} invalid_shortcode{∀ sɥoɹʇɔopǝ ıs 2 ʇo 30 ʅǝʇʇǝɹs (∀ ʇo Z), pıƃıʇs, ɐup nupǝɹsɔoɹǝs.} local_emoji{⊥ɥıs ɔɐu qǝ pouǝ ouʅʎ ʍıʇɥ ʇɥǝ ɔnsʇoɯ ǝɯoɾı oɟ oʇɥǝɹ sǝɹʌǝɹs.} media_not_found{⊥ɥǝ ıɯɐƃǝ ʍɐs uoʇ ɟonup ɐɯouƃ ʎonɹ ndʅoɐps.} media_not_ready{⊥ɥǝ ıɯɐƃǝ ıs sʇıʅʅ qǝıuƃ dɹoɔǝssǝp. ⊥ɹʎ ɐƃɐıu ıu ɐ ɯoɯǝuʇ.} other{⊥ɥǝ ɔnsʇoɯ ǝɯoɾı qɹǝɐʞs ɐ ɹnʅǝ.} remote_emoji{⊥ɥıs ɔɐu qǝ pouǝ ouʅʎ ʍıʇɥ ʇɥǝ ɔnsʇoɯ ǝɯoɾı oɟ ʇɥıs sǝɹʌǝɹ.} shortcode_taken{∀ ɔnsʇoɯ ǝɯoɾı oɟ ʇɥıs sǝɹʌǝɹ ɐʅɹǝɐpʎ ɥɐs ʇɥıs sɥoɹʇɔopǝ.} too_big{⊥ɥǝ ıɯɐƃǝ ɯnsʇ qǝ ɐʇ ɯosʇ 1,024 dıxǝʅs ou ǝɐɔɥ sıpǝ.} too_large{⊥ɥǝ ıɯɐƃǝ ıs ʅɐɹƃǝɹ ʇɥɐu ʇɥǝ ʅıɯıʇ oɟ ʇɥıs sǝɹʌǝɹ.} unsupported_format{⊥ɥǝ ıɯɐƃǝ ɯnsʇ qǝ ɐ ԀN⅁, ɐ ⅁IℲ, oɹ ɐ MǝqԀ.}}‬",
+    "defaultMessage": "‮{reason,select,fetch_failed{⊥ɥǝ ıɯɐƃǝ oɟ ʇɥǝ ɔnsʇoɯ ǝɯoɾı ɔonʅp uoʇ qǝ ɟǝʇɔɥǝp ɟɹoɯ ıʇs sǝɹʌǝɹ.} invalid_alias{∀u ɐʅıɐs ıs 2 ʇo 30 ʅǝʇʇǝɹs (∀ ʇo Z), pıƃıʇs, ɐup nupǝɹsɔoɹǝs, ɐup ɐu ǝɯoɾı ɥɐs ɐʇ ɯosʇ 10.} invalid_category{∀ ɔɐʇǝƃoɹʎ ıs ɐʇ ɯosʇ 64 ɔɥɐɹɐɔʇǝɹs.} invalid_reason{∀ ɹǝɐsou ıs ɐʇ ɯosʇ 500 ɔɥɐɹɐɔʇǝɹs.} invalid_shortcode{∀ sɥoɹʇɔopǝ ıs 2 ʇo 30 ʅǝʇʇǝɹs (∀ ʇo Z), pıƃıʇs, ɐup nupǝɹsɔoɹǝs.} limit_reached{⅄on ɐʅɹǝɐpʎ ɥɐʌǝ ɐs ɯɐuʎ ɔnsʇoɯ ǝɯoɾı ɐup dǝupıuƃ ɹǝbnǝsʇs ɐs ʎonɹ ʅıɯıʇ.} local_emoji{⊥ɥıs ɔɐu qǝ pouǝ ouʅʎ ʍıʇɥ ʇɥǝ ɔnsʇoɯ ǝɯoɾı oɟ oʇɥǝɹ sǝɹʌǝɹs.} media_not_found{⊥ɥǝ ıɯɐƃǝ ʍɐs uoʇ ɟonup ɐɯouƃ ʎonɹ ndʅoɐps.} media_not_ready{⊥ɥǝ ıɯɐƃǝ ıs sʇıʅʅ qǝıuƃ dɹoɔǝssǝp. ⊥ɹʎ ɐƃɐıu ıu ɐ ɯoɯǝuʇ.} other{⊥ɥǝ ɔnsʇoɯ ǝɯoɾı qɹǝɐʞs ɐ ɹnʅǝ.} remote_emoji{⊥ɥıs ɔɐu qǝ pouǝ ouʅʎ ʍıʇɥ ʇɥǝ ɔnsʇoɯ ǝɯoɾı oɟ ʇɥıs sǝɹʌǝɹ.} request_pending{⊥ɥıs ɔnsʇoɯ ǝɯoɾı ɐʅɹǝɐpʎ ɥɐs ɐ dǝupıuƃ ɹǝbnǝsʇ ɟoɹ ɐ uǝʍ ıɯɐƃǝ.} shortcode_taken{∀ ɔnsʇoɯ ǝɯoɾı oɟ ʇɥıs sǝɹʌǝɹ ɐʅɹǝɐpʎ ɥɐs ʇɥıs sɥoɹʇɔopǝ.} too_big{⊥ɥǝ ıɯɐƃǝ ɯnsʇ qǝ ɐʇ ɯosʇ 1,024 dıxǝʅs ou ǝɐɔɥ sıpǝ.} too_large{⊥ɥǝ ıɯɐƃǝ ıs ʅɐɹƃǝɹ ʇɥɐu ʇɥǝ ʅıɯıʇ oɟ ʇɥıs sǝɹʌǝɹ.} unsupported_format{⊥ɥǝ ıɯɐƃǝ ɯnsʇ qǝ ɐ ԀN⅁, ɐ ⅁IℲ, oɹ ɐ MǝqԀ.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.invalid_parameter": {
@@ -1043,6 +1059,14 @@
     "defaultMessage": "‮∀ uǝʍ ɐddǝɐʅ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs oɟ {instance}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "mail.admin_custom_emoji_request.body": {
+    "defaultMessage": "‮∀ nsǝɹ oɟ {instance} ɹǝbnǝsʇǝp ɐ ɔnsʇoɯ ǝɯoɾı, oɹ ɐ uǝʍ ıɯɐƃǝ oɟ ouǝ, ɐup ʇɥǝ ɹǝbnǝsʇ ɐʍɐıʇs ɹǝʌıǝʍ.\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous ʇo ɹǝʌıǝʍ ıʇ:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon ɔɥosǝ ʇo ƃǝʇ ɯopǝɹɐʇoɹ uoʇıɟıɔɐʇıous qʎ ǝɯɐıʅ. ⅄on ɔɐu ʇnɹu ıʇ oɟɟ ıu ʎonɹ dɹǝɟǝɹǝuɔǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_custom_emoji_request.subject": {
+    "defaultMessage": "‮∀ ɔnsʇoɯ ǝɯoɾı ɹǝbnǝsʇ ɐʍɐıʇs ɹǝʌıǝʍ ou {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "mail.admin_report.body": {
     "defaultMessage": "‮∀ uǝʍ ɹǝdoɹʇ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs oɟ {instance}.\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous ʇo ɹǝʌıǝʍ ıʇ:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon ɔɥosǝ ʇo ƃǝʇ ɯopǝɹɐʇoɹ uoʇıɟıɔɐʇıous qʎ ǝɯɐıʅ. ⅄on ɔɐu ʇnɹu ıʇ oɟɟ ıu ʎonɹ dɹǝɟǝɹǝuɔǝs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1135,6 +1159,10 @@
     "defaultMessage": "‮∀ uǝʍ ɐddǝɐʅ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs oɟ {instance}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "push.admin_custom_emoji_request": {
+    "defaultMessage": "‮∀ ɔnsʇoɯ ǝɯoɾı ɹǝbnǝsʇ ɐʍɐıʇs ɹǝʌıǝʍ ou {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "push.admin_report": {
     "defaultMessage": "‮∀ uǝʍ ɹǝdoɹʇ ɐʍɐıʇs ʇɥǝ ɯopǝɹɐʇoɹs oɟ {instance}‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1153,6 +1181,10 @@
   },
   "push.boost": {
     "defaultMessage": "‮{name} qoosʇǝp ʎonɹ dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.custom_emoji_request_decided": {
+    "defaultMessage": "‮⊥ɥǝ ɐpɯıuısʇɹɐʇoɹs oɟ {instance} ɹǝʌıǝʍǝp ʎonɹ ɔnsʇoɯ ǝɯoɾı ɹǝbnǝsʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "push.favourite": {

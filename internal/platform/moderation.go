@@ -149,6 +149,8 @@ func (m moderationAuditTargets) ExistingAuditTargets(ctx context.Context, kind m
 		return m.a.Identity.ExistingRoleIDs(ctx, ids)
 	case kind == moderation.AuditTargetCustomEmoji && m.a.CustomEmojis != nil:
 		return m.a.CustomEmojis.ExistingIDs(ctx, ids)
+	case kind == moderation.AuditTargetCustomEmojiRequest && m.a.CustomEmojis != nil:
+		return m.a.CustomEmojis.ExistingRequestIDs(ctx, ids)
 	case kind == moderation.AuditTargetWebhook && m.a.Webhooks != nil:
 		return m.a.Webhooks.ExistingIDs(ctx, ids)
 	case kind == moderation.AuditTargetRelay && m.a.Relays != nil:

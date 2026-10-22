@@ -23,7 +23,12 @@ description: |
   approval; `account` is the new user's account) to those with `manage_accounts`, and
   `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
   `manage_accounts`, and `admin_webhook_disabled` (the server disabled a webhook that
-  answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`.
+  answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`, and
+  `admin_custom_emoji_request` (a user requested a custom emoji or a new image of one;
+  `custom_emoji_request` is the request) to those with `manage_custom_emojis`.
+  `custom_emoji_request_decided` also comes from the instance: an administrator approved
+  or rejected the user's custom emoji request, which `custom_emoji_request` carries with
+  its state and the reason of a rejection.
 type: string
 enum:
   - follow
@@ -43,3 +48,5 @@ enum:
   - appeal_decided
   - admin_appeal
   - admin_webhook_disabled
+  - admin_custom_emoji_request
+  - custom_emoji_request_decided

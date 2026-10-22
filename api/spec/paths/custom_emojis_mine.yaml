@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listOwnCustomEmojis
+  summary: List the custom emoji that the user made
+  description: |
+    The local custom emoji that the user made (ADR-0070 §6), newest first, with what the user
+    used of their limit: their emoji and their pending requests to create one, and the limit,
+    which a supporter plan sets and which is absent for no limit (ADR-0070 §4). Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+  tags: [custom-emojis]
+  security:
+    - oauth2: ["read:custom_emojis"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the emoji.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/OwnCustomEmojiPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

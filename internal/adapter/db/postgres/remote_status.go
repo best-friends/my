@@ -254,7 +254,8 @@ func (r *StatusRepository) FindPollTallies(ctx context.Context, pollID string) (
 
 func customEmojiFrom(row postgresgen.CustomEmoji) content.CustomEmoji {
 	return content.CustomEmoji{
-		ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: fromNullString(row.Uri), CreatedAt: utc(row.CreatedAt),
+		ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: fromNullString(row.Uri), CreatedByUserID: fromNullString(row.CreatedByUserID),
+		CreatedAt: utc(row.CreatedAt),
 	}
 }
 

@@ -99,7 +99,7 @@ func (q *Queries) ExistsLocalStatusInConversation(ctx context.Context, conversat
 }
 
 const getCustomEmoji = `-- name: GetCustomEmoji :one
-SELECT id, shortcode, domain, uri, created_at FROM custom_emojis WHERE id = $1
+SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis WHERE id = $1
 `
 
 func (q *Queries) GetCustomEmoji(ctx context.Context, id string) (CustomEmoji, error) {
@@ -110,13 +110,14 @@ func (q *Queries) GetCustomEmoji(ctx context.Context, id string) (CustomEmoji, e
 		&i.Shortcode,
 		&i.Domain,
 		&i.Uri,
+		&i.CreatedByUserID,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getCustomEmojiByShortcode = `-- name: GetCustomEmojiByShortcode :one
-SELECT id, shortcode, domain, uri, created_at FROM custom_emojis
+SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis
 WHERE shortcode = $1 AND domain = $2
 `
 
@@ -133,6 +134,7 @@ func (q *Queries) GetCustomEmojiByShortcode(ctx context.Context, arg GetCustomEm
 		&i.Shortcode,
 		&i.Domain,
 		&i.Uri,
+		&i.CreatedByUserID,
 		&i.CreatedAt,
 	)
 	return i, err

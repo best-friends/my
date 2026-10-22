@@ -55,6 +55,10 @@
     "defaultMessage": "ブックマークの読み取り",
     "description": "Permission (OAuth scope read:bookmarks) listed on the authorization page."
   },
+  "auth.authorize.scope.read_custom_emojis": {
+    "defaultMessage": "あなたが作ったカスタム絵文字と、作成の申請を読む",
+    "description": "Permission (OAuth scope read:custom_emojis) listed on the authorization page."
+  },
   "auth.authorize.scope.read_favourites": {
     "defaultMessage": "お気に入りの読み取り",
     "description": "Permission (OAuth scope read:favourites) listed on the authorization page."
@@ -98,6 +102,10 @@
   "auth.authorize.scope.write_bookmarks": {
     "defaultMessage": "ブックマークの追加と削除",
     "description": "Permission (OAuth scope write:bookmarks) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_custom_emojis": {
+    "defaultMessage": "カスタム絵文字の作成を申請し、あなたが作った絵文字を変更・削除する",
+    "description": "Permission (OAuth scope write:custom_emojis) listed on the authorization page."
   },
   "auth.authorize.scope.write_favourites": {
     "defaultMessage": "お気に入りと絵文字リアクションの追加と削除",
@@ -1031,6 +1039,14 @@
     "defaultMessage": "{instance} のモデレーターに新しい異議申し立てが届きました",
     "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a user appealed a moderation action on their account. {instance} is the server's display name, or its domain name when it has none."
   },
+  "mail.admin_custom_emoji_request.body": {
+    "defaultMessage": "{instance} の利用者が、カスタム絵文字の作成か画像の差し替えを申請し、審査を待っています。\n\n通知から確認できます：\n\n{url}\n\nこのメールは、モデレーターへの通知をメールでも受け取る設定にしているため送られています。設定から止められます。",
+    "description": "Plain-text body of the email to an administrator about a new custom emoji request. It never names the user or the emoji. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_custom_emoji_request.subject": {
+    "defaultMessage": "{instance} のカスタム絵文字の申請が審査を待っています",
+    "description": "Subject of the email to an administrator who chose to get moderator notifications by email: a user requested a custom emoji or a new image of one. {instance} is the server's display name, or its domain name when it has none."
+  },
   "mail.admin_report.body": {
     "defaultMessage": "{instance} のモデレーターに新しい通報が届きました。\n\n次のリンクから通知を開いて、確認してください。\n\n{url}\n\nモデレーターへの通知をメールでも受け取る設定にしているため、このメールを送りました。設定から止められます。",
     "description": "Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
@@ -1095,6 +1111,10 @@
     "defaultMessage": "{instance} のモデレーターに新しい異議申し立てが届きました",
     "description": "Web Push notification to a moderator: a user appealed a moderation action. It never names the user. {instance} is the server's display name, or its domain name when it has none."
   },
+  "push.admin_custom_emoji_request": {
+    "defaultMessage": "{instance} のカスタム絵文字の申請が審査を待っています",
+    "description": "Web Push notification to an administrator: a user requested a custom emoji or a new image of one. {instance} is the server's display name, or its domain name when it has none."
+  },
   "push.admin_report": {
     "defaultMessage": "{instance} のモデレーターに新しい通報が届きました",
     "description": "Web Push notification to a moderator: someone reported an account that had no open report. It never names the accounts. {instance} is the server's display name, or its domain name when it has none."
@@ -1110,6 +1130,10 @@
   "push.appeal_decided": {
     "defaultMessage": "{instance} のモデレーターがあなたの異議申し立てを審査しました",
     "description": "Web Push notification: the moderators upheld or overturned the user's appeal. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.custom_emoji_request_decided": {
+    "defaultMessage": "{instance} の管理者があなたのカスタム絵文字の申請を審査しました",
+    "description": "Web Push notification: an administrator approved or rejected the user's request for a custom emoji or a new image of one. {instance} is the server's display name, or its domain name when it has none."
   },
   "push.boost": {
     "defaultMessage": "{name}さんがあなたの投稿をブーストしました",
@@ -1193,11 +1217,19 @@
   },
   "errors.invalid_custom_emoji": {
     "defaultMessage": "カスタム絵文字を保存できません。",
-    "description": "API error title for HTTP 422 when an administrator registers or changes a custom emoji that breaks a rule; the detail and the reason property say which."
+    "description": "API error title for HTTP 422 when a custom emoji, or a request for one, breaks a rule; the detail and the reason property say which."
   },
   "errors.invalid_custom_emoji_detail": {
-    "defaultMessage": "{reason, select, invalid_shortcode {ショートコードは、2〜30 文字の英字（A〜Z）・数字・アンダースコアです。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。} invalid_alias {別名は 2〜30 文字の英字（A〜Z）・数字・アンダースコアで、1 つの絵文字に 10 個までです。} invalid_category {カテゴリは 64 文字までです。} media_not_found {アップロードした画像の中に見つかりません。} media_not_ready {画像はまだ処理中です。少し待ってからもう一度試してください。} unsupported_format {画像は PNG・GIF・WebP のどれかにしてください。} too_large {画像がこのサーバーの上限より大きいです。} too_big {画像は縦横とも 1024 ピクセル以下にしてください。} remote_emoji {この操作は、このサーバーのカスタム絵文字にだけ行えます。} local_emoji {この操作は、ほかのサーバーのカスタム絵文字にだけ行えます。} fetch_failed {カスタム絵文字の画像を、そのサーバーから取得できませんでした。} other {カスタム絵文字が規則に合いません。}}",
+    "defaultMessage": "{reason, select, invalid_shortcode {ショートコードは、2〜30 文字の英字（A〜Z）・数字・アンダースコアです。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。} invalid_alias {別名は 2〜30 文字の英字（A〜Z）・数字・アンダースコアで、1 つの絵文字に 10 個までです。} invalid_category {カテゴリは 64 文字までです。} media_not_found {アップロードした画像の中に見つかりません。} media_not_ready {画像はまだ処理中です。少し待ってからもう一度試してください。} unsupported_format {画像は PNG・GIF・WebP のどれかにしてください。} too_large {画像がこのサーバーの上限より大きいです。} too_big {画像は縦横とも 1024 ピクセル以下にしてください。} remote_emoji {この操作は、このサーバーのカスタム絵文字にだけ行えます。} local_emoji {この操作は、ほかのサーバーのカスタム絵文字にだけ行えます。} fetch_failed {カスタム絵文字の画像を、そのサーバーから取得できませんでした。} limit_reached {作れるカスタム絵文字の数の上限に、作った絵文字と審査中の申請の数が達しています。} request_pending {このカスタム絵文字には、審査中の画像の差し替えの申請があります。} invalid_reason {理由は 500 文字までです。} other {カスタム絵文字が規則に合いません。}}",
     "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
+  },
+  "errors.custom_emoji_request_conflict": {
+    "defaultMessage": "このカスタム絵文字の申請は、いまの状態では処理できません。",
+    "description": "API error title for HTTP 409 when an administrator approves or rejects, or the requester withdraws, a custom emoji request that cannot be; the detail and the reason property say why."
+  },
+  "errors.custom_emoji_request_conflict_detail": {
+    "defaultMessage": "{reason, select, not_pending {この申請は、すでに承認・却下・取り下げされています。} requester_cannot_create {申請者は、もうカスタム絵文字を作れません。申請を却下してください。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。申請を却下してください。} other {この申請は、いまの状態では処理できません。}}",
+    "description": "Detail of the API error (HTTP 409) of a custom emoji request that cannot be decided or withdrawn. {reason} is the reason code (not shown); each branch explains one case."
   },
   "errors.domain_mutes.too_many": {
     "defaultMessage": "ミュートできるドメインの数の上限に達しています。先にどれかのミュートを解除してください。",

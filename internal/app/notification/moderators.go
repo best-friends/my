@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	appcontent "github.com/best-friends/my/internal/app/content"
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
@@ -21,8 +22,9 @@ import (
 )
 
 // The moderator notifications (FR-712, data-model §4.7): admin_report of the first open report
-// of an account, admin_sign_up of a registration that awaits approval, and admin_appeal of an
-// appeal of a moderation action, to the local accounts
+// of an account, admin_sign_up of a registration that awaits approval, admin_appeal of an
+// appeal of a moderation action, admin_webhook_disabled of a webhook endpoint that the server
+// disabled, and admin_custom_emoji_request of a custom emoji request, to the local accounts
 // whose users' roles grant the permission the type needs (notification.ModeratorPermission).
 // The recipients are those who hold it in the transaction that creates the notifications; the
 // list leaves out the notifications of a recipient who no longer holds it (Service.List). A
@@ -87,9 +89,11 @@ type ModeratorDeps struct {
 //     account that appealed.
 //   - webhook.endpoint_disabled: admin_webhook_disabled, to the holders of manage_webhooks
 //     (ADR-0060).
+//   - content.custom_emoji_request_recorded of a submission: admin_custom_emoji_request, to the
+//     holders of manage_custom_emojis other than the requester (ADR-0070 §9).
 //
 // The dedupe keys (notification.AdminReportKey, AdminSignUpKey, AdminAppealKey,
-// AdminWebhookDisabledKey) make projecting an event again
+// AdminWebhookDisabledKey, AdminCustomEmojiRequestKey) make projecting an event again
 // create nothing more. For each recipient who wants them by email and whose notification is
 // new, the projector enqueues JobModeratorEmail through d.Outbox.
 func RegisterModeratorProjectors(r *uow.Projectors, d ModeratorDeps) {
@@ -121,6 +125,16 @@ func RegisterModeratorProjectors(r *uow.Projectors, d ModeratorDeps) {
 		return p.notify(ctx, tx, notification.Notification{
 			Type: notification.TypeAdminWebhookDisabled, DedupeKey: notification.AdminWebhookDisabledKey(ev.StateChangeID), CreatedAt: ev.At,
 		})
+	})
+	r.Register(appcontent.EventCustomEmojiRequestRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appcontent.CustomEmojiRequestRecorded)
+		if ev.Action != appcontent.CustomEmojiRequestSubmitted {
+			return nil
+		}
+		return p.notify(ctx, tx, notification.Notification{
+			Type: notification.TypeAdminCustomEmojiRequest, CustomEmojiRequestID: ev.Request.ID,
+			DedupeKey: notification.AdminCustomEmojiRequestKey(ev.Request.ID), CreatedAt: ev.At,
+		}, ev.RequesterAccountID)
 	})
 }
 
@@ -247,6 +261,8 @@ func sendModeratorEmail(ctx context.Context, d MailDeps, job moderatorEmail) err
 		m.Subject, m.Text = l.ServerMailAdminAppealSubject(name), l.ServerMailAdminAppealBody(name, link)
 	case notification.TypeAdminWebhookDisabled:
 		m.Subject, m.Text = l.ServerMailAdminWebhookDisabledSubject(name), l.ServerMailAdminWebhookDisabledBody(name, link)
+	case notification.TypeAdminCustomEmojiRequest:
+		m.Subject, m.Text = l.ServerMailAdminCustomEmojiRequestSubject(name), l.ServerMailAdminCustomEmojiRequestBody(name, link)
 	default:
 		return nil
 	}

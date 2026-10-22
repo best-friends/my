@@ -172,6 +172,10 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 	if err != nil {
 		return nil, err
 	}
+	emojiRequests, err := s.notifiedCustomEmojiRequests(ctx, ns)
+	if err != nil {
+		return nil, err
+	}
 	parts, err := s.statusParts(ctx, views, found...)
 	if err != nil {
 		return nil, err
@@ -211,6 +215,9 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 		if n.Type == notification.TypeAdminReport {
 			id := n.ReportID
 			item.ReportId = &id
+		}
+		if r, ok := emojiRequests[n.CustomEmojiRequestID]; ok {
+			item.CustomEmojiRequest = &r
 		}
 		if sv, ok := severances[n.SeveranceID]; ok {
 			item.RelationshipSeverance = newRelationshipSeverance(sv)
@@ -276,6 +283,33 @@ func (s *Server) notifiedReports(ctx context.Context, accountID string, ns []not
 	out := make(map[string]Report, len(items))
 	for _, r := range items {
 		out[r.Id] = r
+	}
+	return out, nil
+}
+
+// notifiedCustomEmojiRequests presents, by ID, the custom emoji requests that the
+// admin_custom_emoji_request and custom_emoji_request_decided notifications ns tell of, read
+// together; one that no longer exists is left out.
+func (s *Server) notifiedCustomEmojiRequests(ctx context.Context, ns []notification.Notification) (map[string]CustomEmojiRequest, error) {
+	out := map[string]CustomEmojiRequest{}
+	if s.o.CustomEmojiRequests == nil {
+		return out, nil
+	}
+	var ids []string
+	for _, n := range ns {
+		if n.CustomEmojiRequestID != "" {
+			ids = append(ids, n.CustomEmojiRequestID)
+		}
+	}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	reqs, err := s.o.CustomEmojiRequests.RequestsByID(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: the custom emoji requests of the notifications: %w", err)
+	}
+	for _, r := range reqs {
+		out[r.Request.ID] = newCustomEmojiRequest(r)
 	}
 	return out, nil
 }

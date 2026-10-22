@@ -124,7 +124,7 @@ CREATE TABLE role_permissions (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
     'manage_login_recovery', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements',
-    'manage_finance', 'view_finance', 'manage_supporters'
+    'manage_finance', 'view_finance', 'manage_supporters', 'create_custom_emojis'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -1390,7 +1390,7 @@ CREATE TABLE notifications (
     'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'quote', 'poll_closed',
     'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
-    'admin_appeal', 'admin_webhook_disabled'
+    'admin_appeal', 'admin_webhook_disabled', 'admin_custom_emoji_request', 'custom_emoji_request_decided'
   )),
   source_account_id text COLLATE "C",
   -- the domain of a remote source account; NULL for a local source or none.
@@ -1405,6 +1405,8 @@ CREATE TABLE notifications (
   severance_id text COLLATE "C",
   -- appeal_decided, admin_appeal: the appeal.
   appeal_id text COLLATE "C",
+  -- admin_custom_emoji_request, custom_emoji_request_decided: the custom_emoji_requests row.
+  custom_emoji_request_id text COLLATE "C",
   -- reaction: the emoji, a Unicode emoji or the custom emoji (custom_emojis.id).
   reaction_emoji text,
   reaction_custom_emoji_id text COLLATE "C",
@@ -1480,7 +1482,7 @@ CREATE TABLE push_subscription_alerts (
     'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'quote', 'poll_closed',
     'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
-    'admin_appeal', 'admin_webhook_disabled'
+    'admin_appeal', 'admin_webhook_disabled', 'admin_custom_emoji_request', 'custom_emoji_request_decided'
   )),
   PRIMARY KEY (subscription_id, notification_type)
 );
@@ -1898,16 +1900,21 @@ CREATE INDEX relay_states_relay_actor_uri ON relay_states (relay_actor_uri);
 -- ---------------------------------------------------------------------------------------------
 
 -- Resource: a custom emoji, unique by its shortcode on a domain ('' for this instance). uri is
--- the id of a remote emoji's Emoji object.
+-- the id of a remote emoji's Emoji object. created_by_user_id is the user who made a local emoji
+-- (ADR-0070 §7): the requester of an approved request, or the administrator who registered or
+-- copied it; NULL for one made with the CLI and for a remote one. It never changes.
 CREATE TABLE custom_emojis (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   shortcode text NOT NULL,
   domain text NOT NULL,
   uri text,
+  created_by_user_id text COLLATE "C",
   created_at timestamptz NOT NULL
 );
 CREATE UNIQUE INDEX custom_emojis_shortcode_domain ON custom_emojis (shortcode, domain);
 CREATE UNIQUE INDEX custom_emojis_uri ON custom_emojis (uri);
+-- The creators' own emoji (/custom_emojis/mine) and their count against the limit (ADR-0070 §4).
+CREATE INDEX custom_emojis_created_by_user_id_id ON custom_emojis (created_by_user_id, id);
 
 -- Event (revision): the image of a custom emoji. The newest row is the current image.
 CREATE TABLE custom_emoji_images (
@@ -1936,6 +1943,57 @@ CREATE TABLE custom_emoji_aliases (
   alias text NOT NULL,
   PRIMARY KEY (emoji_id, alias)
 );
+
+-- Resource: a request of a holder of create_custom_emojis (ADR-0070 §2, §3): to create a local
+-- custom emoji (kind create, emoji_id NULL) or to replace the image of one the requester made
+-- (kind image, emoji_id the emoji, shortcode a copy of its own). media_id is an upload of the
+-- requester's local account. Kept after it ends, for the requester's history and the audit log.
+CREATE TABLE custom_emoji_requests (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  kind text NOT NULL CHECK (kind IN ('create', 'image')),
+  requester_user_id text COLLATE "C" NOT NULL,
+  emoji_id text COLLATE "C",
+  shortcode text NOT NULL,
+  media_id text COLLATE "C" NOT NULL,
+  created_at timestamptz NOT NULL,
+  CONSTRAINT custom_emoji_requests_emoji_check CHECK ((kind = 'create') = (emoji_id IS NULL))
+);
+CREATE INDEX custom_emoji_requests_requester_user_id_id ON custom_emoji_requests (requester_user_id, id);
+-- The media cleanup keeps the upload of a pending request.
+CREATE INDEX custom_emoji_requests_media_id ON custom_emoji_requests (media_id);
+
+-- Event: the end of a custom emoji request, at most one per request; a request without one is
+-- pending. decided_by_user_id is NULL for the CLI and for lapsed (a request to replace the image
+-- of an emoji that was deleted); reason is the optional reason of a rejection; emoji_id is the
+-- emoji that an approval made or changed.
+CREATE TABLE custom_emoji_request_outcomes (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  request_id text COLLATE "C" NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('approved', 'rejected', 'withdrawn', 'lapsed')),
+  decided_by_user_id text COLLATE "C",
+  reason text CHECK (reason IS NULL OR char_length(reason) BETWEEN 1 AND 500),
+  emoji_id text COLLATE "C",
+  decided_at timestamptz NOT NULL,
+  CONSTRAINT custom_emoji_request_outcomes_rejected_check CHECK (reason IS NULL OR outcome = 'rejected'),
+  CONSTRAINT custom_emoji_request_outcomes_approved_check CHECK ((outcome = 'approved') = (emoji_id IS NOT NULL))
+);
+CREATE UNIQUE INDEX custom_emoji_request_outcomes_request_id ON custom_emoji_request_outcomes (request_id);
+
+-- Projection: the pending custom emoji requests, written with the request and deleted with its
+-- outcome in the same transaction; rebuilt from custom_emoji_requests without an outcome.
+-- reserved_shortcode is the shortcode that a request to create reserves, which no other request
+-- and no new local emoji may take; emoji_id is the emoji of a request to replace an image, at
+-- most one pending per emoji.
+CREATE TABLE custom_emoji_pending_requests (
+  request_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  requester_user_id text COLLATE "C" NOT NULL,
+  reserved_shortcode text,
+  emoji_id text COLLATE "C",
+  CONSTRAINT custom_emoji_pending_requests_kind_check CHECK ((reserved_shortcode IS NULL) <> (emoji_id IS NULL))
+);
+CREATE UNIQUE INDEX custom_emoji_pending_requests_reserved_shortcode ON custom_emoji_pending_requests (reserved_shortcode);
+CREATE UNIQUE INDEX custom_emoji_pending_requests_emoji_id ON custom_emoji_pending_requests (emoji_id);
+CREATE INDEX custom_emoji_pending_requests_requester_user_id ON custom_emoji_pending_requests (requester_user_id);
 
 -- Event (child of a revision): the poll of a status revision (FR-112). closes_at is NULL for a
 -- poll without an end; hide_totals hides the counts of a local poll until it ends.
@@ -2352,12 +2410,14 @@ CREATE TABLE audit_log_entries (
     'billing_import_queued',
     'cost_item_created', 'cost_item_relabeled', 'cost_item_price_revised', 'cost_item_end_changed', 'cost_item_canceled',
     'supporter_program_enabled', 'supporter_program_disabled', 'supporter_plan_created', 'supporter_plan_revised',
-    'supporter_plan_retired', 'supporter_subscription_canceled'
+    'supporter_plan_retired', 'supporter_subscription_canceled',
+    'custom_emoji_request_submitted', 'custom_emoji_request_withdrawn', 'custom_emoji_request_approved',
+    'custom_emoji_request_rejected'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
     'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay', 'billing_source',
-    'cost_item', 'supporter_program', 'supporter_plan', 'supporter_subscription'
+    'cost_item', 'supporter_program', 'supporter_plan', 'supporter_subscription', 'custom_emoji_request'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,

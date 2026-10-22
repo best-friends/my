@@ -106,3 +106,22 @@ func TestAdminEmojiCommands(t *testing.T) {
 		}
 	}
 }
+
+func TestAdminEmojiRequestCommands(t *testing.T) {
+	newAdminEnv(t)
+	if code, stdout, stderr := runCmd(t, adminCmd, "emoji", "requests", "list"); code != 0 || !strings.HasPrefix(stdout, "ID ") || strings.Count(stdout, "\n") != 1 {
+		t.Errorf("emoji requests list = %d %q %q", code, stdout, stderr)
+	}
+	if code, _, stderr := runCmd(t, adminCmd, "emoji", "requests", "list", "-state", "nothing"); code != 2 || !strings.Contains(stderr, `unknown -state "nothing"`) {
+		t.Errorf("emoji requests list -state nothing = %d %q", code, stderr)
+	}
+	const unknown = "0192f0c1-0000-7000-8000-00000000dead"
+	for _, sub := range []string{"approve", "reject"} {
+		if code, _, stderr := runCmd(t, adminCmd, "emoji", "requests", sub, unknown); code != 1 || !strings.Contains(stderr, "no custom emoji request has the ID") {
+			t.Errorf("emoji requests %s unknown = %d %q", sub, code, stderr)
+		}
+	}
+	if code, _, _ := runCmd(t, adminCmd, "emoji", "requests"); code != 2 {
+		t.Errorf("emoji requests without a subcommand = %d, want 2", code)
+	}
+}

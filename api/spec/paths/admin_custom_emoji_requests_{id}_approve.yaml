@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/CustomEmojiRequestId.yaml
+post:
+  operationId: approveCustomEmojiRequest
+  summary: Approve a custom emoji request
+  description: |
+    Approves a pending request (ADR-0070 §2): a `create` request makes the local emoji,
+    without a category, in the picker, and enabled, whose creator is the requester; an `image`
+    request gives the emoji the requested image. The image is copied as an upload of the
+    instance. The approval and the emoji's registration or new image are recorded in the
+    audit log, and the requester is notified. A request that is not pending, whose requester
+    no longer may create custom emoji, or whose shortcode a local emoji has is a 409
+    `/api/v1/problems/custom-emoji-request-conflict` whose `reason` says which (reject it
+    instead); an image that no longer qualifies is a 422. An unknown request is a 404.
+    Needs the `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  responses:
+    "200":
+      $ref: ../components/responses/AdminCustomEmojiRequest.yaml
+    "409":
+      $ref: ../components/responses/CustomEmojiRequestProblem.yaml
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

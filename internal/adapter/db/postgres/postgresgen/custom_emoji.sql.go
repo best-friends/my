@@ -110,16 +110,17 @@ func (q *Queries) GetCustomEmojiSettings(ctx context.Context, emojiID string) (C
 
 const insertCustomEmoji = `-- name: InsertCustomEmoji :exec
 
-INSERT INTO custom_emojis (id, shortcode, domain, uri, created_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO custom_emojis (id, shortcode, domain, uri, created_by_user_id, created_at)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type InsertCustomEmojiParams struct {
-	ID        string
-	Shortcode string
-	Domain    string
-	Uri       *string
-	CreatedAt time.Time
+	ID              string
+	Shortcode       string
+	Domain          string
+	Uri             *string
+	CreatedByUserID *string
+	CreatedAt       time.Time
 }
 
 // SPDX-License-Identifier: AGPL-3.0-only
@@ -131,6 +132,7 @@ func (q *Queries) InsertCustomEmoji(ctx context.Context, arg InsertCustomEmojiPa
 		arg.Shortcode,
 		arg.Domain,
 		arg.Uri,
+		arg.CreatedByUserID,
 		arg.CreatedAt,
 	)
 	return err
@@ -151,7 +153,7 @@ func (q *Queries) InsertCustomEmojiAlias(ctx context.Context, arg InsertCustomEm
 }
 
 const listAdminCustomEmojis = `-- name: ListAdminCustomEmojis :many
-SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
+SELECT e.id, e.shortcode, e.domain, e.uri, e.created_by_user_id, e.created_at,
   i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
   COALESCE(s.enabled, TRUE)::boolean AS enabled,
   COALESCE(s.visible_in_picker, TRUE)::boolean AS visible_in_picker,
@@ -163,15 +165,17 @@ WHERE i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.i
   AND ($1::integer = 0 OR ($1::integer = 1) = (e.domain = ''))
   AND ($2::text = '' OR e.domain = $2::text)
   AND ($3::text = '' OR strpos(lower(e.shortcode), $3::text) > 0)
-  AND ($4::text = '' OR e.id < $4::text)
+  AND ($4::text = '' OR e.created_by_user_id = $4::text)
+  AND ($5::text = '' OR e.id < $5::text)
 ORDER BY e.id DESC
-LIMIT $5
+LIMIT $6
 `
 
 type ListAdminCustomEmojisParams struct {
 	Locality  int32
 	Domain    string
 	Shortcode string
+	CreatedBy string
 	BeforeID  string
 	RowLimit  int32
 }
@@ -181,6 +185,7 @@ type ListAdminCustomEmojisRow struct {
 	Shortcode       string
 	Domain          string
 	Uri             *string
+	CreatedByUserID *string
 	CreatedAt       time.Time
 	ImageID         string
 	ImageMediaID    string
@@ -193,12 +198,13 @@ type ListAdminCustomEmojisRow struct {
 // ListAdminCustomEmojis returns a page of the custom emoji, newest first, with their current
 // images and settings. @locality is 0 for every emoji, 1 for the local ones, 2 for the remote
 // ones; an empty @domain and @shortcode select every domain and shortcode, and @shortcode
-// matches a part of the shortcode in lower case.
+// matches a part of the shortcode in lower case; a @created_by keeps the emoji that a user made.
 func (q *Queries) ListAdminCustomEmojis(ctx context.Context, arg ListAdminCustomEmojisParams) ([]ListAdminCustomEmojisRow, error) {
 	rows, err := q.db.Query(ctx, listAdminCustomEmojis,
 		arg.Locality,
 		arg.Domain,
 		arg.Shortcode,
+		arg.CreatedBy,
 		arg.BeforeID,
 		arg.RowLimit,
 	)
@@ -214,6 +220,7 @@ func (q *Queries) ListAdminCustomEmojis(ctx context.Context, arg ListAdminCustom
 			&i.Shortcode,
 			&i.Domain,
 			&i.Uri,
+			&i.CreatedByUserID,
 			&i.CreatedAt,
 			&i.ImageID,
 			&i.ImageMediaID,
@@ -310,7 +317,7 @@ func (q *Queries) ListExistingCustomEmojiIDs(ctx context.Context, ids []string) 
 }
 
 const listLocalCustomEmojis = `-- name: ListLocalCustomEmojis :many
-SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
+SELECT e.id, e.shortcode, e.domain, e.uri, e.created_by_user_id, e.created_at,
   i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
   COALESCE(s.enabled, TRUE)::boolean AS enabled,
   COALESCE(s.visible_in_picker, TRUE)::boolean AS visible_in_picker,
@@ -334,6 +341,7 @@ type ListLocalCustomEmojisRow struct {
 	Shortcode       string
 	Domain          string
 	Uri             *string
+	CreatedByUserID *string
 	CreatedAt       time.Time
 	ImageID         string
 	ImageMediaID    string
@@ -359,6 +367,7 @@ func (q *Queries) ListLocalCustomEmojis(ctx context.Context, arg ListLocalCustom
 			&i.Shortcode,
 			&i.Domain,
 			&i.Uri,
+			&i.CreatedByUserID,
 			&i.CreatedAt,
 			&i.ImageID,
 			&i.ImageMediaID,

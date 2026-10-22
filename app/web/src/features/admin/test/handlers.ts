@@ -3,7 +3,7 @@
 // server's texts, the custom emoji, the webhooks, the announcements, the relays, the cost items and their totals, the billing imports, and the supporter program with its plans and subscriptions, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
-import type { Schemas } from "../../../test/fixtures";
+import { otherAccountFixture, type Schemas } from "../../../test/fixtures";
 import { apiBase, withViewer } from "../../../test/msw/http";
 
 /** An instance text as the server answers it, saved at 2026-10-17T00:00:00Z. */
@@ -76,8 +76,24 @@ export function adminCustomEmojiFixture(id: string, shortcode: string, overrides
     enabled: true,
     visible_in_picker: true,
     aliases: [],
+    created_by_deleted: false,
     created_at: "2026-10-20T00:00:00Z",
     updated_at: "2026-10-20T00:00:00Z",
+    ...overrides,
+  };
+}
+
+/** A pending request for a new emoji as the admin API answers it, made at 2026-10-21T00:00:00Z by Bob, with `overrides`. */
+export function adminCustomEmojiRequestFixture(id: string, shortcode: string, overrides: Partial<Schemas["AdminCustomEmojiRequest"]> = {}): Schemas["AdminCustomEmojiRequest"] {
+  return {
+    id,
+    kind: "create",
+    state: "pending",
+    shortcode,
+    url: `https://my.example/media/${id}/r/medium.webp`,
+    static_url: `https://my.example/media/${id}/r/medium.webp`,
+    created_at: "2026-10-21T00:00:00Z",
+    requester: otherAccountFixture,
     ...overrides,
   };
 }
@@ -324,6 +340,20 @@ export const handlers = [
   http.put(`${apiBase}/admin/custom_emojis/:id/image`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(adminCustomEmojiFixture(String(params["id"]), "blobcat", { updated_at: "2026-10-21T00:00:00Z" }))),
   ),
+  // operationIds listAdminCustomEmojiRequests, approveCustomEmojiRequest, rejectCustomEmojiRequest: no requests; a
+  // decided request is answered approved or rejected with the reason sent.
+  http.get(`${apiBase}/admin/custom_emoji_requests`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminCustomEmojiRequestPage"]))),
+  http.post(`${apiBase}/admin/custom_emoji_requests/:id/approve`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(adminCustomEmojiRequestFixture(String(params["id"]), "blobcat", { state: "approved", decided_at: "2026-10-22T00:00:00Z" }))),
+  ),
+  http.post(`${apiBase}/admin/custom_emoji_requests/:id/reject`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["RejectCustomEmojiRequestRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json(
+        adminCustomEmojiRequestFixture(String(params["id"]), "blobcat", { state: "rejected", decided_at: "2026-10-22T00:00:00Z", ...(body.reason === undefined ? {} : { reason: body.reason }) }),
+      ),
+    );
+  }),
   // operationIds listAdminWebhooks, createWebhook, getAdminWebhook, updateWebhook, deleteWebhook, enableWebhook,
   // disableWebhook, rotateWebhookSecret, testWebhook, listWebhookDeliveries, redeliverWebhookDelivery: no webhooks
   // and no deliveries; a new or changed webhook is answered as sent.

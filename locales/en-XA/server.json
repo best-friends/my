@@ -55,6 +55,10 @@
     "defaultMessage": "[Řḗḗȧȧḓ ẏǿǿŭŭř ƀǿǿǿǿķḿȧȧřķş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.read_custom_emojis": {
+    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ẏǿǿŭŭ ḿȧȧḓḗḗ ȧȧƞḓ ẏǿǿŭŭř řḗḗɋŭŭḗḗşŧş ƒǿǿř ƞḗḗẇ ǿǿƞḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.read_favourites": {
     "defaultMessage": "[Řḗḗȧȧḓ ẏǿǿŭŭř ƒȧȧṽǿǿŭŭřīŧḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -97,6 +101,10 @@
   },
   "auth.authorize.scope.write_bookmarks": {
     "defaultMessage": "[Ȧḓḓ ȧȧƞḓ řḗḗḿǿǿṽḗḗ ƀǿǿǿǿķḿȧȧřķş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.authorize.scope.write_custom_emojis": {
+    "defaultMessage": "[Řḗḗɋŭŭḗḗşŧ ƞḗḗẇ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī, ȧȧƞḓ ƈħȧȧƞɠḗḗ ȧȧƞḓ ḓḗḗŀḗḗŧḗḗ ŧħḗḗ ǿǿƞḗḗş ẏǿǿŭŭ ḿȧȧḓḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_favourites": {
@@ -627,6 +635,14 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈǿǿƞƒŀīƈŧş ẇīŧħ ŧħḗḗ ƈŭŭřřḗḗƞŧ şŧȧȧŧḗḗ ǿǿƒ ŧħḗḗ řḗḗşǿǿŭŭřƈḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.custom_emoji_request_conflict": {
+    "defaultMessage": "[Ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī řḗḗɋŭŭḗḗşŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗƈīḓḗḗḓ ȧȧş īŧ īş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.custom_emoji_request_conflict_detail": {
+    "defaultMessage": "[{reason,select,not_pending{Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ẇȧȧş ȧȧŀřḗḗȧȧḓẏ ȧȧƥƥřǿǿṽḗḗḓ, řḗḗĵḗḗƈŧḗḗḓ, ǿǿř ẇīŧħḓřȧȧẇƞ.} other{Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗƈīḓḗḗḓ ȧȧş īŧ īş.} requester_cannot_create{Ŧħḗḗ řḗḗɋŭŭḗḗşŧḗḗř ƈȧȧƞ ƞǿǿ ŀǿǿƞɠḗḗř ƈřḗḗȧȧŧḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī. Řḗḗĵḗḗƈŧ ŧħḗḗ řḗḗɋŭŭḗḗşŧ īƞşŧḗḗȧȧḓ.} shortcode_taken{Ȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ħȧȧş ŧħīş şħǿǿřŧƈǿǿḓḗḗ. Řḗḗĵḗḗƈŧ ŧħḗḗ řḗḗɋŭŭḗḗşŧ īƞşŧḗḗȧȧḓ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.domain_mutes.too_many": {
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧŀřḗḗȧȧḓẏ ḿŭŭŧḗḗ ŧħḗḗ ḿǿǿşŧ ḓǿǿḿȧȧīƞş ȧȧŀŀǿǿẇḗḗḓ. Ŭƞḿŭŭŧḗḗ ǿǿƞḗḗ ƒīřşŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -672,7 +688,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.invalid_custom_emoji_detail": {
-    "defaultMessage": "[{reason,select,fetch_failed{Ŧħḗḗ īḿȧȧɠḗḗ ǿǿƒ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ƒḗḗŧƈħḗḗḓ ƒřǿǿḿ īŧş şḗḗřṽḗḗř.} invalid_alias{Ȧƞ ȧȧŀīȧȧş īş 2 ŧǿǿ 30 ŀḗḗŧŧḗḗřş (Ȧ ŧǿǿ Ẑ), ḓīɠīŧş, ȧȧƞḓ ŭŭƞḓḗḗřşƈǿǿřḗḗş, ȧȧƞḓ ȧȧƞ ḗḗḿǿǿĵī ħȧȧş ȧȧŧ ḿǿǿşŧ 10.} invalid_category{Ȧ ƈȧȧŧḗḗɠǿǿřẏ īş ȧȧŧ ḿǿǿşŧ 64 ƈħȧȧřȧȧƈŧḗḗřş.} invalid_shortcode{Ȧ şħǿǿřŧƈǿǿḓḗḗ īş 2 ŧǿǿ 30 ŀḗḗŧŧḗḗřş (Ȧ ŧǿǿ Ẑ), ḓīɠīŧş, ȧȧƞḓ ŭŭƞḓḗḗřşƈǿǿřḗḗş.} local_emoji{Ŧħīş ƈȧȧƞ ƀḗḗ ḓǿǿƞḗḗ ǿǿƞŀẏ ẇīŧħ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş.} media_not_found{Ŧħḗḗ īḿȧȧɠḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ ȧȧḿǿǿƞɠ ẏǿǿŭŭř ŭŭƥŀǿǿȧȧḓş.} media_not_ready{Ŧħḗḗ īḿȧȧɠḗḗ īş şŧīŀŀ ƀḗḗīƞɠ ƥřǿǿƈḗḗşşḗḗḓ. Ŧřẏ ȧȧɠȧȧīƞ īƞ ȧȧ ḿǿǿḿḗḗƞŧ.} other{Ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} remote_emoji{Ŧħīş ƈȧȧƞ ƀḗḗ ḓǿǿƞḗḗ ǿǿƞŀẏ ẇīŧħ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř.} shortcode_taken{Ȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ħȧȧş ŧħīş şħǿǿřŧƈǿǿḓḗḗ.} too_big{Ŧħḗḗ īḿȧȧɠḗḗ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ 1,024 ƥīẋḗḗŀş ǿǿƞ ḗḗȧȧƈħ şīḓḗḗ.} too_large{Ŧħḗḗ īḿȧȧɠḗḗ īş ŀȧȧřɠḗḗř ŧħȧȧƞ ŧħḗḗ ŀīḿīŧ ǿǿƒ ŧħīş şḗḗřṽḗḗř.} unsupported_format{Ŧħḗḗ īḿȧȧɠḗḗ ḿŭŭşŧ ƀḗḗ ȧȧ ƤȠƓ, ȧȧ ƓĪƑ, ǿǿř ȧȧ ẆḗḗƀƤ.}}]",
+    "defaultMessage": "[{reason,select,fetch_failed{Ŧħḗḗ īḿȧȧɠḗḗ ǿǿƒ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ƒḗḗŧƈħḗḗḓ ƒřǿǿḿ īŧş şḗḗřṽḗḗř.} invalid_alias{Ȧƞ ȧȧŀīȧȧş īş 2 ŧǿǿ 30 ŀḗḗŧŧḗḗřş (Ȧ ŧǿǿ Ẑ), ḓīɠīŧş, ȧȧƞḓ ŭŭƞḓḗḗřşƈǿǿřḗḗş, ȧȧƞḓ ȧȧƞ ḗḗḿǿǿĵī ħȧȧş ȧȧŧ ḿǿǿşŧ 10.} invalid_category{Ȧ ƈȧȧŧḗḗɠǿǿřẏ īş ȧȧŧ ḿǿǿşŧ 64 ƈħȧȧřȧȧƈŧḗḗřş.} invalid_reason{Ȧ řḗḗȧȧşǿǿƞ īş ȧȧŧ ḿǿǿşŧ 500 ƈħȧȧřȧȧƈŧḗḗřş.} invalid_shortcode{Ȧ şħǿǿřŧƈǿǿḓḗḗ īş 2 ŧǿǿ 30 ŀḗḗŧŧḗḗřş (Ȧ ŧǿǿ Ẑ), ḓīɠīŧş, ȧȧƞḓ ŭŭƞḓḗḗřşƈǿǿřḗḗş.} limit_reached{Ẏǿǿŭŭ ȧȧŀřḗḗȧȧḓẏ ħȧȧṽḗḗ ȧȧş ḿȧȧƞẏ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ȧȧƞḓ ƥḗḗƞḓīƞɠ řḗḗɋŭŭḗḗşŧş ȧȧş ẏǿǿŭŭř ŀīḿīŧ.} local_emoji{Ŧħīş ƈȧȧƞ ƀḗḗ ḓǿǿƞḗḗ ǿǿƞŀẏ ẇīŧħ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş.} media_not_found{Ŧħḗḗ īḿȧȧɠḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ ȧȧḿǿǿƞɠ ẏǿǿŭŭř ŭŭƥŀǿǿȧȧḓş.} media_not_ready{Ŧħḗḗ īḿȧȧɠḗḗ īş şŧīŀŀ ƀḗḗīƞɠ ƥřǿǿƈḗḗşşḗḗḓ. Ŧřẏ ȧȧɠȧȧīƞ īƞ ȧȧ ḿǿǿḿḗḗƞŧ.} other{Ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} remote_emoji{Ŧħīş ƈȧȧƞ ƀḗḗ ḓǿǿƞḗḗ ǿǿƞŀẏ ẇīŧħ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř.} request_pending{Ŧħīş ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ȧȧŀřḗḗȧȧḓẏ ħȧȧş ȧȧ ƥḗḗƞḓīƞɠ řḗḗɋŭŭḗḗşŧ ƒǿǿř ȧȧ ƞḗḗẇ īḿȧȧɠḗḗ.} shortcode_taken{Ȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ħȧȧş ŧħīş şħǿǿřŧƈǿǿḓḗḗ.} too_big{Ŧħḗḗ īḿȧȧɠḗḗ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ 1,024 ƥīẋḗḗŀş ǿǿƞ ḗḗȧȧƈħ şīḓḗḗ.} too_large{Ŧħḗḗ īḿȧȧɠḗḗ īş ŀȧȧřɠḗḗř ŧħȧȧƞ ŧħḗḗ ŀīḿīŧ ǿǿƒ ŧħīş şḗḗřṽḗḗř.} unsupported_format{Ŧħḗḗ īḿȧȧɠḗḗ ḿŭŭşŧ ƀḗḗ ȧȧ ƤȠƓ, ȧȧ ƓĪƑ, ǿǿř ȧȧ ẆḗḗƀƤ.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.invalid_parameter": {
@@ -1043,6 +1059,14 @@
     "defaultMessage": "[Ȧ ƞḗḗẇ ȧȧƥƥḗḗȧȧŀ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ǿǿƒ {instance}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "mail.admin_custom_emoji_request.body": {
+    "defaultMessage": "[Ȧ ŭŭşḗḗř ǿǿƒ {instance} řḗḗɋŭŭḗḗşŧḗḗḓ ȧȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī, ǿǿř ȧȧ ƞḗḗẇ īḿȧȧɠḗḗ ǿǿƒ ǿǿƞḗḗ, ȧȧƞḓ ŧħḗḗ řḗḗɋŭŭḗḗşŧ ȧȧẇȧȧīŧş řḗḗṽīḗḗẇ.\n\nǾƥḗḗƞ ẏǿǿŭŭř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ŧǿǿ řḗḗṽīḗḗẇ īŧ:\n\n{url}\n\nẎǿǿŭŭ ɠḗḗŧ ŧħīş ḗḗḿȧȧīŀ ƀḗḗƈȧȧŭŭşḗḗ ẏǿǿŭŭ ƈħǿǿşḗḗ ŧǿǿ ɠḗḗŧ ḿǿǿḓḗḗřȧȧŧǿǿř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ƀẏ ḗḗḿȧȧīŀ. Ẏǿǿŭŭ ƈȧȧƞ ŧŭŭřƞ īŧ ǿǿƒƒ īƞ ẏǿǿŭŭř ƥřḗḗƒḗḗřḗḗƞƈḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_custom_emoji_request.subject": {
+    "defaultMessage": "[Ȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī řḗḗɋŭŭḗḗşŧ ȧȧẇȧȧīŧş řḗḗṽīḗḗẇ ǿǿƞ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "mail.admin_report.body": {
     "defaultMessage": "[Ȧ ƞḗḗẇ řḗḗƥǿǿřŧ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ǿǿƒ {instance}.\n\nǾƥḗḗƞ ẏǿǿŭŭř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ŧǿǿ řḗḗṽīḗḗẇ īŧ:\n\n{url}\n\nẎǿǿŭŭ ɠḗḗŧ ŧħīş ḗḗḿȧȧīŀ ƀḗḗƈȧȧŭŭşḗḗ ẏǿǿŭŭ ƈħǿǿşḗḗ ŧǿǿ ɠḗḗŧ ḿǿǿḓḗḗřȧȧŧǿǿř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ƀẏ ḗḗḿȧȧīŀ. Ẏǿǿŭŭ ƈȧȧƞ ŧŭŭřƞ īŧ ǿǿƒƒ īƞ ẏǿǿŭŭř ƥřḗḗƒḗḗřḗḗƞƈḗḗş.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1135,6 +1159,10 @@
     "defaultMessage": "[Ȧ ƞḗḗẇ ȧȧƥƥḗḗȧȧŀ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ǿǿƒ {instance}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "push.admin_custom_emoji_request": {
+    "defaultMessage": "[Ȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī řḗḗɋŭŭḗḗşŧ ȧȧẇȧȧīŧş řḗḗṽīḗḗẇ ǿǿƞ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "push.admin_report": {
     "defaultMessage": "[Ȧ ƞḗḗẇ řḗḗƥǿǿřŧ ȧȧẇȧȧīŧş ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ǿǿƒ {instance}]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1153,6 +1181,10 @@
   },
   "push.boost": {
     "defaultMessage": "[{name} ƀǿǿǿǿşŧḗḗḓ ẏǿǿŭŭř ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.custom_emoji_request_decided": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧḓḿīƞīşŧřȧȧŧǿǿřş ǿǿƒ {instance} řḗḗṽīḗḗẇḗḗḓ ẏǿǿŭŭř ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī řḗḗɋŭŭḗḗşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "push.favourite": {

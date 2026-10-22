@@ -14,9 +14,10 @@ type Type string
 // Notification types. The notification module generates follow, follow_request,
 // follow_accepted, mention, boost, favourite, reaction, quote, and poll_closed from the graph and
 // content events, and moderation_notice, appeal_decided, report_resolved, and
-// relationships_severed from the moderation events. admin_report,
-// admin_sign_up, and admin_appeal go to the moderators whose roles grant the permission they
-// need (ModeratorPermission).
+// relationships_severed from the moderation events, and custom_emoji_request_decided from the
+// custom emoji requests (ADR-0070 §9). admin_report, admin_sign_up, admin_appeal,
+// admin_webhook_disabled, and admin_custom_emoji_request go to the staff whose roles grant the
+// permission they need (ModeratorPermission).
 const (
 	TypeFollow         Type = "follow"
 	TypeFollowRequest  Type = "follow_request"
@@ -42,6 +43,12 @@ const (
 	// TypeAdminWebhookDisabled tells the holders of manage_webhooks that the server disabled a
 	// webhook endpoint that kept failing (ADR-0060).
 	TypeAdminWebhookDisabled Type = "admin_webhook_disabled"
+	// TypeAdminCustomEmojiRequest tells the holders of manage_custom_emojis of a new request to
+	// create a custom emoji or to replace the image of one (ADR-0070 §9).
+	TypeAdminCustomEmojiRequest Type = "admin_custom_emoji_request"
+	// TypeCustomEmojiRequestDecided tells the requester that their custom emoji request was
+	// approved or rejected (ADR-0070 §9).
+	TypeCustomEmojiRequestDecided Type = "custom_emoji_request_decided"
 )
 
 // Types are every notification type, in a stable order.
@@ -49,7 +56,7 @@ var Types = []Type{
 	TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
 	TypeReaction, TypeQuote, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 	TypeRelationshipsSevered,
-	TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled,
+	TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled, TypeAdminCustomEmojiRequest, TypeCustomEmojiRequestDecided,
 }
 
 // Valid reports whether t is a known notification type.
@@ -57,7 +64,8 @@ func (t Type) Valid() bool {
 	switch t {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
 		TypeReaction, TypeQuote, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
-		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled:
+		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled,
+		TypeAdminCustomEmojiRequest, TypeCustomEmojiRequestDecided:
 		return true
 	}
 	return false
@@ -82,6 +90,9 @@ type Notification struct {
 	SubjectUserID      string // "" unless the notification is an admin_sign_up: the user who signed up
 	SeveranceID        string // "" unless the notification is a relationships_severed
 	AppealID           string // "" unless the notification is an appeal_decided or an admin_appeal
+	// CustomEmojiRequestID is the custom emoji request of an admin_custom_emoji_request or a
+	// custom_emoji_request_decided, "" for the other types.
+	CustomEmojiRequestID string
 	// ReactionEmoji and ReactionCustomEmojiID are the emoji of a reaction: a Unicode emoji or a
 	// custom emoji (custom_emojis.id), exactly one of them; both "" for the other types.
 	ReactionEmoji         string
@@ -121,6 +132,9 @@ func (n Notification) Validate() error {
 	if (n.Type == TypeAppealDecided || n.Type == TypeAdminAppeal) != (n.AppealID != "") {
 		return errors.New("notification: an appeal_decided or an admin_appeal, and only they, name an appeal")
 	}
+	if (n.Type == TypeAdminCustomEmojiRequest || n.Type == TypeCustomEmojiRequestDecided) != (n.CustomEmojiRequestID != "") {
+		return errors.New("notification: an admin_custom_emoji_request or a custom_emoji_request_decided, and only they, name a custom emoji request")
+	}
 	if hasEmoji := n.ReactionEmoji != "" || n.ReactionCustomEmojiID != ""; (n.Type == TypeReaction) != hasEmoji ||
 		(n.ReactionEmoji != "" && n.ReactionCustomEmojiID != "") {
 		return errors.New("notification: a reaction, and only it, names one emoji")
@@ -129,6 +143,8 @@ func (n Notification) Validate() error {
 	case n.Type == TypeAdminReport && (n.ReportID == "" || n.SourceAccountID != ""),
 		n.Type == TypeAdminAppeal && n.SourceAccountID != "",
 		n.Type == TypeAdminWebhookDisabled && n.SourceAccountID != "",
+		n.Type == TypeAdminCustomEmojiRequest && n.SourceAccountID != "",
+		n.Type == TypeCustomEmojiRequestDecided && n.SourceAccountID != "",
 		n.Type == TypeAdminSignUp && (n.SubjectUserID == "" || n.SourceAccountID != ""):
 		return errors.New("notification: a moderator notification needs its subject and has no source account")
 	}
@@ -184,12 +200,15 @@ const (
 	PermissionManageReports  Permission = "manage_reports"
 	PermissionManageAccounts Permission = "manage_accounts"
 	PermissionManageWebhooks Permission = "manage_webhooks"
+	// PermissionManageCustomEmojis is the identity module's manage_custom_emojis.
+	PermissionManageCustomEmojis Permission = "manage_custom_emojis"
 )
 
 // ModeratorPermission returns the permission that the recipient of a notification of type t
 // needs, when they get it and while they read it, and whether t needs one: admin_report needs
-// manage_reports, admin_sign_up and admin_appeal manage_accounts, and admin_webhook_disabled
-// manage_webhooks. The other types need none.
+// manage_reports, admin_sign_up and admin_appeal manage_accounts, admin_webhook_disabled
+// manage_webhooks, and admin_custom_emoji_request manage_custom_emojis. The other types need
+// none.
 func ModeratorPermission(t Type) (Permission, bool) {
 	switch t {
 	case TypeAdminReport:
@@ -198,6 +217,8 @@ func ModeratorPermission(t Type) (Permission, bool) {
 		return PermissionManageAccounts, true
 	case TypeAdminWebhookDisabled:
 		return PermissionManageWebhooks, true
+	case TypeAdminCustomEmojiRequest:
+		return PermissionManageCustomEmojis, true
 	}
 	return "", false
 }
@@ -231,6 +252,18 @@ func AppealDecidedKey(appealID string) string { return string(TypeAppealDecided)
 // state change of the endpoint that disabled it.
 func AdminWebhookDisabledKey(stateChangeID string) string {
 	return string(TypeAdminWebhookDisabled) + ":" + stateChangeID
+}
+
+// AdminCustomEmojiRequestKey is the dedupe key of an admin_custom_emoji_request notification: one
+// per request.
+func AdminCustomEmojiRequestKey(requestID string) string {
+	return string(TypeAdminCustomEmojiRequest) + ":" + requestID
+}
+
+// CustomEmojiRequestDecidedKey is the dedupe key of a custom_emoji_request_decided notification:
+// one per request, which is decided once.
+func CustomEmojiRequestDecidedKey(requestID string) string {
+	return string(TypeCustomEmojiRequestDecided) + ":" + requestID
 }
 
 // AdminAppealKey is the dedupe key of an admin_appeal notification: one per appeal.

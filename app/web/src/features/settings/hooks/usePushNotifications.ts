@@ -19,10 +19,10 @@ import {
 type PushAlertGroup = { id: string; label: ClientMessageKey; types: readonly NotificationType[] };
 
 /**
- * The permissions whose holders get moderator notifications (admin_report, admin_sign_up, admin_appeal, and
- * admin_webhook_disabled for manage_webhooks).
+ * The permissions whose holders get moderator notifications (admin_report, admin_sign_up, admin_appeal,
+ * admin_webhook_disabled for manage_webhooks, and admin_custom_emoji_request for manage_custom_emojis).
  */
-const moderatorPermissions: readonly Permission[] = ["manage_reports", "manage_accounts", "manage_webhooks"];
+const moderatorPermissions: readonly Permission[] = ["manage_reports", "manage_accounts", "manage_webhooks", "manage_custom_emojis"];
 
 /** The kinds that every user chooses from, in the order of the notifications' filter. */
 const userGroups: readonly PushAlertGroup[] = [
@@ -37,7 +37,7 @@ const userGroups: readonly PushAlertGroup[] = [
   {
     id: "moderation",
     label: "client:settings.push.type.moderation",
-    types: ["moderation_notice", "appeal_decided", "report_resolved", "relationships_severed"],
+    types: ["moderation_notice", "appeal_decided", "report_resolved", "relationships_severed", "custom_emoji_request_decided"],
   },
 ];
 
@@ -45,7 +45,7 @@ const userGroups: readonly PushAlertGroup[] = [
 const moderatorGroup: PushAlertGroup = {
   id: "admin",
   label: "client:settings.push.type.admin",
-  types: ["admin_report", "admin_sign_up", "admin_appeal", "admin_webhook_disabled"],
+  types: ["admin_report", "admin_sign_up", "admin_appeal", "admin_webhook_disabled", "admin_custom_emoji_request"],
 };
 
 /** What the preferences show of Web Push on this device. */

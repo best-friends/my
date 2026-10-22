@@ -40,13 +40,16 @@ type RemoteRevisionSource struct {
 }
 
 // CustomEmoji is a custom emoji, unique by Shortcode on Domain ("" for this instance). URI is
-// the id of a remote emoji's Emoji object, "" when it has none.
+// the id of a remote emoji's Emoji object, "" when it has none. CreatedByUserID is the user who
+// made a local emoji (ADR-0070 §7): the requester of an approved request, or the administrator
+// who registered or copied it; "" for one made with the CLI and for a remote one.
 type CustomEmoji struct {
-	ID        string
-	Shortcode string
-	Domain    string
-	URI       string
-	CreatedAt time.Time
+	ID              string
+	Shortcode       string
+	Domain          string
+	URI             string
+	CreatedByUserID string
+	CreatedAt       time.Time
 }
 
 // CustomEmojiImage is one image of a custom emoji (custom_emoji_images); the newest is current.

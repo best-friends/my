@@ -306,6 +306,10 @@ export const auditActions = [
   "supporter_plan_revised",
   "supporter_plan_retired",
   "supporter_subscription_canceled",
+  "custom_emoji_request_submitted",
+  "custom_emoji_request_withdrawn",
+  "custom_emoji_request_approved",
+  "custom_emoji_request_rejected",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
@@ -330,6 +334,7 @@ export const auditTargetKinds = [
   "supporter_program",
   "supporter_plan",
   "supporter_subscription",
+  "custom_emoji_request",
 ] as const satisfies readonly AuditTargetKind[];
 
 /**

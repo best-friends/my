@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A local custom emoji that the user made (ADR-0070 §3).
+type: object
+required: [id, shortcode, enabled, visible_in_picker, aliases, created_at, updated_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  shortcode:
+    description: The shortcode, without the colons around it.
+    type: string
+  url:
+    description: The URL of the image, animated when the emoji is; absent when it cannot be shown.
+    type: string
+    format: uri
+  static_url:
+    description: The URL of a still image of the emoji; absent with `url`.
+    type: string
+    format: uri
+  enabled:
+    description: |
+      Whether the emoji is shown; an administrator disables and enables it, and a disabled one
+      stays `:shortcode:` text.
+    type: boolean
+  visible_in_picker:
+    description: Whether the picker offers the emoji.
+    type: boolean
+  category:
+    description: The category of the emoji in the picker; absent for none.
+    type: string
+  aliases:
+    description: The other names that the picker finds the emoji by.
+    type: array
+    items:
+      type: string
+  created_at:
+    description: When the emoji was made.
+    type: string
+    format: date-time
+  updated_at:
+    description: When its current image was set.
+    type: string
+    format: date-time
