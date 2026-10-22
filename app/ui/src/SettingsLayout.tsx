@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The body of the settings (design/components/LayoutSettings): where the column is wide enough (`@2xl`, 42rem), a
-// sticky menu of the sections beside one pane; narrower, the menu is a page of its own and each section fills the
-// width. It asks its own container, not the viewport (web-client.md D2).
+// sticky menu of the sections beside one pane; narrower, the page of the settings stacks its heading, the menu and
+// what else it holds, and a section's page shows the section alone. It asks its own container, not the viewport
+// (web-client.md D2).
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { Card } from "./Card";
@@ -14,9 +15,9 @@ const settingsLayout = tv({
     pane: "min-w-0",
   },
   variants: {
-    // Narrower, one of the two is on screen: the menu on the page of the settings, the pane on a section's page.
+    // Narrower, a section's page hides the menu; the page of the settings keeps both, the menu first.
     view: {
-      menu: { pane: "@max-2xl:hidden" },
+      menu: {},
       pane: { menu: "@max-2xl:hidden" },
     },
   },
@@ -27,17 +28,20 @@ export type SettingsLayoutProps = {
   menu: ReactNode;
   /** The name of the menu's navigation landmark. */
   menuLabel: string;
-  /** Narrow: `menu` (the page of the settings) shows the menu only; `pane` (a section) shows the section only. */
+  /** Narrow: `menu` (the page of the settings) stacks the menu and the pane; `pane` (a section) shows the section only. */
   view: "menu" | "pane";
+  /** The page's heading, before the menu and the pane (the page of the settings; a section brings its own). */
+  heading?: ReactNode;
   /** The section. */
   children: ReactNode;
 };
 
-/** A sticky menu card beside the pane card; narrow, one of them at a time. */
-export function SettingsLayout({ menu, menuLabel, view, children }: SettingsLayoutProps) {
+/** A sticky menu card beside the pane card; narrow, the two stacked on the page of the settings, the section alone on a section's page. */
+export function SettingsLayout({ menu, menuLabel, view, heading, children }: SettingsLayoutProps) {
   const slots = settingsLayout({ view });
   return (
     <div className={slots.root()}>
+      {heading}
       <div className={slots.base()}>
       <nav aria-label={menuLabel} className={slots.menu()}>
         <Card padding="3">{menu}</Card>

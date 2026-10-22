@@ -3,8 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DocumentsSection } from "../features/documents";
 import { AccountSection } from "../features/session";
 import { requireSignIn } from "../lib/auth/requireSignIn";
-import { useT } from "../lib/i18n";
-import { PageHeading } from "./-layout/PageHeading";
 import { StaffModeEntry } from "./-layout/StaffModeEntry";
 
 /**
@@ -19,10 +17,8 @@ export const Route = createFileRoute("/settings/")({
 });
 
 function SettingsPage() {
-  const t = useT();
   return (
     <>
-      <PageHeading>{t("client:settings.title")}</PageHeading>
       <StaffModeEntry />
       <AccountSection />
       <DocumentsSection />
