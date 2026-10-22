@@ -5,8 +5,9 @@
 // schedule, dates and prices and the dialogs that change its label, revise its price and set its end, and canceling
 // it after an alert dialog; the state of the billing imports with importing now; and the income that the payment
 // provider records (ADR-0073 §6): its totals under the same tabs, with the gross, the fees, the net, the balance and
-// the members of each plan, and its money movements, newest first, with their subscribers, which only this screen
-// shows. The granularity and the basis are in the URL (web-client.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
+// the members of each plan, and its money movements, newest first, with their subscribers by username, narrowed to a
+// kind and a range of dates, which only this screen shows. The granularity, the basis and the movements' filter are
+// in the URL (web-client.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
 // memos are the operator's words, shown with dir="auto". What a change did stays in a StatusMessage above the list;
 // a failure stays there too (role="alert", web-client.md E2).
 import {
@@ -55,8 +56,10 @@ import {
   costNameLimit,
   type CostSchedule,
   costSchedules,
+  incomeKinds,
   type IncomeKind,
   type IncomeMovement,
+  type IncomeMovementFilter,
   maxCostInterval,
   priceOn,
 } from "../api/finance";
@@ -71,6 +74,7 @@ import {
   useCostTotals,
   useFormatDay,
   useIncomeMovements,
+  useMovementDates,
   useNewCostItemForm,
   useRunBillingImport,
 } from "../hooks/useFinance";
@@ -96,6 +100,9 @@ const incomeKindLabels: Readonly<Record<IncomeKind, ClientMessageKey>> = {
   fee: "client:admin.finance.movements.kind.fee",
 };
 
+/** The value of the "every kind" choice of the movements' filter. */
+const anyKind = "any";
+
 const errorKindLabels: Readonly<Record<NonNullable<BillingImport["last_run"]>["error_kind"], ClientMessageKey>> = {
   none: "client:admin.finance.imports.error.none",
   permission: "client:admin.finance.imports.error.permission",
@@ -116,6 +123,10 @@ export type FinanceSettingsProps = {
   today: string;
   /** Selects another granularity or basis: the route puts it into the URL. */
   onTotalsChange: (next: { granularity: CostGranularity; basis: CostBasis }) => void;
+  /** The kind and the dates of the money movements shown, from the URL. */
+  movements: IncomeMovementFilter;
+  /** Narrows the money movements another way: the route puts it into the URL. */
+  onMovementsChange: (next: IncomeMovementFilter) => void;
 };
 
 export function FinanceSettings(props: FinanceSettingsProps) {
@@ -141,7 +152,7 @@ export function FinanceSettings(props: FinanceSettingsProps) {
           <BillingImports />
         </DetailSection>
         <DetailSection title={t("client:admin.finance.movements.title")}>
-          <IncomeMovements />
+          <IncomeMovements filter={props.movements} onFilterChange={props.onMovementsChange} />
         </DetailSection>
       </div>
     </RequirePermission>
@@ -839,23 +850,115 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
 
 /**
  * The payment provider's money movements of the income, newest first (ADR-0073 §6): what each brought or took back,
- * and whose subscription it belongs to. Only this screen shows them; the payment provider records them, and nothing
- * here changes them.
+ * and whose subscription it belongs to, narrowed to a kind (which applies at once) and to the dates they are counted on
+ * (applied together, since a date field changes while it is typed). Only this screen shows them; the payment provider
+ * records them, and nothing here changes them.
  */
-function IncomeMovements() {
+function IncomeMovements({ filter, onFilterChange }: { filter: IncomeMovementFilter; onFilterChange: (filter: IncomeMovementFilter) => void }) {
   const t = useT();
-  const list = useIncomeMovements();
+  const list = useIncomeMovements(filter);
+  const dates = useMovementDates(filter, onFilterChange);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const filtered = filter.kind !== undefined || filter.from !== undefined || filter.to !== undefined;
+  const kinds = [{ id: anyKind, name: t("client:admin.finance.movements.filter.any_kind") }, ...incomeKinds.map((kind) => ({ id: kind, name: t(incomeKindLabels[kind]) }))];
+  const clear = () => {
+    // The pressed button goes away with the filters: focus moves to their first control, which stays.
+    filtersRef.current?.querySelector<HTMLElement>("button")?.focus();
+    onFilterChange({});
+  };
+  const clearButton = (
+    <Button size="sm" onPress={clear}>
+      {t("client:admin.finance.movements.filter.clear")}
+    </Button>
+  );
   return (
     <div className="flex flex-col gap-3">
       <p className="text-fg-muted">{t("client:admin.finance.movements.description")}</p>
+      <div ref={filtersRef} className="flex flex-col gap-4">
+        <Select
+          label={t("client:admin.finance.movements.filter.kind")}
+          value={filter.kind ?? anyKind}
+          onChange={(key) => {
+            onFilterChange({ ...filter, kind: incomeKinds.find((kind) => kind === key) });
+          }}
+          items={kinds}
+        >
+          {(item) => (
+            <SelectItem id={item.id} textValue={item.name}>
+              {item.name}
+            </SelectItem>
+          )}
+        </Select>
+        <form onSubmit={dates.submit} className="flex flex-col items-start gap-4" noValidate>
+          <div className="flex flex-wrap items-start gap-4">
+          <TextField
+            type="date"
+            label={t("client:admin.finance.movements.filter.from")}
+            value={dates.draft.from}
+            onChange={(from) => {
+              dates.change({ from });
+            }}
+          />
+          <TextField
+            type="date"
+            label={t("client:admin.finance.movements.filter.to")}
+            value={dates.draft.to}
+            onChange={(to) => {
+              dates.change({ to });
+            }}
+            {...(dates.toError !== undefined && { isInvalid: true, errorMessage: dates.toError })}
+          />
+          </div>
+          <Button type="submit">
+            {t("client:admin.finance.movements.filter.apply")}
+          </Button>
+        </form>
+        {filtered && <div>{clearButton}</div>}
+      </div>
       <RecordList
         list={list}
         getId={(movement) => movement.id}
-        empty={<EmptyState headingLevel={3} heading={t("client:admin.finance.movements.empty")} description={t("client:admin.finance.movements.empty.description")} />}
+        empty={
+          filtered ? (
+            <EmptyState
+              headingLevel={3}
+              heading={t("client:admin.finance.movements.empty.filtered")}
+              description={t("client:admin.finance.movements.empty.filtered.description")}
+              action={clearButton}
+            />
+          ) : (
+            <EmptyState headingLevel={3} heading={t("client:admin.finance.movements.empty")} description={t("client:admin.finance.movements.empty.description")} />
+          )
+        }
       >
         {(movement) => <IncomeMovementRow movement={movement} />}
       </RecordList>
     </div>
+  );
+}
+
+/**
+ * Whose subscription a movement belongs to: the subscriber's username, linked to the account's moderation screen for
+ * a viewer with manage_accounts; "deleted account" when the account is gone; "none" for a movement of no
+ * subscription (the provider's fee).
+ */
+function Subscriber({ movement }: { movement: IncomeMovement }) {
+  const t = useT();
+  const mayOpenAccount = useHasPermission("manage_accounts");
+  if (movement.account_id === undefined || movement.username === undefined) {
+    return t(movement.subscription_id === undefined ? "client:admin.finance.movements.no_subscriber" : "client:admin.finance.movements.deleted_account");
+  }
+  const handle = `@${movement.username}`;
+  return mayOpenAccount ? (
+    <Link href={`/moderation/accounts/${movement.account_id}`}>
+      <span dir="ltr" className="wrap-anywhere">
+        {handle}
+      </span>
+    </Link>
+  ) : (
+    <span dir="ltr" className="wrap-anywhere">
+      {handle}
+    </span>
   );
 }
 
@@ -864,7 +967,6 @@ function IncomeMovementRow({ movement }: { movement: IncomeMovement }) {
   const intl = useIntl();
   const format = useFormatMoney();
   const formatDay = useFormatDay();
-  const mayOpenAccount = useHasPermission("manage_accounts");
   return (
     <div className="flex flex-col gap-3">
       <h3 className="flex flex-wrap gap-x-2 font-semibold">
@@ -892,15 +994,7 @@ function IncomeMovementRow({ movement }: { movement: IncomeMovement }) {
           </DescriptionItem>
         )}
         <DescriptionItem term={t("client:admin.finance.movements.subscriber")}>
-          {movement.account_id === undefined ? (
-            t("client:admin.finance.movements.no_subscriber")
-          ) : mayOpenAccount ? (
-            <Link href={`/moderation/accounts/${movement.account_id}`}>{t("client:admin.finance.movements.open_account")}</Link>
-          ) : (
-            <span dir="ltr" className="wrap-anywhere">
-              {movement.account_id}
-            </span>
-          )}
+          <Subscriber movement={movement} />
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.movements.provider_id", { provider: movement.provider })}>
           <span dir="ltr" className="wrap-anywhere">

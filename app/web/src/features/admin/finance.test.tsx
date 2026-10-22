@@ -3,7 +3,8 @@
 // manage_finance sees the totals by month amortized by default and switches to weeks, years and cash, with the rules
 // next to them; records a cost paid every few months; edits, revises, ends and cancels one; and imports a provider's
 // charges now; reads the income with its gross, fees and balance under the same tabs, the members of each plan, and the
-// money movements with their subscribers. A viewer without the permission sees why; with MSW playing the API.
+// money movements with their subscribers by username, narrowed to a kind and a range of dates kept in the URL. A viewer
+// without the permission sees why; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
@@ -433,6 +434,7 @@ describe("the income on the costs screen", () => {
     kind: "payment",
     subscription_id: "0199f0e0-0000-7000-8000-00000000cc01",
     account_id: "0199f0e0-0000-7000-8000-00000000dd01",
+    username: "alice",
     occurred_at: "2026-10-10T03:00:00Z",
     occurred_on: "2026-10-10",
     covers_starts_on: "2026-10-10",
@@ -442,6 +444,40 @@ describe("the income on the costs screen", () => {
     net: { amount: "11568", currency: "JPY" },
     recorded_at: "2026-10-10T03:01:00Z",
   };
+
+  /** A refund whose subscriber's account has been deleted: the subscription stays, the account and its username do not. */
+  const orphanRefund: Schemas["IncomeMovement"] = {
+    id: "0199f0e0-0000-7000-8000-00000000bb03",
+    provider: "stripe",
+    provider_id: "txn_refund",
+    kind: "refund",
+    parent_provider_id: "txn_0",
+    subscription_id: "0199f0e0-0000-7000-8000-00000000cc02",
+    occurred_at: "2026-10-09T00:00:00Z",
+    occurred_on: "2026-10-09",
+    gross: { amount: "-500", currency: "JPY" },
+    fee: { amount: "0", currency: "JPY" },
+    net: { amount: "-500", currency: "JPY" },
+    recorded_at: "2026-10-09T00:01:00Z",
+  };
+
+  /** Plays the money movements, narrowed by kind and dates as the server does, and records the queries but the page size. */
+  function serveMovements(items: readonly Schemas["IncomeMovement"][]) {
+    const queries: Record<string, string>[] = [];
+    server.use(
+      http.get(`${apiBase}/admin/income_movements`, ({ request }) => {
+        const { limit: _limit, ...query } = Object.fromEntries(new URL(request.url).searchParams);
+        queries.push(query);
+        const { kind, from, to } = query;
+        return HttpResponse.json({
+          items: items.filter(
+            (item) => (kind === undefined || item.kind === kind) && (from === undefined || item.occurred_on >= from) && (to === undefined || item.occurred_on <= to),
+          ),
+        } satisfies Schemas["IncomeMovementPage"]);
+      }),
+    );
+    return { queries };
+  }
 
   function serveIncome() {
     const queries: Record<string, string>[] = [];
@@ -500,7 +536,7 @@ describe("the income on the costs screen", () => {
     expect(income.queries.at(-1)).toMatchObject({ granularity: "month", basis: "cash" });
   });
 
-  test("lists the money movements with their subscribers, linked for a viewer who may open the accounts", async () => {
+  test("lists the money movements with their subscribers by username, linked for a viewer who may open the accounts", async () => {
     server.use(operatorHandler(["manage_finance", "manage_accounts"]));
     serveIncome();
     await renderApp({ path: "/admin/finance" });
@@ -510,10 +546,91 @@ describe("the income on the costs screen", () => {
     expect(within(rows[0] as HTMLElement).getByRole("heading", { level: 3 })).toHaveTextContent("Payment¥11,568");
     expect(rows[0]).toHaveTextContent("Gross¥12,000");
     expect(rows[0]).toHaveTextContent("Fees¥432");
-    expect(within(rows[0] as HTMLElement).getByRole("link", { name: "Open the account" })).toHaveAttribute("href", `/moderation/accounts/${String(movement.account_id)}`);
+    expect(within(rows[0] as HTMLElement).getByRole("link", { name: "@alice" })).toHaveAttribute("href", `/moderation/accounts/${String(movement.account_id)}`);
+    expect(within(rows[0] as HTMLElement).getByText("@alice")).toHaveAttribute("dir", "ltr");
+    expect(rows[0]).not.toHaveTextContent(String(movement.account_id));
     expect(within(rows[0] as HTMLElement).getByText("txn_1")).toHaveAttribute("dir", "ltr");
     expect(rows[1]).toHaveTextContent("Provider fee-¥84");
     expect(rows[1]).toHaveTextContent("SubscriberNone");
+  });
+
+  test("shows the username without a link to a viewer who may not open the accounts, and a deleted subscriber's account as deleted", async () => {
+    server.use(operatorHandler(["manage_finance"]));
+    serveIncome();
+    serveMovements([movement, orphanRefund]);
+    await renderApp({ path: "/admin/finance" });
+
+    const region = await screen.findByRole("region", { name: "Payments and refunds" });
+    const rows = within(region).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("Subscriber@alice");
+    expect(within(rows[0] as HTMLElement).queryByRole("link")).not.toBeInTheDocument();
+    expect(within(rows[1] as HTMLElement).getByRole("heading", { level: 3 })).toHaveTextContent("Refund-¥500");
+    expect(rows[1]).toHaveTextContent("SubscriberDeleted account");
+    expect(rows[1]).toHaveTextContent("Of the paymenttxn_0");
+  });
+
+  test("narrows the money movements to a kind and a range of dates, kept in the URL", async () => {
+    server.use(operatorHandler(["manage_finance", "manage_accounts"]));
+    serveIncome();
+    const movements = serveMovements([movement, orphanRefund]);
+    const { user, router } = await renderApp({ path: "/admin/finance?basis=cash" });
+
+    const region = await screen.findByRole("region", { name: "Payments and refunds" });
+    expect(within(region).getAllByRole("listitem")).toHaveLength(2);
+    expect(movements.queries[0]).toEqual({});
+
+    await user.click(within(region).getByRole("button", { name: /Kind/u }));
+    await user.click(await screen.findByRole("option", { name: "Refund" }));
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ basis: "cash", kind: "refund" });
+    });
+    expect(movements.queries.at(-1)).toEqual({ kind: "refund" });
+    await waitFor(() => {
+      expect(within(region).getAllByRole("listitem")).toHaveLength(1);
+    });
+
+    // A last date before the first is not applied.
+    const from = within(region).getByLabelText("Counted from");
+    const to = within(region).getByLabelText("Counted until");
+    await user.type(from, "2026-10-10");
+    await user.type(to, "2026-10-01");
+    expect(within(region).getByText("The last date is before the first date.")).toBeInTheDocument();
+    await user.click(within(region).getByRole("button", { name: "Show these dates" }));
+    expect(router.state.location.search).toEqual({ basis: "cash", kind: "refund" });
+
+    await user.clear(to);
+    await user.type(to, "2026-10-31");
+    await user.click(within(region).getByRole("button", { name: "Show these dates" }));
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ basis: "cash", kind: "refund", from: "2026-10-10", to: "2026-10-31" });
+    });
+    expect(movements.queries.at(-1)).toEqual({ kind: "refund", from: "2026-10-10", to: "2026-10-31" });
+    // Nothing matches: the empty list offers to clear the filters, which moves focus to the kind select.
+    expect(await within(region).findByRole("heading", { level: 3, name: "No movements match the filters" })).toBeInTheDocument();
+    const clears = within(region).getAllByRole("button", { name: "Clear the filters" });
+    // The one above the filters, and the one of the empty list.
+    expect(clears).toHaveLength(2);
+    await user.click(clears[1] as HTMLElement);
+    await waitFor(() => {
+      expect(router.state.location.search).toEqual({ basis: "cash" });
+    });
+    expect(within(region).getByRole("button", { name: /Kind/u })).toHaveFocus();
+    expect(from).toHaveValue("");
+    expect(await within(region).findAllByRole("listitem")).toHaveLength(2);
+  });
+
+  test("reads the movements' filter from the URL and ignores what it does not know", async () => {
+    server.use(operatorHandler(["manage_finance"]));
+    serveIncome();
+    const movements = serveMovements([movement, orphanRefund]);
+    await renderApp({ path: "/admin/finance?kind=payment&from=2026-10-01&to=2026-13-40" });
+
+    const region = await screen.findByRole("region", { name: "Payments and refunds" });
+    expect(movements.queries[0]).toEqual({ kind: "payment", from: "2026-10-01" });
+    expect(within(region).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(region).getByLabelText("Counted from")).toHaveValue("2026-10-01");
+    expect(within(region).getByLabelText("Counted until")).toHaveValue("");
+    expect(within(region).getByRole("button", { name: "Clear the filters" })).toBeInTheDocument();
   });
 
   test("shows what the server publishes of the income", async () => {

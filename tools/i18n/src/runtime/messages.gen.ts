@@ -1686,12 +1686,32 @@ export interface MessageArgs {
   "client:admin.finance.memo.description": {};
   /** Period paid for */
   "client:admin.finance.movements.covers": {};
+  /** Deleted account */
+  "client:admin.finance.movements.deleted_account": {};
   /** The money movements that the payment provider recorded, newest first. Only the people who manage the finances see them; they are never published. */
   "client:admin.finance.movements.description": {};
   /** No payments yet */
   "client:admin.finance.movements.empty": {};
   /** The payments of the supporter plans appear here once the payment provider records them. */
   "client:admin.finance.movements.empty.description": {};
+  /** No movements match the filters */
+  "client:admin.finance.movements.empty.filtered": {};
+  /** Choose another kind or other dates, or clear the filters. */
+  "client:admin.finance.movements.empty.filtered.description": {};
+  /** Every kind */
+  "client:admin.finance.movements.filter.any_kind": {};
+  /** Show these dates */
+  "client:admin.finance.movements.filter.apply": {};
+  /** Clear the filters */
+  "client:admin.finance.movements.filter.clear": {};
+  /** Counted from */
+  "client:admin.finance.movements.filter.from": {};
+  /** Kind */
+  "client:admin.finance.movements.filter.kind": {};
+  /** Counted until */
+  "client:admin.finance.movements.filter.to": {};
+  /** The last date is before the first date. */
+  "client:admin.finance.movements.filter.to_before_from": {};
   /** Chargeback */
   "client:admin.finance.movements.kind.chargeback": {};
   /** Chargeback reversed */
@@ -1708,8 +1728,6 @@ export interface MessageArgs {
   "client:admin.finance.movements.occurred_at": {};
   /** Counted on */
   "client:admin.finance.movements.occurred_on": {};
-  /** Open the account */
-  "client:admin.finance.movements.open_account": {};
   /** Of the payment */
   "client:admin.finance.movements.parent": {};
   /** ID at {provider} */

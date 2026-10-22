@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The costs screen in every width × locale project (ADR-0067, ADR-0068, ADR-0027): an administrator with
 // manage_finance sees the totals by month amortized by default, switches to weeks and to payment dates, records a cost
-// paid every year, and deletes one after its dialog; the billing imports show their state. Each step passes axe
+// paid every year, and deletes one after its dialog; the billing imports show their state; the money movements show
+// their subscribers by username and narrow to a kind with the keyboard, into the URL. Each step passes axe
 // without scrolling sideways. `vite preview` has no API, so the test plays the server with page.route; names change
 // with the locale, so the elements are found by role and by the names in the project's locale catalog.
 import { readFileSync } from "node:fs";
@@ -112,6 +113,7 @@ const movements: Schemas["IncomeMovement"][] = [
     kind: "payment",
     subscription_id: "0192f0c4-7a8e-7000-8000-0000000000d2",
     account_id: "0192f0c4-7a8e-7000-8000-0000000000d3",
+    username: "a_supporter_with_a_rather_long_username_that_does_not_wrap",
     occurred_at: "2026-10-10T03:00:00Z",
     occurred_on: "2026-10-10",
     covers_starts_on: "2026-10-10",
@@ -195,7 +197,10 @@ async function serveApi(page: Page) {
     if (key === "GET /admin/cost_items") return json(route, { items });
     if (key === "GET /admin/billing_imports") return json(route, { items: [awsImport] });
     if (key === "GET /admin/income_totals") return json(route, incomeTotals(url));
-    if (key === "GET /admin/income_movements") return json(route, { items: movements });
+    if (key === "GET /admin/income_movements") {
+      const kind = url.searchParams.get("kind");
+      return json(route, { items: movements.filter((movement) => kind === null || movement.kind === kind) });
+    }
     if (key === "POST /admin/cost_items") {
       const { price, memo, ends_on, ...body } = request.postDataJSON() as Schemas["CostItemCreateRequest"];
       sent.push(`create ${body.schedule} ${price.amount} ${price.currency}`);
@@ -294,6 +299,17 @@ test("the income on the costs screen, with its money movements", async ({ page, 
   const movementsRegion = main.getByRole("region", { name: message("admin.finance.movements.title"), exact: true });
   await expect(movementsRegion.getByRole("listitem")).toHaveCount(2);
   await expect(movementsRegion.getByText("txn_1PaymentWithARatherLongIdentifierThatDoesNotWrap")).toHaveAttribute("dir", "ltr");
+  await expect(movementsRegion.getByText("@a_supporter_with_a_rather_long_username_that_does_not_wrap")).toHaveAttribute("dir", "ltr");
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+
+  // The kind select follows the APG select-only combobox: the keyboard opens it and picks a kind, which goes into the URL.
+  await movementsRegion.getByRole("button", { name: message("admin.finance.movements.filter.kind") }).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("option", { name: message("admin.finance.movements.kind.fee"), exact: true }).press("Enter");
+  await expect(page).toHaveURL(/kind=fee/u);
+  await expect(movementsRegion.getByRole("listitem")).toHaveCount(1);
+  await expect(movementsRegion.getByRole("button", { name: message("admin.finance.movements.filter.clear"), exact: true })).toBeVisible();
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);
 });

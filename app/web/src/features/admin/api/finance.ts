@@ -83,12 +83,26 @@ export function adminIncomeTotalsQueryOptions(api: Api, granularity: CostGranula
   });
 }
 
-/** The payment provider's money movements of the income, newest first (GET /admin/income_movements). */
-export function incomeMovementsQueryOptions(api: Api) {
+/** The kinds of the money movements, in the order of the filter. */
+export const incomeKinds = ["payment", "refund", "chargeback", "chargeback_reversal", "fee"] as const satisfies readonly IncomeKind[];
+
+/**
+ * The money movements shown: of a kind, and counted on or after `from` and on or before `to` (`YYYY-MM-DD`, the dates
+ * in the provider's reporting time zone); undefined narrows nothing.
+ */
+export type IncomeMovementFilter = { kind?: IncomeKind | undefined; from?: string | undefined; to?: string | undefined };
+
+/** The payment provider's money movements of the income, newest first, narrowed by the filter (GET /admin/income_movements). */
+export function incomeMovementsQueryOptions(api: Api, filter: IncomeMovementFilter) {
+  const narrow = {
+    ...(filter.kind === undefined ? {} : { kind: filter.kind }),
+    ...(filter.from === undefined ? {} : { from: filter.from }),
+    ...(filter.to === undefined ? {} : { to: filter.to }),
+  };
   return infiniteQueryOptions({
-    queryKey: ["get", "/admin/income_movements", "pages"] as const,
+    queryKey: ["get", "/admin/income_movements", narrow, "pages"] as const,
     queryFn: async ({ pageParam, signal }) => {
-      const { data, error } = await api.fetch.GET("/admin/income_movements", { params: { query: pageQuery(pageParam) }, signal });
+      const { data, error } = await api.fetch.GET("/admin/income_movements", { params: { query: { ...pageQuery(pageParam), ...narrow } }, signal });
       if (data === undefined) throw new ApiError(error);
       return data;
     },

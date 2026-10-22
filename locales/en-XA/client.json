@@ -3367,6 +3367,10 @@
     "defaultMessage": "[Ƥḗḗřīǿǿḓ ƥȧȧīḓ ƒǿǿř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.finance.movements.deleted_account": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗḓ ȧȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.finance.movements.description": {
     "defaultMessage": "[Ŧħḗḗ ḿǿǿƞḗḗẏ ḿǿǿṽḗḗḿḗḗƞŧş ŧħȧȧŧ ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř řḗḗƈǿǿřḓḗḗḓ, ƞḗḗẇḗḗşŧ ƒīřşŧ. Ǿƞŀẏ ŧħḗḗ ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ḿȧȧƞȧȧɠḗḗ ŧħḗḗ ƒīƞȧȧƞƈḗḗş şḗḗḗḗ ŧħḗḗḿ; ŧħḗḗẏ ȧȧřḗḗ ƞḗḗṽḗḗř ƥŭŭƀŀīşħḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3377,6 +3381,42 @@
   },
   "admin.finance.movements.empty.description": {
     "defaultMessage": "[Ŧħḗḗ ƥȧȧẏḿḗḗƞŧş ǿǿƒ ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞş ȧȧƥƥḗḗȧȧř ħḗḗřḗḗ ǿǿƞƈḗḗ ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř řḗḗƈǿǿřḓş ŧħḗḗḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.empty.filtered": {
+    "defaultMessage": "[Ƞǿǿ ḿǿǿṽḗḗḿḗḗƞŧş ḿȧȧŧƈħ ŧħḗḗ ƒīŀŧḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.empty.filtered.description": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ȧȧƞǿǿŧħḗḗř ķīƞḓ ǿǿř ǿǿŧħḗḗř ḓȧȧŧḗḗş, ǿǿř ƈŀḗḗȧȧř ŧħḗḗ ƒīŀŧḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.filter.any_kind": {
+    "defaultMessage": "[Ḗṽḗḗřẏ ķīƞḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.filter.apply": {
+    "defaultMessage": "[Şħǿǿẇ ŧħḗḗşḗḗ ḓȧȧŧḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.filter.clear": {
+    "defaultMessage": "[Ƈŀḗḗȧȧř ŧħḗḗ ƒīŀŧḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.filter.from": {
+    "defaultMessage": "[Ƈǿǿŭŭƞŧḗḗḓ ƒřǿǿḿ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.filter.kind": {
+    "defaultMessage": "[Ķīƞḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.filter.to": {
+    "defaultMessage": "[Ƈǿǿŭŭƞŧḗḗḓ ŭŭƞŧīŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.movements.filter.to_before_from": {
+    "defaultMessage": "[Ŧħḗḗ ŀȧȧşŧ ḓȧȧŧḗḗ īş ƀḗḗƒǿǿřḗḗ ŧħḗḗ ƒīřşŧ ḓȧȧŧḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.finance.movements.kind.chargeback": {
@@ -3409,10 +3449,6 @@
   },
   "admin.finance.movements.occurred_on": {
     "defaultMessage": "[Ƈǿǿŭŭƞŧḗḗḓ ǿǿƞ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.movements.open_account": {
-    "defaultMessage": "[Ǿƥḗḗƞ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.finance.movements.parent": {

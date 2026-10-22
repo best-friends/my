@@ -10045,11 +10045,47 @@
   },
   "admin.finance.movements.no_subscriber": {
     "defaultMessage": "None",
-    "description": "What the subscriber term says of a money movement with no known subscriber, such as a provider fee."
+    "description": "What the subscriber term says of a money movement of no subscription, such as a provider fee."
   },
-  "admin.finance.movements.open_account": {
-    "defaultMessage": "Open the account",
-    "description": "Link from a money movement to the moderation page of its subscriber's account."
+  "admin.finance.movements.deleted_account": {
+    "defaultMessage": "Deleted account",
+    "description": "What the subscriber term says of a money movement whose subscriber's account has been deleted."
+  },
+  "admin.finance.movements.empty.filtered": {
+    "defaultMessage": "No movements match the filters",
+    "description": "Heading of the empty list of money movements when the kind or dates filter leaves none."
+  },
+  "admin.finance.movements.empty.filtered.description": {
+    "defaultMessage": "Choose another kind or other dates, or clear the filters.",
+    "description": "Explains the empty list of money movements under a filter."
+  },
+  "admin.finance.movements.filter.kind": {
+    "defaultMessage": "Kind",
+    "description": "Label of the select that narrows the money movements to one kind."
+  },
+  "admin.finance.movements.filter.any_kind": {
+    "defaultMessage": "Every kind",
+    "description": "Choice of the kind select that shows money movements of every kind."
+  },
+  "admin.finance.movements.filter.from": {
+    "defaultMessage": "Counted from",
+    "description": "Label of the date field: only the money movements counted on or after this date."
+  },
+  "admin.finance.movements.filter.to": {
+    "defaultMessage": "Counted until",
+    "description": "Label of the date field: only the money movements counted on or before this date."
+  },
+  "admin.finance.movements.filter.to_before_from": {
+    "defaultMessage": "The last date is before the first date.",
+    "description": "Error of the last date field when it is before the first date."
+  },
+  "admin.finance.movements.filter.apply": {
+    "defaultMessage": "Show these dates",
+    "description": "Button that narrows the money movements to the typed dates."
+  },
+  "admin.finance.movements.filter.clear": {
+    "defaultMessage": "Clear the filters",
+    "description": "Button that removes the kind and dates filters of the money movements."
   },
   "admin.finance.movements.provider_id": {
     "defaultMessage": "ID at {provider}",
