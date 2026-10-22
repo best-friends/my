@@ -6,20 +6,7 @@
 // one. "Your custom emoji" lists the emoji the user made: their settings change in a dialog, a new image is requested
 // by choosing another file, and deleting one asks first in an alert dialog (it cannot be undone). What a change did
 // stays in a StatusMessage (role="status") of its region, and a failure stays there too (role="alert").
-import {
-  Button,
-  Checkbox,
-  ConfirmDialog,
-  CustomEmoji,
-  DescriptionItem,
-  DescriptionList,
-  Dialog,
-  DialogTrigger,
-  EmptyState,
-  FileTrigger,
-  StatusMessage,
-  TextField,
-} from "@my/ui";
+import { Button, Checkbox, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmojiTile, EmptyState, FileTrigger, Heading, Hint, InlineError, Stack, StatusMessage, Text, TextField } from "@my/ui";
 import { type SubmitEvent, useId, useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
@@ -47,8 +34,8 @@ export function OwnCustomEmojis() {
   const t = useT();
   return (
     <RequirePermission permission="create_custom_emojis">
-      <div className="flex flex-col gap-8">
-        <p className="text-fg-muted">{t("client:custom_emojis.description")}</p>
+      <Stack gap="8">
+        <Hint size="inherit">{t("client:custom_emojis.description")}</Hint>
         <DetailSection title={t("client:custom_emojis.new.title")}>
           <Usage />
           <RequestForm />
@@ -59,7 +46,7 @@ export function OwnCustomEmojis() {
         <DetailSection title={t("client:custom_emojis.list.title")}>
           <EmojiList />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -69,9 +56,9 @@ function Usage() {
   const t = useT();
   const { used, limit } = useOwnCustomEmojis();
   return (
-    <p className="text-sm text-fg-muted">
+    <Hint>
       {limit === undefined ? t("client:custom_emojis.usage.unlimited", { used }) : t("client:custom_emojis.usage", { used, limit: String(limit) })}
-    </p>
+    </Hint>
   );
 }
 
@@ -82,12 +69,12 @@ function RequestForm() {
   const imageErrorId = useId();
   const { draft } = form;
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
-      <div role="group" aria-labelledby={imageId} className="flex flex-col gap-2">
-        <span id={imageId} className="text-sm font-medium text-fg">
+    <Stack as="form" gap="6" onSubmit={form.submit}>
+      <Stack gap="2" role="group" aria-labelledby={imageId}>
+        <Text size="sm" tone="fg" weight="medium" id={imageId}>
           {t("client:custom_emojis.image")}
-        </span>
-        <p className="text-sm text-fg-muted">{t("client:custom_emojis.image.description")}</p>
+        </Text>
+        <Hint>{t("client:custom_emojis.image.description")}</Hint>
         <div>
           <FileTrigger
             acceptedFileTypes={acceptedEmojiTypes}
@@ -101,14 +88,14 @@ function RequestForm() {
             </Button>
           </FileTrigger>
         </div>
-        {draft.file !== null && <p className="text-sm wrap-anywhere">{t("client:custom_emojis.image.chosen", { name: draft.file.name })}</p>}
-        {draft.file !== null && draft.file.size > federatedEmojiBytes && <p className="text-sm text-warning">{t("client:custom_emojis.image.large_hint")}</p>}
+        {draft.file !== null && <Text as="p" size="sm" wrap="anywhere">{t("client:custom_emojis.image.chosen", { name: draft.file.name })}</Text>}
+        {draft.file !== null && draft.file.size > federatedEmojiBytes && <Text as="p" size="sm" tone="warning">{t("client:custom_emojis.image.large_hint")}</Text>}
         {form.missingImage && (
-          <p id={imageErrorId} role="alert" className="text-sm text-danger">
+          <InlineError alert id={imageErrorId}>
             {t("client:custom_emojis.image.required")}
-          </p>
+          </InlineError>
         )}
-      </div>
+      </Stack>
       <TextField
         label={t("client:custom_emojis.shortcode")}
         description={t("client:custom_emojis.shortcode.description")}
@@ -124,9 +111,9 @@ function RequestForm() {
         errorMessage={t("client:custom_emojis.shortcode.invalid")}
       />
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:custom_emojis.request_failed", { reason: form.error })}
-        </p>
+        </InlineError>
       )}
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -134,7 +121,7 @@ function RequestForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -143,26 +130,24 @@ function RequestList() {
   const list = useOwnCustomEmojiRequests();
   const actions = useCustomEmojiRequestActions();
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{actions.status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:custom_emojis.withdraw_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       <RecordList list={list} getId={(request) => request.id} empty={<EmptyState headingLevel={3} heading={t("client:custom_emojis.requests.empty")} />}>
         {(request) => <RequestRow request={request} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
 /** The image of an emoji or a request beside its heading, which names it. */
 function EmojiImage({ shortcode, url, staticUrl }: { shortcode: string; url: string | undefined; staticUrl: string | undefined }) {
   return (
-    <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-3xl">
-      {url !== undefined && staticUrl !== undefined && <CustomEmoji emoji={{ shortcode, url, static_url: staticUrl }} />}
-    </span>
+<EmojiTile emoji={url !== undefined && staticUrl !== undefined ? { shortcode, url, static_url: staticUrl } : undefined} />
   );
 }
 
@@ -170,13 +155,13 @@ function RequestRow({ request, actions }: { request: CustomEmojiRequest; actions
   const t = useT();
   const heading = `:${request.shortcode}:`;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+    <Stack gap="3">
+      <Cluster gap="3" align="center" wrap={false}>
         <EmojiImage shortcode={request.shortcode} url={request.url} staticUrl={request.static_url} />
-        <h3 className="min-w-0 font-mono font-semibold wrap-anywhere">
+        <Heading level={3} wrap="anywhere" mono shrink>
           <span dir="ltr">{heading}</span>
-        </h3>
-      </div>
+        </Heading>
+      </Cluster>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:custom_emoji_requests.kind")}>{t(kindLabels[request.kind])}</DescriptionItem>
         <DescriptionItem term={t("client:custom_emoji_requests.state")}>{t(requestStateLabels[request.state])}</DescriptionItem>
@@ -190,9 +175,9 @@ function RequestRow({ request, actions }: { request: CustomEmojiRequest; actions
         )}
         {request.reason !== undefined && (
           <DescriptionItem term={t("client:custom_emoji_requests.reason")}>
-            <span dir="auto" className="whitespace-pre-line">
+            <Text whitespace="preLine" dir="auto">
               {request.reason}
-            </span>
+            </Text>
           </DescriptionItem>
         )}
       </DescriptionList>
@@ -210,7 +195,7 @@ function RequestRow({ request, actions }: { request: CustomEmojiRequest; actions
           </Button>
         </div>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -224,12 +209,12 @@ function EmojiList() {
   );
   const actions = useOwnCustomEmojiActions(removed);
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{actions.status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:custom_emojis.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       <RecordList
         list={list}
@@ -239,7 +224,7 @@ function EmojiList() {
       >
         {(emoji) => <EmojiRow emoji={emoji} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -249,13 +234,13 @@ function EmojiRow({ emoji, actions }: { emoji: OwnCustomEmoji; actions: OwnCusto
   const heading = `:${emoji.shortcode}:`;
   const isPending = actions.pendingId === emoji.id;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+    <Stack gap="3">
+      <Cluster gap="3" align="center" wrap={false}>
         <EmojiImage shortcode={emoji.shortcode} url={emoji.url} staticUrl={emoji.static_url} />
-        <h3 className="min-w-0 font-mono font-semibold wrap-anywhere">
+        <Heading level={3} wrap="anywhere" mono shrink>
           <span dir="ltr">{heading}</span>
-        </h3>
-      </div>
+        </Heading>
+      </Cluster>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:custom_emojis.state")}>{t(emoji.enabled ? "client:custom_emojis.state.enabled" : "client:custom_emojis.state.disabled")}</DescriptionItem>
         <DescriptionItem term={t("client:custom_emojis.picker")}>
@@ -271,7 +256,7 @@ function EmojiRow({ emoji, actions }: { emoji: OwnCustomEmoji; actions: OwnCusto
           <DateTime value={emoji.updated_at} />
         </DescriptionItem>
       </DescriptionList>
-      <div className="flex flex-wrap gap-2">
+      <Cluster gap="2">
         <EditEmoji emoji={emoji} actions={actions} isPending={isPending} />
         <FileTrigger
           acceptedFileTypes={acceptedEmojiTypes}
@@ -285,8 +270,8 @@ function EmojiRow({ emoji, actions }: { emoji: OwnCustomEmoji; actions: OwnCusto
           </Button>
         </FileTrigger>
         <DeleteEmoji emoji={emoji} actions={actions} isPending={isPending} />
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -327,7 +312,7 @@ function EditEmojiForm({ emoji, actions, close }: { emoji: OwnCustomEmoji; actio
     });
   };
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <Stack as="form" gap="4" onSubmit={onSubmit}>
       <TextField
         label={t("client:custom_emojis.category")}
         description={t("client:custom_emojis.category.description", { max: String(categoryLimit) })}
@@ -350,17 +335,17 @@ function EditEmojiForm({ emoji, actions, close }: { emoji: OwnCustomEmoji; actio
         {t("client:custom_emojis.visible_in_picker")}
       </Checkbox>
       {error && actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:custom_emojis.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:custom_emojis.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:custom_emojis.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 

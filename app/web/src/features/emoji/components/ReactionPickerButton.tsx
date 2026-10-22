@@ -22,7 +22,7 @@ export function ReactionPickerButton({ onSelect, isDisabled = false }: ReactionP
   return (
     <TooltipTrigger>
       <PopoverTrigger>
-        <Button variant="ghost" size="toolbar" aria-label={name} isDisabled={isDisabled} className="text-fg-muted">
+        <Button variant="subtle" size="toolbar" aria-label={name} isDisabled={isDisabled}>
           <EmojiIcon />
         </Button>
         <Popover aria-label={t("client:reaction.picker.title")} placement="bottom start">

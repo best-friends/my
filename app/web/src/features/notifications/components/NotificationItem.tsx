@@ -24,7 +24,22 @@
 // pointer, out of the tab order), and the quote of the post or the follow back button. The avatars of the
 // others are links to their profiles for the pointer only; the post's page lists who favourited and
 // boosted it.
-import { Avatar, EmojiText, Link, PostCard, VisuallyHidden } from "@my/ui";
+import {
+  Avatar,
+  EmojiText,
+  Hint,
+  Link,
+  NotificationLinks,
+  NotificationOthers,
+  NotificationSentence,
+  PostCard,
+  PostCardAvatarLink,
+  PostCardNameLink,
+  PostExcerpt,
+  PostExcerptText,
+  QuoteBlock,
+  Text,
+} from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import { RelationshipActions, useRelationship } from "../../profile";
@@ -37,9 +52,6 @@ import {
   type SupporterNoticeView,
   useNotificationView,
 } from "../hooks/useNotificationView";
-
-/** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
-const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
 
 /** The most avatars of the others that a group shows; the sentence counts them all. */
 const maxOtherAvatars = 6;
@@ -62,59 +74,43 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
     <PostCard
       {...(actor !== null && {
         avatar: (
-          // The same profile as the name, for the pointer: out of the tab order and hidden from screen
-          // readers, which reach it by the name (one tab stop per profile). React Aria's Link does not take
-          // `aria-hidden`, so an element around it hides it.
-          <div aria-hidden="true">
-            <Link href={actor.href} excludeFromTabOrder className="block rounded-full">
-              <Avatar sources={actor.avatar} name={actor.name} decorative />
-            </Link>
-          </div>
+          <PostCardAvatarLink href={actor.href}>
+            <Avatar sources={actor.avatar} name={actor.name} decorative />
+          </PostCardAvatarLink>
         ),
       })}
       author={
         <>
           {view.others.length > 0 && <OtherAvatars others={view.others.slice(0, maxOtherAvatars)} />}
-          <p className="flex items-baseline gap-2">
-            {isUnread && (
-              <>
-                <span aria-hidden="true" className="inline-block size-2 shrink-0 self-center rounded-full bg-accent" />
-                {/* The space keeps the words apart in the article's name. */}
-                <VisuallyHidden>{t("client:notifications.unread")}</VisuallyHidden>{" "}
-              </>
+          <NotificationSentence isUnread={isUnread} unreadLabel={t("client:notifications.unread")}>
+            {/* The actor's name is the user's text, isolated from the sentence around it (Y10). */}
+            {intl.formatMessage(
+              { id: view.sentence },
+              {
+                name:
+                  named === null ? null : (
+                    <PostCardNameLink key="name" href={named.href}>
+                      <EmojiText text={named.name} emojis={named.emojis} />
+                    </PostCardNameLink>
+                  ),
+                count: view.others.length,
+                // The server's name is no running text, isolated from the sentence around it (Y10).
+                domain: view.severance === null || view.severance.domain === null ? null : <bdi key="domain">{view.severance.domain}</bdi>,
+                followers: view.severance?.followers ?? 0,
+                following: view.severance?.following ?? 0,
+                // The emoji is the reacting user's choice, isolated from the sentence around it (Y10).
+                // A requested emoji's shortcode is no running text either.
+                emoji:
+                  view.reaction !== null ? (
+                    <bdi key="emoji">{view.reaction}</bdi>
+                  ) : view.emojiRequest === null ? null : (
+                    <bdi key="emoji" dir="ltr">
+                      {view.emojiRequest.emoji}
+                    </bdi>
+                  ),
+              },
             )}
-            <span className={isUnread ? "font-semibold" : "font-normal"}>
-              {/* The actor's name is the user's text, isolated from the sentence around it (Y10). */}
-              {intl.formatMessage(
-                { id: view.sentence },
-                {
-                  name:
-                    named === null ? null : (
-                      <Link key="name" href={named.href} className={nameLink}>
-                        <bdi>
-                          <EmojiText text={named.name} emojis={named.emojis} />
-                        </bdi>
-                      </Link>
-                    ),
-                  count: view.others.length,
-                  // The server's name is no running text, isolated from the sentence around it (Y10).
-                  domain: view.severance === null || view.severance.domain === null ? null : <bdi key="domain">{view.severance.domain}</bdi>,
-                  followers: view.severance?.followers ?? 0,
-                  following: view.severance?.following ?? 0,
-                  // The emoji is the reacting user's choice, isolated from the sentence around it (Y10).
-                  // A requested emoji's shortcode is no running text either.
-                  emoji:
-                    view.reaction !== null ? (
-                      <bdi key="emoji">{view.reaction}</bdi>
-                    ) : view.emojiRequest === null ? null : (
-                      <bdi key="emoji" dir="ltr">
-                        {view.emojiRequest.emoji}
-                      </bdi>
-                    ),
-                },
-              )}
-            </span>
-          </p>
+          </NotificationSentence>
         </>
       }
       time={
@@ -136,13 +132,13 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
       {...(view.followBack !== null && { actions: <FollowBack account={view.followBack} /> })}
       {...(view.links.length > 0 && {
         actions: (
-          <div className="flex flex-wrap gap-x-4">
+          <NotificationLinks>
             {view.links.map((link) => (
               <Link key={link.href} href={link.href} variant="standalone">
                 {t(link.label)}
               </Link>
             ))}
-          </div>
+          </NotificationLinks>
         ),
       })}
     />
@@ -155,13 +151,13 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
  */
 function OtherAvatars({ others }: { others: readonly NotificationActor[] }) {
   return (
-    <div aria-hidden="true" className="mb-1 flex flex-wrap gap-1">
+    <NotificationOthers>
       {others.map((other) => (
-        <Link key={other.href} href={other.href} excludeFromTabOrder className="block rounded-full">
+        <PostCardAvatarLink key={other.href} href={other.href}>
           <Avatar sources={other.avatar} name={other.name} size="xs" decorative />
-        </Link>
+        </PostCardAvatarLink>
       ))}
-    </div>
+    </NotificationOthers>
   );
 }
 
@@ -190,14 +186,10 @@ function PostQuote({ post }: { post: NonNullable<NotificationView["post"]> }) {
       // A post of pictures only has no text to quote.
       t("client:notifications.post.open")
     ) : (
-      <span dir="auto" lang={post.lang} className="line-clamp-3 whitespace-pre-line">
-        {post.text}
-      </span>
+      <PostExcerptText lang={post.lang}>{post.text}</PostExcerptText>
     );
   return (
-    <Link href={post.href} className="block border-s-2 border-border ps-3 wrap-anywhere text-fg no-underline data-hovered:underline">
-      {label}
-    </Link>
+    <PostExcerpt href={post.href}>{label}</PostExcerpt>
   );
 }
 
@@ -209,21 +201,21 @@ function ModerationNotice({ notice }: { notice: ModerationNoticeView }) {
   const t = useT();
   const intl = useIntl();
   return (
-    <div className="flex flex-col gap-1 border-s-2 border-border ps-3">
-      <p className="font-semibold">{t("client:notifications.moderation.action", { kind: notice.kind, category: notice.category })}</p>
+    <QuoteBlock>
+      <Text as="p" weight="semibold">{t("client:notifications.moderation.action", { kind: notice.kind, category: notice.category })}</Text>
       {notice.reason !== null && (
-        <p dir="auto" className="whitespace-pre-line wrap-anywhere align-match-parent">
+        <Text as="p" dir="auto" whitespace="preLine" wrap="anywhere" align="matchParent">
           {notice.reason}
-        </p>
+        </Text>
       )}
-      {notice.decision !== null && <p className="font-semibold">{t(notice.decision.sentence)}</p>}
+      {notice.decision !== null && <Text as="p" weight="semibold">{t(notice.decision.sentence)}</Text>}
       {notice.decision !== null && notice.decision.reason !== null && (
-        <p dir="auto" className="whitespace-pre-line wrap-anywhere align-match-parent">
+        <Text as="p" dir="auto" whitespace="preLine" wrap="anywhere" align="matchParent">
           {notice.decision.reason}
-        </p>
+        </Text>
       )}
       {notice.until !== null && (
-        <p className="text-sm text-fg-muted">
+        <Hint as="p">
           {intl.formatMessage(
             { id: "client:notifications.moderation.until" },
             {
@@ -234,9 +226,9 @@ function ModerationNotice({ notice }: { notice: ModerationNoticeView }) {
               ),
             },
           )}
-        </p>
+        </Hint>
       )}
-    </div>
+    </QuoteBlock>
   );
 }
 
@@ -244,12 +236,12 @@ function ModerationNotice({ notice }: { notice: ModerationNoticeView }) {
 function RejectionReason({ reason }: { reason: string }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-1 border-s-2 border-border ps-3">
-      <p className="text-sm text-fg-muted">{t("client:notifications.custom_emoji_request.reason")}</p>
-      <p dir="auto" className="whitespace-pre-line wrap-anywhere">
+    <QuoteBlock>
+      <Hint as="p">{t("client:notifications.custom_emoji_request.reason")}</Hint>
+      <Text as="p" dir="auto" whitespace="preLine" wrap="anywhere">
         {reason}
-      </p>
-    </div>
+      </Text>
+    </QuoteBlock>
   );
 }
 
@@ -263,12 +255,12 @@ function SupporterNotice({ supporter }: { supporter: SupporterNoticeView }) {
   const intl = useIntl();
   const { detail } = supporter;
   return (
-    <div className="flex flex-col gap-1 border-s-2 border-border ps-3">
-      <p dir="auto" lang="" className="font-semibold wrap-anywhere">
+    <QuoteBlock>
+      <Text as="p" dir="auto" lang="" weight="semibold" wrap="anywhere">
         {supporter.plan}
-      </p>
+      </Text>
       {detail?.kind === "grace" && (
-        <p className="text-sm text-fg-muted">
+        <Hint as="p">
           {intl.formatMessage(
             { id: "client:notifications.supporter.grace" },
             {
@@ -279,11 +271,11 @@ function SupporterNotice({ supporter }: { supporter: SupporterNoticeView }) {
               ),
             },
           )}
-        </p>
+        </Hint>
       )}
-      {detail?.kind === "ended" && <p className="text-sm text-fg-muted">{t("client:notifications.supporter.ended", { reason: detail.reason })}</p>}
-      {detail?.kind === "retired" && <p className="text-sm text-fg-muted">{t("client:notifications.supporter.retired")}</p>}
-    </div>
+      {detail?.kind === "ended" && <Hint as="p">{t("client:notifications.supporter.ended", { reason: detail.reason })}</Hint>}
+      {detail?.kind === "retired" && <Hint as="p">{t("client:notifications.supporter.retired")}</Hint>}
+    </QuoteBlock>
   );
 }
 

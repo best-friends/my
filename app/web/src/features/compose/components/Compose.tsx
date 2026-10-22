@@ -3,7 +3,7 @@
 // decides which by the viewport (web-client.md D2) and passes it to ComposeProvider; ComposeEntry then
 // renders the panel, or the sheet with the button that opens it (the shell shows that button only on pages
 // with a feed). Only one form is ever on the page.
-import { Button, PlusIcon, Sheet, Tooltip, TooltipTrigger } from "@my/ui";
+import { FloatingButton, Heading, PlusIcon, Sheet, Stack } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { type ComposeLayout, ComposeContext, type ComposeController, useComposeContext, useComposeController } from "../hooks/useCompose";
@@ -40,12 +40,12 @@ function ComposePanel({ controller }: { controller: ComposeController }) {
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:compose.title")}
-      </h2>
+      </Heading>
       <ComposeForm controller={controller} labelledBy={headingId} />
-    </section>
+    </Stack>
   );
 }
 
@@ -68,20 +68,9 @@ function ComposeSheet({ controller, trigger }: { controller: ComposeController; 
   };
   return (
     <>
-      {trigger === "labelled" && (
-        <Button variant="primary" onPress={open} className="min-h-12 rounded-full px-4 shadow-lg">
-          <PlusIcon />
-          {t("client:compose.open")}
-        </Button>
-      )}
-      {trigger === "icon" && (
+      {trigger !== "none" && (
         // An icon-only button is named by aria-label and shows the same words as a tooltip (web-client.md G12).
-        <TooltipTrigger>
-          <Button variant="primary" aria-label={t("client:compose.open")} onPress={open} className="size-12 rounded-full px-0 shadow-lg">
-            <PlusIcon />
-          </Button>
-          <Tooltip placement="start">{t("client:compose.open")}</Tooltip>
-        </TooltipTrigger>
+        <FloatingButton label={t("client:compose.open")} icon={<PlusIcon />} iconOnly={trigger === "icon"} onPress={open} />
       )}
       <Sheet
         title={<span id={headingId}>{t("client:compose.title")}</span>}

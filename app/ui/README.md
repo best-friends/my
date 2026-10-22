@@ -4,6 +4,13 @@ The shared UI kit of the web client and the Tauri app ([ADR-0026](../../docs/adr
 It ships TypeScript source and one stylesheet, `@my/ui/theme.css`, which holds the design tokens.
 The rules for writing components are in [web-client.md](../../docs/architecture/web-client.md).
 
+`app/web/src` writes no Tailwind ([web-client.md A4](../../docs/architecture/web-client.md)): no JSX `className`, also none passed to a component
+of this kit, and no import of `tailwind-variants`, `tailwind-merge` or `clsx`. Oxlint's `restrict/classes` (app/.oxlintrc.json, proved by
+`app/oxlint/restrictions.test.js`) fails `make web-check` on both, in every file of `web/src` and its tests. A look or a layout the web needs is a prop
+of a component here, or a new prop or component; the one exception, a browser- or platform-specific adjustment that no component can express, disables
+the rule on its line with the reason. The layout components take no `className` or `style` at all. Components built on React Aria Components keep
+the `className` of its props, merged into their root, for use inside this package only.
+
 ## Using the tokens
 
 An app's Tailwind entry imports the theme right after Tailwind and scans the kit's source:
@@ -270,7 +277,7 @@ string through props or children.
 | --- | --- | --- |
 | `Button` | `Button` | `variant`: `primary` / `secondary` (default) / `ghost` / `danger`; `size`: `sm` / `md` (default); `isPending` |
 | `Link` | `Link` | `variant`: `inline` (default, underlined in running text) / `standalone` |
-| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder` |
+| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder`; `grow` takes the room left in a row |
 | `TextArea` | `TextField` + `TextArea` | as `TextField`, plus `rows` and the character count below |
 | `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
 | `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
@@ -278,6 +285,7 @@ string through props or children.
 | `Select`, `SelectItem` | `Select` + `Popover` + `ListBox`, `ListBoxItem` | `items` with a render function, or `SelectItem` children; single selection. `SelectItem`'s `description` adds a line under the label (the option's accessible description) that the closed select does not show. `variant="toolbar"` (with `aria-label` and an `icon`) is a ghost `toolbar`-sized button for a row of tools that shows the chosen option |
 | `ReasonField` | `TextArea` | The reason for an operator's action: three rows and a required character count (`characterLimit`, `formatRemaining`) |
 | `DurationSelect` | `Select` | `durations` in seconds with `formatDuration`; `indefiniteLabel` adds "no end", last; the value is seconds or `null` for no end |
+| `Form` | `Form` | The layout props of `Stack` (`gap`, `align`, `justify`, and the box props: `container`, `width`, …); `validationErrors` from the server show on the named fields. A plain `<form>` without them can be `<Stack as="form">` |
 
 - Each component has one `tailwind-variants` recipe; its variant props are typed from the recipe (`VariantProps`).
   `className` (a string or RAC's function of the render props) is merged into the root with `tailwind-merge`, so a later class wins.
@@ -305,7 +313,7 @@ The overlay components wrap React Aria Components, which handle focus, Esc and t
 | `Popover` in a `PopoverTrigger` | Non-modal dialog | Named by `title` or `aria-label`. |
 | `Menu`, `MenuItem`, `MenuSeparator` in a `MenuTrigger`; `SubmenuTrigger` | Menu button | `intent="danger"` for destructive items. Submenus open towards the inline end. |
 | `Tooltip` in a `TooltipTrigger` | Tooltip | Describes its trigger; never the trigger's only name. |
-| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. Tabs that do not fit scroll sideways in the list, which has no scrollbar and fades out (statically, a 2rem mask) at each inline edge with hidden tabs (`data-overflow-start` / `data-overflow-end`); the focused or selected tab scrolls into view, clear of the fade. |
+| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. Tabs that do not fit scroll sideways in the list, which has no scrollbar and fades out (statically, a 2rem mask) at each inline edge with hidden tabs (`data-overflow-start` / `data-overflow-end`); the focused or selected tab scrolls into view, clear of the fade. `TabPanel` takes `gap` (its content one above another, as a `Stack`) and `offset` (`3` / `4`: `pt-3` / `pt-4` more room under the list than the `gap-4` of `Tabs`). |
 | `AnnouncerProvider`, `useAnnouncer` | Live regions | One polite `role="status"` and one assertive `role="alert"` region for the app. |
 | `ToastProvider`, `useToast` | Toasts | Announced through the Announcer; the visible list is a labelled region. |
 | `StatusMessage` | Status | The result of an action that stays on the page: a `role="status"` region, empty until it has a message. |
@@ -338,6 +346,182 @@ announces only changes made after it is in the page. A failure is not a status; 
 | --- | --- |
 | `Picture`, `AutoplayContext` | An image in the rendition that fits (`srcset` / `sizes` from `ImageSources`). An animation's moving rendition is a `<source>` for `prefers-reduced-motion: no-preference` only, and with `AutoplayContext` off it moves only while pointed at or touched (ADR-0054 §3). `Avatar` (`sources`) and `MediaGrid` (`MediaItem.sources`) use it. |
 | `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
+| `DetailSection` | A titled region of a detail page: a `<section>` named by its `h2`; with `headingRef` the heading takes focus from script. |
+| `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
+| `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-sm border border-border px-1 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
+| `ProfileHeader`, `ProfileHeaderImage`, `ProfileFields` / `ProfileField` | The heading of a profile: header image (or band), overlapping avatar, actions slot, name, handle, badges, tag pills, text, metadata fields, joined line and counts; `ProfileHeaderImage size="preview"` is the 3:1 image of the profile form. |
+| `Poll`, `PollResults`, `PollChoices`, `PollSummary`, `PollHint` | A poll (FR-112): `Poll` is the named section; `PollResults` the list of shares with a decorative bar (`aria-hidden`; the percentage and the "your vote" word carry the meaning); `PollChoices` the radio or checkbox form with the vote button; `PollSummary` the total and deadline line; `PollHint` a note. Titles take `dir="auto"`, `lang` and custom emoji. |
+
+## Layout and text
+
+Screens and feature components write no `className`: they lay themselves out with the primitives below and set their
+text with `Heading`, `Text`, `Hint` and `InlineError` ([web-client.md §16.1, §16.2](../../docs/architecture/web-client.md#16-見た目状態文言)).
+None of these components takes `className` or `style`. Every value is a typed prop: a gap or a padding is a step of G1
+(`Space`: `"0"`, `"0.5"`, `"1"`, `"2"`, `"3"`, `"4"`, `"6"`, `"8"`, `"10"`) picked by its role under "Spacing" above, never an
+arbitrary value. A look that no prop gives is a new prop or component in the kit, not a class in the app.
+
+| Component | Renders | Its own props |
+| --- | --- | --- |
+| `Stack` | `flex flex-col` | `gap`; `align` (`stretch` default / `start` / `center` / `end` / `baseline`); `justify` (`start` / `center` / `end` / `between`); `divided` (`divide-y divide-border`: rows of a list, no gap, G3); `marker` (`disc` / `decimal` with `ps-6`, `discInside`); `rowAt` (`sm` / `md`: a row with centered items from that container width) |
+| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line; `inline` (`inline-flex`, in the line of the text around it) |
+| `Grid` | `grid grid-cols-1`, then `columns` (`2` default / `3`) from the container width `at` (`sm` default / `md`) | `columns`; `at`; `gap` (both axes); `rowGap` |
+| `Box` | A block with no layout of its own | Only the box props below |
+| `SectionHeader` | The heading (children) and `actions` (in a `flex flex-wrap gap-2` row): stacked with `items-start gap-2`, on one line with `justify-between` from `@md` | `actions` (nothing, `null` or `false` leaves the heading alone) |
+| `DialogActions` | `flex flex-wrap justify-end gap-2`: the buttons at the end of a dialog, cancel first | — |
+| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium` / `medium` `font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
+| `Text` | A `span` (or `as`: `p`, `div`, `li`, `dt`, `dd`, `code`, `time`, `strong`, `small`, `label`, `legend`) | `size` (`xs` / `sm` / `base` / `lg`), `tone` (`fg` / `muted` / `danger` / `warning` / `success` / `accent`), `weight` (`normal` / `medium` / `semibold`), each inherited when unset; `wrap` (`anywhere` / `truncate` / `pretty`); `whitespace` (`preWrap` / `preLine`); `numeric` (`tabular-nums`); `mono`; `block`; `align` (`start` / `center` / `matchParent`); `lineClamp` (`2` / `3`); `selectAll`; `shrink` |
+| `Hint` | Secondary text (G6), a `p` (or `as` `span` / `div`): `text-sm text-fg-muted` | `size="inherit"` drops `text-sm`; the other props of `Text` but `tone` |
+| `InlineError` | An error in place, a `p` (or `as` `span` / `div`): `text-sm text-danger` | `size="inherit"` drops `text-sm`; `alert` (`role="alert"`, only for the result of the user's own action, G16); the other props of `Text` but `tone` |
+
+`Stack`, `Cluster`, `Grid` and `Box` share the box props:
+
+| Prop | Classes |
+| --- | --- |
+| `as` | The element: `div` (default), `section`, `article`, `aside`, `header`, `footer`, `nav`, `main`, `form`, `fieldset`, `ul`, `ol`, `li`, `dl`, `dd`, `p`, `span`, `label`. The element's attributes (`aria-*`, `id`, `onSubmit`, `ref`) pass through. |
+| `container` | `@container`, so the `@sm:` / `@md:` variants inside (`rowAt`, `Grid`'s `at`, `SectionHeader`) answer to its width |
+| `width` | `prose` `max-w-prose`; `sm` `w-full max-w-sm`; `xs` `w-full max-w-xs`; `full` `w-full` |
+| `shrink`, `grow` | `min-w-0`, `flex-1` |
+| `self` | `start` / `center` / `end`: `self-*` |
+| `padding`, `paddingX`, `paddingY` | `p-*`, `px-*`, `py-*` in a spacing step (a row of a list or a card is `paddingX="4" paddingY="3"`) |
+| `paddingTop`, `paddingBottom`, `marginTop`, `marginStart` | `pt-*`, `pb-*`, `mt-*`, `ms-*` in a spacing step |
+| `fullRow` | `basis-full`: takes a whole line of a wrapping `Cluster` |
+| `border` | `md` `rounded-md border border-border`; `lg` `rounded-lg border border-border`; `y` `border-y border-border`; `top` `border-t border-border`; `bottom` `border-b border-border`; `start` `border-s-2 border-border ps-3` |
+| `background` | `surface` `bg-surface` (a row that stands on the page background); `sunken` `bg-surface-sunken` (a well inside a raised surface, such as the quote of the post a form replies to) |
+| `pushEnd` | `ms-auto`: moves the element to the inline end of its row, also when the row wraps |
+| `tone` | `fg` / `muted` / `danger` / `warning`: the text color inside |
+| `textSize` | `xs` / `sm` / `base` / `lg`: the text size inside |
+
+### Notification rows and quotes
+
+`NotificationSentence` is the sentence of a notification in the author slot of a `PostCard` (`isUnread` adds the dot, the heavier
+weight and the hidden `unreadLabel`), `NotificationOthers` the row of the other people of a group above it (`PostCardAvatarLink`s
+around `xs` avatars), and `NotificationLinks` the links that lead on, in the actions slot. `QuoteBlock` is lines with a rule at the
+start (a moderation notice, a reason); `PostExcerpt` is that rule on a link to a post, around a `PostExcerptText` (its direction,
+language and line breaks, cut after three lines). The form's quote of the post being replied to uses the same parts.
+
+### Settings pieces
+
+`IconLabel` is an icon and a word on one line (a page in a list of pages). `Callout` is a raised box with a strong start edge for a
+note and the one button that acts on it. `CodeList` is a raised box of monospaced codes to copy down (recovery codes). `Button`'s
+`size="icon"` is an icon-only button (as wide as tall, a tap target on a coarse pointer); `Text`'s `inset` adds `px-1` to a `legend`
+over a bordered group; `Stack`'s `marker="decimalInside"` puts numbers inside the text.
+
+`BannerImage` is a page-width image capped in height. `Button` takes `variant="subtle"` (ghost in the muted color) and `size="compact"`;
+`Heading` takes `size="meta"`; `Tag` takes `variant="solid"` (the accent mark); `NewItemsButton` takes `sticky`; `PostContent` takes
+`lineClamp`; `Link` takes `size="sm"` and `wrap="anywhere"`.
+
+### Account rows
+
+`AccountItem` is the avatar, the display name and the handle of an account: a link to the profile with `href`, plain text
+without. `nameContent` shows the name with custom emoji, `layout` is `row` (default), `padded` (a whole-row target with a
+hover background) or `inline` (as wide as its text), `details` adds lines under the handle and `trailing` an action or a
+badge at the end (`trailingPlacement="below"` puts it under the account until the container is `@md` wide). A list of
+accounts is `<Stack as="ul" divided>` of `<Box as="li">`.
+
+### Which component for which pattern
+
+The common class strings of `app/web/src` and what draws the same thing. A string that is not listed is composed from
+the props above. `Stack` and `Cluster` always add `flex`: a block whose children flow as text (an `li` with a name and
+a time side by side as inline text) is a `Box`, not a `Stack`.
+
+| Class string (element) | Replacement |
+| --- | --- |
+| `flex flex-col gap-3` (`div`) | `<Stack gap="3">` |
+| `flex flex-col gap-3` (`section`, `article`, `ul`, `form`) | `<Stack as="section" gap="3">` (`as="article"`, `as="ul"`, `as="form"`) |
+| `flex flex-col gap-1` / `gap-2` / `gap-4` / `gap-6` / `gap-8` | `<Stack gap="1">` / `gap="2"` / `gap="4"` / `gap="6"` / `gap="8"` |
+| `flex flex-col` | `<Stack>` |
+| `flex flex-col items-start gap-2` (also `gap-1`, `gap-3`, `gap-4`) | `<Stack align="start" gap="2">` |
+| `@container flex flex-col gap-4` / `gap-8` | `<Stack container gap="4">` / `<Stack container gap="8">` |
+| `@container flex min-w-0 flex-col gap-2` (`fieldset`) | `<Stack as="fieldset" container shrink gap="2">` |
+| `flex min-w-0 flex-col` / `flex min-w-0 flex-1 flex-col` | `<Stack shrink>` / `<Stack shrink grow>` |
+| `flex max-w-prose flex-col gap-4` | `<Stack width="prose" gap="4">` |
+| `flex flex-col gap-2 text-fg-muted` | `<Stack gap="2" tone="muted">` |
+| `flex flex-col gap-1 text-sm text-danger` | `<Stack gap="1" tone="danger" textSize="sm">` |
+| `flex flex-col gap-1 border-s-2 border-border ps-3` | `<Stack gap="1" border="start">` |
+| `flex flex-col gap-2 rounded-md border border-border p-3` | `<Stack gap="2" border="md" padding="3">` |
+| `flex flex-col gap-3 @md:flex-row @md:items-center` | `<Stack gap="3" rowAt="md">` |
+| `flex flex-col gap-8 pt-4` / `flex flex-col gap-4 pt-3` (on a `TabPanel`) | `<TabPanel gap="8" offset="4">` / `<TabPanel gap="4" offset="3">` |
+| `flex flex-col gap-6` and the other stack strings on a `<form>` | `<Stack as="form" gap="6">`; with server errors on fields, `<Form gap="6" validationErrors={…}>` |
+| `className` on React Aria's `Form` | `<Form>` from the kit with the same layout props as `Stack` |
+| `flex flex-col divide-y divide-border` (`ul`) | `<Stack as="ul" divided>` |
+| `flex flex-col divide-y divide-border rounded-lg border border-border` (`ul`) | `<Stack as="ul" divided border="lg">` |
+| `flex flex-col divide-y divide-border border-y border-border` (`ul`) | `<Stack as="ul" divided border="y">` |
+| `@container py-3` (`li`) | `<Box as="li" container paddingY="3">` |
+| `@container flex flex-col gap-2 py-3` / `flex flex-col gap-1 py-3` (`li`) | `<Stack as="li" container gap="2" paddingY="3">` / `<Stack as="li" gap="1" paddingY="3">` |
+| `flex flex-col px-4 py-3` (`li`) / `px-4 py-3` | `<Stack as="li" paddingX="4" paddingY="3">` / `<Box paddingX="4" paddingY="3">` |
+| `rounded-md border border-border p-3` / `rounded-lg border border-border p-4` | `<Box border="md" padding="3">` / `<Box border="lg" padding="4">` |
+| `w-full max-w-sm` / `w-full max-w-xs` / `w-full` | `<Box width="sm">` / `<Box width="xs">` / `<Box width="full">` |
+| `min-w-0` / `min-w-0 flex-1` | `<Box shrink>` / `<Box shrink grow>` |
+| `flex list-disc flex-col gap-1 ps-6` (`ul`) / `flex list-decimal flex-col gap-2 ps-6` (`ol`) | `<Stack as="ul" marker="disc" gap="1">` / `<Stack as="ol" marker="decimal" gap="2">` |
+| `flex list-inside list-disc flex-col gap-1` (`ul`) | `<Stack as="ul" marker="discInside" gap="1">` |
+| `flex flex-wrap gap-2` / `flex flex-wrap gap-4` | `<Cluster gap="2">` / `<Cluster gap="4">` |
+| `flex flex-wrap items-center gap-2` | `<Cluster align="center" gap="2">` |
+| `flex flex-wrap justify-end gap-2` (the buttons of a dialog; also `mt-4 …` after a paragraph) | `<DialogActions>` (in a `<Stack gap="4">` for the `mt-4`) |
+| `flex flex-wrap justify-end gap-2` (elsewhere) / `flex justify-end` / `flex justify-center` | `<Cluster justify="end" gap="2">` / `<Cluster justify="end">` / `<Cluster justify="center">` |
+| `flex flex-wrap gap-x-2` / `flex flex-wrap gap-x-1` (`li`, `span`, `p`) | `<Cluster as="li" gap="2" rowGap="0">` / `<Cluster as="span" gap="1" rowGap="0">` |
+| `flex flex-wrap gap-x-4` / `flex flex-wrap gap-x-4 gap-y-1` (`ul`) | `<Cluster as="ul" gap="4" rowGap="0">` / `<Cluster as="ul" gap="4" rowGap="1">` |
+| `flex flex-wrap items-baseline gap-x-3` (`span`) | `<Cluster as="span" align="baseline" gap="3" rowGap="0">` |
+| `flex items-center gap-3` / `flex min-w-0 items-center gap-3` | `<Cluster wrap={false} align="center" gap="3">` / add `shrink` |
+| `flex min-w-0 flex-wrap items-center gap-1` | `<Cluster shrink align="center" gap="1">` |
+| `self-start` / `self-end` (a wrapper) | `<Box self="start">` / `<Box self="end">` |
+| `flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between` with a heading and actions | `<SectionHeader actions={…}><Heading level={3}>…</Heading></SectionHeader>`; the actions' own `flex flex-wrap gap-2` wrapper goes away |
+| `grid grid-cols-1 gap-x-6 gap-y-1 @sm:grid-cols-2` (`ul`) | `<Grid as="ul" gap="6" rowGap="1">` |
+| `grid gap-2 @md:grid-cols-2` / `grid grid-cols-1 gap-4 @md:grid-cols-2` | `<Grid at="md" gap="2">` / `<Grid at="md" gap="4">` |
+| `text-2xl font-semibold` (`h1`) | `<Heading level={1}>` (the page title is the app's `PageHeading`) |
+| `text-lg font-semibold` (`h2`) | `<Heading level={2}>` |
+| `font-semibold` (`h3`, `h4`) | `<Heading level={3}>` / `<Heading level={4}>` |
+| `font-semibold` (`h2`) / `font-semibold wrap-anywhere` (`h2`) | `<Heading level={2} size="subsection">` / add `wrap="anywhere"` |
+| `text-sm font-medium text-fg` (`h2`) | `<Heading level={2} size="label" tone="fg">` |
+| `font-semibold text-fg` (`h3` in a muted region) | `<Heading level={3} tone="fg">` |
+| `font-semibold wrap-anywhere outline-none` / `font-semibold outline-none` (`h3` with `tabIndex={-1}`) | `<Heading level={3} wrap="anywhere" focusable>` / `<Heading level={3} focusable>` |
+| `text-lg font-semibold outline-none` (`h2` with `tabIndex={-1}`) | `<Heading level={2} focusable>` |
+| `min-w-0 font-semibold wrap-anywhere` / `min-w-0 font-mono font-semibold wrap-anywhere` (`h3`) | `<Heading level={3} shrink wrap="anywhere">` / add `mono` |
+| `font-mono font-semibold wrap-anywhere` (`h3`) | `<Heading level={3} mono wrap="anywhere">` |
+| `text-sm text-fg-muted` (`p`) / (`span`) | `<Hint>` / `<Hint as="span">` |
+| `text-fg-muted` (`p`) | `<Hint size="inherit">` |
+| `text-fg-muted` (`span`) | `<Text tone="muted">` |
+| `text-sm text-danger` (`p`) / `text-danger` (`p`) | `<InlineError>` / `<InlineError size="inherit">` |
+| `role="alert"` on such a `p` | add `alert`: `<InlineError alert>` |
+| `text-warning` / `text-sm text-warning` (`p`) | `<Text as="p" tone="warning">` / `<Text as="p" size="sm" tone="warning">` |
+| `font-semibold` / `font-medium` (`span`, `p`) | `<Text weight="semibold">` / `<Text as="p" weight="medium">` |
+| `text-sm font-medium text-fg` (`span`, `legend`) | `<Text size="sm" weight="medium" tone="fg">` (`as="legend"`) |
+| `text-sm` / `text-lg` (`p`, `span`) | `<Text size="sm">` / `<Text as="p" size="lg">` |
+| `tabular-nums` (`span`) | `<Text numeric>` |
+| `wrap-anywhere` (`span`, `p`) / `text-sm wrap-anywhere` | `<Text wrap="anywhere">` / `<Text size="sm" wrap="anywhere">` |
+| `font-mono wrap-anywhere` / `font-mono wrap-anywhere select-all` (`p`) | `<Text mono wrap="anywhere">` / `<Text as="p" mono wrap="anywhere" selectAll>` |
+| `whitespace-pre-wrap wrap-anywhere` / `whitespace-pre-line` | `<Text whitespace="preWrap" wrap="anywhere">` / `<Text whitespace="preLine">` |
+| `block text-start wrap-anywhere whitespace-pre-wrap` (`span`) | `<Text block align="start" wrap="anywhere" whitespace="preWrap">` |
+| `whitespace-pre-line wrap-anywhere align-match-parent` (`p dir="auto"`) | `<Text as="p" dir="auto" whitespace="preLine" wrap="anywhere" align="matchParent">` |
+| `line-clamp-2 text-start wrap-anywhere whitespace-pre-wrap` (`p`) | `<Text as="p" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">` |
+| `truncate text-start font-semibold` / `truncate text-start text-sm text-fg-muted` (`span`) | `<Text wrap="truncate" align="start" weight="semibold">` / `<Text wrap="truncate" align="start" size="sm" tone="muted">` |
+| `text-start text-sm font-normal wrap-anywhere text-fg-muted` (`span`) | `<Text align="start" size="sm" weight="normal" wrap="anywhere" tone="muted">` |
+| `rounded-sm border border-border px-1 text-sm text-fg-muted` (`span`) | `<Tag>` |
+| `<table className="w-full text-start">`, `th` `py-2 pe-3 text-start font-semibold`, rows `border-b border-border align-top` | `<Table caption={…}>` with `TableHead` › `TableColumnHeader`, `TableBody` › `TableRow` › `TableRowHeader` / `TableCell` |
+| `<table className="w-full table-fixed border-collapse text-sm">` with `tbody` `divide-y` | `<Table density="compact" aria-labelledby={…}>`, `TableColumnHeader width="narrow"` / `"wide"` for `w-16` / `w-2/5` |
+| `sr-only` | `VisuallyHidden` |
+
+## App shell
+
+The frame around every page ([web-client.md §9](../../docs/architecture/web-client.md#9-アプリの外枠)). The app decides what goes in each slot
+(the items, their permissions and counts, the strings); the look is here. `AppShell` and `AppNavigation` are the kit's only components that
+answer to the viewport (`md:`, `lg:`, `xl:` and the `short:` variant of [theme.css](src/theme.css)), because they lay out the screen itself;
+so does the region of `ToastProvider` (`clearsTabBar`), which stands above the tab bar they draw (D2). The lint exempts those three files from the rule
+against viewport breakpoints.
+
+| Component | What it draws | Its props |
+| --- | --- | --- |
+| `AppShell` | The skip link, the navigation, `main` (padded at its end for the tab bar and the floating button) and the third column (xl) or the floating slot | `navigation`, `children`, `skipLinkLabel`, `mainId`, `mainRef`, `aside` (only where the third column shows), `floating`, `floatingVisible` (sets `data-compose-fab` on `main`, which `with-compose-fab:` and the app's `scroll-padding-block-end` follow) |
+| `AsidePanel` | A section of the third column: an `aside` named by its small muted `h2` | `heading`, `children` |
+| `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` and `footer` (sidebar only), the items as children |
+| `AppNavItem` | An item: the icon in a pill (filled when current), the label, the count's `Badge` | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
+| `AppNavMenu` | The tab bar's last item, a button that opens a `Sheet` | `label`, `badge`, `isOpen`, `onOpenChange`, `title`, `closeLabel`, the sheet's content |
+| `AppNavMenuList`, `AppNavMenuLink`, `AppNavMenuSection` | The sheet's list and its rows; a block under them, with a line above (`separator` `"3"` / `"4"`) or without | as `AppNavItem` but `shows`; `separator` |
+| `AppNavAccount` | The sidebar's signed-in account: avatar, display name and handle | `href`, `avatar`, `name`, `handle`, `description` |
+| `ServerNameLink` | The server's name as the link to `/`, in a `dir="auto"` paragraph | `name`, `description`, `current`, `size` (`lg` at the head of a column) |
+| `PageHeading` | The page's `h1`, focusable by script | `id`, `visuallyHidden` (`sr-only`) |
+| `BackLinkHeading` | A heading with the way back under it (a page of the settings) | `backHref`, `backLabel`, the heading as children |
+| `RouteLoading` | A large spinner in the page's column | `label` |
+| `StandalonePage` | A `main` without the shell, centered, prose width (the layout's own error) | `children` |
 
 ## Component tests
 
@@ -360,7 +544,9 @@ shadow and the focus ring. [src/storybook.css](src/storybook.css) is the Storybo
 
 Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `make ui-test` runs each story in Chromium in
 `en` and `ar-XB`, light and dark (four projects); a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
-1024 px container widths. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
+1024 px container widths. A story of the app shell sets a viewport instead (`globals: atViewport("phone")` with
+`parameters: shellParameters`, [src/storyViewports.ts](src/storyViewports.ts)), since the shell answers to the viewport, and is captured
+once at it; its content stays within the viewport's height. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
 anything in it still animates then; stories render and run their `play` functions (which find elements by role, with
 `storybook/test`) without it. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
 them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
@@ -369,3 +555,38 @@ keep focus); it runs before axe and the screenshots, in every project. The overl
 behaviour in `make check`. Overlays portal into the story frame, which has layout
 containment, so a modal covers the frame and appears in its screenshots.
 The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).
+
+## Parts for the slots of PostCard and QuoteCard
+
+| Part | Slot | What it is |
+| --- | --- | --- |
+| `PostCardAuthorLink` | `author` | The profile link around a `PostCardAuthor` (`href`, `name`, `handle`). |
+| `PostCardTimeLink` | `time`, `details` | The muted link on a `<time>` or on the mark of an edited post; `dense` drops the 24 px minimum height (QuoteCard's header). |
+| `PostCardAvatarLink` | `avatar` | The avatar as a second link to the profile: out of the tab order, `aria-hidden`. |
+| `PostCardNameLink` | `context`, a sentence | A name inside a sentence ("Bob boosted"), in a `<bdi>`; notification rows use it too. |
+| `PostCardBoostContext` | `context` | The boost icon and the sentence. |
+| `PostCardOrigin` | `actions` | The link from a post of another server to its own page (`href`, `host`, `label`). |
+
+Counts in `details` are `<Text numeric>`; several parts under a body are a `<Stack gap="3" shrink>`; `PostContent` takes `size="lg"` for the post a page is about.
+
+### Screen-specific pieces
+
+| Component | Renders |
+| --- | --- |
+| `EmojiTile` | A custom emoji (`emoji`) on a 3rem tile, hidden from assistive technology, beside the heading that names it |
+| `CodeBlock` | `pre` > `code` on a sunken surface, wrapping anywhere (a payload, a log) |
+| `PreviewImage` | A 16:9 `img` preview of a file the user chose |
+| `AttachmentItem` | An image of a draft: the `li` of a `<Stack as="ul">` with the preview, a `progressLabel` band (spinner) over it, and the description field, error and actions as children; a column below `@md` of the container |
+| `OutboxItem` | A post waiting to be sent: the `li` of a `<Stack as="ul">` with its text; `sendingLabel` (`aria-busy`, spinner) while it is sent, else `error` and the retry / edit / discard buttons as children |
+| `Fieldset` | A `fieldset` framed with a `legend` (`gap-3` between its controls); other attributes (`aria-describedby`) pass to the `fieldset` |
+| `FloatingButton` | The round primary button that starts the page's main action: `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s |
+| `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
+| `PostContent` `framed` | A border and padding around a post body shown as a preview |
+| `PostContent` `size="sm"` `lineClamp={3}` | An excerpt of a post in a form (the reply target), cut after three lines |
+
+## Reactions
+
+`ReactionRow` is the wrapping `role="group"` of a post's emoji reactions with the button that lists who reacted (`label`, `listLabel`,
+`onOpenList`; the dialog goes in `after`). Its children are `ReactionChip`s: a toggle named by `label` and described by the formatted
+`count`, outlined and accented while `isSelected`; `onChange={null}` shows it only (an emoji nobody here can react with). The emoji is
+`image` (a custom emoji) or `text`; `ReactionEmoji` draws the same emoji for the rows of the list of reactors.

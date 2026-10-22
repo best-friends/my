@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Checkbox, Dialog, Spinner, TextArea, TextField } from "@my/ui";
+import { Box, Button, Checkbox, Cluster, Dialog, DialogActions, Hint, InlineError, Spinner, Stack, Text, TextArea, TextField } from "@my/ui";
 import type { SubmitEvent } from "react";
 import { useLocale, useT } from "../../../lib/i18n";
 import { maxAttachments } from "../hooks/policy";
@@ -29,12 +29,12 @@ export function ComposeForm({ controller, labelledBy, autoFocus = false }: Compo
       return <Spinner label={t("client:shell.loading")} />;
     case "error":
       return (
-        <div className="flex flex-col items-start gap-2">
+        <Stack align="start" gap="2">
           <p>{form.message}</p>
           <Button size="sm" onPress={form.retry}>
             {t("client:shell.error.retry")}
           </Button>
-        </div>
+        </Stack>
       );
     case "ready":
       return <ReadyForm form={form} labelledBy={labelledBy} autoFocus={autoFocus} />;
@@ -53,8 +53,8 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
     form.submit();
   };
   return (
-    <div className="flex flex-col gap-4 @container">
-      <form aria-labelledby={labelledBy} onSubmit={onSubmit} className="flex flex-col gap-3">
+    <Stack gap="4" container>
+      <Stack as="form" aria-labelledby={labelledBy} onSubmit={onSubmit} gap="3">
         {form.replyTo.status !== "none" && <ReplyContext replyTo={form.replyTo} onCancel={form.cancelReply} />}
         {form.quoteOf.status !== "none" && <ReplyContext kind="quote" replyTo={form.quoteOf} onCancel={form.cancelQuote} />}
         {draft.hasWarning && (
@@ -88,7 +88,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
         />
         {form.poll.draft !== null && <PollEditor poll={form.poll} draft={form.poll.draft} />}
         {attachments.items.length > 0 && (
-          <p className="text-sm text-fg-muted">{t("client:compose.media.hint", { max: maxAttachments })}</p>
+          <Hint>{t("client:compose.media.hint", { max: maxAttachments })}</Hint>
         )}
         {attachments.items.length > 0 && (
           <Checkbox
@@ -101,22 +101,24 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
           </Checkbox>
         )}
         {form.unreachedMentions.length > 0 && (
-          <p className="text-sm text-warning">
+          <Text as="p" size="sm" tone="warning">
             {t("client:compose.mention.unreached", {
               count: form.unreachedMentions.length,
               accounts: new Intl.ListFormat(locale, { type: "conjunction" }).format(form.unreachedMentions.map((acct) => `@${acct}`)),
             })}
-          </p>
+          </Text>
         )}
-        {form.error !== null && <p className="text-danger">{form.error}</p>}
+        {form.error !== null && <InlineError size="inherit">{form.error}</InlineError>}
         {/* The tools and the submit button share the row under the text, so that the button stays on the first screen at 320 px. */}
-        <div className="flex flex-wrap items-center gap-2">
+        <Cluster align="center" gap="2">
           <ComposeTools form={form} />
-          <Button type="submit" variant="primary" className="ms-auto" isDisabled={!form.canSubmit}>
-            {t(form.replyTo.status === "none" ? "client:compose.submit" : "client:compose.submit.reply")}
-          </Button>
-        </div>
-      </form>
+          <Box pushEnd>
+            <Button type="submit" variant="primary" isDisabled={!form.canSubmit}>
+              {t(form.replyTo.status === "none" ? "client:compose.submit" : "client:compose.submit.reply")}
+            </Button>
+          </Box>
+        </Cluster>
+      </Stack>
       <Outbox items={form.outbox} onRetry={form.retry} onEdit={form.editOutbox} canEdit={form.canEditOutbox} onDiscard={form.discard} />
       <Dialog
         role="alertdialog"
@@ -128,9 +130,9 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
         }}
         size="sm"
       >
-        <div className="flex flex-col gap-4">
+        <Stack gap="4">
           <p>{t("client:compose.missing_description.body", { count: form.confirmation.missing })}</p>
-          <div className="flex flex-wrap justify-end gap-2">
+          <DialogActions>
             <Button
               autoFocus
               onPress={() => {
@@ -147,9 +149,9 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
             >
               {t("client:compose.missing_description.post")}
             </Button>
-          </div>
-        </div>
+          </DialogActions>
+        </Stack>
       </Dialog>
-    </div>
+    </Stack>
   );
 }

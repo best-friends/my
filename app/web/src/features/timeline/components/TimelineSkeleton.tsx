@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { PostSkeleton, VisuallyHidden } from "@my/ui";
+import { PostSkeleton, Stack, VisuallyHidden } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 
 /** Placeholder cards, for as long as the first page of a timeline loads. */
@@ -13,11 +13,11 @@ const placeholders = ["first", "second", "third"] as const;
 export function TimelineSkeleton() {
   const t = useT();
   return (
-    <div aria-busy="true" className="flex flex-col">
+    <Stack aria-busy="true">
       <VisuallyHidden>{t("client:timeline.loading")}</VisuallyHidden>
       {placeholders.map((key) => (
         <PostSkeleton key={key} />
       ))}
-    </div>
+    </Stack>
   );
 }

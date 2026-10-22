@@ -3,14 +3,16 @@
 // same shape: the permission gate and its message, the paged list of records (rows with dividers, the empty
 // state and "show more"), the titled section of a detail page, a server's state in words, a domain in both
 // of its forms, and dates in the viewer's locale and time zone. The facts of a record are @my/ui's DescriptionList.
-import { Button, EmptyState } from "@my/ui";
-import { type ReactNode, type Ref, type RefObject, useEffect, useId, useRef } from "react";
+import { Box, Button, DetailSection, EmptyState, Stack, Text } from "@my/ui";
+import { type ReactNode, type Ref, type RefObject, useEffect, useRef } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { domainToUnicode } from "../../../lib/idn";
 import type { InstanceState, Permission } from "../api/staff";
 import type { PagedList } from "../hooks/pagedList";
 import { useHasPermission } from "../hooks/usePermissions";
+
+export { DetailSection };
 
 const stateLabels: Readonly<Record<InstanceState, ClientMessageKey>> = {
   available: "client:admin.instance.state.available",
@@ -20,7 +22,9 @@ const stateLabels: Readonly<Record<InstanceState, ClientMessageKey>> = {
 /** A server's state in words, not by color alone (WCAG 1.4.1): the color only repeats it. */
 export function InstanceStateLabel({ state }: { state: InstanceState }) {
   const t = useT();
-  return <span className={state === "unavailable" ? "font-semibold text-danger" : "font-semibold text-success"}>{t(stateLabels[state])}</span>;
+  return <Text weight="semibold" tone={state === "unavailable" ? "danger" : "success"}>
+      {t(stateLabels[state])}
+    </Text>;
 }
 
 /**
@@ -35,9 +39,9 @@ export function DomainName({ domain }: { domain: string }) {
   return (
     <>
       <span dir="ltr">{unicode}</span>{" "}
-      <span className="text-sm font-normal text-fg-muted">
+      <Text size="sm" weight="normal" tone="muted">
         {t("client:admin.domain.ascii", { domain })}
-      </span>
+      </Text>
     </>
   );
 }
@@ -59,11 +63,11 @@ function MoreButton<T>({ list }: { list: PagedList<T> }) {
   const t = useT();
   if (!list.hasMore) return null;
   return (
-    <div>
+    <Box>
       <Button onPress={list.loadMore} isPending={list.isLoadingMore}>
         {t("client:admin.list.more")}
       </Button>
-    </div>
+    </Box>
   );
 }
 
@@ -105,36 +109,20 @@ export type RecordListProps<T> = {
 export function RecordList<T>({ list, getId, children, empty, listRef, moreError }: RecordListProps<T>) {
   if (list.items.length === 0) return empty;
   return (
-    <div className="flex flex-col gap-4">
-      <ul ref={listRef} className="flex flex-col divide-y divide-border">
+    <Stack gap="4">
+      <Stack as="ul" ref={listRef} divided>
         {list.items.map((item) => {
           const id = getId(item);
           return (
-            <li key={id} data-row-id={id} className="@container py-3">
+            <Box as="li" key={id} data-row-id={id} container paddingY="3">
               {children(item)}
-            </li>
+            </Box>
           );
         })}
-      </ul>
+      </Stack>
       {moreError}
       <MoreButton list={list} />
-    </div>
-  );
-}
-
-/**
- * A titled region of a detail page below its `h1`: an `h2` that names a `<section>`. With `headingRef`, the
- * heading takes focus (`tabindex="-1"`) when the region changes under it (useFocusAfterChange).
- */
-export function DetailSection({ title, headingRef, children }: { title: ReactNode; headingRef?: RefObject<HTMLHeadingElement | null>; children: ReactNode }) {
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 ref={headingRef} id={headingId} {...(headingRef !== undefined && { tabIndex: -1 })} className="text-lg font-semibold outline-none">
-        {title}
-      </h2>
-      {children}
-    </section>
+    </Stack>
   );
 }
 

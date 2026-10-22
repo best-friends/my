@@ -4,7 +4,27 @@
 // the table of the periods, newest first, with their totals by currency, the breakdown of the current period by
 // provider and category when it may be shown, the lines of its items on the finances page, and the rules that cut the
 // periods. Providers, names and memos are the operators' words, shown with dir="auto".
-import { Radio, RadioGroup, Tab, TabList, TabPanel, Tabs } from "@my/ui";
+import {
+  Cluster,
+  Heading,
+  Hint,
+  Radio,
+  RadioGroup,
+  Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeader,
+  TableHead,
+  TabList,
+  TableRow,
+  TableRowHeader,
+  TabPanel,
+  Tabs,
+  Tag,
+  Text,
+} from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import {
@@ -64,7 +84,7 @@ export type CostTotalsPanelProps = {
 export function CostTotalsPanel({ granularity, basis, onTotalsChange, children }: CostTotalsPanelProps) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       <RadioGroup
         label={t("client:costs.basis")}
         orientation="horizontal"
@@ -99,7 +119,7 @@ export function CostTotalsPanel({ granularity, basis, onTotalsChange, children }
           </TabPanel>
         ))}
       </Tabs>
-    </div>
+    </Stack>
   );
 }
 
@@ -122,46 +142,34 @@ export function CostTotalsView({ totals, breakdown, items = false }: CostTotalsV
   const t = useT();
   const periodName = usePeriodName();
   const formatTotals = useFormatTotals();
-  const captionId = useId();
   const { granularity, basis } = totals;
   const newestFirst = totals.periods.toReversed();
   const current = newestFirst[0];
   return (
-    <div className="flex flex-col gap-4">
-      <table aria-labelledby={captionId} className="w-full text-start">
-        <caption id={captionId} className="sr-only">
-          {t("client:costs.totals.caption", { granularity: t(granularityLabels[granularity]), basis: t(basisLabels[basis].label) })}
-        </caption>
-        <thead>
-          <tr className="border-b border-border">
-            <th scope="col" className="py-2 pe-3 text-start font-semibold">
-              {t("client:costs.totals.period")}
-            </th>
-            <th scope="col" className="py-2 text-start font-semibold">
-              {t("client:costs.totals.total")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+    <Stack gap="4">
+      <Table caption={t("client:costs.totals.caption", { granularity: t(granularityLabels[granularity]), basis: t(basisLabels[basis].label) })}>
+        <TableHead>
+          <TableColumnHeader>{t("client:costs.totals.period")}</TableColumnHeader>
+          <TableColumnHeader>{t("client:costs.totals.total")}</TableColumnHeader>
+        </TableHead>
+        <TableBody>
           {newestFirst.map((period) => (
-            <tr key={period.label} className="border-b border-border align-top">
-              <th scope="row" className="py-2 pe-3 text-start font-normal">
-                {periodName(granularity, period)}
-              </th>
-              <td className="py-2 tabular-nums wrap-anywhere">
-                <span className="flex flex-wrap items-center gap-2">
+            <TableRow key={period.label}>
+              <TableRowHeader>{periodName(granularity, period)}</TableRowHeader>
+              <TableCell numeric wrap="anywhere">
+                <Cluster as="span" align="center" gap="2">
                   {formatTotals(period.totals)}
-                  {period.estimated && <span className="rounded-sm border border-border px-1 text-sm text-fg-muted">{t("client:costs.totals.estimated")}</span>}
-                </span>
-              </td>
-            </tr>
+                  {period.estimated && <Tag>{t("client:costs.totals.estimated")}</Tag>}
+                </Cluster>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
       {breakdown && current !== undefined && <Breakdown name={periodName(granularity, current)} period={current} />}
       {items && current !== undefined && <ItemLines name={periodName(granularity, current)} lines={current.items ?? []} />}
       <PeriodRules totals={totals} />
-    </div>
+    </Stack>
   );
 }
 
@@ -171,26 +179,26 @@ function Breakdown({ name, period }: { name: string; period: CostPeriodTotal }) 
   const format = useFormatMoney();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h3 id={headingId} className="font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="2">
+      <Heading level={3} id={headingId}>
         {t("client:costs.breakdown.title", { period: name })}
-      </h3>
+      </Heading>
       {period.breakdown.length === 0 ? (
-        <p className="text-fg-muted">{t("client:costs.breakdown.empty")}</p>
+        <Hint size="inherit">{t("client:costs.breakdown.empty")}</Hint>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <Stack as="ul" gap="1">
           {period.breakdown.map((line) => (
-            <li key={`${line.provider} ${line.category} ${line.amount.currency}`} className="flex flex-wrap gap-x-2">
-              <span dir="auto" className="wrap-anywhere">
+            <Cluster as="li" key={`${line.provider} ${line.category} ${line.amount.currency}`} gap="2" rowGap="0">
+              <Text dir="auto" wrap="anywhere">
                 {line.provider}
-              </span>
-              <span className="text-fg-muted">{t(categoryLabels[line.category])}</span>
-              <span className="tabular-nums">{format(line.amount)}</span>
-            </li>
+              </Text>
+              <Text tone="muted">{t(categoryLabels[line.category])}</Text>
+              <Text numeric>{format(line.amount)}</Text>
+            </Cluster>
           ))}
-        </ul>
+        </Stack>
       )}
-    </section>
+    </Stack>
   );
 }
 
@@ -204,38 +212,38 @@ function ItemLines({ name, lines }: { name: string; lines: readonly FinanceCostI
   const format = useFormatMoney();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h3 id={headingId} className="font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="2">
+      <Heading level={3} id={headingId}>
         {t("client:costs.items.title", { period: name })}
-      </h3>
+      </Heading>
       {lines.length === 0 ? (
-        <p className="text-fg-muted">{t("client:costs.items.empty")}</p>
+        <Hint size="inherit">{t("client:costs.items.empty")}</Hint>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <Stack as="ul" gap="2">
           {lines.map((line, index) => (
-            <li key={`${String(index)} ${line.provider} ${line.category} ${line.amount.currency}`} className="flex flex-col">
-              <span className="flex flex-wrap gap-x-2">
+            <Stack as="li" key={`${String(index)} ${line.provider} ${line.category} ${line.amount.currency}`}>
+              <Cluster as="span" gap="2" rowGap="0">
                 {line.name !== undefined && (
-                  <span dir="auto" className="font-medium wrap-anywhere">
+                  <Text dir="auto" weight="medium" wrap="anywhere">
                     {line.name}
-                  </span>
+                  </Text>
                 )}
-                <span dir="auto" className="wrap-anywhere">
+                <Text dir="auto" wrap="anywhere">
                   {line.provider}
-                </span>
-                <span className="text-fg-muted">{t(categoryLabels[line.category])}</span>
-                <span className="tabular-nums">{format(line.amount)}</span>
-              </span>
+                </Text>
+                <Text tone="muted">{t(categoryLabels[line.category])}</Text>
+                <Text numeric>{format(line.amount)}</Text>
+              </Cluster>
               {line.memo !== undefined && (
-                <span dir="auto" className="text-sm whitespace-pre-line text-fg-muted wrap-anywhere">
+                <Hint as="span" dir="auto" whitespace="preLine" wrap="anywhere">
                   {line.memo}
-                </span>
+                </Hint>
               )}
-            </li>
+            </Stack>
           ))}
-        </ul>
+        </Stack>
       )}
-    </section>
+    </Stack>
   );
 }
 
@@ -244,11 +252,11 @@ function PeriodRules({ totals }: { totals: ShownTotals }) {
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2 text-fg-muted">
-      <h3 id={headingId} className="font-semibold text-fg">
+    <Stack as="section" aria-labelledby={headingId} gap="2" tone="muted">
+      <Heading level={3} id={headingId} tone="fg">
         {t("client:costs.rules.title")}
-      </h3>
-      <ul className="flex list-disc flex-col gap-1 ps-6">
+      </Heading>
+      <Stack as="ul" marker="disc" gap="1">
         <li>{t("client:costs.rules.dates")}</li>
         <li>{t("client:costs.rules.week_start")}</li>
         <li>{t(totals.basis === "amortized" ? "client:costs.rules.amortized" : "client:costs.rules.cash")}</li>
@@ -258,7 +266,7 @@ function PeriodRules({ totals }: { totals: ShownTotals }) {
         ))}
         {/* Without the sources (the public totals only), an estimated period still needs the explanation of its badge. */}
         {(totals.rules.sources.length > 0 || totals.periods.some((period) => period.estimated)) && <li>{t("client:costs.rules.estimated")}</li>}
-      </ul>
-    </section>
+      </Stack>
+    </Stack>
   );
 }

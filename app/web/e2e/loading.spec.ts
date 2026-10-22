@@ -17,6 +17,7 @@ const bob = {
   uri: "https://my.example/ap/actors/0192f0c4-7a8e-7000-8000-000000000002",
   display_name: "Bob",
   note: "",
+  badges: [],
   fields: [],
   emojis: [],
   url: "https://my.example/@bob",

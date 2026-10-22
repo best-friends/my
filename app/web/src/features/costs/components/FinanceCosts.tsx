@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { RegionError, Spinner } from "@my/ui";
+import { Hint, RegionError, Spinner, Stack } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { DetailSection, MissingPermission } from "../../moderation";
 import type { FinanceViewerSettings } from "../api/costs";
@@ -37,15 +37,15 @@ export function FinanceCosts({ today, ...panel }: FinanceCostsProps) {
   const income = useFinanceIncome(panel.granularity, panel.basis, today);
   if (!access.allowed) return <MissingPermission permission="view_finance" />;
   return (
-    <div className="flex flex-col gap-6">
+    <Stack gap="6">
       <p>{t("client:finance.description")}</p>
       {costs.status === "ready" && !access.manage && (
-        <p className="text-fg-muted">
+        <Hint size="inherit">
           {t("client:finance.items_shown", { shown: shownOfItems(costs.totals.viewer) })}
-        </p>
+        </Hint>
       )}
       <CostTotalsPanel {...panel}>
-        <div className="flex flex-col gap-8">
+        <Stack gap="8">
           <DetailSection title={t("client:finance.costs.title")}>
             {costs.status === "loading" && (
               <div aria-busy="true">
@@ -66,8 +66,8 @@ export function FinanceCosts({ today, ...panel }: FinanceCostsProps) {
           <DetailSection title={t("client:income.title")}>
             <IncomeState income={income} />
           </DetailSection>
-        </div>
+        </Stack>
       </CostTotalsPanel>
-    </div>
+    </Stack>
   );
 }

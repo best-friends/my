@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link } from "@my/ui";
+import { Link, Stack } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { AccountDetailView, adminAccountQueryOptions } from "../features/moderation";
@@ -25,12 +25,12 @@ export const Route = createFileRoute("/moderation/accounts_/$id")({
 function AccountHeading() {
   const t = useT();
   return (
-    <div className="flex flex-col items-start gap-1">
+    <Stack align="start" gap="1">
       <PageHeading>{t("client:admin.account.title")}</PageHeading>
-      <Link href="/moderation/accounts" variant="standalone" className="text-sm">
+      <Link href="/moderation/accounts" variant="standalone" size="sm">
         {t("client:admin.account.back")}
       </Link>
-    </div>
+    </Stack>
   );
 }
 

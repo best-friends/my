@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Checkbox, MoveDownIcon, MoveUpIcon, Tooltip, TooltipTrigger } from "@my/ui";
+import { Box, Button, Checkbox, Cluster, Heading, Hint, IconLabel, MoveDownIcon, MoveUpIcon, Stack, Tooltip, TooltipTrigger } from "@my/ui";
 import { useEffect, useId, useRef } from "react";
 import { useT } from "../../../lib/i18n";
 import { useTimelineAvailability } from "../../timeline";
@@ -14,9 +14,6 @@ import { navigationEntryIcons } from "./navigationEntryIcons";
 
 /** The timeline each timeline item opens, which the server may not offer (FR-202). */
 const timelineOf: Partial<Record<NavigationEntryId, "local" | "federated">> = { local: "local", public: "federated" };
-
-/** An icon-only button with the size of a tap target (web-client.md D4). */
-const moveButtonClass = "w-8 px-0 pointer-coarse:w-11";
 
 /**
  * The items of the navigation: which ones show and in which order (web-client.md §9). Each item is a row with a
@@ -61,46 +58,41 @@ export function NavigationSettings() {
     return position < tabBarLimit ? t("client:settings.navigation.in_tab_bar") : t("client:settings.navigation.in_menu");
   };
   return (
-    <section aria-labelledby={headingId} aria-describedby={descriptionId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} aria-describedby={descriptionId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:settings.navigation.title")}
-      </h2>
-      <p id={descriptionId} className="text-sm text-fg-muted">
-        {t("client:settings.navigation.description", { count: tabBarLimit })}
-      </p>
-      <ol className="flex flex-col divide-y divide-border rounded-lg border border-border">
+      </Heading>
+      <Hint id={descriptionId}>{t("client:settings.navigation.description", { count: tabBarLimit })}</Hint>
+      <Stack as="ol" divided border="lg">
         {entries.map((entry, index) => {
           const name = t(navigationEntryLabels[entry.id]);
           const upLabel = t("client:settings.navigation.move_up", { name });
           const downLabel = t("client:settings.navigation.move_down", { name });
           return (
-            <li key={entry.id} className="flex items-start gap-2 px-3 py-2">
-              <Checkbox
-                className="min-w-0 flex-1"
-                isSelected={entry.shown}
-                isDisabled={entry.id === alwaysShownEntry}
-                onChange={(shown) => {
-                  setShown(entry.id, shown);
-                }}
-                description={placeOf(entry.id)}
-              >
-                <span className="flex min-w-0 items-center gap-2 wrap-anywhere [&_svg]:size-5 [&_svg]:shrink-0">
-                  {navigationEntryIcons[entry.id]}
-                  {name}
-                </span>
-              </Checkbox>
+            <Cluster as="li" key={entry.id} wrap={false} align="start" gap="2" paddingX="3" paddingY="2">
+              <Box shrink grow>
+                <Checkbox
+                  isSelected={entry.shown}
+                  isDisabled={entry.id === alwaysShownEntry}
+                  onChange={(shown) => {
+                    setShown(entry.id, shown);
+                  }}
+                  description={placeOf(entry.id)}
+                >
+                  <IconLabel icon={navigationEntryIcons[entry.id]}>{name}</IconLabel>
+                </Checkbox>
+              </Box>
               {/* Icon-only buttons are named by aria-label and show the same words as a tooltip (web-client.md G12). */}
               <TooltipTrigger>
                 <Button
                   id={buttonId(entry.id, -1)}
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   aria-label={upLabel}
                   isDisabled={index === 0}
                   onPress={() => {
                     onMove(entry.id, index, -1);
                   }}
-                  className={moveButtonClass}
                 >
                   <MoveUpIcon />
                 </Button>
@@ -110,27 +102,26 @@ export function NavigationSettings() {
                 <Button
                   id={buttonId(entry.id, 1)}
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   aria-label={downLabel}
                   isDisabled={index === entries.length - 1}
                   onPress={() => {
                     onMove(entry.id, index, 1);
                   }}
-                  className={moveButtonClass}
                 >
                   <MoveDownIcon />
                 </Button>
                 <Tooltip>{downLabel}</Tooltip>
               </TooltipTrigger>
-            </li>
+            </Cluster>
           );
         })}
-      </ol>
+      </Stack>
       <div>
         <Button variant="secondary" size="sm" onPress={reset}>
           {t("client:settings.navigation.reset")}
         </Button>
       </div>
-    </section>
+    </Stack>
   );
 }

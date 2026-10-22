@@ -17,6 +17,8 @@ const button = tv({
       secondary: "border border-border-strong bg-surface-raised text-fg data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
       /** Low-emphasis actions in toolbars and lists. */
       ghost: "text-fg data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
+      /** A low-emphasis action beside content, in the muted text color: the actions of a post's toolbar that are not toggles, the button that lists who reacted. */
+      subtle: "text-fg-muted data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
       /** Destructive actions. */
       danger: "bg-danger text-danger-fg data-hovered:shadow-md data-pressed:shadow-sm",
     },
@@ -25,6 +27,10 @@ const button = tv({
       md: "min-h-10 px-4 text-base [&>svg]:size-5",
       /** Among `ToggleButton`s in a row of actions (a post's): as tall as they are, with its icon as large. */
       toolbar: "min-h-8 px-2 text-sm [&>svg]:size-5",
+      /** Beside a button of the same height, with only an icon in it: the height of `md` with narrow sides. */
+      compact: "min-h-10 px-2 text-base [&>svg]:size-5",
+      /** Only an icon, named by `aria-label`: as wide as it is tall, and a tap target on a coarse pointer (web-client.md D4). */
+      icon: "min-h-8 w-8 px-0 text-sm pointer-coarse:w-11 [&>svg]:size-4",
     },
   },
   defaultVariants: { variant: "secondary", size: "md" },

@@ -2,21 +2,17 @@
 // The links to the server's terms of service and privacy policy. Their pages are the server's own (rendered by
 // the server, readable without signing in and without JavaScript) and outside the app, so a link opens them in a
 // new tab (ExternalLink, web-client.md Y12).
-import { ExternalLink } from "@my/ui";
+import { Box, Cluster, ExternalLink, Heading, Stack } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { useDocumentLinks } from "../hooks/useDocumentLinks";
 
-/** Where the links are: among other content, or under the items of the navigation's menu sheet, set apart by a line. */
-const placements = {
-  inline: undefined,
-  sheet: "mt-3 border-t border-border px-3 pt-3",
-} as const;
 
 type DocumentLinksProps = {
   /** The id of a heading that names the links; without it they are named "Terms and policies". */
   labelledBy?: string;
-  placement?: keyof typeof placements;
+  /** Where the links are: among other content, or under the items of the navigation's menu sheet, set apart by a line. */
+  placement?: "inline" | "sheet";
 };
 
 /** The links to the published documents, in a row that wraps; nothing when the server publishes none. */
@@ -25,11 +21,12 @@ export function DocumentLinks({ labelledBy, placement = "inline" }: DocumentLink
   const links = useDocumentLinks();
   if (links.length === 0) return null;
   return (
-    <nav
+    <Box
+      as="nav"
       {...(labelledBy === undefined ? { "aria-label": t("client:documents.label") } : { "aria-labelledby": labelledBy })}
-      className={placements[placement]}
+      {...(placement === "sheet" ? { marginTop: "3", border: "top", paddingX: "3", paddingTop: "3" } as const : {})}
     >
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <Cluster as="ul" gap="4" rowGap="1" textSize="sm">
         {links.map((link) => (
           <li key={link.href}>
             <ExternalLink href={link.href} variant="standalone">
@@ -37,8 +34,8 @@ export function DocumentLinks({ labelledBy, placement = "inline" }: DocumentLink
             </ExternalLink>
           </li>
         ))}
-      </ul>
-    </nav>
+      </Cluster>
+    </Box>
   );
 }
 
@@ -49,11 +46,11 @@ export function DocumentsSection() {
   const links = useDocumentLinks();
   if (links.length === 0) return null;
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:documents.label")}
-      </h2>
+      </Heading>
       <DocumentLinks labelledBy={headingId} />
-    </section>
+    </Stack>
   );
 }

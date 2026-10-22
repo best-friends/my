@@ -3,7 +3,7 @@
 // domains in the order of the domains, each with its button that unmutes it. The form follows the browser's constraint
 // validation (React Aria's native validation); muting is undone as easily, so neither asks first. What muting did stays
 // on the page in a StatusMessage (role="status") under the form; unmuting is announced and moves focus to the next row.
-import { Button, EmptyState, StatusMessage, TextField } from "@my/ui";
+import { Box, Button, Cluster, EmptyState, Heading, Hint, InlineError, Stack, StatusMessage, Text, TextField } from "@my/ui";
 import { useId, useRef } from "react";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
@@ -17,21 +17,21 @@ export function DomainMutes() {
   const formHeadingId = useId();
   const listHeadingId = useId();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <p>{t("client:settings.domain_mutes.description")}</p>
-      <section aria-labelledby={formHeadingId} className="flex flex-col gap-3">
-        <h2 id={formHeadingId} className="text-lg font-semibold">
+      <Stack as="section" aria-labelledby={formHeadingId} gap="3">
+        <Heading level={2} id={formHeadingId}>
           {t("client:settings.domain_mutes.new.title")}
-        </h2>
+        </Heading>
         <MuteDomainForm />
-      </section>
-      <section aria-labelledby={listHeadingId} className="flex flex-col gap-3">
-        <h2 id={listHeadingId} className="text-lg font-semibold">
+      </Stack>
+      <Stack as="section" aria-labelledby={listHeadingId} gap="3">
+        <Heading level={2} id={listHeadingId}>
           {t("client:settings.domain_mutes.list.title")}
-        </h2>
+        </Heading>
         <DomainMuteList />
-      </section>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -39,7 +39,7 @@ function MuteDomainForm() {
   const t = useT();
   const form = useMuteDomainForm();
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-4">
+    <Stack as="form" onSubmit={form.submit} gap="4">
       <TextField
         label={t("client:settings.domain_mutes.domain")}
         description={t("client:settings.domain_mutes.domain.description")}
@@ -54,9 +54,11 @@ function MuteDomainForm() {
         errorMessage={t("client:settings.domain_mutes.domain.required")}
       />
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {t("client:settings.domain_mutes.mute_failed", { reason: form.error })}
-        </p>
+        <InlineError alert size="inherit">
+          {t("client:settings.domain_mutes.mute_failed", {
+            reason: form.error,
+          })}
+        </InlineError>
       )}
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -64,7 +66,7 @@ function MuteDomainForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -79,10 +81,10 @@ function DomainMuteList() {
   );
   if (list.items.length === 0) return <EmptyState heading={t("client:settings.domain_mutes.empty")} />;
   return (
-    <div className="flex flex-col gap-4">
-      <ul ref={listRef} className="flex flex-col divide-y divide-border">
+    <Stack gap="4">
+      <Stack as="ul" ref={listRef} divided>
         {list.items.map((mute) => (
-          <li key={mute.domain} data-row-id={mute.domain} className="@container py-3">
+          <Box as="li" key={mute.domain} data-row-id={mute.domain} container paddingY="3">
             <DomainMuteRow
               mute={mute}
               unmute={unmute}
@@ -90,9 +92,9 @@ function DomainMuteList() {
                 removed(mute.domain);
               }}
             />
-          </li>
+          </Box>
         ))}
-      </ul>
+      </Stack>
       {list.hasMore && (
         <div>
           <Button onPress={list.loadMore} isPending={list.isLoadingMore}>
@@ -100,7 +102,7 @@ function DomainMuteList() {
           </Button>
         </div>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -113,24 +115,24 @@ function DomainMuteRow({ mute, unmute, onUnmuted }: DomainMuteRowProps) {
   const unicode = domainToUnicode(mute.domain);
   const label = t("client:settings.domain_mutes.unmute");
   return (
-    <div className="flex flex-col gap-3 @md:flex-row @md:items-center">
-      <p className="flex min-w-0 flex-1 flex-col">
+    <Stack gap="3" rowAt="md">
+      <Stack as="p" shrink grow>
         {/* A domain reads left to right in every locale. */}
-        <span dir="ltr" className="truncate text-start font-semibold">
+        <Text dir="ltr" wrap="truncate" align="start" weight="semibold">
           {unicode}
-        </span>
+        </Text>
         {unicode !== mute.domain && (
-          <span dir="ltr" className="truncate text-start text-sm text-fg-muted">
+          <Text dir="ltr" wrap="truncate" align="start" size="sm" tone="muted">
             {mute.domain}
-          </span>
+          </Text>
         )}
-        <span className="text-sm text-fg-muted">
+        <Hint as="span">
           {t("client:settings.domain_mutes.since", {
             date: intl.formatDate(mute.created_at, { dateStyle: "medium", timeStyle: "short" }),
           })}
-        </span>
-      </p>
-      <div className="flex flex-wrap gap-2">
+        </Hint>
+      </Stack>
+      <Cluster gap="2">
         <Button
           size="sm"
           isPending={unmute.pendingDomain === mute.domain}
@@ -141,7 +143,7 @@ function DomainMuteRow({ mute, unmute, onUnmuted }: DomainMuteRowProps) {
         >
           {label}
         </Button>
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
