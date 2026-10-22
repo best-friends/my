@@ -10,7 +10,8 @@ const newItemsButton = tv({
   slots: {
     // Never display: none, even when empty: a live region must stay rendered to announce the next count.
     base: "flex justify-center",
-    button: "rounded-full shadow-md",
+    button:
+      "rounded-full bg-accent-fill text-accent-fill-fg shadow-md data-hovered:bg-accent-fill-hover data-pressed:bg-accent-fill-hover",
   },
   variants: {
     sticky: {

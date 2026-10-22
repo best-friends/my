@@ -28,6 +28,10 @@ const feed = tv({
   },
 });
 
+// The space between two articles (`gap-3`, 0.75rem at the default spacing), kept by the virtualizer because the articles are
+// positioned absolutely. Cards are raised, so they sit apart.
+const cardGap = 12;
+
 const article = tv({ base: "outline-none focus-visible:focus-ring" });
 
 /** What the feed tells each article about its place in the feed. */
@@ -68,6 +72,7 @@ export function FeedArticle({ ref, style, className, ...props }: FeedArticleProp
 type VirtualFeedOptions = {
   count: number;
   estimateSize: number;
+  gap: number;
   overscan: number;
   scrollMargin: number;
   getItemKey: (index: number) => Key;
@@ -94,6 +99,7 @@ function useVirtualFeed(options: VirtualFeedOptions): VirtualFeed {
   const virtualizer = useWindowVirtualizer<HTMLElement>({
     count: options.count,
     estimateSize: () => options.estimateSize,
+    gap: options.gap,
     overscan: options.overscan,
     scrollMargin: options.scrollMargin,
     getItemKey: options.getItemKey,
@@ -201,6 +207,7 @@ export function Feed<T>({
   const { virtualItems, totalSize, measureElement } = useVirtualFeed({
     count: items.length,
     estimateSize,
+    gap: cardGap,
     overscan,
     scrollMargin,
     getItemKey: (index) => {

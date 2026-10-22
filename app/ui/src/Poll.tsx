@@ -15,19 +15,20 @@ const poll = tv({
     form: "flex min-w-0 flex-col items-start gap-2",
     fieldset: "flex min-w-0 flex-col gap-2",
     list: "flex min-w-0 flex-col gap-2",
-    item: "flex min-w-0 flex-col gap-1",
-    row: "flex min-w-0 items-baseline gap-2",
+    // The bar fills the option from behind its text; an inset ring doubles the border of the viewer's choice without moving the text.
+    item: "relative isolate flex min-w-0 flex-col gap-1 overflow-hidden rounded-md border border-border bg-surface px-3 py-2",
+    row: "flex min-w-0 items-baseline gap-2 font-bold",
     share: "w-12 shrink-0 text-sm font-semibold tabular-nums",
     own: "shrink-0 text-sm text-fg-muted",
-    track: "block h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken",
-    fill: "block h-full rounded-full",
+    track: "absolute inset-0 -z-10 block",
+    fill: "block h-full bg-soft",
     title: "min-w-0 wrap-anywhere",
     hint: "text-sm text-fg-muted",
     summary: "flex min-w-0 flex-wrap gap-x-3 text-sm text-fg-muted",
     total: "tabular-nums",
   },
   variants: {
-    own: { true: { fill: "bg-accent" }, false: { fill: "bg-border-strong" } },
+    own: { true: { item: "border-accent inset-ring-1 inset-ring-accent" } },
   },
 });
 
@@ -85,7 +86,7 @@ export function PollResults({ label, options, emojis, lang, ownChoiceLabel }: Po
   return (
     <ul aria-label={label} className={styles.list()}>
       {options.map((option) => (
-        <li key={option.key} className={styles.item()}>
+        <li key={option.key} className={poll({ own: option.ownChoice === true }).item()}>
           <span className={styles.row()}>
             {option.share != null && <span className={styles.share()}>{option.share}</span>}
             <Title title={option.title} emojis={emojis} lang={lang} />
@@ -94,7 +95,7 @@ export function PollResults({ label, options, emojis, lang, ownChoiceLabel }: Po
           {option.share != null && (
             <span aria-hidden="true" className={styles.track()}>
               <span
-                className={poll({ own: option.ownChoice === true }).fill()}
+                className={styles.fill()}
                 style={{ inlineSize: `${String(Math.round((option.ratio ?? 0) * 100))}%` }}
               />
             </span>
