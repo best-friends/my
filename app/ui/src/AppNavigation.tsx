@@ -274,8 +274,7 @@ export function AppNavMenuSection({ separator, children }: AppNavMenuSectionProp
 
 const appNavAction = tv({
   // Icon only in the compact rail (md), icon and label from lg; the width of the rail's items.
-  base: "w-full min-h-12 lg:gap-3 [&>svg]:size-6",
-  variants: { text: { true: "hidden lg:inline" } },
+  slots: { base: "w-full min-h-12 lg:gap-3 [&>svg]:size-6", text: "hidden lg:inline" },
 });
 
 export type AppNavActionProps = {
@@ -288,10 +287,11 @@ export type AppNavActionProps = {
 
 /** The rail's one main action, a `primary` button after the items: icon alone in the compact rail, with its label from lg. */
 export function AppNavAction({ label, icon, onPress }: AppNavActionProps) {
+  const slots = appNavAction();
   return (
-    <Button variant="primary" aria-label={label} onPress={onPress} className={appNavAction()}>
+    <Button variant="primary" aria-label={label} onPress={onPress} className={slots.base()}>
       {icon}
-      <span aria-hidden="true" className={appNavAction({ text: true })}>
+      <span aria-hidden="true" className={slots.text()}>
         {label}
       </span>
     </Button>

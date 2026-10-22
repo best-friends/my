@@ -161,20 +161,17 @@ const floatingButton = (
   </Button>
 );
 
-/** The third column: a stand-in for the new-post form, and the server's information. */
+/** The third column: the server's information. */
 const aside = (
-  <>
-    <Hint>The new-post form goes here.</Hint>
-    <AsidePanel heading="About this server">
-      <ServerNameLink name="my example" description="The server's top page" size="lg" />
-      <Hint>Handles on this server end with @my.example</Hint>
-      <Text as="p" size="sm">
-        <Link href="#about" variant="standalone">
-          More about this server
-        </Link>
-      </Text>
-    </AsidePanel>
-  </>
+  <AsidePanel heading="About this server">
+    <ServerNameLink name="my example" description="The server's top page" size="lg" />
+    <Hint>Handles on this server end with @my.example</Hint>
+    <Text as="p" size="sm">
+      <Link href="#about" variant="standalone">
+        More about this server
+      </Link>
+    </Text>
+  </AsidePanel>
 );
 
 const meta = {
