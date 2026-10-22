@@ -36,6 +36,7 @@ between this server and Mastodon, for the live test of
   | `eve@mastodon.test` | `TestSignatureProfile`: the proxy refuses her draft-cavage POSTs in both directions |
   | `mod@mastodon.test`, `mkadmin@misskey.test` | The administrators whose tokens read the moderators' reports in `TestReportForwarding` |
   | `ivan@my.test`, `judy@mastodon.test` | `TestRelay`: nobody follows them, so their posts reach the other server only through the relay |
+  | `otto@my.test` | `TestFederationMode`: no peer knows him before the scenario, so his `Follow` is the first a peer learns of him |
 
 - **Signatures**: to exercise RFC 9421, which Mastodon and this server only use after a 401, the proxy answers 401
   to a draft-cavage POST signed by eve (to this server) or addressed to eve's inbox (to Mastodon). The script
@@ -54,7 +55,8 @@ between this server and Mastodon, for the live test of
   `home` / `followers` / `specified` are `unlisted` / `private` / `direct` (a `specified` note is for the users
   that its text mentions), a renote is a boost, and a reaction (👍) is a favourite.
 - The scenarios reach the servers through the proxy's published port and read what this server recorded
-  (`received_activities`) from the published PostgreSQL port.
+  (`received_activities`) from the published PostgreSQL port. `TestFederationMode` also reads the proxy's access log
+  with `docker compose logs`, to log which requests a peer made to this server.
 
 ## Running it
 
@@ -93,6 +95,7 @@ leave (a scenario that runs alone makes the follows it needs).
 
 | Scenario | Checks |
 | --- | --- |
+| `TestFederationMode` | The federation direction ([ADR-0076](../../../docs/adr/0076-federation-direction.md)), with otto, in the modes `inbound`, `outbound`, `off`, and `both` again. `inbound`: otto's follow of the peer user is accepted although his actor is the minimal document, the peer's posts reach him, and the peer user's follow of him is rejected and stays pending on neither side; the scenario logs how the peer shows otto and the GETs (WebFinger, actor) it made to this server, from the proxy's access log. `outbound`: the peer user's follow is accepted and otto's post reaches the peer; the peer's post, reply, and favourite reach the inbox and show nowhere. `off`: otto's actor, WebFinger, and NodeInfo answer 404; the peer, made to fetch otto again (Mastodon and Misskey get the 404; GoToSocial answers from what it stored and fetches nothing), keeps him and the follow. `both`: otto's next post reaches the peer. The mode is the whole server's: the scenario runs first (its file sorts first) and sets the mode back to `both` |
 | `TestPeerResolvesLocal` | The peer finds `alice@my.test` through WebFinger and fetches her actor |
 | `TestLocalResolvesPeer` | This server finds the peer user through WebFinger and fetches the actor with a signed GET |
 | `TestFollowFromPeer` | The peer's signed `Follow` reaches this server's inbox and is verified and recorded; then it is accepted |
@@ -129,6 +132,9 @@ What the scenarios show about the pinned peers, and how this server and the scen
 | Misskey 2026.10 | Answers an `Undo Follow` with a `Reject` of the follow (`UserFollowingService.unfollow`), whose `Follow` has the id `/follows/{follower}/{followee}` | This server drops it (`inbox activity dropped`, the follow has already ended) |
 | Misskey 2026.10 | A `followers` note is visible to every user its `tag` mentions, addressed or not (`NoteEntityService.isVisibleForMe` reads the `mentions` that `ApNoteService` takes from `tag`), and each of them gets a `mention` notification (`NoteCreateService.createMentionedEvents`) | This server leaves such mentions out of the `tag` of a `local` post ([ADR-0035](../../../docs/adr/0035-local-visibility-mention-tags.md)); `TestVisibilityAudiences` checks that heidi neither sees it nor is notified |
 | Misskey 2026.10 | The API answers a missing note with a 400 and the code `NO_SUCH_NOTE` | The scenarios read it as a 404 |
+| Mastodon 4.7, GoToSocial 0.22 | Accept a `Follow` from the minimal actor document of the `inbound` mode (no name, icon, or collections), fetch the actor, and then look the handle up through WebFinger (`acct:otto@my.test`); they also try the collections of the instance actor, which answer 404 in that mode | Nothing to do: WebFinger answers in `inbound` ([ADR-0076](../../../docs/adr/0076-federation-direction.md)); `TestFederationMode` logs the requests |
+| Misskey 2026.10 | Accepts a `Follow` from the minimal actor document and shows the follower without a WebFinger lookup | Nothing to do |
+| GoToSocial 0.22 | Keeps the minimal actor document of `inbound` (no `followers`) after the mode widens, and leaves otto's posts out of carol's home timeline, from its database too, though it stores them and lists them on his profile | `TestFederationMode` reads the author's statuses instead of the home timeline |
 | Every peer | None learns that alice locked her account while she has no follower there (the actor `Update` goes to followers only) | Expected: the follow request still waits for her approval on this server |
 
 ## Adding a captured activity as a fixture

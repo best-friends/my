@@ -140,16 +140,18 @@ wait_ready misskey.test /healthz
 wait_ready relay.test /actor
 
 # --- Users --------------------------------------------------------------------------------------
-# alice@my.test, and frank@my.test (the user that the suspension scenario suspends). On Mastodon: bob
+# alice@my.test, frank@my.test (the user that the suspension scenario suspends), and otto@my.test (the
+# federation mode scenario's user, whom no peer knows before it). On Mastodon: bob
 # (alice's follower), dave (never follows alice: the mentioned non-follower of the visibility scenario),
 # eve (the signature scenario), judy (the relay scenario: nobody on my.test follows her), and the
 # administrator mod. ivan@my.test is the relay scenario's user, whom nobody on Mastodon follows. On GoToSocial: carol (alice's follower) and
 # erin (never follows alice). On Misskey: grace (alice's follower) and heidi (never follows alice), made
 # by its administrator mkadmin.
-log "creating alice, frank, and ivan @my.test, bob, dave, eve, judy, and mod @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
+log "creating alice, frank, ivan, and otto @my.test, bob, dave, eve, judy, and mod @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username alice -email alice@my.test >/dev/null
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username frank -email frank@my.test >/dev/null
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username ivan -email ivan@my.test >/dev/null
+printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username otto -email otto@my.test >/dev/null
 
 for user in bob dave eve judy; do
 	"${compose[@]}" exec -T mastodon-web bin/tootctl accounts create "$user" --email "$user@mastodon.test" --confirmed --approve >/dev/null
