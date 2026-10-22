@@ -23,8 +23,8 @@ const mediaGrid = tv({
     video: "relative size-full object-contain",
     audio: "absolute inset-x-2 bottom-2 w-[calc(100%-1rem)]",
     blur: "absolute inset-0",
-    badge: "absolute inset-e-1.5 bottom-1.5 rounded-sm bg-surface-raised px-1.5 py-0.5 text-xs font-semibold text-fg shadow-sm",
-    toggle: "absolute cursor-default rounded-md bg-surface-raised font-medium text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
+    badge: "absolute inset-e-1.5 bottom-1.5 rounded-full bg-surface-raised px-2 py-0.5 text-xs font-extrabold text-fg shadow-sm",
+    toggle: "absolute cursor-default rounded-full bg-surface-raised font-extrabold text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
   },
   variants: {
     count: {
@@ -36,7 +36,7 @@ const mediaGrid = tv({
     },
     revealed: {
       // Concealed: one button over the middle of the grid, so it is the obvious thing to press.
-      false: { toggle: "inset-0 m-auto size-fit min-h-10 max-w-[calc(100%-1rem)] px-4 py-2 text-base shadow-md pointer-coarse:min-h-11" },
+      false: { toggle: "inset-0 m-auto size-fit min-h-10 max-w-[calc(100%-1rem)] px-4 py-2 text-sm shadow-md pointer-coarse:min-h-11" },
       // Shown: a small icon button in the corner that conceals the media again.
       true: { toggle: "inset-s-1.5 top-1.5 grid size-8 place-items-center shadow-sm pointer-coarse:size-11 [&>svg]:size-5" },
     },

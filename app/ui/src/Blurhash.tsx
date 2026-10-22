@@ -6,7 +6,7 @@ import { decodeBlurhash } from "./blurhash";
 /** The pixels decoded: few, since a blurhash has no detail; the browser scales them smoothly to the element's size. */
 const resolution = 32;
 
-const blurhash = tv({ base: "block size-full" });
+const blurhash = tv({ base: "block size-full bg-surface-sunken" });
 
 export type BlurhashProps = Omit<ComponentPropsWithoutRef<"canvas">, "children" | "width" | "height"> & {
   /** The blurhash of the image (MediaAttachment.blurhash). */
