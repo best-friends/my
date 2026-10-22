@@ -30,10 +30,7 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   return (
-    <>
-      <LandingHeading />
-      <Landing />
-    </>
+    <Landing heading={<LandingHeading />} />
   );
 }
 

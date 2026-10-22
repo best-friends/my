@@ -1,6 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Cluster, EmptyState, Feed, Heading, Hint, Link, PostSkeleton, RegionError, Stack, Text, VisuallyHidden } from "@my/ui";
-import { useId } from "react";
+import {
+  Box,
+  Button,
+  ButtonLink,
+  EmojiIcon,
+  EmptyState,
+  FeatureCard,
+  Feed,
+  FederatedIcon,
+  Grid,
+  Heading,
+  Hero,
+  Hint,
+  LanguageIcon,
+  Link,
+  PostSkeleton,
+  RegionError,
+  Stack,
+  Text,
+  VisuallyHidden,
+} from "@my/ui";
+import { type ReactNode, useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { aboutPath } from "../../../lib/paths";
 import { ServerThumbnail, SourceCodeLink } from "../../about";
@@ -8,30 +28,27 @@ import { DocumentsSection } from "../../documents";
 import { useSignIn } from "../../session";
 import { StatusCard } from "../../status";
 import type { RecentPost } from "../api/landing";
-import { type Landing as LandingData, type RecentPosts, type RegistrationMode, useLanding } from "../hooks/useLanding";
+import { type Landing as LandingData, type RecentPosts, useLanding } from "../hooks/useLanding";
+
+export type LandingProps = {
+  /** The page's heading (`PageHeading`), which the hero carries. */
+  heading: ReactNode;
+};
 
 /**
- * The body of the landing page for people who are not signed in (`/`), under the page's heading, in the order of the
- * information page (`/about`): what the server is (its image and summary, how to sign in or create an account, its
- * description, and a few recent posts), what users agree to (its rules, then its terms of service and privacy
- * policy), and the links to the information page, which also tells how the server treats other servers and
- * crawlers and who runs it, and to its source code (AGPL-3.0 section 13).
+ * The landing page for people who are not signed in (`/`): the hero (the heading, the server's summary and image, and
+ * how to sign in or create an account), what the software can do, and then, in the order of the information page
+ * (`/about`), what the server is (its description and a few recent posts), what users agree to (its rules, then its
+ * terms of service and privacy policy), and the links to the information page, which also tells how the server
+ * treats other servers and crawlers and who runs it, and to its source code (AGPL-3.0 section 13).
  */
-export function Landing() {
+export function Landing({ heading }: LandingProps) {
   const t = useT();
   const landing = useLanding();
   return (
     <Stack gap="8">
-      <Stack gap="4">
-        {landing.thumbnail !== undefined && <ServerThumbnail thumbnail={landing.thumbnail} />}
-        {landing.summary !== "" && (
-          // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
-          <Text as="p" dir="auto" lang="" size="lg">
-            {landing.summary}
-          </Text>
-        )}
-        <Entry mode={landing.registrationMode} signUpHref={landing.signUpHref} />
-      </Stack>
+      <LandingHero heading={heading} landing={landing} />
+      <Features />
       {landing.description.length > 0 && <About paragraphs={landing.description} />}
       {/* A sample of what the server is: its latest public posts. */}
       {landing.recentPosts.status !== "off" && <RecentPostsSection posts={landing.recentPosts} />}
@@ -54,6 +71,32 @@ export function Landing() {
   );
 }
 
+/** What the software can do, in three cards: the same on every server. */
+function Features() {
+  const t = useT();
+  const headingId = useId();
+  return (
+    <Stack as="section" aria-labelledby={headingId} gap="4">
+      <Heading level={2} id={headingId}>
+        {t("client:landing.features.title")}
+      </Heading>
+      <Box container>
+        <Grid as="ul" columns={3} at="md" gap="4">
+          <FeatureCard icon={<FederatedIcon />} heading={t("client:landing.features.federation.title")}>
+            {t("client:landing.features.federation.body")}
+          </FeatureCard>
+          <FeatureCard icon={<EmojiIcon />} heading={t("client:landing.features.emoji.title")}>
+            {t("client:landing.features.emoji.body")}
+          </FeatureCard>
+          <FeatureCard icon={<LanguageIcon />} heading={t("client:landing.features.language.title")}>
+            {t("client:landing.features.language.body")}
+          </FeatureCard>
+        </Grid>
+      </Box>
+    </Stack>
+  );
+}
+
 /** The sign-up link's text for each mode in which people may sign up. */
 const signUpLabels = {
   open: "client:landing.sign_up.open",
@@ -68,29 +111,46 @@ const registrationNotes = {
   invite: "client:landing.registrations.invite",
 } as const;
 
-/** The ways in: signing in, and creating an account when the server takes new ones. */
-function Entry({ mode, signUpHref }: { mode: RegistrationMode | undefined; signUpHref: string }) {
+/**
+ * The hero: creating an account is its one primary action while the server takes new accounts, with signing in beside
+ * it; on a closed server (or before the instance has said) signing in is the primary one, and a note tells the mode.
+ */
+function LandingHero({ heading, landing }: { heading: ReactNode; landing: LandingData }) {
   const t = useT();
   const noteId = useId();
   // After signing in, the root address opens the home timeline.
   const { signIn, isPending } = useSignIn("/");
-  const note = mode === undefined || mode === "closed" ? undefined : registrationNotes[mode];
+  const mode = landing.registrationMode;
+  const signUpMode = mode === undefined || mode === "closed" ? undefined : mode;
+  const note = signUpMode === undefined ? undefined : registrationNotes[signUpMode];
   return (
-    <Stack align="start" gap="3">
-      <Cluster align="center" gap="6" rowGap="3">
-        <Button variant="primary" onPress={signIn} isPending={isPending}>
-          {t("client:landing.sign_in")}
-        </Button>
-        {mode !== undefined && mode !== "closed" && (
-          // The registration page is the server's own; the link loads it in place of the app (lib/paths.ts).
-          <Link href={signUpHref} variant="standalone" {...(note !== undefined && { "aria-describedby": noteId })}>
-            {t(signUpLabels[mode])}
-          </Link>
-        )}
-      </Cluster>
-      {note !== undefined && <Hint id={noteId}>{t(note)}</Hint>}
-      {mode === "closed" && <Hint>{t("client:landing.registrations.closed")}</Hint>}
-    </Stack>
+    <Hero
+      eyebrow={t("client:landing.hero.eyebrow")}
+      heading={heading}
+      actions={
+        <>
+          {signUpMode !== undefined && (
+            // The registration page is the server's own; the link loads it in place of the app (lib/paths.ts).
+            <ButtonLink href={landing.signUpHref} variant="primary" size="lg" {...(note !== undefined && { "aria-describedby": noteId })}>
+              {t(signUpLabels[signUpMode])}
+            </ButtonLink>
+          )}
+          <Button variant={signUpMode === undefined ? "primary" : "secondary"} size="lg" onPress={signIn} isPending={isPending}>
+            {t("client:landing.sign_in")}
+          </Button>
+        </>
+      }
+      {...(note !== undefined && { note: <Hint id={noteId}>{t(note)}</Hint> })}
+      {...(mode === "closed" && { note: <Hint>{t("client:landing.registrations.closed")}</Hint> })}
+      {...(landing.thumbnail !== undefined && { media: <ServerThumbnail thumbnail={landing.thumbnail} /> })}
+    >
+      {landing.summary !== "" && (
+        // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
+        <Text as="p" dir="auto" lang="" size="lg">
+          {landing.summary}
+        </Text>
+      )}
+    </Hero>
   );
 }
 

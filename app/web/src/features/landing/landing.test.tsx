@@ -71,6 +71,7 @@ describe("the landing page", () => {
     await screen.findByRole("region", { name: "Terms and policies" });
     const main = screen.getByRole("main");
     expect(within(main).getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)).toEqual([
+      "What you can do with my",
       "About this server",
       "Recent posts",
       "Rules",

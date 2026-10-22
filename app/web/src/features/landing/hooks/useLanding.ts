@@ -7,7 +7,7 @@ import { shellQueryReader } from "../../../lib/query";
 import { type Instance, instanceQueryOptions, type RecentPost, recentPostsQueryOptions } from "../api/landing";
 
 /** Who may sign up (GET /instance `registrations.mode`). */
-export type RegistrationMode = Instance["registrations"]["mode"];
+type RegistrationMode = Instance["registrations"]["mode"];
 
 /** The server-rendered registration page (ADR-0030), which a link loads in place of the app. */
 const signUpPath = "/auth/sign_up";

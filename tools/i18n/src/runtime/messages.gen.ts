@@ -4262,6 +4262,22 @@ export interface MessageArgs {
   "client:income.totals.net": {};
   /** About this server */
   "client:landing.about.title": {};
+  /** React to posts with custom emoji, including those from other servers. */
+  "client:landing.features.emoji.body": {};
+  /** Say it with emoji */
+  "client:landing.features.emoji.title": {};
+  /** Follow and talk with people on Mastodon, Misskey and other servers that speak ActivityPub. */
+  "client:landing.features.federation.body": {};
+  /** Connect beyond this server */
+  "client:landing.features.federation.title": {};
+  /** Use the app in English or Japanese, and tag each post with its language. */
+  "client:landing.features.language.body": {};
+  /** In your language */
+  "client:landing.features.language.title": {};
+  /** What you can do with my */
+  "client:landing.features.title": {};
+  /** Welcome to my */
+  "client:landing.hero.eyebrow": {};
   /** No posts yet */
   "client:landing.posts.empty": {};
   /** Couldn't load the recent posts */
