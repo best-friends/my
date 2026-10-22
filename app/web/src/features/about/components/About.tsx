@@ -14,8 +14,8 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
 /**
  * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
  * description, the rules followed by its terms of service and privacy policy, the remote domains it moderates as far
- * as the instance lists them, what it states to search engines and AI crawlers, what running it costs as far as the
- * instance publishes it, its supporter plans and the supporter list, its commerce disclosures, how to reach the operators, and where to get its source code.
+ * as the instance lists them, what it states to search engines and AI crawlers, what running it costs and what its
+ * supporters bring in as far as the instance publishes them, its supporter plans and the supporter list, its commerce disclosures, how to reach the operators, and where to get its source code.
  * Everyone may read it, signed in or not.
  */
 export function About() {
@@ -37,7 +37,9 @@ export function About() {
       <ModeratedDomainsSection />
       {about.crawlers !== undefined && <Crawlers searchIndexing={about.crawlers.searchIndexing} aiUsage={about.crawlers.aiUsage} />}
       {/* Who runs the server, what it costs and what it runs. */}
-      {(about.finance === "totals" || about.finance === "breakdown") && <Costs visibility={about.finance} />}
+      {about.finance !== undefined && about.income !== undefined && (about.finance !== "private" || about.income !== "private") && (
+        <Costs finance={about.finance} income={about.income} />
+      )}
       <AboutSupportersSection />
       {about.commerceDisclosureUrl !== undefined && <CommerceDisclosure url={about.commerceDisclosureUrl} />}
       {about.contact !== undefined && <Contact contact={about.contact} />}
@@ -179,17 +181,20 @@ function Crawlers({ searchIndexing, aiUsage }: { searchIndexing: Instance["searc
 }
 
 /**
- * What running the server costs (FR-903, ADR-0067 §8): what the instance publishes, and the link to the page of the
- * totals. Absent when the instance publishes nothing.
+ * What running the server costs and what its supporters bring in (FR-903, FR-917, ADR-0067 §8, ADR-0073 §7): what the
+ * instance publishes of each, whether the balance is published (only when both are), and the link to the page of the
+ * totals. Absent when the instance publishes neither.
  */
-function Costs({ visibility }: { visibility: "totals" | "breakdown" }) {
+function Costs({ finance, income }: { finance: Instance["finance_visibility"]; income: Instance["income_visibility"] }) {
   const t = useT();
   return (
     <Section title={t("client:about.costs.title")}>
-      <p>{t("client:about.costs.description", { visibility })}</p>
+      {finance !== "private" && <p>{t("client:about.costs.description", { visibility: finance })}</p>}
+      {income !== "private" && <p>{t("client:about.income.description", { visibility: income })}</p>}
+      {finance !== "private" && income !== "private" && <p>{t("client:about.income.balance")}</p>}
       <p>
         <Link href="/about/costs" variant="standalone">
-          {t("client:about.costs.link")}
+          {t("client:about.costs.link", { shown: finance === "private" ? "income" : income === "private" ? "costs" : "both" })}
         </Link>
       </p>
     </Section>

@@ -3,8 +3,10 @@
 // under tabs, amortized (the default) or in cash, with the rules that cut their periods next to them; the form that
 // records a cost paid once or every N weeks, months or years; the recorded items, newest first, each with its
 // schedule, dates and prices and the dialogs that change its label, revise its price and set its end, and canceling
-// it after an alert dialog; and the state of the billing imports with importing now. The granularity and the basis
-// are in the URL (web-client.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
+// it after an alert dialog; the state of the billing imports with importing now; and the income that the payment
+// provider records (ADR-0073 §6): its totals under the same tabs, with the gross, the fees, the net, the balance and
+// the members of each plan, and its money movements, newest first, with their subscribers, which only this screen
+// shows. The granularity and the basis are in the URL (web-client.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
 // memos are the operator's words, shown with dir="auto". What a change did stays in a StatusMessage above the list;
 // a failure stays there too (role="alert", web-client.md E2).
 import {
@@ -24,7 +26,7 @@ import {
   TextArea,
   TextField,
 } from "@my/ui";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { useApi } from "../../../lib/auth/SessionProvider";
@@ -39,6 +41,7 @@ import {
   CostTotalsPanel,
   CostTotalsView,
   financeCostTotalsQueryOptions,
+  IncomeTotalsView,
   useFormatMoney,
   useFormatTotals,
   utcDate,
@@ -52,6 +55,8 @@ import {
   costNameLimit,
   type CostSchedule,
   costSchedules,
+  type IncomeKind,
+  type IncomeMovement,
   maxCostInterval,
   priceOn,
 } from "../api/finance";
@@ -59,11 +64,13 @@ import {
   type CostItemActions,
   type LabelDraft,
   type PriceDraft,
+  useAdminIncomeTotals,
   useBillingImports,
   useCostItemActions,
   useCostItems,
   useCostTotals,
   useFormatDay,
+  useIncomeMovements,
   useNewCostItemForm,
   useRunBillingImport,
 } from "../hooks/useFinance";
@@ -79,6 +86,14 @@ const monthKindLabels: Readonly<Record<BillingImport["months"][number]["kind"], 
   estimate: "client:admin.finance.imports.kind.estimate",
   final: "client:admin.finance.imports.kind.final",
   correction: "client:admin.finance.imports.kind.correction",
+};
+
+const incomeKindLabels: Readonly<Record<IncomeKind, ClientMessageKey>> = {
+  payment: "client:admin.finance.movements.kind.payment",
+  refund: "client:admin.finance.movements.kind.refund",
+  chargeback: "client:admin.finance.movements.kind.chargeback",
+  chargeback_reversal: "client:admin.finance.movements.kind.chargeback_reversal",
+  fee: "client:admin.finance.movements.kind.fee",
 };
 
 const errorKindLabels: Readonly<Record<NonNullable<BillingImport["last_run"]>["error_kind"], ClientMessageKey>> = {
@@ -125,15 +140,18 @@ export function FinanceSettings(props: FinanceSettingsProps) {
         <DetailSection title={t("client:admin.finance.imports.title")}>
           <BillingImports />
         </DetailSection>
+        <DetailSection title={t("client:admin.finance.movements.title")}>
+          <IncomeMovements />
+        </DetailSection>
       </div>
     </RequirePermission>
   );
 }
 
 /**
- * What the instance publishes of these costs (the instance setting `finance_visibility`, ADR-0067 §8), read from
- * GET /instance. It is a server setting (manage_settings), not one of the costs: a viewer who may change it gets a link
- * to the server settings.
+ * What the instance publishes of these costs and of the income (the instance settings `finance_visibility` and
+ * `income_visibility`, ADR-0067 §8, ADR-0073 §7), read from GET /instance. They are server settings (manage_settings),
+ * not ones of the costs: a viewer who may change them gets a link to the server settings.
  */
 function Publication() {
   const t = useT();
@@ -144,6 +162,7 @@ function Publication() {
   return (
     <p className="flex flex-wrap gap-x-2">
       <span>{t("client:admin.finance.visibility", { visibility: instance.finance_visibility })}</span>
+      <span>{t("client:admin.finance.income_visibility", { visibility: instance.income_visibility })}</span>
       {maySet && (
         <Link href="/admin/settings" variant="standalone">
           {t("client:admin.finance.visibility.change")}
@@ -183,9 +202,23 @@ function TotalsSection({ granularity, basis, today, onTotalsChange }: FinanceSet
   );
 }
 
+/** The costs of the selected periods, then their income with the gross, the fees and the balance under the same basis. */
 function Totals({ granularity, basis, today }: { granularity: CostGranularity; basis: CostBasis; today: string }) {
+  const t = useT();
   const totals = useCostTotals(granularity, basis, today);
-  return <CostTotalsView totals={totals} breakdown />;
+  const income = useAdminIncomeTotals(granularity, basis, today);
+  const incomeId = useId();
+  return (
+    <div className="flex flex-col gap-8">
+      <CostTotalsView totals={totals} breakdown />
+      <section aria-labelledby={incomeId} className="flex flex-col gap-3">
+        <h3 id={incomeId} className="font-semibold">
+          {t("client:income.title")}
+        </h3>
+        <IncomeTotalsView totals={income} detailed headingLevel={4} />
+      </section>
+    </div>
+  );
 }
 
 /** The fields of a label: name, provider, category and memo. */
@@ -800,6 +833,81 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
           {t("client:admin.finance.imports.run")}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The payment provider's money movements of the income, newest first (ADR-0073 §6): what each brought or took back,
+ * and whose subscription it belongs to. Only this screen shows them; the payment provider records them, and nothing
+ * here changes them.
+ */
+function IncomeMovements() {
+  const t = useT();
+  const list = useIncomeMovements();
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-fg-muted">{t("client:admin.finance.movements.description")}</p>
+      <RecordList
+        list={list}
+        getId={(movement) => movement.id}
+        empty={<EmptyState headingLevel={3} heading={t("client:admin.finance.movements.empty")} description={t("client:admin.finance.movements.empty.description")} />}
+      >
+        {(movement) => <IncomeMovementRow movement={movement} />}
+      </RecordList>
+    </div>
+  );
+}
+
+function IncomeMovementRow({ movement }: { movement: IncomeMovement }) {
+  const t = useT();
+  const intl = useIntl();
+  const format = useFormatMoney();
+  const formatDay = useFormatDay();
+  const mayOpenAccount = useHasPermission("manage_accounts");
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="flex flex-wrap gap-x-2 font-semibold">
+        <span>{t(incomeKindLabels[movement.kind])}</span>
+        <span className="tabular-nums">{format(movement.net)}</span>
+      </h3>
+      <DescriptionList columns={2}>
+        <DescriptionItem term={t("client:admin.finance.movements.occurred_at")}>
+          <DateTime value={movement.occurred_at} />
+        </DescriptionItem>
+        <DescriptionItem term={t("client:admin.finance.movements.occurred_on")}>{formatDay(movement.occurred_on)}</DescriptionItem>
+        <DescriptionItem term={t("client:income.totals.gross")}>{format(movement.gross)}</DescriptionItem>
+        <DescriptionItem term={t("client:income.totals.fee")}>{format(movement.fee)}</DescriptionItem>
+        <DescriptionItem term={t("client:income.totals.net")}>{format(movement.net)}</DescriptionItem>
+        {movement.covers_starts_on !== undefined && movement.covers_ends_on !== undefined && (
+          <DescriptionItem term={t("client:admin.finance.movements.covers")}>
+            {intl.formatDateTimeRange(utcDate(movement.covers_starts_on), utcDate(movement.covers_ends_on), { dateStyle: "medium", timeZone: "UTC" })}
+          </DescriptionItem>
+        )}
+        {movement.parent_provider_id !== undefined && (
+          <DescriptionItem term={t("client:admin.finance.movements.parent")}>
+            <span dir="ltr" className="wrap-anywhere">
+              {movement.parent_provider_id}
+            </span>
+          </DescriptionItem>
+        )}
+        <DescriptionItem term={t("client:admin.finance.movements.subscriber")}>
+          {movement.account_id === undefined ? (
+            t("client:admin.finance.movements.no_subscriber")
+          ) : mayOpenAccount ? (
+            <Link href={`/moderation/accounts/${movement.account_id}`}>{t("client:admin.finance.movements.open_account")}</Link>
+          ) : (
+            <span dir="ltr" className="wrap-anywhere">
+              {movement.account_id}
+            </span>
+          )}
+        </DescriptionItem>
+        <DescriptionItem term={t("client:admin.finance.movements.provider_id", { provider: movement.provider })}>
+          <span dir="ltr" className="wrap-anywhere">
+            {movement.provider_id}
+          </span>
+        </DescriptionItem>
+      </DescriptionList>
     </div>
   );
 }

@@ -69,6 +69,7 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
     { key: "finance_viewer_item_names", kind: "bool", default: "false" },
     { key: "finance_viewer_item_memos", kind: "bool", default: "false" },
     { key: "finance_viewer_income", kind: "enum", default: "totals", choices: ["totals", "plans"] },
+    { key: "income_visibility", kind: "enum", default: "private", choices: ["private", "totals", "plans"] },
   ];
   return { items: items.map((item) => ({ ...item, value: stored[item.key] ?? item.default, stored: item.key in stored })) };
 }

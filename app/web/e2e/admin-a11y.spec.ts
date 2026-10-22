@@ -443,6 +443,8 @@ async function moderatorServer(page: Page) {
       return json(route, { ...costTotals, periods: costTotals.periods.map((period) => ({ ...period, items: [] })), viewer: { item_names: false, item_memos: false, income: "totals" } });
     }
     if (key === "GET /admin/billing_imports") return json(route, { items: [] });
+    if (key === "GET /admin/income_totals") return json(route, incomeTotals);
+    if (key === "GET /admin/income_movements") return json(route, { items: [incomeMovement] });
     if (/^GET \/admin\/accounts\/[^/]+\/roles$/.test(key)) return json(route, { items: key.includes(moderator.id) ? roles.slice(0, 1) : [] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
@@ -481,6 +483,46 @@ const costTotals: Schemas["CostTotals"] = {
     },
   ],
   rules: { week_start: "monday", sources: [{ source: "aws", provider: "AWS", time_zone: "UTC" }] },
+};
+
+/** The income of the month as the administrators see it, with a plan's members. */
+const incomeTotals: Schemas["AdminIncomeTotals"] = {
+  granularity: "month",
+  basis: "amortized",
+  periods: [
+    {
+      label: "2026-10",
+      starts_on: "2026-10-01",
+      ends_on: "2026-10-31",
+      gross: [{ amount: "12000", currency: "JPY" }],
+      fee: [{ amount: "432", currency: "JPY" }],
+      net: [{ amount: "11568", currency: "JPY" }],
+      balance: [
+        { amount: "11428", currency: "JPY" },
+        { amount: "-31.24", currency: "USD" },
+      ],
+    },
+  ],
+  plans: [{ plan_id: "0192f0c4-7a8e-7000-8000-0000000000c1", name: "Coffee", members: 1 }],
+  rules: { week_start: "monday", providers: [{ provider: "stripe", time_zone: "Asia/Tokyo" }], amortize_after_days: 31 },
+};
+
+/** A yearly payment of a supporter plan, as GET /admin/income_movements lists it. */
+const incomeMovement: Schemas["IncomeMovement"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000d1",
+  provider: "stripe",
+  provider_id: "txn_1",
+  kind: "payment",
+  subscription_id: "0192f0c4-7a8e-7000-8000-0000000000d2",
+  account_id: "0192f0c4-7a8e-7000-8000-0000000000d3",
+  occurred_at: "2026-10-10T03:00:00Z",
+  occurred_on: "2026-10-10",
+  covers_starts_on: "2026-10-10",
+  covers_ends_on: "2027-10-09",
+  gross: { amount: "12000", currency: "JPY" },
+  fee: { amount: "432", currency: "JPY" },
+  net: { amount: "11568", currency: "JPY" },
+  recorded_at: "2026-10-10T03:01:00Z",
 };
 
 /** The terms of service, as GET /admin/instance_texts lists them. */

@@ -2,7 +2,8 @@
 // The finances page in every width × locale project (ADR-0070 §5, ADR-0027): a user whose roles have view_finance and
 // no staff permission finds Finances in the rail from md and in the menu's sheet below it, with neither Moderation
 // nor Administration, and reads the totals with their breakdown and the lines of the items that the server shows (a
-// long name and a memo in Arabic, which reads right to left), passing axe without scrolling sideways. The app asks
+// long name and a memo in Arabic, which reads right to left), and the income with the balance and the members of a
+// plan under the same tabs, passing axe without scrolling sideways. The app asks
 // for no admin data. `vite preview` has no API, so the test plays the server with page.route; names change with the
 // locale, so the elements are found by role, by address and by the names in the project's locale catalog.
 import { readFileSync } from "node:fs";
@@ -76,7 +77,28 @@ function totals(url: URL): Schemas["FinanceCostTotals"] {
       },
     ],
     rules: { week_start: "monday", sources: [] },
-    viewer: { item_names: true, item_memos: true, income: "totals" },
+    viewer: { item_names: true, item_memos: true, income: "plans" },
+  };
+}
+
+/** The income of the periods of a query as a server that shows the plans answers it: the net, the balance and a plan. */
+function incomeTotals(url: URL): Schemas["IncomeTotals"] {
+  const cost = totals(url);
+  return {
+    granularity: cost.granularity,
+    basis: cost.basis,
+    periods: cost.periods.map((period) => ({
+      label: period.label,
+      starts_on: period.starts_on,
+      ends_on: period.ends_on,
+      net: [{ amount: "4800", currency: "JPY" }],
+      balance: [
+        { amount: "3150", currency: "JPY" },
+        { amount: "-12.34", currency: "USD" },
+      ],
+    })),
+    plans: [{ plan_id: "0192f0c4-7a8e-7000-8000-0000000000c1", name: "A plan with a rather long name that has to wrap on the narrowest screens", members: 3 }],
+    rules: { week_start: "monday", providers: [{ provider: "stripe", time_zone: "Asia/Tokyo" }], amortize_after_days: 31 },
   };
 }
 
@@ -114,6 +136,7 @@ async function serveApi(page: Page) {
     if (key === "GET /notifications/marker") return json(route, { last_read_id: "0", unread_count: 0 });
     if (key === "GET /timelines/home") return json(route, { items: [] });
     if (key === "GET /finance/cost_totals") return json(route, totals(url));
+    if (key === "GET /finance/income_totals") return json(route, incomeTotals(url));
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return adminRequests;
@@ -155,7 +178,12 @@ test.describe("the finances page", () => {
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
-    await costs.getByRole("tab", { name: message("costs.granularity.week"), exact: true }).click();
+    const income = main.getByRole("region", { name: message("income.title"), exact: true });
+    await expect(income.getByRole("table")).toBeVisible();
+    await expect(income.getByText("A plan with a rather long name that has to wrap on the narrowest screens")).toHaveAttribute("dir", "auto");
+
+    // The tabs choose the periods of the costs and of the income together.
+    await main.getByRole("tab", { name: message("costs.granularity.week"), exact: true }).click();
     await expect(costs.getByRole("row", { name: /2026-W43/u })).toBeVisible();
     await expect(page).toHaveURL(/granularity=week/u);
     await expectNoAxeViolations(makeAxeBuilder);

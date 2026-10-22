@@ -3,7 +3,9 @@
 // cost items (GET /admin/cost_items, newest first, as an infinite query), the totals of a range of weeks, months or
 // years under a basis (GET /admin/cost_totals), the state of the billing imports (GET /admin/billing_imports),
 // recording, relabeling, revising, ending and canceling an item, and importing a provider's charges now. Every change
-// goes to the audit log and changes the totals.
+// goes to the audit log and changes the totals. The income (ADR-0073 §6) is only read: its totals with the gross, the
+// fees and the balance (GET /admin/income_totals), and the payment provider's money movements, newest first, with their
+// subscribers (GET /admin/income_movements); the payment provider records it, and nobody changes it here.
 import { infiniteQueryOptions, type QueryClient, queryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -18,6 +20,9 @@ export type CostSchedule = Schemas["CostSchedule"];
 export type NewCostItem = Schemas["CostItemCreateRequest"];
 export type CostItemLabel = Schemas["CostItemLabelRequest"];
 export type BillingImport = Schemas["BillingImport"];
+export type AdminIncomeTotals = Schemas["AdminIncomeTotals"];
+export type IncomeMovement = Schemas["IncomeMovement"];
+export type IncomeKind = Schemas["IncomeKind"];
 
 /** The schedules, in the order of the form. */
 export const costSchedules = ["once", "weeks", "months", "years"] as const satisfies readonly CostSchedule[];
@@ -62,6 +67,33 @@ export function costTotalsQueryOptions(api: Api, granularity: CostGranularity, b
       if (data === undefined) throw new ApiError(error);
       return data;
     },
+  });
+}
+
+/** The income totals of the shown periods up to `today`, with the gross, the fees and the balance (GET /admin/income_totals). */
+export function adminIncomeTotalsQueryOptions(api: Api, granularity: CostGranularity, basis: CostBasis, today: string) {
+  const query = totalsQuery(granularity, basis, today);
+  return queryOptions({
+    queryKey: ["get", "/admin/income_totals", query] as const,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await api.fetch.GET("/admin/income_totals", { params: { query }, signal });
+      if (data === undefined) throw new ApiError(error);
+      return data;
+    },
+  });
+}
+
+/** The payment provider's money movements of the income, newest first (GET /admin/income_movements). */
+export function incomeMovementsQueryOptions(api: Api) {
+  return infiniteQueryOptions({
+    queryKey: ["get", "/admin/income_movements", "pages"] as const,
+    queryFn: async ({ pageParam, signal }) => {
+      const { data, error } = await api.fetch.GET("/admin/income_movements", { params: { query: pageQuery(pageParam) }, signal });
+      if (data === undefined) throw new ApiError(error);
+      return data;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.next_cursor,
   });
 }
 

@@ -14,8 +14,8 @@ export interface MessageArgs {
   "client:about.contact.title": {};
   /** {visibility, select, breakdown {This server publishes what it costs to run by week, month, and year, with a breakdown by provider and category. The names of the items, their notes, and the individual payments are not published.} other {This server publishes the totals of what it costs to run by week, month, and year. What they are spent on, the names of the items, and the individual payments are not published.}} */
   "client:about.costs.description": { visibility: "breakdown" | (string & {}) };
-  /** See the running costs */
-  "client:about.costs.link": {};
+  /** {shown, select, both {See the running costs and income} income {See the income} other {See the running costs}} */
+  "client:about.costs.link": { shown: "both" | "income" | (string & {}) };
   /** Running costs */
   "client:about.costs.title": {};
   /** Each account can also keep its profile and posts out of search engines, or deny AI, for its own pages on this server. An account cannot allow what the server denies. Media files and copies of posts on other servers do not carry an account's choice. */
@@ -58,6 +58,10 @@ export interface MessageArgs {
   "client:about.domains.signed_in_only": {};
   /** Moderated servers */
   "client:about.domains.title": {};
+  /** It also publishes the balance: the income less the costs. */
+  "client:about.income.balance": {};
+  /** {visibility, select, plans {This server publishes its income from its supporters by week, month, and year, after the payment provider's fees and refunds, and how many members each plan has now. Who paid and how much each paid are not published.} other {This server publishes the totals of its income from its supporters by week, month, and year, after the payment provider's fees and refunds. Who paid and how much each paid are not published.}} */
+  "client:about.income.description": { visibility: "plans" | (string & {}) };
   /** Rules */
   "client:about.rules.title": {};
   /** Email address for requests */
@@ -1662,6 +1666,8 @@ export interface MessageArgs {
   "client:admin.finance.imports.too_soon": {};
   /** {used} of {max} */
   "client:admin.finance.imports.used_of": { max: string; used: string };
+  /** {visibility, select, totals {The about page publishes the totals of the income.} plans {The about page publishes the totals of the income and the members of each plan.} other {The income is not published.}} */
+  "client:admin.finance.income_visibility": { visibility: "plans" | "totals" | (string & {}) };
   /** Every how many */
   "client:admin.finance.interval": {};
   /** 1 for every week, month, or year; 3 for every 3 months. Up to {max}. */
@@ -1674,6 +1680,40 @@ export interface MessageArgs {
   "client:admin.finance.memo": {};
   /** Only for the administrators; never published. */
   "client:admin.finance.memo.description": {};
+  /** Period paid for */
+  "client:admin.finance.movements.covers": {};
+  /** The money movements that the payment provider recorded, newest first. Only the people who manage the finances see them; they are never published. */
+  "client:admin.finance.movements.description": {};
+  /** No payments yet */
+  "client:admin.finance.movements.empty": {};
+  /** The payments of the supporter plans appear here once the payment provider records them. */
+  "client:admin.finance.movements.empty.description": {};
+  /** Chargeback */
+  "client:admin.finance.movements.kind.chargeback": {};
+  /** Chargeback reversed */
+  "client:admin.finance.movements.kind.chargeback_reversal": {};
+  /** Provider fee */
+  "client:admin.finance.movements.kind.fee": {};
+  /** Payment */
+  "client:admin.finance.movements.kind.payment": {};
+  /** Refund */
+  "client:admin.finance.movements.kind.refund": {};
+  /** None */
+  "client:admin.finance.movements.no_subscriber": {};
+  /** Booked at */
+  "client:admin.finance.movements.occurred_at": {};
+  /** Counted on */
+  "client:admin.finance.movements.occurred_on": {};
+  /** Open the account */
+  "client:admin.finance.movements.open_account": {};
+  /** Of the payment */
+  "client:admin.finance.movements.parent": {};
+  /** ID at {provider} */
+  "client:admin.finance.movements.provider_id": { provider: string };
+  /** Subscriber */
+  "client:admin.finance.movements.subscriber": {};
+  /** Payments and refunds */
+  "client:admin.finance.movements.title": {};
   /** Name */
   "client:admin.finance.name": {};
   /** What it is, such as example.com or the main server. Up to {max} characters. */
@@ -2778,6 +2818,24 @@ export interface MessageArgs {
   "client:admin.settings.finance.viewer.item_names.description": {};
   /** What to publish */
   "client:admin.settings.finance.visibility": {};
+  /** The about page and the API can publish the income from the supporter plans, after the payment provider's fees and refunds. Who paid, how much each paid, the amounts of each plan, and the fees are never published. When both the costs and the income are published, the balance is published too. */
+  "client:admin.settings.income.description": {};
+  /** Totals and members of each plan */
+  "client:admin.settings.income.plans": {};
+  /** Everyone also sees how many members each plan has now, never its amounts. On a plan with few members, people may guess who they are. */
+  "client:admin.settings.income.plans.description": {};
+  /** Nothing */
+  "client:admin.settings.income.private": {};
+  /** Only the people who manage or may read the finances see it. */
+  "client:admin.settings.income.private.description": {};
+  /** Income */
+  "client:admin.settings.income.title": {};
+  /** Totals */
+  "client:admin.settings.income.totals": {};
+  /** Everyone sees the income of each currency by week, month, and year. */
+  "client:admin.settings.income.totals.description": {};
+  /** What to publish */
+  "client:admin.settings.income.visibility": {};
   /** Default language */
   "client:admin.settings.language.default": {};
   /** The language of new accounts and of visitors whose language the app does not have. */
@@ -3806,11 +3864,13 @@ export interface MessageArgs {
   "client:costs.period.week": { range: string; week: string };
   /** About this server */
   "client:costs.public.about": {};
-  /** What running this server costs, as its operators record it. Amounts in different currencies are totaled separately and never converted. */
+  /** Costs */
+  "client:costs.public.costs": {};
+  /** What running this server costs and what its supporters bring in, as far as it publishes them. Amounts in different currencies are totaled separately and never converted. Nobody's payments are shown. */
   "client:costs.public.description": {};
   /** Couldn't load the running costs */
   "client:costs.public.failed": {};
-  /** This server does not publish its running costs. */
+  /** This server does not publish its running costs or its income. */
   "client:costs.public.hidden": {};
   /** Loading the running costs */
   "client:costs.public.loading": {};
@@ -4016,7 +4076,7 @@ export interface MessageArgs {
   "client:emoji.picker.uncategorized": {};
   /** Costs */
   "client:finance.costs.title": {};
-  /** The running costs of this server, totaled from the operators' records, with what they are spent on by provider and category. Amounts in different currencies are totaled on their own and never converted. Nobody's payments are shown. */
+  /** The running costs of this server, totaled from the operators' records, with what they are spent on by provider and category, and its income from its supporters with the balance. Amounts in different currencies are totaled on their own and never converted. Nobody's payments are shown. */
   "client:finance.description": {};
   /** Couldn't load the finances */
   "client:finance.failed": {};
@@ -4030,6 +4090,46 @@ export interface MessageArgs {
   "client:finance.title": {};
   /** Home */
   "client:home.title": {};
+  /** Couldn't load the income */
+  "client:income.failed": {};
+  /** Loading the income */
+  "client:income.loading": {};
+  /** The members now, not in each period. The amounts of each plan are not shown. */
+  "client:income.plans.description": {};
+  /** No plan has members. */
+  "client:income.plans.empty": {};
+  /** {count, plural, one {# member} other {# members}} */
+  "client:income.plans.members": { count: number };
+  /** Members of each plan */
+  "client:income.plans.title": {};
+  /** The balance is not published, since this server does not publish its costs. */
+  "client:income.public.no_balance": {};
+  /** Try again */
+  "client:income.retry": {};
+  /** A payment for more than {days} days, such as a yearly plan, is spread by day over the days it pays for. Its refund takes off the days before it on the day of the refund, and cancels the days after it. Other payments count on their dates. */
+  "client:income.rules.amortized": { days: string };
+  /** The balance is the income less the costs of each currency, both counted the same way. Currencies are never converted. */
+  "client:income.rules.balance": {};
+  /** Every payment, refund, and fee counts on its date. */
+  "client:income.rules.cash": {};
+  /** The income is what the supporters paid, less the payment provider's fees. A refund or a chargeback is taken off in the period it happens. */
+  "client:income.rules.net": {};
+  /** {provider} dates its payments in the {timeZone} time zone. */
+  "client:income.rules.provider": { provider: string; timeZone: string };
+  /** How the income is counted */
+  "client:income.rules.title": {};
+  /** Income */
+  "client:income.title": {};
+  /** Balance */
+  "client:income.totals.balance": {};
+  /** Income by {granularity}, {basis} */
+  "client:income.totals.caption": { basis: string; granularity: string };
+  /** Fees */
+  "client:income.totals.fee": {};
+  /** Gross */
+  "client:income.totals.gross": {};
+  /** Income after fees */
+  "client:income.totals.net": {};
   /** About this server */
   "client:landing.about.title": {};
   /** No posts yet */

@@ -47,7 +47,13 @@ export { RelaySettings } from "./components/RelaySettings";
 export { RoleSettings } from "./components/RoleSettings";
 // The instance's costs: recording them, their totals by week, month and year, and the state of the billing imports
 // (ADR-0067, ADR-0068), for manage_finance.
-export { billingImportsQueryOptions, costItemsQueryOptions, costTotalsQueryOptions } from "./api/finance";
+export {
+  adminIncomeTotalsQueryOptions,
+  billingImportsQueryOptions,
+  costItemsQueryOptions,
+  costTotalsQueryOptions,
+  incomeMovementsQueryOptions,
+} from "./api/finance";
 export { FinanceSettings } from "./components/FinanceSettings";
 // The supporter program: enabling it, its plans and their subscriptions (ADR-0072), for manage_supporters.
 export {

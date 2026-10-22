@@ -2,7 +2,7 @@
 // The server settings screen below its heading (manage_settings, FR-705): the instance's name and descriptions, how
 // to reach its operators and its thumbnail (#663), then its policies (who may sign up, the default language, the
 // public timelines, whether images need a description, the federation, who may read the list of the domain
-// actions, how much of the costs is published and shown to the holders of view_finance) in one form saved together. The name, the descriptions and the thumbnail's alt text hold one value each,
+// actions, how much of the costs is published and shown to the holders of view_finance, how much of the income is published) in one form saved together. The name, the descriptions and the thumbnail's alt text hold one value each,
 // written in any language and shown as it is in every language; the labels are the app's. The name stands in for
 // the domain where the instance is named to people; the domain stays in handles and links. The browser keeps a
 // form from being sent while a field is invalid (React Aria's native validation: the error is under its field and
@@ -226,6 +226,11 @@ const choices = {
     { value: "totals", label: "client:admin.settings.finance.viewer.income.totals", description: "client:admin.settings.finance.viewer.income.totals.description" },
     { value: "plans", label: "client:admin.settings.finance.viewer.income.plans", description: "client:admin.settings.finance.viewer.income.plans.description" },
   ],
+  income_visibility: [
+    { value: "private", label: "client:admin.settings.income.private", description: "client:admin.settings.income.private.description" },
+    { value: "totals", label: "client:admin.settings.income.totals", description: "client:admin.settings.income.totals.description" },
+    { value: "plans", label: "client:admin.settings.income.plans", description: "client:admin.settings.income.plans.description" },
+  ],
   supporter_list_visibility: [
     { value: "off", label: "client:admin.settings.supporter_list.off", description: "client:admin.settings.supporter_list.off.description" },
     { value: "public", label: "client:admin.settings.supporter_list.public", description: "client:admin.settings.supporter_list.public.description" },
@@ -377,6 +382,10 @@ function PoliciesForm() {
           description={t("client:admin.settings.finance.viewer.item_memos.description")}
         />
         <PolicyRadios form={form} setting="finance_viewer_income" label={t("client:admin.settings.finance.viewer.income")} />
+      </DetailSection>
+      <DetailSection title={t("client:admin.settings.income.title")}>
+        <p className="text-fg-muted">{t("client:admin.settings.income.description")}</p>
+        <PolicyRadios form={form} setting="income_visibility" label={t("client:admin.settings.income.visibility")} />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.supporter_list.title")}>
         <p className="text-fg-muted">{t("client:admin.settings.supporter_list.description")}</p>

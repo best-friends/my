@@ -26,6 +26,10 @@ export type About = {
    */
   finance: Instance["finance_visibility"] | undefined;
   /**
+   * How much of its income the instance publishes (FR-917, ADR-0073 §7); undefined while the instance has not loaded.
+   */
+  income: Instance["income_visibility"] | undefined;
+  /**
    * Where users get the source code the server runs (AGPL-3.0 section 13, ADR-0011): an https URL or a mailto: URI;
    * undefined while the instance has not loaded.
    */
@@ -62,6 +66,7 @@ export function useAbout(): About {
     contact: instance?.contact,
     crawlers: instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage },
     finance: instance?.finance_visibility,
+    income: instance?.income_visibility,
     sourceUrl: instance?.source_url,
     commerceDisclosureUrl: instance?.commerce_disclosure_url,
   };

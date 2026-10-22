@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
-import { billingImportsQueryOptions, costItemsQueryOptions, costTotalsQueryOptions, FinanceSettings } from "../features/admin";
+import {
+  adminIncomeTotalsQueryOptions,
+  billingImportsQueryOptions,
+  costItemsQueryOptions,
+  costTotalsQueryOptions,
+  FinanceSettings,
+  incomeMovementsQueryOptions,
+} from "../features/admin";
 import { type CostBasis, type CostGranularity, deviceToday } from "../features/costs";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
@@ -18,8 +25,8 @@ const searchSchema = z.object({
 });
 
 /**
- * The instance's costs (ADR-0067, ADR-0068): recording them, their totals by week, month or year, and the state of
- * the billing imports, for manage_finance. The totals end with today's period on the viewer's device.
+ * The instance's costs and income (ADR-0067, ADR-0068, ADR-0073 §6): recording the costs, the totals of both by week,
+ * month or year, the state of the billing imports, and the money movements of the income, for manage_finance. The totals end with today's period on the viewer's device.
  */
 export const Route = createFileRoute("/admin/finance")({
   staticData: { title: "client:admin.finance.title" },
@@ -36,6 +43,8 @@ export const Route = createFileRoute("/admin/finance")({
         context.queryClient.query({ ...costTotalsQueryOptions(context.api, granularity, basis, today), staleTime: Infinity }),
         context.queryClient.infiniteQuery({ ...costItemsQueryOptions(context.api), staleTime: Infinity }),
         context.queryClient.query({ ...billingImportsQueryOptions(context.api), staleTime: Infinity }),
+        context.queryClient.query({ ...adminIncomeTotalsQueryOptions(context.api, granularity, basis, today), staleTime: Infinity }),
+        context.queryClient.infiniteQuery({ ...incomeMovementsQueryOptions(context.api), staleTime: Infinity }),
       ]),
     ),
   component: FinancePage,

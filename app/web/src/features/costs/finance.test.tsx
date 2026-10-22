@@ -2,7 +2,9 @@
 // The finances page through the whole app (web-client.md T4, ADR-0070 §5): a user whose roles have view_finance, and
 // no staff permission, has Finances in the navigation and neither Moderation nor Administration, and reads the
 // totals of the costs with their breakdown always and the lines of the items as far as the server settings show them;
-// a holder of manage_finance reads every line; a user without either permission is told why and sends nothing.
+// a holder of manage_finance reads every line. The income comes with the balance always, and with the members of each
+// plan when the server shows them, never with anyone's payments. A user without either permission is told why and
+// sends nothing.
 // jsdom applies no styles, so the rail's and the tab bar's items are all in the document.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
@@ -12,7 +14,7 @@ import { apiBase, operatorHandler, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { deviceToday } from "./api/costs";
-import { financeTotalsFixture } from "./test/handlers";
+import { financeTotalsFixture, incomeTotalsFixture } from "./test/handlers";
 
 beforeEach(() => {
   document.documentElement.lang = "en";
@@ -83,8 +85,8 @@ describe("a user with view_finance", () => {
     expect(screen.queryByText("Main VM")).not.toBeInTheDocument();
     expect(finance.queries[0]).toEqual({ granularity: "month", basis: "amortized", from: expect.stringMatching(/-01$/u) as string, to: deviceToday() });
 
-    await user.click(within(costs).getByRole("tab", { name: "Weeks" }));
-    expect(await within(costs).findByRole("table", { name: "Totals by Weeks, Spread over the period paid for" })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Weeks" }));
+    expect(await within(screen.getByRole("region", { name: "Costs" })).findByRole("table", { name: "Totals by Weeks, Spread over the period paid for" })).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ granularity: "week" });
     expect(finance.adminRequests).toEqual([]);
   });
@@ -112,6 +114,53 @@ describe("a user with view_finance", () => {
     expect(within(items).queryByText("Main VM")).not.toBeInTheDocument();
     expect(within(items).queryByText("example.com")).not.toBeInTheDocument();
     expect(screen.getByText("This server shows the memos of the items, not their names.")).toBeInTheDocument();
+  });
+});
+
+describe("the income on the finances page", () => {
+  beforeEach(() => {
+    server.use(operatorHandler(["view_finance"]));
+  });
+
+  /** Plays the income totals with the members of each plan when `plans`; records the queries. */
+  function serveIncome(plans: boolean) {
+    const queries: Record<string, string>[] = [];
+    server.use(
+      http.get(`${apiBase}/finance/income_totals`, ({ request }) => {
+        const url = new URL(request.url);
+        queries.push(Object.fromEntries(url.searchParams));
+        return HttpResponse.json(incomeTotalsFixture(url, { balance: true, plans }));
+      }),
+    );
+    return { queries };
+  }
+
+  test("reads the net and the balance, without the members of each plan by default and without any payment", async () => {
+    const finance = serveFinance();
+    const income = serveIncome(false);
+    const { user } = await renderApp({ path: "/finance" });
+
+    const region = await screen.findByRole("region", { name: "Income" });
+    const table = await within(region).findByRole("table", { name: "Income by Months, Spread over the period paid for" });
+    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual(["Period", "Income after fees", "Balance"]);
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("¥4,800");
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("+¥3,150");
+    expect(within(region).queryByRole("region", { name: "Members of each plan" })).not.toBeInTheDocument();
+    expect(income.queries[0]).toEqual({ granularity: "month", basis: "amortized", from: expect.stringMatching(/-01$/u) as string, to: deviceToday() });
+
+    await user.click(screen.getByRole("radio", { name: /On the payment date/u }));
+    expect(await within(region).findByRole("table", { name: "Income by Months, On the payment date" })).toBeInTheDocument();
+    expect(within(region).getByRole("region", { name: "How the income is counted" })).toHaveTextContent("Every payment, refund, and fee counts on its date.");
+    expect(finance.adminRequests).toEqual([]);
+  });
+
+  test("reads the members of each plan when the server shows them", async () => {
+    serveFinance({ item_names: false, item_memos: false, income: "plans" });
+    serveIncome(true);
+    await renderApp({ path: "/finance" });
+
+    const region = await screen.findByRole("region", { name: "Income" });
+    expect(await within(region).findByRole("region", { name: "Members of each plan" })).toHaveTextContent("Coffee3 members");
   });
 });
 
