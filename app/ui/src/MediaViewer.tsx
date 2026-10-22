@@ -32,11 +32,11 @@ const mediaViewer = tv({
       "absolute z-20 grid size-10 place-items-center rounded-full shadow-md outline-none",
       "data-focus-visible:focus-ring pointer-coarse:size-11 [&>svg]:size-5",
     ],
-    close: "end-2.5 top-2.5 bg-toast text-toast-fg",
+    close: "inset-e-2.5 top-2.5 bg-toast text-toast-fg",
     // Turns light while the description is shown, so that it stands out from the dark ground it sits on.
-    altToggle: "end-2.5 bottom-2.5 bg-toast text-toast-fg data-[expanded=true]:bg-toast-fg data-[expanded=true]:text-toast",
+    altToggle: "inset-e-2.5 bottom-2.5 bg-toast text-toast-fg data-[expanded=true]:bg-toast-fg data-[expanded=true]:text-toast",
     // Over the whole picture; the room at the end is the toggle's.
-    alt: "absolute inset-0 z-10 m-0 overflow-y-auto overscroll-contain bg-alt-overlay p-5 pe-16 text-base leading-8 break-words whitespace-pre-line text-toast-fg",
+    alt: "absolute inset-0 z-10 m-0 overflow-y-auto overscroll-contain bg-alt-overlay px-6 py-10 pe-10 text-base/8 wrap-break-word whitespace-pre-line text-toast-fg",
     nav: "flex items-center gap-3",
     navButton: "w-10 bg-surface-raised px-0 shadow-md pointer-coarse:w-11",
     count: "rounded-full bg-toast px-3 py-1 text-sm font-extrabold text-toast-fg tabular-nums",

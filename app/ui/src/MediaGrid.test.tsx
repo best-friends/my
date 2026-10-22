@@ -120,8 +120,9 @@ describe("MediaGrid", () => {
       const dialog = await screen.findByRole("dialog", { name: "Image 1 of 2" });
       const toggle = within(dialog).getByRole("button", { name: "Description" });
       expect(toggle).toHaveAttribute("aria-expanded", "false");
-      const note = dialog.querySelector<HTMLElement>(`#${CSS.escape(toggle.getAttribute("aria-controls") ?? "")}`);
-      expect(note).toHaveTextContent("A cat on a sofa");
+      // Hidden from screen readers, which have the picture's name already; the text is there for everyone else.
+      const note = within(dialog).getByText("A cat on a sofa", { selector: "p" });
+      expect(toggle).toHaveAttribute("aria-controls", note.id);
       expect(note).not.toBeVisible();
 
       await user.click(toggle);

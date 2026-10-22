@@ -35,8 +35,8 @@ const animation = {
 
 function Controlled({ index: initial, ...props }: MediaViewerProps) {
   const [index, setIndex] = useState(initial);
-  const [isOpen, setOpen] = useState(true);
-  return <MediaViewer {...props} index={index} isOpen={isOpen} onIndexChange={setIndex} onOpenChange={setOpen} />;
+  const [isOpen, setIsOpen] = useState(true);
+  return <MediaViewer {...props} index={index} isOpen={isOpen} onIndexChange={setIndex} onOpenChange={setIsOpen} />;
 }
 
 const meta = {
