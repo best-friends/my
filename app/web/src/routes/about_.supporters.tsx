@@ -4,6 +4,7 @@ import { instanceQueryOptions } from "../features/about";
 import { SupporterListView, supporterListQueryOptions } from "../features/supporters";
 import { useT } from "../lib/i18n";
 import { useInstanceName } from "../lib/instanceName";
+import { InfoLayout } from "./-layout/InfoLayout";
 import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
 
@@ -27,10 +28,9 @@ export const Route = createFileRoute("/about_/supporters")({
 
 function SupportersPage() {
   return (
-    <>
-      <SupportersHeading />
+    <InfoLayout heading={<SupportersHeading />}>
       <SupporterListView />
-    </>
+    </InfoLayout>
   );
 }
 

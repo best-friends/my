@@ -132,6 +132,7 @@ export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./theme
 export { Box, type BoxProps } from "./Box";
 export { Card, type CardElement, type CardProps } from "./Card";
 export { Cluster, type ClusterProps } from "./Cluster";
+export { InfoPage, type InfoPageProps } from "./InfoPage";
 export { Grid, type GridProps } from "./Grid";
 export type { LayoutElement, Space } from "./layout";
 export { Stack, type StackProps } from "./Stack";

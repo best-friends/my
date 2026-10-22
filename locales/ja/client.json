@@ -6139,6 +6139,10 @@
     "defaultMessage": "注意書き（CW）を付ける",
     "description": "Toggle button (an icon) that adds a content warning: a short text shown instead of the post until the reader opens it."
   },
+  "info.contents": {
+    "defaultMessage": "このページの内容",
+    "description": "Title and accessible name of the table of contents of an information page (about, costs, supporters): links to the page's sections."
+  },
   "documents.label": {
     "defaultMessage": "規約とポリシー",
     "description": "Accessible name of the links to the server's terms of service and privacy policy (in the third column, the menu, the settings, and the sign-in page), and the heading of their section in the settings."
