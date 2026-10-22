@@ -32,7 +32,7 @@ import {
   storeReport,
   storeReportNote,
 } from "../api/reports";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type PagedList, type PagedPages, toPagedList } from "./pagedList";
 
 export const reportCategoryLabels: Readonly<Record<ReportCategory, ClientMessageKey>> = {
   spam: "client:admin.reports.category.spam",
@@ -86,7 +86,7 @@ export function isRemote(account: Pick<Account, "acct">): boolean {
 }
 
 /** The reports of a tab, newest first. */
-export function useReports(filter: ReportFilter): PagedList<Report> {
+export function useReports(filter: ReportFilter): PagedPages<Report> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(reportsQueryOptions(api, filter)));
 }

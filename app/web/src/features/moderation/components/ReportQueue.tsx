@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The report queue below its heading (FR-701, FR-710): the reports that await the moderators and those handled,
-// newest first. The tabs follow the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs), kept
-// in the URL by the route (web-client.md S3); only the selected panel is mounted. Each row's heading links to the
-// report's page, where it is handled.
-import { DescriptionItem, DescriptionList, EmptyState, Heading, Link, Stack, Tab, TabList, TabPanel, Tabs, Text } from "@my/ui";
+// newest first, in the admin mode's list form: a toolbar with the state filter (kept in the URL by the route,
+// web-client.md S3), a table of one page, and previous / next. Each row's first cell links to the report's page,
+// where it is handled.
+import { EmptyState, Link, ListToolbar, Select, SelectItem, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type Report, type ReportFilter, reportFilters } from "../api/reports";
 import { handleOf, isolate, reportCategoryLabels, reportOutcomeLabels, useReports } from "../hooks/useReports";
-import { DateTime, RecordList, RequirePermission } from "./parts";
+import { DateTime, RecordTable, RequirePermission } from "./parts";
 import { AccountLabel, AssigneeName } from "./reportParts";
 
 const filterLabels: Readonly<Record<ReportFilter, ClientMessageKey>> = {
@@ -20,104 +20,118 @@ function isFilter(key: unknown): key is ReportFilter {
 }
 
 export type ReportQueueProps = {
-  /** The selected tab, from the URL. */
+  /** The selected state, from the URL. */
   filter: ReportFilter;
-  /** Selects another tab: the route puts it into the URL. */
+  /** Selects another state: the route puts it into the URL. */
   onFilterChange: (filter: ReportFilter) => void;
 };
 
 export function ReportQueue(props: ReportQueueProps) {
   return (
     <RequirePermission permission="manage_reports">
-      <ReportTabs {...props} />
+      <ReportsView {...props} />
     </RequirePermission>
   );
 }
 
-function ReportTabs({ filter, onFilterChange }: ReportQueueProps) {
+function ReportsView({ filter, onFilterChange }: ReportQueueProps) {
   const t = useT();
   return (
-    <Tabs
-      selectedKey={filter}
-      onSelectionChange={(key) => {
-        if (isFilter(key)) onFilterChange(key);
-      }}
-    >
-      <TabList aria-label={t("client:admin.reports.filter.label")}>
-        {reportFilters.map((item) => (
-          <Tab key={item} id={item}>
-            {t(filterLabels[item])}
-          </Tab>
-        ))}
-      </TabList>
-      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
-      {reportFilters.map((item) => (
-        <TabPanel key={item} id={item}>
-          <ReportList filter={filter} />
-        </TabPanel>
-      ))}
-    </Tabs>
+    <Stack gap="4">
+      <ListToolbar label={t("client:admin.list.filters")}>
+        <Select
+          variant="toolbar"
+          aria-label={t("client:admin.reports.filter.label")}
+          value={filter}
+          onChange={(key) => {
+            if (isFilter(key)) onFilterChange(key);
+          }}
+        >
+          {reportFilters.map((item) => (
+            <SelectItem key={item} id={item}>
+              {t(filterLabels[item])}
+            </SelectItem>
+          ))}
+        </Select>
+      </ListToolbar>
+      {/* Another state is another list: it starts at its first page. */}
+      <ReportList key={filter} filter={filter} />
+    </Stack>
   );
 }
 
 function ReportList({ filter }: { filter: ReportFilter }) {
   const t = useT();
   const list = useReports(filter);
-  const empty =
-    filter === "open" ? (
-      <EmptyState headingLevel={2} heading={t("client:admin.reports.empty.open")} description={t("client:admin.reports.empty.open.description")} />
-    ) : (
-      <EmptyState headingLevel={2} heading={t("client:admin.reports.empty.resolved")} />
-    );
+  const resolved = filter === "resolved";
+  const empty = resolved ? (
+    <EmptyState headingLevel={2} heading={t("client:admin.reports.empty.resolved")} />
+  ) : (
+    <EmptyState headingLevel={2} heading={t("client:admin.reports.empty.open")} description={t("client:admin.reports.empty.open.description")} />
+  );
   return (
-    <RecordList list={list} getId={(report) => report.id} empty={empty}>
+    <RecordTable
+      list={list}
+      caption={t(filterLabels[filter])}
+      getId={(report) => report.id}
+      empty={empty}
+      head={
+        <>
+          <TableColumnHeader>{t("client:admin.reports.column.report")}</TableColumnHeader>
+          <TableColumnHeader>{t("client:admin.report.category")}</TableColumnHeader>
+          <TableColumnHeader>{t("client:admin.report.reporter")}</TableColumnHeader>
+          <TableColumnHeader>{t(resolved ? "client:admin.report.outcome" : "client:admin.report.assignee")}</TableColumnHeader>
+          <TableColumnHeader>{t(resolved ? "client:admin.report.resolved_at" : "client:admin.report.filed_at")}</TableColumnHeader>
+        </>
+      }
+    >
       {(report) => <ReportRow report={report} />}
-    </RecordList>
+    </RecordTable>
   );
 }
 
 function ReportRow({ report }: { report: Report }) {
   const t = useT();
   return (
-    <Stack gap="2">
-      <Heading level={2} size="subsection">
-        <Link href={`/moderation/reports/${encodeURIComponent(report.id)}`} variant="standalone" wrap="anywhere">
-          {report.target_account === undefined
-            ? t("client:admin.report.of_deleted")
-            : t("client:admin.report.of", { target: isolate(handleOf(report.target_account)) })}
-        </Link>
-      </Heading>
-      <DescriptionList columns={3}>
-        <DescriptionItem term={t("client:admin.report.category")}>{t(reportCategoryLabels[report.category])}</DescriptionItem>
-        <DescriptionItem term={t("client:admin.report.reporter")}>
-          <AccountLabel account={report.reporter_account} />
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.report.filed_at")}>
-          <DateTime value={report.filed_at} />
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.report.assignee")}>
-          {report.assignee_account_id === undefined ? t("client:admin.report.assignee.none") : <AssigneeName id={report.assignee_account_id} />}
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.report.posts")}>
-          <Text numeric>{t("client:admin.report.posts.count", { count: report.status_ids.length })}</Text>
-        </DescriptionItem>
-        {report.state === "resolved" && (
-          <>
-            <DescriptionItem term={t("client:admin.report.outcome")}>
-              {report.outcome === undefined ? t("client:admin.reports.filter.resolved") : t(reportOutcomeLabels[report.outcome])}
-            </DescriptionItem>
-            <DescriptionItem term={t("client:admin.report.resolved_at")}>
-              <DateTime value={report.state_changed_at} />
-            </DescriptionItem>
-          </>
+    <TableRow data-row-id={report.id}>
+      <TableRowHeader wrap="anywhere">
+        <Stack gap="1">
+          <Link href={`/moderation/reports/${encodeURIComponent(report.id)}`} variant="standalone" wrap="anywhere">
+            {report.target_account === undefined
+              ? t("client:admin.report.of_deleted")
+              : t("client:admin.report.of", { target: isolate(handleOf(report.target_account)) })}
+          </Link>
+          <Text size="sm" tone="muted" numeric>
+            {t("client:admin.report.posts.count", { count: report.status_ids.length })}
+          </Text>
+          {report.comment !== "" && (
+            // Written by the reporter, in any language; the report's page shows it whole.
+            <Text as="p" size="sm" dir="auto" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">
+              {report.comment}
+            </Text>
+          )}
+        </Stack>
+      </TableRowHeader>
+      <TableCell>{t(reportCategoryLabels[report.category])}</TableCell>
+      <TableCell wrap="anywhere">
+        <AccountLabel account={report.reporter_account} />
+      </TableCell>
+      <TableCell wrap="anywhere">
+        {report.state === "resolved" ? (
+          report.outcome === undefined ? (
+            t("client:admin.reports.filter.resolved")
+          ) : (
+            t(reportOutcomeLabels[report.outcome])
+          )
+        ) : report.assignee_account_id === undefined ? (
+          t("client:admin.report.assignee.none")
+        ) : (
+          <AssigneeName id={report.assignee_account_id} />
         )}
-      </DescriptionList>
-      {report.comment !== "" && (
-        // Written by the reporter, in any language; the report's page shows it whole.
-        <Text as="p" dir="auto" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">
-          {report.comment}
-        </Text>
-      )}
-    </Stack>
+      </TableCell>
+      <TableCell>
+        <DateTime value={report.state === "resolved" ? report.state_changed_at : report.filed_at} />
+      </TableCell>
+    </TableRow>
   );
 }

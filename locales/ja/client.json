@@ -3019,6 +3019,34 @@
     "defaultMessage": "さらに表示",
     "description": "Button under a list of an admin screen that loads more of it."
   },
+  "admin.list.filters": {
+    "defaultMessage": "フィルター",
+    "description": "Accessible name of the row of filters above a list of an admin screen."
+  },
+  "admin.list.pages": {
+    "defaultMessage": "ページ送り",
+    "description": "Accessible name of the previous / next navigation under a list of an admin screen."
+  },
+  "admin.list.previous": {
+    "defaultMessage": "前へ",
+    "description": "Button under a list of an admin screen that shows the previous page."
+  },
+  "admin.list.next": {
+    "defaultMessage": "次へ",
+    "description": "Button under a list of an admin screen that shows the next page, loading it if needed."
+  },
+  "admin.reports.column.report": {
+    "defaultMessage": "通報",
+    "description": "Header of the column of the reports table that names the reported account and links to the report."
+  },
+  "admin.appeals.column.appeal": {
+    "defaultMessage": "異議申し立て",
+    "description": "Header of the column of the appeals table that names the appeal and links to it."
+  },
+  "admin.accounts.column.account": {
+    "defaultMessage": "アカウント",
+    "description": "Header of the column of the accounts table that names the account and links to it."
+  },
   "admin.menu.open_reports": {
     "defaultMessage": "{count, plural, other {未解決の通報 # 件}}",
     "description": "Badge of the reports item of the administration menu: how many reports are open."
