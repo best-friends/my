@@ -704,6 +704,16 @@ type peerAPI interface {
 	home(ctx context.Context) ([]status, error)
 	// notifications returns the user's notifications, including the filtered ones.
 	notifications(ctx context.Context) ([]notification, error)
+	// statusesOf returns the statuses of an account, by the peer's ID of it (TestFederationMode).
+	statusesOf(ctx context.Context, id string) ([]status, error)
+	// followers returns the accounts that follow the user (TestFederationMode).
+	followers(ctx context.Context) ([]account, error)
+	// refetchActor makes the peer fetch a remote actor again, by its URI or the peer's ID of it
+	// (TestFederationMode).
+	refetchActor(ctx context.Context, uri, id string) error
+	// gone reads whether the peer shows an account, by the peer's ID, as gone: suspended, deleted,
+	// or missing (TestFederationMode).
+	gone(ctx context.Context, id string) (bool, string, error)
 }
 
 // --- Mastodon and GoToSocial (the Mastodon client API) ----------------------------------------
