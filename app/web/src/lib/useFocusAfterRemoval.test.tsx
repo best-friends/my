@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useRef, useState } from "react";
 import { describe, expect, test } from "vitest";
 import { useFocusAfterRemoval } from "./useFocusAfterRemoval";
@@ -9,12 +10,12 @@ const all = ["a", "b", "c", "d", "e", "f"];
 /** A list of six ids that shows `pageSize` of them from `start`, as a paged table does. */
 function Paged({ start, pageSize }: { start: number; pageSize: number }) {
   const [ids, setIds] = useState(all);
-  const list = useRef<HTMLUListElement>(null);
-  const removed = useFocusAfterRemoval(list, ids);
+  const listRef = useRef<HTMLUListElement>(null);
+  const removed = useFocusAfterRemoval(listRef, ids);
   return (
     <>
       <h1>Title</h1>
-      <ul ref={list}>
+      <ul ref={listRef}>
         {ids.slice(start, start + pageSize).map((id) => (
           <li key={id} data-row-id={id}>
             <button
@@ -34,16 +35,16 @@ function Paged({ start, pageSize }: { start: number; pageSize: number }) {
 }
 
 describe("useFocusAfterRemoval", () => {
-  test("focus goes to the row that took the place of the removed one within the shown page", () => {
+  test("focus goes to the row that took the place of the removed one within the shown page", async () => {
     render(<Paged start={3} pageSize={3} />);
-    act(() => screen.getByRole("button", { name: "d" }).click());
+    await userEvent.click(screen.getByRole("button", { name: "d" }));
     // The page now shows e, f, and nothing from the next page: "e" took the place of "d".
     expect(screen.getByRole("button", { name: "e" })).toHaveFocus();
   });
 
-  test("the last row of a page hands focus to the row before it", () => {
+  test("the last row of a page hands focus to the row before it", async () => {
     render(<Paged start={3} pageSize={3} />);
-    act(() => screen.getByRole("button", { name: "f" }).click());
+    await userEvent.click(screen.getByRole("button", { name: "f" }));
     expect(screen.getByRole("button", { name: "e" })).toHaveFocus();
   });
 });
