@@ -710,7 +710,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(surfaceRouter{a, surfaceMedia})
 	mediahttp.NewProxy(mediahttp.ProxyOptions{Media: a.MediaProxy, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(surfaceRouter{a, surfaceMedia})
 	api := clientapi.New(clientapi.Options{
-		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
+		Host: cfg.Host, Origin: cfg.ServerOrigin(), WebOrigin: cfg.WebOrigin, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Badges: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Passkeys: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph, InstanceThumbnail: a.instanceThumbnail,
@@ -754,7 +754,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The instance's costs (ADR-0067).
 		Costs: a.Finance,
 		// The supporter program (ADR-0072) and the page of its commerce disclosures (§13).
-		Supporters: a.Supporters, CommerceDisclosurePath: authpages.PathCommerceDisclosure,
+		Supporters: a.Supporters, OwnSupporters: a.Supporters, CommerceDisclosurePath: authpages.PathCommerceDisclosure,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})

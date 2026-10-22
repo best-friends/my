@@ -443,6 +443,17 @@ func (q *Queries) HasRevokingSupporterReversal(ctx context.Context, subscription
 	return found, err
 }
 
+const hasSupporterListing = `-- name: HasSupporterListing :one
+SELECT CAST(EXISTS (SELECT 1 FROM supporter_listings WHERE user_id = ?) AS INTEGER) AS found
+`
+
+func (q *Queries) HasSupporterListing(ctx context.Context, userID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, hasSupporterListing, userID)
+	var found int64
+	err := row.Scan(&found)
+	return found, err
+}
+
 const insertSupporterCheckout = `-- name: InsertSupporterCheckout :exec
 INSERT INTO supporter_checkouts (id, subscription_id, provider, provider_checkout_id, expires_at, created_at)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -527,6 +538,20 @@ func (q *Queries) InsertSupporterLink(ctx context.Context, arg InsertSupporterLi
 		arg.ProviderSubscriptionID,
 		arg.LinkedAt,
 	)
+	return err
+}
+
+const insertSupporterListing = `-- name: InsertSupporterListing :exec
+INSERT INTO supporter_listings (user_id, created_at) VALUES (?, ?) ON CONFLICT (user_id) DO NOTHING
+`
+
+type InsertSupporterListingParams struct {
+	UserID    string
+	CreatedAt int64
+}
+
+func (q *Queries) InsertSupporterListing(ctx context.Context, arg InsertSupporterListingParams) error {
+	_, err := q.db.ExecContext(ctx, insertSupporterListing, arg.UserID, arg.CreatedAt)
 	return err
 }
 
@@ -918,6 +943,71 @@ func (q *Queries) ListOpenSupporterCheckouts(ctx context.Context, arg ListOpenSu
 			return nil, err
 		}
 		items = append(items, provider_checkout_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSupporterListings = `-- name: ListSupporterListings :many
+SELECT l.user_id, h.plan_id, ph.rank, l.created_at FROM supporter_listings l
+JOIN supporter_live_subscriptions s ON s.user_id = l.user_id
+JOIN supporter_subscription_heads h ON h.subscription_id = s.subscription_id
+JOIN supporter_plan_heads ph ON ph.plan_id = h.plan_id
+WHERE h.state IN ('active', 'canceling', 'past_due')
+  AND (CAST(?1 AS TEXT) = '' OR h.plan_id = ?1)
+  AND (CAST(?2 AS TEXT) = '' OR ph.rank > ?3
+    OR (ph.rank = ?3 AND (l.created_at < ?4
+      OR (l.created_at = ?4 AND l.user_id < ?2))))
+ORDER BY ph.rank, l.created_at DESC, l.user_id DESC LIMIT ?5
+`
+
+type ListSupporterListingsParams struct {
+	PlanID      string
+	AfterUserID string
+	AfterRank   int64
+	AfterAt     int64
+	Lim         int64
+}
+
+type ListSupporterListingsRow struct {
+	UserID    string
+	PlanID    string
+	Rank      int64
+	CreatedAt int64
+}
+
+// ListSupporterListings returns a page of the listed members of the plans that are not
+// retired, by the plan's rank and newest first within a plan, after the member of after_user_id
+// (its plan's rank and when it was listed) unless that is ”; of plan_id unless it is ”.
+func (q *Queries) ListSupporterListings(ctx context.Context, arg ListSupporterListingsParams) ([]ListSupporterListingsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSupporterListings,
+		arg.PlanID,
+		arg.AfterUserID,
+		arg.AfterRank,
+		arg.AfterAt,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSupporterListingsRow{}
+	for rows.Next() {
+		var i ListSupporterListingsRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.PlanID,
+			&i.Rank,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

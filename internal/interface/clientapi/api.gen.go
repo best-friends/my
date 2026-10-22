@@ -1661,6 +1661,7 @@ const (
 	InstanceSettingKeyRetentionSessionOrigins          InstanceSettingKey = "retention_session_origins"
 	InstanceSettingKeySearchIndexing                   InstanceSettingKey = "search_indexing"
 	InstanceSettingKeySecurityContact                  InstanceSettingKey = "security_contact"
+	InstanceSettingKeySupporterListVisibility          InstanceSettingKey = "supporter_list_visibility"
 	InstanceSettingKeyThumbnail                        InstanceSettingKey = "thumbnail"
 )
 
@@ -1724,6 +1725,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeySearchIndexing:
 		return true
 	case InstanceSettingKeySecurityContact:
+		return true
+	case InstanceSettingKeySupporterListVisibility:
 		return true
 	case InstanceSettingKeyThumbnail:
 		return true
@@ -2320,6 +2323,27 @@ func (e SignupBlockImportSkippedReason) Valid() bool {
 	}
 }
 
+// Defines values for SupporterIneligibleReason.
+const (
+	SupporterIneligibleReasonEmailUnverified SupporterIneligibleReason = "email_unverified"
+	SupporterIneligibleReasonNotLocal        SupporterIneligibleReason = "not_local"
+	SupporterIneligibleReasonRestricted      SupporterIneligibleReason = "restricted"
+)
+
+// Valid indicates whether the value is a known member of the SupporterIneligibleReason enum.
+func (e SupporterIneligibleReason) Valid() bool {
+	switch e {
+	case SupporterIneligibleReasonEmailUnverified:
+		return true
+	case SupporterIneligibleReasonNotLocal:
+		return true
+	case SupporterIneligibleReasonRestricted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SupporterInterval.
 const (
 	SupporterIntervalMonth SupporterInterval = "month"
@@ -2332,6 +2356,27 @@ func (e SupporterInterval) Valid() bool {
 	case SupporterIntervalMonth:
 		return true
 	case SupporterIntervalYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SupporterListVisibility.
+const (
+	SupporterListVisibilityOff      SupporterListVisibility = "off"
+	SupporterListVisibilityPublic   SupporterListVisibility = "public"
+	SupporterListVisibilitySignedIn SupporterListVisibility = "signed_in"
+)
+
+// Valid indicates whether the value is a known member of the SupporterListVisibility enum.
+func (e SupporterListVisibility) Valid() bool {
+	switch e {
+	case SupporterListVisibilityOff:
+		return true
+	case SupporterListVisibilityPublic:
+		return true
+	case SupporterListVisibilitySignedIn:
 		return true
 	default:
 		return false
@@ -6017,6 +6062,11 @@ type Instance struct {
 	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13), as an https URL to read it at or a mailto URI to request it by email.
 	SourceUrl string `json:"source_url"`
 
+	// SupporterListVisibility Who may read the supporter list (the instance setting `supporter_list_visibility`, ADR-0071
+	// §4): `off`, nobody, and `GET /instance/supporters` is a 404; `public`, everyone;
+	// `signed_in`, the users signed in to this server.
+	SupporterListVisibility SupporterListVisibility `json:"supporter_list_visibility"`
+
 	// SupportersEnabled Whether the supporter program is enabled: its plans (`GET /instance/supporter_plans`)
 	// and the subscriptions show only then.
 	SupportersEnabled bool `json:"supporters_enabled"`
@@ -6776,6 +6826,21 @@ type OwnCustomEmojiPage struct {
 	Used int `json:"used"`
 }
 
+// OwnSupporterSubscription The authenticated user's subscription that goes on, and whether they may subscribe.
+type OwnSupporterSubscription struct {
+	// IneligibleReason Why the user may not subscribe to a supporter plan (ADR-0072 §6): `not_local`, not a user
+	// of this server; `email_unverified`, the primary email address is not verified;
+	// `restricted`, the account is suspended or its deletion is done or scheduled. Omitted when
+	// the user may subscribe.
+	IneligibleReason *SupporterIneligibleReason `json:"ineligible_reason,omitempty"`
+
+	// Subscription The authenticated user's subscription to a supporter plan. `price` is what it renews at,
+	// which may be lower than the plan's current price (a price change does not apply to the
+	// subscriptions that go on). The plan's name is written by the administrators in any
+	// language; render it with `dir="auto"`.
+	Subscription *SupporterSubscription `json:"subscription,omitempty"`
+}
+
 // PageInfo The pagination of a collection page; collection responses embed it with allOf.
 type PageInfo struct {
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
@@ -7109,6 +7174,17 @@ type PreviewDomainBlockImportRequest struct {
 //   - `/api/v1/problems/supporter-plan-retired` (409): the supporter plan is retired and does
 //     not change any more.
 //   - `/api/v1/problems/subscription-ended` (409): the subscription has ended already.
+//   - `/api/v1/problems/supporter-ineligible` (422): the user may not subscribe to a supporter
+//     plan: not a local user, the primary email address is not verified, or the account is
+//     restricted.
+//   - `/api/v1/problems/supporter-subscribed` (409): the user has a subscription that goes on
+//     already; change its plan instead.
+//   - `/api/v1/problems/supporter-plan-unavailable` (422): the supporter plan takes no
+//     subscriptions: hidden, retired, not ready, or of another currency.
+//   - `/api/v1/problems/supporter-subscription-state` (409): the subscription's state does not
+//     allow the operation.
+//   - `/api/v1/problems/supporter-same-plan` (422): the subscription has that plan and interval
+//     already.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -7873,8 +7949,68 @@ type StatusTag struct {
 // StatusText The plain text; the server links mentions, hashtags, and URLs.
 type StatusText = string
 
+// SupporterCheckout The payment provider's hosted checkout of a subscription.
+type SupporterCheckout struct {
+	// RedirectUrl The checkout, to open in the same tab.
+	RedirectUrl string `json:"redirect_url"`
+
+	// SubscriptionId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	SubscriptionId Id `json:"subscription_id"`
+}
+
+// SupporterIneligibleReason Why the user may not subscribe to a supporter plan (ADR-0072 §6): `not_local`, not a user
+// of this server; `email_unverified`, the primary email address is not verified;
+// `restricted`, the account is suspended or its deletion is done or scheduled. Omitted when
+// the user may subscribe.
+type SupporterIneligibleReason string
+
 // SupporterInterval How often a subscription renews.
 type SupporterInterval string
+
+// SupporterListEntry A member on the supporter list.
+type SupporterListEntry struct {
+	// Account An account, as clients show it (FR-006).
+	Account Account `json:"account"`
+
+	// PlanId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	PlanId Id `json:"plan_id"`
+}
+
+// SupporterListPage A page of the supporter list: the members by plan, in the order of `plans`, newest first
+// within a plan.
+type SupporterListPage struct {
+	Items []SupporterListEntry `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+
+	// Plans The plans that are not retired, in their order (the lowest first), on every page.
+	Plans []SupporterListPlan `json:"plans"`
+}
+
+// SupporterListPlan A plan of the supporter list. The name is written by the administrators in any language;
+// render it with `dir="auto"`.
+type SupporterListPlan struct {
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id   Id     `json:"id"`
+	Name string `json:"name"`
+}
+
+// SupporterListVisibility Who may read the supporter list (the instance setting `supporter_list_visibility`, ADR-0071
+// §4): `off`, nobody, and `GET /instance/supporters` is a 404; `public`, everyone;
+// `signed_in`, the users signed in to this server.
+type SupporterListVisibility string
+
+// SupporterListing Whether the user is on the supporter list.
+type SupporterListing struct {
+	Listed bool `json:"listed"`
+}
 
 // SupporterPlan A supporter plan that takes subscriptions. The name and the description are written by
 // the administrators in any language; render them with `dir="auto"`.
@@ -7897,6 +8033,17 @@ type SupporterPlan struct {
 	// YearlyPrice An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
 	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
 	YearlyPrice Money `json:"yearly_price"`
+}
+
+// SupporterPlanChoice A plan and how often its subscription renews.
+type SupporterPlanChoice struct {
+	// Interval How often a subscription renews.
+	Interval SupporterInterval `json:"interval"`
+
+	// PlanId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	PlanId Id `json:"plan_id"`
 }
 
 // SupporterPlanList The supporter plans that take subscriptions, by rank.
@@ -7952,6 +8099,12 @@ type SupporterPlanProblemReason string
 // its subscriptions go on.
 type SupporterPlanVisibility string
 
+// SupporterPortal The payment provider's portal of the user's payment methods and invoices.
+type SupporterPortal struct {
+	// Url The portal, to open in the same tab.
+	Url string `json:"url"`
+}
+
 // SupporterProgramWarning What an administrator should look at in the supporter program. `no_provider`: no payment
 // provider is configured. `no_email`: the server sends no email, so nobody can verify an
 // address to subscribe. `provider_mismatch`: the configured provider is not the one the
@@ -7959,6 +8112,66 @@ type SupporterPlanVisibility string
 // and enabled again (the subscribers subscribe again). `no_commerce_disclosure`: the
 // instance publishes no commerce disclosures (the `commerce_disclosure` instance text).
 type SupporterProgramWarning string
+
+// SupporterScheduledChange A change to a lower plan or to the monthly price that waits for the end of the period.
+type SupporterScheduledChange struct {
+	EffectiveAt time.Time `json:"effective_at"`
+
+	// Interval How often a subscription renews.
+	Interval SupporterInterval `json:"interval"`
+
+	// PlanId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	PlanId   Id     `json:"plan_id"`
+	PlanName string `json:"plan_name"`
+
+	// Price An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Price Money `json:"price"`
+}
+
+// SupporterSubscription The authenticated user's subscription to a supporter plan. `price` is what it renews at,
+// which may be lower than the plan's current price (a price change does not apply to the
+// subscriptions that go on). The plan's name is written by the administrators in any
+// language; render it with `dir="auto"`.
+type SupporterSubscription struct {
+	// GraceEndsAt When a `past_due` subscription loses the plan's role unless a payment succeeds.
+	GraceEndsAt *time.Time `json:"grace_ends_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Interval How often a subscription renews.
+	Interval SupporterInterval `json:"interval"`
+
+	// PeriodEndsAt The end of the current period: when it renews, or, while `canceling`, when it ends;
+	// omitted for `pending`.
+	PeriodEndsAt *time.Time `json:"period_ends_at,omitempty"`
+
+	// PlanId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	PlanId   Id     `json:"plan_id"`
+	PlanName string `json:"plan_name"`
+
+	// Price An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Price Money `json:"price"`
+
+	// ScheduledChange A change to a lower plan or to the monthly price that waits for the end of the period.
+	ScheduledChange *SupporterScheduledChange `json:"scheduled_change,omitempty"`
+	StartedAt       time.Time                 `json:"started_at"`
+
+	// State The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:
+	// paid. `canceling`: canceled at the end of the period. `past_due`: a payment failed less
+	// than 7 days ago. `lapsed`: a payment failed more than 7 days ago, or the subscription is
+	// paused. `expired`: ended. `revoked`: a full refund or a chargeback. `abandoned`: ended
+	// before its first payment. The role is held while `active`, `canceling`, or `past_due`.
+	State SupporterSubscriptionState `json:"state"`
+}
 
 // SupporterSubscriptionState The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:
 // paid. `canceling`: canceled at the end of the period. `past_due`: a payment failed less
@@ -8908,6 +9121,18 @@ type ListInstanceDomainActionsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListInstanceSupportersParams defines parameters for ListInstanceSupporters.
+type ListInstanceSupportersParams struct {
+	// PlanId Only the members of this plan.
+	PlanId *Id `form:"plan_id,omitempty" json:"plan_id,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListOwnModerationActionsParams defines parameters for ListOwnModerationActions.
 type ListOwnModerationActionsParams struct {
 	// Active Keep only the actions in effect now, neither lifted nor expired.
@@ -9193,6 +9418,9 @@ type UpdateAutoDeletePolicyJSONRequestBody = AutoDeletePolicy
 // UpdateBadgeChoiceJSONRequestBody defines body for UpdateBadgeChoice for application/json ContentType.
 type UpdateBadgeChoiceJSONRequestBody = UpdateBadgeChoiceRequest
 
+// UpdateSupporterListingJSONRequestBody defines body for UpdateSupporterListing for application/json ContentType.
+type UpdateSupporterListingJSONRequestBody = SupporterListing
+
 // PutPushSubscriptionJSONRequestBody defines body for PutPushSubscription for application/json ContentType.
 type PutPushSubscriptionJSONRequestBody = PushSubscriptionRequest
 
@@ -9213,6 +9441,12 @@ type SetStatusQuotePolicyJSONRequestBody = SetQuotePolicyRequest
 
 // ReactToStatusJSONRequestBody defines body for ReactToStatus for application/json ContentType.
 type ReactToStatusJSONRequestBody = ReactToStatusRequest
+
+// StartSupporterCheckoutJSONRequestBody defines body for StartSupporterCheckout for application/json ContentType.
+type StartSupporterCheckoutJSONRequestBody = SupporterPlanChoice
+
+// ChangeOwnSupporterSubscriptionJSONRequestBody defines body for ChangeOwnSupporterSubscription for application/json ContentType.
+type ChangeOwnSupporterSubscriptionJSONRequestBody = SupporterPlanChoice
 
 // RegenerateRecoveryCodesJSONRequestBody defines body for RegenerateRecoveryCodes for application/json ContentType.
 type RegenerateRecoveryCodesJSONRequestBody = TwoFactorCodeRequest
@@ -9729,6 +9963,9 @@ type ServerInterface interface {
 	// ListSupporterPlans List the supporter plans
 	// (GET /instance/supporter_plans)
 	ListSupporterPlans(w http.ResponseWriter, r *http.Request)
+	// ListInstanceSupporters List the supporters who chose to be listed
+	// (GET /instance/supporters)
+	ListInstanceSupporters(w http.ResponseWriter, r *http.Request, params ListInstanceSupportersParams)
 	// UploadMedia Upload a media file
 	// (POST /media)
 	UploadMedia(w http.ResponseWriter, r *http.Request)
@@ -9792,6 +10029,12 @@ type ServerInterface interface {
 	// UpdateBadgeChoice Show or hide the badge of a role on the authenticated user's profile
 	// (PUT /preferences/badges/{role_id})
 	UpdateBadgeChoice(w http.ResponseWriter, r *http.Request, roleId BadgeRoleId)
+	// GetSupporterListing Get whether the authenticated user is on the supporter list
+	// (GET /preferences/supporter_listing)
+	GetSupporterListing(w http.ResponseWriter, r *http.Request)
+	// UpdateSupporterListing Choose whether the authenticated user is on the supporter list
+	// (PUT /preferences/supporter_listing)
+	UpdateSupporterListing(w http.ResponseWriter, r *http.Request)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(w http.ResponseWriter, r *http.Request)
@@ -9873,6 +10116,30 @@ type ServerInterface interface {
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(w http.ResponseWriter, r *http.Request, id StatusId)
+	// StartSupporterCheckout Start a subscription to a supporter plan
+	// (POST /supporter/checkout)
+	StartSupporterCheckout(w http.ResponseWriter, r *http.Request)
+	// OpenSupporterPortal Open the payment provider's portal of the authenticated user
+	// (POST /supporter/portal)
+	OpenSupporterPortal(w http.ResponseWriter, r *http.Request)
+	// GetOwnSupporterSubscription Get the authenticated user's supporter subscription
+	// (GET /supporter/subscription)
+	GetOwnSupporterSubscription(w http.ResponseWriter, r *http.Request)
+	// CancelOwnSupporterSubscription Cancel the authenticated user's subscription at the end of its period
+	// (POST /supporter/subscription/cancel)
+	CancelOwnSupporterSubscription(w http.ResponseWriter, r *http.Request)
+	// CancelOwnSupporterScheduledChange Withdraw the scheduled change of the authenticated user's subscription
+	// (POST /supporter/subscription/cancel_scheduled_change)
+	CancelOwnSupporterScheduledChange(w http.ResponseWriter, r *http.Request)
+	// ChangeOwnSupporterSubscription Change the plan or the interval of the authenticated user's subscription
+	// (POST /supporter/subscription/change)
+	ChangeOwnSupporterSubscription(w http.ResponseWriter, r *http.Request)
+	// ResumeOwnSupporterSubscription Withdraw the cancellation of the authenticated user's subscription
+	// (POST /supporter/subscription/resume)
+	ResumeOwnSupporterSubscription(w http.ResponseWriter, r *http.Request)
+	// SyncOwnSupporterSubscription Re-read the authenticated user's subscription from the payment provider
+	// (POST /supporter/subscription/sync)
+	SyncOwnSupporterSubscription(w http.ResponseWriter, r *http.Request)
 	// GetHomeTimeline Get the home timeline
 	// (GET /timelines/home)
 	GetHomeTimeline(w http.ResponseWriter, r *http.Request, params GetHomeTimelineParams)
@@ -14927,6 +15194,65 @@ func (siw *ServerInterfaceWrapper) ListSupporterPlans(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListInstanceSupporters operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceSupporters(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInstanceSupportersParams
+
+	// ------------- Optional query parameter "plan_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "plan_id", r.URL.Query(), &params.PlanId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "plan_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceSupporters(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // UploadMedia operation middleware
 func (siw *ServerInterfaceWrapper) UploadMedia(w http.ResponseWriter, r *http.Request) {
 
@@ -15406,6 +15732,34 @@ func (siw *ServerInterfaceWrapper) UpdateBadgeChoice(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateBadgeChoice(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSupporterListing operation middleware
+func (siw *ServerInterfaceWrapper) GetSupporterListing(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSupporterListing(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSupporterListing operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSupporterListing(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSupporterListing(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -16184,6 +16538,118 @@ func (siw *ServerInterfaceWrapper) GetStatusSource(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// StartSupporterCheckout operation middleware
+func (siw *ServerInterfaceWrapper) StartSupporterCheckout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartSupporterCheckout(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OpenSupporterPortal operation middleware
+func (siw *ServerInterfaceWrapper) OpenSupporterPortal(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OpenSupporterPortal(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOwnSupporterSubscription operation middleware
+func (siw *ServerInterfaceWrapper) GetOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOwnSupporterSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelOwnSupporterSubscription operation middleware
+func (siw *ServerInterfaceWrapper) CancelOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelOwnSupporterSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelOwnSupporterScheduledChange operation middleware
+func (siw *ServerInterfaceWrapper) CancelOwnSupporterScheduledChange(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelOwnSupporterScheduledChange(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ChangeOwnSupporterSubscription operation middleware
+func (siw *ServerInterfaceWrapper) ChangeOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ChangeOwnSupporterSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResumeOwnSupporterSubscription operation middleware
+func (siw *ServerInterfaceWrapper) ResumeOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResumeOwnSupporterSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SyncOwnSupporterSubscription operation middleware
+func (siw *ServerInterfaceWrapper) SyncOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SyncOwnSupporterSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHomeTimeline operation middleware
 func (siw *ServerInterfaceWrapper) GetHomeTimeline(w http.ResponseWriter, r *http.Request) {
 
@@ -16578,6 +17044,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/domain_actions", wrapper.ListInstanceDomainActions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/cost_totals", wrapper.GetInstanceCostTotals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/supporter_plans", wrapper.ListSupporterPlans)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/supporters", wrapper.ListInstanceSupporters)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
@@ -16586,6 +17053,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/auto_delete", wrapper.UpdateAutoDeletePolicy)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences/badges", wrapper.ListBadgeChoices)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/badges/{role_id}", wrapper.UpdateBadgeChoice)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences/supporter_listing", wrapper.GetSupporterListing)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/supporter_listing", wrapper.UpdateSupporterListing)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/delete", wrapper.DeleteOwnAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/password", wrapper.GetPasswordStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/password", wrapper.ChangePassword)
@@ -16672,6 +17141,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/announcements", wrapper.ListAnnouncements)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/announcements/{id}/read", wrapper.MarkAnnouncementRead)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/finance/cost_totals", wrapper.GetFinanceCostTotals)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/supporter/subscription", wrapper.GetOwnSupporterSubscription)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/checkout", wrapper.StartSupporterCheckout)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/subscription/sync", wrapper.SyncOwnSupporterSubscription)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/subscription/change", wrapper.ChangeOwnSupporterSubscription)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/subscription/cancel", wrapper.CancelOwnSupporterSubscription)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/subscription/resume", wrapper.ResumeOwnSupporterSubscription)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/subscription/cancel_scheduled_change", wrapper.CancelOwnSupporterScheduledChange)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/portal", wrapper.OpenSupporterPortal)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/queue", wrapper.GetAdminQueue)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/jobs", wrapper.ListAdminJobs)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/jobs/{id}/attempts", wrapper.ListAdminJobAttempts)
@@ -27237,6 +27714,72 @@ func (response ListSupporterPlansdefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type ListInstanceSupportersRequestObject struct {
+	Params ListInstanceSupportersParams
+}
+
+type ListInstanceSupportersResponseObject interface {
+	VisitListInstanceSupportersResponse(w http.ResponseWriter) error
+}
+
+type ListInstanceSupporters200ResponseHeaders struct {
+	CacheControl *string
+	XRobotsTag   *string
+}
+
+type ListInstanceSupporters200JSONResponse struct {
+	Body    SupporterListPage
+	Headers ListInstanceSupporters200ResponseHeaders
+}
+
+func (response ListInstanceSupporters200JSONResponse) VisitListInstanceSupportersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.XRobotsTag != nil {
+		w.Header().Set("X-Robots-Tag", fmt.Sprint(*response.Headers.XRobotsTag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceSupportersdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInstanceSupportersdefaultApplicationProblemPlusJSONResponse) VisitListInstanceSupportersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UploadMediaRequestObject struct {
 	Body *multipart.Reader
 }
@@ -28471,6 +29014,129 @@ type UpdateBadgeChoicedefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UpdateBadgeChoicedefaultApplicationProblemPlusJSONResponse) VisitUpdateBadgeChoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupporterListingRequestObject struct {
+}
+
+type GetSupporterListingResponseObject interface {
+	VisitGetSupporterListingResponse(w http.ResponseWriter) error
+}
+
+type GetSupporterListing200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetSupporterListing200JSONResponse struct {
+	Body    SupporterListing
+	Headers GetSupporterListing200ResponseHeaders
+}
+
+func (response GetSupporterListing200JSONResponse) VisitGetSupporterListingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupporterListingdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetSupporterListingdefaultApplicationProblemPlusJSONResponse) VisitGetSupporterListingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupporterListingRequestObject struct {
+	Body *UpdateSupporterListingJSONRequestBody
+}
+
+type UpdateSupporterListingResponseObject interface {
+	VisitUpdateSupporterListingResponse(w http.ResponseWriter) error
+}
+
+type UpdateSupporterListing200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateSupporterListing200JSONResponse struct {
+	Body    SupporterListing
+	Headers UpdateSupporterListing200ResponseHeaders
+}
+
+func (response UpdateSupporterListing200JSONResponse) VisitUpdateSupporterListingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupporterListingdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateSupporterListingdefaultApplicationProblemPlusJSONResponse) VisitUpdateSupporterListingResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -30035,6 +30701,496 @@ func (response GetStatusSourcedefaultApplicationProblemPlusJSONResponse) VisitGe
 	return err
 }
 
+type StartSupporterCheckoutRequestObject struct {
+	Body *StartSupporterCheckoutJSONRequestBody
+}
+
+type StartSupporterCheckoutResponseObject interface {
+	VisitStartSupporterCheckoutResponse(w http.ResponseWriter) error
+}
+
+type StartSupporterCheckout200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type StartSupporterCheckout200JSONResponse struct {
+	Body    SupporterCheckout
+	Headers StartSupporterCheckout200ResponseHeaders
+}
+
+func (response StartSupporterCheckout200JSONResponse) VisitStartSupporterCheckoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartSupporterCheckoutdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response StartSupporterCheckoutdefaultApplicationProblemPlusJSONResponse) VisitStartSupporterCheckoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenSupporterPortalRequestObject struct {
+}
+
+type OpenSupporterPortalResponseObject interface {
+	VisitOpenSupporterPortalResponse(w http.ResponseWriter) error
+}
+
+type OpenSupporterPortal200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type OpenSupporterPortal200JSONResponse struct {
+	Body    SupporterPortal
+	Headers OpenSupporterPortal200ResponseHeaders
+}
+
+func (response OpenSupporterPortal200JSONResponse) VisitOpenSupporterPortalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenSupporterPortaldefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response OpenSupporterPortaldefaultApplicationProblemPlusJSONResponse) VisitOpenSupporterPortalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOwnSupporterSubscriptionRequestObject struct {
+}
+
+type GetOwnSupporterSubscriptionResponseObject interface {
+	VisitGetOwnSupporterSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type GetOwnSupporterSubscription200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetOwnSupporterSubscription200JSONResponse struct {
+	Body    OwnSupporterSubscription
+	Headers GetOwnSupporterSubscription200ResponseHeaders
+}
+
+func (response GetOwnSupporterSubscription200JSONResponse) VisitGetOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitGetOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOwnSupporterSubscriptionRequestObject struct {
+}
+
+type CancelOwnSupporterSubscriptionResponseObject interface {
+	VisitCancelOwnSupporterSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type CancelOwnSupporterSubscription200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type CancelOwnSupporterSubscription200JSONResponse struct {
+	Body    SupporterSubscription
+	Headers CancelOwnSupporterSubscription200ResponseHeaders
+}
+
+func (response CancelOwnSupporterSubscription200JSONResponse) VisitCancelOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CancelOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitCancelOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOwnSupporterScheduledChangeRequestObject struct {
+}
+
+type CancelOwnSupporterScheduledChangeResponseObject interface {
+	VisitCancelOwnSupporterScheduledChangeResponse(w http.ResponseWriter) error
+}
+
+type CancelOwnSupporterScheduledChange200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type CancelOwnSupporterScheduledChange200JSONResponse struct {
+	Body    SupporterSubscription
+	Headers CancelOwnSupporterScheduledChange200ResponseHeaders
+}
+
+func (response CancelOwnSupporterScheduledChange200JSONResponse) VisitCancelOwnSupporterScheduledChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOwnSupporterScheduledChangedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CancelOwnSupporterScheduledChangedefaultApplicationProblemPlusJSONResponse) VisitCancelOwnSupporterScheduledChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeOwnSupporterSubscriptionRequestObject struct {
+	Body *ChangeOwnSupporterSubscriptionJSONRequestBody
+}
+
+type ChangeOwnSupporterSubscriptionResponseObject interface {
+	VisitChangeOwnSupporterSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type ChangeOwnSupporterSubscription200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ChangeOwnSupporterSubscription200JSONResponse struct {
+	Body    SupporterSubscription
+	Headers ChangeOwnSupporterSubscription200ResponseHeaders
+}
+
+func (response ChangeOwnSupporterSubscription200JSONResponse) VisitChangeOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ChangeOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitChangeOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumeOwnSupporterSubscriptionRequestObject struct {
+}
+
+type ResumeOwnSupporterSubscriptionResponseObject interface {
+	VisitResumeOwnSupporterSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type ResumeOwnSupporterSubscription200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ResumeOwnSupporterSubscription200JSONResponse struct {
+	Body    SupporterSubscription
+	Headers ResumeOwnSupporterSubscription200ResponseHeaders
+}
+
+func (response ResumeOwnSupporterSubscription200JSONResponse) VisitResumeOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumeOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ResumeOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitResumeOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SyncOwnSupporterSubscriptionRequestObject struct {
+}
+
+type SyncOwnSupporterSubscriptionResponseObject interface {
+	VisitSyncOwnSupporterSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type SyncOwnSupporterSubscription200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type SyncOwnSupporterSubscription200JSONResponse struct {
+	Body    OwnSupporterSubscription
+	Headers SyncOwnSupporterSubscription200ResponseHeaders
+}
+
+func (response SyncOwnSupporterSubscription200JSONResponse) VisitSyncOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SyncOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SyncOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitSyncOwnSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHomeTimelineRequestObject struct {
 	Params GetHomeTimelineParams
 }
@@ -31070,6 +32226,9 @@ type StrictServerInterface interface {
 	// ListSupporterPlans List the supporter plans
 	// (GET /instance/supporter_plans)
 	ListSupporterPlans(ctx context.Context, request ListSupporterPlansRequestObject) (ListSupporterPlansResponseObject, error)
+	// ListInstanceSupporters List the supporters who chose to be listed
+	// (GET /instance/supporters)
+	ListInstanceSupporters(ctx context.Context, request ListInstanceSupportersRequestObject) (ListInstanceSupportersResponseObject, error)
 	// UploadMedia Upload a media file
 	// (POST /media)
 	UploadMedia(ctx context.Context, request UploadMediaRequestObject) (UploadMediaResponseObject, error)
@@ -31133,6 +32292,12 @@ type StrictServerInterface interface {
 	// UpdateBadgeChoice Show or hide the badge of a role on the authenticated user's profile
 	// (PUT /preferences/badges/{role_id})
 	UpdateBadgeChoice(ctx context.Context, request UpdateBadgeChoiceRequestObject) (UpdateBadgeChoiceResponseObject, error)
+	// GetSupporterListing Get whether the authenticated user is on the supporter list
+	// (GET /preferences/supporter_listing)
+	GetSupporterListing(ctx context.Context, request GetSupporterListingRequestObject) (GetSupporterListingResponseObject, error)
+	// UpdateSupporterListing Choose whether the authenticated user is on the supporter list
+	// (PUT /preferences/supporter_listing)
+	UpdateSupporterListing(ctx context.Context, request UpdateSupporterListingRequestObject) (UpdateSupporterListingResponseObject, error)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(ctx context.Context, request DeletePushSubscriptionRequestObject) (DeletePushSubscriptionResponseObject, error)
@@ -31214,6 +32379,30 @@ type StrictServerInterface interface {
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(ctx context.Context, request GetStatusSourceRequestObject) (GetStatusSourceResponseObject, error)
+	// StartSupporterCheckout Start a subscription to a supporter plan
+	// (POST /supporter/checkout)
+	StartSupporterCheckout(ctx context.Context, request StartSupporterCheckoutRequestObject) (StartSupporterCheckoutResponseObject, error)
+	// OpenSupporterPortal Open the payment provider's portal of the authenticated user
+	// (POST /supporter/portal)
+	OpenSupporterPortal(ctx context.Context, request OpenSupporterPortalRequestObject) (OpenSupporterPortalResponseObject, error)
+	// GetOwnSupporterSubscription Get the authenticated user's supporter subscription
+	// (GET /supporter/subscription)
+	GetOwnSupporterSubscription(ctx context.Context, request GetOwnSupporterSubscriptionRequestObject) (GetOwnSupporterSubscriptionResponseObject, error)
+	// CancelOwnSupporterSubscription Cancel the authenticated user's subscription at the end of its period
+	// (POST /supporter/subscription/cancel)
+	CancelOwnSupporterSubscription(ctx context.Context, request CancelOwnSupporterSubscriptionRequestObject) (CancelOwnSupporterSubscriptionResponseObject, error)
+	// CancelOwnSupporterScheduledChange Withdraw the scheduled change of the authenticated user's subscription
+	// (POST /supporter/subscription/cancel_scheduled_change)
+	CancelOwnSupporterScheduledChange(ctx context.Context, request CancelOwnSupporterScheduledChangeRequestObject) (CancelOwnSupporterScheduledChangeResponseObject, error)
+	// ChangeOwnSupporterSubscription Change the plan or the interval of the authenticated user's subscription
+	// (POST /supporter/subscription/change)
+	ChangeOwnSupporterSubscription(ctx context.Context, request ChangeOwnSupporterSubscriptionRequestObject) (ChangeOwnSupporterSubscriptionResponseObject, error)
+	// ResumeOwnSupporterSubscription Withdraw the cancellation of the authenticated user's subscription
+	// (POST /supporter/subscription/resume)
+	ResumeOwnSupporterSubscription(ctx context.Context, request ResumeOwnSupporterSubscriptionRequestObject) (ResumeOwnSupporterSubscriptionResponseObject, error)
+	// SyncOwnSupporterSubscription Re-read the authenticated user's subscription from the payment provider
+	// (POST /supporter/subscription/sync)
+	SyncOwnSupporterSubscription(ctx context.Context, request SyncOwnSupporterSubscriptionRequestObject) (SyncOwnSupporterSubscriptionResponseObject, error)
 	// GetHomeTimeline Get the home timeline
 	// (GET /timelines/home)
 	GetHomeTimeline(ctx context.Context, request GetHomeTimelineRequestObject) (GetHomeTimelineResponseObject, error)
@@ -35943,6 +37132,32 @@ func (sh *strictHandler) ListSupporterPlans(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// ListInstanceSupporters operation middleware
+func (sh *strictHandler) ListInstanceSupporters(w http.ResponseWriter, r *http.Request, params ListInstanceSupportersParams) {
+	var request ListInstanceSupportersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInstanceSupporters(ctx, request.(ListInstanceSupportersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInstanceSupporters")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInstanceSupportersResponseObject); ok {
+		if err := validResponse.VisitListInstanceSupportersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // UploadMedia operation middleware
 func (sh *strictHandler) UploadMedia(w http.ResponseWriter, r *http.Request) {
 	var request UploadMediaRequestObject
@@ -36521,6 +37736,61 @@ func (sh *strictHandler) UpdateBadgeChoice(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateBadgeChoiceResponseObject); ok {
 		if err := validResponse.VisitUpdateBadgeChoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSupporterListing operation middleware
+func (sh *strictHandler) GetSupporterListing(w http.ResponseWriter, r *http.Request) {
+	var request GetSupporterListingRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSupporterListing(ctx, request.(GetSupporterListingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSupporterListing")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSupporterListingResponseObject); ok {
+		if err := validResponse.VisitGetSupporterListingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSupporterListing operation middleware
+func (sh *strictHandler) UpdateSupporterListing(w http.ResponseWriter, r *http.Request) {
+	var request UpdateSupporterListingRequestObject
+
+	var body UpdateSupporterListingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSupporterListing(ctx, request.(UpdateSupporterListingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSupporterListing")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSupporterListingResponseObject); ok {
+		if err := validResponse.VisitUpdateSupporterListingResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -37267,6 +38537,212 @@ func (sh *strictHandler) GetStatusSource(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetStatusSourceResponseObject); ok {
 		if err := validResponse.VisitGetStatusSourceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartSupporterCheckout operation middleware
+func (sh *strictHandler) StartSupporterCheckout(w http.ResponseWriter, r *http.Request) {
+	var request StartSupporterCheckoutRequestObject
+
+	var body StartSupporterCheckoutJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartSupporterCheckout(ctx, request.(StartSupporterCheckoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartSupporterCheckout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartSupporterCheckoutResponseObject); ok {
+		if err := validResponse.VisitStartSupporterCheckoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OpenSupporterPortal operation middleware
+func (sh *strictHandler) OpenSupporterPortal(w http.ResponseWriter, r *http.Request) {
+	var request OpenSupporterPortalRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OpenSupporterPortal(ctx, request.(OpenSupporterPortalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OpenSupporterPortal")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OpenSupporterPortalResponseObject); ok {
+		if err := validResponse.VisitOpenSupporterPortalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOwnSupporterSubscription operation middleware
+func (sh *strictHandler) GetOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+	var request GetOwnSupporterSubscriptionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOwnSupporterSubscription(ctx, request.(GetOwnSupporterSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOwnSupporterSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOwnSupporterSubscriptionResponseObject); ok {
+		if err := validResponse.VisitGetOwnSupporterSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelOwnSupporterSubscription operation middleware
+func (sh *strictHandler) CancelOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+	var request CancelOwnSupporterSubscriptionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelOwnSupporterSubscription(ctx, request.(CancelOwnSupporterSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelOwnSupporterSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelOwnSupporterSubscriptionResponseObject); ok {
+		if err := validResponse.VisitCancelOwnSupporterSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelOwnSupporterScheduledChange operation middleware
+func (sh *strictHandler) CancelOwnSupporterScheduledChange(w http.ResponseWriter, r *http.Request) {
+	var request CancelOwnSupporterScheduledChangeRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelOwnSupporterScheduledChange(ctx, request.(CancelOwnSupporterScheduledChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelOwnSupporterScheduledChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelOwnSupporterScheduledChangeResponseObject); ok {
+		if err := validResponse.VisitCancelOwnSupporterScheduledChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeOwnSupporterSubscription operation middleware
+func (sh *strictHandler) ChangeOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+	var request ChangeOwnSupporterSubscriptionRequestObject
+
+	var body ChangeOwnSupporterSubscriptionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeOwnSupporterSubscription(ctx, request.(ChangeOwnSupporterSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeOwnSupporterSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ChangeOwnSupporterSubscriptionResponseObject); ok {
+		if err := validResponse.VisitChangeOwnSupporterSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResumeOwnSupporterSubscription operation middleware
+func (sh *strictHandler) ResumeOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+	var request ResumeOwnSupporterSubscriptionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResumeOwnSupporterSubscription(ctx, request.(ResumeOwnSupporterSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResumeOwnSupporterSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResumeOwnSupporterSubscriptionResponseObject); ok {
+		if err := validResponse.VisitResumeOwnSupporterSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SyncOwnSupporterSubscription operation middleware
+func (sh *strictHandler) SyncOwnSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+	var request SyncOwnSupporterSubscriptionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SyncOwnSupporterSubscription(ctx, request.(SyncOwnSupporterSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SyncOwnSupporterSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SyncOwnSupporterSubscriptionResponseObject); ok {
+		if err := validResponse.VisitSyncOwnSupporterSubscriptionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

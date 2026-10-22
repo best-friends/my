@@ -220,6 +220,7 @@ var scopeDescriptions = map[string]func(*i18n.Localizer) string{
 	identity.ScopeReadNotifications:  (*i18n.Localizer).ServerAuthAuthorizeScopeReadNotifications,
 	identity.ScopeReadReports:        (*i18n.Localizer).ServerAuthAuthorizeScopeReadReports,
 	identity.ScopeReadStatuses:       (*i18n.Localizer).ServerAuthAuthorizeScopeReadStatuses,
+	identity.ScopeReadSupporters:     (*i18n.Localizer).ServerAuthAuthorizeScopeReadSupporters,
 	identity.ScopeWriteAccounts:      (*i18n.Localizer).ServerAuthAuthorizeScopeWriteAccounts,
 	identity.ScopeWriteBlocks:        (*i18n.Localizer).ServerAuthAuthorizeScopeWriteBlocks,
 	identity.ScopeWriteBookmarks:     (*i18n.Localizer).ServerAuthAuthorizeScopeWriteBookmarks,
@@ -231,6 +232,7 @@ var scopeDescriptions = map[string]func(*i18n.Localizer) string{
 	identity.ScopeWriteNotifications: (*i18n.Localizer).ServerAuthAuthorizeScopeWriteNotifications,
 	identity.ScopeWriteReports:       (*i18n.Localizer).ServerAuthAuthorizeScopeWriteReports,
 	identity.ScopeWriteStatuses:      (*i18n.Localizer).ServerAuthAuthorizeScopeWriteStatuses,
+	identity.ScopeWriteSupporters:    (*i18n.Localizer).ServerAuthAuthorizeScopeWriteSupporters,
 }
 
 func scopeDescription(l *i18n.Localizer, scope string) string {

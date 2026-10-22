@@ -1246,7 +1246,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact, require_media_description, link_cards_enabled, finance_visibility, finance_viewer_item_names, finance_viewer_item_memos, finance_viewer_income)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
+| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact, require_media_description, link_cards_enabled, finance_visibility, finance_viewer_item_names, finance_viewer_item_memos, finance_viewer_income, supporter_list_visibility)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
 | `instance_settings` | 投影 | `key`（PK）, `revision_id`, `value` | |
 | `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt)`）, `body`（空 = 文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)`。文章はキーごとに 1 つの値で、どのロケールでも同じ値を表示する（ADR-0009） |
 | `instance_texts` | 投影 | `key`（PK）, `revision_id` | |
@@ -1435,6 +1435,8 @@ flowchart LR
 
 - 状態は、webhook・決済画面からの戻り・Scheduler の期限・定期の照合のどれも、事業者からサブスクリプションを取り直して `supporters.Derive` で導きます（`Syncer`、ジョブ `supporters.sync`）。
   導いた状態か、プラン・価格・期間の終わり・猶予・予約された変更が直前の遷移と違うときだけ遷移の行を足し、同じトランザクションで投影と期限、プランのロールの付与・剥奪・入れ替え（`identity` の管理されたロールの操作）を書きます。ロールが外れる遷移は `supporter_listings` の行も消します。
+- 掲載の選択（`supporter_listings`）は、加入中（`active`・`canceling`・`past_due`）の本人が `PUT /preferences/supporter_listing` で入れ、取り消すと消えます。入れる処理は加入の行をロックして状態を確かめるので、ロールが外れる遷移と入れ違っても加入の終わった人の行は残りません。
+  一覧（`GET /instance/supporters`）は、行と加入中の加入の投影と廃止していないプランの投影を結合し、プランの順位の順・載せた新しい順に読みます。
 - 期限は、`pending` が開始から 24 時間（`checkout`）、`active`・`canceling` が期間の終わり（`period_end`）、`past_due` が猶予の終わり（`grace`）です。5 分ごとのジョブ `supporters.deadlines` が期限の来た行に `supporters.sync` を積みます。
 - 事業者への命令（すぐ解約・期間の終わりの解約）は、遷移のトランザクションで積むジョブ `supporters.command` がコミットの後に送り、取り直したスナップショットを当てます。全額の返金とチャージバック、アカウントの削除（BAN の予約を含む）、管理者による解約は、こちらの状態を先に終端にしてから事業者をすぐ解約します。凍結は期間の終わりの解約を予約します。
 - プランの作成と、条件の版を足す変更は、同じトランザクションでジョブ `supporters.ensure_prices`（冪等キー `ensure_prices:<版の ID>`）を積みます。ジョブは事業者に月と年の価格を作らせ（`EnsurePlan`）、`supporter_plan_prices` と今の価格、アーカイブを記録します。既存の加入はもとの価格のまま続きます。
@@ -1775,6 +1777,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_*` の表 |
 | FR-912 課金のロールの安全柵 | S | `managed_roles`, `role_permissions`, `roles` |
 | FR-913 ロールのバッジ | S | `role_badges`, `user_role_badge_displays`, `user_roles` |
+| FR-914 参加者の一覧 | S | `supporter_listings`, `supporter_subscription_heads`, `supporter_plan_heads`, `instance_settings`（`supporter_list_visibility`） |
 | FR-915 絵文字の作成の権限と承認制 | S | `role_permissions`（`create_custom_emojis`）, `custom_emojis`（`created_by_user_id`）, `custom_emoji_requests`, `custom_emoji_request_outcomes`, `custom_emoji_pending_requests`, `audit_log_entries`, `notifications`（`admin_custom_emoji_request`, `custom_emoji_request_decided`） |
 | FR-916 会計の閲覧の権限 | S | `role_permissions`（`view_finance`）, `instance_settings`（`finance_viewer_item_names`, `finance_viewer_item_memos`, `finance_viewer_income`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |

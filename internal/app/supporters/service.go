@@ -58,6 +58,8 @@ type User struct {
 type Users interface {
 	// SupporterUser returns a local user; ErrNotFound for an unknown or remote one.
 	SupporterUser(ctx context.Context, userID string) (User, error)
+	// AccountIDs returns the local accounts of users, by user ID; a user without one is left out.
+	AccountIDs(ctx context.Context, userIDs []string) (map[string]string, error)
 }
 
 // Accounts finds the local account of an account in a transaction: *account.Service

@@ -77,8 +77,10 @@ type SubscriptionView struct {
 	// Plan is the plan that the subscription pays for now, and Price its price.
 	Plan  PlanRecord
 	Price Price
-	// ScheduledPrice is the price a scheduled change switches to; nil without one.
+	// ScheduledPrice is the price a scheduled change switches to, and ScheduledPlan its plan;
+	// both nil without one.
 	ScheduledPrice *Price
+	ScheduledPlan  *PlanRecord
 }
 
 // view returns a subscription with its plan and prices.
@@ -97,6 +99,38 @@ func (s *Service) view(ctx context.Context, rec SubscriptionRecord) (Subscriptio
 			return SubscriptionView{}, err
 		}
 		v.ScheduledPrice = &p
+		plan, err := s.d.Repository.FindPlan(ctx, nil, p.PlanID)
+		if err != nil {
+			return SubscriptionView{}, err
+		}
+		v.ScheduledPlan = &plan
+	}
+	return v, nil
+}
+
+// Eligibility returns why a user may not subscribe (ADR-0072 §6), "" for a user who may; a
+// subscription that goes on is not a reason here (see OwnSubscription).
+func (s *Service) Eligibility(ctx context.Context, userID string) (Eligibility, error) {
+	_, err := s.eligible(ctx, userID)
+	var ie *IneligibleError
+	if errors.As(err, &ie) {
+		return ie.Reason, nil
+	}
+	return "", err
+}
+
+// Returned queues the re-read of a user's live subscription from the provider (JobSync), which
+// the web client asks for when the provider's checkout or portal returns to it (ADR-0072 §6),
+// and returns the subscription as it is now. It fails as OwnSubscription does.
+func (s *Service) Returned(ctx context.Context, userID string) (SubscriptionView, error) {
+	v, err := s.OwnSubscription(ctx, userID)
+	if err != nil {
+		return SubscriptionView{}, err
+	}
+	cause := "return:" + s.d.IDs.NewID()
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.d.Outbox.EnqueueTx(ctx, tx, SyncJob(v.ID, cause)) })
+	if err != nil {
+		return SubscriptionView{}, err
 	}
 	return v, nil
 }

@@ -209,6 +209,27 @@ WHERE state IN ('active', 'canceling', 'past_due') GROUP BY plan_id ORDER BY pla
 SELECT id, user_id, plan_id FROM supporter_subscriptions
 WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) ORDER BY id;
 
+-- name: InsertSupporterListing :exec
+INSERT INTO supporter_listings (user_id, created_at) VALUES (?, ?) ON CONFLICT (user_id) DO NOTHING;
+
+-- name: HasSupporterListing :one
+SELECT CAST(EXISTS (SELECT 1 FROM supporter_listings WHERE user_id = ?) AS INTEGER) AS found;
+
+-- ListSupporterListings returns a page of the listed members of the plans that are not
+-- retired, by the plan's rank and newest first within a plan, after the member of after_user_id
+-- (its plan's rank and when it was listed) unless that is ''; of plan_id unless it is ''.
+-- name: ListSupporterListings :many
+SELECT l.user_id, h.plan_id, ph.rank, l.created_at FROM supporter_listings l
+JOIN supporter_live_subscriptions s ON s.user_id = l.user_id
+JOIN supporter_subscription_heads h ON h.subscription_id = s.subscription_id
+JOIN supporter_plan_heads ph ON ph.plan_id = h.plan_id
+WHERE h.state IN ('active', 'canceling', 'past_due')
+  AND (CAST(sqlc.arg(plan_id) AS TEXT) = '' OR h.plan_id = sqlc.arg(plan_id))
+  AND (CAST(sqlc.arg(after_user_id) AS TEXT) = '' OR ph.rank > sqlc.arg(after_rank)
+    OR (ph.rank = sqlc.arg(after_rank) AND (l.created_at < sqlc.arg(after_at)
+      OR (l.created_at = sqlc.arg(after_at) AND l.user_id < sqlc.arg(after_user_id)))))
+ORDER BY ph.rank, l.created_at DESC, l.user_id DESC LIMIT sqlc.arg(lim);
+
 -- name: DeleteSupporterListing :exec
 DELETE FROM supporter_listings WHERE user_id = ?;
 

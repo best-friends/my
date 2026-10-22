@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The payment provider's hosted checkout of a subscription.
+type: object
+required: [subscription_id, redirect_url]
+properties:
+  subscription_id:
+    $ref: ./Id.yaml
+  redirect_url:
+    description: The checkout, to open in the same tab.
+    type: string
+    format: uri

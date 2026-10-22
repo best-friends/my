@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: cancelOwnSupporterSubscription
+  summary: Cancel the authenticated user's subscription at the end of its period
+  description: |
+    Cancels an `active` or `past_due` subscription at the end of its period: the plan's role
+    stays until then (`canceling`, ADR-0072 §7). A 409
+    `/api/v1/problems/supporter-subscription-state` in another state.
+  tags: [supporters]
+  security:
+    - oauth2: ["write:supporters"]
+  responses:
+    "200":
+      description: The subscription after the cancellation.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SupporterSubscription.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

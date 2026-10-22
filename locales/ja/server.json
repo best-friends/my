@@ -87,6 +87,10 @@
     "defaultMessage": "投稿とタイムラインの読み取り",
     "description": "Permission (OAuth scope read:statuses) listed on the authorization page."
   },
+  "auth.authorize.scope.read_supporters": {
+    "defaultMessage": "サポーターのプランへのあなたの加入の閲覧",
+    "description": "Permission (OAuth scope read:supporters) listed on the authorization page."
+  },
   "auth.authorize.scope.write": {
     "defaultMessage": "あなたに代わっての投稿と変更",
     "description": "Permission (OAuth scope write) listed on the authorization page."
@@ -134,6 +138,10 @@
   "auth.authorize.scope.write_statuses": {
     "defaultMessage": "投稿の作成・編集・削除・ブースト・ピン留め",
     "description": "Permission (OAuth scope write:statuses) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_supporters": {
+    "defaultMessage": "サポーターのプランへの加入と、加入の変更・解約・解約の取り消し",
+    "description": "Permission (OAuth scope write:supporters) listed on the authorization page."
   },
   "auth.authorize.title": {
     "defaultMessage": "{app} を認可",
@@ -826,6 +834,34 @@
   "errors.supporters.subscription_ended": {
     "defaultMessage": "この加入は終わっています。",
     "description": "API error title for HTTP 409 when an administrator cancels a subscription to a supporter plan that has ended."
+  },
+  "errors.supporters.ineligible": {
+    "defaultMessage": "サポーターのプランに加入できません。",
+    "description": "API error title for HTTP 422 when a user who may not subscribe starts a subscription to a supporter plan (ADR-0072 §6); the detail says why."
+  },
+  "errors.supporters.ineligible_detail": {
+    "defaultMessage": "{reason, select, not_local {このサーバーの利用者だけが加入できます。} email_unverified {先にメールアドレスを確認してください。} restricted {あなたのアカウントは制限されています。} other {いまは加入できません。}}",
+    "description": "API error detail for HTTP 422 when a user may not subscribe to a supporter plan. {reason} is not_local, email_unverified, or restricted."
+  },
+  "errors.supporters.subscribed": {
+    "defaultMessage": "すでに加入しています。",
+    "description": "API error title for HTTP 409 when a user who has a subscription to a supporter plan starts another one (ADR-0072 §6: one plan at a time)."
+  },
+  "errors.supporters.subscribed_detail": {
+    "defaultMessage": "代わりに、いまの加入のプランを変更してください。",
+    "description": "API error detail for HTTP 409 when a user who has a subscription starts another one."
+  },
+  "errors.supporters.plan_unavailable": {
+    "defaultMessage": "このサポーターのプランは加入を受け付けていません。",
+    "description": "API error title for HTTP 422 when a user subscribes or changes to a supporter plan that takes no subscriptions (hidden, retired, not ready, or of another currency)."
+  },
+  "errors.supporters.subscription_state": {
+    "defaultMessage": "いまの加入の状態ではこの操作はできません。",
+    "description": "API error title for HTTP 409 when the state of a user's subscription to a supporter plan does not allow the operation (ADR-0072 §8): a change needs an active subscription, a cancellation an active or past-due one, a resumption a canceling one."
+  },
+  "errors.supporters.same_plan": {
+    "defaultMessage": "いまの加入がすでにこのプランと支払いの間隔です。",
+    "description": "API error title for HTTP 422 when a user changes their subscription to the plan and interval it has."
   },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",

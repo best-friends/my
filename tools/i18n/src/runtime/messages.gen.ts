@@ -2858,6 +2858,24 @@ export interface MessageArgs {
   "client:admin.settings.remote_media.ttl.description": {};
   /** The server's name and descriptions, who may sign up, its default language, timelines and federation. */
   "client:admin.settings.summary": {};
+  /** The supporter list on /about/supporters shows, by plan, the members who chose to be listed: their avatar, name and handle only, never amounts or dates. Search engines are always asked not to index it. */
+  "client:admin.settings.supporter_list.description": {};
+  /** Nobody */
+  "client:admin.settings.supporter_list.off": {};
+  /** The list is not published, and the about page does not link to it. */
+  "client:admin.settings.supporter_list.off.description": {};
+  /** Everyone */
+  "client:admin.settings.supporter_list.public": {};
+  /** Anyone may read the list, signed in or not. */
+  "client:admin.settings.supporter_list.public.description": {};
+  /** Signed-in users */
+  "client:admin.settings.supporter_list.signed_in": {};
+  /** Only people signed in to this server may read the list. */
+  "client:admin.settings.supporter_list.signed_in.description": {};
+  /** Supporter list */
+  "client:admin.settings.supporter_list.title": {};
+  /** Who may read the supporter list */
+  "client:admin.settings.supporter_list.visibility": {};
   /** Offer the federated timeline */
   "client:admin.settings.timelines.federated": {};
   /** The public posts that reach this server, from other servers too. */
@@ -5510,6 +5528,228 @@ export interface MessageArgs {
   "client:status.unpin.done": {};
   /** Could not unpin the post: {reason} */
   "client:status.unpin.failed": { reason: string };
+  /** This page is not available in the app. */
+  "client:supporter.app": {};
+  /** Cancel */
+  "client:supporter.cancel": {};
+  /** Cancel the subscription */
+  "client:supporter.cancel_subscription": {};
+  /** The subscription ends at the end of the period you paid for, and the benefits stay until then. No more payments are made. You can resume it before the period ends. */
+  "client:supporter.cancel_subscription.description": {};
+  /** Cancel {plan}? */
+  "client:supporter.cancel_subscription.title": { plan: string };
+  /** Change the plan */
+  "client:supporter.change": {};
+  /** Change to {plan}? */
+  "client:supporter.change.confirm": { plan: string };
+  /** A higher plan or yearly payment starts at once, and the difference for the rest of the period is charged now. A lower plan or monthly payment starts at the end of the period. */
+  "client:supporter.change.description": {};
+  /** The change starts now, and the difference for the rest of the period is charged at once. */
+  "client:supporter.change.now": {};
+  /** The change starts at the end of the period. Until then you keep your current plan, and you can withdraw the change. */
+  "client:supporter.change.period_end": {};
+  /** You pay {price} now, an earlier price. After a change you pay the current price of the new plan, even if you come back to this plan. */
+  "client:supporter.change.price_kept": { price: string };
+  /** A higher plan or yearly payment starts now with the difference charged at once; a lower plan or monthly payment starts at the end of the period. */
+  "client:supporter.change.rules": {};
+  /** Change the plan */
+  "client:supporter.change.title": {};
+  /** Choose another plan or payment interval to change. */
+  "client:supporter.change.unchanged": {};
+  /** Could not change the subscription: {reason} */
+  "client:supporter.command.failed": { reason: string };
+  /** Commerce disclosures */
+  "client:supporter.commerce": {};
+  /** Amount */
+  "client:supporter.confirm.amount": {};
+  /** {price}, the same at every renewal */
+  "client:supporter.confirm.amount.value": { price: string };
+  /** Benefits */
+  "client:supporter.confirm.benefits": {};
+  /** Start as soon as the payment is confirmed */
+  "client:supporter.confirm.benefits.value": {};
+  /** Cancelling */
+  "client:supporter.confirm.cancel": {};
+  /** Cancel at any time on this page. The benefits stay until the end of the period you paid for, and no more payments are made. */
+  "client:supporter.confirm.cancel.value": {};
+  /** Check the terms below. You enter your payment details on the payment provider's page, not on this server. */
+  "client:supporter.confirm.description": {};
+  /** Could not open the payment page: {reason} */
+  "client:supporter.confirm.failed": { reason: string };
+  /** Go to payment */
+  "client:supporter.confirm.go": {};
+  /** Payments */
+  "client:supporter.confirm.payments": {};
+  /** {interval, select, year {Now, then every year} other {Now, then every month}} */
+  "client:supporter.confirm.payments.value": { interval: "year" | (string & {}) };
+  /** Plan */
+  "client:supporter.confirm.plan": {};
+  /** Subscribe to {plan}? */
+  "client:supporter.confirm.title": { plan: string };
+  /** Continue to payment */
+  "client:supporter.continue_checkout": {};
+  /** This server does not offer supporter plans. */
+  "client:supporter.disabled": {};
+  /** The subscription has ended. */
+  "client:supporter.error.ended": {};
+  /** Your account cannot subscribe. */
+  "client:supporter.error.ineligible": {};
+  /** This plan takes no subscriptions now. */
+  "client:supporter.error.plan_unavailable": {};
+  /** This is your current plan and payment interval. */
+  "client:supporter.error.same_plan": {};
+  /** The subscription's state does not allow this now. Reload the page. */
+  "client:supporter.error.state": {};
+  /** You have a subscription already. Change its plan instead. */
+  "client:supporter.error.subscribed": {};
+  /** Could not load the supporter plans */
+  "client:supporter.failed": {};
+  /** To subscribe, first verify your email address with the link in the email the server sent you. */
+  "client:supporter.ineligible.email_unverified": {};
+  /** Only users of this server can subscribe. */
+  "client:supporter.ineligible.not_local": {};
+  /** Your account cannot subscribe while it is suspended or being deleted. */
+  "client:supporter.ineligible.restricted": {};
+  /** Monthly */
+  "client:supporter.interval.month": {};
+  /** Yearly */
+  "client:supporter.interval.year": {};
+  /** Keep the subscription */
+  "client:supporter.keep": {};
+  /** The supporter list shows your avatar, name and handle under your plan, never an amount or a date. Nobody is listed until they choose to be, and your choice ends with your subscription. */
+  "client:supporter.listing.description": {};
+  /** Could not save the choice: {reason} */
+  "client:supporter.listing.failed": { reason: string };
+  /** You are on the supporter list. */
+  "client:supporter.listing.listed": {};
+  /** List me on the supporter list */
+  "client:supporter.listing.switch": {};
+  /** Supporter list */
+  "client:supporter.listing.title": {};
+  /** You are off the supporter list. */
+  "client:supporter.listing.unlisted": {};
+  /** Loading the supporter plans */
+  "client:supporter.loading": {};
+  /** Your subscription ends at the end of the period, and the benefits stay until then. Resume it to keep it. */
+  "client:supporter.note.canceling": {};
+  /** The benefits are paused because a payment is overdue. Update your payment method, or cancel the subscription. */
+  "client:supporter.note.lapsed": {};
+  /** A payment failed. Update your payment method before the benefits end. */
+  "client:supporter.note.past_due": {};
+  /** The payment is not complete yet. Continue to the payment page to finish subscribing. */
+  "client:supporter.note.pending": {};
+  /** {amount} a month */
+  "client:supporter.per_month": { amount: string };
+  /** {amount} a year */
+  "client:supporter.per_year": { amount: string };
+  /** A plan supports the running of this server. A higher plan includes everything of the lower ones. You can subscribe to one plan at a time. */
+  "client:supporter.plans.description": {};
+  /** No plans take subscriptions now. */
+  "client:supporter.plans.empty": {};
+  /** Payment */
+  "client:supporter.plans.interval": {};
+  /** Plan */
+  "client:supporter.plans.plan": {};
+  /** {monthly} or {yearly} */
+  "client:supporter.plans.prices": { monthly: string; yearly: string };
+  /** Choose a plan */
+  "client:supporter.plans.title": {};
+  /** Payment methods and invoices */
+  "client:supporter.portal": {};
+  /** Could not open the page of payment methods: {reason} */
+  "client:supporter.portal.failed": { reason: string };
+  /** Resume the subscription */
+  "client:supporter.resume": {};
+  /** Try again */
+  "client:supporter.retry": {};
+  /** You left the payment page. Nothing was charged. */
+  "client:supporter.return.canceled": {};
+  /** Confirming your payment with the payment provider. This takes a few seconds. */
+  "client:supporter.return.confirming": {};
+  /** Thank you for your support. Your subscription is confirmed. */
+  "client:supporter.return.started": {};
+  /** Not completed */
+  "client:supporter.state.abandoned": {};
+  /** Active */
+  "client:supporter.state.active": {};
+  /** Cancelled at the end of the period */
+  "client:supporter.state.canceling": {};
+  /** Ended */
+  "client:supporter.state.expired": {};
+  /** Paused, payment overdue */
+  "client:supporter.state.lapsed": {};
+  /** Payment failed */
+  "client:supporter.state.past_due": {};
+  /** Waiting for payment */
+  "client:supporter.state.pending": {};
+  /** Refunded */
+  "client:supporter.state.revoked": {};
+  /** Subscribe */
+  "client:supporter.subscribe": {};
+  /** Cancelled the subscription at the end of the period. */
+  "client:supporter.subscription.canceled": {};
+  /** Changed the plan. */
+  "client:supporter.subscription.changed": {};
+  /** Ends on */
+  "client:supporter.subscription.ends_at": {};
+  /** Benefits end on */
+  "client:supporter.subscription.grace_ends_at": {};
+  /** Plan */
+  "client:supporter.subscription.plan": {};
+  /** Price */
+  "client:supporter.subscription.price": {};
+  /** Renews on */
+  "client:supporter.subscription.renews_at": {};
+  /** Resumed the subscription. */
+  "client:supporter.subscription.resumed": {};
+  /** Scheduled change */
+  "client:supporter.subscription.scheduled": {};
+  /** To {plan} at {price} on {date} */
+  "client:supporter.subscription.scheduled.value": { date: string; plan: string; price: string };
+  /** State */
+  "client:supporter.subscription.state": {};
+  /** Your subscription */
+  "client:supporter.subscription.title": {};
+  /** Withdrew the scheduled change. */
+  "client:supporter.subscription.unscheduled": {};
+  /** Support this server with a monthly or yearly plan, and manage your subscription. */
+  "client:supporter.summary": {};
+  /** Supporter plans */
+  "client:supporter.title": {};
+  /** Withdraw the scheduled change */
+  "client:supporter.unschedule": {};
+  /** Users of this server can support it with these plans. */
+  "client:supporters.about.description": {};
+  /** See the supporter list */
+  "client:supporters.about.list": {};
+  /** See the plans and subscribe */
+  "client:supporters.about.subscribe": {};
+  /** Supporters */
+  "client:supporters.about.title": {};
+  /** About this server */
+  "client:supporters.list.about": {};
+  /** The members of the plans who chose to be listed, by plan. */
+  "client:supporters.list.description": {};
+  /** Nobody is listed yet. */
+  "client:supporters.list.empty": {};
+  /** Could not load the supporter list */
+  "client:supporters.list.failed": {};
+  /** This server does not publish a supporter list. */
+  "client:supporters.list.hidden": {};
+  /** Loading the supporter list */
+  "client:supporters.list.loading": {};
+  /** Show more */
+  "client:supporters.list.more": {};
+  /** Could not load more supporters */
+  "client:supporters.list.more_failed": {};
+  /** Try again */
+  "client:supporters.list.retry": {};
+  /** Sign in */
+  "client:supporters.list.sign_in": {};
+  /** Only signed-in users can read the supporter list. */
+  "client:supporters.list.signed_in_only": {};
+  /** Supporters of {instance} */
+  "client:supporters.list.title": { instance: string };
   /** #{tag} */
   "client:tag.title": { tag: string };
   /** {name} boosted */
@@ -5632,6 +5872,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_reports": {};
   /** Read posts and timelines */
   "server:auth.authorize.scope.read_statuses": {};
+  /** Read your subscription to the supporter plans */
+  "server:auth.authorize.scope.read_supporters": {};
   /** Post and change things for you */
   "server:auth.authorize.scope.write": {};
   /** Change your profile and settings */
@@ -5656,6 +5898,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_reports": {};
   /** Post, edit, delete, boost, and pin posts */
   "server:auth.authorize.scope.write_statuses": {};
+  /** Subscribe to the supporter plans, and change, cancel, and resume your subscription */
+  "server:auth.authorize.scope.write_supporters": {};
   /** Authorize {app} */
   "server:auth.authorize.title": { app: string };
   /** The request was refused because it came from another site. */
@@ -6070,6 +6314,10 @@ export interface MessageArgs {
   "server:errors.streaming.too_many": {};
   /** Real-time updates are unavailable right now. Try again later. */
   "server:errors.streaming.unavailable": {};
+  /** You cannot subscribe to the supporter plans. */
+  "server:errors.supporters.ineligible": {};
+  /** {reason, select, not_local {Only the users of this server can subscribe.} email_unverified {Verify your email address first.} restricted {Your account is restricted.} other {You cannot subscribe now.}} */
+  "server:errors.supporters.ineligible_detail": { reason: "email_unverified" | "not_local" | "restricted" | (string & {}) };
   /** Subscriptions to the supporter plans go on. */
   "server:errors.supporters.live_subscriptions": {};
   /** Retire the plans and wait for their subscriptions to end before disabling the program. */
@@ -6080,8 +6328,18 @@ export interface MessageArgs {
   "server:errors.supporters.plan_invalid_detail": { reason: "annual_discount_percent" | "currency" | "description" | "emoji_limit" | "monthly_price" | "name" | "order_emoji_limit" | "order_permissions" | "order_position" | "order_rank" | "rank" | "role_builtin" | "role_held" | "role_permissions" | "role_position" | "role_taken" | "visibility" | (string & {}) };
   /** The supporter plan is retired. */
   "server:errors.supporters.plan_retired": {};
+  /** The supporter plan takes no subscriptions. */
+  "server:errors.supporters.plan_unavailable": {};
+  /** Your subscription has this plan and interval already. */
+  "server:errors.supporters.same_plan": {};
+  /** You have a subscription already. */
+  "server:errors.supporters.subscribed": {};
+  /** Change the plan of your subscription instead. */
+  "server:errors.supporters.subscribed_detail": {};
   /** The subscription has ended. */
   "server:errors.supporters.subscription_ended": {};
+  /** Your subscription cannot do that in its current state. */
+  "server:errors.supporters.subscription_state": {};
   /** The supporter program is not available on this server. */
   "server:errors.supporters.unavailable": {};
   /** {reason, select, no_provider {Configure a payment provider in the server's configuration first.} no_email {The server must send email, so that subscribers can verify their address.} provider_mismatch {The configured payment provider is not the one the program was enabled with. Disable the program and enable it again.} other {The supporter program cannot be used now.}} */

@@ -28,6 +28,9 @@ type Options struct {
 	// responses carry to them (Account.url of a local account, Status.url of a local status,
 	// StatusTag.url); "" means https://Host. The ActivityPub ids stay under https://Host.
 	Origin string
+	// WebOrigin is the origin of the web client, which the payment provider's checkout and
+	// portal return to (supporters.go); "" means Origin.
+	WebOrigin string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
 	// SourceURL is where users get the server's source code, an https URL or a mailto: address (ADR-0011).
@@ -191,6 +194,9 @@ type Options struct {
 	// Supporters runs the supporter program, its plans, and their subscriptions
 	// (admin_supporters.go); nil answers 404 to their operations and a disabled program.
 	Supporters Supporters
+	// OwnSupporters runs the users' own subscriptions and the supporter list (supporters.go);
+	// nil answers 404 to their operations.
+	OwnSupporters OwnSupporters
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes

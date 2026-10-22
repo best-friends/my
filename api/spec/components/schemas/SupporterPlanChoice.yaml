@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A plan and how often its subscription renews.
+type: object
+required: [plan_id, interval]
+properties:
+  plan_id:
+    $ref: ./Id.yaml
+  interval:
+    $ref: ./SupporterInterval.yaml

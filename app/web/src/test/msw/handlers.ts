@@ -21,4 +21,5 @@ export * as session from "../../features/session/test/handlers";
 export * as settings from "../../features/settings/test/handlers";
 export * as status from "../../features/status/test/handlers";
 export * as streaming from "./streaming";
+export * as supporters from "../../features/supporters/test/handlers";
 export * as timeline from "../../features/timeline/test/handlers";

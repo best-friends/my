@@ -50,6 +50,22 @@ func (a *App) setUpSupporters(ctx context.Context, cfg *config.Config, repo supp
 // moderation modules (ADR-0072 §6).
 type supporterUsers struct{ a *App }
 
+// AccountIDs implements supporters.Users.
+func (u supporterUsers) AccountIDs(ctx context.Context, userIDs []string) (map[string]string, error) {
+	out := make(map[string]string, len(userIDs))
+	for _, id := range userIDs {
+		la, err := u.a.Accounts.LocalAccountOfUser(ctx, id)
+		if errors.Is(err, account.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		out[id] = la.AccountID
+	}
+	return out, nil
+}
+
 // SupporterUser implements supporters.Users.
 func (u supporterUsers) SupporterUser(ctx context.Context, userID string) (supporters.User, error) {
 	la, err := u.a.Accounts.LocalAccountOfUser(ctx, userID)

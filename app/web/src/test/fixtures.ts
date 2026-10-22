@@ -22,6 +22,7 @@ export const instanceFixture: Schemas["Instance"] = {
   ai_usage: "deny",
   finance_visibility: "private",
   supporters_enabled: false,
+  supporter_list_visibility: "off",
   rules: [],
 };
 

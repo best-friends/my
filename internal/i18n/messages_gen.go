@@ -158,6 +158,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadStatuses() string {
 	return l.format("server:auth.authorize.scope.read_statuses", nil)
 }
 
+// ServerAuthAuthorizeScopeReadSupporters formats "server:auth.authorize.scope.read_supporters". Permission (OAuth scope read:supporters) listed on the authorization page.
+//
+//	en: Read your subscription to the supporter plans
+func (l *Localizer) ServerAuthAuthorizeScopeReadSupporters() string {
+	return l.format("server:auth.authorize.scope.read_supporters", nil)
+}
+
 // ServerAuthAuthorizeScopeWrite formats "server:auth.authorize.scope.write". Permission (OAuth scope write) listed on the authorization page.
 //
 //	en: Post and change things for you
@@ -240,6 +247,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeWriteReports() string {
 //	en: Post, edit, delete, boost, and pin posts
 func (l *Localizer) ServerAuthAuthorizeScopeWriteStatuses() string {
 	return l.format("server:auth.authorize.scope.write_statuses", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteSupporters formats "server:auth.authorize.scope.write_supporters". Permission (OAuth scope write:supporters) listed on the authorization page.
+//
+//	en: Subscribe to the supporter plans, and change, cancel, and resume your subscription
+func (l *Localizer) ServerAuthAuthorizeScopeWriteSupporters() string {
+	return l.format("server:auth.authorize.scope.write_supporters", nil)
 }
 
 // ServerAuthAuthorizeTitle formats "server:auth.authorize.title". Title and heading of the authorization (consent) page. {app} is the name of the application asking for access.
@@ -1691,6 +1705,20 @@ func (l *Localizer) ServerErrorsStreamingUnavailable() string {
 	return l.format("server:errors.streaming.unavailable", nil)
 }
 
+// ServerErrorsSupportersIneligible formats "server:errors.supporters.ineligible". API error title for HTTP 422 when a user who may not subscribe starts a subscription to a supporter plan (ADR-0072 §6); the detail says why.
+//
+//	en: You cannot subscribe to the supporter plans.
+func (l *Localizer) ServerErrorsSupportersIneligible() string {
+	return l.format("server:errors.supporters.ineligible", nil)
+}
+
+// ServerErrorsSupportersIneligibleDetail formats "server:errors.supporters.ineligible_detail". API error detail for HTTP 422 when a user may not subscribe to a supporter plan. {reason} is not_local, email_unverified, or restricted.
+//
+//	en: {reason, select, not_local {Only the users of this server can subscribe.} email_unverified {Verify your email address first.} restricted {Your account is restricted.} other {You cannot subscribe now.}}
+func (l *Localizer) ServerErrorsSupportersIneligibleDetail(reason string) string {
+	return l.format("server:errors.supporters.ineligible_detail", map[string]any{"reason": reason})
+}
+
 // ServerErrorsSupportersLiveSubscriptions formats "server:errors.supporters.live_subscriptions". API error title for HTTP 409 when an administrator disables the supporter program while subscriptions go on (ADR-0072 §2).
 //
 //	en: Subscriptions to the supporter plans go on.
@@ -1726,11 +1754,46 @@ func (l *Localizer) ServerErrorsSupportersPlanRetired() string {
 	return l.format("server:errors.supporters.plan_retired", nil)
 }
 
+// ServerErrorsSupportersPlanUnavailable formats "server:errors.supporters.plan_unavailable". API error title for HTTP 422 when a user subscribes or changes to a supporter plan that takes no subscriptions (hidden, retired, not ready, or of another currency).
+//
+//	en: The supporter plan takes no subscriptions.
+func (l *Localizer) ServerErrorsSupportersPlanUnavailable() string {
+	return l.format("server:errors.supporters.plan_unavailable", nil)
+}
+
+// ServerErrorsSupportersSamePlan formats "server:errors.supporters.same_plan". API error title for HTTP 422 when a user changes their subscription to the plan and interval it has.
+//
+//	en: Your subscription has this plan and interval already.
+func (l *Localizer) ServerErrorsSupportersSamePlan() string {
+	return l.format("server:errors.supporters.same_plan", nil)
+}
+
+// ServerErrorsSupportersSubscribed formats "server:errors.supporters.subscribed". API error title for HTTP 409 when a user who has a subscription to a supporter plan starts another one (ADR-0072 §6: one plan at a time).
+//
+//	en: You have a subscription already.
+func (l *Localizer) ServerErrorsSupportersSubscribed() string {
+	return l.format("server:errors.supporters.subscribed", nil)
+}
+
+// ServerErrorsSupportersSubscribedDetail formats "server:errors.supporters.subscribed_detail". API error detail for HTTP 409 when a user who has a subscription starts another one.
+//
+//	en: Change the plan of your subscription instead.
+func (l *Localizer) ServerErrorsSupportersSubscribedDetail() string {
+	return l.format("server:errors.supporters.subscribed_detail", nil)
+}
+
 // ServerErrorsSupportersSubscriptionEnded formats "server:errors.supporters.subscription_ended". API error title for HTTP 409 when an administrator cancels a subscription to a supporter plan that has ended.
 //
 //	en: The subscription has ended.
 func (l *Localizer) ServerErrorsSupportersSubscriptionEnded() string {
 	return l.format("server:errors.supporters.subscription_ended", nil)
+}
+
+// ServerErrorsSupportersSubscriptionState formats "server:errors.supporters.subscription_state". API error title for HTTP 409 when the state of a user's subscription to a supporter plan does not allow the operation (ADR-0072 §8): a change needs an active subscription, a cancellation an active or past-due one, a resumption a canceling one.
+//
+//	en: Your subscription cannot do that in its current state.
+func (l *Localizer) ServerErrorsSupportersSubscriptionState() string {
+	return l.format("server:errors.supporters.subscription_state", nil)
 }
 
 // ServerErrorsSupportersUnavailable formats "server:errors.supporters.unavailable". API error title for HTTP 409 when the supporter program cannot be enabled or used: no payment provider is configured, the server sends no email, or the configured provider is not the program's (ADR-0072 §2).

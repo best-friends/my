@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: Whether the user is on the supporter list.
+type: object
+required: [listed]
+properties:
+  listed:
+    type: boolean

@@ -240,6 +240,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/instance/supporters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the supporters who chose to be listed
+         * @description The members of the supporter plans who chose to be listed (`PUT
+         *     /preferences/supporter_listing`), by plan in the plans' order and newest first within a
+         *     plan, with the plans that are not retired for the headings (ADR-0071 §4). Only each
+         *     member's account is listed: never an amount, an interval, a date, or a count. Accounts
+         *     that the viewer may not see are left out, so a page may be shorter than `limit`. The
+         *     instance setting `supporter_list_visibility` decides who may read it: `off` makes it a
+         *     404, `signed_in` a 401 `/api/v1/problems/unauthenticated` for a request without an access
+         *     token, and `public` serves everyone. The responses always carry `X-Robots-Tag: noindex,
+         *     noarchive`.
+         */
+        get: operations["listInstanceSupporters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/verify_credentials": {
         parameters: {
             query?: never;
@@ -374,6 +402,36 @@ export interface paths {
          *     that has no badge, is a 404.
          */
         put: operations["updateBadgeChoice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/preferences/supporter_listing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get whether the authenticated user is on the supporter list
+         * @description Whether the user chose to be listed on the supporter list (`GET /instance/supporters`,
+         *     ADR-0071 §4). Nobody is listed until they choose to be, and the choice ends with the
+         *     subscription. A 404 for a user who is not a member of a plan (an `active`, `canceling`,
+         *     or `past_due` subscription) and while the program is disabled.
+         */
+        get: operations["getSupporterListing"];
+        /**
+         * Choose whether the authenticated user is on the supporter list
+         * @description Lists the user on the supporter list or takes them off it. The choice is one per user,
+         *     whichever plan they are a member of; it stays when the plan changes and is deleted when
+         *     the subscription ends. A 404 for a user who is not a member of a plan and while the
+         *     program is disabled.
+         */
+        put: operations["updateSupporterListing"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2163,6 +2221,193 @@ export interface paths {
         get: operations["getFinanceCostTotals"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the authenticated user's supporter subscription
+         * @description The user's subscription that goes on (any state but `expired`, `revoked`, and
+         *     `abandoned`), and why the user cannot subscribe when they cannot (ADR-0072 §6, §18). A 404
+         *     while the supporter program is disabled (`Instance.supporters_enabled`).
+         */
+        get: operations["getOwnSupporterSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a subscription to a supporter plan
+         * @description Starts a subscription to a plan at an interval and returns the payment provider's hosted
+         *     checkout, which the client opens in the same tab; no card details reach this server
+         *     (ADR-0072 §6, ADR-0074). The checkout returns to `/settings/supporter` of the web client.
+         *     Starting again while the subscription is `pending` makes a new checkout of the same
+         *     subscription. Only a local user with a verified primary address and without another
+         *     subscription may subscribe: a 422 `/api/v1/problems/supporter-ineligible` otherwise, a 409
+         *     `/api/v1/problems/supporter-subscribed` with a subscription that is not pending, and a 422
+         *     `/api/v1/problems/supporter-plan-unavailable` for a plan that takes no subscriptions. A 404
+         *     for an unknown plan and while the program is disabled.
+         */
+        post: operations["startSupporterCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/subscription/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-read the authenticated user's subscription from the payment provider
+         * @description What the web client sends when the payment provider's checkout or portal returns to it:
+         *     it queues a re-read of the user's subscription from the provider, without waiting for its
+         *     webhook (ADR-0072 §6), and answers the subscription as it is now. Read it again to see the
+         *     result. A 404 while the program is disabled.
+         */
+        post: operations["syncOwnSupporterSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/subscription/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the plan or the interval of the authenticated user's subscription
+         * @description Changes an `active` subscription to another plan or interval (ADR-0072 §8): to a higher
+         *     plan or to the yearly price at once, with the difference charged pro rata; to a lower plan
+         *     or to the monthly price at the end of the period, as `scheduled_change`. The new plan's
+         *     current price applies. A 409 `/api/v1/problems/supporter-subscription-state` unless the
+         *     subscription is `active`, a 422 `/api/v1/problems/supporter-plan-unavailable` for a plan
+         *     that takes no subscriptions, and a 422 `/api/v1/problems/supporter-same-plan` for the
+         *     current plan and interval.
+         */
+        post: operations["changeOwnSupporterSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/subscription/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel the authenticated user's subscription at the end of its period
+         * @description Cancels an `active` or `past_due` subscription at the end of its period: the plan's role
+         *     stays until then (`canceling`, ADR-0072 §7). A 409
+         *     `/api/v1/problems/supporter-subscription-state` in another state.
+         */
+        post: operations["cancelOwnSupporterSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/subscription/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw the cancellation of the authenticated user's subscription
+         * @description Withdraws the cancellation of a `canceling` subscription, which then renews as before. A
+         *     409 `/api/v1/problems/supporter-subscription-state` in another state.
+         */
+        post: operations["resumeOwnSupporterSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/subscription/cancel_scheduled_change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw the scheduled change of the authenticated user's subscription
+         * @description Withdraws the change to a lower plan or to the monthly price that waits for the end of
+         *     the period (ADR-0072 §8); the subscription renews at its current plan and interval. A 409
+         *     `/api/v1/problems/supporter-subscription-state` without a scheduled change.
+         */
+        post: operations["cancelOwnSupporterScheduledChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/supporter/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open the payment provider's portal of the authenticated user
+         * @description The payment provider's portal of the user's payment methods and invoices, which returns
+         *     to `/settings/supporter` of the web client (ADR-0072 §8). Plans change on this server, not in
+         *     the portal. A 409 `/api/v1/problems/subscription-ended` for a user whom the provider does not
+         *     know.
+         */
+        post: operations["openSupporterPortal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7146,6 +7391,7 @@ export interface components {
              *     and the subscriptions show only then.
              */
             supporters_enabled: boolean;
+            supporter_list_visibility: components["schemas"]["SupporterListVisibility"];
             theme?: components["schemas"]["InstanceTheme"];
             contact?: components["schemas"]["InstanceContact"];
             thumbnail?: components["schemas"]["InstanceThumbnail"];
@@ -7234,7 +7480,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility" | "finance_viewer_item_names" | "finance_viewer_item_memos" | "finance_viewer_income";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility" | "finance_viewer_item_names" | "finance_viewer_item_memos" | "finance_viewer_income" | "supporter_list_visibility";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
@@ -7776,6 +8022,11 @@ export interface components {
             /** @description How many the user may have; absent for no limit. */
             limit?: number;
         };
+        /** @description The authenticated user's subscription that goes on, and whether they may subscribe. */
+        OwnSupporterSubscription: {
+            subscription?: components["schemas"]["SupporterSubscription"];
+            ineligible_reason?: components["schemas"]["SupporterIneligibleReason"];
+        };
         /** @description The pagination of a collection page; collection responses embed it with allOf. */
         PageInfo: {
             next_cursor?: components["schemas"]["Cursor"];
@@ -8098,6 +8349,17 @@ export interface components {
          *     - `/api/v1/problems/supporter-plan-retired` (409): the supporter plan is retired and does
          *       not change any more.
          *     - `/api/v1/problems/subscription-ended` (409): the subscription has ended already.
+         *     - `/api/v1/problems/supporter-ineligible` (422): the user may not subscribe to a supporter
+         *       plan: not a local user, the primary email address is not verified, or the account is
+         *       restricted.
+         *     - `/api/v1/problems/supporter-subscribed` (409): the user has a subscription that goes on
+         *       already; change its plan instead.
+         *     - `/api/v1/problems/supporter-plan-unavailable` (422): the supporter plan takes no
+         *       subscriptions: hidden, retired, not ready, or of another currency.
+         *     - `/api/v1/problems/supporter-subscription-state` (409): the subscription's state does not
+         *       allow the operation.
+         *     - `/api/v1/problems/supporter-same-plan` (422): the subscription has that plan and interval
+         *       already.
          */
         Problem: {
             /**
@@ -8660,11 +8922,61 @@ export interface components {
         };
         /** @description The plain text; the server links mentions, hashtags, and URLs. */
         StatusText: string;
+        /** @description The payment provider's hosted checkout of a subscription. */
+        SupporterCheckout: {
+            subscription_id: components["schemas"]["Id"];
+            /**
+             * Format: uri
+             * @description The checkout, to open in the same tab.
+             */
+            redirect_url: string;
+        };
+        /**
+         * @description Why the user may not subscribe to a supporter plan (ADR-0072 §6): `not_local`, not a user
+         *     of this server; `email_unverified`, the primary email address is not verified;
+         *     `restricted`, the account is suspended or its deletion is done or scheduled. Omitted when
+         *     the user may subscribe.
+         * @enum {string}
+         */
+        SupporterIneligibleReason: "not_local" | "email_unverified" | "restricted";
         /**
          * @description How often a subscription renews.
          * @enum {string}
          */
         SupporterInterval: "month" | "year";
+        /** @description A member on the supporter list. */
+        SupporterListEntry: {
+            plan_id: components["schemas"]["Id"];
+            account: components["schemas"]["Account"];
+        };
+        /**
+         * @description A page of the supporter list: the members by plan, in the order of `plans`, newest first
+         *     within a plan.
+         */
+        SupporterListPage: components["schemas"]["PageInfo"] & {
+            /** @description The plans that are not retired, in their order (the lowest first), on every page. */
+            plans: components["schemas"]["SupporterListPlan"][];
+            items: components["schemas"]["SupporterListEntry"][];
+        };
+        /**
+         * @description A plan of the supporter list. The name is written by the administrators in any language;
+         *     render it with `dir="auto"`.
+         */
+        SupporterListPlan: {
+            id: components["schemas"]["Id"];
+            name: string;
+        };
+        /**
+         * @description Who may read the supporter list (the instance setting `supporter_list_visibility`, ADR-0071
+         *     §4): `off`, nobody, and `GET /instance/supporters` is a 404; `public`, everyone;
+         *     `signed_in`, the users signed in to this server.
+         * @enum {string}
+         */
+        SupporterListVisibility: "off" | "public" | "signed_in";
+        /** @description Whether the user is on the supporter list. */
+        SupporterListing: {
+            listed: boolean;
+        };
         /**
          * @description A supporter plan that takes subscriptions. The name and the description are written by
          *     the administrators in any language; render them with `dir="auto"`.
@@ -8677,6 +8989,11 @@ export interface components {
             rank: number;
             monthly_price: components["schemas"]["Money"];
             yearly_price: components["schemas"]["Money"];
+        };
+        /** @description A plan and how often its subscription renews. */
+        SupporterPlanChoice: {
+            plan_id: components["schemas"]["Id"];
+            interval: components["schemas"]["SupporterInterval"];
         };
         /** @description The supporter plans that take subscriptions, by rank. */
         SupporterPlanList: {
@@ -8709,6 +9026,14 @@ export interface components {
          * @enum {string}
          */
         SupporterPlanVisibility: "public" | "hidden";
+        /** @description The payment provider's portal of the user's payment methods and invoices. */
+        SupporterPortal: {
+            /**
+             * Format: uri
+             * @description The portal, to open in the same tab.
+             */
+            url: string;
+        };
         /**
          * @description What an administrator should look at in the supporter program. `no_provider`: no payment
          *     provider is configured. `no_email`: the server sends no email, so nobody can verify an
@@ -8719,6 +9044,43 @@ export interface components {
          * @enum {string}
          */
         SupporterProgramWarning: "no_provider" | "no_email" | "provider_mismatch" | "no_commerce_disclosure";
+        /** @description A change to a lower plan or to the monthly price that waits for the end of the period. */
+        SupporterScheduledChange: {
+            plan_id: components["schemas"]["Id"];
+            plan_name: string;
+            interval: components["schemas"]["SupporterInterval"];
+            price: components["schemas"]["Money"];
+            /** Format: date-time */
+            effective_at: string;
+        };
+        /**
+         * @description The authenticated user's subscription to a supporter plan. `price` is what it renews at,
+         *     which may be lower than the plan's current price (a price change does not apply to the
+         *     subscriptions that go on). The plan's name is written by the administrators in any
+         *     language; render it with `dir="auto"`.
+         */
+        SupporterSubscription: {
+            id: components["schemas"]["Id"];
+            state: components["schemas"]["SupporterSubscriptionState"];
+            plan_id: components["schemas"]["Id"];
+            plan_name: string;
+            interval: components["schemas"]["SupporterInterval"];
+            price: components["schemas"]["Money"];
+            /**
+             * Format: date-time
+             * @description The end of the current period: when it renews, or, while `canceling`, when it ends;
+             *     omitted for `pending`.
+             */
+            period_ends_at?: string;
+            /**
+             * Format: date-time
+             * @description When a `past_due` subscription loses the plan's role unless a payment succeeds.
+             */
+            grace_ends_at?: string;
+            scheduled_change?: components["schemas"]["SupporterScheduledChange"];
+            /** Format: date-time */
+            started_at: string;
+        };
         /**
          * @description The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:
          *     paid. `canceling`: canceled at the end of the period. `past_due`: a payment failed less
@@ -9460,6 +9822,8 @@ export interface components {
     headers: {
         /** @description The caching policy. Anonymous public GETs are cacheable by shared caches (ADR-0016). */
         CacheControl: string;
+        /** @description The statement to search engines (ADR-0057) of a response that states more than the default `noindex`. */
+        XRobotsTag: string;
     };
     pathItems: never;
 }
@@ -9725,6 +10089,36 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    listInstanceSupporters: {
+        parameters: {
+            query?: {
+                /** @description Only the members of this plan. */
+                plan_id?: components["schemas"]["Id"];
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of listed supporters. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    "X-Robots-Tag": components["headers"]["XRobotsTag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterListPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     verifyAccountCredentials: {
         parameters: {
             query?: never;
@@ -9915,6 +10309,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BadgeChoice"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getSupporterListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The choice. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterListing"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateSupporterListing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupporterListing"];
+            };
+        };
+        responses: {
+            /** @description The choice as saved. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterListing"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -11864,6 +12306,190 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinanceCostTotals"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getOwnSupporterSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription, or none. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnSupporterSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    startSupporterCheckout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupporterPlanChoice"];
+            };
+        };
+        responses: {
+            /** @description The checkout to open. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterCheckout"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    syncOwnSupporterSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription as it is now, or none. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnSupporterSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    changeOwnSupporterSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupporterPlanChoice"];
+            };
+        };
+        responses: {
+            /** @description The subscription after the change. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    cancelOwnSupporterSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription after the cancellation. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    resumeOwnSupporterSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription after the resumption. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    cancelOwnSupporterScheduledChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription without the scheduled change. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    openSupporterPortal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The portal to open. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterPortal"];
                 };
             };
             default: components["responses"]["Problem"];

@@ -93,6 +93,8 @@ export async function cacheSavedSettings(queryClient: QueryClient, api: Api, set
     // What finance_visibility publishes (FR-903), and what the finance_viewer_* settings show (ADR-0070 §5).
     queryClient.invalidateQueries({ queryKey: ["get", "/instance/cost_totals"] }),
     queryClient.invalidateQueries({ queryKey: ["get", "/finance/cost_totals"] }),
+    // Who may read the supporter list (ADR-0071 §4).
+    queryClient.invalidateQueries({ queryKey: ["get", "/instance/supporters"] }),
     refreshAuditLog(queryClient),
   ]);
 }

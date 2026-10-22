@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: startSupporterCheckout
+  summary: Start a subscription to a supporter plan
+  description: |
+    Starts a subscription to a plan at an interval and returns the payment provider's hosted
+    checkout, which the client opens in the same tab; no card details reach this server
+    (ADR-0072 §6, ADR-0074). The checkout returns to `/settings/supporter` of the web client.
+    Starting again while the subscription is `pending` makes a new checkout of the same
+    subscription. Only a local user with a verified primary address and without another
+    subscription may subscribe: a 422 `/api/v1/problems/supporter-ineligible` otherwise, a 409
+    `/api/v1/problems/supporter-subscribed` with a subscription that is not pending, and a 422
+    `/api/v1/problems/supporter-plan-unavailable` for a plan that takes no subscriptions. A 404
+    for an unknown plan and while the program is disabled.
+  tags: [supporters]
+  security:
+    - oauth2: ["write:supporters"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/SupporterPlanChoice.yaml
+  responses:
+    "200":
+      description: The checkout to open.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SupporterCheckout.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

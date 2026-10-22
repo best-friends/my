@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getOwnSupporterSubscription
+  summary: Get the authenticated user's supporter subscription
+  description: |
+    The user's subscription that goes on (any state but `expired`, `revoked`, and
+    `abandoned`), and why the user cannot subscribe when they cannot (ADR-0072 §6, §18). A 404
+    while the supporter program is disabled (`Instance.supporters_enabled`).
+  tags: [supporters]
+  security:
+    - oauth2: ["read:supporters"]
+  responses:
+    "200":
+      description: The subscription, or none.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/OwnSupporterSubscription.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listInstanceSupporters
+  summary: List the supporters who chose to be listed
+  description: |
+    The members of the supporter plans who chose to be listed (`PUT
+    /preferences/supporter_listing`), by plan in the plans' order and newest first within a
+    plan, with the plans that are not retired for the headings (ADR-0071 §4). Only each
+    member's account is listed: never an amount, an interval, a date, or a count. Accounts
+    that the viewer may not see are left out, so a page may be shorter than `limit`. The
+    instance setting `supporter_list_visibility` decides who may read it: `off` makes it a
+    404, `signed_in` a 401 `/api/v1/problems/unauthenticated` for a request without an access
+    token, and `public` serves everyone. The responses always carry `X-Robots-Tag: noindex,
+    noarchive`.
+  tags: [instance]
+  security:
+    - {}
+    - oauth2: ["read:accounts"]
+  parameters:
+    - name: plan_id
+      in: query
+      description: Only the members of this plan.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of listed supporters.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+        X-Robots-Tag:
+          $ref: ../components/headers/XRobotsTag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SupporterListPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

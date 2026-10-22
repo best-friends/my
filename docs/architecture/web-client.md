@@ -397,7 +397,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   読み込み中と失敗はその区画の中に出す。`GET /instance` が失敗しても、ページは外枠のランタイム設定の名前とサインインのボタンで開く。
   サーバーはこのアドレスに、インスタンスを紹介するリンクプレビュー（`og:type` は `website`。[リンクプレビュー](../operations/link-previews.md)）付きの外枠を返す。
 - **インスタンスの情報ページ**（`routes/about.tsx`、`features/about`、FR-718）: `/about` は、サインインしているかによらず同じ中身を、外枠の中に出す。見出し（`h1`）は「{サーバーの名前} について」にする。
-  中身は `GET /instance` からサムネイル・要約・説明・ルール（ランディングページと同じ出し方）、利用規約とプライバシーポリシーの区画（`DocumentsSection`）、処分したドメインの一覧（`GET /instance/domain_actions`）、検索エンジンと AI への表明、運営の費用、運営者の連絡先、ソースコードの区画を順に出す。
+  中身は `GET /instance` からサムネイル・要約・説明・ルール（ランディングページと同じ出し方）、利用規約とプライバシーポリシーの区画（`DocumentsSection`）、処分したドメインの一覧（`GET /instance/domain_actions`）、検索エンジンと AI への表明、運営の費用、サポーター、特商法の表記、運営者の連絡先、ソースコードの区画を順に出す。
   利用者が従う決まり（ルール・規約・ポリシー）を続けて置き、次にサーバーが他のサーバーとクローラーにどう接するか、最後に運営者と動かしているソフトウェアを置く。
   サムネイル（`thumbnail`）はページの幅の画像で、代替テキストは管理者が書いたもの（無ければ見出しがサーバーを名指すので装飾として `alt=""`）にする。
   連絡先（`contact`）は「連絡先」の区画の説明リストで、アカウント（アバター・表示名（`dir="auto"`）・ハンドル（`dir="ltr"`）をプロフィールへの 1 つのリンクにする）とメールアドレス（`mailto:` のリンク、`dir="ltr"`）を、サーバーが返したものだけ出す。どちらも無ければ区画ごと出さない。
@@ -407,12 +407,19 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   どちらも設定の答えなので再試行しない。項目はドメイン（伏せ字はサーバーが返したまま、`dir="ltr"`）・種類・公開コメント（`dir="auto"`。見せてよい相手にだけサーバーが返す）で、伏せ字のドメインがあるときは一覧の前にそのことを書く。
   一覧は 40 件ずつで、続きは「さらに表示」のボタンで読む。loader は `GET /instance` と一覧の最初のページを待つが、どちらの失敗もページの失敗にはせず、一覧の失敗はその区画の中に出す。
   運営の費用の区画は、`GET /instance` の `finance_visibility`（FR-903、[ADR-0067](../adr/0067-finance-cost-records.md) §8）が `totals` か `breakdown` のときだけ出し、何を公開しているか（合計だけか、内訳までか。項目の名前・メモ・個々の支払いは出さない）と `/about/costs` へのリンクを置く。
+  サポーターの区画（`features/supporters` の `AboutSupportersSection`、ADR-0072 §14、ADR-0071 §4）は、`GET /instance` の `supporters_enabled` が真のとき、加入を受け付けているプラン（`GET /instance/supporter_plans`。名前と説明は `dir="auto"`・`lang=""`、月額と年額）と `/settings/supporter` へのリンクを、
+  `supporter_list_visibility` が `off` でないとき `/about/supporters` へのリンクを出す。どちらもなければ区画を出さない。Tauri のアプリでは、プランと加入へのリンクを出さず、一覧へのリンクだけを出す（下の「Tauri のアプリ」）。
   `xl` からの 3 列目（`ServerInfo`）・メニューのシート（テーマの切り替えの下）・ランディングページからリンクする。
   サーバーはこのアドレスに、ランディングページと同じインスタンスのリンクプレビュー（タイトルは「{サーバーの名前} について」）付きの外枠を返す。
 - **運営の費用のページ**（`routes/about_.costs.tsx`、`features/costs`、FR-903、ADR-0067 §8）: `/about/costs` は、サインインしているかによらず同じ中身を、外枠の中に出す。見出し（`h1`）は「{サーバーの名前} の運営の費用」にする。
   管理画面の費用の集計（下の「費用」）と同じ部品（`CostTotalsPanel`・`CostTotalsView`）で、計上のしかたと週・月・年のタブ（どちらも URL に置く。S3）、新しい期間が先の合計の表、期間の区切りの規則を出し、`GET /instance/cost_totals` を読む。今日の日付は端末のタイムゾーンでルートの loader が決める。
   今の期間の事業者・区分ごとの内訳は `finance_visibility` が `breakdown` のときだけ出し、`totals` のときは合計だけを公開していることを書く。API が 404（公開しない）を返すときは、表の代わりにそのことと `/about` へのリンクを出す。これは設定の答えなので再試行しない。
   loader は `GET /instance` と合計を待つが、どちらの失敗もページの失敗にはせず、合計の失敗はタブの中に出す。
+- **サポーターの一覧**（`routes/about_.supporters.tsx`、`features/supporters` の `SupporterListView`、[ADR-0071](../adr/0071-role-badges-and-supporter-list.md) §4）: `/about/supporters` は、インスタンス設定 `supporter_list_visibility` の範囲で、外枠の中に出す。見出し（`h1`）は「{サーバーの名前} のサポーター」にする。
+  `GET /instance/supporters` を無限の query で読み、応答の `plans` の順にプランの名前の見出し（`h2`、`dir="auto"`・`lang=""`）の区画を作り、各人を情報ページの連絡先と同じ 1 つのプロフィールへのリンク（アバター・表示名（`dir="auto"`）・ハンドル（`dir="ltr"`））で並べる。
+  一覧はプランの順、プランの中では新しい順に並ぶので、続きのページの人は同じ見出しの下に続く。読み込めた人のいないプランの見出しは出さない。続きは「さらに表示」で読む。金額・月払いか年払いか・日付・人数は出さない。
+  API が 404（誰にも見せない）を返すときは、そのことと `/about` へのリンクを、401（サインインした人だけに見せる。サインインしていない閲覧者）を返すときは、そのことと戻り先をこのページにした `/login` へのリンクを出す。どちらも設定の答えなので再試行しない。
+  loader は `GET /instance` と最初のページを待つが、どちらの失敗もページの失敗にはしない。サーバーはこのアドレスに、設定によらず `noindex, noarchive` の汎用の外枠を返す（ADR-0057）。
 - **会計のページ**（`routes/finance.tsx`、`features/costs` の `FinanceCosts`、[ADR-0070](../adr/0070-permission-split-emoji-finance.md) §5）: `/finance` は `view_finance` を持つ人（`manage_finance` を持つ人も読める）の、利用者の側の画面で、スタッフの画面（`/admin/*`）の外に置く。
   見出し（`h1`）は「会計」で、ナビゲーションの項目の画面なので見た目からは消す。`GET /finance/cost_totals`（スコープ `read:finance`。`admin:*` を要さない）を読み、運営の費用のページと同じ部品（`CostTotalsPanel`・`CostTotalsView`）で、計上のしかたと週・月・年のタブ（URL に置く。S3）、合計の表、今の期間の事業者・区分ごとの内訳（設定によらずいつも）、期間の区切りの規則を「費用」の区画（`h2` の `section`）に出す。
   インスタンス設定 `finance_viewer_item_names`・`finance_viewer_item_memos` のどちらかが有効なら、今の期間の項目の行（名前・事業者・区分・額・メモ。名前とメモはサーバーが返したときだけ。`dir="auto"`）を内訳の下に出し、画面の説明の下に、項目の名前とメモのどちらを見せているかを書く。`manage_finance` を持つ人にはサーバーがすべての行を返すので、この文を出さない。
@@ -425,6 +432,22 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   - **申請の一覧**: 新しい順。各申請は画像と見出し（`:shortcode:`、`dir="ltr"`）と、内容（新しい絵文字・画像の差し替え）・状態・申請した日時・終わった日時・却下の理由（`dir="auto"`）の説明リスト。審査中の申請は「取り下げる」を持ち、応答で行を置き換える。
   - **自分の絵文字**: 新しい順。各絵文字は管理画面の行と同じ説明リストで、「編集する」（カテゴリ・別名・ピッカーに出すかのダイアログ。有効・無効は管理者だけが変える）・「画像の差し替えを申請」（`FileTrigger` で選ぶとすぐに `kind=image` の申請を送る。承認まで絵文字は今の画像のまま）・「削除する」（`ConfirmDialog`）を持つ。
     変えた絵文字は応答で行を置き換え、消した絵文字は一覧から除いてフォーカスを次の行のボタンに移し、使った数・申請（画像の申請が失効する）・ピッカーの絵文字に無効化の印を付ける。
+- **サポーターのプラン**（`/settings/supporter`、`routes/settings.supporter.tsx`、`features/supporters` の `SupporterSubscriptionSettings`、[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §6・§8・§13・§14）: 設定のメニューは、`GET /instance` の `supporters_enabled` が真のときだけ（Tauri のアプリでは出さない）「サポーターのプラン」を出す。
+  loader は公開のプラン（`GET /instance/supporter_plans`）と自分の加入（`GET /supporter/subscription`。続いている加入と、加入できない理由 `ineligible_reason`）を待つが、失敗はページの失敗にせず本文に出す。どちらかが 404 なら、課金が無効でプランを提供していないことだけを出す。
+  - **加入**: 続いている加入がなければ「プランを選ぶ」の区画に、プランの `RadioGroup`（名前は `dir="auto"`・`lang=""`、説明に月額と年額と管理者の説明）と支払いの間隔（月払い・年払い、選んだプランの額）の `RadioGroup` を出す。加入できない利用者には理由（メールの確認がまだ・このサーバーの利用者でない・凍結か削除の手続き中）を書き、「加入する」を出さない。
+    「加入する」は最終の確認（`ConfirmDialog`、`primary`）を開き、プランの名前・間隔ごとの額と更新しても同じであること・支払いの時期（いますぐ、以降は毎月か毎年）・特典が始まる時期・解約の方法と効果（このページからいつでも、支払った期間の終わりまで特典が続く）を説明リストで、特商法の表記（`commerce_disclosure_url`）があればそのリンク（`ExternalLink`）を出す（§13）。
+    「支払いへ進む」は `POST /supporter/checkout` を送り、応答の `redirect_url`（決済事業者のホスト型の決済画面）へ外枠の `leaveApp` で同じタブのままページごと移る。カード情報はこのアプリを通らない。断られたら（422 `supporter-ineligible`・`supporter-plan-unavailable`、409 `supporter-subscribed`）、`type` に対応する文言をダイアログに出す（E2）。
+  - **戻り**: 決済画面は `?checkout=success`（済んだ）か `?checkout=canceled`（離れた）、顧客ポータルは `?portal=returned` を付けてこのページに戻す。検索条件は Zod で検証し、知らない値は無視する（S3）。`success` と `returned` では、loader が 1 度だけ `POST /supporter/subscription/sync`（事業者からの取り直しを積み、いまの加入を返す）を送って応答をキャッシュに書く。
+    `success` で加入がまだ `pending` の間は、事業者の確認を待っていることを `StatusMessage` に出し、`GET /supporter/subscription` を 3 秒ごとに最大 20 回読み直す。確かめられたら礼を、`canceled` では請求されていないことを出す。
+  - **自分の加入**: 「あなたの加入」の区画に、プラン（`dir="auto"`）・状態・更新の額（もとの価格で続けているときはその額）・次の更新か終了（`canceling`）の日時・特典の終わり（`past_due`）・予約した変更（変更先と額と日時）の説明リストと、状態が求めること（支払い待ち・解約の予約・支払いの失敗・猶予の切れ）の文を出す。
+    操作は状態ごとに、`pending` は「支払いに進む」（同じプランと間隔でもう一度 `POST /supporter/checkout`）、`canceling` は「解約を取り消す」、予約した変更があれば「予約した変更を取り消す」、`active` と `past_due` は「解約する」（`ConfirmDialog`、`danger`。期間の終わりまで特典が続き、それ以降の請求がないこと）、`pending` 以外は「支払い方法と請求書」（`POST /supporter/portal` の URL へ `leaveApp` で移る）。
+    `active` のときだけ「プランを変更する」の区画に同じ 2 つの `RadioGroup` を出し、上位のプランや年払いはすぐ（差額を日割りで請求）、下位のプランや月払いは期間の終わりに変わることを説明し、確認のダイアログに選んだ変更がどちらかを書いてから `POST /supporter/subscription/change` を送る。いまのプランと間隔のままならボタンを押せない。もとの価格で続けているときは、変えると変更先のいまの価格になることを書く。
+    変更・解約・取り消しは `POST /supporter/subscription/{change,cancel,resume,cancel_scheduled_change}` で、応答の加入でキャッシュを置き換え、掲載の選択・サポーターの一覧・閲覧者のアカウント（ロールとバッジ）に無効化の印を付け、結果を区画の `StatusMessage` に出して `useAnnouncer` で知らせる。失敗は `type` に対応する文言で出す。
+  - **掲載の選択**（ADR-0071 §4）: `/settings/profile` の「サポーターの一覧」の区画（`SupporterListingSettings`）で、`GET /preferences/supporter_listing` の `listed` を `Switch` にし、変えるとすぐ `PUT` で保存してサポーターの一覧に無効化の印を付ける（既定は載せない）。
+    区画の説明に、一覧にはプランの見出しの下にアバター・名前・ハンドルだけが出て金額や日付は出ないこと、加入が終わると選択も消えることを書く。プランに加入していない利用者（API が 404）と、`supporter_list_visibility` が `off` のときは区画を出さない。特典の設定なので Tauri のアプリでも出す。
+- **Tauri のアプリ**（`lib/platform.ts` の `isTauriApp()`、ADR-0072 §14）: Web クライアントが Tauri 2 のアプリ（ADR-0008）の WebView の中で動くかは、Tauri がページのスクリプトより前に置く `window.isTauri` が `true` かだけで決める（`@tauri-apps/api` の `isTauri()` が読むのと同じ値。依存は足さない）。ほかの手段（User-Agent、ビルドの旗）で見分けない。
+  アプリでは、加入・プランの変更・解約・解約の取り消し・顧客ポータルの画面（`/settings/supporter`）、設定のメニューのその項目、`/about` のプランの区画と加入へのリンクを出さない。`/settings/supporter` を直接開いても、プランも加入も読まずに、この画面はアプリでは使えないことだけを出す。
+  購入への導線も、Web で加入できることの案内も出さない。特典（プロフィールのバッジ、`/settings/custom-emojis`、`/finance`）と、サポーターの一覧とそのリンク、掲載の選択はアプリでも出す。新しく購入につながる画面やリンクを足すときは、この関数で出し分ける。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。サーバーの名前が変わったときも作り直す（フォーカスは動かさない）。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
   ナビゲーションの項目の画面で、見出しが場所を言うだけのもの（ホーム・ローカル・連合・通知・検索・ブックマーク・設定・会計・モデレーション・サーバー管理）は、
@@ -878,8 +901,9 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   - **設定**: `GET /admin/settings` の値で、登録モード（`RadioGroup`、各モードの説明付き）、既定の言語（`Select`。カタログのある言語と保存されている言語。新しい利用者の UI の言語の初期値）、ローカルと連合のタイムライン（`Checkbox`）、
     すべての画像に代替テキストを必須にするか（`require_media_description`、`Checkbox`）、Authorized Fetch（`Checkbox`）、リモートのメディアの複製（`RadioGroup`）と持つ期間（`Select`。1 時間〜365 日と保存されている値）、処分したドメインの一覧と公開コメントを見られる人（`RadioGroup`、誰にも・ログインした利用者・誰にでも）、
     運営の費用の公開範囲（`finance_visibility`、`RadioGroup`、公開しない・合計だけ・合計と内訳。内訳の選択肢の説明に、どの事業者で動いているかが知られることを書く。FR-903）と、同じ区画に、会計を閲覧できる人に見せる範囲
-    （項目の名前・メモを見せるか（`finance_viewer_item_names`・`finance_viewer_item_memos`、`Checkbox`、既定は見せない。メモの説明に運営者だけに向けた書き込みがあるかもしれないことを書く）、収入の見せ方（`finance_viewer_income`、`RadioGroup`、合計だけ・合計とプランごとの人数）。ADR-0070 §5）を出す。
-    1 つのフォームで、「設定を保存する」は変えた設定だけを `PATCH /admin/settings` でまとめて送る（サーバーはすべてか何も変えない）。成功したら応答で設定のキャッシュを置き換え、`GET /instance`（登録モードとタイムライン）・`GET /instance/cost_totals`・`GET /finance/cost_totals`・監査ログを取り直してから
+    （項目の名前・メモを見せるか（`finance_viewer_item_names`・`finance_viewer_item_memos`、`Checkbox`、既定は見せない。メモの説明に運営者だけに向けた書き込みがあるかもしれないことを書く）、収入の見せ方（`finance_viewer_income`、`RadioGroup`、合計だけ・合計とプランごとの人数）。ADR-0070 §5）、
+    サポーターの一覧を見られる人（`supporter_list_visibility`、`RadioGroup`、誰にも見せない・誰でも・サインインした人。区画の説明に、一覧はアバター・名前・ハンドルだけで金額や日付を出さず、いつも検索エンジンに索引しないよう求めることを書く。ADR-0071 §4）を出す。
+    1 つのフォームで、「設定を保存する」は変えた設定だけを `PATCH /admin/settings` でまとめて送る（サーバーはすべてか何も変えない）。成功したら応答で設定のキャッシュを置き換え、`GET /instance`（登録モードとタイムライン）・`GET /instance/cost_totals`・`GET /finance/cost_totals`・`GET /instance/supporters`・監査ログを取り直してから
     結果をボタンの下の `StatusMessage` に出す。変えた設定がなければ何も送らずにその旨を出し、失敗はボタンの上（`role="alert"`）に出して選択を残す（E2）。
 - **ルール**（`/admin/rules`、`manage_rules`、FR-705）: 「ルールを追加する」と「有効なルール」の区画（`h2` の `section`）。
   - **追加**: ルール（`TextField`、1 行、300 文字、必須）と補足（`TextArea`、1,000 文字、任意）を 1 つずつ置く。どちらもどのロケールでも同じ値を出す。文が空なら文の欄のエラーにして送らない。

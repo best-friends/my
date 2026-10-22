@@ -89,6 +89,17 @@ description: |
   - `/api/v1/problems/supporter-plan-retired` (409): the supporter plan is retired and does
     not change any more.
   - `/api/v1/problems/subscription-ended` (409): the subscription has ended already.
+  - `/api/v1/problems/supporter-ineligible` (422): the user may not subscribe to a supporter
+    plan: not a local user, the primary email address is not verified, or the account is
+    restricted.
+  - `/api/v1/problems/supporter-subscribed` (409): the user has a subscription that goes on
+    already; change its plan instead.
+  - `/api/v1/problems/supporter-plan-unavailable` (422): the supporter plan takes no
+    subscriptions: hidden, retired, not ready, or of another currency.
+  - `/api/v1/problems/supporter-subscription-state` (409): the subscription's state does not
+    allow the operation.
+  - `/api/v1/problems/supporter-same-plan` (422): the subscription has that plan and interval
+    already.
 type: object
 required: [type, title, status]
 properties:
