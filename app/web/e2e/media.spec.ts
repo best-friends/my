@@ -138,10 +138,17 @@ test.describe("a post with videos and audio", () => {
     const audio = article.locator("audio");
     await expect(videos).toHaveCount(2);
     await expect(audio).toHaveCount(1);
-    for (const player of [videos.first(), videos.nth(1), audio]) {
+    for (const player of [videos.first(), videos.nth(1)]) {
       await expect(player).toHaveAttribute("controls", "");
-      await expect(player).not.toHaveAttribute("autoplay");
-      await expect(player).toHaveJSProperty("paused", true);
+    }
+    // The audio file has the page's own player (a play button and a seek slider) in place of the browser's controls.
+    await expect(audio).not.toHaveAttribute("controls");
+    const player = audio.locator("xpath=..");
+    await expect(player.getByRole("button")).toHaveCount(1);
+    await expect(player.getByRole("slider")).toHaveCount(1);
+    for (const element of [videos.first(), videos.nth(1), audio]) {
+      await expect(element).not.toHaveAttribute("autoplay");
+      await expect(element).toHaveJSProperty("paused", true);
     }
     await expect(videos.first()).toHaveAccessibleName("A cat jumps onto a sofa");
     await expect(videos.first()).toHaveAttribute("poster", `${mediaBase}/poster.svg`);

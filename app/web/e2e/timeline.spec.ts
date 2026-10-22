@@ -27,7 +27,7 @@ const account: Status["account"] = {
 };
 
 /** A picture that the fixture serves on the preview's origin (servedImage), so that no request leaves it. */
-const picture = servedImage(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#4f6d8f"/></svg>')}`);
+const picture = servedImage(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90" viewBox="0 0 160 90"><rect width="160" height="90" fill="#4f6d8f"/></svg>')}`);
 /** An avatar, served the same way. */
 const avatar = servedImage(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`);
 
