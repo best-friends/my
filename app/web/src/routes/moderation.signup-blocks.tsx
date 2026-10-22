@@ -5,7 +5,7 @@ import { type SignupBlockFilter, signupBlockFilters, SignupBlocks, signupBlocksQ
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** `filter`: the tab of the list; omitted, or anything unknown, shows the blocks in effect (web-client.md S3). */
 const searchSchema = z.object({
@@ -33,7 +33,7 @@ function SignupBlocksPage() {
   };
   return (
     <>
-      <SettingsHeading>{t("client:admin.signup_blocks.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.signup_blocks.title")}</PageHeading>
       <SignupBlocks filter={filter} onFilterChange={changeFilter} />
     </>
   );

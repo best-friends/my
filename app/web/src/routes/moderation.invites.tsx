@@ -4,7 +4,7 @@ import { Invites, invitesQueryOptions, moderationInstanceQueryOptions } from "..
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The invites that let people sign up in the invite registration mode (FR-001): creating and revoking them, for manage_invites. */
 export const Route = createFileRoute("/moderation/invites")({
@@ -25,7 +25,7 @@ function InvitesPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.invites.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.invites.title")}</PageHeading>
       <Invites />
     </>
   );

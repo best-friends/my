@@ -1346,6 +1346,10 @@ export interface MessageArgs {
   "client:admin.domain_actions.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:admin.domain_actions.characters_over": { count: number };
+  /** Details */
+  "client:admin.domain_actions.column.details": {};
+  /** Domain */
+  "client:admin.domain_actions.column.domain": {};
   /** Cancel */
   "client:admin.domain_actions.confirm_suspend.cancel": {};
   /** Suspend */
@@ -1812,6 +1816,10 @@ export interface MessageArgs {
   "client:admin.home.none.heading": {};
   /** Back to remote servers */
   "client:admin.instance.back": {};
+  /** Event */
+  "client:admin.instance.column.event": {};
+  /** When */
+  "client:admin.instance.column.occurred_at": {};
   /** Deliveries resumed */
   "client:admin.instance.event.marked_available": {};
   /** Deliveries paused */
@@ -1864,6 +1872,8 @@ export interface MessageArgs {
   "client:admin.instance.state.available": {};
   /** Paused */
   "client:admin.instance.state.unavailable": {};
+  /** Server */
+  "client:admin.instances.column.server": {};
   /** No servers with failed deliveries */
   "client:admin.instances.empty": {};
   /** Servers that are not listed get every delivery. */
@@ -1880,6 +1890,8 @@ export interface MessageArgs {
   "client:admin.instances.summary": {};
   /** Remote servers */
   "client:admin.instances.title": {};
+  /** Invite code */
+  "client:admin.invites.column.invite": {};
   /** Copied the link of the invite {code}. */
   "client:admin.invites.copied": { code: string };
   /** Copy link */
@@ -2124,6 +2136,8 @@ export interface MessageArgs {
   "client:admin.registrations.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:admin.registrations.characters_over": { count: number };
+  /** Applicant */
+  "client:admin.registrations.column.applicant": {};
   /** {applicant} can sign in and start posting. The decision cannot be changed afterwards. */
   "client:admin.registrations.confirm_approve.description": { applicant: string };
   /** Approve {applicant}? */
@@ -3040,6 +3054,10 @@ export interface MessageArgs {
   "client:admin.signup_blocks.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:admin.signup_blocks.characters_over": { count: number };
+  /** Details */
+  "client:admin.signup_blocks.column.details": {};
+  /** Blocked */
+  "client:admin.signup_blocks.column.value": {};
   /** Comment */
   "client:admin.signup_blocks.comment": {};
   /** Seen by moderators only. */

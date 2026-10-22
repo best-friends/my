@@ -260,9 +260,8 @@ describe("the audit log after an audited write", () => {
     );
     setup?.();
     const { user, router } = await renderApp({ path: "/moderation/audit-log" });
-    const operations = await screen.findByRole("region", { name: "Operations" });
-    expect(await within(operations).findByRole("heading", { level: 3 })).toBeInTheDocument();
-    expect(within(operations).queryAllByRole("listitem")).toHaveLength(0);
+    expect(await screen.findByRole("heading", { level: 2, name: "No operations yet" })).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
     await router.navigate({ href: page });
     // From now on the audit log takes a while; the handler falls through to the one above.
@@ -275,7 +274,7 @@ describe("the audit log after an audited write", () => {
     expect(entries).toHaveLength(1);
 
     await router.navigate({ to: "/moderation/audit-log" });
-    const after = await screen.findByRole("region", { name: "Operations" });
-    expect(within(after).getAllByRole("listitem").length).toBeGreaterThan(0);
+    const after = await screen.findByRole("table");
+    expect(within(after).getAllByRole("rowheader").length).toBeGreaterThan(0);
   });
 });

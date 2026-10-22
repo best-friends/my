@@ -15,10 +15,10 @@ import {
   type RegistrationDecision,
   registrationsQueryOptions,
 } from "../api/registrations";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type PagedPages, toPagedList } from "./pagedList";
 
 /** The registrations that await approval, longest waiting first. */
-export function useRegistrations(): PagedList<Registration> {
+export function useRegistrations(): PagedPages<Registration> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(registrationsQueryOptions(api)));
 }

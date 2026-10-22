@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The invites screen below its heading (FR-001, manage_invites): the form of a new invite, then the invites, newest
-// first. An invite lets people sign up only while the registration mode is `invite` (a server setting, /admin/settings),
+// first, in the admin mode's table form (one page at a time, previous / next). An invite lets people sign up only while the registration mode is `invite` (a server setting, /admin/settings),
 // which the screen says when it is not. A new invite's code and link stay under the form in a StatusMessage; each
 // usable invite can be copied as its sign-up link or revoked, which takes effect at once and asks nothing first.
-import { Box, Button, DescriptionItem, DescriptionList, DurationSelect, EmptyState, Heading, InlineError, SectionHeader, Select, SelectItem, Stack, StatusMessage, Text } from "@my/ui";
+import { Box, Button, Cluster, DurationSelect, EmptyState, Heading, InlineError, Select, SelectItem, Stack, StatusMessage, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, VisuallyHidden } from "@my/ui";
 import { useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusHeadingAfterLift } from "../../../lib/useFocusAfterRemoval";
 import type { Invite, InviteState } from "../api/invites";
 import { inviteExpiries, inviteMaxUses, type RevokeInvite, useCopyInviteLink, useInviteForm, useInvites, useInvitesWork, useRevokeInvite } from "../hooks/useInvites";
-import { DateTime, DetailSection, RecordList, RequirePermission } from "./parts";
+import { DateTime, DetailSection, RecordTable, RequirePermission } from "./parts";
 
 const stateLabels: Readonly<Record<InviteState, ClientMessageKey>> = {
   usable: "client:admin.invites.state.usable",
@@ -31,9 +31,7 @@ export function Invites() {
         <DetailSection title={t("client:admin.invites.new.title")}>
           <NewInviteForm />
         </DetailSection>
-        <DetailSection title={t("client:admin.invites.list.title")}>
-          <InviteList />
-        </DetailSection>
+        <InviteList />
       </Stack>
     </RequirePermission>
   );
@@ -111,7 +109,7 @@ function NewInviteForm() {
 
 function InviteList() {
   const t = useT();
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const list = useInvites();
   const [status, setStatus] = useState<string | undefined>(undefined);
   const keepFocus = useFocusHeadingAfterLift(listRef);
@@ -122,15 +120,30 @@ function InviteList() {
   });
   return (
     <Stack gap="3">
+      <Heading level={2}>{t("client:admin.invites.list.title")}</Heading>
       <StatusMessage>{status}</StatusMessage>
-      <RecordList
-        list={list}
-        getId={(invite) => invite.id}
-        listRef={listRef}
-        empty={<EmptyState headingLevel={3} heading={t("client:admin.invites.empty")} description={t("client:admin.invites.empty.description")} />}
-      >
-        {(invite) => <InviteRow invite={invite} revoke={revoke} />}
-      </RecordList>
+      <Box ref={listRef}>
+        <RecordTable
+          list={list}
+          caption={t("client:admin.invites.list.title")}
+          getId={(invite) => invite.id}
+          empty={<EmptyState headingLevel={3} heading={t("client:admin.invites.empty")} description={t("client:admin.invites.empty.description")} />}
+          head={
+            <>
+              <TableColumnHeader>{t("client:admin.invites.column.invite")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.invites.state")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.invites.used")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.invites.expires_at")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.invites.created_at")}</TableColumnHeader>
+              <TableColumnHeader>
+                <VisuallyHidden>{t("client:admin.list.column.actions")}</VisuallyHidden>
+              </TableColumnHeader>
+            </>
+          }
+        >
+          {(invite) => <InviteRow invite={invite} revoke={revoke} />}
+        </RecordTable>
+      </Box>
     </Stack>
   );
 }
@@ -141,11 +154,28 @@ function InviteRow({ invite, revoke }: { invite: Invite; revoke: RevokeInvite })
   const copy = useCopyInviteLink();
   const created = intl.formatDate(invite.created_at, { dateStyle: "medium", timeStyle: "short" });
   return (
-    <Stack gap="3">
-      <SectionHeader
-        actions={
-          invite.state === "usable" && (
-            <>
+    <TableRow data-row-id={invite.id}>
+      {/* Focusable from script: it takes focus when the revoke button goes away (useFocusHeadingAfterLift). */}
+      <TableRowHeader tabIndex={-1} wrap="anywhere">
+        <Text dir="ltr" mono wrap="anywhere">
+          {invite.code}
+        </Text>
+      </TableRowHeader>
+      <TableCell>
+        <Text {...(invite.state === "usable" ? { weight: "semibold" as const } : {})}>{t(stateLabels[invite.state])}</Text>
+      </TableCell>
+      <TableCell>
+        {invite.max_uses === undefined
+          ? t("client:admin.invites.used.unlimited", { uses: invite.uses })
+          : t("client:admin.invites.used.limited", { uses: invite.uses, max: invite.max_uses })}
+      </TableCell>
+      <TableCell>{invite.expires_at === undefined ? t("client:admin.invites.never") : <DateTime value={invite.expires_at} />}</TableCell>
+      <TableCell>
+        <DateTime value={invite.created_at} />
+      </TableCell>
+      <TableCell>
+        {invite.state === "usable" && (
+          <Cluster gap="2">
             <Button
               size="sm"
               aria-label={t("client:admin.invites.copy_invite", { code: invite.code })}
@@ -166,30 +196,9 @@ function InviteRow({ invite, revoke }: { invite: Invite; revoke: RevokeInvite })
             >
               {t("client:admin.invites.revoke")}
             </Button>
-            </>
-          )
-        }
-      >
-        <Heading level={3} dir="ltr" mono wrap="anywhere" focusable>
-          {invite.code}
-        </Heading>
-      </SectionHeader>
-      <DescriptionList columns={3}>
-        <DescriptionItem term={t("client:admin.invites.state")}>
-          <Text {...(invite.state === "usable" ? { weight: "semibold" as const } : {})}>{t(stateLabels[invite.state])}</Text>
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.invites.used")}>
-          {invite.max_uses === undefined
-            ? t("client:admin.invites.used.unlimited", { uses: invite.uses })
-            : t("client:admin.invites.used.limited", { uses: invite.uses, max: invite.max_uses })}
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.invites.expires_at")}>
-          {invite.expires_at === undefined ? t("client:admin.invites.never") : <DateTime value={invite.expires_at} />}
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.invites.created_at")}>
-          <DateTime value={invite.created_at} />
-        </DescriptionItem>
-      </DescriptionList>
-    </Stack>
+          </Cluster>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }

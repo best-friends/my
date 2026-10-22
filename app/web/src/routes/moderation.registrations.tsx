@@ -4,7 +4,7 @@ import { RegistrationList, registrationsQueryOptions } from "../features/moderat
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The registrations that await approval, and approving or rejecting them (FR-721), for manage_accounts. */
 export const Route = createFileRoute("/moderation/registrations")({
@@ -20,7 +20,7 @@ function RegistrationsPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.registrations.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.registrations.title")}</PageHeading>
       <RegistrationList />
     </>
   );
