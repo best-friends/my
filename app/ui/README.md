@@ -560,7 +560,7 @@ against viewport breakpoints.
 | `AsidePanel` | A section of the third column: an `aside` named by its small muted `h2` | `heading`, `children` |
 | `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` (the wordmark and server name: `AppNavBrand`), `action` (the rail's button: `AppNavAction`), `footer` (sidebar only), `placement` (`side` / `top`), the items as children |
 | `AppNavItem` | An item: a `RailItem` (icon, label, count's `Badge`; soft fill when current) | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
-| `FloatingButton` | The round primary button that starts the page's main action (below md; the rail has `AppNavAction`): `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s |
+| `FloatingButton` | The round primary button that starts the page's main action (below md; the rail has `AppNavAction`): `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s | `label`, `icon`, `iconOnly`, `onPress` |
 | `AppNavAction` | The rail's one `primary` button after the items: icon alone in the md rail, with its label from lg | `label`, `icon`, `onPress` |
 | `RailItem` | A navigation link: icon, label, optional count; `aria-current="page"` is soft-filled with an accent label | `href`, `icon`, `label`, `current`, `badge`, `form` (`tab` / `row` / `top`), `prominent`, `classNames` |
 | `AppNavMenu` | The tab bar's last item, a button that opens a `Sheet` | `label`, `badge`, `isOpen`, `onOpenChange`, `title`, `closeLabel`, the sheet's content |

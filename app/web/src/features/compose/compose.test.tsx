@@ -778,7 +778,7 @@ describe("the new-post buttons (web-client.md G4)", () => {
     await renderApp({ path });
 
     expect(await screen.findByRole("heading", { level: 1, name: new RegExp(heading) })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Write a post" })).toHaveLength(1);
+    expect(await screen.findAllByRole("button", { name: "Write a post" })).toHaveLength(1);
     expect(railButton()).toBeInTheDocument();
     expect(screen.getByRole("main")).not.toHaveAttribute("data-compose-fab");
   });
