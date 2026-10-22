@@ -104,8 +104,8 @@ export function ProfileHeader({ image, avatar, name, actions, heading, handle, b
 
 const headerImage = tv({
   slots: {
-    band: "rounded-lg bg-surface-sunken",
-    picture: "w-full rounded-lg bg-surface-sunken object-cover",
+    band: "rounded-xl bg-surface-sunken",
+    picture: "w-full rounded-xl bg-surface-sunken object-cover",
   },
   variants: {
     size: {

@@ -6,7 +6,7 @@ import { Link } from "./Link";
 const serverNameLink = tv({
   slots: {
     base: "",
-    link: "max-w-full font-semibold text-fg wrap-anywhere",
+    link: "max-w-full font-extrabold text-fg wrap-anywhere",
   },
   variants: {
     size: {
