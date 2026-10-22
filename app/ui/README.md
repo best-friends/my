@@ -486,3 +486,16 @@ keep focus); it runs before axe and the screenshots, in every project. The overl
 behaviour in `make check`. Overlays portal into the story frame, which has layout
 containment, so a modal covers the frame and appears in its screenshots.
 The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).
+
+## Parts for the slots of PostCard and QuoteCard
+
+| Part | Slot | What it is |
+| --- | --- | --- |
+| `PostCardAuthorLink` | `author` | The profile link around a `PostCardAuthor` (`href`, `name`, `handle`). |
+| `PostCardTimeLink` | `time`, `details` | The muted link on a `<time>` or on the mark of an edited post; `dense` drops the 24 px minimum height (QuoteCard's header). |
+| `PostCardAvatarLink` | `avatar` | The avatar as a second link to the profile: out of the tab order, `aria-hidden`. |
+| `PostCardNameLink` | `context`, a sentence | A name inside a sentence ("Bob boosted"), in a `<bdi>`; notification rows use it too. |
+| `PostCardBoostContext` | `context` | The boost icon and the sentence. |
+| `PostCardOrigin` | `actions` | The link from a post of another server to its own page (`href`, `host`, `label`). |
+
+Counts in `details` are `<Text numeric>`; several parts under a body are a `<Stack gap="3" shrink>`; `PostContent` takes `size="lg"` for the post a page is about.

@@ -24,7 +24,7 @@
 // pointer, out of the tab order), and the quote of the post or the follow back button. The avatars of the
 // others are links to their profiles for the pointer only; the post's page lists who favourited and
 // boosted it.
-import { Avatar, EmojiText, Link, PostCard, VisuallyHidden } from "@my/ui";
+import { Avatar, EmojiText, Link, PostCard, PostCardNameLink, VisuallyHidden } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import { RelationshipActions, useRelationship } from "../../profile";
@@ -37,9 +37,6 @@ import {
   type SupporterNoticeView,
   useNotificationView,
 } from "../hooks/useNotificationView";
-
-/** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
-const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
 
 /** The most avatars of the others that a group shows; the sentence counts them all. */
 const maxOtherAvatars = 6;
@@ -90,11 +87,9 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
                 {
                   name:
                     named === null ? null : (
-                      <Link key="name" href={named.href} className={nameLink}>
-                        <bdi>
-                          <EmojiText text={named.name} emojis={named.emojis} />
-                        </bdi>
-                      </Link>
+                      <PostCardNameLink key="name" href={named.href}>
+                        <EmojiText text={named.name} emojis={named.emojis} />
+                      </PostCardNameLink>
                     ),
                   count: view.others.length,
                   // The server's name is no running text, isolated from the sentence around it (Y10).

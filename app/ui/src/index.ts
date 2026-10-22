@@ -149,3 +149,16 @@ export {
   type TableRowHeaderProps,
   type TableRowProps,
 } from "./Table";
+export {
+  PostCardAuthorLink,
+  PostCardAvatarLink,
+  PostCardBoostContext,
+  PostCardNameLink,
+  PostCardOrigin,
+  PostCardTimeLink,
+  type PostCardAuthorLinkProps,
+  type PostCardAvatarLinkProps,
+  type PostCardNameLinkProps,
+  type PostCardOriginProps,
+  type PostCardTimeLinkProps,
+} from "./PostCardParts";

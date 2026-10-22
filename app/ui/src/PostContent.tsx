@@ -89,11 +89,14 @@ const postContent = tv({
     "[&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6",
     "[&>*+*]:mt-2",
   ],
+  variants: { size: { base: "", lg: "text-lg" } },
 });
 
 export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "dangerouslySetInnerHTML" | "dir"> & {
   /** The post body as the server rendered and sanitized it. */
   html: SanitizedHtml;
+  /** `lg` for the post a page is about, in larger text; `base` by default. */
+  size?: "base" | "lg";
   /** The language of the post, when the server knows it (a BCP 47 tag). */
   lang?: string | undefined;
   /**
@@ -208,7 +211,7 @@ function emojiDrawer(html: SanitizedHtml, emojis: readonly CustomEmojiImage[], a
  * own pages through its router), and `emojis` to draw its custom emoji. The links to any other page open in a
  * new tab (`ExternalLinkContext`).
  */
-export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, className, ref, ...props }: PostContentProps) {
+export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, size, className, ref, ...props }: PostContentProps) {
   const autoplay = use(AutoplayContext);
   const links = use(ExternalLinkContext);
   const emojiMotion = motion ?? autoplay;
@@ -218,7 +221,7 @@ export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, 
       ref={mergeRefs(ref, linkTargetSetter(html, links), linkClickListener(onLinkClick), emojiDrawer(html, emojis, emojiMotion))}
       dir="auto"
       lang={lang}
-      className={postContent({ className })}
+      className={postContent({ size, className })}
       dangerouslySetInnerHTML={{ __html: trustedHtml(html) }}
     />
   );
