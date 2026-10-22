@@ -5,7 +5,21 @@
 // on or replacing them answers are listed once. What a change did stays on the page in a StatusMessage
 // (role="status"); a wrong code is the code field's error and any other failure an alert next to its form
 // (web-client.md E2, G16).
-import { Button, DescriptionItem, DescriptionList, QrCode, StatusMessage, TextField } from "@my/ui";
+import {
+  Box,
+  Button,
+  CodeList,
+  DescriptionItem,
+  DescriptionList,
+  Heading,
+  Hint,
+  InlineError,
+  QrCode,
+  Stack,
+  StatusMessage,
+  Text,
+  TextField,
+} from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
@@ -18,7 +32,7 @@ export function TwoFactorSettings() {
   const settings = useTwoFactor();
   const { status } = settings;
   return (
-    <div className="@container flex flex-col gap-8">
+    <Stack container gap="8">
       <StatusMessage>{settings.result}</StatusMessage>
       <Section title={t("client:settings.two_factor.status.title")}>
         {status.enabled ? (
@@ -31,7 +45,7 @@ export function TwoFactorSettings() {
             )}
             {status.recovery_codes_remaining !== undefined && (
               <DescriptionItem term={t("client:settings.two_factor.recovery_codes.remaining")}>
-                <span className="tabular-nums">{intl.formatNumber(status.recovery_codes_remaining)}</span>
+                <Text numeric>{intl.formatNumber(status.recovery_codes_remaining)}</Text>
               </DescriptionItem>
             )}
           </DescriptionList>
@@ -43,34 +57,34 @@ export function TwoFactorSettings() {
       {status.enabled ? (
         <>
           <Section title={t("client:settings.two_factor.recovery_codes.title")}>
-            <p className="text-sm text-fg-muted">{t("client:settings.two_factor.recovery_codes.description")}</p>
+            <Hint>{t("client:settings.two_factor.recovery_codes.description")}</Hint>
             <CodeFormView form={settings.regenerate} submitLabel={t("client:settings.two_factor.recovery_codes.replace")} />
           </Section>
           <Section title={t("client:settings.two_factor.disable.title")}>
-            <p className="text-sm text-fg-muted">{t("client:settings.two_factor.disable.description")}</p>
+            <Hint>{t("client:settings.two_factor.disable.description")}</Hint>
             <CodeFormView form={settings.disable} submitLabel={t("client:settings.two_factor.disable.submit")} />
           </Section>
         </>
       ) : (
         <Section title={t("client:settings.two_factor.setup.title")}>
           {settings.setup === null ? (
-            <div className="flex flex-col items-start gap-3">
-              <p className="text-sm text-fg-muted">{t("client:settings.two_factor.setup.description")}</p>
+            <Stack align="start" gap="3">
+              <Hint>{t("client:settings.two_factor.setup.description")}</Hint>
               {settings.setupError !== undefined && (
-                <p role="alert" className="text-danger">
+                <InlineError alert size="inherit">
                   {settings.setupError}
-                </p>
+                </InlineError>
               )}
               <Button variant="primary" onPress={settings.setUp} isPending={settings.isSettingUp}>
                 {t("client:settings.two_factor.setup.start")}
               </Button>
-            </div>
+            </Stack>
           ) : (
             <SetupSteps setup={settings.setup} form={settings.enable} />
           )}
         </Section>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -78,12 +92,12 @@ export function TwoFactorSettings() {
 function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {title}
-      </h2>
+      </Heading>
       {children}
-    </section>
+    </Stack>
   );
 }
 
@@ -92,23 +106,27 @@ function SetupSteps({ setup, form }: { setup: TotpSetup; form: CodeForm }) {
   const t = useT();
   const secretId = useId();
   return (
-    <div className="flex flex-col gap-6">
-      <ol className="flex list-inside list-decimal flex-col gap-1">
+    <Stack gap="6">
+      <Stack as="ol" marker="decimalInside" gap="1">
         <li>{t("client:settings.two_factor.setup.step.scan")}</li>
         <li>{t("client:settings.two_factor.setup.step.confirm")}</li>
-      </ol>
+      </Stack>
       <QrCode size={setup.qr_code.size} path={setup.qr_code.path} label={t("client:settings.two_factor.setup.qr_code")} />
-      <div className="flex flex-col gap-1">
-        <span id={secretId} className="text-sm font-medium">
+      <Stack gap="1">
+        <Text id={secretId} size="sm" weight="medium">
           {t("client:settings.two_factor.setup.secret")}
-        </span>
+        </Text>
         {/* Base32, typed into the app as it is: left to right in every locale, in groups that read easily. */}
-        <code aria-labelledby={secretId} dir="ltr" className="font-mono text-base wrap-anywhere">
+        <Text as="code" aria-labelledby={secretId} dir="ltr" mono size="base" wrap="anywhere">
           {setup.secret.match(/.{1,4}/g)?.join(" ") ?? setup.secret}
-        </code>
-      </div>
-      <CodeFormView form={form} submitLabel={t("client:settings.two_factor.setup.submit")} description={t("client:settings.two_factor.setup.code.description")} />
-    </div>
+        </Text>
+      </Stack>
+      <CodeFormView
+        form={form}
+        submitLabel={t("client:settings.two_factor.setup.submit")}
+        description={t("client:settings.two_factor.setup.code.description")}
+      />
+    </Stack>
   );
 }
 
@@ -116,29 +134,30 @@ function SetupSteps({ setup, form }: { setup: TotpSetup; form: CodeForm }) {
 function CodeFormView({ form, submitLabel, description }: { form: CodeForm; submitLabel: string; description?: string }) {
   const t = useT();
   return (
-    <form onSubmit={form.submit} className="flex flex-col items-start gap-3">
-      <TextField
-        className="w-full max-w-xs"
-        label={t("client:settings.two_factor.code")}
-        description={description ?? t("client:settings.two_factor.code.description")}
-        value={form.code}
-        onChange={form.changeCode}
-        isRequired
-        isInvalid={form.codeError !== undefined}
-        maxLength={twoFactorCodeLimit}
-        autoComplete="one-time-code"
-        spellCheck="false"
-        errorMessage={form.codeError ?? t("client:settings.two_factor.code.required")}
-      />
+    <Stack as="form" onSubmit={form.submit} align="start" gap="3">
+      <Box width="xs">
+        <TextField
+          label={t("client:settings.two_factor.code")}
+          description={description ?? t("client:settings.two_factor.code.description")}
+          value={form.code}
+          onChange={form.changeCode}
+          isRequired
+          isInvalid={form.codeError !== undefined}
+          maxLength={twoFactorCodeLimit}
+          autoComplete="one-time-code"
+          spellCheck="false"
+          errorMessage={form.codeError ?? t("client:settings.two_factor.code.required")}
+        />
+      </Box>
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {form.error}
-        </p>
+        </InlineError>
       )}
       <Button type="submit" variant="primary" isPending={form.isPending}>
         {submitLabel}
       </Button>
-    </form>
+    </Stack>
   );
 }
 
@@ -148,11 +167,7 @@ function RecoveryCodeList({ codes }: { codes: readonly string[] }) {
   return (
     <Section title={t("client:settings.two_factor.recovery_codes.new.title")}>
       <p>{t("client:settings.two_factor.recovery_codes.new.description")}</p>
-      <ul className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface-raised px-4 py-3 font-mono @md:grid-cols-2" dir="ltr">
-        {codes.map((code) => (
-          <li key={code}>{code}</li>
-        ))}
-      </ul>
+      <CodeList codes={codes} />
     </Section>
   );
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, PostSkeleton, VisuallyHidden } from "@my/ui";
+import { Box, Button, Heading, PostSkeleton, Stack, Text, VisuallyHidden } from "@my/ui";
 import { useId, useRef } from "react";
 import { useT } from "../../../lib/i18n";
 import { useRevealOnce } from "../hooks/useRevealOnce";
@@ -30,12 +30,14 @@ export function StatusThread({ id, onDeleted }: StatusThreadProps) {
   useRevealOnce(focusedRef, hasAncestors);
 
   return (
-    <div className="flex flex-col">
+    <Stack>
       {thread.status === "loaded" && thread.ancestors.length > 0 && (
         <section aria-labelledby={ancestorsId}>
-          <h2 id={ancestorsId} className="px-4 pt-2 text-sm font-semibold text-fg-muted">
-            {t("client:status.thread.ancestors")}
-          </h2>
+          <Box paddingX="4" paddingTop="2">
+            <Heading level={2} id={ancestorsId} size="subsection" tone="muted">
+              <Text size="sm">{t("client:status.thread.ancestors")}</Text>
+            </Heading>
+          </Box>
           <StatusList posts={thread.ancestors} />
         </section>
       )}
@@ -47,12 +49,14 @@ export function StatusThread({ id, onDeleted }: StatusThreadProps) {
         onDeleted={onDeleted}
       />
       <section aria-labelledby={repliesId} aria-busy={thread.status === "loading"}>
-        <h2 id={repliesId} className="px-4 pt-4 pb-2 text-lg font-semibold">
-          {t("client:status.thread.replies")}
-        </h2>
+        <Box paddingX="4" paddingTop="4" paddingBottom="2">
+          <Heading level={2} id={repliesId}>
+            {t("client:status.thread.replies")}
+          </Heading>
+        </Box>
         <ThreadReplies thread={thread} />
       </section>
-    </div>
+    </Stack>
   );
 }
 
@@ -74,14 +78,18 @@ function ThreadReplies({ thread }: { thread: ThreadState }) {
       );
     case "error":
       return (
-        <div className="flex flex-col items-center gap-3 p-4 text-center">
-          <p>{t("client:status.thread.failed", { reason: thread.message })}</p>
+        <Stack align="center" gap="3" padding="4">
+          <Text as="p" align="center">
+            {t("client:status.thread.failed", { reason: thread.message })}
+          </Text>
           <Button onPress={thread.retry}>{t("client:status.thread.retry")}</Button>
-        </div>
+        </Stack>
       );
     case "loaded":
       return thread.descendants.length === 0 ? (
-        <p className="px-4 pb-4 text-fg-muted">{t("client:status.thread.no_replies")}</p>
+        <Box as="p" paddingX="4" paddingBottom="4" tone="muted">
+          {t("client:status.thread.no_replies")}
+        </Box>
       ) : (
         <StatusList posts={thread.descendants} />
       );

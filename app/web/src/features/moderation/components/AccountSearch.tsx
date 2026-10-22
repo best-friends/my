@@ -4,7 +4,7 @@
 // TextFields, checked by the browser's constraint validation before the search runs. The route keeps the search
 // in the address (web-client.md S3). A local account can be searched by its email address, its email domain or
 // an IP address it used, one of them at a time; the results never show them (the account's page does, when asked).
-import { Avatar, Button, DescriptionItem, DescriptionList, EmptyState, Link, RegionError, Select, SelectItem, Spinner, TextField } from "@my/ui";
+import { AccountItem, Box, Button, DescriptionItem, DescriptionList, DetailSection, EmptyState, Grid, Heading, RegionError, Select, SelectItem, Spinner, Stack, Text, TextField } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import {
@@ -28,9 +28,8 @@ import {
   useAccountSearchForm,
   useAccountSearchResults,
 } from "../hooks/useAdminAccounts";
-import { accountName } from "../hooks/useReports";
-import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
-import { AccountLabel } from "./reportParts";
+import { accountName, handleOf } from "../hooks/useReports";
+import { DateTime, DomainName, RecordList, RequirePermission } from "./parts";
 import { imageSources } from "../../../lib/images";
 
 export type AccountSearchProps = {
@@ -56,7 +55,7 @@ function isFiltered(search: AdminAccountSearch): boolean {
 function AccountSearchView({ search, onSearch }: AccountSearchProps) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <DetailSection title={t("client:admin.accounts.search.title")}>
         {/* Another search in the address (back, forward, a link) starts the form from it (web-client.md R10). */}
         <SearchForm key={JSON.stringify(search)} search={search} onSearch={onSearch} />
@@ -64,7 +63,7 @@ function AccountSearchView({ search, onSearch }: AccountSearchProps) {
       <DetailSection title={t("client:admin.accounts.results.title")}>
         <Results search={search} />
       </DetailSection>
-    </div>
+    </Stack>
   );
 }
 
@@ -73,8 +72,8 @@ function SearchForm({ search, onSearch }: AccountSearchProps) {
   const form = useAccountSearchForm(search, onSearch);
   const { draft } = form;
   return (
-    <form onSubmit={form.submit} className="@container flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 @md:grid-cols-2">
+    <Stack as="form" onSubmit={form.submit} container gap="4">
+      <Grid at="md" gap="4">
         <TextField
           label={t("client:admin.accounts.search.username")}
           description={t("client:admin.accounts.search.username.description")}
@@ -157,13 +156,13 @@ function SearchForm({ search, onSearch }: AccountSearchProps) {
             }
           />
         )}
-      </div>
-      <div>
+      </Grid>
+      <Box>
         <Button type="submit" variant="primary">
           {t("client:admin.accounts.search.submit")}
         </Button>
-      </div>
-    </form>
+      </Box>
+    </Stack>
   );
 }
 
@@ -208,10 +207,10 @@ function Results({ search }: { search: AdminAccountSearch }) {
           list={list}
           getId={(account) => account.id}
           empty={
-            <div className="flex flex-col gap-4">
+            <Stack gap="4">
               {empty}
               {results.moreError !== undefined && <RegionError heading={t("client:admin.accounts.results.more_failed")} reason={results.moreError} />}
-            </div>
+            </Stack>
           }
           moreError={results.moreError !== undefined && <RegionError heading={t("client:admin.accounts.results.more_failed")} reason={results.moreError} />}
         >
@@ -232,18 +231,18 @@ function AccountRow({ account }: { account: AdminAccount }) {
   const t = useT();
   const intl = useIntl();
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex min-w-0 items-center gap-3">
-        <Avatar sources={imageSources(account.account.avatar)} name={accountName(account.account)} decorative />
-        <h3 className="min-w-0 font-semibold">
-          <Link href={`/moderation/accounts/${encodeURIComponent(account.id)}`} variant="standalone">
-            <AccountLabel account={account.account} />
-          </Link>
-        </h3>
-      </div>
+    <Stack gap="2">
+      <Heading level={3} shrink>
+        <AccountItem
+          name={accountName(account.account)}
+          handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
+          avatar={imageSources(account.account.avatar)}
+          href={`/moderation/accounts/${encodeURIComponent(account.id)}`}
+        />
+      </Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.accounts.state")}>
-          <span className="font-semibold">{t(adminAccountStateLabels[account.state])}</span>
+          <Text weight="semibold">{t(adminAccountStateLabels[account.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.accounts.origin")}>
           <AccountOrigin account={account} />
@@ -263,6 +262,6 @@ function AccountRow({ account }: { account: AdminAccount }) {
           </DescriptionItem>
         )}
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }

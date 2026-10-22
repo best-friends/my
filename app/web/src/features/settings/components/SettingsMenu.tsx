@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link } from "@my/ui";
+import { Heading, Hint, Link, Stack } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type Permission, useViewerPermissions } from "../../moderation";
@@ -38,25 +38,25 @@ export function SettingsMenu() {
     (page) => (page.permission === undefined || permissions.includes(page.permission)) && (page.supporters === undefined || supporters),
   );
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:settings.menu.title")}
-      </h2>
-      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+      </Heading>
+      <Stack as="ul" divided border="lg">
         {shown.map((page) => {
           const descriptionId = `${headingId}-${page.href}`;
           return (
-            <li key={page.href} className="flex flex-col px-4 py-3">
+            <Stack as="li" key={page.href} paddingX="4" paddingY="3">
               <Link href={page.href} variant="standalone" aria-describedby={descriptionId}>
                 {t(page.label)}
               </Link>
-              <span id={descriptionId} className="text-sm text-fg-muted">
+              <Hint as="span" id={descriptionId}>
                 {t(page.description)}
-              </span>
-            </li>
+              </Hint>
+            </Stack>
           );
         })}
-      </ul>
-    </section>
+      </Stack>
+    </Stack>
   );
 }

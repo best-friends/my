@@ -5,19 +5,19 @@
 // alert dialog (ConfirmDialog); a refusal (a role above the viewer's, the last admin) stays in it with the
 // reason. What a change did stays in the region's StatusMessage, and focus moves to the region's heading, since
 // the pressed button gives way to the other one.
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, RegionError, Spinner, StatusMessage } from "@my/ui";
+import { Button, ConfirmDialog, DescriptionItem, DescriptionList, DetailSection, EmptyState, Heading, Hint, RegionError, SectionHeader, Spinner, Stack, StatusMessage, Text } from "@my/ui";
 import { useRef } from "react";
 import { useT } from "../../../lib/i18n";
 import { adminRoleKey } from "../api/roles";
 import { type AccountRoles as AccountRolesState, type RoleChanges, type RoleRow, useAccountRoles, useRoleChanges } from "../hooks/useRoles";
-import { DetailSection, RecordList, useFocusAfterChange } from "./parts";
+import { RecordList, useFocusAfterChange } from "./parts";
 
 /** A role's key, an identifier that reads left to right in every locale. */
 function RoleKey({ value }: { value: string }) {
   return (
-    <span dir="ltr" className="wrap-anywhere">
+    <Text dir="ltr" wrap="anywhere">
       {value}
-    </span>
+    </Text>
   );
 }
 
@@ -37,7 +37,7 @@ export function AccountRoles({ accountId, handle }: { accountId: string; handle:
   return (
     <DetailSection title={t("client:admin.account.roles.title")} headingRef={headingRef}>
       <StatusMessage tone="success">{changes.status}</StatusMessage>
-      <p className="text-sm text-fg-muted">{t("client:admin.account.roles.description")}</p>
+      <Hint>{t("client:admin.account.roles.description")}</Hint>
       <RoleList roles={roles} changes={changes} />
       <RoleChangeDialog changes={changes} handle={handle} />
     </DetailSection>
@@ -79,12 +79,10 @@ function RoleItem({ row, changes }: { row: RoleRow; changes: RoleChanges }) {
   const key = isolatedKey(role.key);
   const pending = changes.isPending && changes.confirmation?.role.id === role.id;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        <h3 className="font-semibold">
-          <RoleKey value={role.key} />
-        </h3>
-        {outrankedBy === undefined &&
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          outrankedBy === undefined &&
           // Different keys: the pressed button gives way to the other one, and focus goes to the region's heading.
           (held ? (
             <Button
@@ -110,20 +108,25 @@ function RoleItem({ row, changes }: { row: RoleRow; changes: RoleChanges }) {
             >
               {t("client:admin.account.roles.grant")}
             </Button>
-          ))}
-      </div>
+          ))
+        }
+      >
+        <Heading level={3}>
+          <RoleKey value={role.key} />
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.account.roles.held")}>
-          <span className={held ? "font-semibold" : undefined}>{held ? t("client:admin.account.roles.held.yes") : t("client:admin.account.roles.held.no")}</span>
+          <Text {...(held && { weight: "semibold" as const })}>{held ? t("client:admin.account.roles.held.yes") : t("client:admin.account.roles.held.no")}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.account.roles.permissions")}>
           {role.permissions.length === 0 ? t("client:admin.account.roles.permissions.none") : <RoleKey value={role.permissions.join(", ")} />}
         </DescriptionItem>
       </DescriptionList>
       {outrankedBy !== undefined && (
-        <p className="text-sm text-fg-muted">{t("client:admin.account.roles.outranked", { role: isolatedKey(outrankedBy.key) })}</p>
+        <Hint>{t("client:admin.account.roles.outranked", { role: isolatedKey(outrankedBy.key) })}</Hint>
       )}
-    </div>
+    </Stack>
   );
 }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { EmptyState, Link, NewItemsButton } from "@my/ui";
+import { Box, EmptyState, Link, NewItemsButton, Stack } from "@my/ui";
 import { useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useIntl } from "react-intl";
@@ -32,10 +32,10 @@ export function HomeTimeline({ "aria-labelledby": labelledBy, saved = false }: H
   if (status === "signed-in") return <SignedInHomeTimeline aria-labelledby={labelledBy} />;
   if (saved && unreachable) {
     return (
-      <div className="flex flex-col">
+      <Stack>
         <OfflineNotice />
         <TimelineFeed timeline={{ kind: "home" }} aria-labelledby={labelledBy} />
-      </div>
+      </Stack>
     );
   }
   return (
@@ -69,7 +69,7 @@ function SignedInHomeTimeline({ "aria-labelledby": labelledBy }: HomeTimelinePro
   // Synchronizes the browser's storage with the query cache, two stores outside React (web-client.md R8).
   useEffect(() => keepHomeTimelineSaved(queryClient, api), [queryClient, api]);
   return (
-    <div className="flex flex-col">
+    <Stack>
       {offline && <OfflineNotice />}
       <NewItemsButton
         count={count}
@@ -78,10 +78,10 @@ function SignedInHomeTimeline({ "aria-labelledby": labelledBy }: HomeTimelinePro
           show();
           document.getElementById(labelledBy)?.focus();
         }}
-        className="pointer-events-none sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 h-8 items-start pointer-coarse:h-11 *:pointer-events-auto"
+        sticky
       />
       <TimelineFeed timeline={{ kind: "home" }} aria-labelledby={labelledBy} />
-    </div>
+    </Stack>
   );
 }
 
@@ -95,5 +95,9 @@ function OfflineNotice() {
   const api = useApi();
   const { dataUpdatedAt } = useSuspenseInfiniteQuery(timelineQueryOptions(api, { kind: "home" }));
   const time = intl.formatDate(dataUpdatedAt, { dateStyle: "medium", timeStyle: "short" });
-  return <p className="border-b border-border px-4 py-3 text-sm text-fg-muted">{t("client:timeline.offline.home", { time })}</p>;
+  return (
+    <Box as="p" border="bottom" paddingX="4" paddingY="3" textSize="sm" tone="muted">
+      {t("client:timeline.offline.home", { time })}
+    </Box>
+  );
 }

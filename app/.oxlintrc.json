@@ -769,6 +769,29 @@
         "./oxlint/restrictions.js"
       ]
     },
+    // A4: web/src writes no Tailwind; its looks and layout are @my/ui components and their props. No file is exempt, tests
+    // included; a line that must keep a class disables this rule with the reason.
+    {
+      "files": [
+        "web/src/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "restrict/classes": [
+          "error",
+          {
+            "selector": "JSXAttribute[name.name='className'], Property[key.name='className']",
+            "message": "Do not write className in web/src; a look or layout is a prop of a @my/ui component, or a new prop or component there (web-client.md A4)."
+          },
+          {
+            "selector": "ImportDeclaration[source.value=/^(tailwind-variants|tailwind-merge|clsx|classnames|class-variance-authority)(\\/|$)/]",
+            "message": "Do not compose classes in web/src; tailwind-variants, tailwind-merge and clsx belong to @my/ui (web-client.md A4)."
+          }
+        ]
+      },
+      "jsPlugins": [
+        "./oxlint/restrictions.js"
+      ]
+    },
     // S1: the API client and fetch are allowed here.
     {
       "files": [
@@ -825,11 +848,17 @@
         ]
       }
     },
-    // D2: components use container queries; viewport breakpoints belong to the app shell.
+    // D2: components use container queries; viewport breakpoints belong to the app shell, whose look is in the kit's
+    // AppShell and AppNavigation, and ToastProvider's region, which stands clear of the tab bar they draw.
     {
       "files": [
         "ui/src/**/*.tsx",
         "web/src/features/**/*.tsx"
+      ],
+      "excludeFiles": [
+        "ui/src/AppShell.tsx",
+        "ui/src/AppNavigation.tsx",
+        "ui/src/Toast.tsx"
       ],
       "rules": {
         "better-tailwindcss/no-restricted-classes": [

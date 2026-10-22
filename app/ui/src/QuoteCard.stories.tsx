@@ -2,8 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
 import { Avatar } from "./Avatar";
-import { Link } from "./Link";
-import { PostCardAuthor } from "./PostCard";
+import { PostCardAuthorLink, PostCardTimeLink } from "./PostCardParts";
 import { PostContent, serverSanitizedHtml } from "./PostContent";
 import { QuoteCard } from "./QuoteCard";
 
@@ -13,11 +12,11 @@ const meta = {
   args: {
     label: "Quoted post",
     avatar: <Avatar name="Carol" size="sm" decorative />,
-    author: <PostCardAuthor name="Carol" handle="@carol@mastodon.example" />,
+    author: <PostCardAuthorLink href="/@carol@mastodon.example" name="Carol" handle="@carol@mastodon.example" />,
     time: (
-      <Link href="/@carol@mastodon.example/status/1">
+      <PostCardTimeLink href="/@carol@mastodon.example/status/1" dense>
         <time dateTime="2026-10-17T06:52:12Z">2h</time>
-      </Link>
+      </PostCardTimeLink>
     ),
     children: <PostContent html={serverSanitizedHtml("<p>The sun rose again this morning, as it does.</p>")} lang="en" />,
   },

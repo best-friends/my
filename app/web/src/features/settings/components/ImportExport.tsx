@@ -3,14 +3,20 @@
 // domains, and bookmarks to download; a form that imports such a file after checking what it would do; and the latest imports with
 // their progress. Dates are in the user's locale and time zone, numbers in the user's locale.
 import {
+  Box,
   Button,
+  Cluster,
   DescriptionItem,
   DescriptionList,
   EmptyState,
   FileTrigger,
+  Heading,
+  InlineError,
   Radio,
   RadioGroup,
+  Stack,
   StatusMessage,
+  Text,
 } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useIntl } from "react-intl";
@@ -64,7 +70,7 @@ export function ImportExport() {
   const form = useImportForm();
   const imports = useDataImports();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <Section title={t("client:settings.import_export.export.title")}>
         <ExportsView exports={exports} />
       </Section>
@@ -74,7 +80,7 @@ export function ImportExport() {
       <Section title={t("client:settings.import_export.history.title")}>
         <HistoryView imports={imports} />
       </Section>
-    </div>
+    </Stack>
   );
 }
 
@@ -82,32 +88,34 @@ export function ImportExport() {
 function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {title}
-      </h2>
+      </Heading>
       {children}
-    </section>
+    </Stack>
   );
 }
 
 function ExportsView({ exports }: { exports: CsvExports }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       <p>{t("client:settings.import_export.export.description")}</p>
       {exports.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {exports.error}
-        </p>
+        </InlineError>
       )}
-      <ul className="flex flex-col divide-y divide-border">
+      <Stack as="ul" divided>
         {dataImportKinds.map((kind) => (
-          <li key={kind} className="flex flex-wrap items-center justify-between gap-2 py-3">
-            <span className="flex min-w-0 flex-col">
+          <Cluster as="li" key={kind} align="center" justify="between" gap="2" paddingY="3">
+            <Stack as="span" shrink>
               <span>{t(kindLabels[kind])}</span>
-              <span className="text-sm wrap-anywhere text-fg-muted">{csvFileNames[kind]}</span>
-            </span>
+              <Text size="sm" tone="muted" wrap="anywhere">
+                {csvFileNames[kind]}
+              </Text>
+            </Stack>
             <Button
               size="sm"
               aria-label={t("client:settings.import_export.export.download_of", { kind: t(kindLabels[kind]) })}
@@ -118,10 +126,10 @@ function ExportsView({ exports }: { exports: CsvExports }) {
             >
               {t("client:settings.import_export.export.download")}
             </Button>
-          </li>
+          </Cluster>
         ))}
-      </ul>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -130,7 +138,7 @@ function ImportView({ form }: { form: ImportForm }) {
   const fileHeadingId = useId();
   const fileStateId = useId();
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       <p>{t("client:settings.import_export.import.description")}</p>
       <RadioGroup
         label={t("client:settings.import_export.import.kind")}
@@ -159,11 +167,11 @@ function ImportView({ form }: { form: ImportForm }) {
           {t(modeLabels.overwrite)}
         </Radio>
       </RadioGroup>
-      <div className="flex flex-col gap-2">
-        <h3 id={fileHeadingId} className="text-sm font-medium">
+      <Stack gap="2">
+        <Heading level={3} id={fileHeadingId} size="label">
           {t("client:settings.import_export.import.file")}
-        </h3>
-        <div className="flex flex-wrap items-center gap-2">
+        </Heading>
+        <Cluster align="center" gap="2">
           <FileTrigger
             acceptedFileTypes={csvFileTypes}
             onSelect={(files) => {
@@ -175,18 +183,16 @@ function ImportView({ form }: { form: ImportForm }) {
               {t("client:settings.import_export.import.choose")}
             </Button>
           </FileTrigger>
-          <span id={fileStateId} className="min-w-0 text-sm wrap-anywhere text-fg-muted">
+          <Text id={fileStateId} shrink size="sm" tone="muted" wrap="anywhere">
             {form.fileName === undefined
               ? t("client:settings.import_export.import.no_file")
-              : t("client:settings.import_export.import.chosen", { name: form.fileName })}
-          </span>
-        </div>
-        {form.fileError !== undefined && (
-          <p role="alert" className="text-sm text-danger">
-            {form.fileError}
-          </p>
-        )}
-      </div>
+              : t("client:settings.import_export.import.chosen", {
+                  name: form.fileName,
+                })}
+          </Text>
+        </Cluster>
+        {form.fileError !== undefined && <InlineError alert>{form.fileError}</InlineError>}
+      </Stack>
       <div>
         <Button onPress={form.preview} isDisabled={!form.canPreview} isPending={form.isPreviewing}>
           {t("client:settings.import_export.import.preview")}
@@ -194,12 +200,12 @@ function ImportView({ form }: { form: ImportForm }) {
       </div>
       {form.result !== undefined && <PreviewView result={form.result} form={form} />}
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {form.error}
-        </p>
+        </InlineError>
       )}
       <StatusMessage tone="success">{form.status}</StatusMessage>
-    </div>
+    </Stack>
   );
 }
 
@@ -213,46 +219,46 @@ function PreviewView({ result, form }: { result: DataImportPreview; form: Import
   const headingId = useId();
   const skippedId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3 rounded-md border border-border px-4 py-3">
-      <h3 id={headingId} className="font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3" border="md" paddingX="4" paddingY="3">
+      <Heading level={3} id={headingId}>
         {t("client:settings.import_export.import.preview.title")}
-      </h3>
+      </Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:settings.import_export.import.preview.entries")}>
-          <span className="tabular-nums">{intl.formatNumber(result.entries)}</span>
+          <Text numeric>{intl.formatNumber(result.entries)}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:settings.import_export.import.preview.present")}>
-          <span className="tabular-nums">{intl.formatNumber(result.present)}</span>
+          <Text numeric>{intl.formatNumber(result.present)}</Text>
         </DescriptionItem>
         {form.mode === "overwrite" && (
           <DescriptionItem term={t("client:settings.import_export.import.preview.removals")}>
-            <span className="tabular-nums">{intl.formatNumber(result.removals)}</span>
+            <Text numeric>{intl.formatNumber(result.removals)}</Text>
           </DescriptionItem>
         )}
       </DescriptionList>
       {result.skipped.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <h4 id={skippedId} className="text-sm font-medium">
+        <Stack gap="1">
+          <Heading level={4} id={skippedId} size="label">
             {t("client:settings.import_export.import.preview.skipped")}
-          </h4>
-          <ul aria-labelledby={skippedId} className="flex flex-col gap-1 text-sm">
+          </Heading>
+          <Stack as="ul" aria-labelledby={skippedId} gap="1" textSize="sm">
             {result.skipped.slice(0, maxSkippedShown).map((line) => (
-              <li key={line.line} className="flex flex-col">
-                <span dir="auto" className="wrap-anywhere">
+              <Stack as="li" key={line.line}>
+                <Text dir="auto" wrap="anywhere">
                   {t("client:settings.import_export.import.preview.skipped_line", { line: line.line, value: line.value })}
-                </span>
-                <span className="text-fg-muted">{t(skipReasons[line.reason])}</span>
-              </li>
+                </Text>
+                <Text tone="muted">{t(skipReasons[line.reason])}</Text>
+              </Stack>
             ))}
-          </ul>
-        </div>
+          </Stack>
+        </Stack>
       )}
       <div>
         <Button variant={form.mode === "overwrite" ? "danger" : "primary"} onPress={form.start} isPending={form.isStarting}>
           {t("client:settings.import_export.import.start")}
         </Button>
       </div>
-    </section>
+    </Stack>
   );
 }
 
@@ -262,13 +268,13 @@ function HistoryView({ imports }: { imports: DataImport[] }) {
     return <EmptyState headingLevel={3} heading={t("client:settings.import_export.history.empty")} />;
   }
   return (
-    <ul className="flex flex-col divide-y divide-border">
+    <Stack as="ul" divided>
       {imports.map((item) => (
-        <li key={item.id} className="@container py-3">
+        <Box as="li" key={item.id} container paddingY="3">
           <ImportRow item={item} />
-        </li>
+        </Box>
       ))}
-    </ul>
+    </Stack>
   );
 }
 
@@ -277,25 +283,28 @@ function ImportRow({ item }: { item: DataImport }) {
   const intl = useIntl();
   const headingId = `import-${item.id}`;
   return (
-    <article aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h3 id={headingId} className="font-semibold">
+    <Stack as="article" aria-labelledby={headingId} gap="3">
+      <Heading level={3} id={headingId}>
         {t("client:settings.import_export.history.item", {
           kind: t(kindLabels[item.kind]),
           date: intl.formatDate(item.created_at, dateTimeFormat),
         })}
-      </h3>
+      </Heading>
       <DescriptionList columns={4}>
         <DescriptionItem term={t("client:settings.import_export.history.state")}>{t(stateLabels[item.state])}</DescriptionItem>
         <DescriptionItem term={t("client:settings.import_export.history.mode")}>{t(modeLabels[item.mode])}</DescriptionItem>
         <DescriptionItem term={t("client:settings.import_export.history.progress")}>
-          <span className="tabular-nums">
-            {t("client:settings.import_export.history.progress_value", { processed: item.processed, total: item.total })}
-          </span>
+          <Text numeric>
+            {t("client:settings.import_export.history.progress_value", {
+              processed: item.processed,
+              total: item.total,
+            })}
+          </Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:settings.import_export.history.failed")}>
-          <span className="tabular-nums">{intl.formatNumber(item.failed)}</span>
+          <Text numeric>{intl.formatNumber(item.failed)}</Text>
         </DescriptionItem>
       </DescriptionList>
-    </article>
+    </Stack>
   );
 }

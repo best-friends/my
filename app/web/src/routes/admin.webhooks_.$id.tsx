@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link } from "@my/ui";
+import { Link, Stack } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { WebhookDeliveries, webhookDeliveriesQueryOptions, webhookQueryOptions } from "../features/admin";
@@ -30,12 +30,12 @@ export const Route = createFileRoute("/admin/webhooks_/$id")({
 function WebhookHeading() {
   const t = useT();
   return (
-    <div className="flex flex-col items-start gap-1">
+    <Stack align="start" gap="1">
       <PageHeading>{t("client:admin.webhook.title")}</PageHeading>
-      <Link href="/admin/webhooks" variant="standalone" className="text-sm">
+      <Link href="/admin/webhooks" variant="standalone" size="sm">
         {t("client:admin.webhook.back")}
       </Link>
-    </div>
+    </Stack>
   );
 }
 

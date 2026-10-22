@@ -46,3 +46,8 @@ export const LongLink: Story = {
     ),
   },
 };
+
+/** `size="sm" lineClamp={3}`: an excerpt of a post in a form, cut after three lines. */
+export const Excerpt: Story = {
+  args: { size: "sm", lineClamp: 3, html: serverSanitizedHtml("<p>One</p><p>Two</p><p>Three</p><p>Four</p><p>Five</p>") },
+};

@@ -21,6 +21,12 @@ const link = tv({
        */
       navigation: "inline-flex min-h-6 items-center font-medium no-underline pointer-coarse:min-h-11 [&_svg]:size-6 [&_svg]:shrink-0",
     },
+    /** The space between an icon and the text of the link (a step of `Space`). */
+    gap: { 1: "gap-1", 2: "gap-2" },
+    /** Wraps a long word anywhere (a domain, a handle). */
+    wrap: { anywhere: "wrap-anywhere" },
+    /** The text size when it differs from the text around the link. */
+    size: { sm: "text-sm" },
   },
   defaultVariants: { variant: "inline" },
 });
@@ -41,6 +47,6 @@ export type LinkProps = RACLinkProps &
  * app's React Aria `RouterProvider`, so the kit knows no router. React Aria's useLink hands
  * `excludeFromTabOrder` to useFocusable, which sets the `tabindex`.
  */
-export function Link({ variant, className, ...props }: LinkProps) {
-  return <RACLink {...props} className={composeRenderProps(className, (className) => link({ variant, className }))} />;
+export function Link({ variant, gap, wrap, size, className, ...props }: LinkProps) {
+  return <RACLink {...props} className={composeRenderProps(className, (className) => link({ variant, gap, wrap, size, className }))} />;
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Checkbox, CloseIcon, Select, SelectItem, TextField, Tooltip, TooltipTrigger } from "@my/ui";
+import { Box, Button, Checkbox, CloseIcon, Cluster, Fieldset, InlineError, Select, SelectItem, Stack, TextField, Tooltip, TooltipTrigger } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { durationParts, maxPollOptionLength, maxPollOptions, minPollOptions, type PollDraft, pollDurations } from "../hooks/poll";
@@ -24,19 +24,16 @@ export function PollEditor({ poll, draft }: PollEditorProps) {
   const problemId = useId();
   const canRemove = draft.options.length > minPollOptions;
   return (
-    <fieldset
-      aria-describedby={poll.problem === "duplicate" ? problemId : undefined}
-      className="flex min-w-0 flex-col gap-3 rounded-md border border-border p-3"
-    >
-      <legend className="px-1 text-sm font-medium text-fg">{t("client:compose.poll.legend")}</legend>
-      <ol className="flex flex-col gap-2">
+    <Fieldset legend={t("client:compose.poll.legend")} aria-describedby={poll.problem === "duplicate" ? problemId : undefined}>
+      <Stack as="ol" gap="2">
         {draft.options.map((option, index) => {
           const number = index + 1;
           const removeLabel = t("client:compose.poll.option.remove", { number: String(number) });
           return (
-            <li key={option.key} className="flex items-end gap-1">
+            <Cluster as="li" key={option.key} wrap={false} align="end" gap="1">
               <TextField
-                className="min-w-0 flex-1"
+                shrink
+                grow
                 label={t("client:compose.poll.option", { number: String(number) })}
                 value={option.title}
                 maxLength={maxPollOptionLength}
@@ -59,21 +56,19 @@ export function PollEditor({ poll, draft }: PollEditorProps) {
                   <Tooltip>{removeLabel}</Tooltip>
                 </TooltipTrigger>
               )}
-            </li>
+            </Cluster>
           );
         })}
-      </ol>
+      </Stack>
       {poll.problem === "duplicate" && (
-        <p id={problemId} className="text-sm text-danger">
-          {t("client:compose.poll.duplicate")}
-        </p>
+        <InlineError id={problemId}>{t("client:compose.poll.duplicate")}</InlineError>
       )}
       {draft.options.length < maxPollOptions && (
-        <div>
+        <Box>
           <Button size="sm" onPress={poll.addOption}>
             {t("client:compose.poll.option.add")}
           </Button>
-        </div>
+        </Box>
       )}
       <Select
         label={t("client:compose.poll.duration")}
@@ -108,6 +103,6 @@ export function PollEditor({ poll, draft }: PollEditorProps) {
       >
         {t("client:compose.poll.hide_totals")}
       </Checkbox>
-    </fieldset>
+    </Fieldset>
   );
 }

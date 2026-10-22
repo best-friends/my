@@ -4,7 +4,7 @@
 // regions and toasts of @my/ui (with the prompt for a new version of the app), whether animations play by
 // themselves (lib/autoplay), how links leave the app (ExternalLinks), React Aria's router binding, and the router
 // with every page.
-import { AnnouncerProvider, AutoplayContext, Center, ExternalLinkContext, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
+import { AnnouncerProvider, AutoplayContext, Box, Center, ExternalLinkContext, Heading, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, Stack, Text, ToastProvider } from "@my/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { type AnyRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -111,24 +111,13 @@ export function ExternalLinks({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * Below md the toasts stand above the navigation's tab bar (routes/-layout/Navigation.tsx), whose links
- * they would otherwise cover: its links are 4rem high (3rem on short screens, index.css), with a 1px border
- * above and the safe-area inset below them. On pages with the floating new-post button they stand above it
- * too (web-client.md G4): it is 3rem high, 1rem above the tab bar (0.5rem on short screens). From md the
- * navigation is a side rail, the button sits in the corner beside the centred toasts, and the toasts go back
- * to the bottom edge.
- */
-const toastRegionClassName =
-  "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 short:bottom-[calc(3rem+1px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))] with-compose-fab:bottom-[calc(8rem+env(safe-area-inset-bottom))] with-compose-fab:short:bottom-[calc(6.5rem+env(safe-area-inset-bottom))] with-compose-fab:md:bottom-0";
-
 function Toasts({ children }: { children: ReactNode }) {
   const t = useT();
   return (
     <ToastProvider
       regionLabel={t("client:shell.toast.region")}
       dismissLabel={t("client:shell.toast.dismiss")}
-      regionClassName={toastRegionClassName}
+      clearsTabBar
     >
       {children}
     </ToastProvider>
@@ -149,13 +138,13 @@ export function StartupError({ i18n }: StartupErrorProps) {
 function StartupErrorMessage() {
   const t = useT();
   return (
-    <main className="px-4">
+    <Box as="main" paddingX="4">
       <Center>
-        <div className="flex max-w-prose flex-col gap-4">
-          <h1 className="text-2xl font-semibold">{t("client:shell.startup_error.title")}</h1>
-          <p>{t("client:shell.startup_error.body")}</p>
-        </div>
+        <Stack gap="4" width="prose">
+          <Heading level={1}>{t("client:shell.startup_error.title")}</Heading>
+          <Text as="p">{t("client:shell.startup_error.body")}</Text>
+        </Stack>
       </Center>
-    </main>
+    </Box>
   );
 }

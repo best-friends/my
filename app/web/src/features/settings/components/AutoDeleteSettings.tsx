@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The automatic deletion of the user's own old posts (FR-118): turning it on, the age after which posts go, and the
 // exceptions that keep them. The form saves the whole policy at once; the server deletes the posts in its hourly job.
-import { Button, Checkbox, ConfirmDialog, Select, SelectItem, StatusMessage, Switch } from "@my/ui";
+import { Button, Checkbox, ConfirmDialog, Grid, Hint, InlineError, Select, SelectItem, Stack, StatusMessage, Switch, Text } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { Visibility } from "../api/me";
@@ -34,9 +34,13 @@ export function AutoDeleteSettings() {
   const thresholdLabel = (count: number) => (count === 0 ? t("client:settings.auto_delete.threshold.off") : t("client:settings.auto_delete.threshold.count", { count }));
   return (
     <>
-      <form onSubmit={form.submit} className="flex flex-col gap-6">
-        <p className="text-fg-muted">{t("client:settings.auto_delete.description")}</p>
-        <Switch isSelected={form.policy.enabled} onChange={form.setEnabled} description={t("client:settings.auto_delete.enabled.description")}>
+      <Stack as="form" onSubmit={form.submit} gap="6">
+        <Hint size="inherit">{t("client:settings.auto_delete.description")}</Hint>
+        <Switch
+          isSelected={form.policy.enabled}
+          onChange={form.setEnabled}
+          description={t("client:settings.auto_delete.enabled.description")}
+        >
           {t("client:settings.auto_delete.enabled")}
         </Switch>
         <Select
@@ -54,12 +58,12 @@ export function AutoDeleteSettings() {
             </SelectItem>
           )}
         </Select>
-        <fieldset aria-describedby={keepId} className="@container flex min-w-0 flex-col gap-2">
-          <legend className="text-sm font-medium text-fg">{t("client:settings.auto_delete.keep")}</legend>
-          <p id={keepId} className="text-sm text-fg-muted">
-            {t("client:settings.auto_delete.keep.description")}
-          </p>
-          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @sm:grid-cols-2">
+        <Stack as="fieldset" aria-describedby={keepId} container shrink gap="2">
+          <Text as="legend" size="sm" weight="medium" tone="fg">
+            {t("client:settings.auto_delete.keep")}
+          </Text>
+          <Hint id={keepId}>{t("client:settings.auto_delete.keep.description")}</Hint>
+          <Grid as="ul" gap="6" rowGap="1">
             {flags.map((flag) => (
               <li key={flag.id}>
                 <Checkbox
@@ -72,14 +76,14 @@ export function AutoDeleteSettings() {
                 </Checkbox>
               </li>
             ))}
-          </ul>
-        </fieldset>
-        <fieldset aria-describedby={visibilityId} className="@container flex min-w-0 flex-col gap-2">
-          <legend className="text-sm font-medium text-fg">{t("client:settings.auto_delete.visibilities")}</legend>
-          <p id={visibilityId} className="text-sm text-fg-muted">
-            {t("client:settings.auto_delete.visibilities.description")}
-          </p>
-          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @sm:grid-cols-2">
+          </Grid>
+        </Stack>
+        <Stack as="fieldset" aria-describedby={visibilityId} container shrink gap="2">
+          <Text as="legend" size="sm" weight="medium" tone="fg">
+            {t("client:settings.auto_delete.visibilities")}
+          </Text>
+          <Hint id={visibilityId}>{t("client:settings.auto_delete.visibilities.description")}</Hint>
+          <Grid as="ul" gap="6" rowGap="1">
             {visibilities.map((visibility) => (
               <li key={visibility.id}>
                 <Checkbox
@@ -92,8 +96,8 @@ export function AutoDeleteSettings() {
                 </Checkbox>
               </li>
             ))}
-          </ul>
-        </fieldset>
+          </Grid>
+        </Stack>
         <Select
           label={t("client:settings.auto_delete.min_boosts")}
           value={String(form.policy.keep_min_boosts)}
@@ -123,19 +127,21 @@ export function AutoDeleteSettings() {
           )}
         </Select>
         {form.saveError !== undefined && (
-          <p role="alert" className="text-danger">
-            {t("client:settings.auto_delete.save_failed", { reason: form.saveError })}
-          </p>
+          <InlineError alert size="inherit">
+            {t("client:settings.auto_delete.save_failed", {
+              reason: form.saveError,
+            })}
+          </InlineError>
         )}
-        <div className="flex flex-col gap-3">
+        <Stack gap="3">
           <div>
             <Button type="submit" variant="primary" isPending={form.isSaving}>
               {t("client:settings.auto_delete.save")}
             </Button>
           </div>
           <StatusMessage>{form.status}</StatusMessage>
-        </div>
-      </form>
+        </Stack>
+      </Stack>
       {/* Outside the form: React bubbles the dialog's own submit event through its portal to an enclosing form. */}
       <UnsavedChangesDialog hasChanges={form.hasChanges} />
     </>

@@ -10,6 +10,7 @@ import { notificationsFixture } from "./test/handlers";
 import { accountFixture, otherAccountFixture, relationshipFixture, statusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 import type { Notification, NotificationMarker, NotificationType } from "./api/notifications";
 
 
@@ -158,6 +159,7 @@ describe("the notifications page", () => {
     });
     expect(await screen.findByRole("article", { name: /Bob mentioned you/ })).toBeInTheDocument();
     expect(within(tabs).getByRole("tab", { name: "Mentions" })).toHaveAttribute("aria-selected", "true");
+    expectSelectedTabControlsPanel("Mentions");
     expect(marker.updates).toEqual([]);
   });
 

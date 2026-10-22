@@ -203,3 +203,25 @@ export const SelectedOutOfView: StoryObj<typeof NarrowTabs> = {
     await expect(isClearOfFades(list, canvas.getByRole("tab", { name: "Edits" }))).toBe(true);
   },
 };
+
+/** A panel whose sections sit one above another (`gap="8"`), with more room under the tab list (`offset="4"`). */
+export const PanelLayout: Story = {
+  render: () => (
+    <Tabs>
+      <TabList aria-label="Custom emoji">
+        <Tab id="emoji">Emoji</Tab>
+        <Tab id="requests">Requests</Tab>
+      </TabList>
+      <TabPanel id="emoji" gap="8" offset="4">
+        <p>Add an emoji: its shortcode, its image and its category.</p>
+        <p>The emoji of this server, a-very-long-category-name-without-any-spaces-that-wraps-anywhere.</p>
+      </TabPanel>
+      <TabPanel id="requests" gap="8" offset="4">
+        <p>Requests from supporters.</p>
+      </TabPanel>
+    </Tabs>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("tabpanel", { name: "Emoji" })).toHaveClass("gap-8", "pt-4");
+  },
+};

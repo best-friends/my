@@ -7,7 +7,7 @@
 // after a confirmation in an alert dialog when they suspend a domain (ConfirmDialog, NFR-MOD-7). What the export
 // and the import did stays on the page in a StatusMessage (role="status"); the import's result replaces the preview,
 // and focus moves to the heading of the import.
-import { Button, Checkbox, ConfirmDialog, FileTrigger, ReasonField, StatusMessage, TextArea } from "@my/ui";
+import { Box, Button, Checkbox, ConfirmDialog, FileTrigger, Heading, Hint, InlineError, ReasonField, Stack, StatusMessage, Text, TextArea } from "@my/ui";
 import { useId, useRef } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -30,11 +30,11 @@ const skipReasonLabels: Readonly<Record<Exclude<DomainBlockImportStatus, "import
 export function DomainBlockCsv() {
   const t = useT();
   return (
-    <div className="flex flex-col gap-6">
-      <p className="text-fg-muted">{t("client:admin.domain_actions.csv.description")}</p>
+    <Stack gap="6">
+      <Hint size="inherit">{t("client:admin.domain_actions.csv.description")}</Hint>
       <DomainBlockExport />
       <DomainBlockImport />
-    </div>
+    </Stack>
   );
 }
 
@@ -42,17 +42,15 @@ function DomainBlockExport() {
   const t = useT();
   const exporting = useDomainBlockExport();
   return (
-    <div className="flex flex-col items-start gap-2">
+    <Stack align="start" gap="2">
       <Button onPress={exporting.exportCsv} isPending={exporting.isPending}>
         {t("client:admin.domain_actions.csv.export")}
       </Button>
       {exporting.error !== undefined && (
-        <p role="alert" className="text-sm text-danger">
-          {t("client:admin.domain_actions.csv.export.failed", { reason: exporting.error })}
-        </p>
+        <InlineError alert>{t("client:admin.domain_actions.csv.export.failed", { reason: exporting.error })}</InlineError>
       )}
       <StatusMessage>{exporting.status}</StatusMessage>
-    </div>
+    </Stack>
   );
 }
 
@@ -64,11 +62,11 @@ function DomainBlockImport() {
   // The import button goes away with the preview once the import is done: focus moves to the heading of the import.
   const focusHeading = useFocusAfterChange(headingRef, form.outcome?.id);
   return (
-    <div className="flex flex-col gap-4">
-      <h3 ref={headingRef} tabIndex={-1} className="font-semibold outline-none">
+    <Stack gap="4">
+      <Heading ref={headingRef} level={3} focusable>
         {t("client:admin.domain_actions.csv.import.title")}
-      </h3>
-      <form onSubmit={form.submitPreview} className="flex flex-col gap-4">
+      </Heading>
+      <Stack as="form" onSubmit={form.submitPreview} gap="4">
         <TextArea
           label={t("client:admin.domain_actions.csv.csv")}
           description={t("client:admin.domain_actions.csv.csv.description", { max: domainBlockImportRowLimit })}
@@ -82,7 +80,7 @@ function DomainBlockImport() {
           autoComplete="off"
           spellCheck="false"
         />
-        <div className="flex flex-col items-start gap-2">
+        <Stack align="start" gap="2">
           <FileTrigger
             acceptedFileTypes={csvFileTypes}
             onSelect={(files) => {
@@ -94,27 +92,21 @@ function DomainBlockImport() {
               {t("client:admin.domain_actions.csv.file")}
             </Button>
           </FileTrigger>
-          <p id={fileHelpId} className="text-sm text-fg-muted">
-            {t("client:admin.domain_actions.csv.file.description")}
-          </p>
-          {form.file.status === "failed" && (
-            <p role="alert" className="text-sm text-danger">
-              {form.file.message}
-            </p>
-          )}
+          <Hint id={fileHelpId}>{t("client:admin.domain_actions.csv.file.description")}</Hint>
+          {form.file.status === "failed" && <InlineError alert>{form.file.message}</InlineError>}
           <StatusMessage tone="neutral">{form.file.status === "read" ? form.file.message : undefined}</StatusMessage>
-        </div>
+        </Stack>
         {form.previewError !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError alert size="inherit">
             {t("client:admin.domain_actions.csv.preview.failed", { reason: form.previewError })}
-          </p>
+          </InlineError>
         )}
-        <div>
+        <Box>
           <Button type="submit" isPending={form.isPreviewing}>
             {t("client:admin.domain_actions.csv.preview")}
           </Button>
-        </div>
-      </form>
+        </Box>
+      </Stack>
       <StatusMessage tone={form.outcome !== undefined && form.outcome.issued.length === 0 ? "neutral" : "success"}>
         {form.outcome === undefined
           ? undefined
@@ -155,7 +147,7 @@ function DomainBlockImport() {
           ? { errorMessage: t("client:admin.domain_actions.csv.import.failed", { reason: form.importError }) }
           : {})}
       />
-    </div>
+    </Stack>
   );
 }
 
@@ -178,18 +170,18 @@ function PreviewRows({ preview, isChosen, choose, chosenCount, privateNote, chan
   const { rows } = preview;
   const importable = rows.filter((row) => row.status === "importable").length;
   return (
-    <div className="flex flex-col gap-4">
-      <h4 id={headingId} className="font-semibold">
+    <Stack gap="4">
+      <Heading id={headingId} level={4}>
         {t("client:admin.domain_actions.csv.preview.title")}
-      </h4>
+      </Heading>
       <p>{t("client:admin.domain_actions.csv.preview.summary", { count: rows.length, importable })}</p>
-      <ul aria-labelledby={headingId} className="flex flex-col divide-y divide-border">
+      <Stack as="ul" aria-labelledby={headingId} divided>
         {rows.map((row) => (
-          <li key={row.line} className="py-2">
+          <Box as="li" key={row.line} paddingY="2">
             <PreviewRow row={row} isChosen={isChosen(row.line)} choose={choose} />
-          </li>
+          </Box>
         ))}
-      </ul>
+      </Stack>
       <ReasonField
         label={t("client:admin.domain_actions.private_note")}
         description={t("client:admin.domain_actions.csv.private_note.description")}
@@ -202,16 +194,16 @@ function PreviewRows({ preview, isChosen, choose, chosenCount, privateNote, chan
         errorMessage={t("client:admin.domain_actions.too_long", { max: domainActionTextLimit })}
       />
       {error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {t("client:admin.domain_actions.csv.import.failed", { reason: error })}
-        </p>
+        </InlineError>
       )}
-      <div>
+      <Box>
         <Button variant="primary" onPress={submit} isPending={isPending}>
           {t("client:admin.domain_actions.csv.submit", { count: chosenCount })}
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }
 
@@ -231,20 +223,20 @@ function PreviewRow({ row, isChosen, choose }: { row: DomainBlockImportRow; isCh
         }}
         description={t("client:admin.domain_actions.csv.row.issue", { line: row.line, kinds })}
       >
-        <span className="wrap-anywhere">
+        <Text wrap="anywhere">
           <DomainName domain={row.block.domain} />
-        </span>
+        </Text>
       </Checkbox>
     );
   }
   const reason = row.status === "importable" ? skipReasonLabels.invalid : skipReasonLabels[row.status];
   return (
-    <div className="flex flex-col gap-1">
+    <Stack gap="1">
       {/* As written in the CSV, which may not be a domain. */}
-      <span dir="auto" className="wrap-anywhere">
+      <Text dir="auto" wrap="anywhere">
         {row.written_domain}
-      </span>
-      <span className="text-sm text-fg-muted">{t("client:admin.domain_actions.csv.row.skipped", { line: row.line, reason: t(reason) })}</span>
-    </div>
+      </Text>
+      <Hint as="span">{t("client:admin.domain_actions.csv.row.skipped", { line: row.line, reason: t(reason) })}</Hint>
+    </Stack>
   );
 }

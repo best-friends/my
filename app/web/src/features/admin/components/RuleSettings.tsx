@@ -5,7 +5,7 @@
 // as well as the pointer (no dragging); focus then moves to the moved rule's heading. Editing opens a dialog with the
 // text and the hint; retiring cannot be undone, so it asks first (an alert dialog). What a change did stays on the
 // page in a StatusMessage above the list; a failure stays there too (role="alert", web-client.md E2).
-import { Button, ConfirmDialog, Dialog, DialogTrigger, EmptyState, StatusMessage, TextArea, TextField } from "@my/ui";
+import { Box, Button, Cluster, ConfirmDialog, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Stack, StatusMessage, Text, TextArea, TextField } from "@my/ui";
 import { useRef, useState } from "react";
 import { useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval, useFocusHeadingAfterMove } from "../../../lib/useFocusAfterRemoval";
@@ -17,15 +17,15 @@ export function RuleSettings() {
   const t = useT();
   return (
     <RequirePermission permission="manage_rules">
-      <div className="flex flex-col gap-8">
-        <p className="text-fg-muted">{t("client:admin.rules.description")}</p>
+      <Stack gap="8">
+        <Hint size="inherit">{t("client:admin.rules.description")}</Hint>
         <DetailSection title={t("client:admin.rules.new.title")}>
           <NewRuleForm />
         </DetailSection>
         <DetailSection title={t("client:admin.rules.list.title")}>
           <RuleList />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -34,7 +34,7 @@ export function RuleSettings() {
 function RuleTextFields({ fields, autoFocus = false }: { fields: RuleFields; autoFocus?: boolean }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <TextField
         label={t("client:admin.rules.text")}
         description={t("client:admin.rules.text.description", { max: String(ruleTextLimit) })}
@@ -55,7 +55,7 @@ function RuleTextFields({ fields, autoFocus = false }: { fields: RuleFields; aut
         }
         {...(fields.hintError === undefined ? {} : { isInvalid: true, errorMessage: fields.hintError })}
       />
-    </div>
+    </Stack>
   );
 }
 
@@ -63,12 +63,12 @@ function NewRuleForm() {
   const t = useT();
   const form = useNewRuleForm();
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
+    <Stack as="form" gap="6" onSubmit={form.submit}>
       <RuleTextFields fields={form.draft.fields} />
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.rules.add_failed", { reason: form.error })}
-        </p>
+        </InlineError>
       )}
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -76,7 +76,7 @@ function NewRuleForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -96,25 +96,25 @@ function RuleList() {
     setStatus(done);
   });
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.rules.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       {rules.length === 0 ? (
         <EmptyState headingLevel={3} heading={t("client:admin.rules.empty")} description={t("client:admin.rules.empty.description")} />
       ) : (
-        <ol ref={listRef} className="flex flex-col divide-y divide-border">
+        <Stack as="ol" divided ref={listRef}>
           {rules.map((rule, index) => (
-            <li key={rule.id} data-row-id={rule.id} className="@container py-3">
+            <Box as="li" container paddingY="3" key={rule.id} data-row-id={rule.id}>
               <RuleRow rule={rule} place={index + 1} count={rules.length} actions={actions} />
-            </li>
+            </Box>
           ))}
-        </ol>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -123,18 +123,18 @@ function RuleRow({ rule, place, count, actions }: { rule: Rule; place: number; c
   const name = rule.text;
   const isMoving = actions.movingIds.includes(rule.id);
   return (
-    <div className="flex flex-col gap-3">
-      <h3 tabIndex={-1} className="font-semibold wrap-anywhere outline-none">
+    <Stack gap="3">
+      <Heading level={3} wrap="anywhere" focusable>
         {/* The rule is written by an administrator in any language: U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE. */}
         {t("client:admin.rules.heading", { place: String(place), rule: `\u2068${name}\u2069` })}
-      </h3>
+      </Heading>
       {rule.hint !== undefined && (
         // Written by an administrator in a language the app does not know: lang="" rather than the app's (Y10).
-        <p dir="auto" lang="" className="text-fg-muted wrap-anywhere whitespace-pre-wrap">
+        <Text as="p" tone="muted" wrap="anywhere" whitespace="preWrap" dir="auto" lang="">
           {rule.hint}
-        </p>
+        </Text>
       )}
-      <div className="flex flex-wrap gap-2">
+      <Cluster gap="2">
         {/* The first rule cannot move up nor the last down: those buttons stay out rather than doing nothing. */}
         {place > 1 && (
           <Button
@@ -162,8 +162,8 @@ function RuleRow({ rule, place, count, actions }: { rule: Rule; place: number; c
         )}
         <EditRule rule={rule} name={name} actions={actions} />
         <RetireRule rule={rule} name={name} actions={actions} />
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -190,7 +190,7 @@ function EditRuleForm({ rule, actions, close }: { rule: Rule; actions: RuleActio
   const [isSaving, setIsSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   return (
-    <form
+    <Stack as="form" gap="4"
       onSubmit={(event) => {
         event.preventDefault();
         if (isSaving) return;
@@ -203,22 +203,20 @@ function EditRuleForm({ rule, actions, close }: { rule: Rule; actions: RuleActio
           if (saved) close();
           else setFailed(true);
         });
-      }}
-      className="flex flex-col gap-4"
-    >
+      }}>
       <RuleTextFields fields={draft.fields} autoFocus />
       {failed && actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.rules.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:admin.rules.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:admin.rules.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 

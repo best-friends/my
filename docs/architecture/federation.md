@@ -88,6 +88,8 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 
 `POST /ap/inbox`（shared inbox）と `POST /ap/actors/{uuid}/inbox`（有効なローカルの Actor でなければ 404）は、次の順に処理します。どこかで失敗したら、DB とキューに触れずに応答します。
 
+連合の向き（[§14](#14-連合の向き)）が `off` のときは、署名の検証より前に、ドメインの `suspend` と同じ位置で `403`（理由 `federation off`）を返します。
+
 | 順 | 処理 | 失敗時 |
 | --- | --- | --- |
 | 1 | `Content-Type` が `application/activity+json`、`application/ld+json`（AS2 のプロファイル付き）、`application/json` のどれか | `415` |
@@ -121,6 +123,8 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 ### 3.2 非同期の部分
 
 ジョブ `federation.inbox`（ペイロードは `activity_uri` と `trust`、リレーが運んだものは `relay_id`、冪等キーは `inbox:<activity_uri のハッシュ>`、`orderingKey` は `inbox:<actor の URI>`）が、原本を読んで処理します。
+
+ハンドラへ進めるのは、連合の向きが通す型だけです。ほかは `dropped` にします（型と流れの対応は [§14.2](#142-入口ごとの振る舞い)）。
 
 1. 原本を正規化する（§4）。正規化できなければ `Fail`（dead job に残る）。`relay_id` の付いたアクティビティは、何かを取得する前にリレーの関門を通す（§13）。
 2. `trust = refetch` なら、オブジェクトを `id` からオリジンに取得し直し（§6）、取得した文書を使う。`Announce` 以外で取得できなければ捨てる。
@@ -241,6 +245,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 ### 6.1 取得の規則
 
+- 取得するかどうかは連合の向きで決まります（[§14](#14-連合の向き)）。`off` は何も取得せず、`outbound` は署名の検証と配送の宛先に要る Actor だけを取得し、投稿・スレッド・outbox は取得しません。メディアプロキシは、`outbound` ではローカルのアカウントをフォローしているリモートのアカウントの画像だけを取得し、`off` では取得しません。
+
 - すべて `HTTPClient` を通し、インスタンス Actor の鍵で署名した GET で取得します（§2）。`Accept: application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"`。
 - 応答の `Content-Type` が AS2 でなければ採用しません。本文は 1 MiB まで（ADR-0019 §1）。
 - **同じオリジン**: 最後のリダイレクト先のオリジンと、文書の `id` のオリジンが一致しなければ採用しません。要求した URL と `id` が異なるときは、`id` を 1 回だけ取得し直して一致を確かめます（[ActivityPub 付録 B.2](https://www.w3.org/TR/activitypub/#security-verification)、FEP-fe34）。
@@ -337,6 +343,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 ## 7. 送信（配送）
 
 ### 7.1 記録
+
+展開と配送のジョブは、実行の時点の連合の向きで何を送るかを決めます（[§14](#14-連合の向き)）。向きが送らないものは `skipped` にし、広げ直しても再送しません。
 
 ローカルの操作のトランザクションで、`federation` が他のモジュールのドメインイベントを購読し（`uow.Projectors`）、`outbound_activities` と `federation.fanout` ジョブ（`queue.Outbox`）を同じトランザクションで書きます。
 
@@ -554,6 +562,8 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 ## 10. コレクションとオブジェクトの GET
 
+連合の向きが `publish` を通さないとき、投稿・`/activity`・コレクション（outbox・followers・following・featured）・カスタム絵文字・引用の承認の GET は `404` です（`410` にしません）。ローカルの Actor・インスタンス Actor・WebFinger・host-meta・NodeInfo の扱いは [§14.2](#142-入口ごとの振る舞い) にあります。
+
 - `GET /ap/objects/{uuid}`（`/activity` を含む）は、署名から閲覧者（署名者のドメイン）を決め、`content.CanView`（`ContextObjectFetch`）を通します。権限が無いときと存在しないときは同じ 404 です（ADR-0018）。削除済みは、削除の前に閲覧できた相手にだけ `410 Gone` と `Tombstone` を返し、それ以外には 404 を返します（[ActivityPub §6.4](https://www.w3.org/TR/activitypub/#delete-activity-outbox)）。
 - 判定は `federation.Objects`（`internal/app/federation`）が行います。
   - 署名は §2 の受信の規則（`SignatureVerifier`）で検証します。署名が無い・検証できない GET は未ログインとして扱い、401 にはしません（Mastodon と同じ。401 にするのは Authorized Fetch だけ）。
@@ -654,6 +664,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 [ADR-0061](../adr/0061-federation-relays.md)（FR-411、FR-724）の実装です。運営者が登録したリレーにインスタンス Actor が参加し、`public` の投稿を送り、リレーが運んだ `public` の投稿を取り込みます。
 リレーに参加していないインスタンスでは、受信の照合（下記）のほかに行もジョブも増えません。
+連合の向き（[§14](#14-連合の向き)）が `off` のときは、参加・送信・受信をしません（登録と状態は残します）。`inbound` は受信だけ、`outbound` は送信だけです。参加・脱退の `Follow` / `Undo` は取り込みか公開が通るときに送り、リレーの `Accept` は `publish` として扱います。
 
 ### 13.1 参加と脱退
 
@@ -688,3 +699,69 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - 取り込んだ投稿は、ほかのリモートの `public` の投稿と同じく連合タイムラインとハッシュタグのタイムラインに出ます。ホームには出ず、通知も作りません。
 - 関門の結果はメトリクス `my.relay.activities`（`my.outcome` が `admitted` / `over_limit` / `restricted` / `not_receiving`）に出ます。管理画面と CLI は、直近 24 時間の時ごとの件数から、取り込んだ件数（上限まで）と上限で捨てた件数を示します。
 - `relayed_statuses` の投稿は、`content.purge_relayed_statuses` が公開から設定 `relay_status_retention`（既定 7 日）で消します（[data-model §4.4](data-model.md#リモート投稿の保持期間)）。脱退しても、取り込んだ投稿はすぐには消しません。
+
+## 14. 連合の向き
+
+[ADR-0076](../adr/0076-federation-direction.md)（FR-413）の実装です。インスタンス設定 `federation_mode`（`off` / `inbound` / `outbound` / `both`、既定 `both`）が、このサーバーが連合する向きを決めます。値はリクエストとジョブごとに読み、変更はすぐに効きます。
+
+判定は `internal/domain/federation` の `federation.Allows(mode, Flow) bool` に集め、各入口は自分の扱う `Flow` を渡して聞くだけにします（モードの値では分岐しません）。応用層は `appfederation.ModeSettings` でモードを読み、`ErrFederationRestricted` で「モードが通さない」ことを返します。
+
+### 14.1 流れの分類
+
+| `Flow` | 内容 | `off` | `inbound` | `outbound` | `both` |
+| --- | --- | --- | --- | --- | --- |
+| `publish` | ローカルの投稿・プロフィール・反応を外へ出す（配送と GET） | × | × | ○ | ○ |
+| `ingest` | 外の投稿・反応を取り込む（受信と取得） | × | ○ | × | ○ |
+| `follow_out` | ローカルの利用者が外のアカウントをフォローする往復（`Follow` / `Undo Follow` の送信、`Accept` / `Reject` の受信、`Move`） | × | ○ | × | ○ |
+| `follow_in` | 外のアカウントがローカルの利用者をフォローする往復（`Follow` / `Undo Follow` の受信、`Accept` / `Reject` の送信） | × | 断る | ○ | ○ |
+| `retract` | すでに外へ出したものの撤回（投稿の `Delete`、Actor の `Delete`、`Undo Like` / `Undo Announce` / `Undo EmojiReact`、凍結の `Update(Actor)`） | × | ○ | ○ | ○ |
+| `protect` | 保護のための手続き（`Block` / `Undo Block` と `Flag` の送受信、外の Actor の自分自身の `Update` / `Delete` の受信） | × | ○ | ○ | ○ |
+| `identify` | 署名の検証のための鍵の取得と提供（外の Actor の取得、ローカルの Actor・インスタンス Actor の GET、WebFinger・host-meta・NodeInfo） | × | ○ | ○ | ○ |
+
+- `inbound` の `follow_in` の「断る」は、受けた `Follow` に `Reject` を返すことです。承認待ちを作りません。この `Reject` は対応するフォローの行が無いので、`outbound_activities.object_type = 'refusal'` として記録して配送します（[data-model §4.9](data-model.md)）。
+- `retract` は、`inbound` に狭めたあとも、それまでに外へ出したものを消せるように通します。宛先は元の配送（`deliveries`）とその時点のフォロワーだけで、共有 inbox やリレーのフェーズは付けません。
+- ドメインの処分（§11）はモードと独立に効きます。モードが通しても、処分が止めるものは止まります。
+
+### 14.2 入口ごとの振る舞い
+
+| 入口 | `off` | `inbound` | `outbound` | `both` |
+| --- | --- | --- | --- | --- |
+| inbox（同期、§3.1） | 署名の検証より前に `403` | 受け付ける | 受け付ける | 受け付ける |
+| inbox（非同期、§3.2） | — | 下記の型だけ処理し、ほかは `dropped` | 下記の型だけ処理し、ほかは `dropped` | すべて処理する |
+| 展開と配送（§7.2・§7.3） | すべて `skipped` | `follow_out`・`follow_in` の `Reject`・`retract`・`protect` だけ送る | `publish`・`follow_in`・`retract`・`protect` だけ送る | すべて送る |
+| 外の取得（§6） | しない | する | 署名の検証と配送の宛先に要る Actor だけ。メディアプロキシはフォロワーの Actor の画像だけ | する |
+| ローカルの Actor の GET（§10） | `404` | 鍵の取得のための最小の文書（Authorized Fetch の署名なしと同じ項目） | 全体を返す | 全体を返す |
+| 投稿・`/activity`・コレクション・カスタム絵文字・引用の承認の GET（§10） | `404` | `404` | 返す | 返す |
+| インスタンス Actor の GET | `404` | 返す | 返す | 返す |
+| WebFinger・host-meta | `404` | 答える | 答える | 答える |
+| NodeInfo | `404` | 答える | 答える | 答える |
+| リレー（§13） | 参加・送信・受信をしない | 受信だけ | 送信だけ（受信は捨てる） | 送受信 |
+
+`off` では、ローカルの Actor・投稿・コレクションがどれも `404` です（`410` にしません）。NodeInfo は `metadata.federationMode` にモードを出します。
+
+非同期の inbox は、型を次の流れに対応させます。
+
+| 型 | 流れ |
+| --- | --- |
+| `Follow`（ローカルのアカウントへ） | `follow_in`（`inbound` は断る） |
+| `Accept` / `Reject` | `follow_out`、リレーの参加への応答、`QuoteRequest` への応答のどれかが通れば進み、ハンドラが自分の流れを確かめる |
+| `Undo` | 取り消す型の流れ（`Follow` は `follow_in`、`Block` は `protect`、`Accept` は `follow_out`、反応は `ingest`） |
+| `Block`・`Flag`、外の Actor の自分自身の `Update` / `Delete` | `protect` |
+| `Like`・`EmojiReact` | `ingest` と `publish` の両方（外から見えないローカルの投稿への反応は捨てる） |
+| `Announce` | `ingest`。ローカルの投稿のブーストは `publish` も要る |
+| `QuoteRequest` | `publish`（取り込みが通らないモードでは `Reject` を返す） |
+| `Move` | `follow_out` |
+| `Create`・`Update`・`Delete`・`Add`・`Remove`、ほか | `ingest` |
+
+- `inbound` で外の文書に `Create` などが埋め込まれていても、取り込みの範囲は §6.3 のままです。モードは範囲を広げません。
+- `outbound` で捨てるものには、ローカルの投稿への返信・メンション・ブースト・お気に入り・絵文字リアクション・投票への回答・引用の依頼が含まれます。外の反応は数にも通知にも出ません。
+- `inbound` でも、ローカルの利用者へのメンション（フォロー中の相手から）は `ingest` として取り込みます。
+
+### 14.3 切り替え
+
+- モードを狭めても、フォロー関係・取り込んだ投稿・配送の記録は消さず、`Undo` / `Reject` も送りません。流れが止まるだけで、広げ直すとそのまま再開します。
+  - 狭めている間に作られた投稿・反応は、広げ直しても遡って配送しません（展開は実行の時点のモードで決まり、`skipped` は再送しません）。
+  - 展開と配送のジョブは実行の時点のモードで判定するので、狭める前に積んだジョブが、狭めた後に送られることはありません。
+  - `off` の間の削除は外に伝わりません。
+- 関係を切るには、CLI `my admin federation sever --direction in|out|both` を使います（[運用手順](../operations/instance-settings.md)）。ローカルのアカウントと外のアカウントのあいだの承認待ちと有効なフォローを `follow_terminations`（`reason = moderation`、ADR-0036）で終わらせ、そのときのモードが送るときだけ `Reject`（`in`）・`Undo`（`out`）を記録します。モードの変更が自動で呼ぶことはありません。
+- モードの変更は `instance_setting_revisions` に記録し、監査ログ（ADR-0037）に `target_kind = setting` で残します。

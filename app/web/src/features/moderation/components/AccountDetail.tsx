@@ -10,7 +10,7 @@
 // page in a StatusMessage (role="status") next to what caused it (web-client.md §14). A viewer with manage_roles
 // also has the account's roles, to grant and revoke (AccountRoles); one with manage_domains, the refetch of a
 // remote account's posts from its server (RefetchStatusesSection).
-import { Avatar, Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, Link, ReasonField, RegionError, Spinner, StatusMessage } from "@my/ui";
+import { AccountItem, Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DetailSection, EmptyState, Heading, Hint, Link, ReasonField, RegionError, SectionHeader, Spinner, Stack, StatusMessage, Text } from "@my/ui";
 import { useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -43,7 +43,7 @@ import {
 import { AccountActionForm } from "./AccountActionForm";
 import { AccountRoles } from "./AccountRoles";
 import { AccountOrigin } from "./AccountSearch";
-import { DateTime, DetailSection, RecordList, RequirePermission, useFocusAfterChange } from "./parts";
+import { DateTime, RecordList, RequirePermission, useFocusAfterChange } from "./parts";
 import { RefetchStatusesSection } from "./RefetchStatuses";
 import { AccountLabel, AssigneeName } from "./reportParts";
 import { imageSources } from "../../../lib/images";
@@ -67,7 +67,7 @@ function AccountPage({ id }: { id: string }) {
   // Recovering a user's sign-in is server administration (ADR-0058).
   const canRecoverSignIn = useHasPermission("manage_login_recovery");
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <DetailSection title={t("client:admin.account.summary.title")}>
         <AccountSummary account={account} />
       </DetailSection>
@@ -75,11 +75,11 @@ function AccountPage({ id }: { id: string }) {
         {account.restrictions.length === 0 ? (
           <p>{t("client:admin.account.restrictions.none")}</p>
         ) : (
-          <ul className="flex list-inside list-disc flex-col gap-1">
+          <Stack as="ul" marker="discInside" gap="1">
             {account.restrictions.map((restriction) => (
               <li key={restriction}>{t(adminAccountRestrictionLabels[restriction])}</li>
             ))}
-          </ul>
+          </Stack>
         )}
       </DetailSection>
       {!account.local && account.state !== "deleted" && canRefetch && <RefetchStatusesSection target={{ kind: "account", id: account.id }} />}
@@ -99,7 +99,7 @@ function AccountPage({ id }: { id: string }) {
           <p>{t("client:admin.account.action.deleted")}</p>
         ) : (
           <>
-            <p className="text-sm text-fg-muted">{t("client:admin.account.action.posts")}</p>
+            <Hint>{t("client:admin.account.action.posts")}</Hint>
             <AccountActionForm
               target={{ accountId: account.id, remote: !account.local, statusIds: [], category: "other", hasEmail: account.email_verified !== undefined }}
               handle={handle}
@@ -111,7 +111,7 @@ function AccountPage({ id }: { id: string }) {
           </>
         )}
       </DetailSection>
-    </div>
+    </Stack>
   );
 }
 
@@ -120,12 +120,13 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
   const canAudit = useHasPermission("view_audit");
   const { registration } = account;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <Avatar sources={imageSources(account.account.avatar)} name={accountName(account.account)} decorative />
-        <AccountLabel account={account.account} />
-      </div>
-      <ul className="flex flex-wrap gap-x-4 gap-y-1">
+    <Stack gap="3">
+      <AccountItem
+        name={accountName(account.account)}
+        handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
+        avatar={imageSources(account.account.avatar)}
+      />
+      <Cluster as="ul" gap="4" rowGap="1">
         {account.state !== "deleted" && (
           <li>
             <Link href={`/@${account.account.acct}`} variant="standalone">
@@ -140,10 +141,10 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
             </Link>
           </li>
         )}
-      </ul>
+      </Cluster>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.accounts.state")}>
-          <span className="font-semibold">{t(adminAccountStateLabels[account.state])}</span>
+          <Text weight="semibold">{t(adminAccountStateLabels[account.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.accounts.origin")}>
           <AccountOrigin account={account} />
@@ -181,9 +182,9 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
                 t("client:admin.account.roles.none")
               ) : (
                 // Role keys are identifiers, left to right in every locale.
-                <span dir="ltr" className="wrap-anywhere">
+                <Text dir="ltr" wrap="anywhere">
                   {account.roles.join(", ")}
-                </span>
+                </Text>
               )}
             </DescriptionItem>
           </>
@@ -193,13 +194,13 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
         <DescriptionList>
           <DescriptionItem term={t("client:admin.account.registration.reason")}>
             {/* Written by the applicant, in any language and direction (web-client.md Y10). */}
-            <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+            <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
               {registration.reason}
-            </span>
+            </Text>
           </DescriptionItem>
         </DescriptionList>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -220,12 +221,12 @@ function TwoFactorSection({ id, enabled, handle }: { id: string; enabled: boolea
       <StatusMessage tone="success">{remove.status}</StatusMessage>
       <p>{enabled ? t("client:admin.account.two_factor.on") : t("client:admin.account.two_factor.off")}</p>
       {enabled && canRemove && (
-        <div className="flex flex-col items-start gap-3">
-          <p className="text-sm text-fg-muted">{t("client:admin.account.two_factor.remove.description")}</p>
+        <Stack align="start" gap="3">
+          <Hint>{t("client:admin.account.two_factor.remove.description")}</Hint>
           <Button onPress={remove.open} isPending={remove.isPending}>
             {t("client:admin.account.two_factor.remove")}
           </Button>
-        </div>
+        </Stack>
       )}
       <ConfirmDialog
         isOpen={remove.isOpen}
@@ -263,18 +264,18 @@ function PasswordResetSection({ id, handle }: { id: string; handle: string }) {
     <DetailSection title={t("client:admin.account.password_reset.title")}>
       <StatusMessage tone="success">{issue.status}</StatusMessage>
       {link !== undefined && (
-        <div className="flex flex-col gap-2 rounded-md border border-border p-3">
-          <p id={linkLabelId} className="font-medium">
+        <Stack gap="2" border="md" padding="3">
+          <Text as="p" weight="medium" id={linkLabelId}>
             {t("client:admin.account.password_reset.link")}
-          </p>
-          <p className="text-sm text-fg-muted">
+          </Text>
+          <Hint>
             {t("client:admin.account.password_reset.link.notice", { expiresAt: intl.formatDate(link.expires_at, { dateStyle: "medium", timeStyle: "short" }) })}
-          </p>
+          </Hint>
           {/* A URL reads left to right in every locale. */}
-          <p aria-labelledby={linkLabelId} dir="ltr" className="font-mono wrap-anywhere select-all">
+          <Text as="p" mono wrap="anywhere" selectAll aria-labelledby={linkLabelId} dir="ltr">
             {link.url}
-          </p>
-          <div>
+          </Text>
+          <Box>
             <Button
               size="sm"
               onPress={() => {
@@ -283,15 +284,15 @@ function PasswordResetSection({ id, handle }: { id: string; handle: string }) {
             >
               {t("client:admin.account.password_reset.copy")}
             </Button>
-          </div>
-        </div>
+          </Box>
+        </Stack>
       )}
-      <div className="flex flex-col items-start gap-3">
-        <p className="text-sm text-fg-muted">{t("client:admin.account.password_reset.description")}</p>
+      <Stack align="start" gap="3">
+        <Hint>{t("client:admin.account.password_reset.description")}</Hint>
         <Button onPress={issue.open} isPending={issue.isPending}>
           {t("client:admin.account.password_reset.issue")}
         </Button>
-      </div>
+      </Stack>
       <ConfirmDialog
         isOpen={issue.isOpen}
         onOpenChange={(isOpen) => {
@@ -325,12 +326,12 @@ function PrivateDataSection({ id }: { id: string }) {
     <DetailSection title={t("client:admin.account.private.title")} headingRef={headingRef}>
       <StatusMessage>{privateData.data === undefined ? undefined : t("client:admin.account.private.shown")}</StatusMessage>
       {privateData.data === undefined ? (
-        <div className="flex flex-col items-start gap-3">
-          <p className="text-sm text-fg-muted">{t("client:admin.account.private.description")}</p>
+        <Stack align="start" gap="3">
+          <Hint>{t("client:admin.account.private.description")}</Hint>
           <Button onPress={privateData.reveal} isPending={privateData.isPending}>
             {t("client:admin.account.private.reveal")}
           </Button>
-        </div>
+        </Stack>
       ) : (
         <PrivateData data={privateData.data} />
       )}
@@ -348,9 +349,9 @@ function IpAddress({ ip }: { ip: string | undefined }) {
   const t = useT();
   if (ip === undefined) return t("client:admin.account.private.unknown");
   return (
-    <span dir="ltr" className="wrap-anywhere">
+    <Text dir="ltr" wrap="anywhere">
       {ip}
-    </span>
+    </Text>
   );
 }
 
@@ -358,51 +359,51 @@ function PrivateData({ data }: { data: AdminAccountPrivateData }) {
   const t = useT();
   const emailDomain = data.email?.split("@").at(-1);
   return (
-    <div className="flex flex-col gap-6">
+    <Stack gap="6">
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.account.private.email")}>
           {data.email === undefined ? (
             t("client:admin.account.email.none")
           ) : (
-            <span className="flex flex-col items-start gap-1">
-              <span dir="ltr" className="wrap-anywhere">
+            <Stack as="span" align="start" gap="1">
+              <Text dir="ltr" wrap="anywhere">
                 {data.email}
-              </span>
-              <span className="text-sm text-fg-muted">
+              </Text>
+              <Hint as="span">
                 {data.email_verified === true ? t("client:admin.account.email_verified.yes") : t("client:admin.account.email_verified.no")}
-              </span>
+              </Hint>
               {emailDomain !== undefined && emailDomain !== "" && (
-                <Link href={searchHref({ email_domain: emailDomain })} variant="standalone" className="text-sm">
+                <Link href={searchHref({ email_domain: emailDomain })} variant="standalone" size="sm">
                   {t("client:admin.account.private.search_email_domain", { domain: `⁦${emailDomain}⁩` })}
                 </Link>
               )}
-            </span>
+            </Stack>
           )}
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.account.private.registration_ip")}>
           {data.registration_ip === undefined ? (
             t("client:admin.account.private.unknown")
           ) : (
-            <span className="flex flex-col items-start gap-1">
+            <Stack as="span" align="start" gap="1">
               <IpAddress ip={data.registration_ip} />
               {data.registered_at !== undefined && (
-                <span className="text-sm text-fg-muted">
+                <Hint as="span">
                   <DateTime value={data.registered_at} />
-                </span>
+                </Hint>
               )}
-            </span>
+            </Stack>
           )}
         </DescriptionItem>
       </DescriptionList>
-      <div className="flex flex-col gap-3">
-        <h3 className="font-semibold">{t("client:admin.account.private.sign_ins")}</h3>
+      <Stack gap="3">
+        <Heading level={3}>{t("client:admin.account.private.sign_ins")}</Heading>
         {data.sign_ins.length === 0 ? (
-          <p className="text-fg-muted">{t("client:admin.account.private.sign_ins.none")}</p>
+          <Hint size="inherit">{t("client:admin.account.private.sign_ins.none")}</Hint>
         ) : (
-          <ul className="flex flex-col divide-y divide-border">
+          <Stack as="ul" divided>
             {data.sign_ins.map((signIn, index) => (
               // A sign-in has no ID: its time and address keep the rows of one answer apart, which never changes.
-              <li key={`${signIn.signed_in_at} ${signIn.ip ?? ""} ${String(index)}`} className="py-3">
+              <Box as="li" paddingY="3" key={`${signIn.signed_in_at} ${signIn.ip ?? ""} ${String(index)}`}>
                 <DescriptionList columns={3}>
                   <DescriptionItem term={t("client:admin.account.private.signed_in_at")}>
                     <DateTime value={signIn.signed_in_at} />
@@ -414,47 +415,47 @@ function PrivateData({ data }: { data: AdminAccountPrivateData }) {
                     {signIn.user_agent === undefined ? (
                       t("client:admin.account.private.unknown")
                     ) : (
-                      <span dir="ltr" className="wrap-anywhere">
+                      <Text dir="ltr" wrap="anywhere">
                         {signIn.user_agent}
-                      </span>
+                      </Text>
                     )}
                   </DescriptionItem>
                 </DescriptionList>
-              </li>
+              </Box>
             ))}
-          </ul>
+          </Stack>
         )}
-      </div>
-      <div className="flex flex-col gap-3">
-        <h3 className="font-semibold">{t("client:admin.account.private.same_ip")}</h3>
+      </Stack>
+      <Stack gap="3">
+        <Heading level={3}>{t("client:admin.account.private.same_ip")}</Heading>
         {data.same_ip_accounts.length === 0 ? (
-          <p className="text-fg-muted">{t("client:admin.account.private.same_ip.none")}</p>
+          <Hint size="inherit">{t("client:admin.account.private.same_ip.none")}</Hint>
         ) : (
-          <ul className="flex flex-col divide-y divide-border">
+          <Stack as="ul" divided>
             {data.same_ip_accounts.map((group) => (
-              <li key={group.ip} className="flex flex-col gap-2 py-3">
-                <h4 className="font-semibold">
+              <Stack as="li" gap="2" paddingY="3" key={group.ip}>
+                <Heading level={4}>
                   <IpAddress ip={group.ip} />
-                </h4>
-                <ul className="flex flex-col gap-2">
+                </Heading>
+                <Stack as="ul" gap="2">
                   {group.accounts.map((other) => (
-                    <li key={other.id} className="flex flex-wrap items-baseline gap-x-3">
+                    <Cluster as="li" align="baseline" gap="3" rowGap="0" key={other.id}>
                       <Link href={`/moderation/accounts/${encodeURIComponent(other.id)}`} variant="standalone">
                         <AccountLabel account={other.account} />
                       </Link>
-                      <span className="text-sm text-fg-muted">{t(adminAccountStateLabels[other.state])}</span>
-                    </li>
+                      <Hint as="span">{t(adminAccountStateLabels[other.state])}</Hint>
+                    </Cluster>
                   ))}
-                </ul>
-                <Link href={searchHref({ ip: group.ip })} variant="standalone" className="text-sm">
+                </Stack>
+                <Link href={searchHref({ ip: group.ip })} variant="standalone" size="sm">
                   {t("client:admin.account.private.search_ip", { ip: `⁦${group.ip}⁩` })}
                 </Link>
-              </li>
+              </Stack>
             ))}
-          </ul>
+          </Stack>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -536,13 +537,11 @@ function ActionRow({ action, local, lift }: { action: AccountAction; local: bool
   // A ban is never lifted (the API refuses it); it is undone only by overturning its appeal.
   const liftable = action.state === "active" && action.kind !== "ban";
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        <h3 tabIndex={-1} className="font-semibold outline-none">
-          {kind}
-        </h3>
-        {liftable && (
-          <Button
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          liftable && (
+            <Button
             size="sm"
             isPending={lift.isPending && lift.confirmation?.action.id === action.id}
             aria-label={t("client:admin.account.actions.lift_action", {
@@ -552,14 +551,19 @@ function ActionRow({ action, local, lift }: { action: AccountAction; local: bool
             onPress={() => {
               lift.open(action);
             }}
-          >
+        >
             {t("client:admin.account.actions.lift")}
-          </Button>
-        )}
-      </div>
+        </Button>
+          )
+        }
+      >
+        <Heading level={3} focusable>
+          {kind}
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.account_actions.state")}>
-          <span className={action.state === "active" ? "font-semibold" : undefined}>{t(accountActionStateLabels[action.state])}</span>
+          <Text {...(action.state === "active" && { weight: "semibold" as const })}>{t(accountActionStateLabels[action.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.account_actions.issued_at")}>
           <DateTime value={action.issued_at} />
@@ -583,7 +587,7 @@ function ActionRow({ action, local, lift }: { action: AccountAction; local: bool
         )}
         {action.status_ids !== undefined && (
           <DescriptionItem term={t("client:admin.report.posts")}>
-            <span className="tabular-nums">{t("client:admin.report.posts.count", { count: action.status_ids.length })}</span>
+            <Text numeric>{t("client:admin.report.posts.count", { count: action.status_ids.length })}</Text>
           </DescriptionItem>
         )}
         {action.report_id !== undefined && (
@@ -599,28 +603,28 @@ function ActionRow({ action, local, lift }: { action: AccountAction; local: bool
           {action.public_reason !== undefined && (
             <DescriptionItem term={t("client:admin.account_actions.public_reason")}>
               {/* Written by a moderator, in any language. */}
-              <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+              <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
                 {action.public_reason}
-              </span>
+              </Text>
             </DescriptionItem>
           )}
           {action.private_note !== undefined && (
             <DescriptionItem term={t("client:admin.account_actions.private_note")}>
-              <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+              <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
                 {action.private_note}
-              </span>
+              </Text>
             </DescriptionItem>
           )}
           {action.lift_reason !== undefined && (
             <DescriptionItem term={t("client:admin.account.actions.lift_reason")}>
-              <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+              <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
                 {action.lift_reason}
-              </span>
+              </Text>
             </DescriptionItem>
           )}
         </DescriptionList>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -635,12 +639,12 @@ function AccountReports({ reports }: { reports: readonly Report[] }) {
   const canHandle = useHasPermission("manage_reports");
   if (reports.length === 0) return <EmptyState headingLevel={3} heading={t("client:admin.account.reports.empty")} />;
   return (
-    <ul className="flex flex-col divide-y divide-border">
+    <Stack as="ul" divided>
       {reports.map((report) => {
         const title = t("client:admin.account.reports.item", { date: intl.formatDate(report.filed_at, { dateStyle: "medium", timeStyle: "short" }) });
         return (
-          <li key={report.id} className="@container flex flex-col gap-2 py-3">
-            <h3 className="font-semibold">
+          <Stack as="li" container gap="2" paddingY="3" key={report.id}>
+            <Heading level={3}>
               {canHandle ? (
                 <Link href={`/moderation/reports/${encodeURIComponent(report.id)}`} variant="standalone">
                   {title}
@@ -648,7 +652,7 @@ function AccountReports({ reports }: { reports: readonly Report[] }) {
               ) : (
                 title
               )}
-            </h3>
+            </Heading>
             <DescriptionList columns={3}>
               <DescriptionItem term={t("client:admin.report.state")}>
                 {report.outcome === undefined ? t(reportStateLabels[report.state]) : t(reportOutcomeLabels[report.outcome])}
@@ -660,13 +664,13 @@ function AccountReports({ reports }: { reports: readonly Report[] }) {
             </DescriptionList>
             {report.comment !== "" && (
               // Written by the reporter, in any language.
-              <p dir="auto" className="line-clamp-2 text-start wrap-anywhere whitespace-pre-wrap">
+              <Text as="p" dir="auto" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">
                 {report.comment}
-              </p>
+              </Text>
             )}
-          </li>
+          </Stack>
         );
       })}
-    </ul>
+    </Stack>
   );
 }

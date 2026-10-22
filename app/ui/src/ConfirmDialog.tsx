@@ -13,6 +13,7 @@ import { Form, Text } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
+import { DialogActions } from "./DialogActions";
 
 const confirmDialog = tv({
   slots: {
@@ -20,7 +21,6 @@ const confirmDialog = tv({
     description: "text-base text-fg",
     fields: "flex flex-col gap-4",
     error: "text-sm text-danger",
-    actions: "flex flex-wrap justify-end gap-2",
   },
 });
 
@@ -95,14 +95,14 @@ export function ConfirmDialog({
               {errorMessage}
             </p>
           )}
-          <div className={styles.actions()}>
+          <DialogActions>
             <Button onPress={close} autoFocus={children === undefined}>
               {cancelLabel}
             </Button>
             <Button type="submit" variant={tone} isPending={isPending}>
               {confirmLabel}
             </Button>
-          </div>
+          </DialogActions>
         </Form>
       )}
     </Dialog>

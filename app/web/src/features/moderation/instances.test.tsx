@@ -8,6 +8,7 @@ import type { Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler);
@@ -60,6 +61,7 @@ describe("remote servers", () => {
       expect(router.state.location.search).toEqual({ state: "unavailable" });
     });
     expect(screen.getByRole("tab", { name: "Paused" })).toHaveAttribute("aria-selected", "true");
+    expectSelectedTabControlsPanel("Paused");
     expect(await screen.findByRole("heading", { level: 2, name: "down.example" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "flaky.example" })).not.toBeInTheDocument();
     expect(requests).toEqual(["GET /admin/instances?limit=40", "GET /admin/instances?limit=40&cursor=next", "GET /admin/instances?limit=40&state=unavailable"]);

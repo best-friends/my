@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Link, RegionError, Spinner } from "@my/ui";
+import { Button, Heading, Hint, Link, RegionError, Spinner, Stack, Text } from "@my/ui";
 import { useId, useState } from "react";
 import { handleOf } from "../../../lib/handle";
 import { useT } from "../../../lib/i18n";
@@ -11,12 +11,12 @@ export function AccountSection() {
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:session.account.title")}
-      </h2>
+      </Heading>
       <AccountStatus />
-    </section>
+    </Stack>
   );
 }
 
@@ -30,14 +30,14 @@ function AccountStatus() {
       return <Spinner label={t("client:shell.loading")} />;
     case "signed-out":
       return (
-        <div className="flex flex-col items-start gap-2">
-          <p className="text-fg-muted">{t("client:session.signed_out")}</p>
+        <Stack align="start" gap="2">
+          <Hint size="inherit">{t("client:session.signed_out")}</Hint>
           <Link href="/login">{t("client:session.sign_in")}</Link>
-        </div>
+        </Stack>
       );
     case "error":
       return (
-        <div className="flex flex-col items-start gap-2">
+        <Stack align="start" gap="2">
           {/* Read with the page, not announced; a retry that fails again is the user's action, and an alert (G16). */}
           <RegionError
             headingLevel={3}
@@ -54,25 +54,25 @@ function AccountStatus() {
           <Button onPress={signOut} isPending={isPending}>
             {t("client:session.sign_out")}
           </Button>
-        </div>
+        </Stack>
       );
     case "signed-in": {
       const handle = handleOf(viewer.account.acct);
       return (
-        <div className="flex flex-col items-start gap-2">
+        <Stack align="start" gap="2">
           {/* The display name and handle are the user's text, in any language (web-client.md Y10). */}
-          <p className="flex flex-col">
-            <span dir="auto" className="font-semibold align-match-parent">
+          <Stack as="p">
+            <Text dir="auto" weight="semibold" align="matchParent">
               {viewer.account.display_name || viewer.account.username}
-            </span>
-            <span dir="ltr" className="text-sm text-fg-muted">
+            </Text>
+            <Hint as="span" dir="ltr">
               {handle}
-            </span>
-          </p>
+            </Hint>
+          </Stack>
           <Button onPress={signOut} isPending={isPending}>
             {t("client:session.sign_out")}
           </Button>
-        </div>
+        </Stack>
       );
     }
   }

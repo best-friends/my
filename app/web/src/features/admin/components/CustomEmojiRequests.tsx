@@ -5,7 +5,7 @@
 // pending one is approved at once, or rejected after an alert dialog with an optional reason that the requester
 // sees. What a decision did stays above the list in a StatusMessage, and a failure (a request that cannot be decided
 // says why) stays there too (role="alert").
-import { Button, ConfirmDialog, CustomEmoji, DescriptionItem, DescriptionList, DialogTrigger, EmptyState, Link, ReasonField, Select, SelectItem, StatusMessage } from "@my/ui";
+import { Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DialogTrigger, EmojiTile, EmptyState, Heading, Hint, InlineError, Link, ReasonField, Select, SelectItem, Stack, StatusMessage, Text } from "@my/ui";
 import { useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
@@ -43,8 +43,8 @@ export type CustomEmojiRequestsProps = {
 export function CustomEmojiRequests({ state, onStateChange }: CustomEmojiRequestsProps) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-fg-muted">{t("client:admin.custom_emoji_requests.description")}</p>
+    <Stack gap="4">
+      <Hint>{t("client:admin.custom_emoji_requests.description")}</Hint>
       <div>
         <Select
           label={t("client:admin.custom_emoji_requests.state")}
@@ -62,7 +62,7 @@ export function CustomEmojiRequests({ state, onStateChange }: CustomEmojiRequest
         </Select>
       </div>
       <RequestList key={state} state={state} />
-    </div>
+    </Stack>
   );
 }
 
@@ -82,17 +82,17 @@ function RequestList({ state }: { state: CustomEmojiRequestState }) {
       <EmptyState headingLevel={3} heading={t("client:admin.custom_emoji_requests.empty")} />
     );
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{actions.status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.custom_emoji_requests.decide_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       <RecordList list={list} getId={(request) => request.id} listRef={listRef} empty={empty}>
         {(request) => <RequestRow request={request} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -103,18 +103,14 @@ function RequestRow({ request, actions }: { request: AdminCustomEmojiRequest; ac
   const isPending = actions.pendingId === request.id;
   const { requester } = request;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+    <Stack gap="3">
+      <Cluster gap="3" align="center" wrap={false}>
         {/* The heading names the emoji; the image beside it shows what was requested. */}
-        <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-3xl">
-          {request.url !== undefined && request.static_url !== undefined && (
-            <CustomEmoji emoji={{ shortcode: request.shortcode, url: request.url, static_url: request.static_url }} />
-          )}
-        </span>
-        <h3 className="min-w-0 font-mono font-semibold wrap-anywhere">
+<EmojiTile emoji={request.url !== undefined && request.static_url !== undefined ? { shortcode: request.shortcode, url: request.url, static_url: request.static_url } : undefined} />
+        <Heading level={3} wrap="anywhere" mono shrink>
           <span dir="ltr">{heading}</span>
-        </h3>
-      </div>
+        </Heading>
+      </Cluster>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:custom_emoji_requests.kind")}>{t(kindLabels[request.kind])}</DescriptionItem>
         <DescriptionItem term={t("client:custom_emoji_requests.state")}>{t(requestStateLabels[request.state])}</DescriptionItem>
@@ -136,14 +132,14 @@ function RequestRow({ request, actions }: { request: AdminCustomEmojiRequest; ac
         )}
         {request.reason !== undefined && (
           <DescriptionItem term={t("client:custom_emoji_requests.reason")}>
-            <span dir="auto" className="whitespace-pre-line">
+            <Text whitespace="preLine" dir="auto">
               {request.reason}
-            </span>
+            </Text>
           </DescriptionItem>
         )}
       </DescriptionList>
       {request.state === "pending" && (
-        <div className="flex flex-wrap gap-2">
+        <Cluster gap="2">
           <Button
             size="sm"
             variant="primary"
@@ -156,9 +152,9 @@ function RequestRow({ request, actions }: { request: AdminCustomEmojiRequest; ac
             {t("client:admin.custom_emoji_requests.approve")}
           </Button>
           <RejectRequest request={request} actions={actions} isPending={isPending} />
-        </div>
+        </Cluster>
       )}
-    </div>
+    </Stack>
   );
 }
 

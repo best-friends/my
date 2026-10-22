@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { PiStar } from "react-icons/pi"; // expect: eslint(no-restricted-imports) G10
+import { tv } from "tailwind-variants"; // expect: restrict(classes) A4
 import { useComposeForm } from "../../compose/hooks/useComposeForm"; // expect: boundaries(dependencies) A3
 import { Route as IndexRoute } from "../../../routes/index"; // expect: boundaries(dependencies) A1
 import { client } from "../../../lib/api/client"; // expect: eslint(no-restricted-imports) S1
@@ -154,19 +155,20 @@ export function Styled({ size }: { size: string }) {
   void IndexRoute;
   void useComposeForm;
   void PiStar;
+  void tv;
   return (
     <div>
       <div onClick={() => undefined} /> {/* expect: restrict(syntax) */}
       <p dangerouslySetInnerHTML={{ __html: size }} /> {/* expect: @eslint-react(dom-no-dangerously-set-innerhtml) */}
       <p>Hello</p> {/* expect: formatjs(no-literal-string-in-jsx) */}
-      <p className="md:flex" /> {/* expect: better-tailwindcss(no-restricted-classes) */}
-      <p className="h-screen" /> {/* expect: better-tailwindcss(no-restricted-classes) */}
+      <p className="md:flex" /> {/* expect: restrict(classes) better-tailwindcss(no-restricted-classes) */}
+      <p className="h-screen" /> {/* expect: restrict(classes) better-tailwindcss(no-restricted-classes) */}
       <p style={{ height: "100vh" }} /> {/* expect: restrict(syntax) */}
-      <p className="animate-spin" /> {/* expect: better-tailwindcss(no-restricted-classes) */}
-      <p className="ml-2" /> {/* expect: better-tailwindcss(no-restricted-classes) */}
-      <p className="not-a-class" /> {/* expect: better-tailwindcss(no-unknown-classes) */}
-      <p className={"p-" + size} /> {/* expect: better-tailwindcss(no-concatenated-classes) */}
-      <p className="flex grid" /> {/* expect: better-tailwindcss(no-conflicting-classes) better-tailwindcss(no-conflicting-classes) */}
+      <p className="animate-spin" /> {/* expect: restrict(classes) better-tailwindcss(no-restricted-classes) */}
+      <p className="ml-2" /> {/* expect: restrict(classes) better-tailwindcss(no-restricted-classes) */}
+      <p className="not-a-class" /> {/* expect: restrict(classes) better-tailwindcss(no-unknown-classes) */}
+      <p className={"p-" + size} /> {/* expect: restrict(classes) better-tailwindcss(no-concatenated-classes) */}
+      <p className="flex grid" /> {/* expect: restrict(classes) better-tailwindcss(no-conflicting-classes) better-tailwindcss(no-conflicting-classes) */}
       <svg /> {/* expect: restrict(svg) */}
       <a href="https://remote.example/" target="_blank" rel="noreferrer">{size}</a> {/* expect: restrict(syntax) restrict(syntax) */}
     </div>
