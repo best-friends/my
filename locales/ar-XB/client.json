@@ -8515,6 +8515,10 @@
     "defaultMessage": "‮Iuɔoɯǝ ɐɟʇǝɹ ɟǝǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "info.contents": {
+    "defaultMessage": "‮Ou ʇɥıs dɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "landing.about.title": {
     "defaultMessage": "‮∀qonʇ ʇɥıs sǝɹʌǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -4260,6 +4260,8 @@ export interface MessageArgs {
   "client:income.totals.gross": {};
   /** Income after fees */
   "client:income.totals.net": {};
+  /** On this page */
+  "client:info.contents": {};
   /** About this server */
   "client:landing.about.title": {};
   /** React to posts with custom emoji, including those from other servers. */

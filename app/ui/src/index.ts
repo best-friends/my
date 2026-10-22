@@ -137,6 +137,7 @@ export { SettingsLayout, type SettingsLayoutProps } from "./SettingsLayout";
 export { FeatureCard, type FeatureCardProps } from "./FeatureCard";
 export { Hero, type HeroProps } from "./Hero";
 export { Cluster, type ClusterProps } from "./Cluster";
+export { InfoPage, type InfoPageProps } from "./InfoPage";
 export { Grid, type GridProps } from "./Grid";
 export type { LayoutElement, Space } from "./layout";
 export { Stack, type StackProps } from "./Stack";
