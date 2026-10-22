@@ -81,7 +81,7 @@ B は成り立たない（受信のみでフォローを送れない、送信の
 | ローカルの Actor の GET（§10） | `404`（`410` にしない） | 鍵の取得のための最小の文書（Authorized Fetch の署名なしと同じ項目） | いまのまま | いまのまま |
 | 投稿・`/activity`・コレクション（outbox・followers・following・featured）の GET | `404` | `404`（outbox など空にせず存在を見せない） | いまのまま | いまのまま |
 | インスタンス Actor の GET | `404` | いまのまま | いまのまま | いまのまま |
-| WebFinger・host-meta | `404` | 答える（`follow_out` で相手がハンドルを確かめるため。要検証） | いまのまま | いまのまま |
+| WebFinger・host-meta | `404` | 答える（`follow_out` で相手がハンドルを確かめるため。Mastodon・GoToSocial は Actor を取得したあと WebFinger を引く） | いまのまま | いまのまま |
 | NodeInfo | `404` | 答える。`metadata.federationMode` に値を出す | 同左 | 同左 |
 | リレー（ADR-0061） | 参加・送信・受信をしない（登録と状態は残す） | 受信だけ（送信のフェーズを飛ばす） | 送信だけ（受信を捨てる） | いまのまま |
 
@@ -110,6 +110,16 @@ B は成り立たない（受信のみでフォローを送れない、送信の
 
 - 機能要件に FR-413（連合の向き）を足す（この PR で更新する）。
 - 決定のあと、federation.md（§3・§6・§7・§10・§13 と新しい節「連合の向き」）、data-model.md（§4.9 の `instance_setting_revisions.key`）、`docs/operations/instance-settings.md` を実装の PR で更新する。
+
+### 相互運用の確認
+
+federation-live（2026-10-22、[#983](https://github.com/best-friends/my/issues/983#issuecomment-6337103257)）で、Mastodon 4.7・GoToSocial 0.22・Misskey 2026.10 を相手に次を確かめた。見直す条件には当たらない。
+
+- `inbound` の最小の Actor の文書（名前・アイコン・コレクションなし）からの `Follow` を、3 つとも受け付けて `Accept` を返す。
+- Mastodon と GoToSocial は、こちらの Actor を取得したあと `acct:` の WebFinger を引く。Misskey は引かない。`inbound` でも WebFinger に答える。
+- `inbound` で外から受けた `Follow` は `Reject` になり、相手の側にもこちらの側にも承認待ちが残らない。
+- `off` の Actor・WebFinger・NodeInfo は `404` を返す。Mastodon と Misskey は Actor を取り直して `404` を受けても、アカウントとフォローを消さない。`both` に戻すと投稿がまた届く。
+- NodeInfo 2.1 のスキーマは `protocols` を `minItems: 1` とするので、空の配列は返せない。`off` は NodeInfo を `404` にする。
 
 ### この決定を見直す条件
 
@@ -159,5 +169,7 @@ B は成り立たない（受信のみでフォローを送れない、送信の
 
 ## Open Questions / 要検証
 
-- `inbound` で、Mastodon・Misskey がこちらの `Follow` の主体を確かめるときに WebFinger を引くか、最小の Actor の文書（名前・アイコンなし）でフォローを受け付けて表示するか（要検証。federation-live で確かめる）。
-- NodeInfo 2.1 の `protocols` は空の配列を許さないため（要検証）、`off` は NodeInfo 自体を `404` にした。サーバーの一覧サイトなどに「ActivityPub を話さないが存在する」ことを出したい場合は、`off` でも NodeInfo を返す形を考える。
+- Akkoma は federation-live の構成に無く、`inbound` の最小の Actor の文書からの `Follow` を受け付けるかを確かめていない（要検証）。
+- GoToSocial は保存した Actor で答え、取り直さないため、`off` の `404` への振る舞いを確かめていない（要検証）。
+- GoToSocial は、モードを `inbound` から広げたあとも最小の Actor の文書（`followers` なし）を持ち続け、`outbound` で届けたこちらの投稿が相手の利用者のホームに出ない。配送は `202` で受け付けられる。原因は確かめていない（要検証）。
+- サーバーの一覧サイトなどに「ActivityPub を話さないが存在する」ことを出したい場合は、`off` でも NodeInfo を返す形（`protocols` は空にできない）を考える。
