@@ -21,7 +21,13 @@ export function AccountSearch({ headingId, ...options }: AccountSearchProps) {
         <TextField
           type="search"
           label={t("client:search.label")}
-          description={search.signedOut ? t("client:search.description_signed_out") : t("client:search.description")}
+          description={
+            search.signedOut
+              ? t("client:search.description_signed_out")
+              : search.knownOnly
+                ? t("client:search.description_known_only")
+                : t("client:search.description")
+          }
           value={search.value}
           onChange={search.onChange}
           isRequired

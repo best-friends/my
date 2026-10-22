@@ -3,7 +3,8 @@
 // the follow button, whose label is where the follow stands (Follow, Requested, Following, Blocked), and
 // a menu button (WAI-ARIA APG, menu button pattern) with mute, block and report (features/report). Undoing
 // a follow or a request, blocking and unblocking ask first in an alert dialog (WAI-ARIA APG, alert dialog
-// pattern). A follow request to an account of another server says which server it waits for. A list of
+// pattern). A follow request to an account of another server says which server it waits for, and no new follow of
+// such an account is offered while the instance does not follow other servers (ADR-0076). A list of
 // accounts (the notifications) can show the follow button alone, and leave mute, block and report to the
 // profile.
 import { Box, Button, Cluster, Dialog, DialogActions, Hint, Link, Menu, MenuItem, MenuTrigger, MoreIcon, Stack } from "@my/ui";
@@ -88,22 +89,29 @@ function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
   // request is pending, and the button's description names the server it waits for.
   const pendingId = useId();
   const pendingRemote = state.follow === "requested" && account.acct.includes("@");
+  // While the instance does not follow other servers (ADR-0076), no new follow of their accounts is offered; the
+  // line that says so takes the button's place.
+  const offersFollow = state.follow !== "none" || state.canFollow;
 
   return (
     <>
       <Cluster align="center" gap="2">
         {/* One button for every state, so that it keeps the focus when its label changes. */}
-        <Button
-          variant={followButton.variant}
-          isPending={isPending}
-          {...(pendingRemote ? { "aria-describedby": pendingId } : {})}
-          onPress={() => {
-            if (followButton.press === "follow") change("follow");
-            else confirm(followButton.press);
-          }}
-        >
-          {followButton.label}
-        </Button>
+        {offersFollow ? (
+          <Button
+            variant={followButton.variant}
+            isPending={isPending}
+            {...(pendingRemote ? { "aria-describedby": pendingId } : {})}
+            onPress={() => {
+              if (followButton.press === "follow") change("follow");
+              else confirm(followButton.press);
+            }}
+          >
+            {followButton.label}
+          </Button>
+        ) : (
+          <Hint as="span">{t("client:profile.follow.federation_restricted")}</Hint>
+        )}
         {showMenu && (
           <MenuTrigger>
             <Button variant="ghost" size="compact" isPending={isPending} aria-label={moreLabel}>

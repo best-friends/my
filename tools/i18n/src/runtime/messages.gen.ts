@@ -2800,6 +2800,44 @@ export interface MessageArgs {
   "client:admin.settings.federation.link_cards": {};
   /** The server fetches the page of the first link in each post, whoever can see the post, and shows its title, description, and image under it. The linked sites learn when the link was posted, but not by whom. */
   "client:admin.settings.federation.link_cards.description": {};
+  /** Federation direction */
+  "client:admin.settings.federation.mode": {};
+  /** Both ways */
+  "client:admin.settings.federation.mode.both": {};
+  /** Users follow and read accounts of other servers, and this server delivers its posts to their followers there. */
+  "client:admin.settings.federation.mode.both.description": {};
+  /** Which way posts, follows and reactions flow between this server and other servers. The change takes effect at once. */
+  "client:admin.settings.federation.mode.description": {};
+  /** Receive only */
+  "client:admin.settings.federation.mode.inbound": {};
+  /** Users follow and read accounts of other servers, but the posts, profiles and reactions of this server do not go out, and follows from other servers are declined. */
+  "client:admin.settings.federation.mode.inbound.description": {};
+  /** Off */
+  "client:admin.settings.federation.mode.off": {};
+  /** Nothing is sent to other servers and nothing is taken in from them. This server works on its own. */
+  "client:admin.settings.federation.mode.off.description": {};
+  /** Send only */
+  "client:admin.settings.federation.mode.outbound": {};
+  /** Accounts of other servers can follow users here and receive their posts, but the posts and reactions of other servers are not taken in, and users cannot follow or look up accounts of other servers. */
+  "client:admin.settings.federation.mode.outbound.description": {};
+  /** Cancel */
+  "client:admin.settings.federation.narrow.cancel": {};
+  /** Change and save */
+  "client:admin.settings.federation.narrow.confirm": {};
+  /** Posts and accounts deleted while federation is off are not deleted on other servers: their copies there stay. */
+  "client:admin.settings.federation.narrow.deletions": {};
+  /** Changing from “{from}” to “{to}” takes effect as soon as it is saved: */
+  "client:admin.settings.federation.narrow.description": { from: string; to: string };
+  /** Posts and reactions from other servers no longer come in, and users can no longer follow or look up accounts of other servers. Their follows of remote accounts stay but are no longer updated. */
+  "client:admin.settings.federation.narrow.receiving": {};
+  /** Follows with other servers, the posts taken in and the delivery records are kept, and nothing is sent to end the follows. */
+  "client:admin.settings.federation.narrow.relations": {};
+  /** The posts, profiles and reactions of this server no longer reach other servers. Followers there stay but receive nothing, and what is posted meanwhile is not delivered later. */
+  "client:admin.settings.federation.narrow.sending": {};
+  /** Change the federation direction to “{mode}”? */
+  "client:admin.settings.federation.narrow.title": { mode: string };
+  /** Widening the direction again later resumes the flow from then on. */
+  "client:admin.settings.federation.narrow.widen": {};
   /** Federation */
   "client:admin.settings.federation.title": {};
   /** Totals and breakdown */
@@ -3742,6 +3780,8 @@ export interface MessageArgs {
   "client:compose.close": {};
   /** Could not send the post: {reason} */
   "client:compose.failed": { reason: string };
+  /** This won't reach other servers: this server does not send posts to them now, so the accounts of other servers that this replies to or mentions will not receive it. */
+  "client:compose.federation.stays_local": {};
   /** Language */
   "client:compose.language.label": {};
   /** Not specified */
@@ -4468,6 +4508,8 @@ export interface MessageArgs {
   "client:profile.follow.back": {};
   /** Blocked */
   "client:profile.follow.blocked": {};
+  /** This server does not follow accounts of other servers now. */
+  "client:profile.follow.federation_restricted": {};
   /** Following */
   "client:profile.follow.following": {};
   /** Waiting for {host} to accept your follow request. */
@@ -4666,6 +4708,8 @@ export interface MessageArgs {
   "client:report.title": { name: string };
   /** Enter @username@server or the address of a profile, on this server or another one. */
   "client:search.description": {};
+  /** Enter @username@server or the address of a profile. This server does not look up accounts of other servers now, so only the accounts it already knows are found. */
+  "client:search.description_known_only": {};
   /** Enter @username@server or the address of a profile. Only accounts this server already knows are found. */
   "client:search.description_signed_out": {};
   /** Could not search for accounts: {reason} */
@@ -4674,6 +4718,8 @@ export interface MessageArgs {
   "client:search.label": {};
   /** No account found. Check the handle or the address. */
   "client:search.not_found": {};
+  /** This server does not know that account, and it does not look up accounts of other servers now. */
+  "client:search.not_found_known_only": {};
   /** This server does not know that account. Sign in to look it up on its own server. */
   "client:search.not_found_signed_out": {};
   /** Too many searches. Try again in a few minutes. */
@@ -5594,6 +5640,8 @@ export interface MessageArgs {
   "client:status.favourite.off": {};
   /** Added to favourites */
   "client:status.favourite.on": {};
+  /** Won't reach its server */
+  "client:status.federation.stays_local": {};
   /** {count, plural, one {# boost} other {# boosts}} */
   "client:status.focused.boosts": { count: number };
   /** {count, plural, one {# favourite} other {# favourites}} */

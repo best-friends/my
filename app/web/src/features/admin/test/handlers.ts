@@ -197,6 +197,7 @@ const settingDefaults: readonly Omit<Schemas["AdminSetting"], "value" | "stored"
   { key: "finance_viewer_income", kind: "enum", default: "totals", choices: ["totals", "plans"] },
   { key: "income_visibility", kind: "enum", default: "private", choices: ["private", "totals", "plans"] },
   { key: "supporter_list_visibility", kind: "enum", default: "off", choices: ["off", "public", "signed_in"] },
+  { key: "federation_mode", kind: "enum", default: "both", choices: ["off", "inbound", "outbound", "both"] },
 ];
 
 /** The instance settings as GET /admin/settings answers them, with the `stored` values set and the others at their defaults. */

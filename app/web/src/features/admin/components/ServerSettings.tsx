@@ -8,7 +8,26 @@
 // form from being sent while a field is invalid (React Aria's native validation: the error is under its field and
 // linked to it, and focus moves to the first invalid field). What a save did stays on the page in a StatusMessage
 // next to its button; a failure stays above the button (web-client.md E2).
-import { Button, Checkbox, Cluster, FileTrigger, Heading, Hint, InlineError, PreviewImage, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, TextArea, TextField } from "@my/ui";
+import {
+  Button,
+  Checkbox,
+  Cluster,
+  Dialog,
+  DialogActions,
+  FileTrigger,
+  Heading,
+  Hint,
+  InlineError,
+  PreviewImage,
+  Radio,
+  RadioGroup,
+  Select,
+  SelectItem,
+  Stack,
+  StatusMessage,
+  TextArea,
+  TextField,
+} from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { DetailSection, RequirePermission } from "../../moderation";
@@ -16,7 +35,7 @@ import { acceptedImageTypes } from "../../settings";
 import { thumbnailAltLimit } from "../api/settings";
 import { useServerContact } from "../hooks/useServerContact";
 import { type DescriptionField, descriptionLimits, useServerDescriptions } from "../hooks/useServerDescriptions";
-import { type PolicyKey, useServerPolicies } from "../hooks/useServerPolicies";
+import { type FederationNarrowing, type PolicyKey, useServerPolicies } from "../hooks/useServerPolicies";
 import { useServerSettings } from "../hooks/useServerSettings";
 
 export function ServerSettings() {
@@ -202,6 +221,12 @@ const choices = {
     { value: "invite", label: "client:admin.settings.registration.invite", description: "client:admin.settings.registration.invite.description" },
     { value: "closed", label: "client:admin.settings.registration.closed", description: "client:admin.settings.registration.closed.description" },
   ],
+  federation_mode: [
+    { value: "both", label: "client:admin.settings.federation.mode.both", description: "client:admin.settings.federation.mode.both.description" },
+    { value: "inbound", label: "client:admin.settings.federation.mode.inbound", description: "client:admin.settings.federation.mode.inbound.description" },
+    { value: "outbound", label: "client:admin.settings.federation.mode.outbound", description: "client:admin.settings.federation.mode.outbound.description" },
+    { value: "off", label: "client:admin.settings.federation.mode.off", description: "client:admin.settings.federation.mode.off.description" },
+  ],
   remote_media_policy: [
     { value: "none", label: "client:admin.settings.remote_media.none", description: "client:admin.settings.remote_media.none.description" },
     { value: "avatars", label: "client:admin.settings.remote_media.avatars", description: "client:admin.settings.remote_media.avatars.description" },
@@ -331,6 +356,12 @@ function PoliciesForm() {
         />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.federation.title")}>
+        <PolicyRadios
+          form={form}
+          setting="federation_mode"
+          label={t("client:admin.settings.federation.mode")}
+          description={t("client:admin.settings.federation.mode.description")}
+        />
         <PolicyCheckbox
           form={form}
           setting="authorized_fetch"
@@ -423,6 +454,59 @@ function PoliciesForm() {
         </div>
         <StatusMessage>{form.status}</StatusMessage>
       </Stack>
+      {form.narrowing !== null && (
+        <NarrowingDialog narrowing={form.narrowing} isOpen={form.isConfirming} onConfirm={form.confirm} onCancel={form.cancel} />
+      )}
     </Stack>
+  );
+}
+
+const modeLabels = {
+  off: "client:admin.settings.federation.mode.off",
+  inbound: "client:admin.settings.federation.mode.inbound",
+  outbound: "client:admin.settings.federation.mode.outbound",
+  both: "client:admin.settings.federation.mode.both",
+} as const satisfies Record<FederationNarrowing["to"], ClientMessageKey>;
+
+type NarrowingDialogProps = { narrowing: FederationNarrowing; isOpen: boolean; onConfirm: () => void; onCancel: () => void };
+
+/**
+ * Asks before the federation mode narrows (ADR-0076, "設定"): an alert dialog (WAI-ARIA APG) that lists what stops
+ * flowing, says that the relations with other servers stay connected with nothing flowing, and, for `off`, that
+ * deletions made meanwhile never reach other servers. The cancel button has the focus first.
+ */
+function NarrowingDialog({ narrowing, isOpen, onConfirm, onCancel }: NarrowingDialogProps) {
+  const t = useT();
+  return (
+    <Dialog
+      role="alertdialog"
+      closeLabel={null}
+      size="md"
+      title={t("client:admin.settings.federation.narrow.title", { mode: t(modeLabels[narrowing.to]) })}
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
+      <Stack gap="4">
+        <p>{t("client:admin.settings.federation.narrow.description", { from: t(modeLabels[narrowing.from]), to: t(modeLabels[narrowing.to]) })}</p>
+        <Stack as="ul" marker="disc" gap="2">
+          {narrowing.stopsSending && <li>{t("client:admin.settings.federation.narrow.sending")}</li>}
+          {narrowing.stopsReceiving && <li>{t("client:admin.settings.federation.narrow.receiving")}</li>}
+          {narrowing.stopsAll && <li>{t("client:admin.settings.federation.narrow.deletions")}</li>}
+          <li>{t("client:admin.settings.federation.narrow.relations")}</li>
+        </Stack>
+        <Hint>{t("client:admin.settings.federation.narrow.widen")}</Hint>
+        <DialogActions>
+          {/* The least destructive choice has the focus first (APG, alert dialog pattern). */}
+          <Button autoFocus onPress={onCancel}>
+            {t("client:admin.settings.federation.narrow.cancel")}
+          </Button>
+          <Button variant="danger" onPress={onConfirm}>
+            {t("client:admin.settings.federation.narrow.confirm")}
+          </Button>
+        </DialogActions>
+      </Stack>
+    </Dialog>
   );
 }

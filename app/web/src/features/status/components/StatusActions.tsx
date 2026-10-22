@@ -5,6 +5,7 @@ import {
   Button,
   Dialog,
   DialogActions,
+  Hint,
   Menu,
   MenuItem,
   MenuTrigger,
@@ -46,11 +47,14 @@ function reactionEmojiOf(choice: ReactionChoice): ReactionEmoji {
  * viewer (ADR-0069 §3) and, for the viewer's own posts, edit (EditStatusDialog), who may quote it (QuotePolicyDialog), the posts that
  * quote it, pin or unpin, and delete behind a confirmation (WAI-ARIA APG, alert dialog pattern). Nothing while
  * nobody is signed in. The toggles keep their names in both states and expose the state with
- * `aria-pressed` (APG, button pattern); a count is the toggle's description.
+ * `aria-pressed` (APG, button pattern); a count is the toggle's description. On a post of another server while the
+ * instance sends nothing out (ADR-0076), quoting is not offered and a note at the end of the bar, which also
+ * describes the reply, boost and favourite, says that the actions do not reach that server.
  */
 export function StatusActions({ status, onDeleted }: StatusActionsProps) {
   const t = useT();
   const repliesId = useId();
+  const staysLocalId = useId();
   const actions = useStatusActions(status);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
@@ -59,6 +63,9 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
   if (actions === null) return null;
   const post = status.boost ?? status;
   const remove = actions.delete;
+  // The note that the actions on a post of another server do not reach it (ADR-0076) describes each of them.
+  const note = actions.staysLocal ? staysLocalId : undefined;
+  const replyDescription = [post.replies_count > 0 ? repliesId : undefined, note].filter((id) => id !== undefined).join(" ");
 
   return (
     <>
@@ -66,23 +73,31 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
         variant="subtle"
         size="toolbar"
         aria-label={t("client:status.action.reply")}
-        {...(post.replies_count > 0 && { "aria-describedby": repliesId })}
+        {...(replyDescription !== "" && { "aria-describedby": replyDescription })}
         onPress={actions.reply}
       >
         <ReplyIcon />
         <Count id={repliesId} value={post.replies_count} />
       </Button>
-      <RelationButton label={t("client:status.action.boost")} toggle={actions.boost} tone="success" icon={(on) => <BoostIcon filled={on} />} />
-      <Button
-        variant="subtle"
-        size="toolbar"
-        aria-label={t("client:status.action.quote")}
-        onPress={actions.quote.onPress}
-        isDisabled={actions.quote.isDisabled}
-      >
-        <QuoteIcon />
-      </Button>
-      <RelationButton label={t("client:status.action.favourite")} toggle={actions.favourite} tone="warning" icon={(on) => <StarIcon filled={on} />} />
+      <RelationButton label={t("client:status.action.boost")} toggle={actions.boost} tone="success" icon={(on) => <BoostIcon filled={on} />} describedBy={note} />
+      {actions.quote !== null && (
+        <Button
+          variant="subtle"
+          size="toolbar"
+          aria-label={t("client:status.action.quote")}
+          onPress={actions.quote.onPress}
+          isDisabled={actions.quote.isDisabled}
+        >
+          <QuoteIcon />
+        </Button>
+      )}
+      <RelationButton
+        label={t("client:status.action.favourite")}
+        toggle={actions.favourite}
+        tone="warning"
+        icon={(on) => <StarIcon filled={on} />}
+        describedBy={note}
+      />
       <ReactionPickerButton
         onSelect={(choice) => {
           actions.react(reactionEmojiOf(choice));
@@ -139,6 +154,11 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
           )}
         </Menu>
       </MenuTrigger>
+      {note !== undefined && (
+        <Hint as="span" id={note}>
+          {t("client:status.federation.stays_local")}
+        </Hint>
+      )}
       {actions.canReport && <ReportDialog account={post.account} status={post} isOpen={isReporting} onOpenChange={setIsReporting} />}
       {actions.canEdit && <EditStatusDialog status={post} isOpen={isEditing} onOpenChange={setIsEditing} />}
       {actions.quotePolicy !== null && (
@@ -194,15 +214,18 @@ type RelationButtonProps = {
   toggle: RelationToggle;
   tone: NonNullable<ToggleButtonProps["tone"]>;
   icon: (on: boolean) => ReactNode;
+  /** The id of another description of the toggle: the note that the action does not reach the post's server. */
+  describedBy?: string | undefined;
 };
 
-function RelationButton({ label, toggle, tone, icon }: RelationButtonProps) {
+function RelationButton({ label, toggle, tone, icon, describedBy }: RelationButtonProps) {
   const countId = useId();
   const hasCount = toggle.count !== null && toggle.count > 0;
+  const description = [hasCount ? countId : undefined, describedBy].filter((id) => id !== undefined).join(" ");
   return (
     <ToggleButton
       aria-label={label}
-      {...(hasCount && { "aria-describedby": countId })}
+      {...(description !== "" && { "aria-describedby": description })}
       tone={tone}
       isSelected={toggle.isSelected}
       isDisabled={toggle.isDisabled}

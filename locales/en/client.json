@@ -4647,6 +4647,82 @@
     "defaultMessage": "The server fetches the page of the first link in each post, whoever can see the post, and shows its title, description, and image under it. The linked sites learn when the link was posted, but not by whom.",
     "description": "Description of the link cards checkbox."
   },
+  "admin.settings.federation.mode": {
+    "defaultMessage": "Federation direction",
+    "description": "Label of the radio buttons of the federation direction setting (federation_mode, ADR-0076): which way posts flow between this server and other servers."
+  },
+  "admin.settings.federation.mode.description": {
+    "defaultMessage": "Which way posts, follows and reactions flow between this server and other servers. The change takes effect at once.",
+    "description": "Description of the federation direction radio buttons."
+  },
+  "admin.settings.federation.mode.both": {
+    "defaultMessage": "Both ways",
+    "description": "Federation direction choice: send to and receive from other servers (the default)."
+  },
+  "admin.settings.federation.mode.both.description": {
+    "defaultMessage": "Users follow and read accounts of other servers, and this server delivers its posts to their followers there.",
+    "description": "Description of the federation direction choice 'Both ways'."
+  },
+  "admin.settings.federation.mode.inbound": {
+    "defaultMessage": "Receive only",
+    "description": "Federation direction choice: only receive from other servers."
+  },
+  "admin.settings.federation.mode.inbound.description": {
+    "defaultMessage": "Users follow and read accounts of other servers, but the posts, profiles and reactions of this server do not go out, and follows from other servers are declined.",
+    "description": "Description of the federation direction choice 'Receive only'."
+  },
+  "admin.settings.federation.mode.outbound": {
+    "defaultMessage": "Send only",
+    "description": "Federation direction choice: only send to other servers."
+  },
+  "admin.settings.federation.mode.outbound.description": {
+    "defaultMessage": "Accounts of other servers can follow users here and receive their posts, but the posts and reactions of other servers are not taken in, and users cannot follow or look up accounts of other servers.",
+    "description": "Description of the federation direction choice 'Send only'."
+  },
+  "admin.settings.federation.mode.off": {
+    "defaultMessage": "Off",
+    "description": "Federation direction choice: no federation at all."
+  },
+  "admin.settings.federation.mode.off.description": {
+    "defaultMessage": "Nothing is sent to other servers and nothing is taken in from them. This server works on its own.",
+    "description": "Description of the federation direction choice 'Off'."
+  },
+  "admin.settings.federation.narrow.title": {
+    "defaultMessage": "Change the federation direction to “{mode}”?",
+    "description": "Title of the confirmation before saving a federation direction that stops something from flowing. {mode} is the chosen direction, such as 'Receive only'."
+  },
+  "admin.settings.federation.narrow.description": {
+    "defaultMessage": "Changing from “{from}” to “{to}” takes effect as soon as it is saved:",
+    "description": "First sentence of the confirmation before narrowing the federation direction, followed by a list of what changes. {from} and {to} are the saved and the chosen directions."
+  },
+  "admin.settings.federation.narrow.sending": {
+    "defaultMessage": "The posts, profiles and reactions of this server no longer reach other servers. Followers there stay but receive nothing, and what is posted meanwhile is not delivered later.",
+    "description": "Item of the list in the confirmation before narrowing the federation direction, when the new direction stops sending to other servers."
+  },
+  "admin.settings.federation.narrow.receiving": {
+    "defaultMessage": "Posts and reactions from other servers no longer come in, and users can no longer follow or look up accounts of other servers. Their follows of remote accounts stay but are no longer updated.",
+    "description": "Item of the list in the confirmation before narrowing the federation direction, when the new direction stops receiving from other servers."
+  },
+  "admin.settings.federation.narrow.deletions": {
+    "defaultMessage": "Posts and accounts deleted while federation is off are not deleted on other servers: their copies there stay.",
+    "description": "Item of the list in the confirmation before turning federation off."
+  },
+  "admin.settings.federation.narrow.relations": {
+    "defaultMessage": "Follows with other servers, the posts taken in and the delivery records are kept, and nothing is sent to end the follows.",
+    "description": "Last item of the list in the confirmation before narrowing the federation direction."
+  },
+  "admin.settings.federation.narrow.widen": {
+    "defaultMessage": "Widening the direction again later resumes the flow from then on.",
+    "description": "Note under the list in the confirmation before narrowing the federation direction."
+  },
+  "admin.settings.federation.narrow.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the confirmation before narrowing the federation direction without saving."
+  },
+  "admin.settings.federation.narrow.confirm": {
+    "defaultMessage": "Change and save",
+    "description": "Button that saves the settings with the narrower federation direction."
+  },
   "admin.settings.federation.title": {
     "defaultMessage": "Federation",
     "description": "Heading of the section of the federation settings."
@@ -5847,6 +5923,10 @@
     "defaultMessage": "{count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see this mention as a plain link.} other {{accounts} are on other servers and do not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see these mentions as plain links.}}",
     "description": "Warning under a post with the visibility 'This server' that mentions accounts of other servers that do not follow the author (ADR-0017, ADR-0035): those accounts do not receive the post, and the author's followers on other servers see the mention as a plain link, not as a mention. {accounts} is the list of their handles, for example '@carol@remote.example and @dave@other.example'; {count} is how many there are."
   },
+  "compose.federation.stays_local": {
+    "defaultMessage": "This won't reach other servers: this server does not send posts to them now, so the accounts of other servers that this replies to or mentions will not receive it.",
+    "description": "Warning under a post that replies to or mentions an account of another server while this server sends nothing to other servers (federation direction 'Receive only' or 'Off', ADR-0076)."
+  },
   "compose.missing_description.add": {
     "defaultMessage": "Add descriptions",
     "description": "Button of the confirmation that goes back to the form to describe the images."
@@ -6579,6 +6659,10 @@
     "defaultMessage": "Waiting for {host} to accept your follow request.",
     "description": "Shown under the follow button of an account on another server while the user's follow request awaits that server's answer. {host} is the server's host name."
   },
+  "profile.follow.federation_restricted": {
+    "defaultMessage": "This server does not follow accounts of other servers now.",
+    "description": "Shown in place of the follow button on the profile of an account of another server while this server does not follow other servers (federation direction 'Send only' or 'Off', ADR-0076)."
+  },
   "profile.follow.request": {
     "defaultMessage": "Request to follow",
     "description": "Button on a profile of an account that approves its followers: it sends a follow request."
@@ -6915,6 +6999,10 @@
     "defaultMessage": "Enter @username@server or the address of a profile. Only accounts this server already knows are found.",
     "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
   },
+  "search.description_known_only": {
+    "defaultMessage": "Enter @username@server or the address of a profile. This server does not look up accounts of other servers now, so only the accounts it already knows are found.",
+    "description": "Help text of the account search field while this server does not look up accounts of other servers (federation direction 'Send only' or 'Off', ADR-0076)."
+  },
   "search.failed": {
     "defaultMessage": "Could not search for accounts: {reason}",
     "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
@@ -6930,6 +7018,10 @@
   "search.not_found_signed_out": {
     "defaultMessage": "This server does not know that account. Sign in to look it up on its own server.",
     "description": "Error under the search field when nobody is signed in and this server does not know the account."
+  },
+  "search.not_found_known_only": {
+    "defaultMessage": "This server does not know that account, and it does not look up accounts of other servers now.",
+    "description": "Error of the account search when this server does not know the account and does not look up accounts of other servers (federation direction 'Send only' or 'Off', ADR-0076)."
   },
   "search.rate_limited": {
     "defaultMessage": "Too many searches. Try again in a few minutes.",
@@ -8930,6 +9022,10 @@
   "status.edited": {
     "defaultMessage": "Edited",
     "description": "Link under an edited post to its edit history."
+  },
+  "status.federation.stays_local": {
+    "defaultMessage": "Won't reach its server",
+    "description": "Short note at the end of the action bar of a post of another server while this server sends nothing to other servers (federation direction 'Receive only' or 'Off', ADR-0076): replies, boosts, favourites and reactions are recorded on this server but do not reach the post's server. It also describes those buttons."
   },
   "status.favourite.off": {
     "defaultMessage": "Removed from favourites",

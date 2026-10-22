@@ -2,6 +2,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
+import { useFederation } from "../../../lib/federation";
 import { lookupAccountQueryOptions, maxRelationshipIds, relationshipsQueryOptions } from "../api/compose";
 import { domainMentions } from "./policy";
 
@@ -29,15 +30,17 @@ function useSettled(value: string, delay: number): string {
  * mentioned (ADR-0017 asks the client to warn, ADR-0035).
  *
  * Each mention with a domain is resolved with GET /accounts/lookup (`resolve`, as the server resolves
- * the mentions of a post) once the text settles; the accounts it finds outside this server (an `acct`
- * with a domain) are checked with GET /accounts/relationships. Handles that do not resolve are left out:
- * the server leaves them as text. Nothing is reported until the answers are in.
+ * the mentions of a post, unless the instance takes nothing in from other servers, ADR-0076) once the text
+ * settles; the accounts it finds outside this server (an `acct` with a domain) are checked with
+ * GET /accounts/relationships. Handles that do not resolve are left out: the server leaves them as text.
+ * Nothing is reported until the answers are in.
  */
 export function useUnreachedMentions(text: string, isLocal: boolean): string[] {
   const api = useApi();
+  const { followsRemote } = useFederation();
   const handles = useSettled(isLocal ? domainMentions(text).join(" ") : "", mentionLookupDelay);
   const lookups = useQueries({
-    queries: (handles === "" ? [] : handles.split(" ")).map((acct) => lookupAccountQueryOptions(api, acct)),
+    queries: (handles === "" ? [] : handles.split(" ")).map((acct) => lookupAccountQueryOptions(api, acct, followsRemote)),
   });
   const remote = lookups.flatMap((lookup) => (lookup.data !== undefined && lookup.data.acct.includes("@") ? [lookup.data] : []));
   const ids = [...new Set(remote.map((account) => account.id))].slice(0, maxRelationshipIds);

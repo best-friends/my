@@ -360,6 +360,72 @@ describe("the server's policies", () => {
     expect(settings.patches).toEqual([{ values: { default_locale: "ja" } }]);
   });
 
+  test("offers the four federation directions, both ways by default", async () => {
+    settingsServer();
+    await renderApp({ path: "/admin/settings" });
+    const direction = await screen.findByRole("radiogroup", { name: "Federation direction" });
+    expect(within(direction).getAllByRole("radio").map((radio) => radio.getAttribute("value"))).toEqual(["both", "inbound", "outbound", "off"]);
+    expect(within(direction).getByRole("radio", { name: "Both ways" })).toBeChecked();
+  });
+
+  test("asks before narrowing the federation direction, saying what stops, and saves once confirmed", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const direction = await screen.findByRole("radiogroup", { name: "Federation direction" });
+    await user.click(within(direction).getByRole("radio", { name: "Receive only" }));
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    const dialog = await screen.findByRole("alertdialog", { name: "Change the federation direction to “Receive only”?" });
+    const items = within(dialog)
+      .getAllByRole("listitem")
+      .map((item) => item.textContent);
+    expect(items).toEqual([
+      expect.stringContaining("no longer reach other servers. Followers there stay but receive nothing"),
+      expect.stringContaining("nothing is sent to end the follows"),
+    ]);
+    // The least destructive choice has the focus (APG, alert dialog pattern); cancelling saves nothing.
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toHaveFocus();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+    expect(settings.patches).toEqual([]);
+    expect(within(direction).getByRole("radio", { name: "Receive only" })).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Change and save" }));
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { federation_mode: "inbound" } }]);
+  });
+
+  test("turning federation off says that deletions meanwhile do not reach other servers", async () => {
+    settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const direction = await screen.findByRole("radiogroup", { name: "Federation direction" });
+    await user.click(within(direction).getByRole("radio", { name: "Off" }));
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    const dialog = await screen.findByRole("alertdialog", { name: "Change the federation direction to “Off”?" });
+    expect(within(dialog).getByText(/Changing from “Both ways” to “Off”/)).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(dialog).getByText(/Posts and reactions from other servers no longer come in/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/deleted while federation is off are not deleted on other servers/)).toBeInTheDocument();
+  });
+
+  test("widening the federation direction saves without asking", async () => {
+    const settings = settingsServer();
+    server.use(http.get(`${apiBase}/admin/settings`, () => HttpResponse.json(instanceSettingsFixture({ federation_mode: "inbound" }))));
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const direction = await screen.findByRole("radiogroup", { name: "Federation direction" });
+    expect(within(direction).getByRole("radio", { name: "Receive only" })).toBeChecked();
+    await user.click(within(direction).getByRole("radio", { name: "Both ways" }));
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { federation_mode: "both" } }]);
+  });
+
   test("shows why a save failed, keeps the choices and changes nothing", async () => {
     const refusal: Schemas["Problem"] = { type: "about:blank", title: "Unprocessable", status: 422, detail: "values.registration_mode is invalid" };
     server.use(
