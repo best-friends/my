@@ -3,7 +3,7 @@ import type { ComponentPropsWithRef } from "react";
 import { tv } from "tailwind-variants";
 
 const codeBlock = tv({
-  base: "rounded-md bg-surface-sunken p-2 text-sm whitespace-pre-wrap wrap-anywhere",
+  base: "rounded-md bg-surface-sunken p-3 text-sm whitespace-pre-wrap wrap-anywhere",
 });
 
 export type CodeBlockProps = Omit<

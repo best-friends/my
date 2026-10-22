@@ -12,20 +12,19 @@ const table = tv({
     headRow: "border-b",
     body: "",
     row: "",
-    columnHeader: "py-2 pe-3 text-start wrap-anywhere last:pe-0",
-    rowHeader: "py-2 pe-3 text-start font-normal last:pe-0",
-    cell: "py-2 pe-3 last:pe-0",
+    columnHeader: "px-3 py-2 text-start text-xs font-extrabold text-fg-muted wrap-anywhere",
+    rowHeader: "p-3 text-start font-normal",
+    cell: "p-3",
   },
   variants: {
     density: {
       // Totals of a few columns at body size, a rule under every row.
-      regular: { root: "text-start", headRow: "border-border", row: "border-b border-border align-top", columnHeader: "font-semibold" },
+      regular: { root: "text-start", headRow: "border-border", row: "border-b border-border align-top last:border-b-0" },
       // Many short values at `text-sm` in fixed columns, rules between the rows.
       compact: {
         root: "table-fixed border-collapse text-sm",
         headRow: "border-border-strong",
         body: "divide-y divide-border",
-        columnHeader: "font-medium",
         rowHeader: "align-top",
         cell: "align-top",
       },

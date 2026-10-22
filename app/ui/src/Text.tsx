@@ -30,6 +30,7 @@ const text = tv({
     selectAll: { true: "select-all" },
     shrink: { true: "min-w-0" },
     inset: { true: "px-1" },
+    eyebrow: { true: "text-xs font-extrabold tracking-widest text-accent uppercase" },
   },
 });
 
@@ -66,6 +67,8 @@ type TextOwnProps = {
   shrink?: boolean;
   /** A little space at both sides (`px-1`), for the `legend` that interrupts a bordered group's edge. */
   inset?: boolean;
+  /** The small upper-case label above a heading (`text-xs`, wide letter spacing, `text-accent`); its text is the caller's. */
+  eyebrow?: boolean;
 };
 
 export type TextProps<E extends TextElement = "span"> = PolymorphicProps<E, TextOwnProps>;
@@ -86,9 +89,10 @@ export function Text<E extends TextElement = "span">({
   selectAll,
   shrink,
   inset,
+  eyebrow,
   ...rest
 }: TextProps<E>) {
-  return createElement(as ?? "span", { ...rest, className: text({ size, tone, weight, wrap, whitespace, numeric, mono, block, align, lineClamp, selectAll, shrink, inset }) });
+  return createElement(as ?? "span", { ...rest, className: text({ size, tone, weight, wrap, whitespace, numeric, mono, block, align, lineClamp, selectAll, shrink, inset, eyebrow }) });
 }
 
 export type HintProps<E extends "p" | "span" | "div" = "p"> = Omit<TextProps<E>, "tone" | "size"> & {

@@ -42,7 +42,7 @@ describe("Table", () => {
       </>,
     );
     expect(screen.getByRole("table", { name: "Skipped lines" })).toHaveClass("table-fixed", "text-sm");
-    expect(screen.getByRole("columnheader", { name: "Line" })).toHaveClass("w-16", "font-medium");
+    expect(screen.getByRole("columnheader", { name: "Line" })).toHaveClass("w-16", "font-extrabold");
     expect(screen.getByRole("cell", { name: "3" })).toHaveClass("align-top");
   });
 });
