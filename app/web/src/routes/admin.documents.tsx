@@ -4,7 +4,7 @@ import { DocumentSettings, instanceTextsQueryOptions } from "../features/admin";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The terms of service and the privacy policy that the server publishes (#489), for manage_settings. */
 export const Route = createFileRoute("/admin/documents")({
@@ -20,7 +20,7 @@ function DocumentsPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.documents.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.documents.title")}</PageHeading>
       <DocumentSettings />
     </>
   );

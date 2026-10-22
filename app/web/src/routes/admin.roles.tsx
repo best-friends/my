@@ -6,7 +6,7 @@ import { viewerQueryOptions } from "../features/session";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The roles (FR-720): creating them and changing their positions and permissions, for manage_roles. */
 export const Route = createFileRoute("/admin/roles")({
@@ -28,7 +28,7 @@ function RolesPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.roles.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.roles.title")}</PageHeading>
       <RoleSettings />
     </>
   );
