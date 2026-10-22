@@ -110,6 +110,8 @@ export const Viewer: Story = {
     viewerLabels: {
       title: (position, count) => `Image ${String(position)} of ${String(count)}`,
       close: "Close",
+      position: (position: number, count: number) => `${String(position)} / ${String(count)}`,
+      altText: "Description",
       previous: "Previous image",
       next: "Next image",
     },

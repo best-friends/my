@@ -12119,12 +12119,20 @@
     "defaultMessage": "[Şħǿǿẇ şḗḗƞşīŧīṽḗḗ ḿḗḗḓīȧȧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "timeline.media.viewer.alt_text": {
+    "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "timeline.media.viewer.close": {
     "defaultMessage": "[Ƈŀǿǿşḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.media.viewer.next": {
     "defaultMessage": "[Ƞḗḗẋŧ īḿȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.position": {
+    "defaultMessage": "[{position, number} / {count, number}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.media.viewer.previous": {

@@ -35,6 +35,7 @@ import {
   PiInfo,
   PiList,
   PiMagnifyingGlass,
+  PiNote,
   PiPlus,
   PiQuotes,
   PiRepeat,
@@ -97,6 +98,8 @@ export const iconTable = {
   // The image viewer steps through a post's pictures in the order of the line, so they mirror.
   PreviousIcon: { off: glyph(PiCaretLeft, "PiCaretLeft"), directional: true },
   NextIcon: { off: glyph(PiCaretRight, "PiCaretRight"), directional: true },
+  // A note: the button that lays a picture's description over it. The page has no direction, so it does not mirror.
+  AltTextIcon: { off: glyph(PiNote, "PiNote") },
   // A loop means a loop and not a direction, so it does not mirror; it has nothing to fill, so on is Bold.
   BoostIcon: { off: glyph(PiRepeat, "PiRepeat"), on: glyph(PiRepeatBold, "PiRepeatBold") },
   StarIcon: { off: glyph(PiStar, "PiStar"), on: glyph(PiStarFill, "PiStarFill") },
@@ -209,6 +212,11 @@ export function HideMediaIcon() {
 /** A caret to the start of the line, for the button that shows the picture before. It flips in right-to-left text. */
 export function PreviousIcon() {
   return renderIcon(iconTable.PreviousIcon);
+}
+
+/** A note, for the button of the image viewer that shows or hides the picture's description. */
+export function AltTextIcon() {
+  return renderIcon(iconTable.AltTextIcon);
 }
 
 /** A caret to the end of the line, for the button that shows the next picture. It flips in right-to-left text. */
