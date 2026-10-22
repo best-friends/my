@@ -4,7 +4,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
-import { AppNav, AppNavAccount, AppNavItem, AppNavMenu, AppNavMenuLink, AppNavMenuList, AppNavMenuSection, type AppNavBadge } from "./AppNavigation";
+import { AppNav, AppNavAccount, AppNavBrand, AppNavItem, AppNavMenu, AppNavMenuLink, AppNavMenuList, AppNavMenuSection, type AppNavBadge } from "./AppNavigation";
 import { AppShell, AsidePanel } from "./AppShell";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
@@ -55,6 +55,26 @@ const longLabels: Labels = {
 const unread: AppNavBadge = { count: 3, label: "3 unread notifications", name: "Notifications, 3 unread" };
 const pending: AppNavBadge = { count: 12, label: "12 pending", name: "Moderation, 12 pending" };
 
+function Brand({ name }: { name: string }) {
+  return (
+    <AppNavBrand>
+      <ServerNameLink name={name} description="The server's top page" size="lg" />
+    </AppNavBrand>
+  );
+}
+
+/** The navigation of people who are not signed in: a light top bar with the server's pages and the way in. */
+function SignedOutNav() {
+  return (
+    <AppNav label="Main" placement="top" header={<Brand name="my example" />}>
+      <AppNavItem href="#about" icon={<HomeIcon />} label="About this server" current />
+      <AppNavItem href="#rules" icon={<SearchIcon />} label="Rules" />
+      <AppNavItem href="#login" icon={<ProfileIcon />} label="Log in" />
+      <AppNavItem href="#signup" icon={<PlusIcon />} label="Create an account" prominent />
+    </AppNav>
+  );
+}
+
 type SampleNavProps = {
   labels?: Labels;
   serverName?: string;
@@ -69,7 +89,7 @@ function SampleNav({ labels: l = labels, serverName = "my example", accountName 
   return (
     <AppNav
       label="Main"
-      header={<ServerNameLink name={serverName} description="The server's top page" size="lg" />}
+      header={<Brand name={serverName} />}
       footer={
         <AppNavAccount
           href="#profile"
@@ -264,4 +284,21 @@ export const SkipLinkFocused: Story = {
     await expect(skip).toHaveFocus();
     await expect(skip).toHaveAttribute("href", "#main");
   },
+};
+
+/** Signed out: the top bar in place of the rail and the tab bar, on a tablet. */
+export const SignedOutTablet: Story = {
+  globals: atViewport("tablet"),
+  args: { navigation: <SignedOutNav />, navigationPlacement: "top" },
+  play: async ({ canvas }) => {
+    const nav = canvas.getByRole("navigation", { name: "Main" });
+    await expect(within(nav).getByRole("link", { name: "About this server" })).toHaveAttribute("aria-current", "page");
+    await expect(within(nav).getByRole("link", { name: "Create an account" })).toBeVisible();
+  },
+};
+
+/** Signed out on a phone: the links wrap under the brand instead of scrolling sideways. */
+export const SignedOutPhone: Story = {
+  globals: atViewport("phone"),
+  args: { navigation: <SignedOutNav />, navigationPlacement: "top" },
 };

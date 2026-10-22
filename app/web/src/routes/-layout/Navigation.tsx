@@ -45,6 +45,7 @@ import {
   AdminIcon,
   AppNav,
   AppNavAccount,
+  AppNavBrand,
   type AppNavBadge,
   AppNavItem,
   AppNavMenu,
@@ -189,13 +190,19 @@ function inSection(pathname: string, section: Section, ownAcct: string | null): 
 /** The badge of an item and the name of its link while it shows one, or undefined for an item without a count now. */
 type ItemBadge = AppNavBadge | undefined;
 
+/** Whether nobody is signed in (offline, a session that could not be resumed counts as still there): the pages then have a top bar. */
+export function useSignedOut(): boolean {
+  const status = useSessionStatus();
+  const unreachable = useSessionUnreachable();
+  return status === "signed-out" && !unreachable;
+}
+
 export function Navigation() {
   const t = useT();
   const pathname = useLocation({ select: (location) => location.pathname });
   const signInHref = useLocation({ select: signInHrefOf });
   const signUpHref = useSignUpHref();
   const status = useSessionStatus();
-  const unreachable = useSessionUnreachable();
   const unread = useUnreadNotificationCount();
   const moderationEntry = useModerationEntry();
   const adminEntry = useAdminEntry();
@@ -219,7 +226,7 @@ export function Navigation() {
       }),
     );
   // Offline, a session that could not be resumed is most likely still there: the user's items stay (web-client.md §11).
-  const signedOut = status === "signed-out" && !unreachable;
+  const signedOut = useSignedOut();
   let items: readonly NavigationItem[] = [];
   if (signedOut) items = signedOutItems(signInHref, signUpHref);
   else if (status !== "unknown") items = [...userItems, ...(financeEntry.available ? [financeItem] : []), ...staffItems];
@@ -238,8 +245,14 @@ export function Navigation() {
   return (
     <AppNav
       label={t("client:shell.nav.label")}
-      // The server's name, a link to the root address (web-client.md G9).
-      header={<ServerNameLink size="lg" />}
+      // The wordmark and the server's name, a link to the root address (web-client.md G9).
+      header={
+        <AppNavBrand>
+          <ServerNameLink size="lg" />
+        </AppNavBrand>
+      }
+      // Signed out, the navigation is a light bar along the top (AppLayout puts it above the page).
+      placement={signedOut ? "top" : "side"}
       footer={<ViewerLink />}
     >
       {shown.map((item) => {
@@ -252,6 +265,7 @@ export function Navigation() {
             label={t(item.label)}
             current={current(item.section)}
             shows={item.shows}
+            {...(item.id === "sign-up" && { prominent: true })}
             {...(badge !== undefined && { badge })}
           />
         );
