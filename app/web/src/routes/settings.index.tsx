@@ -4,7 +4,6 @@ import { AdminMenu } from "../features/admin";
 import { DocumentsSection } from "../features/documents";
 import { ModerationMenu } from "../features/moderation";
 import { AccountSection } from "../features/session";
-import { SettingsMenu } from "../features/settings";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
@@ -26,7 +25,6 @@ function SettingsPage() {
   return (
     <>
       <PageHeading>{t("client:settings.title")}</PageHeading>
-      <SettingsMenu />
       <ModerationMenu />
       <AdminMenu />
       <AccountSection />

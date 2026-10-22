@@ -42,6 +42,10 @@ const backLinkHeading = tv({
     base: "flex flex-col items-start gap-1",
     link: "text-sm",
   },
+  variants: {
+    // The way back is not needed where the settings' menu stands beside the page (the SettingsLayout's container).
+    hideWhenWide: { true: { link: "@2xl:hidden" } },
+  },
 });
 
 export type BackLinkHeadingProps = {
@@ -51,11 +55,13 @@ export type BackLinkHeadingProps = {
   backHref: string;
   /** The way back's text ("Back to settings"). */
   backLabel: string;
+  /** Hide the way back where the column is wide (`@2xl`) and the menu it leads to stands beside the page. */
+  hideWhenWide?: boolean;
 };
 
 /** A page's heading with the way back to the page above it under it, such as a page of the settings. */
-export function BackLinkHeading({ children, backHref, backLabel }: BackLinkHeadingProps) {
-  const slots = backLinkHeading();
+export function BackLinkHeading({ children, backHref, backLabel, hideWhenWide }: BackLinkHeadingProps) {
+  const slots = backLinkHeading({ hideWhenWide });
   return (
     <div className={slots.base()}>
       {children}
