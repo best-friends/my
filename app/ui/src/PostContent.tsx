@@ -90,7 +90,7 @@ const postContent = tv({
     "[&>*+*]:mt-2",
   ],
   variants: {
-    size: { base: "", lg: "text-lg" },
+    size: { sm: "text-sm", base: "", lg: "text-lg" },
     framed: { true: "rounded-md border border-border p-3" },
     lineClamp: { 2: "line-clamp-2", 3: "line-clamp-3" },
   },
@@ -99,11 +99,11 @@ const postContent = tv({
 export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "dangerouslySetInnerHTML" | "dir"> & {
   /** The post body as the server rendered and sanitized it. */
   html: SanitizedHtml;
-  /** `lg` for the post a page is about, in larger text; `base` by default. */
-  size?: "base" | "lg";
+  /** `lg` for the post a page is about, in larger text; `sm` for an excerpt in a form; `base` by default. */
+  size?: "sm" | "base" | "lg";
   /** Draws a border and padding around the body, for a preview of it in a form or a list of settings. */
   framed?: boolean;
-  /** Cuts the body after this many lines, for a preview. */
+  /** Cuts the body after this many lines, for an excerpt or a preview. */
   lineClamp?: 2 | 3;
   /** The language of the post, when the server knows it (a BCP 47 tag). */
   lang?: string | undefined;

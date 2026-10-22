@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import {
   Button,
+  Cluster,
   FileTrigger,
   ImageIcon,
   LanguageIcon,
@@ -43,7 +44,7 @@ export function ComposeTools({ form }: ComposeToolsProps) {
   const warningLabel = t("client:compose.warning.toggle");
   const pollLabel = t("client:compose.poll.toggle");
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-1">
+    <Cluster align="center" gap="1" shrink>
       <TooltipTrigger>
         <FileTrigger
           acceptedFileTypes={acceptedMediaTypes}
@@ -135,6 +136,6 @@ export function ComposeTools({ form }: ComposeToolsProps) {
           </SelectItem>
         )}
       </Select>
-    </div>
+    </Cluster>
   );
 }

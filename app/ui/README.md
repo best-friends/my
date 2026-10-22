@@ -376,7 +376,11 @@ arbitrary value. A look that no prop gives is a new prop or component in the kit
 | `shrink`, `grow` | `min-w-0`, `flex-1` |
 | `self` | `start` / `center` / `end`: `self-*` |
 | `padding`, `paddingX`, `paddingY` | `p-*`, `px-*`, `py-*` in a spacing step (a row of a list or a card is `paddingX="4" paddingY="3"`) |
-| `border` | `md` `rounded-md border border-border`; `lg` `rounded-lg border border-border`; `y` `border-y border-border`; `start` `border-s-2 border-border ps-3` |
+| `paddingTop`, `paddingBottom`, `marginStart` | `pt-*`, `pb-*`, `ms-*` in a spacing step |
+| `fullRow` | `basis-full`: takes a whole line of a wrapping `Cluster` |
+| `border` | `md` `rounded-md border border-border`; `lg` `rounded-lg border border-border`; `y` `border-y border-border`; `bottom` `border-b border-border`; `start` `border-s-2 border-border ps-3` |
+| `background` | `surface` `bg-surface` (a row that stands on the page background); `sunken` `bg-surface-sunken` (a well inside a raised surface, such as the quote of the post a form replies to) |
+| `pushEnd` | `ms-auto`: moves the element to the inline end of its row, also when the row wraps |
 | `tone` | `fg` / `muted` / `danger` / `warning`: the text color inside |
 | `textSize` | `xs` / `sm` / `base` / `lg`: the text size inside |
 
@@ -397,8 +401,7 @@ over a bordered group; `Stack`'s `marker="decimalInside"` puts numbers inside th
 
 `BannerImage` is a page-width image capped in height. `Button` takes `variant="subtle"` (ghost in the muted color) and `size="compact"`;
 `Heading` takes `size="meta"`; `Tag` takes `variant="solid"` (the accent mark); `NewItemsButton` takes `sticky`; `PostContent` takes
-`lineClamp`; `Link` takes `size="sm"` and `wrap="anywhere"`. The box props also take `paddingTop`, `paddingBottom`, `marginStart`, `fullRow`,
-`background="surface"` and `border="bottom"`.
+`lineClamp`; `Link` takes `size="sm"` and `wrap="anywhere"`.
 
 ### Account rows
 
@@ -565,8 +568,13 @@ Counts in `details` are `<Text numeric>`; several parts under a body are a `<Sta
 | `EmojiTile` | A custom emoji (`emoji`) on a 3rem tile, hidden from assistive technology, beside the heading that names it |
 | `CodeBlock` | `pre` > `code` on a sunken surface, wrapping anywhere (a payload, a log) |
 | `PreviewImage` | A 16:9 `img` preview of a file the user chose |
+| `AttachmentItem` | An image of a draft: the `li` of a `<Stack as="ul">` with the preview, a `progressLabel` band (spinner) over it, and the description field, error and actions as children; a column below `@md` of the container |
+| `OutboxItem` | A post waiting to be sent: the `li` of a `<Stack as="ul">` with its text; `sendingLabel` (`aria-busy`, spinner) while it is sent, else `error` and the retry / edit / discard buttons as children |
+| `Fieldset` | A `fieldset` framed with a `legend` (`gap-3` between its controls); other attributes (`aria-describedby`) pass to the `fieldset` |
+| `FloatingButton` | The round primary button that starts the page's main action: `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s |
 | `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
 | `PostContent` `framed` | A border and padding around a post body shown as a preview |
+| `PostContent` `size="sm"` `lineClamp={3}` | An excerpt of a post in a form (the reply target), cut after three lines |
 
 ## Reactions
 

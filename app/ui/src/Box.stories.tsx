@@ -42,3 +42,6 @@ export const ListRows: Story = {
 
 /** `width="sm"`: a narrow form or field at most `max-w-sm` wide. */
 export const NarrowWidth: Story = { args: { border: "md", padding: "3", width: "sm" } };
+
+/** `background="sunken"`: a well inside a raised surface, such as the quote of the post a form replies to. */
+export const Sunken: Story = { args: { background: "sunken" } };

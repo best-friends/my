@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Spinner, TextArea } from "@my/ui";
+import { AttachmentItem, Box, Button, InlineError, Stack, TextArea } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { maxDescriptionLength } from "../hooks/policy";
 import { type AttachmentView, descriptionFieldId } from "../hooks/useAttachments";
@@ -34,21 +34,16 @@ export function AttachmentList({ items, onDescribe, onRemove, requireDescription
   const formatRemaining = useFormatRemaining();
   if (items.length === 0) return null;
   return (
-    <ul aria-label={t("client:compose.media.list")} className="flex flex-col gap-3">
-      {items.map((item) => (
-        <li key={item.key} className="flex flex-col gap-2 rounded-md border border-border p-2 @md:flex-row">
-          <div className="relative grid aspect-video w-full shrink-0 place-items-center overflow-hidden rounded-sm bg-surface-sunken @md:w-40">
-            {/* The description is the field next to the preview; the preview itself adds nothing for a screen reader. */}
-            {item.src !== null && <img src={item.src} alt="" className="size-full object-cover" />}
-            {(item.status === "uploading" || item.status === "processing") && (
-              <span className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-surface-raised px-2 py-1 text-sm">
-                <Spinner size="sm" label={t(item.status === "uploading" ? "client:compose.media.uploading" : "client:compose.media.processing")} />
-                <span aria-hidden="true">{t(item.status === "uploading" ? "client:compose.media.uploading" : "client:compose.media.processing")}</span>
-              </span>
-            )}
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            {item.status === "failed" && <p className="text-sm text-danger">{t("client:compose.media.failed", { reason: item.message })}</p>}
+    <Stack as="ul" aria-label={t("client:compose.media.list")} gap="3">
+      {items.map((item) => {
+        const progressKey = item.status === "uploading" ? "client:compose.media.uploading" : "client:compose.media.processing";
+        return (
+          <AttachmentItem
+            key={item.key}
+            src={item.src}
+            progressLabel={item.status === "uploading" || item.status === "processing" ? t(progressKey) : undefined}
+          >
+            {item.status === "failed" && <InlineError>{t("client:compose.media.failed", { reason: item.message })}</InlineError>}
             <TextArea
               id={descriptionFieldId(item.key)}
               label={t("client:compose.media.description.label", { position: String(item.position) })}
@@ -65,21 +60,22 @@ export function AttachmentList({ items, onDescribe, onRemove, requireDescription
               isReadOnly={isDisabled}
             />
             {onRemove !== undefined && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="self-start"
-                isDisabled={isDisabled}
-                onPress={() => {
-                  onRemove(item.key);
-                }}
-              >
-                {t("client:compose.media.remove", { position: String(item.position) })}
-              </Button>
+              <Box self="start">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  isDisabled={isDisabled}
+                  onPress={() => {
+                    onRemove(item.key);
+                  }}
+                >
+                  {t("client:compose.media.remove", { position: String(item.position) })}
+                </Button>
+              </Box>
             )}
-          </div>
-        </li>
-      ))}
-    </ul>
+          </AttachmentItem>
+        );
+      })}
+    </Stack>
   );
 }
