@@ -1588,6 +1588,69 @@ func (e FinanceVisibility) Valid() bool {
 	}
 }
 
+// Defines values for IncomeKind.
+const (
+	IncomeKindChargeback         IncomeKind = "chargeback"
+	IncomeKindChargebackReversal IncomeKind = "chargeback_reversal"
+	IncomeKindFee                IncomeKind = "fee"
+	IncomeKindPayment            IncomeKind = "payment"
+	IncomeKindRefund             IncomeKind = "refund"
+)
+
+// Valid indicates whether the value is a known member of the IncomeKind enum.
+func (e IncomeKind) Valid() bool {
+	switch e {
+	case IncomeKindChargeback:
+		return true
+	case IncomeKindChargebackReversal:
+		return true
+	case IncomeKindFee:
+		return true
+	case IncomeKindPayment:
+		return true
+	case IncomeKindRefund:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncomeTotalsRulesWeekStart.
+const (
+	IncomeTotalsRulesWeekStartMonday IncomeTotalsRulesWeekStart = "monday"
+)
+
+// Valid indicates whether the value is a known member of the IncomeTotalsRulesWeekStart enum.
+func (e IncomeTotalsRulesWeekStart) Valid() bool {
+	switch e {
+	case IncomeTotalsRulesWeekStartMonday:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncomeVisibility.
+const (
+	IncomeVisibilityPlans   IncomeVisibility = "plans"
+	IncomeVisibilityPrivate IncomeVisibility = "private"
+	IncomeVisibilityTotals  IncomeVisibility = "totals"
+)
+
+// Valid indicates whether the value is a known member of the IncomeVisibility enum.
+func (e IncomeVisibility) Valid() bool {
+	switch e {
+	case IncomeVisibilityPlans:
+		return true
+	case IncomeVisibilityPrivate:
+		return true
+	case IncomeVisibilityTotals:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceDomainActionKind.
 const (
 	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
@@ -1645,6 +1708,7 @@ const (
 	InstanceSettingKeyFinanceViewerItemMemos           InstanceSettingKey = "finance_viewer_item_memos"
 	InstanceSettingKeyFinanceViewerItemNames           InstanceSettingKey = "finance_viewer_item_names"
 	InstanceSettingKeyFinanceVisibility                InstanceSettingKey = "finance_visibility"
+	InstanceSettingKeyIncomeVisibility                 InstanceSettingKey = "income_visibility"
 	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
 	InstanceSettingKeyLinkCardsEnabled                 InstanceSettingKey = "link_cards_enabled"
 	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
@@ -1693,6 +1757,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyFinanceViewerItemNames:
 		return true
 	case InstanceSettingKeyFinanceVisibility:
+		return true
+	case InstanceSettingKeyIncomeVisibility:
 		return true
 	case InstanceSettingKeyIndexableDefault:
 		return true
@@ -3626,6 +3692,52 @@ type AdminDomainActionPage struct {
 // AdminDomainActionState `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
 // lifted it.
 type AdminDomainActionState string
+
+// AdminIncomePeriodTotal A week, month, or year of the income totals as the administrators see it: the `gross`, the
+// provider's `fee`, and the `net` (gross less fee) of each currency, sorted by currency code,
+// and the `balance`, the net less the costs of each currency under the same basis.
+type AdminIncomePeriodTotal struct {
+	Balance []Money `json:"balance"`
+
+	// EndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EndsOn CalendarDate `json:"ends_on"`
+	Fee    []Money      `json:"fee"`
+	Gross  []Money      `json:"gross"`
+	Label  string       `json:"label"`
+	Net    []Money      `json:"net"`
+
+	// StartsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	StartsOn CalendarDate `json:"starts_on"`
+}
+
+// AdminIncomeTotals The income totals as the administrators see them over the periods from the one that holds
+// `from` to the one that holds `to`, oldest first, with the number of members of each
+// supporter plan now (ADR-0073 §6).
+type AdminIncomeTotals struct {
+	// Basis How the totals place a payment (ADR-0067 §4). `amortized` (the default) spreads each
+	// payment of a schedule longer than a month (every 2 or more months, every year, every 5 or
+	// more weeks) by day over the days up to the next payment, with the cumulative rounding;
+	// the other payments stay on their dates. `cash` places every payment on its date. Imported
+	// usage charges spread by day over their billing period under both.
+	Basis CostBasis `json:"basis"`
+
+	// Granularity The periods of the totals: ISO 8601 weeks (Monday to Sunday), calendar months, or calendar
+	// years, cut by date (ADR-0067 §5).
+	Granularity CostGranularity          `json:"granularity"`
+	Periods     []AdminIncomePeriodTotal `json:"periods"`
+	Plans       []IncomePlanCount        `json:"plans"`
+
+	// Rules How the income totals cut the periods and place the payments (ADR-0073 §3, §5), to show
+	// next to them: by calendar date without a time zone, weeks from `week_start` (ISO 8601),
+	// each money movement on its date in its payment provider's reporting time zone
+	// (`providers`), and under the `amortized` basis a payment that covers more than
+	// `amortize_after_days` days spread by day over the days it covers, with its refunds and
+	// chargebacks taking back the days before them on their own date and cancelling the later
+	// ones.
+	Rules IncomeTotalsRules `json:"rules"`
+}
 
 // AdminInstanceHealth Whether deliveries go to a remote server (federation.md §7.3).
 type AdminInstanceHealth struct {
@@ -5995,6 +6107,171 @@ type ImportSignupBlocksRequest struct {
 	Text string `json:"text"`
 }
 
+// IncomeKind The kind of a money movement of the payment provider (ADR-0073 §2): `payment` of a
+// subscription, `refund` and `chargeback` of a payment (a negative gross), the
+// `chargeback_reversal` that gives a chargeback back, and a `fee` of the provider that
+// belongs to no payment (a zero gross and a negative net).
+type IncomeKind string
+
+// IncomeMovement A money movement of the payment provider as the income records keep it (ADR-0073 §2, §6):
+// recorded once its amounts are final, and never edited. `occurred_on` is `occurred_at` as a
+// date in the provider's reporting time zone. A payment carries the billing period it pays
+// for (`covers_starts_on` to `covers_ends_on`) when it has one; a refund, a chargeback, or a
+// reversal carries the provider ID of its payment (`parent_provider_id`). `subscription_id`
+// and `account_id` name the subscription and its subscriber's account while they are known;
+// a fee of no subscription has neither.
+type IncomeMovement struct {
+	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	AccountId *Id `json:"account_id,omitempty"`
+
+	// CoversEndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	CoversEndsOn *CalendarDate `json:"covers_ends_on,omitempty"`
+
+	// CoversStartsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	CoversStartsOn *CalendarDate `json:"covers_starts_on,omitempty"`
+
+	// Fee An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Fee Money `json:"fee"`
+
+	// Gross An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Gross Money `json:"gross"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Kind The kind of a money movement of the payment provider (ADR-0073 §2): `payment` of a
+	// subscription, `refund` and `chargeback` of a payment (a negative gross), the
+	// `chargeback_reversal` that gives a chargeback back, and a `fee` of the provider that
+	// belongs to no payment (a zero gross and a negative net).
+	Kind IncomeKind `json:"kind"`
+
+	// Net An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Net        Money     `json:"net"`
+	OccurredAt time.Time `json:"occurred_at"`
+
+	// OccurredOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	OccurredOn       CalendarDate `json:"occurred_on"`
+	ParentProviderId *string      `json:"parent_provider_id,omitempty"`
+	Provider         string       `json:"provider"`
+	ProviderId       string       `json:"provider_id"`
+	RecordedAt       time.Time    `json:"recorded_at"`
+
+	// SubscriptionId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	SubscriptionId *Id `json:"subscription_id,omitempty"`
+}
+
+// IncomeMovementPage A page of money movements, newest first.
+type IncomeMovementPage struct {
+	Items []IncomeMovement `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// IncomePeriodTotal A week, month, or year of the income totals (`label`: `2026-W17`, `2026-04`, or `2026`):
+// the net income of each currency (what the payments brought less the provider's fees and the
+// refunds), never converted, sorted by currency code. `balance` is the net less the costs of
+// each currency under the same basis, present only where the balance is shown: a currency of
+// one side alone shows that side's amount.
+type IncomePeriodTotal struct {
+	Balance *[]Money `json:"balance,omitempty"`
+
+	// EndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EndsOn CalendarDate `json:"ends_on"`
+	Label  string       `json:"label"`
+	Net    []Money      `json:"net"`
+
+	// StartsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	StartsOn CalendarDate `json:"starts_on"`
+}
+
+// IncomePlanCount The number of members of a supporter plan now (ADR-0073 §7): the subscriptions that hold
+// the plan's role (active, canceling, or past due within the grace period). A retired plan
+// appears while it has members. Never the plan's amounts.
+type IncomePlanCount struct {
+	Members int64  `json:"members"`
+	Name    string `json:"name"`
+
+	// PlanId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	PlanId Id `json:"plan_id"`
+}
+
+// IncomeProviderRule The IANA time zone (`UTC`, `Asia/Tokyo`) in which a payment provider's money movements fall
+// on their dates: the provider's reporting time zone, or `UTC` when it could not be read
+// (ADR-0073 §3).
+type IncomeProviderRule struct {
+	Provider string `json:"provider"`
+	TimeZone string `json:"time_zone"`
+}
+
+// IncomeTotals The income totals over the periods from the one that holds `from` to the one that holds
+// `to`, oldest first (ADR-0073 §9). `plans`, the number of members of each supporter plan
+// now, is present only where the plans are shown. No answer carries individual payments, the
+// subscribers, the amounts of each plan, or the gross and the fees.
+type IncomeTotals struct {
+	// Basis How the totals place a payment (ADR-0067 §4). `amortized` (the default) spreads each
+	// payment of a schedule longer than a month (every 2 or more months, every year, every 5 or
+	// more weeks) by day over the days up to the next payment, with the cumulative rounding;
+	// the other payments stay on their dates. `cash` places every payment on its date. Imported
+	// usage charges spread by day over their billing period under both.
+	Basis CostBasis `json:"basis"`
+
+	// Granularity The periods of the totals: ISO 8601 weeks (Monday to Sunday), calendar months, or calendar
+	// years, cut by date (ADR-0067 §5).
+	Granularity CostGranularity     `json:"granularity"`
+	Periods     []IncomePeriodTotal `json:"periods"`
+	Plans       *[]IncomePlanCount  `json:"plans,omitempty"`
+
+	// Rules How the income totals cut the periods and place the payments (ADR-0073 §3, §5), to show
+	// next to them: by calendar date without a time zone, weeks from `week_start` (ISO 8601),
+	// each money movement on its date in its payment provider's reporting time zone
+	// (`providers`), and under the `amortized` basis a payment that covers more than
+	// `amortize_after_days` days spread by day over the days it covers, with its refunds and
+	// chargebacks taking back the days before them on their own date and cancelling the later
+	// ones.
+	Rules IncomeTotalsRules `json:"rules"`
+}
+
+// IncomeTotalsRules How the income totals cut the periods and place the payments (ADR-0073 §3, §5), to show
+// next to them: by calendar date without a time zone, weeks from `week_start` (ISO 8601),
+// each money movement on its date in its payment provider's reporting time zone
+// (`providers`), and under the `amortized` basis a payment that covers more than
+// `amortize_after_days` days spread by day over the days it covers, with its refunds and
+// chargebacks taking back the days before them on their own date and cancelling the later
+// ones.
+type IncomeTotalsRules struct {
+	AmortizeAfterDays int                        `json:"amortize_after_days"`
+	Providers         []IncomeProviderRule       `json:"providers"`
+	WeekStart         IncomeTotalsRulesWeekStart `json:"week_start"`
+}
+
+// IncomeTotalsRulesWeekStart defines model for IncomeTotalsRules.WeekStart.
+type IncomeTotalsRulesWeekStart string
+
+// IncomeVisibility How much of the instance's income everyone may read (the instance setting
+// `income_visibility`, FR-917, ADR-0073 §7), apart from `finance_visibility`. `private`:
+// nothing, and `GET /instance/income_totals` is a 404; `totals`: the net income of each
+// currency by period; `plans`: also the number of members of each supporter plan now. No
+// level publishes individual payments, the subscribers, the amounts of each plan, or the
+// gross and the fees.
+type IncomeVisibility string
+
 // Instance Public information about the instance.
 type Instance struct {
 	// AiUsage What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
@@ -6023,6 +6300,14 @@ type Instance struct {
 	// `breakdown`: the totals and their breakdown by provider and category. No level publishes
 	// the names, memos, or individual payments of the cost items.
 	FinanceVisibility FinanceVisibility `json:"finance_visibility"`
+
+	// IncomeVisibility How much of the instance's income everyone may read (the instance setting
+	// `income_visibility`, FR-917, ADR-0073 §7), apart from `finance_visibility`. `private`:
+	// nothing, and `GET /instance/income_totals` is a 404; `totals`: the net income of each
+	// currency by period; `plans`: also the number of members of each supporter plan now. No
+	// level publishes individual payments, the subscribers, the amounts of each plan, or the
+	// gross and the fees.
+	IncomeVisibility IncomeVisibility `json:"income_visibility"`
 
 	// Limits Limits that clients check before sending a request.
 	Limits InstanceLimits `json:"limits"`
@@ -8910,6 +9195,38 @@ type ListDomainActionsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListIncomeMovementsParams defines parameters for ListIncomeMovements.
+type ListIncomeMovementsParams struct {
+	// From Only the movements on or after this date.
+	From *CalendarDate `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Only the movements on or before this date.
+	To *CalendarDate `form:"to,omitempty" json:"to,omitempty"`
+
+	// Kind Only the movements of this kind.
+	Kind *IncomeKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetIncomeTotalsParams defines parameters for GetIncomeTotals.
+type GetIncomeTotalsParams struct {
+	Granularity CostGranularity `form:"granularity" json:"granularity"`
+
+	// From A date in the first period.
+	From CalendarDate `form:"from" json:"from"`
+
+	// To A date in the last period.
+	To CalendarDate `form:"to" json:"to"`
+
+	// Basis How the totals place a payment; `amortized` by default.
+	Basis *CostBasis `form:"basis,omitempty" json:"basis,omitempty"`
+}
+
 // ListInstanceHealthParams defines parameters for ListInstanceHealth.
 type ListInstanceHealthParams struct {
 	// State Keep only the servers in this state; omitted keeps both.
@@ -9089,6 +9406,20 @@ type GetFinanceCostTotalsParams struct {
 	Basis *CostBasis `form:"basis,omitempty" json:"basis,omitempty"`
 }
 
+// GetFinanceIncomeTotalsParams defines parameters for GetFinanceIncomeTotals.
+type GetFinanceIncomeTotalsParams struct {
+	Granularity CostGranularity `form:"granularity" json:"granularity"`
+
+	// From A date in the first period.
+	From CalendarDate `form:"from" json:"from"`
+
+	// To A date in the last period.
+	To CalendarDate `form:"to" json:"to"`
+
+	// Basis How the totals place a payment; `amortized` by default.
+	Basis *CostBasis `form:"basis,omitempty" json:"basis,omitempty"`
+}
+
 // ListFollowRequestsParams defines parameters for ListFollowRequests.
 type ListFollowRequestsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -9119,6 +9450,20 @@ type ListInstanceDomainActionsParams struct {
 
 	// Limit The maximum number of items in the page.
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetInstanceIncomeTotalsParams defines parameters for GetInstanceIncomeTotals.
+type GetInstanceIncomeTotalsParams struct {
+	Granularity CostGranularity `form:"granularity" json:"granularity"`
+
+	// From A date in the first period.
+	From CalendarDate `form:"from" json:"from"`
+
+	// To A date in the last period; a date after today reads as today.
+	To CalendarDate `form:"to" json:"to"`
+
+	// Basis How the totals place a payment; `amortized` by default.
+	Basis *CostBasis `form:"basis,omitempty" json:"basis,omitempty"`
 }
 
 // ListInstanceSupportersParams defines parameters for ListInstanceSupporters.
@@ -9672,6 +10017,12 @@ type ServerInterface interface {
 	// LiftDomainAction Lift a moderation action on a domain
 	// (POST /admin/domain_actions/{id}/lift)
 	LiftDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId)
+	// ListIncomeMovements List the money movements of the income
+	// (GET /admin/income_movements)
+	ListIncomeMovements(w http.ResponseWriter, r *http.Request, params ListIncomeMovementsParams)
+	// GetIncomeTotals Total the income by period
+	// (GET /admin/income_totals)
+	GetIncomeTotals(w http.ResponseWriter, r *http.Request, params GetIncomeTotalsParams)
 	// ListInstanceTexts List the instance texts
 	// (GET /admin/instance_texts)
 	ListInstanceTexts(w http.ResponseWriter, r *http.Request)
@@ -9933,6 +10284,9 @@ type ServerInterface interface {
 	// GetFinanceCostTotals Total the costs by period for the finance viewers
 	// (GET /finance/cost_totals)
 	GetFinanceCostTotals(w http.ResponseWriter, r *http.Request, params GetFinanceCostTotalsParams)
+	// GetFinanceIncomeTotals Total the income by period for the finance viewers
+	// (GET /finance/income_totals)
+	GetFinanceIncomeTotals(w http.ResponseWriter, r *http.Request, params GetFinanceIncomeTotalsParams)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(w http.ResponseWriter, r *http.Request, params ListFollowRequestsParams)
@@ -9960,6 +10314,9 @@ type ServerInterface interface {
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(w http.ResponseWriter, r *http.Request, params ListInstanceDomainActionsParams)
+	// GetInstanceIncomeTotals Total the instance's public income by period
+	// (GET /instance/income_totals)
+	GetInstanceIncomeTotals(w http.ResponseWriter, r *http.Request, params GetInstanceIncomeTotalsParams)
 	// ListSupporterPlans List the supporter plans
 	// (GET /instance/supporter_plans)
 	ListSupporterPlans(w http.ResponseWriter, r *http.Request)
@@ -12465,6 +12822,163 @@ func (siw *ServerInterfaceWrapper) LiftDomainAction(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// ListIncomeMovements operation middleware
+func (siw *ServerInterfaceWrapper) ListIncomeMovements(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIncomeMovementsParams
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncomeMovements(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetIncomeTotals operation middleware
+func (siw *ServerInterfaceWrapper) GetIncomeTotals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetIncomeTotalsParams
+
+	// ------------- Required query parameter "granularity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "granularity", r.URL.Query(), &params.Granularity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "granularity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "granularity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "basis" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "basis", r.URL.Query(), &params.Basis, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "basis"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "basis", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIncomeTotals(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListInstanceTexts operation middleware
 func (siw *ServerInterfaceWrapper) ListInstanceTexts(w http.ResponseWriter, r *http.Request) {
 
@@ -14908,6 +15422,78 @@ func (siw *ServerInterfaceWrapper) GetFinanceCostTotals(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// GetFinanceIncomeTotals operation middleware
+func (siw *ServerInterfaceWrapper) GetFinanceIncomeTotals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetFinanceIncomeTotalsParams
+
+	// ------------- Required query parameter "granularity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "granularity", r.URL.Query(), &params.Granularity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "granularity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "granularity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "basis" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "basis", r.URL.Query(), &params.Basis, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "basis"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "basis", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFinanceIncomeTotals(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListFollowRequests operation middleware
 func (siw *ServerInterfaceWrapper) ListFollowRequests(w http.ResponseWriter, r *http.Request) {
 
@@ -15171,6 +15757,78 @@ func (siw *ServerInterfaceWrapper) ListInstanceDomainActions(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListInstanceDomainActions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInstanceIncomeTotals operation middleware
+func (siw *ServerInterfaceWrapper) GetInstanceIncomeTotals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetInstanceIncomeTotalsParams
+
+	// ------------- Required query parameter "granularity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "granularity", r.URL.Query(), &params.Granularity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "granularity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "granularity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "basis" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "basis", r.URL.Query(), &params.Basis, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "basis"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "basis", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInstanceIncomeTotals(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -17043,6 +17701,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/custom_emoji_requests/{id}/withdraw", wrapper.WithdrawCustomEmojiRequest)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/domain_actions", wrapper.ListInstanceDomainActions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/cost_totals", wrapper.GetInstanceCostTotals)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/income_totals", wrapper.GetInstanceIncomeTotals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/supporter_plans", wrapper.ListSupporterPlans)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/supporters", wrapper.ListInstanceSupporters)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
@@ -17141,6 +17800,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/announcements", wrapper.ListAnnouncements)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/announcements/{id}/read", wrapper.MarkAnnouncementRead)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/finance/cost_totals", wrapper.GetFinanceCostTotals)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/finance/income_totals", wrapper.GetFinanceIncomeTotals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/supporter/subscription", wrapper.GetOwnSupporterSubscription)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/checkout", wrapper.StartSupporterCheckout)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/supporter/subscription/sync", wrapper.SyncOwnSupporterSubscription)
@@ -17168,6 +17828,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/cost_items/{id}/end", wrapper.SetCostItemEnd)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/cost_items/{id}/cancel", wrapper.CancelCostItem)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/cost_totals", wrapper.GetCostTotals)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/income_totals", wrapper.GetIncomeTotals)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/income_movements", wrapper.ListIncomeMovements)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions", wrapper.ListDomainActions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions", wrapper.CreateDomainAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions/{id}", wrapper.GetDomainAction)
@@ -21803,6 +22465,130 @@ type LiftDomainActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response LiftDomainActiondefaultApplicationProblemPlusJSONResponse) VisitLiftDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncomeMovementsRequestObject struct {
+	Params ListIncomeMovementsParams
+}
+
+type ListIncomeMovementsResponseObject interface {
+	VisitListIncomeMovementsResponse(w http.ResponseWriter) error
+}
+
+type ListIncomeMovements200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListIncomeMovements200JSONResponse struct {
+	Body    IncomeMovementPage
+	Headers ListIncomeMovements200ResponseHeaders
+}
+
+func (response ListIncomeMovements200JSONResponse) VisitListIncomeMovementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncomeMovementsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListIncomeMovementsdefaultApplicationProblemPlusJSONResponse) VisitListIncomeMovementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncomeTotalsRequestObject struct {
+	Params GetIncomeTotalsParams
+}
+
+type GetIncomeTotalsResponseObject interface {
+	VisitGetIncomeTotalsResponse(w http.ResponseWriter) error
+}
+
+type GetIncomeTotals200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetIncomeTotals200JSONResponse struct {
+	Body    AdminIncomeTotals
+	Headers GetIncomeTotals200ResponseHeaders
+}
+
+func (response GetIncomeTotals200JSONResponse) VisitGetIncomeTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncomeTotalsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetIncomeTotalsdefaultApplicationProblemPlusJSONResponse) VisitGetIncomeTotalsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -27118,6 +27904,68 @@ func (response GetFinanceCostTotalsdefaultApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type GetFinanceIncomeTotalsRequestObject struct {
+	Params GetFinanceIncomeTotalsParams
+}
+
+type GetFinanceIncomeTotalsResponseObject interface {
+	VisitGetFinanceIncomeTotalsResponse(w http.ResponseWriter) error
+}
+
+type GetFinanceIncomeTotals200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetFinanceIncomeTotals200JSONResponse struct {
+	Body    IncomeTotals
+	Headers GetFinanceIncomeTotals200ResponseHeaders
+}
+
+func (response GetFinanceIncomeTotals200JSONResponse) VisitGetFinanceIncomeTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetFinanceIncomeTotalsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetFinanceIncomeTotalsdefaultApplicationProblemPlusJSONResponse) VisitGetFinanceIncomeTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListFollowRequestsRequestObject struct {
 	Params ListFollowRequestsParams
 }
@@ -27630,6 +28478,68 @@ type ListInstanceDomainActionsdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListInstanceDomainActionsdefaultApplicationProblemPlusJSONResponse) VisitListInstanceDomainActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceIncomeTotalsRequestObject struct {
+	Params GetInstanceIncomeTotalsParams
+}
+
+type GetInstanceIncomeTotalsResponseObject interface {
+	VisitGetInstanceIncomeTotalsResponse(w http.ResponseWriter) error
+}
+
+type GetInstanceIncomeTotals200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetInstanceIncomeTotals200JSONResponse struct {
+	Body    IncomeTotals
+	Headers GetInstanceIncomeTotals200ResponseHeaders
+}
+
+func (response GetInstanceIncomeTotals200JSONResponse) VisitGetInstanceIncomeTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceIncomeTotalsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetInstanceIncomeTotalsdefaultApplicationProblemPlusJSONResponse) VisitGetInstanceIncomeTotalsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -31935,6 +32845,12 @@ type StrictServerInterface interface {
 	// LiftDomainAction Lift a moderation action on a domain
 	// (POST /admin/domain_actions/{id}/lift)
 	LiftDomainAction(ctx context.Context, request LiftDomainActionRequestObject) (LiftDomainActionResponseObject, error)
+	// ListIncomeMovements List the money movements of the income
+	// (GET /admin/income_movements)
+	ListIncomeMovements(ctx context.Context, request ListIncomeMovementsRequestObject) (ListIncomeMovementsResponseObject, error)
+	// GetIncomeTotals Total the income by period
+	// (GET /admin/income_totals)
+	GetIncomeTotals(ctx context.Context, request GetIncomeTotalsRequestObject) (GetIncomeTotalsResponseObject, error)
 	// ListInstanceTexts List the instance texts
 	// (GET /admin/instance_texts)
 	ListInstanceTexts(ctx context.Context, request ListInstanceTextsRequestObject) (ListInstanceTextsResponseObject, error)
@@ -32196,6 +33112,9 @@ type StrictServerInterface interface {
 	// GetFinanceCostTotals Total the costs by period for the finance viewers
 	// (GET /finance/cost_totals)
 	GetFinanceCostTotals(ctx context.Context, request GetFinanceCostTotalsRequestObject) (GetFinanceCostTotalsResponseObject, error)
+	// GetFinanceIncomeTotals Total the income by period for the finance viewers
+	// (GET /finance/income_totals)
+	GetFinanceIncomeTotals(ctx context.Context, request GetFinanceIncomeTotalsRequestObject) (GetFinanceIncomeTotalsResponseObject, error)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(ctx context.Context, request ListFollowRequestsRequestObject) (ListFollowRequestsResponseObject, error)
@@ -32223,6 +33142,9 @@ type StrictServerInterface interface {
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(ctx context.Context, request ListInstanceDomainActionsRequestObject) (ListInstanceDomainActionsResponseObject, error)
+	// GetInstanceIncomeTotals Total the instance's public income by period
+	// (GET /instance/income_totals)
+	GetInstanceIncomeTotals(ctx context.Context, request GetInstanceIncomeTotalsRequestObject) (GetInstanceIncomeTotalsResponseObject, error)
 	// ListSupporterPlans List the supporter plans
 	// (GET /instance/supporter_plans)
 	ListSupporterPlans(ctx context.Context, request ListSupporterPlansRequestObject) (ListSupporterPlansResponseObject, error)
@@ -34473,6 +35395,58 @@ func (sh *strictHandler) LiftDomainAction(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(LiftDomainActionResponseObject); ok {
 		if err := validResponse.VisitLiftDomainActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncomeMovements operation middleware
+func (sh *strictHandler) ListIncomeMovements(w http.ResponseWriter, r *http.Request, params ListIncomeMovementsParams) {
+	var request ListIncomeMovementsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncomeMovements(ctx, request.(ListIncomeMovementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncomeMovements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncomeMovementsResponseObject); ok {
+		if err := validResponse.VisitListIncomeMovementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetIncomeTotals operation middleware
+func (sh *strictHandler) GetIncomeTotals(w http.ResponseWriter, r *http.Request, params GetIncomeTotalsParams) {
+	var request GetIncomeTotalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIncomeTotals(ctx, request.(GetIncomeTotalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIncomeTotals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIncomeTotalsResponseObject); ok {
+		if err := validResponse.VisitGetIncomeTotalsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -36868,6 +37842,32 @@ func (sh *strictHandler) GetFinanceCostTotals(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// GetFinanceIncomeTotals operation middleware
+func (sh *strictHandler) GetFinanceIncomeTotals(w http.ResponseWriter, r *http.Request, params GetFinanceIncomeTotalsParams) {
+	var request GetFinanceIncomeTotalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetFinanceIncomeTotals(ctx, request.(GetFinanceIncomeTotalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetFinanceIncomeTotals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetFinanceIncomeTotalsResponseObject); ok {
+		if err := validResponse.VisitGetFinanceIncomeTotalsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListFollowRequests operation middleware
 func (sh *strictHandler) ListFollowRequests(w http.ResponseWriter, r *http.Request, params ListFollowRequestsParams) {
 	var request ListFollowRequestsRequestObject
@@ -37101,6 +38101,32 @@ func (sh *strictHandler) ListInstanceDomainActions(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListInstanceDomainActionsResponseObject); ok {
 		if err := validResponse.VisitListInstanceDomainActionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInstanceIncomeTotals operation middleware
+func (sh *strictHandler) GetInstanceIncomeTotals(w http.ResponseWriter, r *http.Request, params GetInstanceIncomeTotalsParams) {
+	var request GetInstanceIncomeTotalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInstanceIncomeTotals(ctx, request.(GetInstanceIncomeTotalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInstanceIncomeTotals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInstanceIncomeTotalsResponseObject); ok {
+		if err := validResponse.VisitGetInstanceIncomeTotalsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

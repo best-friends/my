@@ -85,6 +85,9 @@ const (
 	// SettingSupporterListVisibility decides who may read the supporter list of the members who
 	// chose to be listed (ADR-0071 §4).
 	SettingSupporterListVisibility SettingKey = "supporter_list_visibility"
+	// SettingIncomeVisibility decides how much of the instance's income the public API and the
+	// about page show (FR-917, ADR-0073 §7), apart from SettingFinanceVisibility.
+	SettingIncomeVisibility SettingKey = "income_visibility"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -148,6 +151,18 @@ type FinanceViewerIncome string
 const (
 	FinanceViewerIncomeTotals FinanceViewerIncome = "totals" // the total of each currency by period
 	FinanceViewerIncomePlans  FinanceViewerIncome = "plans"  // the totals and the number of members of each plan
+)
+
+// IncomeVisibility is the value of SettingIncomeVisibility (ADR-0073 §7): how much of the
+// instance's income everyone may read. No level publishes the individual payments, the
+// subscribers, the amounts of each plan, or the gross and the fees.
+type IncomeVisibility string
+
+// Income visibilities, from the least to the most revealing.
+const (
+	IncomePrivate IncomeVisibility = "private" // nothing: the public API is a 404
+	IncomeTotals  IncomeVisibility = "totals"  // the net total of each currency by period
+	IncomePlans   IncomeVisibility = "plans"   // the totals and the number of members of each plan
 )
 
 // SupporterListVisibility is the value of SettingSupporterListVisibility (ADR-0071 §4): who may
@@ -386,6 +401,11 @@ var definitions = []Definition{
 		Key: SettingSupporterListVisibility, Kind: KindEnum, Default: string(SupporterListOff),
 		Choices: []string{string(SupporterListOff), string(SupporterListPublic), string(SupporterListSignedIn)},
 		Doc:     "Who may read the supporter list (GET /instance/supporters and /about/supporters) of the members of the supporter plans who chose to be listed: off (nobody), public (everyone), or signed_in (the users signed in to this server); it shows their accounts and plans only, never amounts or dates (ADR-0071 §4).",
+	},
+	{
+		Key: SettingIncomeVisibility, Kind: KindEnum, Default: string(IncomePrivate),
+		Choices: []string{string(IncomePrivate), string(IncomeTotals), string(IncomePlans)},
+		Doc:     "How much of the instance's income GET /instance/income_totals and the about page show: private (nothing), totals (the net income of each currency by period), or plans (also the number of members of each supporter plan now); the balance against the costs is shown only while finance_visibility is not private as well, and individual payments, subscribers, the amounts of each plan, and the fees are never shown (FR-917, ADR-0073 §7).",
 	},
 }
 
@@ -753,6 +773,17 @@ func (s Settings) FinanceVisibility() FinanceVisibility {
 		return FinanceBreakdown
 	}
 	return FinancePrivate
+}
+
+// IncomeVisibility returns the value of SettingIncomeVisibility; an unexpected value is private.
+func (s Settings) IncomeVisibility() IncomeVisibility {
+	switch v, _ := s.Value(SettingIncomeVisibility); IncomeVisibility(v) {
+	case IncomeTotals:
+		return IncomeTotals
+	case IncomePlans:
+		return IncomePlans
+	}
+	return IncomePrivate
 }
 
 // FinanceViewer returns the values of SettingFinanceViewerItemNames,

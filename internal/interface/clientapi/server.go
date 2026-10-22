@@ -191,6 +191,9 @@ type Options struct {
 	// Costs records the instance's costs and totals them (admin_finance.go); nil answers 404 to
 	// their operations.
 	Costs Costs
+	// Income totals the instance's income and lists its money movements (income.go); nil
+	// answers 404 to their operations.
+	Income Income
 	// Supporters runs the supporter program, its plans, and their subscriptions
 	// (admin_supporters.go); nil answers 404 to their operations and a disabled program.
 	Supporters Supporters

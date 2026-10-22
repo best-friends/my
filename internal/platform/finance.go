@@ -50,7 +50,8 @@ func (a *App) setUpFinance(ctx context.Context, cfg *config.Config, repo finance
 		Caps: map[string]finance.RequestCaps{
 			"aws": {PerDay: cfg.BillingAWSMaxRequestsPerDay, PerMonth: cfg.BillingAWSMaxRequestsPerMonth},
 		},
-		Outbox: outbox, Logger: a.Logger,
+		Supporters: supporterDirectory{a},
+		Outbox:     outbox, Logger: a.Logger,
 	})
 	a.Finance.RegisterJobs(a.Handlers, a.Scheduler)
 	return nil

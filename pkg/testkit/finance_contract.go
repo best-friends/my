@@ -37,7 +37,7 @@ type FinanceFactory func(t *testing.T, opts uow.Options) FinanceHarness
 // of a FakeBillingSource count once however often they run, record estimates, finals, and
 // corrections (0 for a key that the source no longer reports), refetch the months of the rules,
 // stop at the request caps by UTC day and month without calling the source, and record every
-// failed attempt alone.
+// failed attempt alone. The income records follow finance_income_contract.go.
 func FinanceRepositoryContract(t *testing.T, newHarness FinanceFactory) {
 	t.Helper()
 	cases := []struct {
@@ -55,6 +55,8 @@ func FinanceRepositoryContract(t *testing.T, newHarness FinanceFactory) {
 		{"ImportsEstimatesFinalsAndCorrections", financeImportRevisions},
 		{"ImportsWithinTheRequestCaps", financeImportCaps},
 		{"RecordsFailedImports", financeImportFailures},
+		{"RecordsIncomeOnceAndTotalsIt", financeIncomeRecords},
+		{"ListsIncomeMovements", financeIncomeList},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newFinanceEnv(t, newHarness)) })
@@ -68,6 +70,8 @@ type financeEnv struct {
 	// aws is the billing source of svc, and caps its request caps, which a test may set.
 	aws  *FakeBillingSource
 	caps map[string]appfinance.RequestCaps
+	// dir is the supporter directory of svc, which a test may fill.
+	dir *FakeSupporterDirectory
 }
 
 func newFinanceEnv(t *testing.T, newHarness FinanceFactory) *financeEnv {
@@ -78,11 +82,12 @@ func newFinanceEnv(t *testing.T, newHarness FinanceFactory) *financeEnv {
 	appfinance.RegisterProjectors(projectors, h.Finance)
 	aws := NewFakeBillingSource("aws", time.UTC)
 	caps := map[string]appfinance.RequestCaps{}
+	dir := &FakeSupporterDirectory{}
 	svc := appfinance.NewService(appfinance.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Finance, Clock: clock, IDs: NewIDGenerator(clock),
-		Sources: []appfinance.BillingSource{aws}, Caps: caps, Logger: discardLogger(),
+		Sources: []appfinance.BillingSource{aws}, Caps: caps, Supporters: dir, Logger: discardLogger(),
 	})
-	return &financeEnv{h: h, clock: clock, svc: svc, aws: aws, caps: caps}
+	return &financeEnv{h: h, clock: clock, svc: svc, aws: aws, caps: caps, dir: dir}
 }
 
 func financeDate(t *testing.T, s string) finance.Date {

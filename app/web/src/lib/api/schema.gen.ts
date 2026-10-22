@@ -218,6 +218,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/instance/income_totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Total the instance's public income by period
+         * @description The net income that the instance setting `income_visibility` publishes (FR-917,
+         *     ADR-0073 §7, §9). It takes the query of `GET /admin/cost_totals`: `private` makes it a
+         *     404; `totals` gives the net of each currency by period; `plans` adds `plans`, the number
+         *     of members of each supporter plan now. Each period carries `balance`, the net less the
+         *     costs, only while `finance_visibility` is not `private` either, since the balance would
+         *     otherwise tell the hidden side. No level returns individual payments, the subscribers,
+         *     the amounts of each plan, or the gross and the fees. The periods stop at the one that
+         *     holds today (UTC): a `to` after today reads as today, and a `from` after today gives no
+         *     period. More than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422
+         *     naming `to`.
+         */
+        get: operations["getInstanceIncomeTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/instance/supporter_plans": {
         parameters: {
             query?: never;
@@ -2227,6 +2256,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/finance/income_totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Total the income by period for the finance viewers
+         * @description The income totals for the holders of `view_finance` (ADR-0073 §6, ADR-0070 §5). It takes
+         *     the query of `GET /admin/cost_totals` and always answers the net of each currency by
+         *     period with its `balance` against the costs, whatever `income_visibility` and
+         *     `finance_visibility` publish. `plans`, the number of members of each supporter plan now,
+         *     is present while the instance setting `finance_viewer_income` is `plans` or
+         *     `income_visibility` publishes the plans; a holder of `manage_finance` always reads it. No
+         *     answer carries individual payments, the subscribers, the amounts of each plan, or the
+         *     gross and the fees. More than 104 weeks, 60 months, or 20 years, and `to` before `from`,
+         *     are a 422 naming `to`. Needs the `view_finance` or the `manage_finance` permission (a 403
+         *     `/api/v1/problems/missing-permission` otherwise).
+         */
+        get: operations["getFinanceIncomeTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/supporter/subscription": {
         parameters: {
             query?: never;
@@ -2813,6 +2871,55 @@ export interface paths {
          *     `to` before `from`, are a 422 naming `to`. Needs the `manage_finance` permission.
          */
         get: operations["getCostTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/income_totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Total the income by period
+         * @description The totals of the payment provider's money movements for each week, month, or year from
+         *     the one that holds `from` to the one that holds `to` (ADR-0073 §5, §6): the gross, the
+         *     provider's fees, and the net of each currency, the balance against the costs of
+         *     `GET /admin/cost_totals` under the same basis, the number of members of each supporter
+         *     plan now, and the rules that cut the periods. The totals are computed on every read. More
+         *     than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422 naming `to`.
+         *     Needs the `manage_finance` permission.
+         */
+        get: operations["getIncomeTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/income_movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the money movements of the income
+         * @description The payment provider's money movements that the income records keep (ADR-0073 §6), newest
+         *     first by the time the provider booked them, narrowed to the dates they fall on and a
+         *     kind, with the subscriber's account of each. Only this operation and the admin screen
+         *     show individual movements and their subscribers. Needs the `manage_finance` permission.
+         */
+        get: operations["listIncomeMovements"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5571,6 +5678,32 @@ export interface components {
          * @enum {string}
          */
         AdminDomainActionState: "active" | "expired" | "lifted";
+        /**
+         * @description A week, month, or year of the income totals as the administrators see it: the `gross`, the
+         *     provider's `fee`, and the `net` (gross less fee) of each currency, sorted by currency code,
+         *     and the `balance`, the net less the costs of each currency under the same basis.
+         */
+        AdminIncomePeriodTotal: {
+            label: string;
+            starts_on: components["schemas"]["CalendarDate"];
+            ends_on: components["schemas"]["CalendarDate"];
+            gross: components["schemas"]["Money"][];
+            fee: components["schemas"]["Money"][];
+            net: components["schemas"]["Money"][];
+            balance: components["schemas"]["Money"][];
+        };
+        /**
+         * @description The income totals as the administrators see them over the periods from the one that holds
+         *     `from` to the one that holds `to`, oldest first, with the number of members of each
+         *     supporter plan now (ADR-0073 §6).
+         */
+        AdminIncomeTotals: {
+            granularity: components["schemas"]["CostGranularity"];
+            basis: components["schemas"]["CostBasis"];
+            periods: components["schemas"]["AdminIncomePeriodTotal"][];
+            plans: components["schemas"]["IncomePlanCount"][];
+            rules: components["schemas"]["IncomeTotalsRules"];
+        };
         /** @description Whether deliveries go to a remote server (federation.md §7.3). */
         AdminInstanceHealth: {
             domain: string;
@@ -7334,6 +7467,118 @@ export interface components {
             /** @description The seconds each block lasts; omitted, they last until they are lifted. */
             expires_in?: number;
         };
+        /**
+         * @description The kind of a money movement of the payment provider (ADR-0073 §2): `payment` of a
+         *     subscription, `refund` and `chargeback` of a payment (a negative gross), the
+         *     `chargeback_reversal` that gives a chargeback back, and a `fee` of the provider that
+         *     belongs to no payment (a zero gross and a negative net).
+         * @enum {string}
+         */
+        IncomeKind: "payment" | "refund" | "chargeback" | "chargeback_reversal" | "fee";
+        /**
+         * @description A money movement of the payment provider as the income records keep it (ADR-0073 §2, §6):
+         *     recorded once its amounts are final, and never edited. `occurred_on` is `occurred_at` as a
+         *     date in the provider's reporting time zone. A payment carries the billing period it pays
+         *     for (`covers_starts_on` to `covers_ends_on`) when it has one; a refund, a chargeback, or a
+         *     reversal carries the provider ID of its payment (`parent_provider_id`). `subscription_id`
+         *     and `account_id` name the subscription and its subscriber's account while they are known;
+         *     a fee of no subscription has neither.
+         */
+        IncomeMovement: {
+            id: components["schemas"]["Id"];
+            provider: string;
+            provider_id: string;
+            kind: components["schemas"]["IncomeKind"];
+            parent_provider_id?: string;
+            subscription_id?: components["schemas"]["Id"];
+            account_id?: components["schemas"]["Id"];
+            /** Format: date-time */
+            occurred_at: string;
+            occurred_on: components["schemas"]["CalendarDate"];
+            covers_starts_on?: components["schemas"]["CalendarDate"];
+            covers_ends_on?: components["schemas"]["CalendarDate"];
+            gross: components["schemas"]["Money"];
+            fee: components["schemas"]["Money"];
+            net: components["schemas"]["Money"];
+            /** Format: date-time */
+            recorded_at: string;
+        };
+        /** @description A page of money movements, newest first. */
+        IncomeMovementPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["IncomeMovement"][];
+        };
+        /**
+         * @description A week, month, or year of the income totals (`label`: `2026-W17`, `2026-04`, or `2026`):
+         *     the net income of each currency (what the payments brought less the provider's fees and the
+         *     refunds), never converted, sorted by currency code. `balance` is the net less the costs of
+         *     each currency under the same basis, present only where the balance is shown: a currency of
+         *     one side alone shows that side's amount.
+         */
+        IncomePeriodTotal: {
+            label: string;
+            starts_on: components["schemas"]["CalendarDate"];
+            ends_on: components["schemas"]["CalendarDate"];
+            net: components["schemas"]["Money"][];
+            balance?: components["schemas"]["Money"][];
+        };
+        /**
+         * @description The number of members of a supporter plan now (ADR-0073 §7): the subscriptions that hold
+         *     the plan's role (active, canceling, or past due within the grace period). A retired plan
+         *     appears while it has members. Never the plan's amounts.
+         */
+        IncomePlanCount: {
+            plan_id: components["schemas"]["Id"];
+            name: string;
+            /** Format: int64 */
+            members: number;
+        };
+        /**
+         * @description The IANA time zone (`UTC`, `Asia/Tokyo`) in which a payment provider's money movements fall
+         *     on their dates: the provider's reporting time zone, or `UTC` when it could not be read
+         *     (ADR-0073 §3).
+         */
+        IncomeProviderRule: {
+            provider: string;
+            time_zone: string;
+        };
+        /**
+         * @description The income totals over the periods from the one that holds `from` to the one that holds
+         *     `to`, oldest first (ADR-0073 §9). `plans`, the number of members of each supporter plan
+         *     now, is present only where the plans are shown. No answer carries individual payments, the
+         *     subscribers, the amounts of each plan, or the gross and the fees.
+         */
+        IncomeTotals: {
+            granularity: components["schemas"]["CostGranularity"];
+            basis: components["schemas"]["CostBasis"];
+            periods: components["schemas"]["IncomePeriodTotal"][];
+            plans?: components["schemas"]["IncomePlanCount"][];
+            rules: components["schemas"]["IncomeTotalsRules"];
+        };
+        /**
+         * @description How the income totals cut the periods and place the payments (ADR-0073 §3, §5), to show
+         *     next to them: by calendar date without a time zone, weeks from `week_start` (ISO 8601),
+         *     each money movement on its date in its payment provider's reporting time zone
+         *     (`providers`), and under the `amortized` basis a payment that covers more than
+         *     `amortize_after_days` days spread by day over the days it covers, with its refunds and
+         *     chargebacks taking back the days before them on their own date and cancelling the later
+         *     ones.
+         */
+        IncomeTotalsRules: {
+            /** @enum {string} */
+            week_start: "monday";
+            providers: components["schemas"]["IncomeProviderRule"][];
+            amortize_after_days: number;
+        };
+        /**
+         * @description How much of the instance's income everyone may read (the instance setting
+         *     `income_visibility`, FR-917, ADR-0073 §7), apart from `finance_visibility`. `private`:
+         *     nothing, and `GET /instance/income_totals` is a 404; `totals`: the net income of each
+         *     currency by period; `plans`: also the number of members of each supporter plan now. No
+         *     level publishes individual payments, the subscribers, the amounts of each plan, or the
+         *     gross and the fees.
+         * @enum {string}
+         */
+        IncomeVisibility: "private" | "totals" | "plans";
         /** @description Public information about the instance. */
         Instance: {
             /** @description The domain that serves the instance. */
@@ -7398,6 +7643,7 @@ export interface components {
             search_indexing: components["schemas"]["SearchIndexing"];
             ai_usage: components["schemas"]["AIUsage"];
             finance_visibility: components["schemas"]["FinanceVisibility"];
+            income_visibility: components["schemas"]["IncomeVisibility"];
         };
         /**
          * @description How people reach the instance's operators (the instance settings `contact_account` and
@@ -7480,7 +7726,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility" | "finance_viewer_item_names" | "finance_viewer_item_memos" | "finance_viewer_income" | "supporter_list_visibility";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility" | "finance_viewer_item_names" | "finance_viewer_item_memos" | "finance_viewer_income" | "supporter_list_visibility" | "income_visibility";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
@@ -10067,6 +10313,36 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    getInstanceIncomeTotals: {
+        parameters: {
+            query: {
+                granularity: components["schemas"]["CostGranularity"];
+                /** @description A date in the first period. */
+                from: components["schemas"]["CalendarDate"];
+                /** @description A date in the last period; a date after today reads as today. */
+                to: components["schemas"]["CalendarDate"];
+                /** @description How the totals place a payment; `amortized` by default. */
+                basis?: components["schemas"]["CostBasis"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The public income totals. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeTotals"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     listSupporterPlans: {
         parameters: {
             query?: never;
@@ -12311,6 +12587,36 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    getFinanceIncomeTotals: {
+        parameters: {
+            query: {
+                granularity: components["schemas"]["CostGranularity"];
+                /** @description A date in the first period. */
+                from: components["schemas"]["CalendarDate"];
+                /** @description A date in the last period. */
+                to: components["schemas"]["CalendarDate"];
+                /** @description How the totals place a payment; `amortized` by default. */
+                basis?: components["schemas"]["CostBasis"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The income totals. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeTotals"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     getOwnSupporterSubscription: {
         parameters: {
             query?: never;
@@ -12940,6 +13246,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CostTotals"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getIncomeTotals: {
+        parameters: {
+            query: {
+                granularity: components["schemas"]["CostGranularity"];
+                /** @description A date in the first period. */
+                from: components["schemas"]["CalendarDate"];
+                /** @description A date in the last period. */
+                to: components["schemas"]["CalendarDate"];
+                /** @description How the totals place a payment; `amortized` by default. */
+                basis?: components["schemas"]["CostBasis"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The income totals. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminIncomeTotals"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listIncomeMovements: {
+        parameters: {
+            query?: {
+                /** @description Only the movements on or after this date. */
+                from?: components["schemas"]["CalendarDate"];
+                /** @description Only the movements on or before this date. */
+                to?: components["schemas"]["CalendarDate"];
+                /** @description Only the movements of this kind. */
+                kind?: components["schemas"]["IncomeKind"];
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of money movements. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeMovementPage"];
                 };
             };
             default: components["responses"]["Problem"];

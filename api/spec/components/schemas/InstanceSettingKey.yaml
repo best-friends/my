@@ -35,3 +35,4 @@ enum:
   - finance_viewer_item_memos
   - finance_viewer_income
   - supporter_list_visibility
+  - income_visibility

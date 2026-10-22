@@ -45,6 +45,23 @@ type Entry struct {
 	// Item is what the entry is a payment of: a cost item or a service of an imported cost. The
 	// totals ignore it; the item lines of ItemizedTotals group by it (ADR-0070 §5).
 	Item ItemRef
+	// Span, when set, is the range that Amount spreads over by day, of which only the dates of
+	// Range carry their part: the rest of a refund of an amortized payment, which cancels the
+	// payment's later days with the payment's own rounding (ADR-0073 §5). Nil spreads Amount over
+	// Range.
+	Span *DateRange
+}
+
+// amountIn returns the part of the entry's amount that falls on the dates of part (Spread).
+func (e Entry) amountIn(part DateRange) int64 {
+	if e.Span == nil {
+		return Spread(e.Amount.Minor, e.Range, part)
+	}
+	in, ok := e.Range.Intersect(part)
+	if !ok {
+		return 0
+	}
+	return Spread(e.Amount.Minor, *e.Span, in)
 }
 
 // ItemRef is what an entry is a payment of: Key tells the cost item or the service of an
@@ -125,7 +142,7 @@ func Summarize(entries []Entry, periods []Period) []PeriodTotal {
 				continue
 			}
 			estimated = estimated || e.Estimated
-			amount := Spread(e.Amount.Minor, e.Range, p.Range)
+			amount := e.amountIn(p.Range)
 			totals[e.Amount.Currency] += amount
 			lines[BreakdownKey{Provider: e.Provider, Category: e.Category, Currency: e.Amount.Currency}] += amount
 		}
@@ -182,7 +199,7 @@ func ItemizedTotals(items []CostItem, imported []Entry, basis Basis, periods []P
 				line = &ItemLine{Item: e.Item, Provider: e.Provider, Category: e.Category, Amount: Money{Currency: e.Amount.Currency}}
 				lines[k] = line
 			}
-			line.Amount.Minor += Spread(e.Amount.Minor, e.Range, p.Range)
+			line.Amount.Minor += e.amountIn(p.Range)
 		}
 		items := make([]ItemLine, 0, len(lines))
 		for _, line := range lines {

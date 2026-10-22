@@ -148,7 +148,7 @@ entries:
     docs: ["docs/architecture/data-model.md#411-webhook", "docs/reference/webhooks.md"]
   - name: module-finance
     paths: ["internal/domain/finance/**", "internal/app/finance/**"]
-    docs: ["docs/architecture/data-model.md#412-finance", "docs/adr/0067-finance-cost-records.md", "docs/adr/0068-billing-import.md"]
+    docs: ["docs/architecture/data-model.md#412-finance", "docs/adr/0067-finance-cost-records.md", "docs/adr/0068-billing-import.md", "docs/adr/0073-income-records-and-publication.md"]
   - name: module-supporters
     paths: ["internal/domain/supporters/**", "internal/app/supporters/**"]
     docs: ["docs/architecture/data-model.md#413-supporters", "docs/adr/0072-supporter-plans-and-roles.md", "docs/operations/supporters.md"]

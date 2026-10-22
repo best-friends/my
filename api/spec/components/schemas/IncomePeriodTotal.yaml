@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A week, month, or year of the income totals (`label`: `2026-W17`, `2026-04`, or `2026`):
+  the net income of each currency (what the payments brought less the provider's fees and the
+  refunds), never converted, sorted by currency code. `balance` is the net less the costs of
+  each currency under the same basis, present only where the balance is shown: a currency of
+  one side alone shows that side's amount.
+type: object
+required: [label, starts_on, ends_on, net]
+properties:
+  label:
+    type: string
+  starts_on:
+    $ref: ./CalendarDate.yaml
+  ends_on:
+    $ref: ./CalendarDate.yaml
+  net:
+    type: array
+    items:
+      $ref: ./Money.yaml
+  balance:
+    type: array
+    items:
+      $ref: ./Money.yaml

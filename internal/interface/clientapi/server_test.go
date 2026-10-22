@@ -65,6 +65,7 @@ func TestGetInstance(t *testing.T) {
 		SearchIndexing: clientapi.SearchIndexingDeny, AiUsage: clientapi.AIUsageDeny,
 		// Unset, the costs are private (ADR-0067 §8).
 		FinanceVisibility:       clientapi.FinanceVisibilityPrivate,
+		IncomeVisibility:        clientapi.IncomeVisibilityPrivate,
 		SupporterListVisibility: clientapi.SupporterListVisibilityOff,
 	}
 	if !reflect.DeepEqual(got, want) {

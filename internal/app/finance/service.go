@@ -31,7 +31,10 @@ type Deps struct {
 	Caps map[string]RequestCaps
 	// Outbox enqueues the manual imports; nil refuses them.
 	Outbox queue.Outbox
-	// Logger logs the imports; nil means slog.Default().
+	// Supporters reads the supporters module for the income (ADR-0073 §1); nil reads no plans,
+	// subscribers, or providers.
+	Supporters SupporterDirectory
+	// Logger logs the imports and the income records; nil means slog.Default().
 	Logger *slog.Logger
 }
 
@@ -284,24 +287,9 @@ type TotalsQuery struct {
 // estimated imported cost meets is Estimated (ADR-0068 §3). It fails with finance.ErrInvalidBasis
 // and the errors of finance.Granularity.Periods.
 func (s *Service) Totals(ctx context.Context, q TotalsQuery) ([]finance.PeriodTotal, error) {
-	if err := q.Basis.Validate(); err != nil {
-		return nil, err
-	}
-	if q.To.Before(q.From) {
-		return nil, fmt.Errorf("%w: %s to %s", finance.ErrInvalidPeriod, q.From, q.To)
-	}
-	if q.UntilToday {
-		today := finance.DateOf(s.d.Clock.Now().UTC())
-		if q.From.After(today) {
-			return []finance.PeriodTotal{}, nil
-		}
-		if q.To.After(today) {
-			q.To = today
-		}
-	}
-	periods, err := q.Granularity.Periods(q.From, q.To)
-	if err != nil {
-		return nil, err
+	periods, err := s.periods(q)
+	if err != nil || len(periods) == 0 {
+		return []finance.PeriodTotal{}, err
 	}
 	items, err := s.d.Repository.AllItems(ctx)
 	if err != nil {

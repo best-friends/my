@@ -16,7 +16,8 @@ import (
 	"github.com/best-friends/my/internal/domain/finance"
 )
 
-// ErrNotFound reports an unknown or canceled cost item.
+// ErrNotFound reports an unknown or canceled cost item, or an income movement that is not
+// recorded.
 var ErrNotFound = errors.New("finance: not found")
 
 // LabelRevision is one revision of a cost item's label (cost_item_label_revisions).
@@ -96,6 +97,7 @@ type Repository interface {
 	AllItems(ctx context.Context) ([]finance.CostItem, error)
 
 	ImportRepository
+	IncomeRepository
 	ProjectionRepository
 }
 

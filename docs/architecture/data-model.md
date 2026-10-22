@@ -203,7 +203,7 @@ flowchart LR
 | `federation` | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `remote_instances`, `instance_nodeinfo_observations`, `instance_availability_events` | `instance_health` |
 | `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_retirements`, `announcements`, `announcement_revisions`, `announcement_state_changes` | `instance_settings`, `instance_texts`, `instance_rule_heads`, `announcement_heads`, `announcement_reads` |
 | `webhook` | `webhook_endpoints`, `webhook_endpoint_revisions`, `webhook_endpoint_revision_events`, `webhook_secrets`, `webhook_endpoint_state_changes`, `webhook_messages`, `webhook_deliveries`, `webhook_delivery_attempts` | `webhook_endpoint_heads`, `webhook_endpoint_failures` |
-| `finance` | `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations`, `billing_import_runs`, `imported_cost_revisions` | `cost_item_heads`, `imported_cost_heads` |
+| `finance` | `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations`, `billing_import_runs`, `imported_cost_revisions`, `income_movements` | `cost_item_heads`, `imported_cost_heads` |
 | `supporters` | `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_program_changes`, `supporter_plans`, `supporter_plan_revisions`, `supporter_plan_retirements`, `supporter_plan_prices`, `supporter_plan_price_archivals`, `supporter_customers`, `supporter_subscriptions`, `supporter_checkouts`, `supporter_subscription_links`, `supporter_subscription_transitions`, `supporter_grace_periods`, `supporter_scheduled_changes`, `supporter_subscription_reversals` | `supporter_plan_heads`, `supporter_plan_price_heads`, `supporter_subscription_heads`, `supporter_live_subscriptions`, `supporter_subscription_deadlines`, `supporter_listings` |
 | 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `job_attempts`, `kv_entries` |
 
@@ -1246,7 +1246,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact, require_media_description, link_cards_enabled, finance_visibility, finance_viewer_item_names, finance_viewer_item_memos, finance_viewer_income, supporter_list_visibility)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
+| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact, require_media_description, link_cards_enabled, finance_visibility, finance_viewer_item_names, finance_viewer_item_memos, finance_viewer_income, supporter_list_visibility, income_visibility)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
 | `instance_settings` | 投影 | `key`（PK）, `revision_id`, `value` | |
 | `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt)`）, `body`（空 = 文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)`。文章はキーごとに 1 つの値で、どのロケールでも同じ値を表示する（ADR-0009） |
 | `instance_texts` | 投影 | `key`（PK）, `revision_id` | |
@@ -1359,7 +1359,7 @@ flowchart LR
 
 ### 4.12 finance
 
-サーバーの維持費用（FR-901・FR-902・FR-904、[ADR-0067](../adr/0067-finance-cost-records.md)・[ADR-0068](../adr/0068-billing-import.md)）。`internal/app/finance` が所有します。
+サーバーの維持費用と収入（FR-901・FR-902・FR-904・FR-917、[ADR-0067](../adr/0067-finance-cost-records.md)・[ADR-0068](../adr/0068-billing-import.md)・[ADR-0073](../adr/0073-income-records-and-publication.md)）。`internal/app/finance` が所有します。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -1372,6 +1372,7 @@ flowchart LR
 | `billing_import_runs` | イベント | `id`, `source`（`enum(aws, gcp)`）, `run_key`（ジョブの冪等キー）, `outcome`（`enum(succeeded, failed)`）, `error_kind`（`enum(none, permission, not_enabled, not_found, throttled, request_cap, bytes_cap, invalid_response, unavailable)`）, `requests`（`int`）, `bytes_billed`（`bigint`）, `occurred_at` | `CHECK (outcome = 'succeeded') = (error_kind = 'none')`。インデックス `(source, occurred_at)`, `(run_key)` |
 | `imported_cost_revisions` | イベント（版） | `id`, `source`, `billing_month`（`string(7)`。`YYYY-MM`）, `service`（`string(200)`）, `charge_type`（`enum(usage, credit, refund, tax, support, fee, adjustment, other)`）, `category`（`cost_item_label_revisions` と同じ enum）, `starts_on`・`ends_on`（`date`）, `amount_minor`（`bigint`。負も可）, `currency`（`string(3)`）, `kind`（`enum(estimate, final, correction)`）, `run_id`, `run_key`, `recorded_at` | 一意 `(source, billing_month, service, charge_type, run_key)`。`starts_on <= ends_on` |
 | `imported_cost_heads` | 投影 | `(source, billing_month, service, charge_type)`（PK）, `revision_id` | 版を足すトランザクションで同期に更新する |
+| `income_movements` | イベント | `id`, `provider`（`enum(stripe)`）, `provider_id`（`string(255)`。Stripe は balance transaction の ID）, `kind`（`enum(payment, refund, chargeback, chargeback_reversal, fee)`）, `parent_movement_id`（NULL 可。返金・チャージバック・その取り消しの元の `payment` の行）, `subscription_id`（NULL 可 = 加入に結び付かない手数料。加入への論理参照で外部キーを付けない）, `occurred_at`, `occurred_on`（`date`。事業者のレポートのタイムゾーンでの日付）, `covers_starts_on`・`covers_ends_on`（`date`。NULL 可。`payment` の請求の期間）, `gross_minor`・`fee_minor`・`net_minor`（`bigint`。負も可）, `currency`（`string(3)`）, `recorded_at` | 一意 `(provider, provider_id)`。`net_minor = gross_minor - fee_minor`。`covers_*` は両方 NULL か `payment` で `starts_on <= ends_on`。`parent_movement_id` は返金・チャージバック・取り消しだけ。インデックス `(occurred_on)`, `(subscription_id, occurred_at)` |
 
 - 作成は項目・最初のラベルの版・`starts_on` から効く最初の価格の版（と終了日を渡したときは終了の変更）を 1 つのトランザクションで書き、`finance.cost_item_changed` を発行します。
   ラベルの変更と終了の変更も `finance.cost_item_changed` を発行し、その射影が `cost_item_heads` を書きます。取り消しは `finance.cost_item_canceled` を発行し、射影が行を消します。
@@ -1389,6 +1390,13 @@ flowchart LR
   版の種類は、キーの最新の版が `final` か `correction` なら `correction`、事業者が月を確定と返せば `final`、それまでは `estimate` です（`finance.NextRevisionKind`）。同じジョブの再試行は `run_key` の一意制約で版を重ねません。
 - 取り直す月は事業者のタイムゾーンでの今月と、15 日まで、または確定するまでの前月です（`finance.RefetchMonths`）。AWS の課金される要求は `billing_import_runs.requests` を UTC の日と暦月で合計して上限（`billing_aws_max_requests_per_day`・`_per_month`）で止め、上限に達した試行は事業者を呼ばずに `request_cap` として記録します。
 - 集計は、取り込んだ費用の各キーの最新の版を `starts_on`〜`ends_on` の日数に、現金主義でも按分でも日割りで載せ、`estimate` の版が載る期間を見込みとします（ADR-0068 §3）。
+
+- 収入（ADR-0073）は、決済の事業者で額が確定したお金の動きを 1 件 1 行で `income_movements` に記録します。加入のモジュール（`supporters`）の webhook と照合のジョブが `finance.RecordIncome` を呼び、
+  `(provider, provider_id)` の一意で同じ動きは何度渡されても 1 行です（挿入の衝突は何もしない）。返金・チャージバック・その取り消しは元の支払いの行を `parent_movement_id` に持ち、元の行がまだなければ記録せずにジョブの再試行に任せます。
+  加入の ID は事業者の加入をこちらの加入に写したもので、こちらの加入でなければ NULL です。行は利用者を持たず、加入者のアカウントは管理画面だけが `finance.SupporterDirectory`（`internal/platform` が `supporters` で実装する）で引きます。
+- 収入の集計は投影に持たず、期間に載りうる行（期間の日の行、期間に掛かる請求の期間の支払い、期間の終わりまでの返金などのうち元の支払いの請求の期間が期間に掛かるもの）を読んで `finance.IncomeTotals` で計算します。
+  按分では 31 日より長い請求の期間の支払いを日割りし、その返金・チャージバック・取り消しは、元の支払いの日割りのうち自分の日より前の分を自分の日にまとめて載せ、残りを元の支払いと同じ日割りで打ち消します（ADR-0073 §5）。
+  総額と net を同じ規則で載せ、手数料は期間の総額 − net です。収支は同じ期間・同じ見方の費用の合計を通貨ごとに引きます（`finance.Balance`）。
 
 ### 4.13 supporters
 
@@ -1780,6 +1788,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-914 参加者の一覧 | S | `supporter_listings`, `supporter_subscription_heads`, `supporter_plan_heads`, `instance_settings`（`supporter_list_visibility`） |
 | FR-915 絵文字の作成の権限と承認制 | S | `role_permissions`（`create_custom_emojis`）, `custom_emojis`（`created_by_user_id`）, `custom_emoji_requests`, `custom_emoji_request_outcomes`, `custom_emoji_pending_requests`, `audit_log_entries`, `notifications`（`admin_custom_emoji_request`, `custom_emoji_request_decided`） |
 | FR-916 会計の閲覧の権限 | S | `role_permissions`（`view_finance`）, `instance_settings`（`finance_viewer_item_names`, `finance_viewer_item_memos`, `finance_viewer_income`）と FR-902 の集計（読み取りのときに計算する） |
+| FR-917 収入の記録と公開 | S | §4.12 の `income_movements` と、`instance_settings`（`income_visibility`）。集計は読み取りのときに計算する |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |
 | FR-707 異議申し立て | S | `moderation_appeals`, `moderation_appeal_decisions`, `appeal_states` |

@@ -5,6 +5,7 @@ package supporters
 import (
 	"context"
 	"slices"
+	"time"
 
 	appidentity "github.com/best-friends/my/internal/app/identity"
 )
@@ -103,4 +104,14 @@ func (s *Service) SubscriptionUsers(ctx context.Context, ids []string) ([]Subscr
 		return nil, err
 	}
 	return s.d.Repository.SubscriptionUsers(ctx, ids)
+}
+
+// ProviderLocation returns the name of the configured payment provider and the time zone in
+// which its money movements fall on their dates (ADR-0073 §3); false with payments_provider =
+// none.
+func (s *Service) ProviderLocation() (string, *time.Location, bool) {
+	if s.d.Provider == nil {
+		return "", nil, false
+	}
+	return s.d.Provider.Name(), s.d.Provider.Location(), true
 }

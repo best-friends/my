@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	appfinance "github.com/best-friends/my/internal/app/finance"
 	"github.com/best-friends/my/internal/app/supporters"
 )
 
@@ -511,6 +512,21 @@ func paymentMoney(t *testing.T, newProvider PaymentProviderFactory) {
 		}
 		if !m.Final {
 			t.Errorf("%s: not final", m.ID)
+		}
+	}
+	// Each movement maps to an income movement that the income records hold (ADR-0073 §1): Net =
+	// Gross - Fee in the currency's minor unit, a period on the payments only, and the parent
+	// on the refunds, chargebacks, and reversals.
+	for _, m := range got {
+		in := supporters.IncomeOf(p.Name(), m, "")
+		rec, err := appfinance.ParseIncome(in)
+		if err != nil {
+			t.Errorf("ParseIncome(%s) = %v", m.ID, err)
+			continue
+		}
+		if rec.OccurredOn.String() != m.OccurredOn.String() || (rec.Covers != nil) != (m.Kind == supporters.MoneyPayment) ||
+			(in.ParentID != "") != m.Kind.HasParent() {
+			t.Errorf("income of %s = %+v, want its date, the period of a payment, and the parent of a reversal", m.ID, rec)
 		}
 	}
 	if late := got[1]; late.OccurredOn != (supporters.Date{Year: 2026, Month: 10, Day: 2}) {

@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getIncomeTotals
+  summary: Total the income by period
+  description: |
+    The totals of the payment provider's money movements for each week, month, or year from
+    the one that holds `from` to the one that holds `to` (ADR-0073 §5, §6): the gross, the
+    provider's fees, and the net of each currency, the balance against the costs of
+    `GET /admin/cost_totals` under the same basis, the number of members of each supporter
+    plan now, and the rules that cut the periods. The totals are computed on every read. More
+    than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422 naming `to`.
+    Needs the `manage_finance` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: granularity
+      in: query
+      required: true
+      schema:
+        $ref: ../components/schemas/CostGranularity.yaml
+    - name: from
+      in: query
+      required: true
+      description: A date in the first period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: to
+      in: query
+      required: true
+      description: A date in the last period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: basis
+      in: query
+      required: false
+      description: How the totals place a payment; `amortized` by default.
+      schema:
+        $ref: ../components/schemas/CostBasis.yaml
+  responses:
+    "200":
+      description: The income totals.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminIncomeTotals.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

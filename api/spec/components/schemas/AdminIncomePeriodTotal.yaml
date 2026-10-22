@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A week, month, or year of the income totals as the administrators see it: the `gross`, the
+  provider's `fee`, and the `net` (gross less fee) of each currency, sorted by currency code,
+  and the `balance`, the net less the costs of each currency under the same basis.
+type: object
+required: [label, starts_on, ends_on, gross, fee, net, balance]
+properties:
+  label:
+    type: string
+  starts_on:
+    $ref: ./CalendarDate.yaml
+  ends_on:
+    $ref: ./CalendarDate.yaml
+  gross:
+    type: array
+    items:
+      $ref: ./Money.yaml
+  fee:
+    type: array
+    items:
+      $ref: ./Money.yaml
+  net:
+    type: array
+    items:
+      $ref: ./Money.yaml
+  balance:
+    type: array
+    items:
+      $ref: ./Money.yaml

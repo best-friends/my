@@ -112,6 +112,8 @@ paths:
     $ref: ./paths/instance_domain_actions.yaml
   /instance/cost_totals:
     $ref: ./paths/instance_cost_totals.yaml
+  /instance/income_totals:
+    $ref: ./paths/instance_income_totals.yaml
   /instance/supporter_plans:
     $ref: ./paths/instance_supporter_plans.yaml
   /instance/supporters:
@@ -270,6 +272,8 @@ paths:
     $ref: ./paths/streaming.yaml
   /finance/cost_totals:
     $ref: ./paths/finance_cost_totals.yaml
+  /finance/income_totals:
+    $ref: ./paths/finance_income_totals.yaml
   /supporter/subscription:
     $ref: ./paths/supporter_subscription.yaml
   /supporter/checkout:
@@ -320,6 +324,10 @@ paths:
     $ref: ./paths/admin_cost_items_{id}_cancel.yaml
   /admin/cost_totals:
     $ref: ./paths/admin_cost_totals.yaml
+  /admin/income_totals:
+    $ref: ./paths/admin_income_totals.yaml
+  /admin/income_movements:
+    $ref: ./paths/admin_income_movements.yaml
   /admin/domain_actions:
     $ref: ./paths/admin_domain_actions.yaml
   /admin/domain_actions/{id}:
@@ -747,6 +755,10 @@ components:
       $ref: ./components/schemas/AdminDomainActionPage.yaml
     AdminDomainActionState:
       $ref: ./components/schemas/AdminDomainActionState.yaml
+    AdminIncomePeriodTotal:
+      $ref: ./components/schemas/AdminIncomePeriodTotal.yaml
+    AdminIncomeTotals:
+      $ref: ./components/schemas/AdminIncomeTotals.yaml
     AdminInstanceHealth:
       $ref: ./components/schemas/AdminInstanceHealth.yaml
     AdminInstanceHealthPage:
@@ -1043,6 +1055,24 @@ components:
       $ref: ./components/schemas/ImportDomainBlocksRequest.yaml
     ImportSignupBlocksRequest:
       $ref: ./components/schemas/ImportSignupBlocksRequest.yaml
+    IncomeKind:
+      $ref: ./components/schemas/IncomeKind.yaml
+    IncomeMovement:
+      $ref: ./components/schemas/IncomeMovement.yaml
+    IncomeMovementPage:
+      $ref: ./components/schemas/IncomeMovementPage.yaml
+    IncomePeriodTotal:
+      $ref: ./components/schemas/IncomePeriodTotal.yaml
+    IncomePlanCount:
+      $ref: ./components/schemas/IncomePlanCount.yaml
+    IncomeProviderRule:
+      $ref: ./components/schemas/IncomeProviderRule.yaml
+    IncomeTotals:
+      $ref: ./components/schemas/IncomeTotals.yaml
+    IncomeTotalsRules:
+      $ref: ./components/schemas/IncomeTotalsRules.yaml
+    IncomeVisibility:
+      $ref: ./components/schemas/IncomeVisibility.yaml
     Instance:
       $ref: ./components/schemas/Instance.yaml
     InstanceContact:

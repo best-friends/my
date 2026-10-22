@@ -37,8 +37,7 @@ func (a *App) setUpSupporters(ctx context.Context, cfg *config.Config, repo supp
 		CommerceDisclosure: func(ctx context.Context) (bool, error) {
 			return a.Instance.HasDocument(ctx, domaininstance.TextCommerceDisclosure)
 		},
-		// The income records of the finance module (ADR-0073) are #923's; until then nil records none.
-		Income: nil,
+		Income: financeIncome{a},
 		Outbox: outbox, Clock: a.Clock, IDs: a.IDs, Logger: a.Logger,
 	})
 	a.Supporters.RegisterProjectors(a.Projectors)

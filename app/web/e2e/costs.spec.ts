@@ -57,6 +57,7 @@ async function serveCosts(page: Page, visibility: Instance["finance_visibility"]
     search_indexing: "deny",
     ai_usage: "deny",
     finance_visibility: visibility,
+    income_visibility: "private",
     supporters_enabled: false,
     supporter_list_visibility: "off",
     rules: [],

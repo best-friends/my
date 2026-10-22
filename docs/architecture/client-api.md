@@ -109,6 +109,7 @@ oapi-codegen は分割したファイルを直接読めないので、バンド�
   | --- | --- | --- | --- |
   | `GET /instance/domain_actions` | `domain_actions_visibility` | `none` / `users` / `all` | 匿名は `public, max-age=60`、トークン付きは `private, max-age=60` |
   | `GET /instance/cost_totals` | `finance_visibility` | `private`（404。ほかの値は公開する範囲） | 同上 |
+  | `GET /instance/income_totals` | `income_visibility`（ADR-0073 §7） | `private`（404。ほかの値は公開する範囲） | 同上 |
   | `GET /instance/supporters` | `supporter_list_visibility`（ADR-0071 §4） | `off` / `signed_in` / `public` | `public` は同上、`signed_in` は `private, no-store` |
 
   サポーターの一覧（`GET /instance/supporters`）の応答は、問題の応答も含め、`search_indexing` に関わらずいつも `X-Robots-Tag: noindex, noarchive` です（`platform` の `noArchivePaths`、ADR-0057）。

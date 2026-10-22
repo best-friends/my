@@ -110,3 +110,48 @@ ORDER BY h.source, h.billing_month, h.service, h.charge_type;
 SELECT 1 FROM imported_cost_heads
 WHERE source = sqlc.arg(source) AND billing_month = ANY(sqlc.arg(months)::text[])
 FOR UPDATE;
+
+-- The income records (ADR-0073 section 8). income_movements is written once per (provider,
+-- provider_id); the totals read it on every request.
+
+-- InsertIncomeMovement writes nothing when the movement is already recorded.
+-- name: InsertIncomeMovement :execrows
+INSERT INTO income_movements (
+  id, provider, provider_id, kind, parent_movement_id, subscription_id, occurred_at, occurred_on, covers_starts_on,
+  covers_ends_on, gross_minor, fee_minor, net_minor, currency, recorded_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+ON CONFLICT (provider, provider_id) DO NOTHING;
+
+-- name: FindIncomeMovementID :one
+SELECT id FROM income_movements WHERE provider = $1 AND provider_id = $2;
+
+-- KnownIncomeMovements returns the provider IDs among ids that are recorded.
+-- name: KnownIncomeMovements :many
+SELECT provider_id FROM income_movements
+WHERE provider = sqlc.arg(provider) AND provider_id = ANY(sqlc.arg(ids)::text[]);
+
+-- ListIncomeMovementsInWindow returns the movements whose place in the totals can meet the
+-- dates from starts_on to ends_on: those on the dates, the payments whose period meets them,
+-- and the movements on or before ends_on of a payment whose period ends on or after starts_on,
+-- with the period of their payment.
+-- name: ListIncomeMovementsInWindow :many
+SELECT m.kind, m.occurred_on, m.covers_starts_on, m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency,
+  p.covers_starts_on AS parent_covers_starts_on, p.covers_ends_on AS parent_covers_ends_on
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE (m.occurred_on >= sqlc.arg(starts_on)::date AND m.occurred_on <= sqlc.arg(ends_on)::date)
+  OR (m.covers_starts_on <= sqlc.arg(ends_on)::date AND m.covers_ends_on >= sqlc.arg(starts_on)::date)
+  OR (m.occurred_on <= sqlc.arg(ends_on)::date AND p.covers_ends_on >= sqlc.arg(starts_on)::date)
+ORDER BY m.occurred_on, m.id;
+
+-- ListIncomeMovements returns up to lim movements on the dates from starts_on to ends_on, of
+-- kind unless it is empty, newest first, before the movement before unless it is empty.
+-- name: ListIncomeMovements :many
+SELECT m.id, m.provider, m.provider_id, m.kind, m.subscription_id, m.occurred_at, m.occurred_on, m.covers_starts_on,
+  m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency, m.recorded_at, p.provider_id AS parent_provider_id
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE m.occurred_on >= sqlc.arg(starts_on)::date AND m.occurred_on <= sqlc.arg(ends_on)::date
+  AND (sqlc.arg(kind)::text = '' OR m.kind = sqlc.arg(kind)::text)
+  AND (sqlc.arg(before)::text = ''
+    OR (m.occurred_at, m.id) < (SELECT b.occurred_at, b.id FROM income_movements b WHERE b.id = sqlc.arg(before)::text))
+ORDER BY m.occurred_at DESC, m.id DESC
+LIMIT sqlc.arg(lim);

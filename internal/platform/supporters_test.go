@@ -394,6 +394,32 @@ func TestSupporterSubscriptionAndList(t *testing.T) {
 	if own.Subscription == nil || own.Subscription.State != clientapi.SupporterSubscriptionStateActive || own.Subscription.PlanName != "Supporter" {
 		t.Fatalf("after the return: %+v", own.Subscription)
 	}
+	// The payment reaches the income records with our subscription (ADR-0073 §1); the public
+	// income shows the plan's members and never the payment.
+	paid := time.Now().UTC()
+	day := supporters.DateOf(paid)
+	if err := e.app.Supporters.RecordMoney(ctx, "stripe", []supporters.MoneyMovement{{
+		ID: "txn_b", Kind: supporters.MoneyPayment, Subscription: "sub_b", OccurredAt: paid, OccurredOn: day,
+		Covers: supporters.DateRange{Start: day, End: day}, Gross: "500", Fee: "18", Net: "482", Currency: "JPY", Final: true,
+	}}); err != nil {
+		t.Fatalf("RecordMoney = %v", err)
+	}
+	var movements clientapi.IncomeMovementPage
+	e.want(e.do(http.MethodGet, "/admin/income_movements", admin.token, nil, &movements), http.StatusOK, "GET /admin/income_movements")
+	if len(movements.Items) != 1 || movements.Items[0].SubscriptionId == nil || *movements.Items[0].SubscriptionId != co.SubscriptionId ||
+		movements.Items[0].AccountId == nil || movements.Items[0].Net.Amount != "482" {
+		t.Errorf("income movements = %+v, want bob's payment", movements.Items)
+	}
+	e.want(e.do(http.MethodPatch, "/admin/settings", admin.token, map[string]any{"values": map[string]string{"income_visibility": "plans"}}, nil),
+		http.StatusOK, "set income_visibility plans")
+	var income clientapi.IncomeTotals
+	q := "/instance/income_totals?granularity=year&from=" + day.String() + "&to=" + day.String()
+	e.want(e.do(http.MethodGet, q, "", nil, &income), http.StatusOK, "GET /instance/income_totals")
+	if len(income.Periods) != 1 || len(income.Periods[0].Net) != 1 || income.Periods[0].Net[0].Amount != "482" ||
+		income.Plans == nil || len(*income.Plans) != 1 || (*income.Plans)[0].Members != 1 || income.Periods[0].Balance != nil {
+		t.Errorf("public income = %+v, want 482 and one member, without a balance while the costs are private", income)
+	}
+
 	// One plan at a time.
 	res := e.do(http.MethodPost, "/supporter/checkout", bob.token, choice, nil)
 	if typ := e.want(res, http.StatusConflict, "a second checkout"); typ != clientapi.ProblemTypeSupporterSubscribed {

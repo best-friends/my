@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  How the income totals cut the periods and place the payments (ADR-0073 §3, §5), to show
+  next to them: by calendar date without a time zone, weeks from `week_start` (ISO 8601),
+  each money movement on its date in its payment provider's reporting time zone
+  (`providers`), and under the `amortized` basis a payment that covers more than
+  `amortize_after_days` days spread by day over the days it covers, with its refunds and
+  chargebacks taking back the days before them on their own date and cancelling the later
+  ones.
+type: object
+required: [week_start, providers, amortize_after_days]
+properties:
+  week_start:
+    type: string
+    enum: [monday]
+  providers:
+    type: array
+    items:
+      $ref: ./IncomeProviderRule.yaml
+  amortize_after_days:
+    type: integer
