@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A quoted piece of someone else's text: the rule at the start and the clamped excerpt of a post. A notification quotes
+// A quoted piece of someone else's text: the sunken well and the clamped excerpt of a post. A notification quotes
 // the post it is about, a moderation notice quotes the moderators' words, and the form quotes the post being replied to.
 import type { ReactNode } from "react";
 import { Link } from "./Link";
-import { Stack } from "./Stack";
 import { Text } from "./Text";
 
 export type QuoteBlockProps = {
@@ -11,12 +10,10 @@ export type QuoteBlockProps = {
   children: ReactNode;
 };
 
-/** A block of lines with a rule at the start (`border-s-2`), one line above another. */
+/** A block of lines on a sunken well, one line above another. */
 export function QuoteBlock({ children }: QuoteBlockProps) {
   return (
-    <Stack gap="1" border="start">
-      {children}
-    </Stack>
+    <div className="flex min-w-0 flex-col gap-1 rounded-md bg-surface-sunken px-3 py-2 text-fg-muted">{children}</div>
   );
 }
 
@@ -30,7 +27,7 @@ export type PostExcerptProps = {
 /** The excerpt of a post as a quote that links to the post, in the color of the text and underlined on hover. */
 export function PostExcerpt({ href, children }: PostExcerptProps) {
   return (
-    <Link href={href} className="block border-s-2 border-border ps-3 wrap-anywhere text-fg no-underline data-hovered:underline">
+    <Link href={href} className="block rounded-md bg-surface-sunken px-3 py-2 wrap-anywhere text-fg-muted no-underline data-hovered:text-fg data-hovered:underline">
       {children}
     </Link>
   );

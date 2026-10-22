@@ -5,7 +5,7 @@ import { ContentWarning } from "./ContentWarning";
 
 const quoteCard = tv({
   slots: {
-    base: "flex w-full min-w-0 flex-col gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2",
+    base: "flex w-full min-w-0 flex-col gap-2 rounded-md border border-border bg-surface px-3 py-2",
     header: "flex min-w-0 items-center gap-2 text-sm",
     author: "min-w-0 flex-1",
     time: "shrink-0 text-fg-muted",

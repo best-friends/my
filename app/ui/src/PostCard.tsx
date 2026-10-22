@@ -7,8 +7,8 @@ import { VisuallyHidden } from "./VisuallyHidden";
 const postCard = tv({
   slots: {
     // The card is the size container its layout answers to (web-client.md D2).
-    base: "@container border-b border-border bg-surface px-4 py-3",
-    context: "mb-2 flex min-w-0 items-center gap-2 text-sm wrap-anywhere text-fg-muted [&>svg]:size-4 [&>svg]:shrink-0",
+    base: "@container relative mb-3 rounded-xl border border-border bg-surface-raised p-4 shadow-card",
+    context: "mb-2 flex min-w-0 items-center gap-2 text-sm font-bold wrap-anywhere text-success [&>svg]:size-4 [&>svg]:shrink-0",
     grid: "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
     // Narrow: the avatar sits beside the header and the body spans the card. Wide: the avatar has its own column.
     // Positioned, so that the avatar is drawn over the thread's line.
@@ -24,28 +24,28 @@ const postCard = tv({
     reactions: "col-span-2 flex min-w-0 flex-wrap items-center gap-1 @md:col-span-1 @md:col-start-2",
     actions: "col-span-2 flex min-w-0 flex-wrap items-center gap-1 @md:col-span-1 @md:col-start-2",
     // The thread's line, down the middle of the avatar (1rem of padding and half of its 2.5rem), behind it.
-    // It reaches from the card's top or from the avatar's middle (2rem down) to the card's bottom edge or
+    // It reaches from the card's top or from the avatar's middle (2.25rem down) to the card's bottom edge or
     // to the avatar's middle. It is decorative: the order of the posts and the headings around them carry
     // the thread.
     line: "pointer-events-none absolute inset-s-[calc(2.25rem-1px)] w-0.5 bg-border-strong",
   },
   variants: {
-    // Told apart by its surface and a bar on its start edge, not by a color alone. The bar's width comes
-    // out of the start padding, so the content lines up with the cards around it.
-    highlighted: { true: { base: "border-s-4 border-s-accent bg-surface-raised ps-3", line: "inset-s-[calc(2rem-1px)]" } },
-    lineAbove: { true: { base: "relative", line: "top-0" }, false: { line: "top-8" } },
+    // Told apart by a thicker border in the accent color, not by a color alone: it is the only card with a 2px border.
+    highlighted: { true: { base: "border-2 border-accent" } },
+    // Cards of a thread touch: the corners where they meet are square and the rule between them is the line's.
+    lineAbove: { true: { base: "-mt-px rounded-t-none border-t-transparent", line: "-top-px" }, false: { line: "top-9" } },
     // Below the avatar the line runs down the card, so on a narrow card the body, details and actions under
     // the header move clear of it; from `@md` they are in the avatar's next column anyway.
     lineBelow: {
       true: {
-        base: "relative",
+        base: "mb-0 rounded-b-none",
         line: "-bottom-px",
         body: "ps-8 @md:ps-0",
         details: "ps-8 @md:ps-0",
         reactions: "ps-8 @md:ps-0",
         actions: "ps-8 @md:ps-0",
       },
-      false: { line: "h-8" },
+      false: { line: "h-9" },
     },
   },
 });
@@ -166,7 +166,7 @@ const postCardAuthor = tv({
     // The lines start at the card's start, as wide as their text: a right-to-left name in a left-to-right
     // card lines up with the card, not with its own direction (G9; Chromium has no `text-align: match-parent`).
     base: "flex min-w-0 flex-col items-start @sm:flex-row @sm:items-baseline @sm:gap-1",
-    name: "max-w-full min-w-0 truncate font-semibold",
+    name: "max-w-full min-w-0 truncate font-extrabold",
     // Left to right in any page, so the ellipsis at its end cuts the domain and the user part stays. The
     // handle is one text: elements inside would be blocks in the flex row and split it in the accessible name.
     handle: "max-w-full min-w-0 truncate text-sm text-fg-muted",
