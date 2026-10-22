@@ -70,6 +70,7 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
     { key: "finance_viewer_item_memos", kind: "bool", default: "false" },
     { key: "finance_viewer_income", kind: "enum", default: "totals", choices: ["totals", "plans"] },
     { key: "income_visibility", kind: "enum", default: "private", choices: ["private", "totals", "plans"] },
+    { key: "federation_mode", kind: "enum", default: "both", choices: ["off", "inbound", "outbound", "both"] },
   ];
   return { items: items.map((item) => ({ ...item, value: stored[item.key] ?? item.default, stored: item.key in stored })) };
 }
@@ -99,6 +100,7 @@ async function administratorServer(page: Page) {
         registrations: { mode: "approval" },
         limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
+        federation: { mode: settings["federation_mode"] ?? "both" },
         rules: [],
       });
     }
@@ -197,5 +199,31 @@ test.describe("server policies", () => {
     expect(changes).toEqual(["registration_mode=invite"]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+  });
+
+  test("narrows the federation direction only after confirming what stops (ADR-0076)", async ({ page, makeAxeBuilder }) => {
+    const changes = await administratorServer(page);
+    await page.goto("/admin/settings");
+    const main = page.getByRole("main");
+    await expect(main.getByRole("textbox").first()).toHaveValue("my example");
+    const direction = main.getByRole("radiogroup", { name: message("admin.settings.federation.mode"), exact: true });
+    await expect(direction.getByRole("radio", { name: message("admin.settings.federation.mode.both"), exact: true })).toBeChecked();
+    await direction.getByText(message("admin.settings.federation.mode.inbound"), { exact: true }).click();
+    const save = main.getByRole("button", { name: message("admin.settings.policies.save"), exact: true });
+    await save.click();
+
+    // The dialog lists what stops and keeps the focus on the way out.
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("listitem")).toHaveCount(2);
+    await expect(dialog.getByRole("button", { name: message("admin.settings.federation.narrow.cancel"), exact: true })).toBeFocused();
+    expect(changes).toEqual([]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await dialog.getByRole("button", { name: message("admin.settings.federation.narrow.confirm"), exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(main.getByRole("status").last()).not.toBeEmpty();
+    expect(changes).toEqual(["federation_mode=inbound"]);
   });
 });

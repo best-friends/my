@@ -6,7 +6,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
-import { relationshipFixture, remoteAccountFixture, statusPage, viewerFixture } from "../../test/fixtures";
+import { instanceFixture, relationshipFixture, remoteAccountFixture, type Schemas, statusPage, viewerFixture } from "../../test/fixtures";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -205,5 +205,94 @@ describe("an account on another server", () => {
     await screen.findByRole("heading", { level: 1, name: "Accounts ⁨Alice⁩ follows" });
     const link = within(screen.getByRole("main")).getByRole("link", { name: "Carol @carol@remote.example" });
     expect(link).toHaveAttribute("href", "/@carol@remote.example");
+  });
+});
+
+/** Serves GET /instance with the federation direction (ADR-0076): the modes in turn, one for each read, then the last. */
+function federationServer(...modes: Schemas["InstanceFederation"]["mode"][]) {
+  let reads = 0;
+  server.use(
+    http.get(`${apiBase}/instance`, () => {
+      const mode = modes[Math.min(reads, modes.length - 1)] ?? "both";
+      reads++;
+      return HttpResponse.json({ ...instanceFixture, federation: { mode } });
+    }),
+  );
+}
+
+describe("while the instance takes nothing in from other servers", () => {
+  test("the search finds only the accounts this server knows", async () => {
+    server.use(resumableSession());
+    federationServer("outbound");
+    const { searches } = searchServer();
+    const { user, field } = await openSearch();
+
+    await waitFor(() => {
+      expect(field).toHaveAccessibleDescription(/does not look up accounts of other servers now/);
+    });
+    await user.type(field, "@dave@elsewhere.example{Enter}");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("This server does not know that account, and it does not look up accounts of other servers now.");
+    expect(searches).toEqual([{ acct: "@dave@elsewhere.example", resolve: false }]);
+  });
+
+  test("the search does not offer signing in to find accounts on other servers", async () => {
+    federationServer("off");
+    const { field } = await openSearch();
+
+    await waitFor(() => {
+      expect(field).toHaveAccessibleDescription(/does not look up accounts of other servers now/);
+    });
+    expect(screen.queryByRole("link", { name: "Sign in to find accounts on other servers" })).not.toBeInTheDocument();
+  });
+
+  test("a refusal for the federation direction stops the app offering what it refuses", async () => {
+    server.use(resumableSession());
+    // The operators turned federation off after the page read GET /instance.
+    federationServer("both", "off");
+    const { searches } = searchServer(() => problem(403, "/api/v1/problems/federation-restricted", "This server does not federate in the direction that this needs."));
+    const { user, field } = await openSearch();
+
+    await user.type(field, "@dave@elsewhere.example{Enter}");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("This server does not know that account, and it does not look up accounts of other servers now.");
+    await waitFor(() => {
+      expect(field).toHaveAccessibleDescription(/does not look up accounts of other servers now/);
+    });
+    await user.type(field, "x{Enter}");
+    await waitFor(() => {
+      expect(searches).toEqual([
+        { acct: "@dave@elsewhere.example", resolve: true },
+        { acct: "@dave@elsewhere.examplex", resolve: false },
+      ]);
+    });
+  });
+
+  test("a remote account's profile offers no new follow", async () => {
+    server.use(resumableSession());
+    federationServer("outbound");
+    server.use(
+      http.get(`${apiBase}/accounts/lookup`, () => HttpResponse.json(carol)),
+      http.get(`${apiBase}/accounts/relationships`, () => HttpResponse.json([relationshipFixture(carol.id)])),
+    );
+    await renderApp({ path: `/@${carol.acct}` });
+
+    expect(await screen.findByText("This server does not follow accounts of other servers now.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Follow" })).not.toBeInTheDocument();
+    // Mute, block and report stay.
+    expect(screen.getByRole("button", { name: "More actions for ⁨Carol⁩" })).toBeInTheDocument();
+  });
+
+  test("a remote account's profile still undoes an existing follow", async () => {
+    server.use(resumableSession());
+    federationServer("off");
+    server.use(
+      http.get(`${apiBase}/accounts/lookup`, () => HttpResponse.json(carol)),
+      http.get(`${apiBase}/accounts/relationships`, () => HttpResponse.json([relationshipFixture(carol.id, { following: true })])),
+    );
+    await renderApp({ path: `/@${carol.acct}` });
+
+    expect(await screen.findByRole("button", { name: "Following" })).toBeInTheDocument();
+    expect(screen.queryByText("This server does not follow accounts of other servers now.")).not.toBeInTheDocument();
   });
 });

@@ -3,7 +3,10 @@ import { useAnnouncer, useToast } from "@my/ui";
 import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
+import { useConfig } from "../../../lib/config";
 import { errorMessage } from "../../../lib/errors";
+import { useFederation } from "../../../lib/federation";
+import { isRemoteAcct } from "../../../lib/handle";
 import { useLocale, useT } from "../../../lib/i18n";
 import { shellQueryReader } from "../../../lib/query";
 import {
@@ -22,7 +25,7 @@ import {
 import { type Draft, isEmptyDraft } from "./draftStore";
 import { newPoll, type PollDraft, pollProblem, pollRequest, withOption, withoutOption } from "./poll";
 import { type LanguageOption, languageOptions } from "./languages";
-import { countCharacters, defaultVisibility, postedVisibility, visibilities } from "./policy";
+import { countCharacters, defaultVisibility, domainMentions, postedVisibility, visibilities } from "./policy";
 import { type Attachments, descriptionFieldId, useAttachments } from "./useAttachments";
 import { type ComposeController, composeTextId, useComposeState } from "./useCompose";
 import { useUnreachedMentions } from "./useUnreachedMentions";
@@ -65,6 +68,11 @@ export type ReadyComposeForm = {
    * `local` and they do not follow the viewer (ADR-0017); empty for the other visibilities.
    */
   unreachedMentions: string[];
+  /**
+   * Whether the post replies to or mentions an account of another server while the instance sends nothing out
+   * (its federation mode is `off` or `inbound`, ADR-0076): the post is posted here but does not reach that server.
+   */
+  staysLocal: boolean;
   language: string;
   languages: LanguageOption[];
   replyTo: ReplyTarget;
@@ -183,6 +191,8 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   const visibility =
     preferredVisibility === undefined ? undefined : postedVisibility(draft.visibility ?? defaultVisibility(preferredVisibility, replyPost), limits);
   const unreachedMentions = useUnreachedMentions(draft.text, visibility === "local");
+  const { reachesRemote } = useFederation();
+  const { accountDomain } = useConfig();
   const attachments = useAttachments(store, draft.attachments);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -238,6 +248,11 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   const replyTo = targetOf(draft.replyToId, replyPost, replyQuery.isError);
   const quoteOf = targetOf(draft.quoteId, draft.quoteId === null ? undefined : quoteQuery.data, quoteQuery.isError);
   const quotePolicy = draft.quotePolicy ?? preferences.data.default_quote_policy;
+  const ownDomain = accountDomain.toLowerCase();
+  const staysLocal =
+    !reachesRemote &&
+    ((replyTo.status === "ready" && isRemoteAcct(replyTo.post.account.acct)) ||
+      domainMentions(draft.text).some((handle) => handle.slice(handle.indexOf("@") + 1) !== ownDomain));
   const language = draft.language ?? preferredLanguage;
   const warningLength = draft.hasWarning ? countCharacters(draft.spoilerText) : 0;
   const textLimit = maxCharacters - warningLength;
@@ -303,6 +318,7 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
     visibility,
     limits: limits === undefined || limits.visibilities.length === visibilities.length ? null : limits,
     unreachedMentions,
+    staysLocal,
     language,
     languages: languageOptions(locale, [preferredLanguage, language], t("client:compose.language.und")),
     replyTo,

@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type SubmitEvent, useState } from "react";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
 import { ApiError, errorMessage } from "../../../lib/errors";
+import { isFederationRestricted } from "../../../lib/federation";
+import { useFederation } from "../../../lib/federation";
 import { type Translate, useT } from "../../../lib/i18n";
 import { accountSearchMutationKey, lookupAccount, storeFoundAccount } from "../api/lookup";
 
@@ -24,16 +26,33 @@ export type AccountSearchState = {
   isPending: boolean;
   /** Why the search of the text in the field found nothing (localized), or null. */
   error: string | null;
-  /** Whether the viewer is signed out, so that only the accounts this server knows can be found. */
+  /** Whether the viewer is signed out, so that only the accounts this server knows can be found until they sign in. */
   signedOut: boolean;
+  /**
+   * Whether only the accounts this server knows can be found because the instance does not take in other servers'
+   * posts (its federation mode is `off` or `outbound`, ADR-0076), signed in or not.
+   */
+  knownOnly: boolean;
 };
 
+/** Why the search finds only the accounts this server knows, if it does. */
+type Scope = "all" | "signed-out" | "known-only";
+
 /** The localized reason a search failed. 404 and 429 come from the client's catalog (web-client.md E2). */
-function failureOf(t: Translate, error: unknown, signedOut: boolean): string {
+function failureOf(t: Translate, error: unknown, scope: Scope): string {
   if (error instanceof ApiError && error.status === 404) {
-    return signedOut ? t("client:search.not_found_signed_out") : t("client:search.not_found");
+    switch (scope) {
+      case "signed-out":
+        return t("client:search.not_found_signed_out");
+      case "known-only":
+        return t("client:search.not_found_known_only");
+      case "all":
+        return t("client:search.not_found");
+    }
   }
   if (error instanceof ApiError && error.status === 429) return t("client:search.rate_limited");
+  // The mode narrowed after the page loaded it; GET /instance is fetched again (lib/federation.ts).
+  if (isFederationRestricted(error)) return t("client:search.not_found_known_only");
   return t("client:search.failed", { reason: errorMessage(error) });
 }
 
@@ -47,16 +66,19 @@ export function useAccountSearch({ initialQuery, onFound }: AccountSearchOptions
   const [value, setValue] = useState(initialQuery);
   // Resolving needs a token; while the session is still resuming, the request waits for it (lib/api/client.ts).
   const signedOut = session === "signed-out";
+  // Resolving reaches the account's server, which the server refuses while it takes nothing in (ADR-0076).
+  const { followsRemote } = useFederation();
+  const scope: Scope = !followsRemote ? "known-only" : signedOut ? "signed-out" : "all";
   const mutation = useMutation({
     mutationKey: accountSearchMutationKey,
-    mutationFn: ({ query, resolve }: { query: string; resolve: boolean }) => lookupAccount(api, query, resolve),
+    mutationFn: (variables: { query: string; scope: Scope }) => lookupAccount(api, variables.query, variables.scope === "all"),
     onSuccess: (account, { query }) => {
       storeFoundAccount(queryClient, api, account);
       onFound(account.acct, query);
     },
-    onError: (error, { resolve }) => {
+    onError: (error, variables) => {
       // The message is linked to the field, which keeps the focus; a screen reader hears it at once.
-      announce(failureOf(t, error, !resolve), "assertive");
+      announce(failureOf(t, error, variables.scope), "assertive");
     },
   });
 
@@ -67,11 +89,12 @@ export function useAccountSearch({ initialQuery, onFound }: AccountSearchOptions
     submit: (event) => {
       event.preventDefault();
       if (query === "" || mutation.isPending) return;
-      mutation.mutate({ query, resolve: !signedOut });
+      mutation.mutate({ query, scope });
     },
     isPending: mutation.isPending,
     // The failure belongs to the text that caused it: editing the text clears it.
-    error: mutation.isError && mutation.variables.query === query ? failureOf(t, mutation.error, !mutation.variables.resolve) : null,
-    signedOut,
+    error: mutation.isError && mutation.variables.query === query ? failureOf(t, mutation.error, mutation.variables.scope) : null,
+    signedOut: scope === "signed-out",
+    knownOnly: scope === "known-only",
   };
 }

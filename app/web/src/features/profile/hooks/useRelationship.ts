@@ -6,6 +6,8 @@ import { useAnnouncer, useToast } from "@my/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApi, useSessionStatus } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
+import { useFederation } from "../../../lib/federation";
+import { isRemoteAcct } from "../../../lib/handle";
 import { type Translate, useT } from "../../../lib/i18n";
 import { profilePath } from "../../../lib/paths";
 import { useViewer } from "../../session";
@@ -28,6 +30,12 @@ export type RelationshipState =
       kind: "other";
       relationship: Relationship;
       follow: FollowState;
+      /**
+       * Whether to offer a new follow (`follow` is `none`): not of an account of another server while the instance
+       * does not follow other servers (its federation mode is `off` or `outbound`, ADR-0076), which the server
+       * refuses. A follow or a request that already exists can still be undone.
+       */
+      canFollow: boolean;
       /** The change on its way to the server, or null. */
       pending: RelationshipAction | null;
       /** Sends a change. Its result is announced; a failure is shown in a toast. */
@@ -69,6 +77,7 @@ export function useRelationship(account: Account): RelationshipState {
   const toast = useToast();
   const session = useSessionStatus();
   const viewer = useViewer();
+  const { followsRemote } = useFederation();
   const isOther = viewer.status === "signed-in" && viewer.account.id !== account.id;
   const query = useQuery({ ...relationshipQueryOptions(api, account.id), enabled: isOther });
   const mutation = useMutation({
@@ -97,6 +106,7 @@ export function useRelationship(account: Account): RelationshipState {
     kind: "other",
     relationship: query.data,
     follow: followStateOf(query.data),
+    canFollow: followsRemote || !isRemoteAcct(account.acct),
     pending: mutation.isPending ? mutation.variables : null,
     change: (action) => {
       if (!mutation.isPending) mutation.mutate(action);

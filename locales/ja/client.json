@@ -4647,6 +4647,82 @@
     "defaultMessage": "サーバーが各投稿の最初のリンクのページを、投稿の公開範囲によらず取得し、題名・説明・画像を投稿の下に表示します。リンク先のサイトには、そのリンクがいつ投稿されたかが伝わりますが、誰が投稿したかは伝わりません。",
     "description": "Description of the link cards checkbox."
   },
+  "admin.settings.federation.mode": {
+    "defaultMessage": "連合の向き",
+    "description": "Label of the radio buttons of the federation direction setting (federation_mode, ADR-0076): which way posts flow between this server and other servers."
+  },
+  "admin.settings.federation.mode.description": {
+    "defaultMessage": "このサーバーとほかのサーバーのあいだで、投稿・フォロー・反応をどちらの向きに流すかを選びます。変更はすぐに効きます。",
+    "description": "Description of the federation direction radio buttons."
+  },
+  "admin.settings.federation.mode.both": {
+    "defaultMessage": "送受信",
+    "description": "Federation direction choice: send to and receive from other servers (the default)."
+  },
+  "admin.settings.federation.mode.both.description": {
+    "defaultMessage": "利用者はほかのサーバーのアカウントをフォローして読め、このサーバーの投稿はほかのサーバーのフォロワーに届きます。",
+    "description": "Description of the federation direction choice 'Both ways'."
+  },
+  "admin.settings.federation.mode.inbound": {
+    "defaultMessage": "受信のみ",
+    "description": "Federation direction choice: only receive from other servers."
+  },
+  "admin.settings.federation.mode.inbound.description": {
+    "defaultMessage": "利用者はほかのサーバーのアカウントをフォローして読めますが、このサーバーの投稿・プロフィール・反応は外へ出ず、ほかのサーバーからのフォローは断ります。",
+    "description": "Description of the federation direction choice 'Receive only'."
+  },
+  "admin.settings.federation.mode.outbound": {
+    "defaultMessage": "送信のみ",
+    "description": "Federation direction choice: only send to other servers."
+  },
+  "admin.settings.federation.mode.outbound.description": {
+    "defaultMessage": "ほかのサーバーのアカウントはここの利用者をフォローして投稿を受け取れますが、ほかのサーバーの投稿・反応は取り込まず、利用者はほかのサーバーのアカウントをフォローしたり探したりできません。",
+    "description": "Description of the federation direction choice 'Send only'."
+  },
+  "admin.settings.federation.mode.off": {
+    "defaultMessage": "オフ",
+    "description": "Federation direction choice: no federation at all."
+  },
+  "admin.settings.federation.mode.off.description": {
+    "defaultMessage": "ほかのサーバーへ何も送らず、ほかのサーバーから何も取り込みません。このサーバーだけで動きます。",
+    "description": "Description of the federation direction choice 'Off'."
+  },
+  "admin.settings.federation.narrow.title": {
+    "defaultMessage": "連合の向きを「{mode}」に変えますか？",
+    "description": "Title of the confirmation before saving a federation direction that stops something from flowing. {mode} is the chosen direction, such as 'Receive only'."
+  },
+  "admin.settings.federation.narrow.description": {
+    "defaultMessage": "「{from}」から「{to}」に変えると、保存したときから次のようになります。",
+    "description": "First sentence of the confirmation before narrowing the federation direction, followed by a list of what changes. {from} and {to} are the saved and the chosen directions."
+  },
+  "admin.settings.federation.narrow.sending": {
+    "defaultMessage": "このサーバーの投稿・プロフィール・反応がほかのサーバーに届かなくなります。ほかのサーバーのフォロワーはつながったまま何も受け取らなくなり、そのあいだの投稿は後から配送されません。",
+    "description": "Item of the list in the confirmation before narrowing the federation direction, when the new direction stops sending to other servers."
+  },
+  "admin.settings.federation.narrow.receiving": {
+    "defaultMessage": "ほかのサーバーの投稿・反応が届かなくなり、利用者はほかのサーバーのアカウントをフォローしたり探したりできなくなります。すでにしているフォローはつながったまま更新されなくなります。",
+    "description": "Item of the list in the confirmation before narrowing the federation direction, when the new direction stops receiving from other servers."
+  },
+  "admin.settings.federation.narrow.deletions": {
+    "defaultMessage": "オフのあいだに削除した投稿やアカウントは、ほかのサーバーには伝わらず、そこにある写しは残ります。",
+    "description": "Item of the list in the confirmation before turning federation off."
+  },
+  "admin.settings.federation.narrow.relations": {
+    "defaultMessage": "ほかのサーバーとのフォロー関係・取り込んだ投稿・配送の記録は消えず、フォローを終える通知も送りません。",
+    "description": "Last item of the list in the confirmation before narrowing the federation direction."
+  },
+  "admin.settings.federation.narrow.widen": {
+    "defaultMessage": "あとで向きを広げ直すと、そのときから流れが再開します。",
+    "description": "Note under the list in the confirmation before narrowing the federation direction."
+  },
+  "admin.settings.federation.narrow.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes the confirmation before narrowing the federation direction without saving."
+  },
+  "admin.settings.federation.narrow.confirm": {
+    "defaultMessage": "変更して保存",
+    "description": "Button that saves the settings with the narrower federation direction."
+  },
   "admin.settings.federation.title": {
     "defaultMessage": "連合",
     "description": "Heading of the section of the federation settings."
@@ -5847,6 +5923,10 @@
     "defaultMessage": "{count, plural, other {{accounts} はほかのサーバーのアカウントで、あなたをフォローしていないため、この投稿は届きません。}}公開範囲「このサーバー」の投稿は、ほかのサーバーではあなたのフォロワーにだけ届き、このメンションはメンションではなくただのリンクとして表示されます。",
     "description": "Warning under a post with the visibility 'This server' that mentions accounts of other servers that do not follow the author (ADR-0017, ADR-0035): those accounts do not receive the post, and the author's followers on other servers see the mention as a plain link, not as a mention. {accounts} is the list of their handles, for example '@carol@remote.example and @dave@other.example'; {count} is how many there are."
   },
+  "compose.federation.stays_local": {
+    "defaultMessage": "連合先には届きません。このサーバーはいまほかのサーバーへ投稿を送らないため、返信先やメンションしたほかのサーバーのアカウントにはこの投稿が届きません。",
+    "description": "Warning under a post that replies to or mentions an account of another server while this server sends nothing to other servers (federation direction 'Receive only' or 'Off', ADR-0076)."
+  },
   "compose.missing_description.add": {
     "defaultMessage": "説明を書く",
     "description": "Button of the confirmation that goes back to the form to describe the images."
@@ -6579,6 +6659,10 @@
     "defaultMessage": "{host} がフォローのリクエストを承認するのを待っています。",
     "description": "Shown under the follow button of an account on another server while the user's follow request awaits that server's answer. {host} is the server's host name."
   },
+  "profile.follow.federation_restricted": {
+    "defaultMessage": "このサーバーはいま、ほかのサーバーのアカウントをフォローできません。",
+    "description": "Shown in place of the follow button on the profile of an account of another server while this server does not follow other servers (federation direction 'Send only' or 'Off', ADR-0076)."
+  },
   "profile.follow.request": {
     "defaultMessage": "フォローをリクエスト",
     "description": "Button on a profile of an account that approves its followers: it sends a follow request."
@@ -6915,6 +6999,10 @@
     "defaultMessage": "@ユーザー名@サーバー か、プロフィールのアドレスを入力します。このサーバーがすでに知っているアカウントだけが見つかります。",
     "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
   },
+  "search.description_known_only": {
+    "defaultMessage": "@ユーザー名@サーバー か、プロフィールのアドレスを入力します。このサーバーはいまほかのサーバーのアカウントを問い合わせないため、すでに知っているアカウントだけが見つかります。",
+    "description": "Help text of the account search field while this server does not look up accounts of other servers (federation direction 'Send only' or 'Off', ADR-0076)."
+  },
   "search.failed": {
     "defaultMessage": "アカウントを検索できませんでした：{reason}",
     "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
@@ -6930,6 +7018,10 @@
   "search.not_found_signed_out": {
     "defaultMessage": "このサーバーはそのアカウントを知りません。サインインすると、そのアカウントのサーバーに問い合わせられます。",
     "description": "Error under the search field when nobody is signed in and this server does not know the account."
+  },
+  "search.not_found_known_only": {
+    "defaultMessage": "このサーバーはそのアカウントを知らず、いまはほかのサーバーに問い合わせません。",
+    "description": "Error of the account search when this server does not know the account and does not look up accounts of other servers (federation direction 'Send only' or 'Off', ADR-0076)."
   },
   "search.rate_limited": {
     "defaultMessage": "検索の回数が多すぎます。数分たってからもう一度お試しください。",
@@ -8930,6 +9022,10 @@
   "status.edited": {
     "defaultMessage": "編集済み",
     "description": "Link under an edited post to its edit history."
+  },
+  "status.federation.stays_local": {
+    "defaultMessage": "連合先には届きません",
+    "description": "Short note at the end of the action bar of a post of another server while this server sends nothing to other servers (federation direction 'Receive only' or 'Off', ADR-0076): replies, boosts, favourites and reactions are recorded on this server but do not reach the post's server. It also describes those buttons."
   },
   "status.favourite.off": {
     "defaultMessage": "お気に入りから外しました",

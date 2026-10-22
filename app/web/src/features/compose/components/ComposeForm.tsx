@@ -108,6 +108,11 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
             })}
           </Text>
         )}
+        {form.staysLocal && (
+          <Text as="p" size="sm" tone="warning">
+            {t("client:compose.federation.stays_local")}
+          </Text>
+        )}
         {form.error !== null && <InlineError size="inherit">{form.error}</InlineError>}
         {/* The tools and the submit button share the row under the text, so that the button stays on the first screen at 320 px. */}
         <Cluster align="center" gap="2">

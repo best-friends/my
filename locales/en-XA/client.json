@@ -5595,6 +5595,82 @@
     "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƒḗḗŧƈħḗḗş ŧħḗḗ ƥȧȧɠḗḗ ǿǿƒ ŧħḗḗ ƒīřşŧ ŀīƞķ īƞ ḗḗȧȧƈħ ƥǿǿşŧ, ẇħǿǿḗḗṽḗḗř ƈȧȧƞ şḗḗḗḗ ŧħḗḗ ƥǿǿşŧ, ȧȧƞḓ şħǿǿẇş īŧş ŧīŧŀḗḗ, ḓḗḗşƈřīƥŧīǿǿƞ, ȧȧƞḓ īḿȧȧɠḗḗ ŭŭƞḓḗḗř īŧ. Ŧħḗḗ ŀīƞķḗḗḓ şīŧḗḗş ŀḗḗȧȧřƞ ẇħḗḗƞ ŧħḗḗ ŀīƞķ ẇȧȧş ƥǿǿşŧḗḗḓ, ƀŭŭŧ ƞǿǿŧ ƀẏ ẇħǿǿḿ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.federation.mode": {
+    "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧīǿǿƞ ḓīřḗḗƈŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.both": {
+    "defaultMessage": "[Ɓǿǿŧħ ẇȧȧẏş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.both.description": {
+    "defaultMessage": "[Ŭşḗḗřş ƒǿǿŀŀǿǿẇ ȧȧƞḓ řḗḗȧȧḓ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş, ȧȧƞḓ ŧħīş şḗḗřṽḗḗř ḓḗḗŀīṽḗḗřş īŧş ƥǿǿşŧş ŧǿǿ ŧħḗḗīř ƒǿǿŀŀǿǿẇḗḗřş ŧħḗḗřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.description": {
+    "defaultMessage": "[Ẇħīƈħ ẇȧȧẏ ƥǿǿşŧş, ƒǿǿŀŀǿǿẇş ȧȧƞḓ řḗḗȧȧƈŧīǿǿƞş ƒŀǿǿẇ ƀḗḗŧẇḗḗḗḗƞ ŧħīş şḗḗřṽḗḗř ȧȧƞḓ ǿǿŧħḗḗř şḗḗřṽḗḗřş. Ŧħḗḗ ƈħȧȧƞɠḗḗ ŧȧȧķḗḗş ḗḗƒƒḗḗƈŧ ȧȧŧ ǿǿƞƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.inbound": {
+    "defaultMessage": "[Řḗḗƈḗḗīṽḗḗ ǿǿƞŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.inbound.description": {
+    "defaultMessage": "[Ŭşḗḗřş ƒǿǿŀŀǿǿẇ ȧȧƞḓ řḗḗȧȧḓ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş, ƀŭŭŧ ŧħḗḗ ƥǿǿşŧş, ƥřǿǿƒīŀḗḗş ȧȧƞḓ řḗḗȧȧƈŧīǿǿƞş ǿǿƒ ŧħīş şḗḗřṽḗḗř ḓǿǿ ƞǿǿŧ ɠǿǿ ǿǿŭŭŧ, ȧȧƞḓ ƒǿǿŀŀǿǿẇş ƒřǿǿḿ ǿǿŧħḗḗř şḗḗřṽḗḗřş ȧȧřḗḗ ḓḗḗƈŀīƞḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.off": {
+    "defaultMessage": "[Ǿƒƒ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.off.description": {
+    "defaultMessage": "[Ƞǿǿŧħīƞɠ īş şḗḗƞŧ ŧǿǿ ǿǿŧħḗḗř şḗḗřṽḗḗřş ȧȧƞḓ ƞǿǿŧħīƞɠ īş ŧȧȧķḗḗƞ īƞ ƒřǿǿḿ ŧħḗḗḿ. Ŧħīş şḗḗřṽḗḗř ẇǿǿřķş ǿǿƞ īŧş ǿǿẇƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.outbound": {
+    "defaultMessage": "[Şḗḗƞḓ ǿǿƞŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.mode.outbound.description": {
+    "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş ƈȧȧƞ ƒǿǿŀŀǿǿẇ ŭŭşḗḗřş ħḗḗřḗḗ ȧȧƞḓ řḗḗƈḗḗīṽḗḗ ŧħḗḗīř ƥǿǿşŧş, ƀŭŭŧ ŧħḗḗ ƥǿǿşŧş ȧȧƞḓ řḗḗȧȧƈŧīǿǿƞş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş ȧȧřḗḗ ƞǿǿŧ ŧȧȧķḗḗƞ īƞ, ȧȧƞḓ ŭŭşḗḗřş ƈȧȧƞƞǿǿŧ ƒǿǿŀŀǿǿẇ ǿǿř ŀǿǿǿǿķ ŭŭƥ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.cancel": {
+    "defaultMessage": "[Ƈȧȧƞƈḗḗŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.confirm": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗ ȧȧƞḓ şȧȧṽḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.deletions": {
+    "defaultMessage": "[Ƥǿǿşŧş ȧȧƞḓ ȧȧƈƈǿǿŭŭƞŧş ḓḗḗŀḗḗŧḗḗḓ ẇħīŀḗḗ ƒḗḗḓḗḗřȧȧŧīǿǿƞ īş ǿǿƒƒ ȧȧřḗḗ ƞǿǿŧ ḓḗḗŀḗḗŧḗḗḓ ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş: ŧħḗḗīř ƈǿǿƥīḗḗş ŧħḗḗřḗḗ şŧȧȧẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.description": {
+    "defaultMessage": "[Ƈħȧȧƞɠīƞɠ ƒřǿǿḿ “{from}” ŧǿǿ “{to}” ŧȧȧķḗḗş ḗḗƒƒḗḗƈŧ ȧȧş şǿǿǿǿƞ ȧȧş īŧ īş şȧȧṽḗḗḓ:]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.receiving": {
+    "defaultMessage": "[Ƥǿǿşŧş ȧȧƞḓ řḗḗȧȧƈŧīǿǿƞş ƒřǿǿḿ ǿǿŧħḗḗř şḗḗřṽḗḗřş ƞǿǿ ŀǿǿƞɠḗḗř ƈǿǿḿḗḗ īƞ, ȧȧƞḓ ŭŭşḗḗřş ƈȧȧƞ ƞǿǿ ŀǿǿƞɠḗḗř ƒǿǿŀŀǿǿẇ ǿǿř ŀǿǿǿǿķ ŭŭƥ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş. Ŧħḗḗīř ƒǿǿŀŀǿǿẇş ǿǿƒ řḗḗḿǿǿŧḗḗ ȧȧƈƈǿǿŭŭƞŧş şŧȧȧẏ ƀŭŭŧ ȧȧřḗḗ ƞǿǿ ŀǿǿƞɠḗḗř ŭŭƥḓȧȧŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.relations": {
+    "defaultMessage": "[Ƒǿǿŀŀǿǿẇş ẇīŧħ ǿǿŧħḗḗř şḗḗřṽḗḗřş, ŧħḗḗ ƥǿǿşŧş ŧȧȧķḗḗƞ īƞ ȧȧƞḓ ŧħḗḗ ḓḗḗŀīṽḗḗřẏ řḗḗƈǿǿřḓş ȧȧřḗḗ ķḗḗƥŧ, ȧȧƞḓ ƞǿǿŧħīƞɠ īş şḗḗƞŧ ŧǿǿ ḗḗƞḓ ŧħḗḗ ƒǿǿŀŀǿǿẇş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.sending": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧş, ƥřǿǿƒīŀḗḗş ȧȧƞḓ řḗḗȧȧƈŧīǿǿƞş ǿǿƒ ŧħīş şḗḗřṽḗḗř ƞǿǿ ŀǿǿƞɠḗḗř řḗḗȧȧƈħ ǿǿŧħḗḗř şḗḗřṽḗḗřş. Ƒǿǿŀŀǿǿẇḗḗřş ŧħḗḗřḗḗ şŧȧȧẏ ƀŭŭŧ řḗḗƈḗḗīṽḗḗ ƞǿǿŧħīƞɠ, ȧȧƞḓ ẇħȧȧŧ īş ƥǿǿşŧḗḗḓ ḿḗḗȧȧƞẇħīŀḗḗ īş ƞǿǿŧ ḓḗḗŀīṽḗḗřḗḗḓ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.title": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗ ŧħḗḗ ƒḗḗḓḗḗřȧȧŧīǿǿƞ ḓīřḗḗƈŧīǿǿƞ ŧǿǿ “{mode}”?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.narrow.widen": {
+    "defaultMessage": "[Ẇīḓḗḗƞīƞɠ ŧħḗḗ ḓīřḗḗƈŧīǿǿƞ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř řḗḗşŭŭḿḗḗş ŧħḗḗ ƒŀǿǿẇ ƒřǿǿḿ ŧħḗḗƞ ǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.settings.federation.title": {
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7479,6 +7555,10 @@
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ şḗḗƞḓ ŧħḗḗ ƥǿǿşŧ: {reason}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.federation.stays_local": {
+    "defaultMessage": "[Ŧħīş ẇǿǿƞ'ŧ řḗḗȧȧƈħ ǿǿŧħḗḗř şḗḗřṽḗḗřş: ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ şḗḗƞḓ ƥǿǿşŧş ŧǿǿ ŧħḗḗḿ ƞǿǿẇ, şǿǿ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş ŧħȧȧŧ ŧħīş řḗḗƥŀīḗḗş ŧǿǿ ǿǿř ḿḗḗƞŧīǿǿƞş ẇīŀŀ ƞǿǿŧ řḗḗƈḗḗīṽḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.language.label": {
     "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8931,6 +9011,10 @@
     "defaultMessage": "[Ɓŀǿǿƈķḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "profile.follow.federation_restricted": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ ƒǿǿŀŀǿǿẇ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş ƞǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "profile.follow.following": {
     "defaultMessage": "[Ƒǿǿŀŀǿǿẇīƞɠ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -9327,6 +9411,10 @@
     "defaultMessage": "[Ḗƞŧḗḗř @ŭŭşḗḗřƞȧȧḿḗḗ@şḗḗřṽḗḗř ǿǿř ŧħḗḗ ȧȧḓḓřḗḗşş ǿǿƒ ȧȧ ƥřǿǿƒīŀḗḗ, ǿǿƞ ŧħīş şḗḗřṽḗḗř ǿǿř ȧȧƞǿǿŧħḗḗř ǿǿƞḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "search.description_known_only": {
+    "defaultMessage": "[Ḗƞŧḗḗř @ŭŭşḗḗřƞȧȧḿḗḗ@şḗḗřṽḗḗř ǿǿř ŧħḗḗ ȧȧḓḓřḗḗşş ǿǿƒ ȧȧ ƥřǿǿƒīŀḗḗ. Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ ŀǿǿǿǿķ ŭŭƥ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş ƞǿǿẇ, şǿǿ ǿǿƞŀẏ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş īŧ ȧȧŀřḗḗȧȧḓẏ ķƞǿǿẇş ȧȧřḗḗ ƒǿǿŭŭƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "search.description_signed_out": {
     "defaultMessage": "[Ḗƞŧḗḗř @ŭŭşḗḗřƞȧȧḿḗḗ@şḗḗřṽḗḗř ǿǿř ŧħḗḗ ȧȧḓḓřḗḗşş ǿǿƒ ȧȧ ƥřǿǿƒīŀḗḗ. Ǿƞŀẏ ȧȧƈƈǿǿŭŭƞŧş ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ķƞǿǿẇş ȧȧřḗḗ ƒǿǿŭŭƞḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -9341,6 +9429,10 @@
   },
   "search.not_found": {
     "defaultMessage": "[Ƞǿǿ ȧȧƈƈǿǿŭŭƞŧ ƒǿǿŭŭƞḓ. Ƈħḗḗƈķ ŧħḗḗ ħȧȧƞḓŀḗḗ ǿǿř ŧħḗḗ ȧȧḓḓřḗḗşş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "search.not_found_known_only": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ ķƞǿǿẇ ŧħȧȧŧ ȧȧƈƈǿǿŭŭƞŧ, ȧȧƞḓ īŧ ḓǿǿḗḗş ƞǿǿŧ ŀǿǿǿǿķ ŭŭƥ ȧȧƈƈǿǿŭŭƞŧş ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş ƞǿǿẇ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "search.not_found_signed_out": {
@@ -11181,6 +11273,10 @@
   },
   "status.favourite.on": {
     "defaultMessage": "[Ȧḓḓḗḗḓ ŧǿǿ ƒȧȧṽǿǿŭŭřīŧḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.federation.stays_local": {
+    "defaultMessage": "[Ẇǿǿƞ'ŧ řḗḗȧȧƈħ īŧş şḗḗřṽḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.focused.boosts": {

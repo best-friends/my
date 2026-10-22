@@ -9,6 +9,8 @@ import { useAnnouncer, useToast } from "@my/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
+import { useFederation } from "../../../lib/federation";
+import { isRemoteAcct } from "../../../lib/handle";
 import { type Translate, useT } from "../../../lib/i18n";
 import { useQuote, useReply } from "../../compose";
 import { useViewer } from "../../session";
@@ -76,9 +78,16 @@ export type StatusActions = {
   pin: { isPinned: boolean; toggle: () => void } | null;
   /**
    * Opens the form quoting the post (FR-114). `isDisabled` while the viewer may not quote it (`Status.quotable`:
-   * its policy, or a followers-only or direct post of someone else).
+   * its policy, or a followers-only or direct post of someone else). Null for a post of another server while the
+   * instance sends nothing out (its federation mode is `off` or `inbound`, ADR-0076): the quote request could not
+   * reach it, and the server refuses the quote.
    */
-  quote: { onPress: () => void; isDisabled: boolean };
+  quote: { onPress: () => void; isDisabled: boolean } | null;
+  /**
+   * Whether the reply, boost, favourite and reaction stay on this server: the post is of another server and the
+   * instance sends nothing out (`off` or `inbound`, ADR-0076). They are still recorded here; the bar says so.
+   */
+  staysLocal: boolean;
   /**
    * Who may quote the viewer's own post and its change (ADR-0069 §1), with the address of the posts that quote it;
    * null for others' posts.
@@ -160,6 +169,7 @@ export function useStatusActions(status: Status): StatusActions | null {
   const viewer = useViewer();
   const reply = useReply();
   const quote = useQuote();
+  const { reachesRemote } = useFederation();
   const viewerId = viewer.status === "signed-in" ? viewer.account.id : "";
   const boost = useRelation(post, "boost", viewerId);
   const likeSlot = useLikeSlot(post);
@@ -218,6 +228,7 @@ export function useStatusActions(status: Status): StatusActions | null {
   const isPinned = post.pinned === true;
   const quoted = post.quote?.quoted_status;
   const ownQuoted = quoted !== undefined && quoted.account.id === viewer.account.id && post.quote?.state === "accepted" && !isAuthor;
+  const staysLocal = !reachesRemote && isRemoteAcct(post.account.acct);
   return {
     reply: () => {
       reply(post);
@@ -260,12 +271,15 @@ export function useStatusActions(status: Status): StatusActions | null {
             },
           }
         : null,
-    quote: {
-      onPress: () => {
-        quote(post);
-      },
-      isDisabled: post.quotable !== true,
-    },
+    quote: staysLocal
+      ? null
+      : {
+          onPress: () => {
+            quote(post);
+          },
+          isDisabled: post.quotable !== true,
+        },
+    staysLocal,
     quotePolicy:
       isAuthor && post.quote_policy !== undefined
         ? {

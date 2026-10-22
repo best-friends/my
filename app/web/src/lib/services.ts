@@ -9,6 +9,7 @@ import { Session } from "./auth/session";
 import type { LeaveApp } from "./auth/SessionProvider";
 import { forgetUserDataOnUserChange } from "./auth/userData";
 import type { RuntimeConfig } from "./config";
+import { refetchInstanceOnFederationRestricted } from "./federation";
 import type { I18n } from "./i18n";
 import { AppLocale } from "./locale";
 import { startConnectivity } from "./network";
@@ -34,6 +35,8 @@ export function createAppServices(config: RuntimeConfig, i18n: I18n, leaveApp: L
   forgetUserDataOnUserChange(session, queryClient);
   refetchOnLocaleChange(locale, queryClient);
   const api = createApi({ apiOrigin: config.apiOrigin, session, locale });
+  // The mode can narrow while a page is open; a refusal for it brings the app's offer up to date.
+  refetchInstanceOnFederationRestricted(queryClient, api);
   return { queryClient, api, session, leaveApp, locale };
 }
 
