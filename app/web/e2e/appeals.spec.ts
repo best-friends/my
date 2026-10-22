@@ -226,8 +226,8 @@ test.describe("appeals", () => {
     // server answers the lists slowly now: the list is not shown from a cache older than the decision.
     await main.locator('a[href="/moderation/appeals"]').click();
     await expect(page).toHaveURL(/\/moderation\/appeals$/);
-    await expect(panel.locator(`a[href="/moderation/appeals/${otherAppealId}"]`)).toBeVisible();
-    expect(await panel.locator(`a[href="/moderation/appeals/${appealId}"]`).count()).toBe(0);
-    await expect(panel.locator('a[href^="/moderation/appeals/"]')).toHaveCount(1);
+    await expect(main.getByRole("table").locator(`a[href="/moderation/appeals/${otherAppealId}"]`)).toBeVisible();
+    expect(await main.getByRole("table").locator(`a[href="/moderation/appeals/${appealId}"]`).count()).toBe(0);
+    await expect(main.getByRole("table").locator('a[href^="/moderation/appeals/"]')).toHaveCount(1);
   });
 });
