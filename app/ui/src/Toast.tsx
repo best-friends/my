@@ -86,7 +86,7 @@ const toast = tv({
   },
   variants: {
     clearsTabBar: {
-      true: { region: "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 short:bottom-[calc(3rem+1px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))]" },
+      true: { region: "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 short:bottom-[calc(3rem+1px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))] with-compose-fab:bottom-[calc(8rem+env(safe-area-inset-bottom))] with-compose-fab:short:bottom-[calc(6.5rem+env(safe-area-inset-bottom))] with-compose-fab:md:bottom-0" },
     },
     tone: {
       neutral: {},
@@ -106,7 +106,8 @@ export type ToastProviderProps = {
   defaultTimeout?: number;
   /**
    * Below md the toasts stand above the app's tab bar along the bottom edge (4rem high, 3rem on short screens, with a 1px
-   * border above and the safe-area inset below), which they would otherwise cover. From md the navigation is a
+   * border above and the safe-area inset below), which they would otherwise cover. On a page with a floating new-post
+   * button (`[data-compose-fab]` in the document) they stand above it too (web-client.md G4). From md the navigation is a
    * side rail and the toasts go back to the bottom edge.
    */
   clearsTabBar?: boolean;

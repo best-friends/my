@@ -750,47 +750,86 @@ describe("replies", () => {
   });
 });
 
-describe("the new-post button", () => {
-  test.each(["/home", "/notifications", "/search", "/settings", "/@bob"])("is in the navigation on %s", async (path) => {
+describe("the new-post buttons (web-client.md G4)", () => {
+  /** Matches the given media queries only, as a viewport of that width would. */
+  function stubViewport(...matching: string[]) {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: matching.includes(query), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  }
+
+  /** The rail's button, in the navigation (the stylesheet shows it from md only). */
+  const railButton = () => within(screen.getByRole("navigation", { name: "Main" })).getByRole("button", { name: "Write a post" });
+
+  test.each(["/home", "/local", "/tags/hello", "/@bob"])("floats over %s, a feed, below md", async (path) => {
     signedIn();
     await renderApp({ path });
 
-    const buttons = await screen.findAllByRole("button", { name: "Write a post" });
-    // One in the tab bar (below md) and one in the rail (from md); the stylesheet shows one of them.
-    expect(buttons).toHaveLength(2);
+    expect(await screen.findAllByRole("button", { name: "Write a post" })).toHaveLength(2);
+    expect(railButton()).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveAttribute("data-compose-fab");
   });
 
-  test("is not there while signed out", async () => {
+  test.each([
+    ["/notifications", "Notifications"],
+    ["/search", "Search"],
+    ["/settings", "Settings"],
+    ["/@bob/followers", "Followers"],
+  ])("does not float over %s, which has no feed, but the rail has the button", async (path, heading) => {
+    signedIn();
+    await renderApp({ path });
+
+    expect(await screen.findByRole("heading", { level: 1, name: new RegExp(heading) })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Write a post" })).toHaveLength(1);
+    expect(railButton()).toBeInTheDocument();
+    expect(screen.getByRole("main")).not.toHaveAttribute("data-compose-fab");
+  });
+
+  test("is not offered while signed out", async () => {
     await renderApp({ path: "/local" });
 
     expect(await screen.findByRole("navigation", { name: "Main" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
   });
 
-  test("opens the form in a dialog, never inline, and posts from it", async () => {
+  test("below md the floating button is only an icon, named by its label and with the label as its tooltip", async () => {
     signedIn();
+    const { user } = await renderApp({ path: "/home" });
+    const button = (await screen.findAllByRole("button", { name: "Write a post" })).at(-1) as HTMLElement;
+    expect(button).toHaveTextContent("");
+
+    // The button is the page's last focusable element: Shift+Tab from the start reaches it. On keyboard focus,
+    // React Aria shows the tooltip at once.
+    await user.tab({ shift: true });
+    expect(button).toHaveFocus();
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Write a post");
+  });
+
+  test("from md nothing floats and the rail's button opens the form in a dialog, never inline, and posts from it", async () => {
+    signedIn();
+    stubViewport("(min-width: 48rem)");
     const sent = recordPosts();
     const { user } = await renderApp({ path: "/home" });
+    expect(await screen.findAllByRole("button", { name: "Write a post" })).toHaveLength(1);
+    expect(screen.getByRole("main")).not.toHaveAttribute("data-compose-fab");
     expect(screen.queryByRole("textbox", { name: "Your post" })).not.toBeInTheDocument();
 
-    const [button] = await screen.findAllByRole("button", { name: "Write a post" });
-    await user.click(button as HTMLElement);
+    await user.click(railButton());
     const sheet = await screen.findByRole("dialog", { name: "New post" });
-    await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "From the button");
+    await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "From the rail");
     await user.click(within(sheet).getByRole("button", { name: "Post" }));
 
     expect(await findToast("Posted.")).toBeInTheDocument();
-    expect(sent[0]?.body["text"]).toBe("From the button");
+    expect(sent[0]?.body["text"]).toBe("From the rail");
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "New post" })).not.toBeInTheDocument();
     });
   });
 
-  test("gets focus back when the sheet it opened with the keyboard closes", async () => {
+  test("the floating button gets focus back when the sheet it opened with the keyboard closes", async () => {
     signedIn();
     const { user } = await renderApp({ path: "/home" });
-    const [button] = await screen.findAllByRole("button", { name: "Write a post" });
-    (button as HTMLElement).focus();
+    const button = (await screen.findAllByRole("button", { name: "Write a post" })).at(-1) as HTMLElement;
+    button.focus();
 
     await user.keyboard("{Enter}");
     const sheet = await screen.findByRole("dialog", { name: "New post" });

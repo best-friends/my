@@ -20,7 +20,7 @@ import { PageHeading } from "./-layout/PageHeading";
 /** The home timeline (FR-201): the signed-in user's posts and those of the accounts they follow. */
 export const Route = createFileRoute("/home")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
-  staticData: { title: "client:home.title", hideHeading: true },
+  staticData: { title: "client:home.title", hideHeading: true, composeButton: true },
   // The home timeline needs a session; without one the browser goes to sign in first, and comes back here
   // (web-client.md §10). While the server cannot be reached to resume it (a page opened offline), the page opens
   // and shows the posts kept on this browser (FR-604, web-client.md §11); once the server answers that there is

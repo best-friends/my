@@ -26,7 +26,7 @@ const appNav = tv({
     ],
     header: "mx-2 hidden px-3 pt-4 pb-2 lg:block",
     list: "flex",
-    // The rail's main action; the tab bar has its own (`AppNavCompose`, in the list).
+    // The rail's main action (from md); below md the page floats its own button (`AppShell` `floating`).
     action: "hidden p-2 md:block",
   },
   variants: {
@@ -295,33 +295,6 @@ export function AppNavAction({ label, icon, onPress }: AppNavActionProps) {
         {label}
       </span>
     </Button>
-  );
-}
-
-const appNavCompose = tv({
-  slots: {
-    base: "flex flex-none items-center justify-center px-2 md:hidden",
-    button: "size-12 rounded-xl px-0 shadow-md short:size-10 [&>svg]:size-6",
-  },
-});
-
-export type AppNavComposeProps = {
-  /** The action's words ("Write a post"): the button's accessible name. */
-  label: string;
-  /** The button's icon (`PlusIcon`). */
-  icon: ReactNode;
-  onPress: () => void;
-};
-
-/** The tab bar's coral button (below md only), an item of the list among the links; the rail has `AppNavAction` instead. */
-export function AppNavCompose({ label, icon, onPress }: AppNavComposeProps) {
-  const slots = appNavCompose();
-  return (
-    <li className={slots.base()}>
-      <Button variant="primary" aria-label={label} onPress={onPress} className={slots.button()}>
-        {icon}
-      </Button>
-    </li>
   );
 }
 

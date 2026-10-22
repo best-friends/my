@@ -3,10 +3,11 @@
 // navigation as a bottom tab bar; from md a side rail and the page; from xl a third column about the
 // server. Its look is @my/ui's AppShell; this file decides what goes in it.
 import { AppShell } from "@my/ui";
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useMatches } from "@tanstack/react-router";
 import { useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { ComposeEntry, ComposeProvider } from "../../features/compose";
+import { useViewer } from "../../features/session";
 import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
 import { ConnectionBanner } from "./ConnectionBanner";
@@ -22,6 +23,9 @@ const mainId = "main";
 /** The `xl` breakpoint of Tailwind (80rem), from which the third column shows. */
 const wideQuery = "(min-width: 80rem)";
 
+/** The `md` breakpoint of Tailwind (48rem), from which the rail has the new-post button and nothing floats. */
+const mediumQuery = "(min-width: 48rem)";
+
 export function AppLayout() {
   const t = useT();
   const mainRef = useRef<HTMLElement>(null);
@@ -30,7 +34,13 @@ export function AppLayout() {
   // Every page is displayed in the signed-in user's locale and time zone.
   useUserDisplaySettings();
   const wide = useMediaQuery(wideQuery);
+  const medium = useMediaQuery(mediumQuery);
+  // Only pages with a feed float the new-post button (timelines and profiles: their routes' static data), below md
+  // (ADR-0039); from md the rail has the button.
+  const pageWantsButton = useMatches({ select: (matches) => matches.some((match) => match.staticData.composeButton === true) });
   const signedOut = useSignedOut();
+  const signedIn = useViewer().status === "signed-in";
+  const showButton = !medium && pageWantsButton && signedIn;
   return (
     <ComposeProvider>
       {/* The one bar for being offline or rate-limited (web-client.md G17), in the page from the start so that the
@@ -42,6 +52,10 @@ export function AppLayout() {
         skipLinkLabel={t("client:shell.skip_to_main")}
         mainId={mainId}
         mainRef={mainRef}
+        floatingVisible={showButton}
+        // Above the tab bar on phones (only its icon, named by its label). It always holds the new-post sheet, which pages
+        // without a feed keep for replies; the button shows only on pages with a feed.
+        floating={<ComposeEntry trigger={showButton ? "icon" : "none"} />}
         {...(wide && {
           aside: (
             // Independent sections: if one breaks, the page goes on without it (web-client.md E1).
@@ -53,8 +67,6 @@ export function AppLayout() {
       >
         <Outlet />
       </AppShell>
-      {/* The new-post sheet, opened by the navigation's button, a reply or a quote; nothing while signed out. */}
-      <ComposeEntry />
     </ComposeProvider>
   );
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The new-post form in every width × locale project (ADR-0027): a sheet
-// there (xl). `vite preview` has no API, so the spec answers the client API and the token refresh itself
+// The new-post form in every width × locale project (ADR-0027): always a sheet (a dialog), opened by the floating
+// button below md or the rail's button from md. `vite preview` has no API, so the spec answers the client API and the token refresh itself
 // (Playwright's request routing), as a signed-in session. The client calls the runtime config's apiOrigin,
 // the origin of the page (fixtures.ts); the answers carry CORS headers all the same, as a separate API
 // origin needs them (ADR-0016). Names come from the
@@ -332,8 +332,8 @@ async function boxOf(locator: ReturnType<Page["getByRole"]>): Promise<Box> {
   return box;
 }
 
-test.describe("the tab bar's new-post button (web-client.md G4)", () => {
-  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, "from md the button is in the rail");
+test.describe("the floating new-post button (web-client.md G4)", () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, "from md the rail has the button and nothing floats");
 
   test.beforeEach(async ({ page }) => {
     await serveApi(page);
@@ -350,12 +350,15 @@ test.describe("the tab bar's new-post button (web-client.md G4)", () => {
       window.scrollTo(0, document.documentElement.scrollHeight);
     });
 
+    const fabBox = await boxOf(fab);
     const navBox = await boxOf(page.getByRole("navigation", { name: message("shell.nav.label") }));
+    const tabBar = (page.viewportSize()?.width ?? 0) < 768;
     const actions = await last.getByRole("button").all();
     expect(actions.length).toBeGreaterThan(0);
     for (const action of actions) {
       const box = await boxOf(action);
-      expect(overlaps(box, navBox), "a post action under the tab bar").toBe(false);
+      expect(overlaps(box, fabBox), "a post action under the floating button").toBe(false);
+      if (tabBar) expect(overlaps(box, navBox), "a post action under the tab bar").toBe(false);
     }
   });
 
@@ -366,11 +369,9 @@ test.describe("the tab bar's new-post button (web-client.md G4)", () => {
     await expect(fab).toBeVisible();
     await expectNoHorizontalScroll(page);
 
-    // The coral button is inside the bar, so the bar is all that is fixed to the screen.
     const fabBox = await boxOf(fab);
     const navBox = await boxOf(page.getByRole("navigation", { name: message("shell.nav.label") }));
-    expect(fabBox.y).toBeGreaterThanOrEqual(navBox.y);
-    expect(225 - navBox.y).toBeLessThanOrEqual(225 / 2);
+    expect(225 - Math.min(fabBox.y, navBox.y)).toBeLessThanOrEqual(225 / 2);
   });
 
   test("the tab bar and the offline bar take at most half of a 320 × 225 viewport (400% zoom) while offline", async ({
@@ -380,6 +381,7 @@ test.describe("the tab bar's new-post button (web-client.md G4)", () => {
   }) => {
     await page.setViewportSize({ width: 320, height: 225 });
     await page.goto("/home");
+    const fab = page.getByRole("button", { name: message("compose.open") });
     await expect(page.getByRole("article").last()).toBeVisible();
     await context.setOffline(true);
     const bar = page.getByRole("status").filter({ hasText: message("shell.offline") });
@@ -394,9 +396,10 @@ test.describe("the tab bar's new-post button (web-client.md G4)", () => {
     const viewport = 225;
     /** How much of the viewport's height the element takes. */
     const shown = (box: Box) => Math.max(0, Math.min(box.y + box.height, viewport) - Math.max(box.y, 0));
+    const fabBox = await boxOf(fab);
     const navBox = await boxOf(page.getByRole("navigation", { name: message("shell.nav.label") }));
     const barBox = await boxOf(bar);
-    const bottom = viewport - navBox.y;
+    const bottom = viewport - Math.min(fabBox.y, navBox.y);
     expect(shown(barBox) + bottom).toBeLessThanOrEqual(viewport / 2);
     await context.setOffline(false);
   });
@@ -413,5 +416,28 @@ test.describe("the tab bar's new-post button (web-client.md G4)", () => {
 
     await expect(sheet).toBeHidden();
     await expect(fab).toBeFocused();
+  });
+
+  for (const path of ["/notifications", "/search", "/settings"]) {
+    test(`is not on ${path}, which has no feed`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page.getByRole("button", { name: message("compose.open") })).toHaveCount(0);
+    });
+  }
+});
+
+test.describe("the rail's new-post button", () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) < 768, "below md the page floats the button");
+
+  test("is on every page of the app and opens the form in a dialog", async ({ page }) => {
+    await serveApi(page);
+    await serveHomeTimeline(page);
+    for (const path of ["/home", "/notifications", "/settings"]) {
+      await page.goto(path);
+      await expect(page.getByRole("navigation", { name: message("shell.nav.label") }).getByRole("button", { name: message("compose.open") })).toBeVisible();
+    }
+    await page.getByRole("button", { name: message("compose.open") }).click();
+    await expect(page.getByRole("dialog", { name: message("compose.title") })).toBeVisible();
   });
 });

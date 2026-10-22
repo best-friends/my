@@ -189,9 +189,7 @@ export {
   AppNav,
   AppNavAccount,
   AppNavAction,
-  AppNavCompose,
   type AppNavActionProps,
-  type AppNavComposeProps,
   AppNavBrand,
   type AppNavBrandProps,
   AppNavItem,
@@ -240,4 +238,5 @@ export { CodeList, type CodeListProps } from "./CodeList";
 // The parts of the post form (FR-101): an image of a draft, a framed group of controls, the floating compose button.
 export { AttachmentItem, type AttachmentItemProps } from "./AttachmentItem";
 export { Fieldset, type FieldsetProps } from "./Fieldset";
+export { FloatingButton, type FloatingButtonProps } from "./FloatingButton";
 export { OutboxItem, type OutboxItemProps } from "./OutboxItem";

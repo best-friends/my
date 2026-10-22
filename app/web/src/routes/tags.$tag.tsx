@@ -13,6 +13,7 @@ const paramsSchema = z.object({ tag: z.string().min(1).max(256) });
 /** The timeline of one hashtag (FR-203). */
 export const Route = createFileRoute("/tags/$tag")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  staticData: { composeButton: true },
   params: { parse: (params) => paramsSchema.parse(params) },
   loader: async ({ context: { queryClient, api }, params: { tag } }) => {
     // Cached pages that no write has marked stale are shown at once (and refetched in the background once

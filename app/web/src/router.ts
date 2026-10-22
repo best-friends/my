@@ -51,6 +51,8 @@ declare module "@tanstack/react-router" {
   // What a route tells the app shell about itself, read from the current matches (TanStack Router's
   // static route data).
   interface StaticDataRouteOption {
+    /** The shell floats the button that opens the new-post sheet over this page (timelines and profiles; web-client.md G4). */
+    composeButton?: boolean;
     /**
      * The page's h1 only says where the user is, which the navigation already shows (an item of the navigation
      * with nothing beside its heading): PageHeading hides it visually and keeps it for assistive technology, on

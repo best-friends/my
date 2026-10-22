@@ -47,6 +47,9 @@
   --palette-cocoa-900: #241f20;
   --palette-cocoa-950: #1c1819;
 
+  /* Rose (decorative: the waveform of AudioPlayer) */
+  --palette-rose-400: #d97c7c;
+
   /* Coral (brand primary) */
   --palette-coral-300: #ffa8a8;
   --palette-coral-350: #ff8585;
@@ -168,6 +171,27 @@
   --color-overlay: light-dark(#211c1c9e, #0d0a0bb3);
   --color-alt-overlay: #000000cc;
 
+  /* The pastel tints of an avatar without a picture: avatar-<tint> is the fill and avatar-<tint>-fg the initial on it.
+     The same in both themes; the tint is picked per account, stable by its id. Server themes cannot override them. */
+  --color-avatar-lilac: #e8d9f5;
+  --color-avatar-lilac-fg: #7c5571;
+  --color-avatar-peach: #ffe2d2;
+  --color-avatar-peach-fg: #945947;
+  --color-avatar-mint: #dcefe2;
+  --color-avatar-mint-fg: #52715d;
+  --color-avatar-lavender: #e8dcef;
+  --color-avatar-lavender-fg: #6c5d7b;
+  --color-avatar-yellow: #ffebbd;
+  --color-avatar-yellow-fg: #856631;
+
+  /* The pressed button of a Segmented: charcoal with white in light, the brand coral with charcoal in dark. */
+  --color-pressed: light-dark(var(--palette-charcoal-900), var(--palette-coral-500));
+  --color-pressed-fg: light-dark(var(--palette-white), var(--palette-charcoal-900));
+
+  /* Decorative marks on media: the duration chip over a video's poster (with toast-fg text), and AudioPlayer's waveform. */
+  --color-media-chip: #000000a6;
+  --color-wave: var(--palette-rose-400);
+
   /* Role badges (ADR-0071): badge-<color> is the background and badge-<color>-fg the text on it.
      The color only decorates; the badge's name carries its meaning. Server themes cannot override them. */
   --color-badge-neutral: light-dark(var(--palette-cream-200), var(--palette-cocoa-700));
@@ -279,9 +303,12 @@
 }
 
 /* A short screen below md, such as a phone in landscape or a 320 × 225 viewport at 400% zoom: the tab bar
-   and its coral new-post button shrink so that the fixed elements stay within half the screen's height.
+   and the floating new-post button shrink so that the fixed elements stay within half the screen's height.
    The app shell only (AppShell, AppNavigation, OfflineBanner; web-client.md D2). */
 @custom-variant short (@media (width < 48rem) and (height <= 32rem));
+/* While the page floats the new-post button (data-compose-fab on main, AppShell's floatingVisible), for
+   the other elements fixed to the bottom edge that must stand clear of it (web-client.md G4). */
+@custom-variant with-compose-fab (:root:has([data-compose-fab]) &);
 
 /* A visible focus indicator. Use it as `focus-visible:focus-ring` (or `data-focus-visible:focus-ring`
    on React Aria Components); an outline survives forced-colors mode, unlike a box-shadow. */
