@@ -1,6 +1,6 @@
 # ADR-0076: 連合の向きをインスタンス設定で選ぶ（オフ / 受信のみ / 送信のみ / 送受信）
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-22
 - Deciders: @rosylilly
 - Issue: #976
@@ -45,9 +45,7 @@ B は成り立たない（受信のみでフォローを送れない、送信の
 
 ## Decision（決定）
 
-> 推奨案（Proposed）。
-
-**選択肢 1（1 つの enum）+ A（内容の流れで区切る）を推奨する。** タイムラインの公開範囲（`local_timeline_access` など、#975）と同じく、状態を 1 つの enum で表す。
+**選択肢 1（1 つの enum）+ A（内容の流れで区切る）を採用する。** タイムラインの公開範囲（`local_timeline_access` など、#975）と同じく、状態を 1 つの enum で表す。
 
 ### 設定
 
