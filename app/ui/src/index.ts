@@ -71,6 +71,7 @@ export {
   AboutIcon,
   CheckIcon,
   AdminIcon,
+  AltTextIcon,
   BackIcon,
   BookmarkIcon,
   BoostIcon,

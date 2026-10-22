@@ -69,6 +69,8 @@ describe("MediaGrid", () => {
     const viewerLabels = {
       title: (position: number, count: number) => `Image ${String(position)} of ${String(count)}`,
       close: "Close",
+      position: (position: number, count: number) => `${String(position)} / ${String(count)}`,
+      altText: "Description",
       previous: "Previous image",
       next: "Next image",
     };
@@ -109,6 +111,28 @@ describe("MediaGrid", () => {
       await waitFor(() => {
         expect(first).toHaveFocus();
       });
+    });
+
+    it("shows the description over the picture on demand, and only for a picture that has one", async () => {
+      const user = userEvent.setup();
+      render(<MediaGrid items={viewable} noDescriptionLabel="No description" revealLabel="Show sensitive media" viewerLabels={viewerLabels} />);
+      await user.click(screen.getByRole("button", { name: "A cat on a sofa" }));
+      const dialog = await screen.findByRole("dialog", { name: "Image 1 of 2" });
+      const toggle = within(dialog).getByRole("button", { name: "Description" });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      const note = dialog.querySelector<HTMLElement>(`#${CSS.escape(toggle.getAttribute("aria-controls") ?? "")}`);
+      expect(note).toHaveTextContent("A cat on a sofa");
+      expect(note).not.toBeVisible();
+
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      expect(note).toBeVisible();
+      await user.click(toggle);
+      expect(note).not.toBeVisible();
+
+      // The next picture has no description, so it has no button.
+      await user.click(within(dialog).getByRole("button", { name: "Next image" }));
+      expect(within(dialog).queryByRole("button", { name: "Description" })).not.toBeInTheDocument();
     });
 
     it("does not open pictures without viewer labels, an original, or while they are concealed", async () => {

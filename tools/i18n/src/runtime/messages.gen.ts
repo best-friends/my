@@ -6062,10 +6062,14 @@ export interface MessageArgs {
   "client:timeline.media.no_description": {};
   /** Show sensitive media */
   "client:timeline.media.reveal": {};
+  /** Description */
+  "client:timeline.media.viewer.alt_text": {};
   /** Close */
   "client:timeline.media.viewer.close": {};
   /** Next image */
   "client:timeline.media.viewer.next": {};
+  /** {position, number} / {count, number} */
+  "client:timeline.media.viewer.position": { count: number; position: number };
   /** Previous image */
   "client:timeline.media.viewer.previous": {};
   /** Image {position, number} of {count, number} */
