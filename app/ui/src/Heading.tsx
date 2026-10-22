@@ -3,15 +3,16 @@
 // its look (web-client.md G5). The look follows the level unless `size` says otherwise.
 import type { ComponentPropsWithRef } from "react";
 import { tv } from "tailwind-variants";
+import { Spark, type SparkMark } from "./Spark";
 
 const heading = tv({
   variants: {
     size: {
-      page: "text-2xl font-semibold",
-      section: "text-lg font-semibold",
-      subsection: "font-semibold",
-      label: "text-sm font-medium",
-      medium: "font-medium",
+      page: "text-2xl font-bold",
+      section: "text-lg font-bold",
+      subsection: "font-bold",
+      label: "text-sm font-bold",
+      medium: "font-bold",
       meta: "text-sm font-normal",
     },
     tone: { fg: "text-fg", muted: "text-fg-muted" },
@@ -44,18 +45,23 @@ export type HeadingProps = Omit<ComponentPropsWithRef<"h2">, "className" | "styl
    * removes the control that had it. It never enters the tab order.
    */
   focusable?: boolean;
+  /** A decorative mark (`✳` or `✧`, mango) after the text, hidden from assistive technology. The screen decides whether to use it. */
+  spark?: SparkMark;
 };
 
 const defaultSize = { 1: "page", 2: "section", 3: "subsection", 4: "subsection", 5: "subsection", 6: "subsection" } as const;
 
 /** An `h1`–`h6` in a type role. */
-export function Heading({ level, size, tone, wrap, mono, shrink, focusable = false, ...props }: HeadingProps) {
+export function Heading({ level, size, tone, wrap, mono, shrink, focusable = false, spark, children, ...props }: HeadingProps) {
   const Element = `h${String(level)}` as `h${typeof level}`;
   return (
     <Element
       {...props}
       tabIndex={focusable ? -1 : undefined}
       className={heading({ size: size ?? defaultSize[level], tone, wrap, mono, shrink, focusable })}
-    />
+    >
+      {children}
+      {spark !== undefined && <Spark mark={spark} />}
+    </Element>
   );
 }

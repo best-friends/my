@@ -53,3 +53,11 @@ export const WithBackLink: Story = {
     await expect(canvas.getByRole("link", { name: "Back to settings" })).toHaveAttribute("href", "#settings");
   },
 };
+
+/** The spark after the title is decorative: the heading's name stays the text. */
+export const WithSpark: Story = {
+  args: { children: "Home", spark: "✳" },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+  },
+};

@@ -6,7 +6,7 @@ const qrCode = tv({
   // QR readers need dark modules on a light ground, so the code keeps the light theme's colors in dark mode too
   // (color-scheme: light makes the tokens' light-dark() pick their light side).
   slots: {
-    base: "size-48 shrink-0 scheme-light",
+    base: "size-48 shrink-0 rounded-lg scheme-light",
     ground: "fill-surface-raised",
     modules: "fill-fg",
   },

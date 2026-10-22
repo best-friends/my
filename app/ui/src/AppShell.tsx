@@ -7,6 +7,7 @@
 // the story's viewport instead of the frame's width (storyViewports.ts).
 import { type ReactNode, type Ref, useId } from "react";
 import { tv } from "tailwind-variants";
+import { Card } from "./Card";
 import { Link } from "./Link";
 
 const appShell = tv({
@@ -87,7 +88,7 @@ export function AppShell({ navigation, children, skipLinkLabel, mainId = "main",
 const asidePanel = tv({
   slots: {
     base: "flex flex-col gap-2",
-    heading: "text-sm font-semibold text-fg-muted",
+    heading: "text-sm font-bold text-fg-muted",
   },
 });
 
@@ -102,11 +103,13 @@ export function AsidePanel({ heading, children }: AsidePanelProps) {
   const slots = asidePanel();
   const headingId = useId();
   return (
-    <aside aria-labelledby={headingId} className={slots.base()}>
-      <h2 id={headingId} className={slots.heading()}>
-        {heading}
-      </h2>
-      {children}
-    </aside>
+    <Card as="aside" padding="4" aria-labelledby={headingId}>
+      <div className={slots.base()}>
+        <h2 id={headingId} className={slots.heading()}>
+          {heading}
+        </h2>
+        {children}
+      </div>
+    </Card>
   );
 }

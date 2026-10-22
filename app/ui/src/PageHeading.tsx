@@ -2,10 +2,12 @@
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { Link } from "./Link";
+import { Spark, type SparkMark } from "./Spark";
 
 const pageHeading = tv({
   variants: {
-    visuallyHidden: { true: "sr-only", false: "text-2xl font-semibold" },
+    // The brand's page-title: the serif is for brand moments, and this is the first of them.
+    visuallyHidden: { true: "sr-only", false: "font-serif text-3xl font-medium tracking-tight" },
   },
 });
 
@@ -18,16 +20,19 @@ export type PageHeadingProps = {
    * shows (a timeline, the notifications), it is visually hidden but stays in the accessibility tree (web-client.md Y5).
    */
   visuallyHidden?: boolean;
+  /** A decorative mark (`✳` or `✧`, mango) after the text, hidden from assistive technology. */
+  spark?: SparkMark;
 };
 
 /**
  * The page's only level-one heading. After a navigation the app moves focus to it and names the document after its
  * text, so it is focusable by script (`tabIndex={-1}`) but not in the tab order.
  */
-export function PageHeading({ children, id, visuallyHidden = false }: PageHeadingProps) {
+export function PageHeading({ children, id, visuallyHidden = false, spark }: PageHeadingProps) {
   return (
     <h1 id={id} tabIndex={-1} className={pageHeading({ visuallyHidden })}>
       {children}
+      {spark !== undefined && !visuallyHidden && <Spark mark={spark} />}
     </h1>
   );
 }

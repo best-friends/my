@@ -100,3 +100,12 @@ export const InlineErrorAlert: Story = {
     await expect(canvas.getByRole("alert")).toHaveTextContent("Couldn't save the changes");
   },
 };
+
+/** The small upper-case label above a heading. */
+export const Eyebrow: Story = {
+  render: () => (
+    <Text as="p" eyebrow>
+      Welcome to my
+    </Text>
+  ),
+};
