@@ -193,6 +193,7 @@ const customEmoji: Schemas["AdminCustomEmoji"] = {
   visible_in_picker: true,
   category: "Blobs and other round creatures of the fediverse",
   aliases: ["cat", "kitty", "round_cat_of_the_fediverse"],
+  created_by_deleted: true,
   created_at: "2026-10-20T00:00:00Z",
   updated_at: "2026-10-20T00:00:00Z",
 };
@@ -217,7 +218,7 @@ const roles: Schemas["AdminRole"][] = [
     id: "0192f0c4-7a8e-7000-8000-0000000000f7",
     key: "admin",
     position: 1000,
-    permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_login_recovery", "manage_custom_emojis", "manage_webhooks", "manage_announcements", "manage_finance", "manage_supporters"],
+    permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_login_recovery", "manage_custom_emojis", "manage_webhooks", "manage_announcements", "manage_finance", "manage_supporters", "view_finance", "create_custom_emojis"],
   },
   { id: "0192f0c4-7a8e-7000-8000-0000000000f8", key: "moderator", position: 100, permissions: ["manage_reports", "manage_accounts", "view_audit"] },
   {
@@ -429,6 +430,7 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/rules") return json(route, { items: [rule] });
     if (key === "GET /admin/invites") return json(route, { items: [invite] });
     if (key === "GET /admin/custom_emojis") return json(route, { items: url.searchParams.get("local") === "false" ? [] : [customEmoji] });
+    if (key === "GET /admin/custom_emoji_requests") return json(route, { items: [] });
     if (key === "GET /admin/webhooks") return json(route, { items: [webhook] });
     if (key === "GET /admin/announcements") return json(route, { items: [announcement] });
     if (key === `GET /admin/webhooks/${webhook.id}`) return json(route, webhook);

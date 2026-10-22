@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A new custom emoji request: `create` takes the `shortcode` of the new emoji, and `image` the
+  `emoji_id` of a local emoji that the user made. `media_id` is an upload of the user that
+  finished processing (upload it with the `emoji` purpose), under the rules of the image of a
+  custom emoji.
+type: object
+required: [kind, media_id]
+properties:
+  kind:
+    $ref: ./CustomEmojiRequestKind.yaml
+  shortcode:
+    description: For `create`, 2 to 30 letters (A to Z, a to z), digits, and underscores; case matters.
+    type: string
+    minLength: 2
+    maxLength: 30
+  emoji_id:
+    description: For `image`, the emoji whose image the request replaces.
+    allOf:
+      - $ref: ./Id.yaml
+  media_id:
+    $ref: ./Id.yaml

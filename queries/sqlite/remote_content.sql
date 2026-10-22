@@ -97,11 +97,11 @@ VALUES (@id, @shortcode, @domain, @uri, @created_at)
 ON CONFLICT DO NOTHING;
 
 -- name: GetCustomEmojiByShortcode :one
-SELECT id, shortcode, domain, uri, created_at FROM custom_emojis
+SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis
 WHERE shortcode = @shortcode AND domain = @domain;
 
 -- name: GetCustomEmoji :one
-SELECT id, shortcode, domain, uri, created_at FROM custom_emojis WHERE id = @id;
+SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis WHERE id = @id;
 
 -- name: InsertCustomEmojiImage :exec
 INSERT INTO custom_emoji_images (id, emoji_id, media_id, revised_at)

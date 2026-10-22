@@ -63,6 +63,13 @@ tags:
     description: Real-time updates of the home timeline, the notifications, and the announcements.
   - name: announcements
     description: The server's announcements to every local user and which of them the user has read.
+  - name: custom-emojis
+    description: |
+      The custom emoji that the holders of the `create_custom_emojis` permission request and
+      made (ADR-0070 §6): their requests for new emoji and new images, which a holder of
+      `manage_custom_emojis` approves, and the emoji they made. The operations need a
+      `read:custom_emojis` or `write:custom_emojis` scope and the `create_custom_emojis`
+      permission, never an `admin` scope.
   - name: finance
     description: |
       The instance's finances as the holders of the `view_finance` permission read them, as far
@@ -87,6 +94,14 @@ paths:
     $ref: ./paths/instance.yaml
   /custom_emojis:
     $ref: ./paths/custom_emojis.yaml
+  /custom_emojis/mine:
+    $ref: ./paths/custom_emojis_mine.yaml
+  /custom_emojis/mine/{id}:
+    $ref: ./paths/custom_emojis_mine_{id}.yaml
+  /custom_emoji_requests:
+    $ref: ./paths/custom_emoji_requests.yaml
+  /custom_emoji_requests/{id}/withdraw:
+    $ref: ./paths/custom_emoji_requests_{id}_withdraw.yaml
   /instance/domain_actions:
     $ref: ./paths/instance_domain_actions.yaml
   /instance/cost_totals:
@@ -331,6 +346,12 @@ paths:
     $ref: ./paths/admin_custom_emojis_{id}_image.yaml
   /admin/custom_emojis/{id}/copy:
     $ref: ./paths/admin_custom_emojis_{id}_copy.yaml
+  /admin/custom_emoji_requests:
+    $ref: ./paths/admin_custom_emoji_requests.yaml
+  /admin/custom_emoji_requests/{id}/approve:
+    $ref: ./paths/admin_custom_emoji_requests_{id}_approve.yaml
+  /admin/custom_emoji_requests/{id}/reject:
+    $ref: ./paths/admin_custom_emoji_requests_{id}_reject.yaml
   /admin/instance_texts:
     $ref: ./paths/admin_instance_texts.yaml
   /admin/instance_texts/{key}:
@@ -458,6 +479,7 @@ components:
             "read:blocks": Read the accounts the user blocks.
             "read:bookmarks": Read the user's bookmarks.
             "read:favourites": Read the user's favourites.
+            "read:custom_emojis": Read the custom emoji the user made and their requests for new ones.
             "read:finance": Read the totals of the instance's costs, as far as the user's roles allow.
             "read:follows": Read follows and follow requests.
             "read:mutes": Read the accounts and domains the user mutes.
@@ -467,6 +489,7 @@ components:
             "write:accounts": Change the user's profile and preferences.
             "write:blocks": Block and unblock accounts.
             "write:bookmarks": Bookmark posts and remove bookmarks.
+            "write:custom_emojis": Request new custom emoji, and change and delete the ones the user made.
             "write:favourites": Favourite posts and react to them with emoji, and take both back.
             "write:follows": Follow and unfollow accounts and answer follow requests.
             "write:media": Upload media and change their descriptions.
@@ -496,6 +519,8 @@ components:
       $ref: ./components/parameters/Cursor.yaml
     CustomEmojiId:
       $ref: ./components/parameters/CustomEmojiId.yaml
+    CustomEmojiRequestId:
+      $ref: ./components/parameters/CustomEmojiRequestId.yaml
     DomainActionId:
       $ref: ./components/parameters/DomainActionId.yaml
     IdempotencyKey:
@@ -543,6 +568,8 @@ components:
       $ref: ./components/responses/AdminAppeal.yaml
     AdminCustomEmoji:
       $ref: ./components/responses/AdminCustomEmoji.yaml
+    AdminCustomEmojiRequest:
+      $ref: ./components/responses/AdminCustomEmojiRequest.yaml
     AdminDomainAction:
       $ref: ./components/responses/AdminDomainAction.yaml
     AdminInstanceHealth:
@@ -579,6 +606,12 @@ components:
       $ref: ./components/responses/CostItem.yaml
     CustomEmojiProblem:
       $ref: ./components/responses/CustomEmojiProblem.yaml
+    CustomEmojiRequest:
+      $ref: ./components/responses/CustomEmojiRequest.yaml
+    CustomEmojiRequestProblem:
+      $ref: ./components/responses/CustomEmojiRequestProblem.yaml
+    OwnCustomEmoji:
+      $ref: ./components/responses/OwnCustomEmoji.yaml
     Problem:
       $ref: ./components/responses/Problem.yaml
     Relationship:
@@ -672,6 +705,10 @@ components:
       $ref: ./components/schemas/AdminCustomEmoji.yaml
     AdminCustomEmojiPage:
       $ref: ./components/schemas/AdminCustomEmojiPage.yaml
+    AdminCustomEmojiRequest:
+      $ref: ./components/schemas/AdminCustomEmojiRequest.yaml
+    AdminCustomEmojiRequestPage:
+      $ref: ./components/schemas/AdminCustomEmojiRequestPage.yaml
     AdminDomainAction:
       $ref: ./components/schemas/AdminDomainAction.yaml
     AdminDomainActionKind:
@@ -900,6 +937,18 @@ components:
       $ref: ./components/schemas/CustomEmojiProblem.yaml
     CustomEmojiProblemReason:
       $ref: ./components/schemas/CustomEmojiProblemReason.yaml
+    CustomEmojiRequest:
+      $ref: ./components/schemas/CustomEmojiRequest.yaml
+    CustomEmojiRequestConflictReason:
+      $ref: ./components/schemas/CustomEmojiRequestConflictReason.yaml
+    CustomEmojiRequestKind:
+      $ref: ./components/schemas/CustomEmojiRequestKind.yaml
+    CustomEmojiRequestPage:
+      $ref: ./components/schemas/CustomEmojiRequestPage.yaml
+    CustomEmojiRequestProblem:
+      $ref: ./components/schemas/CustomEmojiRequestProblem.yaml
+    CustomEmojiRequestState:
+      $ref: ./components/schemas/CustomEmojiRequestState.yaml
     DataExport:
       $ref: ./components/schemas/DataExport.yaml
     DataExportList:
@@ -1034,6 +1083,8 @@ components:
       $ref: ./components/schemas/MutePage.yaml
     MutedAccount:
       $ref: ./components/schemas/MutedAccount.yaml
+    NewCustomEmojiRequest:
+      $ref: ./components/schemas/NewCustomEmojiRequest.yaml
     Notification:
       $ref: ./components/schemas/Notification.yaml
     NotificationMarker:
@@ -1044,6 +1095,10 @@ components:
       $ref: ./components/schemas/NotificationPage.yaml
     NotificationType:
       $ref: ./components/schemas/NotificationType.yaml
+    OwnCustomEmoji:
+      $ref: ./components/schemas/OwnCustomEmoji.yaml
+    OwnCustomEmojiPage:
+      $ref: ./components/schemas/OwnCustomEmojiPage.yaml
     PageInfo:
       $ref: ./components/schemas/PageInfo.yaml
     Passkey:
@@ -1104,6 +1159,8 @@ components:
       $ref: ./components/schemas/RegistrationDecisionRequest.yaml
     RegistrationState:
       $ref: ./components/schemas/RegistrationState.yaml
+    RejectCustomEmojiRequestRequest:
+      $ref: ./components/schemas/RejectCustomEmojiRequestRequest.yaml
     Relationship:
       $ref: ./components/schemas/Relationship.yaml
     RelationshipSeverance:
@@ -1218,6 +1275,8 @@ components:
       $ref: ./components/schemas/UpdateCustomEmojiRequest.yaml
     UpdateInstanceSettingsRequest:
       $ref: ./components/schemas/UpdateInstanceSettingsRequest.yaml
+    UpdateOwnCustomEmojiRequest:
+      $ref: ./components/schemas/UpdateOwnCustomEmojiRequest.yaml
     UpdatePreferencesRequest:
       $ref: ./components/schemas/UpdatePreferencesRequest.yaml
     UpdateRoleRequest:

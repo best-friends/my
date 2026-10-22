@@ -33,8 +33,19 @@ func (r *CustomEmojiRepository) InsertCustomEmoji(ctx context.Context, tx uow.Tx
 	if err != nil {
 		return err
 	}
+	if e.Domain == "" {
+		// A pending request to create a local emoji reserves its shortcode (ADR-0070 §2).
+		reserved, err := q.CustomEmojiShortcodeReserved(ctx, e.Shortcode)
+		if err != nil {
+			return wrap(err, "custom emoji shortcode reserved")
+		}
+		if reserved != 0 {
+			return appcontent.ErrShortcodeTaken
+		}
+	}
 	err = q.InsertCustomEmoji(ctx, sqlitegen.InsertCustomEmojiParams{
-		ID: e.ID, Shortcode: e.Shortcode, Domain: e.Domain, Uri: toNullString(e.URI), CreatedAt: toMillis(e.CreatedAt),
+		ID: e.ID, Shortcode: e.Shortcode, Domain: e.Domain, Uri: toNullString(e.URI), CreatedByUserID: toNullString(e.CreatedByUserID),
+		CreatedAt: toMillis(e.CreatedAt),
 	})
 	if isUniqueViolation(err, "custom_emojis.shortcode, custom_emojis.domain") {
 		return appcontent.ErrShortcodeTaken
@@ -151,6 +162,7 @@ func (r *CustomEmojiRepository) aliases(ctx context.Context, ids []string) (map[
 type emojiRecordRow struct {
 	ID, Shortcode, Domain    string
 	Uri                      sql.NullString //nolint:revive // the name of the generated rows, which convert to this type
+	CreatedByUserID          sql.NullString
 	CreatedAt                int64
 	ImageID, ImageMediaID    string
 	ImageRevisedAt           int64
@@ -172,7 +184,8 @@ func (r *CustomEmojiRepository) records(ctx context.Context, rows []emojiRecordR
 		out[i] = content.CustomEmojiRecord{
 			CurrentCustomEmoji: content.CurrentCustomEmoji{
 				Emoji: content.CustomEmoji{
-					ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: row.Uri.String, CreatedAt: fromMillis(row.CreatedAt),
+					ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: row.Uri.String, CreatedByUserID: row.CreatedByUserID.String,
+					CreatedAt: fromMillis(row.CreatedAt),
 				},
 				Image: content.CustomEmojiImage{ID: row.ImageID, EmojiID: row.ID, MediaID: row.ImageMediaID, RevisedAt: fromMillis(row.ImageRevisedAt)},
 				Settings: content.CustomEmojiSettings{
@@ -188,7 +201,8 @@ func (r *CustomEmojiRepository) records(ctx context.Context, rows []emojiRecordR
 // ListCustomEmojiRecords implements content.CustomEmojiRepository.
 func (r *CustomEmojiRepository) ListCustomEmojiRecords(ctx context.Context, q appcontent.CustomEmojiQuery, limit int) ([]content.CustomEmojiRecord, error) {
 	rows, err := r.db.reader().ListAdminCustomEmojis(ctx, sqlitegen.ListAdminCustomEmojisParams{
-		Locality: int64(q.Locality), Domain: q.Domain, Shortcode: q.Shortcode, BeforeID: q.Before, RowLimit: int64(limit),
+		Locality: int64(q.Locality), Domain: q.Domain, Shortcode: q.Shortcode, CreatedBy: q.CreatedBy, BeforeID: q.Before,
+		RowLimit: int64(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list custom emoji")

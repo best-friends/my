@@ -82,6 +82,10 @@ type ProjectorDeps struct {
 //   - moderation.appeal_decided: appeal_decided, to the account that appealed. It comes from
 //     the instance and has no source account; its dedupe key is the appeal's
 //     (notification.AppealDecidedKey).
+//   - content.custom_emoji_request_recorded of an approval or a rejection:
+//     custom_emoji_request_decided, to the requester's local account (ADR-0070 §9). It comes from
+//     the instance and has no source account; its dedupe key is the request's
+//     (notification.CustomEmojiRequestDecidedKey). A withdrawal and a lapse notify nobody.
 //
 // A notification goes only to a local recipient other than its source, and not when either
 // blocks the other, the recipient mutes the source with hide_notifications or mutes its domain
@@ -216,6 +220,17 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 		return p.notify(ctx, tx, notification.Notification{
 			RecipientAccountID: ev.Appeal.AccountID, Type: notification.TypeAppealDecided, AppealID: ev.Appeal.ID,
 			DedupeKey: notification.AppealDecidedKey(ev.Appeal.ID), CreatedAt: ev.Decision.DecidedAt,
+		})
+	})
+	r.Register(appcontent.EventCustomEmojiRequestRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appcontent.CustomEmojiRequestRecorded)
+		if ev.Outcome == nil || ev.RequesterAccountID == "" ||
+			ev.Action != appcontent.CustomEmojiRequestApproved && ev.Action != appcontent.CustomEmojiRequestRejected {
+			return nil
+		}
+		return p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: ev.RequesterAccountID, Type: notification.TypeCustomEmojiRequestDecided, CustomEmojiRequestID: ev.Request.ID,
+			DedupeKey: notification.CustomEmojiRequestDecidedKey(ev.Request.ID), CreatedAt: ev.At,
 		})
 	})
 }

@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A request of a holder of `create_custom_emojis` for a new local custom emoji, or for a new
+  image of one they made, which a holder of `manage_custom_emojis` approves or rejects
+  (ADR-0070 §2). A request is not an emoji: no picker, post, reaction, or other server shows
+  its image until it is approved.
+type: object
+required: [id, kind, state, shortcode, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  kind:
+    $ref: ./CustomEmojiRequestKind.yaml
+  state:
+    $ref: ./CustomEmojiRequestState.yaml
+  shortcode:
+    description: |
+      The shortcode of the new emoji, without the colons around it, or of the emoji whose image
+      the request replaces.
+    type: string
+  emoji_id:
+    description: |
+      The emoji of an `image` request, and the emoji that an approved `create` request made;
+      absent otherwise.
+    allOf:
+      - $ref: ./Id.yaml
+  url:
+    description: |
+      The URL of the requested image, animated when it is; absent once it cannot be shown (the
+      upload of a request that ended goes with the unattached uploads).
+    type: string
+    format: uri
+  static_url:
+    description: The URL of a still image of the requested image; absent with `url`.
+    type: string
+    format: uri
+  reason:
+    description: The reason of a rejection that the administrator gave; absent for none.
+    type: string
+  created_at:
+    description: When the request was made.
+    type: string
+    format: date-time
+  decided_at:
+    description: |
+      When the request was approved, rejected, withdrawn, or lapsed; absent while it is
+      pending.
+    type: string
+    format: date-time

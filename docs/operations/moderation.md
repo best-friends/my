@@ -277,6 +277,7 @@ my admin report reopen <report id>
 | `admin_report` | 通報の対象に、ほかの未解決の通報が無いとき（同じアカウントへの 2 件目以降の通報では届かない） | ロールが `manage_reports` を持つ人。通報者と通報の対象は除く |
 | `admin_sign_up` | 登録が承認待ちで始まったとき（承認制、またはメールを送れない構成の `open`） | ロールが `manage_accounts` を持つ人 |
 | `admin_appeal` | 処分に異議が申し立てられたとき | ロールが `manage_accounts` を持つ人。申し立てた本人は除く |
+| `admin_custom_emoji_request` | カスタム絵文字の作成か画像の差し替えが申請されたとき（[ADR-0070](../adr/0070-permission-split-emoji-finance.md)） | ロールが `manage_custom_emojis` を持つ人。申請者は除く |
 
 - 届く人は、通知を作るときの権限で決まります。後から権限を失った人の一覧と未読数からは、その種類の通知が消えます。権限を戻せばまた見えます。
 - 利用者設定 `email_moderator_notifications`（`PATCH /api/v1/preferences`、既定は無効）を有効にした人には、同じ通知をメールでも送ります。

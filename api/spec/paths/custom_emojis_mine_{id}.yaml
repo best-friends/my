@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/CustomEmojiId.yaml
+patch:
+  operationId: updateOwnCustomEmoji
+  summary: Change a custom emoji that the user made
+  description: |
+    Changes the aliases, the category, and the place in the picker of a local emoji that the
+    user made, and keeps the rest (ADR-0070 §3); a new image is a request
+    (`POST /custom_emoji_requests`). The rules of `PATCH /admin/custom_emojis/{id}` apply, and
+    the change is recorded in the audit log. An emoji that is not one the user made is a 404.
+    Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+  tags: [custom-emojis]
+  security:
+    - oauth2: ["write:custom_emojis"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UpdateOwnCustomEmojiRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/OwnCustomEmoji.yaml
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: deleteOwnCustomEmoji
+  summary: Delete a custom emoji that the user made
+  description: |
+    Deletes a local emoji that the user made for good, as `DELETE /admin/custom_emojis/{id}`
+    does, which frees a place of the user's limit; a pending request for a new image of it
+    lapses. The deletion is recorded in the audit log. An emoji that is not one the user made
+    is a 404. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+  tags: [custom-emojis]
+  security:
+    - oauth2: ["write:custom_emojis"]
+  responses:
+    "204":
+      description: The emoji is deleted.
+    default:
+      $ref: ../components/responses/Problem.yaml

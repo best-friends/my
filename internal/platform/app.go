@@ -740,7 +740,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The instance theme (ADR-0059) and the URLs of its stylesheets, which the web handler serves.
 		Themes: a.Instance, ThemeStylesheetPath: web.ThemeStylesheetPath,
 		// The custom emoji of the picker and their administration (ADR-0051).
-		CustomEmojis: a.CustomEmojis,
+		CustomEmojis:        a.CustomEmojis,
+		CustomEmojiRequests: a.CustomEmojis,
 		// The instance's webhooks (ADR-0060).
 		Webhooks:     a.Webhooks,
 		WebhookReads: webhookReads{a},
@@ -952,8 +953,10 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository, emojis 
 			MaxBytes: cfg.MediaMaxAVBytes, MaxVideoDuration: cfg.MediaMaxVideoDuration, MaxAudioDuration: cfg.MediaMaxAudioDuration,
 		},
 		UnattachedTTL: cfg.MediaUnattachedTTL,
-		// Avatars and headers refer to media files from the account module.
-		Referrers: []content.MediaReferrer{a.Accounts, a.Instance},
+		// Avatars and headers refer to media files from the account module, the instance's images
+		// from the instance module, and the pending custom emoji requests to their images
+		// (ADR-0070 §2).
+		Referrers: []content.MediaReferrer{a.Accounts, a.Instance, content.PendingCustomEmojiRequestMedia(emojis)},
 		Proxy:     a.MediaProxy,
 		Logger:    a.Logger,
 	})
@@ -961,6 +964,7 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository, emojis 
 	a.CustomEmojis = content.NewCustomEmojiService(content.CustomEmojiDeps{
 		UnitOfWork: a.UnitOfWork, Repository: emojis, Media: a.Media, Clock: a.Clock, IDs: a.IDs,
 		MaxBytes: cfg.CustomEmojiMaxBytes,
+		Creators: emojiCreators{a}, Quota: emojiQuota{a}, InstanceAccount: a.emojiImageOwner,
 	})
 	return nil
 }

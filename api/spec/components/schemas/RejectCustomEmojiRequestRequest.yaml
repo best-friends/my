@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The rejection of a custom emoji request.
+type: object
+properties:
+  reason:
+    description: Why, up to 500 characters, which the requester sees; empty or absent for none.
+    type: string
+    maxLength: 500

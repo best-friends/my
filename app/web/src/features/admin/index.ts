@@ -22,9 +22,16 @@ export { RuleSettings } from "./components/RuleSettings";
 // The server's theme: overrides of the design tokens and a custom CSS (ADR-0059), for manage_settings.
 export { themeQueryOptions } from "./api/theme";
 export { ThemeSettings } from "./components/ThemeSettings";
-// The custom emoji: registering this server's and managing those of other servers (ADR-0051), for manage_custom_emojis.
+// The custom emoji: registering this server's and managing those of other servers (ADR-0051), and deciding the
+// requests of the holders of create_custom_emojis (ADR-0070), for manage_custom_emojis.
 export { adminCustomEmojisQueryOptions, type CustomEmojiFilter } from "./api/customEmojis";
-export { CustomEmojiSettings } from "./components/CustomEmojiSettings";
+export { adminCustomEmojiRequestsQueryOptions, type CustomEmojiRequestState } from "./api/customEmojiRequests";
+export { CustomEmojiSettings, type CustomEmojiTab } from "./components/CustomEmojiSettings";
+// What the user's page of their own custom emoji (features/custom-emojis) shares with the screen: the rules of an
+// emoji, how a sentence names one, and the names of the states of a request.
+export { acceptedEmojiTypes, categoryLimit, federatedEmojiBytes, maxAliases, shortcodePattern } from "./api/customEmojis";
+export { requestStateLabels } from "./components/CustomEmojiRequests";
+export { parseAliases } from "./hooks/useCustomEmojis";
 // The server's announcements to every local user (FR-726), for manage_announcements.
 export { adminAnnouncementsQueryOptions } from "./api/announcements";
 export { AnnouncementSettings } from "./components/AnnouncementSettings";

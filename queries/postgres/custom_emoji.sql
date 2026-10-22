@@ -3,8 +3,8 @@
 -- (ADR-0051). Owned by internal/app/content.
 
 -- name: InsertCustomEmoji :exec
-INSERT INTO custom_emojis (id, shortcode, domain, uri, created_at)
-VALUES (@id, @shortcode, @domain, @uri, @created_at);
+INSERT INTO custom_emojis (id, shortcode, domain, uri, created_by_user_id, created_at)
+VALUES (@id, @shortcode, @domain, @uri, @created_by_user_id, @created_at);
 
 -- name: DeleteCustomEmojiRow :exec
 DELETE FROM custom_emojis WHERE id = @id;
@@ -39,9 +39,9 @@ ORDER BY emoji_id, alias;
 -- ListAdminCustomEmojis returns a page of the custom emoji, newest first, with their current
 -- images and settings. @locality is 0 for every emoji, 1 for the local ones, 2 for the remote
 -- ones; an empty @domain and @shortcode select every domain and shortcode, and @shortcode
--- matches a part of the shortcode in lower case.
+-- matches a part of the shortcode in lower case; a @created_by keeps the emoji that a user made.
 -- name: ListAdminCustomEmojis :many
-SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
+SELECT e.id, e.shortcode, e.domain, e.uri, e.created_by_user_id, e.created_at,
   i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
   COALESCE(s.enabled, TRUE)::boolean AS enabled,
   COALESCE(s.visible_in_picker, TRUE)::boolean AS visible_in_picker,
@@ -53,6 +53,7 @@ WHERE i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.i
   AND (@locality::integer = 0 OR (@locality::integer = 1) = (e.domain = ''))
   AND (@domain::text = '' OR e.domain = @domain::text)
   AND (@shortcode::text = '' OR strpos(lower(e.shortcode), @shortcode::text) > 0)
+  AND (@created_by::text = '' OR e.created_by_user_id = @created_by::text)
   AND (@before_id::text = '' OR e.id < @before_id::text)
 ORDER BY e.id DESC
 LIMIT @row_limit;
@@ -60,7 +61,7 @@ LIMIT @row_limit;
 -- ListLocalCustomEmojis returns the local custom emoji with their current images and settings,
 -- by shortcode: every one, or without @all_shortcodes those with a shortcode in @shortcodes.
 -- name: ListLocalCustomEmojis :many
-SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
+SELECT e.id, e.shortcode, e.domain, e.uri, e.created_by_user_id, e.created_at,
   i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
   COALESCE(s.enabled, TRUE)::boolean AS enabled,
   COALESCE(s.visible_in_picker, TRUE)::boolean AS visible_in_picker,

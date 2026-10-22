@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAdminCustomEmojiRequests
+  summary: List the custom emoji requests
+  description: |
+    The custom emoji requests of the holders of `create_custom_emojis` (ADR-0070 §6), newest
+    first, with their requesters: the pending ones unless `state` names another state. Needs the `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: state
+      in: query
+      required: false
+      description: Keep the requests in this state; `pending` by default.
+      schema:
+        $ref: ../components/schemas/CustomEmojiRequestState.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the requests.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminCustomEmojiRequestPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

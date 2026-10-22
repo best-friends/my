@@ -59,7 +59,8 @@ func (s *Server) ListCustomEmojis(ctx context.Context, _ ListCustomEmojisRequest
 	return ListCustomEmojis200JSONResponse{Body: out, Headers: ListCustomEmojis200ResponseHeaders{CacheControl: &cache}}, nil
 }
 
-// newAdminCustomEmoji presents a custom emoji to the administrators.
+// newAdminCustomEmoji presents a custom emoji to the administrators, without its creator
+// (withCreators adds it).
 func (s *Server) newAdminCustomEmoji(e appcontent.AdminCustomEmoji) AdminCustomEmoji {
 	out := AdminCustomEmoji{
 		Id: e.Emoji.ID, Shortcode: e.Emoji.Shortcode, Local: e.Emoji.Local(), Enabled: e.Settings.Enabled,
@@ -85,6 +86,52 @@ func (s *Server) newAdminCustomEmoji(e appcontent.AdminCustomEmoji) AdminCustomE
 		out.Url, out.StaticUrl = &v.URL, &v.StaticURL
 	}
 	return out
+}
+
+// withCreators presents emojis to the administrators with the accounts of their creators
+// (ADR-0070 §7), read once for all of them.
+func (s *Server) withCreators(ctx context.Context, emojis []appcontent.AdminCustomEmoji) ([]AdminCustomEmoji, error) {
+	if s.o.UserAccounts == nil || s.o.Accounts == nil {
+		out := make([]AdminCustomEmoji, len(emojis))
+		for i, e := range emojis {
+			out[i] = s.newAdminCustomEmoji(e)
+		}
+		return out, nil
+	}
+	return s.withCreatorsWith(ctx, s.reads(), emojis)
+}
+
+// withCreatorsWith is withCreators through reads.
+func (s *Server) withCreatorsWith(ctx context.Context, reads presentReads, emojis []appcontent.AdminCustomEmoji) ([]AdminCustomEmoji, error) {
+	ids := make([]string, len(emojis))
+	for i, e := range emojis {
+		ids[i] = e.Emoji.CreatedByUserID
+	}
+	accounts, err := s.userAccountsWith(ctx, reads, ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]AdminCustomEmoji, len(emojis))
+	for i, e := range emojis {
+		out[i] = s.newAdminCustomEmoji(e)
+		if u := e.Emoji.CreatedByUserID; u != "" {
+			if a, ok := accounts[u]; ok {
+				out[i].CreatedBy = &a
+			} else {
+				out[i].CreatedByDeleted = true
+			}
+		}
+	}
+	return out, nil
+}
+
+// withCreator presents one emoji as withCreators does.
+func (s *Server) withCreator(ctx context.Context, e appcontent.AdminCustomEmoji) (AdminCustomEmoji, error) {
+	out, err := s.withCreators(ctx, []appcontent.AdminCustomEmoji{e})
+	if err != nil {
+		return AdminCustomEmoji{}, err
+	}
+	return out[0], nil
 }
 
 // requireCustomEmojis checks the manage_custom_emojis permission and that the use cases are
@@ -156,10 +203,11 @@ func (s *Server) ListAdminCustomEmojis(ctx context.Context, req ListAdminCustomE
 		return nil, fmt.Errorf("clientapi: list custom emoji: %w", err)
 	}
 	emojis, last := trim(emojis, pq.limit)
-	page := AdminCustomEmojiPage{Items: make([]AdminCustomEmoji, 0, len(emojis))}
-	for _, e := range emojis {
-		page.Items = append(page.Items, s.newAdminCustomEmoji(e))
+	items, err := s.withCreators(ctx, emojis)
+	if err != nil {
+		return nil, err
 	}
+	page := AdminCustomEmojiPage{Items: items}
 	if last >= 0 {
 		page.NextCursor = encodeCursor(emojis[last].Emoji.ID)
 	}
@@ -181,7 +229,11 @@ func (s *Server) GetAdminCustomEmoji(ctx context.Context, req GetAdminCustomEmoj
 	case err != nil:
 		return nil, fmt.Errorf("clientapi: custom emoji %s: %w", req.Id, err)
 	}
-	return GetAdminCustomEmoji200JSONResponse{adminCustomEmojiResponse(s.newAdminCustomEmoji(e))}, nil
+	out, err := s.withCreator(ctx, e)
+	if err != nil {
+		return nil, err
+	}
+	return GetAdminCustomEmoji200JSONResponse{adminCustomEmojiResponse(out)}, nil
 }
 
 // CreateCustomEmoji serves POST /api/v1/admin/custom_emojis.
@@ -217,7 +269,11 @@ func (s *Server) CreateCustomEmoji(ctx context.Context, req CreateCustomEmojiReq
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: create custom emoji: %w", err)
 	}
-	return CreateCustomEmoji200JSONResponse{adminCustomEmojiResponse(s.newAdminCustomEmoji(e))}, nil
+	out, err := s.withCreator(ctx, e)
+	if err != nil {
+		return nil, err
+	}
+	return CreateCustomEmoji200JSONResponse{adminCustomEmojiResponse(out)}, nil
 }
 
 // UpdateCustomEmoji serves PATCH /api/v1/admin/custom_emojis/{id}.
@@ -247,7 +303,11 @@ func (s *Server) UpdateCustomEmoji(ctx context.Context, req UpdateCustomEmojiReq
 	case err != nil:
 		return nil, fmt.Errorf("clientapi: update custom emoji %s: %w", req.Id, err)
 	}
-	return UpdateCustomEmoji200JSONResponse{adminCustomEmojiResponse(s.newAdminCustomEmoji(e))}, nil
+	out, err := s.withCreator(ctx, e)
+	if err != nil {
+		return nil, err
+	}
+	return UpdateCustomEmoji200JSONResponse{adminCustomEmojiResponse(out)}, nil
 }
 
 // ReplaceCustomEmojiImage serves PUT /api/v1/admin/custom_emojis/{id}/image.
@@ -274,7 +334,11 @@ func (s *Server) ReplaceCustomEmojiImage(ctx context.Context, req ReplaceCustomE
 	case err != nil:
 		return nil, fmt.Errorf("clientapi: replace the image of custom emoji %s: %w", req.Id, err)
 	}
-	return ReplaceCustomEmojiImage200JSONResponse{adminCustomEmojiResponse(s.newAdminCustomEmoji(e))}, nil
+	out, err := s.withCreator(ctx, e)
+	if err != nil {
+		return nil, err
+	}
+	return ReplaceCustomEmojiImage200JSONResponse{adminCustomEmojiResponse(out)}, nil
 }
 
 // CopyCustomEmoji serves POST /api/v1/admin/custom_emojis/{id}/copy.
@@ -302,7 +366,11 @@ func (s *Server) CopyCustomEmoji(ctx context.Context, req CopyCustomEmojiRequest
 	case err != nil:
 		return nil, fmt.Errorf("clientapi: copy custom emoji %s: %w", req.Id, err)
 	}
-	return CopyCustomEmoji200JSONResponse{adminCustomEmojiResponse(s.newAdminCustomEmoji(e))}, nil
+	out, err := s.withCreator(ctx, e)
+	if err != nil {
+		return nil, err
+	}
+	return CopyCustomEmoji200JSONResponse{adminCustomEmojiResponse(out)}, nil
 }
 
 // DeleteCustomEmoji serves DELETE /api/v1/admin/custom_emojis/{id}.

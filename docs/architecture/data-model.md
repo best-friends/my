@@ -196,7 +196,7 @@ flowchart LR
 | `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `password_credential_removals`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `role_badges`, `user_role_badge_displays`, `managed_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
-| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts`, `status_quotes`, `status_quote_events`, `quote_authorizations`, `quote_authorization_revocations` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `status_quote_states`, `status_quote_policies`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
+| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `custom_emoji_requests`, `custom_emoji_request_outcomes`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts`, `status_quotes`, `status_quote_events`, `quote_authorizations`, `quote_authorization_revocations` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `custom_emoji_pending_requests`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `status_quote_states`, `status_quote_policies`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
 | `graph` | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `follow_resends`, `blocks`, `block_retractions` | `follow_edges`, `block_edges`, `follow_counters`, `follow_preferences`, `mutes`, `account_domain_mutes` |
 | `timeline` | なし | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_domain_mutes`, `feed_author_restrictions`, `feed_domain_restrictions` |
 | `notification` | `notifications`, `notification_dismissals` | `notification_read_markers`, `push_subscriptions`, `push_subscription_alerts` |
@@ -311,7 +311,7 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `roles` | リソース | `id`, `key`（`string(64)`）, `position`（`int`）, `created_at` | 一意 `(key)` |
-| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_login_recovery, manage_custom_emojis, manage_webhooks, manage_announcements, manage_finance, view_finance, manage_supporters)`） | PK `(role_id, permission)` |
+| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_login_recovery, manage_custom_emojis, manage_webhooks, manage_announcements, manage_finance, view_finance, manage_supporters, create_custom_emojis)`） | PK `(role_id, permission)` |
 | `user_role_grants` | イベント | `id`, `user_id`, `role_id`, `granted_by_user_id`（NULL 可 = CLI による付与。最初の管理者など）, `granted_at` | |
 | `user_role_revocations` | イベント | `grant_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による剥奪）, `revoked_at` | |
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |
@@ -619,7 +619,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite, relay, billing_source, cost_item, supporter_program, supporter_plan, supporter_subscription)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
+| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite, relay, billing_source, cost_item, supporter_program, supporter_plan, supporter_subscription, custom_emoji_request)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
 
 - 各モジュールの管理のユースケースが元のイベントと同じトランザクションで発行するドメインイベント（`moderation.audit_recorded`）を、`moderation` の同期の購読者が書きます。理由とメモの本文は写さず、`source_event_id` で元のイベントから引きます。
   記録の ID はトランザクションの前に作り、再試行しても同じ行を書きます。何も変えなかった操作（解除済みの処分の解除など）は記録しません。
@@ -655,13 +655,15 @@ flowchart LR
   | `supporter_program_enabled`, `supporter_program_disabled` | `supporter_program` | `supporter_program_changes.id` | 決済の事業者の名前（`stripe`） | `supporter_program_changes.id` |
   | `supporter_plan_created`, `supporter_plan_revised`, `supporter_plan_retired` | `supporter_plan` | `supporter_plans.id` | プランの名前（変更は変更後の名前） | `supporter_plan_revisions.id` / `supporter_plan_retirements.plan_id` |
   | `supporter_subscription_canceled` | `supporter_subscription` | `supporter_subscriptions.id` | プランの名前と利用者のハンドル（`Supporter @alice`） | `supporter_subscriptions.id` |
+  | `custom_emoji_request_submitted`, `custom_emoji_request_withdrawn`, `custom_emoji_request_approved`, `custom_emoji_request_rejected` | `custom_emoji_request` | `custom_emoji_requests.id` | `:shortcode:` | 申請はなし、ほかは `custom_emoji_request_outcomes.id` |
 
+  申請と取り下げは申請者（`create_custom_emojis` を持つ利用者）を操作者とし、承認は申請への `custom_emoji_request_approved` と、作った絵文字への `custom_emoji_created`（画像の申請は `custom_emoji_image_replaced`）の 2 行を承認した人を操作者として残します（ADR-0070 §8）。作成者による変更と削除は `custom_emoji_updated`・`custom_emoji_deleted` を作成者を操作者として残します。
   サーバーが 410 Gone や失敗の継続で宛先を無効にした `webhook_disabled` は `actor_kind = system` です（ADR-0060）。リレーが送った `Accept` / `Reject` の `relay_accepted` / `relay_rejected` は `actor_kind = remote` です（ADR-0061）。
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 一覧（`moderation.Service.GoneAuditTargets`）は、ページの行の対象が今もあるかを、対象の種類ごとに 1 回の問い合わせでまとめて確かめます。
   アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせます。
-  ロール・カスタム絵文字・webhook・リレーは、それを持つモジュールが監査ログを発行する側で `moderation` から呼べないため、ポート `moderation.AuditTargets` を通して `identity.Service.ExistingRoleIDs`（`roles`）・`content.CustomEmojiService.ExistingIDs`（`custom_emojis`）・`webhook.Service.ExistingIDs`（`webhook_endpoint_heads` の `deleted` でないもの）・`federation.Relays.ExistingIDs`（`relays`）に問い合わせます。
+  ロール・カスタム絵文字・その申請・webhook・リレーは、それを持つモジュールが監査ログを発行する側で `moderation` から呼べないため、ポート `moderation.AuditTargets` を通して `identity.Service.ExistingRoleIDs`（`roles`）・`content.CustomEmojiService.ExistingIDs`（`custom_emojis`）・`content.CustomEmojiService.ExistingRequestIDs`（`custom_emoji_requests`。行を消さないので常にある）・`webhook.Service.ExistingIDs`（`webhook_endpoint_heads` の `deleted` でないもの）・`federation.Relays.ExistingIDs`（`relays`）に問い合わせます。
   ほかの種類の対象（ドメイン・利用者・設定・ルール・お知らせ・招待）は消えません。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
 - 更新・削除の API と CLI はありません。保持期間（ADR-0038、既定 730 日）を過ぎた行だけを消去ジョブが消します。
@@ -957,8 +959,11 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `tags` | リソース | `id`, `name`（最初に使われた表記）, `name_normalized`（NFKC + 小文字化）, `created_at` | 一意 `(name_normalized)` |
-| `custom_emojis` | リソース | `id`, `shortcode`, `domain`（ローカルは `''`）, `uri`（NULL 可。ローカルは常に NULL で、`id` から `https://{host}/ap/emojis/{id}` を導く）, `created_at` | 一意 `(shortcode, domain)`, `(uri)` |
-| `custom_emoji_images` | イベント（版） | `id`, `emoji_id`, `media_id`, `revised_at` | インデックス `(emoji_id, id DESC)`, `(media_id)`。最新の行が現在の画像。ローカルは管理者（CLI はインスタンスの Actor）がアップロードした `media_files`、リモートは `remote_media` |
+| `custom_emojis` | リソース | `id`, `shortcode`, `domain`（ローカルは `''`）, `uri`（NULL 可。ローカルは常に NULL で、`id` から `https://{host}/ap/emojis/{id}` を導く）, `created_by_user_id`（NULL 可。作った利用者。承認で作った絵文字は申請者、管理画面で作った絵文字と複製はその管理者、CLI とリモートの絵文字は NULL。変えない）, `created_at` | 一意 `(shortcode, domain)`, `(uri)`。インデックス `(created_by_user_id, id)`（作成者の絵文字と上限の数え上げ） |
+| `custom_emoji_images` | イベント（版） | `id`, `emoji_id`, `media_id`, `revised_at` | インデックス `(emoji_id, id DESC)`, `(media_id)`。最新の行が現在の画像。ローカルは管理者がアップロードした `media_files`（CLI と承認した申請はインスタンスの Actor の `media_files`。申請は申請者のアップロードの処理結果を複製する）、リモートは `remote_media` |
+| `custom_emoji_requests` | リソース | `id`, `kind`（`enum(create, image)`）, `requester_user_id`, `emoji_id`（NULL 可。`image` の対象）, `shortcode`（`image` は対象の写し）, `media_id`（申請者のローカルのアカウントのアップロード）, `created_at` | CHECK `(kind = 'create') = (emoji_id IS NULL)`。インデックス `(requester_user_id, id)`, `(media_id)`。終わった申請も消さない（ADR-0070 §7） |
+| `custom_emoji_request_outcomes` | イベント | `id`, `request_id`, `outcome`（`enum(approved, rejected, withdrawn, lapsed)`）, `decided_by_user_id`（NULL 可。CLI と `lapsed`。取り下げは申請者）, `reason`（NULL 可、500 文字まで。`rejected` だけ）, `emoji_id`（`approved` だけ。作った・変えた絵文字）, `decided_at` | 一意 `(request_id)`。行のない申請が審査中 |
+| `custom_emoji_pending_requests` | 投影 | `request_id`（PK）, `requester_user_id`, `reserved_shortcode`（`create` だけ）, `emoji_id`（`image` だけ） | 一意 `(reserved_shortcode)`, `(emoji_id)`。インデックス `(requester_user_id)`。申請と同じトランザクションで作り、結果の行と同じトランザクションで消す。`custom_emoji_requests` のうち結果の行のないものから作り直せる |
 | `custom_emoji_settings` | 現在値 | `emoji_id`（PK）, `enabled`, `visible_in_picker`（`bool`）, `category`（NULL 可、64 文字まで） | 行が無ければ有効・ピッカーに出す・カテゴリなし（既定に戻すと行を消す）。リモートの絵文字は `enabled` だけを使う |
 | `custom_emoji_aliases` | 現在値 | `emoji_id`, `alias`（shortcode と同じ文字種） | PK `(emoji_id, alias)`。ローカルだけ。ピッカーの検索に使う |
 | `polls` | イベント（版の子） | `id`, `revision_id`, `multiple`（`bool`）, `hide_totals`（`bool`。ローカルの投票で、締め切りまで選択肢ごとの票数を隠す）, `closes_at`（NULL 可） | 一意 `(revision_id)`。投票を作り直す編集は新しい版の新しい投票になる |
@@ -972,6 +977,12 @@ flowchart LR
   `:shortcode:`（前後が英数字と `:` でないもの）から有効なローカルの絵文字だけを版の `status_revision_emojis` / `account_profile_revision_emojis` に記録します。
   無効にした絵文字は表示・連合・ピッカーから外れ、削除は `custom_emojis`・`custom_emoji_images`・設定・別名の行を同じトランザクションで消します（過去の版の参照は残し、読み取りで飛ばします）。
   絵文字の画像のアップロードは、版が添付していなくても未使用のアップロードの掃除と、アカウントの消去で消しません。削除した絵文字の画像は未使用のアップロードになり、掃除が Blob ごと消します。
+- 絵文字の作成の申請（ADR-0070 §2〜§4）: `create_custom_emojis` を持つ利用者は、新しい絵文字（`create`）か、自分が作った絵文字の画像の差し替え（`image`）を申請し、`manage_custom_emojis` を持つ人が承認・却下します。
+  申請は絵文字ではないので、承認まで絵文字の読み取りの経路（ピッカー・本文からの抽出・`GET /ap/emojis/{id}`・リアクション・管理の一覧）のどれにも現れません。
+  審査中の `create` は shortcode を予約し（`reserved_shortcode` の一意と、ローカルの絵文字の作成のときの照合）、`image` は 1 つの絵文字に 1 つまでです。審査中の申請の画像は申請者の未添付のアップロードのままで、未使用のアップロードの掃除はそれを残します（`content.PendingCustomEmojiRequestMedia`）。アカウントの消去は消します。
+  承認は同じトランザクションで結果の行を書き、`custom_emojis`（作成者は申請者）・`custom_emoji_images` を作ります。画像は申請者のアップロードの処理結果をインスタンスの Actor のアップロードとして複製したもので、申請者のアップロードは未使用に戻ります。承認のときに申請者が `create_custom_emojis` を持たないか、shortcode がローカルの絵文字にあれば承認は失敗します。
+  作成者は、`create_custom_emojis` を持ち、アカウントが使える間だけ、自分の絵文字の別名・カテゴリ・ピッカーに出すかを変え、削除できます。絵文字の削除は、その絵文字の審査中の `image` の申請を `lapsed` で閉じます。
+  作成数の上限はポート `content.CustomEmojiQuota` が返し（プランのロールは `supporters.Service.EmojiLimit`、ADR-0072 §11）、作成者の絵文字と審査中の `create` の申請の合計が上限以上なら新しい `create` を断ります。上限なし（既定）のときは数えません。
 - リモートの絵文字の消去（ADR-0051 §1、FR-803）: 1 日ごとのジョブ `content.purge_remote_emojis` が、どの投稿の版（`status_revision_emojis`）・プロフィールの版（`account_profile_revision_emojis`、`account` の公開 API `IsEmojiReferenced`）・
   リアクション（`reactions.custom_emoji_id`）からも参照されないリモートの絵文字を消します。保持期間（下の「リモート投稿の保持期間」）とプロフィールの整理で版が消えた後に絵文字を残さないためです。
   管理者が無効にした絵文字は、参照が無くても行・画像・設定ごと残します。消すと次に届いたときに有効として記録し直され、`(shortcode, domain)` に対する無効化が失われるからです。
@@ -1111,7 +1122,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `notifications` | イベント | `id`, `recipient_account_id`, `type`（`enum(follow, follow_request, follow_accepted, mention, boost, favourite, reaction, poll_closed, moderation_notice, appeal_decided, report_resolved, relationships_severed, admin_report, admin_sign_up, admin_appeal, admin_webhook_disabled)`）, `source_account_id`（NULL 可。モデレーションの通知はインスタンス）, `source_domain`（NULL 可。差出人がリモートのアカウントのときのそのドメイン。ドメインのミュートの照合に使う）, `status_id`（NULL 可）, `moderation_action_id`（NULL 可）, `report_id`（NULL 可）, `appeal_id`（NULL 可）, `severance_id`（NULL 可）, `subject_user_id`（NULL 可。`admin_sign_up` の登録者）, `reaction_emoji` / `reaction_custom_emoji_id`（NULL 可。`reaction` の絵文字で、Unicode 絵文字かカスタム絵文字のどちらか一方）, `dedupe_key`, `created_at` | 一意 `(recipient_account_id, dedupe_key)`。インデックス `(recipient_account_id, id)`, `(recipient_account_id, type, id)`, `(status_id)`（保持期間の判定） |
+| `notifications` | イベント | `id`, `recipient_account_id`, `type`（`enum(follow, follow_request, follow_accepted, mention, boost, favourite, reaction, poll_closed, moderation_notice, appeal_decided, report_resolved, relationships_severed, admin_report, admin_sign_up, admin_appeal, admin_webhook_disabled, admin_custom_emoji_request, custom_emoji_request_decided)`）, `source_account_id`（NULL 可。モデレーションの通知はインスタンス）, `source_domain`（NULL 可。差出人がリモートのアカウントのときのそのドメイン。ドメインのミュートの照合に使う）, `status_id`（NULL 可）, `moderation_action_id`（NULL 可）, `report_id`（NULL 可）, `appeal_id`（NULL 可）, `severance_id`（NULL 可）, `subject_user_id`（NULL 可。`admin_sign_up` の登録者）, `custom_emoji_request_id`（NULL 可。`admin_custom_emoji_request` と `custom_emoji_request_decided` の申請）, `reaction_emoji` / `reaction_custom_emoji_id`（NULL 可。`reaction` の絵文字で、Unicode 絵文字かカスタム絵文字のどちらか一方）, `dedupe_key`, `created_at` | 一意 `(recipient_account_id, dedupe_key)`。インデックス `(recipient_account_id, id)`, `(recipient_account_id, type, id)`, `(status_id)`（保持期間の判定） |
 | `notification_dismissals` | イベント | `notification_id`（PK）, `dismissed_at` | |
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
 | `notification_exclusions` | 投影 | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)`。`graph` のブロック・ミュートのイベントから作る |
@@ -1153,7 +1164,7 @@ flowchart LR
 - 一覧は、消していない、除外されていない、削除された投稿についてでない通知を `id` のキーセットで新しい順に引きます。種類の絞り込み（複数可）は `(recipient_account_id, type, id)` を使います。
 - 既読位置は前にだけ進みます（`last_read_id` より古い通知を指定しても変わりません）。同時に既読位置を送る複数の端末が位置を戻さないためです。指定できるのは自分の通知だけです。
 - 未読数は、一覧に出る通知のうち `id > last_read_id` のものの件数です。既読位置が無ければすべてが未読です。
-- モデレーションの通知は `moderation` と `identity` のドメインイベントから作ります。
+- モデレーションの通知は `moderation` と `identity` のドメインイベントから、カスタム絵文字の申請の通知は `content` のドメインイベントから作ります。
 
   | ドメインイベント | 種類 | 受け取る人 | `dedupe_key` |
   | --- | --- | --- | --- |
@@ -1165,6 +1176,8 @@ flowchart LR
   | 承認待ちの登録 | `admin_sign_up` | ロールが `manage_accounts` を持つ人 | `admin_sign_up:<user_id>` |
   | 異議申し立て | `admin_appeal` | ロールが `manage_accounts` を持つ人 | `admin_appeal:<appeal_id>` |
   | サーバーによる webhook の無効化（`webhook.endpoint_disabled`、ADR-0060） | `admin_webhook_disabled` | ロールが `manage_webhooks` を持つ人 | `admin_webhook_disabled:<state_change_id>` |
+  | カスタム絵文字の申請（`content.custom_emoji_request_recorded` の申請、ADR-0070 §9） | `admin_custom_emoji_request` | ロールが `manage_custom_emojis` を持つ人（申請者を除く） | `admin_custom_emoji_request:<request_id>` |
+  | カスタム絵文字の申請の承認と却下（同じイベントの承認・却下。取り下げと `lapsed` は通知しない） | `custom_emoji_request_decided` | 申請者 | `custom_emoji_request_decided:<request_id>` |
 
   - 本人は `moderation_notice` から処分の種類・公開理由・対象の投稿・期限を見られ、異議申し立てに進めます（FR-715）。
     クライアント API は通知に処分を本人に見せる形（種類と理由のカテゴリは本人の UI 言語の表示名付き）で埋め込み、`GET /api/v1/moderation/actions` は本人への処分を通知の有無に関わらずすべて新しい順に返します。
@@ -1176,6 +1189,7 @@ flowchart LR
     後から権限を失った人の通知は、一覧と未読数から読み取り時に除きます（閲覧者のロールが持たない権限の種類を除く）。権限が戻れば、また見えます。
   - `admin_*` の `source_account_id` は NULL で、ブロック・ミュートでは隠しません。`admin_report` は `report_id` を、`admin_sign_up` は `subject_user_id` を持ちます。
     `admin_webhook_disabled` は対象の列を持たず、管理画面の webhook の一覧（無効にした理由が出る）に導きます。
+  - `admin_custom_emoji_request` と `custom_emoji_request_decided` の行は `custom_emoji_request_id` を必ず持ち、ほかの種類は持ちません。クライアント API はどちらにも申請をいまの状態（却下の理由を含む）で埋め込みます。
   - `admin_report` は、通報を受け付けたトランザクションで対象にほかの未解決の通報が無いときだけ作り（`moderation.report_filed` の `FirstOpen`）、通報者と通報の対象には作りません。
   - `admin_sign_up` は `identity.registration_pending`（登録が `pending` で始まった）から作ります。
   - `user_preferences.email_moderator_notifications` が真の受け取る人には、新しく作った通知ごとに、同じトランザクションの outbox でメールのジョブ（`notification.moderator_email`、冪等キーは通知の ID）を積みます。
@@ -1761,6 +1775,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_*` の表 |
 | FR-912 課金のロールの安全柵 | S | `managed_roles`, `role_permissions`, `roles` |
 | FR-913 ロールのバッジ | S | `role_badges`, `user_role_badge_displays`, `user_roles` |
+| FR-915 絵文字の作成の権限と承認制 | S | `role_permissions`（`create_custom_emojis`）, `custom_emojis`（`created_by_user_id`）, `custom_emoji_requests`, `custom_emoji_request_outcomes`, `custom_emoji_pending_requests`, `audit_log_entries`, `notifications`（`admin_custom_emoji_request`, `custom_emoji_request_decided`） |
 | FR-916 会計の閲覧の権限 | S | `role_permissions`（`view_finance`）, `instance_settings`（`finance_viewer_item_names`, `finance_viewer_item_memos`, `finance_viewer_income`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |

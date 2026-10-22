@@ -32,9 +32,11 @@ var ErrShortcodeTaken = errors.New("content: a custom emoji has the shortcode")
 // ErrNotFound.
 type CustomEmojiRepository interface {
 	CustomEmojiTxReads
+	CustomEmojiRequestRepository
 
 	// InsertCustomEmoji inserts an emoji; it fails with an error wrapping ErrShortcodeTaken when
-	// an emoji of its domain has its shortcode.
+	// an emoji of its domain has its shortcode, or, for a local emoji, when a pending request to
+	// create one reserves it (ADR-0070 §2).
 	InsertCustomEmoji(ctx context.Context, tx uow.Tx, e content.CustomEmoji) error
 	InsertCustomEmojiImage(ctx context.Context, tx uow.Tx, img content.CustomEmojiImage) error
 	// SetCustomEmojiSettings records the settings of an emoji; the defaults delete its row.
@@ -74,6 +76,8 @@ type CustomEmojiQuery struct {
 	Domain string
 	// Shortcode keeps the emoji whose shortcode contains it, ignoring case.
 	Shortcode string
+	// CreatedBy keeps the emoji that a user made (custom_emojis.created_by_user_id).
+	CreatedBy string
 	// Before is the ID of the last emoji of the previous page.
 	Before string
 }
@@ -124,6 +128,14 @@ type CustomEmojiDeps struct {
 	// MaxBytes is the largest image of a local emoji as uploaded (custom_emoji_max_bytes); zero
 	// means content.DefaultCustomEmojiMaxBytes.
 	MaxBytes int64
+	// Creators tells whether a user may create custom emoji now, for the requests and the
+	// creators' own changes (ADR-0070 §2, §3); nil lets nobody.
+	Creators CustomEmojiCreators
+	// Quota is the limit of the emoji that a creator makes (ADR-0070 §4); nil is NoCustomEmojiQuota.
+	Quota CustomEmojiQuota
+	// InstanceAccount returns the account of the instance actor, whose uploads the images of
+	// the approved requests become (ADR-0070 §2); nil refuses the approvals.
+	InstanceAccount func(ctx context.Context) (string, error)
 }
 
 // CustomEmojiService runs the use cases of the custom emoji that the administrators manage
@@ -136,6 +148,9 @@ type CustomEmojiService struct {
 func NewCustomEmojiService(d CustomEmojiDeps) *CustomEmojiService {
 	if d.MaxBytes <= 0 {
 		d.MaxBytes = content.DefaultCustomEmojiMaxBytes
+	}
+	if d.Quota == nil {
+		d.Quota = NoCustomEmojiQuota{}
 	}
 	return &CustomEmojiService{d: d}
 }
@@ -186,10 +201,10 @@ func (s *CustomEmojiService) Create(ctx context.Context, in CreateCustomEmojiInp
 }
 
 // register records the local emoji of in, whose fields and image are checked, as the operation
-// action.
+// action of the administrator in.ByUserID, who becomes its creator.
 func (s *CustomEmojiService) register(ctx context.Context, in CreateCustomEmojiInput, aliases []string, category, action string) (AdminCustomEmoji, error) {
 	now := s.d.Clock.Now()
-	e := content.CustomEmoji{ID: s.d.IDs.NewID(), Shortcode: in.Shortcode, CreatedAt: now}
+	e := content.CustomEmoji{ID: s.d.IDs.NewID(), Shortcode: in.Shortcode, CreatedByUserID: in.ByUserID, CreatedAt: now}
 	img := content.CustomEmojiImage{ID: s.d.IDs.NewID(), EmojiID: e.ID, MediaID: in.MediaID, RevisedAt: now}
 	settings := content.DefaultCustomEmojiSettings(e.ID)
 	settings.VisibleInPicker, settings.Category = in.VisibleInPicker, category
@@ -542,22 +557,41 @@ func (s *CustomEmojiService) ReplaceImage(ctx context.Context, id, ownerAccountI
 // Delete deletes a local emoji with its images, settings, and aliases (ADR-0051 §1). The
 // revisions that used it keep their references, which then show :shortcode: as text; the media
 // files of its images become unattached uploads, which the cleanup of unattached uploads deletes
-// with their blobs. A remote emoji fails with a *content.CustomEmojiError (content.EmojiRemote).
-// It fails with ErrNotFound for an unknown ID.
+// with their blobs. A pending request to replace its image lapses (ADR-0070 §7). A remote emoji
+// fails with a *content.CustomEmojiError (content.EmojiRemote). It fails with ErrNotFound for an
+// unknown ID.
 func (s *CustomEmojiService) Delete(ctx context.Context, id, byUserID string) error {
 	r, err := s.d.Repository.FindCustomEmojiRecord(ctx, id)
 	if err != nil {
 		return err
 	}
+	return s.delete(ctx, r, byUserID)
+}
+
+// delete deletes the local emoji r as Delete does.
+func (s *CustomEmojiService) delete(ctx context.Context, r content.CustomEmojiRecord, byUserID string) error {
+	id := r.Emoji.ID
 	if !r.Emoji.Local() {
 		return &content.CustomEmojiError{Reason: content.EmojiRemote, Value: id}
 	}
-	event := s.event(CustomEmojiDeleted, r.Emoji, "", byUserID, s.d.Clock.Now())
+	now := s.d.Clock.Now()
+	event := s.event(CustomEmojiDeleted, r.Emoji, "", byUserID, now)
+	lapse := content.CustomEmojiRequestOutcome{ID: s.d.IDs.NewID(), Outcome: content.RequestLapsed, DecidedAt: now}
 	// The event comes before the deletion, so that its projectors (the webhook messages) can
 	// still present the emoji as it was.
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := tx.Emit(ctx, event); err != nil {
 			return err
+		}
+		pending, err := s.d.Repository.PendingImageRequestOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if pending != "" {
+			lapse.RequestID = pending
+			if err := s.d.Repository.CloseCustomEmojiRequest(ctx, tx, lapse); err != nil {
+				return err
+			}
 		}
 		return s.d.Repository.DeleteCustomEmoji(ctx, tx, id)
 	})

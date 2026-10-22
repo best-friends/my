@@ -178,11 +178,12 @@ type BoostRetraction struct {
 }
 
 type CustomEmoji struct {
-	ID        string
-	Shortcode string
-	Domain    string
-	Uri       *string
-	CreatedAt time.Time
+	ID              string
+	Shortcode       string
+	Domain          string
+	Uri             *string
+	CreatedByUserID *string
+	CreatedAt       time.Time
 }
 
 type CustomEmojiAlias struct {
@@ -566,6 +567,7 @@ type Notification struct {
 	SubjectUserID         *string
 	SeveranceID           *string
 	AppealID              *string
+	CustomEmojiRequestID  *string
 	ReactionEmoji         *string
 	ReactionCustomEmojiID *string
 	DedupeKey             string

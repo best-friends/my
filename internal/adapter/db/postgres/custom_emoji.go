@@ -35,8 +35,19 @@ func (r *CustomEmojiRepository) InsertCustomEmoji(ctx context.Context, tx uow.Tx
 	if err != nil {
 		return err
 	}
+	if e.Domain == "" {
+		// A pending request to create a local emoji reserves its shortcode (ADR-0070 §2).
+		reserved, err := q.CustomEmojiShortcodeReserved(ctx, e.Shortcode)
+		if err != nil {
+			return wrap(err, "custom emoji shortcode reserved")
+		}
+		if reserved {
+			return appcontent.ErrShortcodeTaken
+		}
+	}
 	err = q.InsertCustomEmoji(ctx, postgresgen.InsertCustomEmojiParams{
-		ID: e.ID, Shortcode: e.Shortcode, Domain: e.Domain, Uri: toNullString(e.URI), CreatedAt: utc(e.CreatedAt),
+		ID: e.ID, Shortcode: e.Shortcode, Domain: e.Domain, Uri: toNullString(e.URI), CreatedByUserID: toNullString(e.CreatedByUserID),
+		CreatedAt: utc(e.CreatedAt),
 	})
 	if isUniqueViolation(err, "custom_emojis_shortcode_domain") {
 		return appcontent.ErrShortcodeTaken
@@ -151,6 +162,7 @@ type emojiRecordRow struct {
 	Shortcode       string
 	Domain          string
 	Uri             *string //nolint:revive // the name of the generated rows, which convert to this type
+	CreatedByUserID *string
 	CreatedAt       time.Time
 	ImageID         string
 	ImageMediaID    string
@@ -174,7 +186,8 @@ func (r *CustomEmojiRepository) records(ctx context.Context, rows []emojiRecordR
 		out[i] = content.CustomEmojiRecord{
 			CurrentCustomEmoji: content.CurrentCustomEmoji{
 				Emoji: content.CustomEmoji{
-					ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: fromNullString(row.Uri), CreatedAt: utc(row.CreatedAt),
+					ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: fromNullString(row.Uri),
+					CreatedByUserID: fromNullString(row.CreatedByUserID), CreatedAt: utc(row.CreatedAt),
 				},
 				Image: content.CustomEmojiImage{ID: row.ImageID, EmojiID: row.ID, MediaID: row.ImageMediaID, RevisedAt: utc(row.ImageRevisedAt)},
 				Settings: content.CustomEmojiSettings{
@@ -194,7 +207,7 @@ func (r *CustomEmojiRepository) ListCustomEmojiRecords(ctx context.Context, q ap
 		return nil, err
 	}
 	rows, err := r.db.reader().ListAdminCustomEmojis(ctx, postgresgen.ListAdminCustomEmojisParams{
-		Locality: int32(q.Locality), Domain: q.Domain, Shortcode: q.Shortcode, BeforeID: q.Before, RowLimit: n, //nolint:gosec // a locality is 0 to 2
+		Locality: int32(q.Locality), Domain: q.Domain, Shortcode: q.Shortcode, CreatedBy: q.CreatedBy, BeforeID: q.Before, RowLimit: n, //nolint:gosec // a locality is 0 to 2
 	})
 	if err != nil {
 		return nil, wrap(err, "list custom emoji")

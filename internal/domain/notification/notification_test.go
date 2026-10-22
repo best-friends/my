@@ -127,6 +127,10 @@ func TestValidateModeratorNotifications(t *testing.T) {
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, AppealID: "p", SourceAccountID: "b", DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeAppealDecided, DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminWebhookDisabled, SourceAccountID: "b", DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminCustomEmojiRequest, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminCustomEmojiRequest, CustomEmojiRequestID: "r", SourceAccountID: "b", DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeCustomEmojiRequestDecided, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", CustomEmojiRequestID: "r", DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", AppealID: "p", DedupeKey: "k"},
 	} {
 		if err := n.Validate(); err == nil {
@@ -140,11 +144,12 @@ func TestHiddenTypes(t *testing.T) {
 		granted []Permission
 		want    []Type
 	}{
-		{nil, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal, TypeAdminWebhookDisabled}},
-		{[]Permission{PermissionManageReports}, []Type{TypeAdminSignUp, TypeAdminAppeal, TypeAdminWebhookDisabled}},
-		{[]Permission{PermissionManageAccounts}, []Type{TypeAdminReport, TypeAdminWebhookDisabled}},
-		{[]Permission{PermissionManageWebhooks}, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal}},
-		{[]Permission{PermissionManageAccounts, PermissionManageReports, PermissionManageWebhooks, "view_audit"}, nil},
+		{nil, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal, TypeAdminWebhookDisabled, TypeAdminCustomEmojiRequest}},
+		{[]Permission{PermissionManageReports}, []Type{TypeAdminSignUp, TypeAdminAppeal, TypeAdminWebhookDisabled, TypeAdminCustomEmojiRequest}},
+		{[]Permission{PermissionManageAccounts}, []Type{TypeAdminReport, TypeAdminWebhookDisabled, TypeAdminCustomEmojiRequest}},
+		{[]Permission{PermissionManageWebhooks}, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal, TypeAdminCustomEmojiRequest}},
+		{[]Permission{PermissionManageCustomEmojis}, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal, TypeAdminWebhookDisabled}},
+		{[]Permission{PermissionManageAccounts, PermissionManageReports, PermissionManageWebhooks, PermissionManageCustomEmojis, "view_audit"}, nil},
 	} {
 		if got := HiddenTypes(tc.granted); !slices.Equal(got, tc.want) {
 			t.Errorf("HiddenTypes(%v) = %v, want %v", tc.granted, got, tc.want)

@@ -257,6 +257,33 @@ describe("the notifications page", () => {
     expect(within(disabled).getByRole("link", { name: "Open the webhooks" })).toHaveAttribute("href", "/admin/webhooks");
   });
 
+  test("tells of custom emoji requests: a new one to an administrator, and a decision with its reason to the requester", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const request = { id: "0192f0c4-7a8e-7000-8000-0000000000e1", kind: "create", state: "pending", shortcode: "blobcat", created_at: "2026-10-16T08:00:00Z" } as const;
+    const items: Notification[] = [
+      { id: "0192f0c4-7a8e-7000-8000-0000000000da", type: "admin_custom_emoji_request", created_at: "2026-10-16T09:00:00Z", custom_emoji_request: request },
+      {
+        id: "0192f0c4-7a8e-7000-8000-0000000000db",
+        type: "custom_emoji_request_decided",
+        created_at: "2026-10-16T10:00:00Z",
+        custom_emoji_request: { ...request, kind: "image", state: "rejected", reason: "Too close to :blob:.", decided_at: "2026-10-16T10:00:00Z" },
+      },
+      { id: "0192f0c4-7a8e-7000-8000-0000000000dc", type: "custom_emoji_request_decided", created_at: "2026-10-16T11:00:00Z", custom_emoji_request: { ...request, state: "approved" } },
+    ];
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    const submitted = within(feed).getByRole("article", { name: /A user requested the custom emoji :blobcat:/ });
+    expect(within(submitted).getByRole("link", { name: "Review the requests" })).toHaveAttribute("href", "/admin/custom-emojis?tab=requests");
+    const rejected = within(feed).getByRole("article", { name: /Your request for a new image of :blobcat: was rejected/ });
+    expect(within(rejected).getByText("Too close to :blob:.")).toBeInTheDocument();
+    expect(within(rejected).getByRole("link", { name: "Open your custom emoji" })).toHaveAttribute("href", "/settings/custom-emojis");
+    expect(within(feed).getByRole("article", { name: /Your custom emoji :blobcat: was approved/ })).toBeInTheDocument();
+  });
+
   test("names the actor of every type and hides a post behind its content warning", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });

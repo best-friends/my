@@ -102,6 +102,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadBookmarks() string {
 	return l.format("server:auth.authorize.scope.read_bookmarks", nil)
 }
 
+// ServerAuthAuthorizeScopeReadCustomEmojis formats "server:auth.authorize.scope.read_custom_emojis". Permission (OAuth scope read:custom_emojis) listed on the authorization page.
+//
+//	en: Read the custom emoji you made and your requests for new ones
+func (l *Localizer) ServerAuthAuthorizeScopeReadCustomEmojis() string {
+	return l.format("server:auth.authorize.scope.read_custom_emojis", nil)
+}
+
 // ServerAuthAuthorizeScopeReadFavourites formats "server:auth.authorize.scope.read_favourites". Permission (OAuth scope read:favourites) listed on the authorization page.
 //
 //	en: Read your favourites
@@ -177,6 +184,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeWriteBlocks() string {
 //	en: Add and remove bookmarks
 func (l *Localizer) ServerAuthAuthorizeScopeWriteBookmarks() string {
 	return l.format("server:auth.authorize.scope.write_bookmarks", nil)
+}
+
+// ServerAuthAuthorizeScopeWriteCustomEmojis formats "server:auth.authorize.scope.write_custom_emojis". Permission (OAuth scope write:custom_emojis) listed on the authorization page.
+//
+//	en: Request new custom emoji, and change and delete the ones you made
+func (l *Localizer) ServerAuthAuthorizeScopeWriteCustomEmojis() string {
+	return l.format("server:auth.authorize.scope.write_custom_emojis", nil)
 }
 
 // ServerAuthAuthorizeScopeWriteFavourites formats "server:auth.authorize.scope.write_favourites". Permission (OAuth scope write:favourites) listed on the authorization page.
@@ -1103,6 +1117,20 @@ func (l *Localizer) ServerErrorsConflict() string {
 	return l.format("server:errors.conflict", nil)
 }
 
+// ServerErrorsCustomEmojiRequestConflict formats "server:errors.custom_emoji_request_conflict". API error title for HTTP 409 when an administrator approves or rejects, or the requester withdraws, a custom emoji request that cannot be; the detail and the reason property say why.
+//
+//	en: The custom emoji request cannot be decided as it is.
+func (l *Localizer) ServerErrorsCustomEmojiRequestConflict() string {
+	return l.format("server:errors.custom_emoji_request_conflict", nil)
+}
+
+// ServerErrorsCustomEmojiRequestConflictDetail formats "server:errors.custom_emoji_request_conflict_detail". Detail of the API error (HTTP 409) of a custom emoji request that cannot be decided or withdrawn. {reason} is the reason code (not shown); each branch explains one case.
+//
+//	en: {reason, select, not_pending {The request was already approved, rejected, or withdrawn.} requester_cannot_create {The requester can no longer create custom emoji. Reject the request instead.} shortcode_taken {A custom emoji of this server already has this shortcode. Reject the request instead.} other {The request cannot be decided as it is.}}
+func (l *Localizer) ServerErrorsCustomEmojiRequestConflictDetail(reason string) string {
+	return l.format("server:errors.custom_emoji_request_conflict_detail", map[string]any{"reason": reason})
+}
+
 // ServerErrorsDomainMutesTooMany formats "server:errors.domain_mutes.too_many". API error title for HTTP 422 when the user mutes another domain beyond the limit of muted domains.
 //
 //	en: You already mute the most domains allowed. Unmute one first.
@@ -1173,7 +1201,7 @@ func (l *Localizer) ServerErrorsInternal() string {
 	return l.format("server:errors.internal", nil)
 }
 
-// ServerErrorsInvalidCustomEmoji formats "server:errors.invalid_custom_emoji". API error title for HTTP 422 when an administrator registers or changes a custom emoji that breaks a rule; the detail and the reason property say which.
+// ServerErrorsInvalidCustomEmoji formats "server:errors.invalid_custom_emoji". API error title for HTTP 422 when a custom emoji, or a request for one, breaks a rule; the detail and the reason property say which.
 //
 //	en: The custom emoji cannot be saved.
 func (l *Localizer) ServerErrorsInvalidCustomEmoji() string {
@@ -1182,7 +1210,7 @@ func (l *Localizer) ServerErrorsInvalidCustomEmoji() string {
 
 // ServerErrorsInvalidCustomEmojiDetail formats "server:errors.invalid_custom_emoji_detail". Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule.
 //
-//	en: {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} local_emoji {This can be done only with the custom emoji of other servers.} fetch_failed {The image of the custom emoji could not be fetched from its server.} other {The custom emoji breaks a rule.}}
+//	en: {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} local_emoji {This can be done only with the custom emoji of other servers.} fetch_failed {The image of the custom emoji could not be fetched from its server.} limit_reached {You already have as many custom emoji and pending requests as your limit.} request_pending {This custom emoji already has a pending request for a new image.} invalid_reason {A reason is at most 500 characters.} other {The custom emoji breaks a rule.}}
 func (l *Localizer) ServerErrorsInvalidCustomEmojiDetail(reason string) string {
 	return l.format("server:errors.invalid_custom_emoji_detail", map[string]any{"reason": reason})
 }
@@ -1831,6 +1859,20 @@ func (l *Localizer) ServerMailAdminAppealSubject(instance string) string {
 	return l.format("server:mail.admin_appeal.subject", map[string]any{"instance": instance})
 }
 
+// ServerMailAdminCustomEmojiRequestBody formats "server:mail.admin_custom_emoji_request.body". Plain-text body of the email to an administrator about a new custom emoji request. It never names the user or the emoji. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line).
+//
+//	en: A user of {instance} requested a custom emoji, or a new image of one, and the request awaits review.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminCustomEmojiRequestBody(instance string, url string) string {
+	return l.format("server:mail.admin_custom_emoji_request.body", map[string]any{"instance": instance, "url": url})
+}
+
+// ServerMailAdminCustomEmojiRequestSubject formats "server:mail.admin_custom_emoji_request.subject". Subject of the email to an administrator who chose to get moderator notifications by email: a user requested a custom emoji or a new image of one. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A custom emoji request awaits review on {instance}
+func (l *Localizer) ServerMailAdminCustomEmojiRequestSubject(instance string) string {
+	return l.format("server:mail.admin_custom_emoji_request.subject", map[string]any{"instance": instance})
+}
+
 // ServerMailAdminReportBody formats "server:mail.admin_report.body". Plain-text body of the email to a moderator about a new report. It never names the report or the accounts. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line).
 //
 //	en: A new report awaits the moderators of {instance}.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
@@ -1992,6 +2034,13 @@ func (l *Localizer) ServerPushAdminAppeal(instance string) string {
 	return l.format("server:push.admin_appeal", map[string]any{"instance": instance})
 }
 
+// ServerPushAdminCustomEmojiRequest formats "server:push.admin_custom_emoji_request". Web Push notification to an administrator: a user requested a custom emoji or a new image of one. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A custom emoji request awaits review on {instance}
+func (l *Localizer) ServerPushAdminCustomEmojiRequest(instance string) string {
+	return l.format("server:push.admin_custom_emoji_request", map[string]any{"instance": instance})
+}
+
 // ServerPushAdminReport formats "server:push.admin_report". Web Push notification to a moderator: someone reported an account that had no open report. It never names the accounts. {instance} is the server's display name, or its domain name when it has none.
 //
 //	en: A new report awaits the moderators of {instance}
@@ -2025,6 +2074,13 @@ func (l *Localizer) ServerPushAppealDecided(instance string) string {
 //	en: {name} boosted your post
 func (l *Localizer) ServerPushBoost(name string) string {
 	return l.format("server:push.boost", map[string]any{"name": name})
+}
+
+// ServerPushCustomEmojiRequestDecided formats "server:push.custom_emoji_request_decided". Web Push notification: an administrator approved or rejected the user's request for a custom emoji or a new image of one. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: The administrators of {instance} reviewed your custom emoji request
+func (l *Localizer) ServerPushCustomEmojiRequestDecided(instance string) string {
+	return l.format("server:push.custom_emoji_request_decided", map[string]any{"instance": instance})
 }
 
 // ServerPushFavourite formats "server:push.favourite". Web Push notification. {name} is the display name, or the @handle, of the account that favourited the user's post.

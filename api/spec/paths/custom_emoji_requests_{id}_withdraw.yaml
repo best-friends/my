@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/CustomEmojiRequestId.yaml
+post:
+  operationId: withdrawCustomEmojiRequest
+  summary: Withdraw a custom emoji request
+  description: |
+    Withdraws a pending request of the user, which frees its shortcode; the withdrawal is
+    recorded in the audit log. A request that is not pending is a 409
+    `/api/v1/problems/custom-emoji-request-conflict` (`not_pending`), and an unknown request
+    or one of another user a 404. Needs the `create_custom_emojis` permission (a 403 `/api/v1/problems/missing-permission` otherwise).
+  tags: [custom-emojis]
+  security:
+    - oauth2: ["write:custom_emojis"]
+  responses:
+    "200":
+      $ref: ../components/responses/CustomEmojiRequest.yaml
+    "409":
+      $ref: ../components/responses/CustomEmojiRequestProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

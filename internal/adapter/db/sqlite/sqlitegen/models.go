@@ -176,11 +176,12 @@ type BoostRetraction struct {
 }
 
 type CustomEmoji struct {
-	ID        string
-	Shortcode string
-	Domain    string
-	Uri       sql.NullString
-	CreatedAt int64
+	ID              string
+	Shortcode       string
+	Domain          string
+	Uri             sql.NullString
+	CreatedByUserID sql.NullString
+	CreatedAt       int64
 }
 
 type CustomEmojiAlias struct {
@@ -564,6 +565,7 @@ type Notification struct {
 	SubjectUserID         sql.NullString
 	SeveranceID           sql.NullString
 	AppealID              sql.NullString
+	CustomEmojiRequestID  sql.NullString
 	ReactionEmoji         sql.NullString
 	ReactionCustomEmojiID sql.NullString
 	DedupeKey             string

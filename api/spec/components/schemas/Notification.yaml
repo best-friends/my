@@ -34,6 +34,11 @@ properties:
     description: The appeal that an `admin_appeal` is about.
     allOf:
       - $ref: ./Id.yaml
+  custom_emoji_request:
+    description: |
+      The custom emoji request that an `admin_custom_emoji_request` or a
+      `custom_emoji_request_decided` is about, as it is now; absent when it no longer exists.
+    $ref: ./CustomEmojiRequest.yaml
   relationship_severance:
     $ref: ./RelationshipSeverance.yaml
   reaction:

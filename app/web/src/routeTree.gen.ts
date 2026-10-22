@@ -53,6 +53,7 @@ import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
 import { Route as SettingsAutoDeleteRouteImport } from './routes/settings.auto-delete'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
+import { Route as SettingsCustomEmojisRouteImport } from './routes/settings.custom-emojis'
 import { Route as SettingsDomainMutesRouteImport } from './routes/settings.domain-mutes'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
 import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
@@ -294,6 +295,11 @@ const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
   path: '/settings/blocks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsCustomEmojisRoute = SettingsCustomEmojisRouteImport.update({
+  id: '/settings/custom-emojis',
+  path: '/settings/custom-emojis',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsDomainMutesRoute = SettingsDomainMutesRouteImport.update({
   id: '/settings/domain-mutes',
   path: '/settings/domain-mutes',
@@ -431,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/custom-emojis': typeof SettingsCustomEmojisRoute
   '/settings/domain-mutes': typeof SettingsDomainMutesRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
@@ -495,6 +502,7 @@ export interface FileRoutesByTo {
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/custom-emojis': typeof SettingsCustomEmojisRoute
   '/settings/domain-mutes': typeof SettingsDomainMutesRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
@@ -560,6 +568,7 @@ export interface FileRoutesById {
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/custom-emojis': typeof SettingsCustomEmojisRoute
   '/settings/domain-mutes': typeof SettingsDomainMutesRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
@@ -626,6 +635,7 @@ export interface FileRouteTypes {
     | '/settings/account-status'
     | '/settings/auto-delete'
     | '/settings/blocks'
+    | '/settings/custom-emojis'
     | '/settings/domain-mutes'
     | '/settings/follow-requests'
     | '/settings/import-export'
@@ -690,6 +700,7 @@ export interface FileRouteTypes {
     | '/settings/account-status'
     | '/settings/auto-delete'
     | '/settings/blocks'
+    | '/settings/custom-emojis'
     | '/settings/domain-mutes'
     | '/settings/follow-requests'
     | '/settings/import-export'
@@ -754,6 +765,7 @@ export interface FileRouteTypes {
     | '/settings/account-status'
     | '/settings/auto-delete'
     | '/settings/blocks'
+    | '/settings/custom-emojis'
     | '/settings/domain-mutes'
     | '/settings/follow-requests'
     | '/settings/import-export'
@@ -819,6 +831,7 @@ export interface RootRouteChildren {
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
+  SettingsCustomEmojisRoute: typeof SettingsCustomEmojisRoute
   SettingsDomainMutesRoute: typeof SettingsDomainMutesRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
   SettingsImportExportRoute: typeof SettingsImportExportRoute
@@ -1152,6 +1165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsBlocksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/custom-emojis': {
+      id: '/settings/custom-emojis'
+      path: '/settings/custom-emojis'
+      fullPath: '/settings/custom-emojis'
+      preLoaderRoute: typeof SettingsCustomEmojisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/domain-mutes': {
       id: '/settings/domain-mutes'
       path: '/settings/domain-mutes'
@@ -1323,6 +1343,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
+  SettingsCustomEmojisRoute: SettingsCustomEmojisRoute,
   SettingsDomainMutesRoute: SettingsDomainMutesRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
   SettingsImportExportRoute: SettingsImportExportRoute,

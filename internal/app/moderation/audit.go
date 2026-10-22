@@ -80,6 +80,10 @@ const (
 	AuditSupporterPlanRevised          = moderation.AuditSupporterPlanRevised
 	AuditSupporterPlanRetired          = moderation.AuditSupporterPlanRetired
 	AuditSupporterSubscriptionCanceled = moderation.AuditSupporterSubscriptionCanceled
+	AuditCustomEmojiRequestSubmitted   = moderation.AuditCustomEmojiRequestSubmitted
+	AuditCustomEmojiRequestWithdrawn   = moderation.AuditCustomEmojiRequestWithdrawn
+	AuditCustomEmojiRequestApproved    = moderation.AuditCustomEmojiRequestApproved
+	AuditCustomEmojiRequestRejected    = moderation.AuditCustomEmojiRequestRejected
 
 	AuditTargetUser                  = moderation.AuditTargetUser
 	AuditTargetSetting               = moderation.AuditTargetSetting
@@ -97,6 +101,7 @@ const (
 	AuditTargetSupporterProgram      = moderation.AuditTargetSupporterProgram
 	AuditTargetSupporterPlan         = moderation.AuditTargetSupporterPlan
 	AuditTargetSupporterSubscription = moderation.AuditTargetSupporterSubscription
+	AuditTargetCustomEmojiRequest    = moderation.AuditTargetCustomEmojiRequest
 )
 
 // AuditActorSystem is moderation.AuditActorSystem, the server itself, and AuditActorRemote
@@ -146,7 +151,8 @@ type AuditQuery struct {
 }
 
 // RegisterAuditProjector registers the projector that writes the audit log entry of every
-// AuditRecorded, and of every appcontent.CustomEmojiAdministered, into the transaction that
+// AuditRecorded, and of every appcontent.CustomEmojiAdministered and
+// appcontent.CustomEmojiRequestRecorded, into the transaction that
 // emits it. An invalid entry fails the operation: an operation that cannot be audited does not
 // happen.
 func RegisterAuditProjector(r *uow.Projectors, repo AuditRepository) {
@@ -163,6 +169,24 @@ func RegisterAuditProjector(r *uow.Projectors, repo AuditRepository) {
 	r.Register(appcontent.EventCustomEmojiAdministered, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		return r.Project(ctx, tx, AuditRecorded{Entry: customEmojiAuditEntry(e.(appcontent.CustomEmojiAdministered))})
 	})
+	r.Register(appcontent.EventCustomEmojiRequestRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		return r.Project(ctx, tx, AuditRecorded{Entry: customEmojiRequestAuditEntry(e.(appcontent.CustomEmojiRequestRecorded))})
+	})
+}
+
+// customEmojiRequestAuditEntry returns the audit log entry of an operation on a custom emoji
+// request (ADR-0070 §8): its label is the :shortcode: of the request, and its source the
+// outcome, if any.
+func customEmojiRequestAuditEntry(e appcontent.CustomEmojiRequestRecorded) AuditEntry {
+	entry := AuditEntry{
+		ID: e.AuditID, Action: moderation.AuditAction(e.Action), TargetKind: moderation.AuditTargetCustomEmojiRequest,
+		TargetID: e.Request.ID, TargetLabel: e.Request.Label(), OccurredAt: e.At,
+	}
+	if e.Outcome != nil {
+		entry.SourceEventID = e.Outcome.ID
+	}
+	entry.ActorKind, entry.ActorUserID = moderation.AuditActor(e.ByUserID)
+	return entry
 }
 
 // customEmojiAuditEntry returns the audit log entry of an operation on a custom emoji: its
@@ -198,8 +222,8 @@ type AuditTarget struct {
 
 // GoneAuditTargets returns the targets of entries that no longer exist: accounts, reports,
 // appeals, and sign-up blocks erased (past their retention, ADR-0038), and roles, custom emoji,
-// webhooks, and relays deleted (through Deps.AuditTargets). It looks up each kind of target once for all
-// the entries. A domain, a user, a setting, a rule, an announcement, and an invite are never
+// custom emoji requests, webhooks, and relays deleted (through Deps.AuditTargets). It looks up
+// each kind of target once for all the entries. A domain, a user, a setting, a rule, an announcement, and an invite are never
 // removed, a canceled cost item keeps its rows, and a status has no operation recorded on it;
 // none of these is reported gone.
 func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.AuditEntry) (map[AuditTarget]bool, error) {
@@ -214,7 +238,8 @@ func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.Aud
 		switch e.TargetKind {
 		case moderation.AuditTargetAccount, moderation.AuditTargetReport, moderation.AuditTargetAppeal, moderation.AuditTargetSignupBlock:
 			ids[e.TargetKind] = append(ids[e.TargetKind], e.TargetID)
-		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook, moderation.AuditTargetRelay:
+		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetCustomEmojiRequest, moderation.AuditTargetWebhook,
+			moderation.AuditTargetRelay:
 			if s.d.AuditTargets != nil {
 				ids[e.TargetKind] = append(ids[e.TargetKind], e.TargetID)
 			}
@@ -227,7 +252,8 @@ func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.Aud
 		switch kind {
 		case moderation.AuditTargetAccount:
 			existing, err = s.d.Accounts.ExistingIDs(ctx, list)
-		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook, moderation.AuditTargetRelay:
+		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetCustomEmojiRequest, moderation.AuditTargetWebhook,
+			moderation.AuditTargetRelay:
 			existing, err = s.d.AuditTargets.ExistingAuditTargets(ctx, kind, list)
 		default:
 			existing, err = s.d.Repository.ExistingAuditTargets(ctx, kind, list)

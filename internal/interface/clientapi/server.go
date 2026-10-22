@@ -167,6 +167,9 @@ type Options struct {
 	// CustomEmojis runs the custom emoji of the picker and the admin operations
 	// (admin_custom_emojis.go); nil answers an empty picker and 404 to the admin operations.
 	CustomEmojis CustomEmojis
+	// CustomEmojiRequests runs the requests of the holders of create_custom_emojis and their
+	// own emoji (ADR-0070); nil answers those operations 404.
+	CustomEmojiRequests CustomEmojiRequests
 	// Webhooks runs the admin operations on the instance's webhooks (admin_webhooks.go); nil
 	// answers 404 to them.
 	Webhooks Webhooks

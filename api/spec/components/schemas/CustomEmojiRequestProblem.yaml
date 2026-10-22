@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The problem of a custom emoji request that cannot be decided or withdrawn (409,
+  `/api/v1/problems/custom-emoji-request-conflict`); `reason` says why.
+allOf:
+  - $ref: ./Problem.yaml
+  - type: object
+    properties:
+      reason:
+        $ref: ./CustomEmojiRequestConflictReason.yaml

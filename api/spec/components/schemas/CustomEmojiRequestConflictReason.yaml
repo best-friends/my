@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Why a custom emoji request cannot be decided or withdrawn. `not_pending`: it was already
+  approved, rejected, withdrawn, or lapsed. `requester_cannot_create`: the requester no longer
+  holds `create_custom_emojis` or can no longer use the server. `shortcode_taken`: a local
+  emoji has the shortcode of the request. The last two can only be rejected.
+type: string
+enum:
+  - not_pending
+  - requester_cannot_create
+  - shortcode_taken

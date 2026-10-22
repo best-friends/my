@@ -43,6 +43,11 @@ const (
 	// its plans, and see and cancel the subscriptions (ADR-0072 §2). It is server administration
 	// (ADR-0058 §4).
 	PermManageSupporters Permission = "manage_supporters"
+	// PermCreateCustomEmojis: request new local custom emoji, which a holder of
+	// manage_custom_emojis approves, and change and delete the ones the holder made, while
+	// holding it (ADR-0070 §2, §3). It is a member permission (ADR-0070 §1), whose limit a
+	// supporter plan sets (ADR-0072 §11).
+	PermCreateCustomEmojis Permission = "create_custom_emojis"
 )
 
 // AllPermissions lists every permission.
@@ -51,7 +56,7 @@ func AllPermissions() []Permission {
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
 		PermManageLoginRecovery, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
-		PermManageFinance, PermViewFinance, PermManageSupporters,
+		PermManageFinance, PermViewFinance, PermManageSupporters, PermCreateCustomEmojis,
 	}
 }
 
@@ -75,7 +80,7 @@ func (p Permission) Category() PermissionCategory {
 	switch p {
 	case PermManageReports, PermManageAccounts, PermManageDomains, PermManageInvites, PermViewAudit:
 		return CategoryModeration
-	case PermViewFinance:
+	case PermViewFinance, PermCreateCustomEmojis:
 		return CategoryMember
 	default:
 		return CategoryServer

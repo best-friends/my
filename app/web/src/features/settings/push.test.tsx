@@ -106,6 +106,7 @@ const everyUserType = [
   "appeal_decided",
   "report_resolved",
   "relationships_severed",
+  "custom_emoji_request_decided",
 ];
 
 beforeEach(() => {

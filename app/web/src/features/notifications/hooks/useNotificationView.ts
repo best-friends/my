@@ -77,6 +77,12 @@ export type NotificationView = {
    */
   reaction: string | null;
   /**
+   * The custom emoji request that an `admin_custom_emoji_request` or a `custom_emoji_request_decided` tells of:
+   * its `:shortcode:`, for `{emoji}` in the sentence, and the administrator's reason of a rejection (their own text,
+   * null when they gave none or for the other states); null for the other types and when the request is gone.
+   */
+  emojiRequest: { emoji: string; reason: string | null } | null;
+  /**
    * The pages the row leads to besides the actor's profile and the post, where the user follows up what it
    * tells: the account status, the report, the registrations, or the user's follow lists.
    */
@@ -101,7 +107,31 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   appeal_decided: "client:notifications.type.appeal_decided",
   admin_appeal: "client:notifications.type.admin_appeal",
   admin_webhook_disabled: "client:notifications.type.admin_webhook_disabled",
+  admin_custom_emoji_request: "client:notifications.type.admin_custom_emoji_request",
+  custom_emoji_request_decided: "client:notifications.type.custom_emoji_request_decided",
 };
+
+/** The sentences of the custom emoji requests, by what happened to the request and its kind. */
+const emojiRequestSentences = {
+  submitted: { create: "client:notifications.custom_emoji_request.submitted.create", image: "client:notifications.custom_emoji_request.submitted.image" },
+  approved: { create: "client:notifications.custom_emoji_request.approved.create", image: "client:notifications.custom_emoji_request.approved.image" },
+  rejected: { create: "client:notifications.custom_emoji_request.rejected.create", image: "client:notifications.custom_emoji_request.rejected.image" },
+} as const satisfies Record<string, Record<"create" | "image", ClientMessageKey>>;
+
+/**
+ * The sentence and the emoji of a custom emoji request's notification; without its request (or for a decision in
+ * another state), no sentence, so that the row says the type's sentence without the emoji.
+ */
+function emojiRequestOf(notification: Notification): Pick<NotificationView, "emojiRequest"> & { sentence: ClientMessageKey | null } {
+  const request = notification.custom_emoji_request;
+  if (request === undefined || (notification.type !== "admin_custom_emoji_request" && notification.type !== "custom_emoji_request_decided")) {
+    return { sentence: null, emojiRequest: null };
+  }
+  const outcome = notification.type === "admin_custom_emoji_request" ? "submitted" : request.state === "approved" || request.state === "rejected" ? request.state : null;
+  if (outcome === null) return { sentence: null, emojiRequest: null };
+  const reason = request.state === "rejected" && request.reason !== undefined && request.reason !== "" ? request.reason : null;
+  return { sentence: emojiRequestSentences[outcome][request.kind], emojiRequest: { emoji: `:${request.shortcode}:`, reason } };
+}
 
 /** The sentences of a group of the types that rows group (groupNotifications). */
 const groupSentences: Readonly<Partial<Record<NotificationType, ClientMessageKey>>> = {
@@ -179,6 +209,10 @@ function linksOf(notification: Notification, ownAcct: string | null): Notificati
       return [{ href: "/moderation/registrations", label: "client:notifications.link.registrations" }];
     case "admin_webhook_disabled":
       return [{ href: "/admin/webhooks", label: "client:notifications.link.webhooks" }];
+    case "admin_custom_emoji_request":
+      return [{ href: "/admin/custom-emojis?tab=requests", label: "client:notifications.link.custom_emoji_requests" }];
+    case "custom_emoji_request_decided":
+      return [{ href: "/settings/custom-emojis", label: "client:notifications.link.own_custom_emojis" }];
     case "relationships_severed":
       return ownAcct === null
         ? []
@@ -206,6 +240,7 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
   const time = useTimeView(notification.created_at);
   const { account, status } = notification;
   const severed = notification.type === "relationships_severed" ? severanceOf(notification) : null;
+  const requested = emojiRequestOf(notification);
   // The same account can favourite a post again after taking it back: it counts once.
   const seen = new Set(account === undefined ? [] : [account.id]);
   const others: NotificationActor[] = [];
@@ -220,6 +255,7 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
   return {
     sentence:
       severed?.sentence ??
+      requested.sentence ??
       (target === undefined ? null : "client:notifications.report_resolved.account") ??
       (others.length > 0 && groupSentence !== undefined ? groupSentence : sentences[notification.type]),
     actor: account === undefined ? null : actorOf(account),
@@ -231,6 +267,7 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
     severance: severed?.severance ?? null,
     notice: action === undefined ? null : noticeOf(action, (value) => intl.formatDate(value, { dateStyle: "medium", timeStyle: "short" })),
     reaction: reactionOf(notification),
+    emojiRequest: requested.emojiRequest,
     links: linksOf(notification, viewer.status === "signed-in" ? viewer.account.acct : null),
   };
 }

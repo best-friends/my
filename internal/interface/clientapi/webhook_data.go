@@ -222,7 +222,7 @@ func (s *Server) WebhookDomainAction(ctx context.Context, tx uow.Tx, id string) 
 
 // WebhookCustomEmoji presents a custom emoji as AdminCustomEmoji.
 func (s *Server) WebhookCustomEmoji(ctx context.Context, tx uow.Tx, id string) (any, error) {
-	w, _, err := s.webhookReads(tx)
+	w, reads, err := s.webhookReads(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -230,5 +230,9 @@ func (s *Server) WebhookCustomEmoji(ctx context.Context, tx uow.Tx, id string) (
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: custom emoji %s: %w", id, err)
 	}
-	return s.newAdminCustomEmoji(e), nil
+	out, err := s.withCreatorsWith(ctx, reads, []appcontent.AdminCustomEmoji{e})
+	if err != nil {
+		return nil, err
+	}
+	return out[0], nil
 }

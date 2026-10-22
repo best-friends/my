@@ -4,8 +4,10 @@
 // web-client.md S3), newest first, with a search. A local emoji's settings change in a dialog, its image is replaced
 // by choosing another file, and deleting it asks first in an alert dialog (it cannot be undone); a remote emoji is
 // enabled or disabled, or copied into one of this server under a shortcode chosen in a dialog. What a change did stays above the list in a StatusMessage (role="status"), and a
-// failure stays there too (role="alert").
+// failure stays there too (role="alert"). A second tab (kept in the URL too) holds the requests of the holders of
+// create_custom_emojis (ADR-0070 §2), with the number of the pending ones in its name (ADR-0070 §9).
 import {
+  Badge,
   Button,
   Checkbox,
   ConfirmDialog,
@@ -38,7 +40,18 @@ import {
   maxAliases,
   shortcodePattern,
 } from "../api/customEmojis";
+import type { CustomEmojiRequestState } from "../api/customEmojiRequests";
+import { usePendingCustomEmojiRequestCount } from "../hooks/useCustomEmojiRequests";
 import { type CustomEmojiActions, emojiInText, parseAliases, useAdminCustomEmojis, useCustomEmojiActions, useCustomEmojiForm } from "../hooks/useCustomEmojis";
+import { AccountLink, CustomEmojiRequests } from "./CustomEmojiRequests";
+
+/** The tabs of the screen: the emoji, and the requests for new ones. */
+export type CustomEmojiTab = "emoji" | "requests";
+const screenTabs = ["emoji", "requests"] as const satisfies readonly CustomEmojiTab[];
+
+function isScreenTab(key: unknown): key is CustomEmojiTab {
+  return screenTabs.some((tab) => tab === key);
+}
 
 const originLabels: Readonly<Record<CustomEmojiOrigin, ClientMessageKey>> = {
   local: "client:admin.custom_emojis.filter.local",
@@ -49,26 +62,71 @@ function isOrigin(key: unknown): key is CustomEmojiOrigin {
   return customEmojiOrigins.some((origin) => origin === key);
 }
 
-export type CustomEmojiSettingsProps = {
+type EmojiListProps = {
   /** The list's filter, from the URL. */
   filter: CustomEmojiFilter;
   /** Shows another filter: the route puts it into the URL. */
   onFilterChange: (filter: CustomEmojiFilter) => void;
 };
 
+export type CustomEmojiSettingsProps = EmojiListProps & {
+  /** The tab of the screen, from the URL. */
+  tab: CustomEmojiTab;
+  /** Shows another tab: the route puts it into the URL. */
+  onTabChange: (tab: CustomEmojiTab) => void;
+  /** The state of the listed requests, from the URL. */
+  requestState: CustomEmojiRequestState;
+  /** Shows the requests in another state: the route puts it into the URL. */
+  onRequestStateChange: (state: CustomEmojiRequestState) => void;
+};
+
 export function CustomEmojiSettings(props: CustomEmojiSettingsProps) {
-  const t = useT();
   return (
     <RequirePermission permission="manage_custom_emojis">
-      <div className="flex flex-col gap-8">
+      <ScreenTabs {...props} />
+    </RequirePermission>
+  );
+}
+
+function ScreenTabs({ tab, onTabChange, requestState, onRequestStateChange, ...list }: CustomEmojiSettingsProps) {
+  const t = useT();
+  const pending = usePendingCustomEmojiRequestCount();
+  return (
+    <Tabs
+      selectedKey={tab}
+      onSelectionChange={(key) => {
+        if (isScreenTab(key)) onTabChange(key);
+      }}
+    >
+      <TabList aria-label={t("client:admin.custom_emojis.tabs.label")}>
+        <Tab id="emoji">{t("client:admin.custom_emojis.tabs.emoji")}</Tab>
+        <Tab id="requests">
+          <span className="inline-flex items-center gap-2">
+            {t("client:admin.custom_emojis.tabs.requests")}
+            {pending !== undefined && pending.count > 0 && (
+              <Badge
+                count={pending.more ? pending.count + 1 : pending.count}
+                max={pending.more ? pending.count : 99}
+                label={t(pending.more ? "client:admin.custom_emojis.tabs.pending_more" : "client:admin.custom_emojis.tabs.pending", { count: pending.count })}
+              />
+            )}
+          </span>
+        </Tab>
+      </TabList>
+      <TabPanel id="emoji" className="flex flex-col gap-8 pt-4">
         <DetailSection title={t("client:admin.custom_emojis.new.title")}>
           <NewCustomEmojiForm />
         </DetailSection>
         <DetailSection title={t("client:admin.custom_emojis.list.title")}>
-          <CustomEmojiTabs {...props} />
+          <CustomEmojiTabs {...list} />
         </DetailSection>
-      </div>
-    </RequirePermission>
+      </TabPanel>
+      <TabPanel id="requests" className="flex flex-col gap-8 pt-4">
+        <DetailSection title={t("client:admin.custom_emoji_requests.title")}>
+          <CustomEmojiRequests state={requestState} onStateChange={onRequestStateChange} />
+        </DetailSection>
+      </TabPanel>
+    </Tabs>
   );
 }
 
@@ -170,7 +228,7 @@ function NewCustomEmojiForm() {
   );
 }
 
-function CustomEmojiTabs({ filter, onFilterChange }: CustomEmojiSettingsProps) {
+function CustomEmojiTabs({ filter, onFilterChange }: EmojiListProps) {
   const t = useT();
   return (
     <Tabs
@@ -195,7 +253,7 @@ function CustomEmojiTabs({ filter, onFilterChange }: CustomEmojiSettingsProps) {
 }
 
 /** The search of the list: the shortcode, and for other servers the domain. Submitting puts it into the URL. */
-function SearchForm({ filter, onFilterChange }: CustomEmojiSettingsProps) {
+function SearchForm({ filter, onFilterChange }: EmojiListProps) {
   const t = useT();
   const [shortcode, setShortcode] = useState(filter.shortcode ?? "");
   const [domain, setDomain] = useState(filter.domain ?? "");
@@ -308,6 +366,17 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
               {emoji.aliases.length === 0 ? t("client:admin.custom_emojis.none") : <span dir="ltr">{emoji.aliases.join(", ")}</span>}
             </DescriptionItem>
           </>
+        )}
+        {emoji.local && (
+          <DescriptionItem term={t("client:admin.custom_emojis.created_by")}>
+            {emoji.created_by !== undefined ? (
+              <AccountLink acct={emoji.created_by.acct} />
+            ) : emoji.created_by_deleted ? (
+              t("client:admin.custom_emojis.created_by.deleted")
+            ) : (
+              t("client:admin.custom_emojis.created_by.none")
+            )}
+          </DescriptionItem>
         )}
         {emoji.url === undefined && <DescriptionItem term={t("client:admin.custom_emojis.image")}>{t("client:admin.custom_emojis.no_image")}</DescriptionItem>}
         <DescriptionItem term={t("client:admin.custom_emojis.updated_at")}>
