@@ -4,7 +4,7 @@ import { instanceSettingsQueryOptions, instanceTextsQueryOptions, ownInstanceQue
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /**
  * The server's settings, for manage_settings: its name in each language, which people see in place of its domain,
@@ -29,7 +29,7 @@ function ServerSettingsPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.settings.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.settings.title")}</PageHeading>
       <ServerSettings />
     </>
   );

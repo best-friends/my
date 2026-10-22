@@ -4,7 +4,7 @@ import { RuleSettings, rulesQueryOptions } from "../features/admin";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The server's rules (FR-705): adding, editing, reordering and retiring them, for manage_rules. */
 export const Route = createFileRoute("/admin/rules")({
@@ -20,7 +20,7 @@ function RulesPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.rules.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.rules.title")}</PageHeading>
       <RuleSettings />
     </>
   );
