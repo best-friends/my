@@ -252,15 +252,18 @@ function DomainActionTabs({ filter, domain, onFilterChange, everyDomainHref }: D
             </Tab>
           ))}
         </TabList>
-        <TabPanel id={filter}>
-          <DomainActionList
-            filter={filter}
-            domain={domain}
-            onLifted={(action) => {
-              setStatus(t("client:admin.domain_actions.lifted", { kind: t(domainActionKindLabels[action.kind]), domain: domainInText(t, action.domain) }));
-            }}
-          />
-        </TabPanel>
+        {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+        {domainActionFilters.map((item) => (
+          <TabPanel key={item} id={item}>
+            <DomainActionList
+              filter={filter}
+              domain={domain}
+              onLifted={(action) => {
+                setStatus(t("client:admin.domain_actions.lifted", { kind: t(domainActionKindLabels[action.kind]), domain: domainInText(t, action.domain) }));
+              }}
+            />
+          </TabPanel>
+        ))}
       </Tabs>
     </Stack>
   );

@@ -48,9 +48,12 @@ export function NotificationsView({ filter, onFilterChange, headingId }: Notific
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter}>
-        <NotificationList filter={filter} headingId={headingId} />
-      </TabPanel>
+      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+      {notificationFilters.map((item) => (
+        <TabPanel key={item} id={item}>
+          <NotificationList filter={filter} headingId={headingId} />
+        </TabPanel>
+      ))}
     </Tabs>
   );
 }

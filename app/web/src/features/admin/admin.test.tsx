@@ -9,6 +9,7 @@ import type { Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler);
@@ -260,6 +261,7 @@ describe("the queue dashboard", () => {
 
     await user.click(await screen.findByRole("tab", { name: "Retrying" }));
     expect(await screen.findByRole("tabpanel", { name: "Retrying" })).toBeInTheDocument();
+    expectSelectedTabControlsPanel("Retrying");
     expect(router.state.location.search).toEqual({ state: "retrying" });
     expect(requests).toContain("GET /admin/jobs?limit=40&state=retrying");
   });
