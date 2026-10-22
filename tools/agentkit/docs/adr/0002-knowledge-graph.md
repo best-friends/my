@@ -1,6 +1,6 @@
 # ADR-0002: 構造の索引と全文検索で前提を引き、結果は CLI で小さく返す
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-22
 - Deciders: @rosylilly
 - Issue: なし
@@ -10,6 +10,9 @@
 [ADR-0001](0001-agentkit.md) の集計のとおり、トークンの大半は、エージェントが grep や cat でファイルの位置を探し、必要以上の範囲を読むことに使われている。
 このリポジトリでは前提の参照が識別子で書かれている。Issue は `FR-915`・`ADR-0070`・`data-model §4.4` のように前提を指し、コードの 1,263 ファイルが FR や ADR に言及している。
 API は operationId、ハンドラ、app のサービス、adapter、sqlc のクエリ、テーブルを、名前の規約でつないでいる。
+決定者の回答（原文）:
+
+> ADR-0002 Accepted
 
 ## Decision Drivers（判断基準）
 
@@ -26,8 +29,6 @@ API は operationId、ハンドラ、app のサービス、adapter、sqlc のク
 4. 提供の形: CLI か、MCP サーバーか
 
 ## Decision（決定）
-
-> 推奨案。
 
 選択肢 1 を、CLI で提供する。
 
