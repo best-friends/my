@@ -133,6 +133,7 @@ export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
 export { Hint, InlineError, Text, type HintProps, type InlineErrorProps, type TextElement, type TextProps } from "./Text";
 export { DialogActions, type DialogActionsProps } from "./DialogActions";
 export { Tag, type TagProps } from "./Tag";
+export { Form, type FormProps } from "./Form";
 export {
   Table,
   TableBody,

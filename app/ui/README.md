@@ -278,6 +278,7 @@ string through props or children.
 | `Select`, `SelectItem` | `Select` + `Popover` + `ListBox`, `ListBoxItem` | `items` with a render function, or `SelectItem` children; single selection. `SelectItem`'s `description` adds a line under the label (the option's accessible description) that the closed select does not show. `variant="toolbar"` (with `aria-label` and an `icon`) is a ghost `toolbar`-sized button for a row of tools that shows the chosen option |
 | `ReasonField` | `TextArea` | The reason for an operator's action: three rows and a required character count (`characterLimit`, `formatRemaining`) |
 | `DurationSelect` | `Select` | `durations` in seconds with `formatDuration`; `indefiniteLabel` adds "no end", last; the value is seconds or `null` for no end |
+| `Form` | `Form` | The layout props of `Stack` (`gap`, `align`, `justify`, and the box props: `container`, `width`, …); `validationErrors` from the server show on the named fields. A plain `<form>` without them can be `<Stack as="form">` |
 
 - Each component has one `tailwind-variants` recipe; its variant props are typed from the recipe (`VariantProps`).
   `className` (a string or RAC's function of the render props) is merged into the root with `tailwind-merge`, so a later class wins.
@@ -305,7 +306,7 @@ The overlay components wrap React Aria Components, which handle focus, Esc and t
 | `Popover` in a `PopoverTrigger` | Non-modal dialog | Named by `title` or `aria-label`. |
 | `Menu`, `MenuItem`, `MenuSeparator` in a `MenuTrigger`; `SubmenuTrigger` | Menu button | `intent="danger"` for destructive items. Submenus open towards the inline end. |
 | `Tooltip` in a `TooltipTrigger` | Tooltip | Describes its trigger; never the trigger's only name. |
-| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. Tabs that do not fit scroll sideways in the list, which has no scrollbar and fades out (statically, a 2rem mask) at each inline edge with hidden tabs (`data-overflow-start` / `data-overflow-end`); the focused or selected tab scrolls into view, clear of the fade. |
+| `Tabs`, `TabList`, `Tab`, `TabPanel` | Tabs | `selectedKey` / `onSelectionChange` let a route keep the tab in the URL. Tabs that do not fit scroll sideways in the list, which has no scrollbar and fades out (statically, a 2rem mask) at each inline edge with hidden tabs (`data-overflow-start` / `data-overflow-end`); the focused or selected tab scrolls into view, clear of the fade. `TabPanel` takes `gap` (its content one above another, as a `Stack`) and `offset` (`3` / `4`: `pt-3` / `pt-4` more room under the list than the `gap-4` of `Tabs`). |
 | `AnnouncerProvider`, `useAnnouncer` | Live regions | One polite `role="status"` and one assertive `role="alert"` region for the app. |
 | `ToastProvider`, `useToast` | Toasts | Announced through the Announcer; the visible list is a labelled region. |
 | `StatusMessage` | Status | The result of an action that stays on the page: a `role="status"` region, empty until it has a message. |
@@ -398,7 +399,9 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 | `flex flex-col gap-1 border-s-2 border-border ps-3` | `<Stack gap="1" border="start">` |
 | `flex flex-col gap-2 rounded-md border border-border p-3` | `<Stack gap="2" border="md" padding="3">` |
 | `flex flex-col gap-3 @md:flex-row @md:items-center` | `<Stack gap="3" rowAt="md">` |
-| `flex flex-col gap-8 pt-4` (on a `TabPanel`) | `<Stack gap="8">` inside the `TabPanel`; the `pt-4` between the tabs and their panel is not a prop yet (it belongs to `Tabs`) |
+| `flex flex-col gap-8 pt-4` / `flex flex-col gap-4 pt-3` (on a `TabPanel`) | `<TabPanel gap="8" offset="4">` / `<TabPanel gap="4" offset="3">` |
+| `flex flex-col gap-6` and the other stack strings on a `<form>` | `<Stack as="form" gap="6">`; with server errors on fields, `<Form gap="6" validationErrors={…}>` |
+| `className` on React Aria's `Form` | `<Form>` from the kit with the same layout props as `Stack` |
 | `flex flex-col divide-y divide-border` (`ul`) | `<Stack as="ul" divided>` |
 | `flex flex-col divide-y divide-border rounded-lg border border-border` (`ul`) | `<Stack as="ul" divided border="lg">` |
 | `flex flex-col divide-y divide-border border-y border-border` (`ul`) | `<Stack as="ul" divided border="y">` |
