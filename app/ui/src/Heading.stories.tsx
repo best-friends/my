@@ -82,7 +82,10 @@ export const Focusable: Story = {
   play: async ({ canvas, userEvent }) => {
     const heading = canvas.getByRole("heading", { level: 3, name: "example.com" });
     await expect(heading).toHaveAttribute("tabindex", "-1");
-    await userEvent.click(canvas.getByRole("button", { name: "Lift the suspension" }));
+    const button = canvas.getByRole("button", { name: "Lift the suspension" });
+    await userEvent.click(button);
     await expect(heading).toHaveFocus();
+    // The button keeps no hover in the screenshots.
+    await userEvent.unhover(button);
   },
 };

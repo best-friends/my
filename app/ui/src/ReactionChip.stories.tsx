@@ -24,6 +24,9 @@ export const Unicode: Story = {
     await expect(chip).toHaveAccessibleDescription("3");
     await userEvent.click(chip);
     await expect(args.onChange).toHaveBeenCalledWith(true);
+    // Back to the resting state, so the screenshots do not catch the hover.
+    await userEvent.unhover(chip);
+    chip.blur();
   },
 };
 
