@@ -335,20 +335,80 @@ func failureReport(n int, p prState, failed []string, logDir string) []string {
 	return lines
 }
 
+// prSnapshot is what Watch compares between polls.
+type prSnapshot struct {
+	ci, mergeable string
+	failed        []string
+	queued        bool // auto-merge on, or in the merge queue
+}
+
+// transitions returns the events between two snapshots of an open pull request; had is false on its first poll.
+func transitions(old prSnapshot, had bool, cur prSnapshot) []string {
+	var out []string
+	switch {
+	case cur.mergeable == "CONFLICTING" && (!had || old.mergeable != "CONFLICTING"):
+		out = append(out, "conflicting")
+	case cur.ci == "failed" && (!had || old.ci != "failed"):
+		out = append(out, "ci-failed "+strings.Join(cur.failed, ","))
+	case cur.ci == "passed" && had && old.ci != "passed":
+		out = append(out, "ci-green")
+	}
+	switch {
+	case had && !old.queued && cur.queued:
+		out = append(out, "queued")
+	case had && old.queued && !cur.queued:
+		out = append(out, "dequeued (out of the merge queue without merging: a conflict or a failed merge group)")
+	}
+	return out
+}
+
+const queueQuery = `query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: OPEN, first: 100) { nodes { number mergeQueueEntry { state } } }
+  }
+}`
+
+// queuedPRs returns the open pull requests that are in the merge queue. A pull request in the queue has no
+// auto-merge request, and gh pr list cannot report the queue, so it is read through GraphQL.
+func queuedPRs() (map[int]bool, error) {
+	owner, name, _ := strings.Cut(gh.Repo(), "/")
+	var resp struct {
+		Data struct {
+			Repository struct {
+				PullRequests struct {
+					Nodes []struct {
+						Number          int `json:"number"`
+						MergeQueueEntry *struct {
+							State string `json:"state"`
+						} `json:"mergeQueueEntry"`
+					} `json:"nodes"`
+				} `json:"pullRequests"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := gh.JSON(&resp, "api", "graphql", "-f", "query="+queueQuery, "-F", "owner="+owner, "-F", "name="+name); err != nil {
+		return nil, err
+	}
+	out := map[int]bool{}
+	for _, n := range resp.Data.Repository.PullRequests.Nodes {
+		if n.MergeQueueEntry != nil {
+			out[n.Number] = true
+		}
+	}
+	return out, nil
+}
+
 // Watch prints one line per event of the watched pull requests — opened, merged, closed, conflicting,
-// ci-failed, ci-green, dequeued (auto-merge turned off while open) — until every watched pull request is
-// merged or closed. With no numbers it watches every open pull request, including new ones, forever.
+// ci-failed, ci-green, queued, dequeued (out of the merge queue, or auto-merge off, while open) — until every
+// watched pull request is merged or closed. With no numbers it watches every open pull request, including
+// new ones, forever.
 func Watch(w io.Writer, nums []int, interval time.Duration) error {
 	all := len(nums) == 0
 	watched := map[int]bool{}
 	for _, n := range nums {
 		watched[n] = true
 	}
-	type last struct {
-		ci, mergeable string
-		auto          bool
-	}
-	prev := map[int]last{}
+	prev := map[int]prSnapshot{}
 	first := true
 	emit := func(n int, title, event string) {
 		fmt.Fprintf(w, "%s #%d %s — %s\n", time.Now().Format("15:04"), n, event, title)
@@ -359,6 +419,11 @@ func Watch(w io.Writer, nums []int, interval time.Duration) error {
 	for {
 		var open []prState
 		if err := gh.JSON(&open, "pr", "list", "-R", gh.Repo(), "--state", "open", "--limit", "100", "--json", prFields); err != nil {
+			time.Sleep(interval)
+			continue
+		}
+		queue, err := queuedPRs()
+		if err != nil {
 			time.Sleep(interval)
 			continue
 		}
@@ -375,18 +440,10 @@ func Watch(w io.Writer, nums []int, interval time.Duration) error {
 				continue
 			}
 			ci, failed, _ := summarize(p.StatusCheckRollup)
-			cur := last{ci, p.Mergeable, p.AutoMergeRequest != nil}
+			cur := prSnapshot{ci, p.Mergeable, failed, p.AutoMergeRequest != nil || queue[p.Number]}
 			old, had := prev[p.Number]
-			switch {
-			case cur.mergeable == "CONFLICTING" && (!had || old.mergeable != "CONFLICTING"):
-				emit(p.Number, p.Title, "conflicting")
-			case cur.ci == "failed" && (!had || old.ci != "failed"):
-				emit(p.Number, p.Title, "ci-failed "+strings.Join(failed, ","))
-			case cur.ci == "passed" && had && old.ci != "passed":
-				emit(p.Number, p.Title, "ci-green")
-			}
-			if had && old.auto && !cur.auto {
-				emit(p.Number, p.Title, "dequeued (auto-merge is off: conflict or failed merge group)")
+			for _, e := range transitions(old, had, cur) {
+				emit(p.Number, p.Title, e)
 			}
 			prev[p.Number] = cur
 		}
