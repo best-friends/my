@@ -11,7 +11,7 @@
 [ADR-0027](0027-ui-quality-gates.md) は「新しい投稿をタイムラインに自動で差し込まない。『N 件の新しい投稿』ボタン（`role="status"`）にする（WCAG 2.2.2）」と決めており、
 Web クライアントは届いた投稿を溜め、`@my/ui` の `NewItemsButton` が押されたときだけ差し込む（web-client.md Y7・§10 のリアルタイム更新）。
 
-一方、新しいデザインシステム（エピック #987）の LayoutTimeline（`app/ui/design/layouts.md`・`app/ui/design/components/LayoutTimeline/README.md`）は、
+一方、新しいデザインシステム（エピック #987）の LayoutTimelineは、
 新しい投稿を先頭に自動で差し込み、読んでいる投稿の位置は動かさない形を描いている。
 押さなければ新着が見えない形は、流れを眺めたい利用者には手間になる。自動で動く内容は、読んでいる位置を奪い、支援技術の利用者を混乱させるので、誰にでも既定で動かすことはできない（WCAG 2.2.2、NFR-A11Y-1）。
 

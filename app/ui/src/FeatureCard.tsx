@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A card that says one thing the product does: an icon tile, a heading and a sentence (design/components/LayoutLanding).
+// A card that says one thing the product does: an icon tile, a heading and a sentence.
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { Card } from "./Card";

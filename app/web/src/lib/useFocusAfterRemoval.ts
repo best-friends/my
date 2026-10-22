@@ -26,7 +26,10 @@ export function useFocusAfterRemoval(list: RefObject<HTMLElement | null>, ids: r
   });
 
   return (id) => {
-    pendingRef.current = { id, index: ids.indexOf(id) };
+    // The place among the rows shown: a paged table shows a slice of `ids`, so the index in `ids` is not the row's place on the page.
+    const shown = Array.from(list.current?.querySelectorAll<HTMLElement>("[data-row-id]") ?? []);
+    const shownIndex = shown.findIndex((row) => row.dataset["rowId"] === id);
+    pendingRef.current = { id, index: shownIndex >= 0 ? shownIndex : ids.indexOf(id) };
   };
 }
 

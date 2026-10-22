@@ -191,6 +191,8 @@
   /* Decorative marks on media: the duration chip over a video's poster (with toast-fg text), and AudioPlayer's waveform. */
   --color-media-chip: #000000a6;
   --color-wave: var(--palette-rose-400);
+  /* The spark after a heading: mango, a decoration only. */
+  --color-spark: var(--palette-mango-400);
 
   /* Role badges (ADR-0071): badge-<color> is the background and badge-<color>-fg the text on it.
      The color only decorates; the badge's name carries its meaning. Server themes cannot override them. */

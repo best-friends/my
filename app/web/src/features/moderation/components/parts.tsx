@@ -146,7 +146,7 @@ export type RecordTableProps<T> = {
 };
 
 /**
- * The list of an admin screen in the admin mode's form (design/layouts/my-layout-05-admin.html): a `Table` in a
+ * The list of an admin screen in the admin mode's form: a `Table` in a
  * `Card`, one page of it at a time, with `Pagination` below. The API pages by cursor, so the pagination has
  * previous and next only; next past the loaded pages loads one more (useListPages). Key the component by whatever
  * the list is of (the filter), so that another list starts at its first page.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The raised surface that side panels, settings panes and detail sections sit on (design/components/Card).
+// The raised surface that side panels, settings panes and detail sections sit on.
 import { createElement } from "react";
 import { tv } from "tailwind-variants";
 import type { PolymorphicProps } from "./layout";
