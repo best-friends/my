@@ -535,3 +535,10 @@ The test procedure is in [web-client.md §7](../../docs/architecture/web-client.
 | `PostCardOrigin` | `actions` | The link from a post of another server to its own page (`href`, `host`, `label`). |
 
 Counts in `details` are `<Text numeric>`; several parts under a body are a `<Stack gap="3" shrink>`; `PostContent` takes `size="lg"` for the post a page is about.
+
+## Reactions
+
+`ReactionRow` is the wrapping `role="group"` of a post's emoji reactions with the button that lists who reacted (`label`, `listLabel`,
+`onOpenList`; the dialog goes in `after`). Its children are `ReactionChip`s: a toggle named by `label` and described by the formatted
+`count`, outlined and accented while `isSelected`; `onChange={null}` shows it only (an emoji nobody here can react with). The emoji is
+`image` (a custom emoji) or `text`; `ReactionEmoji` draws the same emoji for the rows of the list of reactors.

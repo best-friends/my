@@ -17,6 +17,8 @@ const button = tv({
       secondary: "border border-border-strong bg-surface-raised text-fg data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
       /** Low-emphasis actions in toolbars and lists. */
       ghost: "text-fg data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
+      /** A low-emphasis action beside content, in the muted text color (the button that lists who reacted). */
+      subtle: "text-fg-muted data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
       /** Destructive actions. */
       danger: "bg-danger text-danger-fg data-hovered:shadow-md data-pressed:shadow-sm",
     },

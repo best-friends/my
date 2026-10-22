@@ -161,6 +161,7 @@ export {
   type ProfileHeaderProps,
 } from "./ProfileHeader";
 export { AccountItem, type AccountItemProps } from "./AccountItem";
+export {
   PostCardAuthorLink,
   PostCardAvatarLink,
   PostCardBoostContext,
@@ -196,3 +197,4 @@ export {
 export { BackLinkHeading, PageHeading, type BackLinkHeadingProps, type PageHeadingProps } from "./PageHeading";
 export { RouteLoading, StandalonePage, type RouteLoadingProps, type StandalonePageProps } from "./RouteStates";
 export { ServerNameLink, type ServerNameLinkProps } from "./ServerNameLink";
+export { ReactionChip, ReactionEmoji, ReactionRow, type ReactionChipProps, type ReactionEmojiProps, type ReactionRowProps } from "./ReactionChip";
