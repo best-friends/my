@@ -1107,10 +1107,6 @@
     "defaultMessage": "Posts are followers-only",
     "description": "A restriction of an account by its actions."
   },
-  "admin.accounts.restrictions": {
-    "defaultMessage": "Restrictions",
-    "description": "Term of an account in the search results: what its actions take away now."
-  },
   "admin.accounts.results.failed": {
     "defaultMessage": "Could not search the accounts",
     "description": "Heading when the search of the accounts failed."
@@ -3037,7 +3033,7 @@
   },
   "admin.list.column.actions": {
     "defaultMessage": "Actions",
-    "description": "Header of the column of buttons in the table of an admin list."
+    "description": "Header of the column of an admin table that holds the buttons of a row; visually hidden."
   },
   "admin.reports.column.report": {
     "defaultMessage": "Report",
@@ -3255,10 +3251,6 @@
     "defaultMessage": "{count, plural, one {# activity} other {# activities}}",
     "description": "How many activities a relay brought in."
   },
-  "admin.relays.actor": {
-    "defaultMessage": "Relay actor",
-    "description": "Term in a relay's details: the ActivityPub actor of the relay, which accepted the server."
-  },
   "admin.relays.cancel": {
     "defaultMessage": "Cancel",
     "description": "Button that closes the dialog of a relay without changing it."
@@ -3322,10 +3314,6 @@
   "admin.relays.followed": {
     "defaultMessage": "The server asked to join {name} again.",
     "description": "Status after asking to join a relay again."
-  },
-  "admin.relays.inbox": {
-    "defaultMessage": "Inbox",
-    "description": "Term in a relay's details: the inbox URL the public posts are delivered to, when it differs from the registered URL."
   },
   "admin.relays.list.title": {
     "defaultMessage": "Relays of this server",
@@ -3418,10 +3406,6 @@
   "admin.relays.state.rejected": {
     "defaultMessage": "Rejected by the relay",
     "description": "State of a relay that rejected the server or ended its membership."
-  },
-  "admin.relays.state_changed_at": {
-    "defaultMessage": "State changed",
-    "description": "Term in a relay's details: when its state last changed."
   },
   "admin.relays.submit": {
     "defaultMessage": "Join",
@@ -5531,10 +5515,6 @@
     "defaultMessage": "Last attempt",
     "description": "Term in a delivery's details: the outcome and time of its last attempt."
   },
-  "admin.webhooks.deliveries.message_id": {
-    "defaultMessage": "Message ID",
-    "description": "Term in a delivery's details: its webhook-id, the same on every attempt."
-  },
   "admin.webhooks.deliveries.outcome.connection_error": {
     "defaultMessage": "Could not connect",
     "description": "Outcome of an attempt whose connection failed."
@@ -7554,10 +7534,6 @@
   "custom_emoji_requests.reason": {
     "defaultMessage": "Reason of the rejection",
     "description": "Term of the description list of a rejected custom emoji request: the administrator's reason."
-  },
-  "custom_emoji_requests.image": {
-    "defaultMessage": "Image",
-    "description": "Term of the description list of a custom emoji request whose image cannot be shown."
   },
   "custom_emoji_requests.no_image": {
     "defaultMessage": "No longer kept",
@@ -10191,10 +10167,6 @@
     "defaultMessage": "Booked at",
     "description": "Term of the time the payment provider booked a money movement."
   },
-  "admin.finance.movements.occurred_on": {
-    "defaultMessage": "Counted on",
-    "description": "Term of the date on which a money movement counts in the totals: the booking time as a date in the provider's reporting time zone."
-  },
   "admin.finance.movements.covers": {
     "defaultMessage": "Period paid for",
     "description": "Term of the billing period that a payment pays for."
@@ -12238,10 +12210,6 @@
   "supporters.list.more_failed": {
     "defaultMessage": "Could not load more supporters",
     "description": "Heading when more of the list could not load."
-  },
-  "admin.list.column.actions": {
-    "defaultMessage": "Actions",
-    "description": "Header of the column of an admin table that holds the buttons of a row; visually hidden."
   },
   "admin.registrations.column.applicant": {
     "defaultMessage": "Applicant",

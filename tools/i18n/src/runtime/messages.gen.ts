@@ -558,8 +558,6 @@ export interface MessageArgs {
   "client:admin.accounts.restriction.unsolicited_reach": {};
   /** Posts are followers-only */
   "client:admin.accounts.restriction.visibility_ceiling_private": {};
-  /** Restrictions */
-  "client:admin.accounts.restrictions": {};
   /** Could not search the accounts */
   "client:admin.accounts.results.failed": {};
   /** Loading accounts */
@@ -1732,8 +1730,6 @@ export interface MessageArgs {
   "client:admin.finance.movements.no_subscriber": {};
   /** Booked at */
   "client:admin.finance.movements.occurred_at": {};
-  /** Counted on */
-  "client:admin.finance.movements.occurred_on": {};
   /** Of the payment */
   "client:admin.finance.movements.parent": {};
   /** ID at {provider} */
@@ -2192,8 +2188,6 @@ export interface MessageArgs {
   "client:admin.registrations.title": {};
   /** {count, plural, one {# activity} other {# activities}} */
   "client:admin.relays.activities": { count: number };
-  /** Relay actor */
-  "client:admin.relays.actor": {};
   /** Cancel */
   "client:admin.relays.cancel": {};
   /** Could not change the relay: {reason} */
@@ -2226,8 +2220,6 @@ export interface MessageArgs {
   "client:admin.relays.follow_relay": { name: string };
   /** The server asked to join {name} again. */
   "client:admin.relays.followed": { name: string };
-  /** Inbox */
-  "client:admin.relays.inbox": {};
   /** Relays of this server */
   "client:admin.relays.list.title": {};
   /** The public posts of this server go to every relay it joins, which passes them on to the other servers of the relay. Posts of other visibilities are never sent. */
@@ -2266,8 +2258,6 @@ export interface MessageArgs {
   "client:admin.relays.receive.yes": {};
   /** State */
   "client:admin.relays.state": {};
-  /** State changed */
-  "client:admin.relays.state_changed_at": {};
   /** Joined */
   "client:admin.relays.state.accepted": {};
   /** Left */
@@ -3634,8 +3624,6 @@ export interface MessageArgs {
   "client:admin.webhooks.deliveries.empty": {};
   /** Last attempt */
   "client:admin.webhooks.deliveries.last_attempt": {};
-  /** Message ID */
-  "client:admin.webhooks.deliveries.message_id": {};
   /** Could not connect */
   "client:admin.webhooks.deliveries.outcome.connection_error": {};
   /** Destination not allowed */
@@ -4090,8 +4078,6 @@ export interface MessageArgs {
   "client:custom_emoji_requests.created_at": {};
   /** Ended */
   "client:custom_emoji_requests.decided_at": {};
-  /** Image */
-  "client:custom_emoji_requests.image": {};
   /** Asks for */
   "client:custom_emoji_requests.kind": {};
   /** A new emoji */

@@ -1107,10 +1107,6 @@
     "defaultMessage": "投稿はフォロワー限定になる",
     "description": "A restriction of an account by its actions."
   },
-  "admin.accounts.restrictions": {
-    "defaultMessage": "制限",
-    "description": "Term of an account in the search results: what its actions take away now."
-  },
   "admin.accounts.results.failed": {
     "defaultMessage": "アカウントを検索できませんでした",
     "description": "Heading when the search of the accounts failed."
@@ -3036,8 +3032,8 @@
     "description": "Button under a list of an admin screen that shows the next page, loading it if needed."
   },
   "admin.list.column.actions": {
-    "defaultMessage": "操作",
-    "description": "Header of the column of buttons in the table of an admin list."
+    "defaultMessage": "アクション",
+    "description": "Header of the column of an admin table that holds the buttons of a row; visually hidden."
   },
   "admin.reports.column.report": {
     "defaultMessage": "通報",
@@ -3255,10 +3251,6 @@
     "defaultMessage": "{count, plural, other {# 件}}",
     "description": "How many activities a relay brought in."
   },
-  "admin.relays.actor": {
-    "defaultMessage": "リレーの Actor",
-    "description": "Term in a relay's details: the ActivityPub actor of the relay, which accepted the server."
-  },
   "admin.relays.cancel": {
     "defaultMessage": "キャンセル",
     "description": "Button that closes the dialog of a relay without changing it."
@@ -3322,10 +3314,6 @@
   "admin.relays.followed": {
     "defaultMessage": "{name} にもう一度参加を申し込みました。",
     "description": "Status after asking to join a relay again."
-  },
-  "admin.relays.inbox": {
-    "defaultMessage": "inbox",
-    "description": "Term in a relay's details: the inbox URL the public posts are delivered to, when it differs from the registered URL."
   },
   "admin.relays.list.title": {
     "defaultMessage": "このサーバーのリレー",
@@ -3418,10 +3406,6 @@
   "admin.relays.state.rejected": {
     "defaultMessage": "リレーに拒否されました",
     "description": "State of a relay that rejected the server or ended its membership."
-  },
-  "admin.relays.state_changed_at": {
-    "defaultMessage": "状態の変更日時",
-    "description": "Term in a relay's details: when its state last changed."
   },
   "admin.relays.submit": {
     "defaultMessage": "参加する",
@@ -5531,10 +5515,6 @@
     "defaultMessage": "最後の試行",
     "description": "Term in a delivery's details: the outcome and time of its last attempt."
   },
-  "admin.webhooks.deliveries.message_id": {
-    "defaultMessage": "メッセージ ID",
-    "description": "Term in a delivery's details: its webhook-id, the same on every attempt."
-  },
   "admin.webhooks.deliveries.outcome.connection_error": {
     "defaultMessage": "接続できませんでした",
     "description": "Outcome of an attempt whose connection failed."
@@ -7554,10 +7534,6 @@
   "custom_emoji_requests.reason": {
     "defaultMessage": "却下の理由",
     "description": "Term of the description list of a rejected custom emoji request: the administrator's reason."
-  },
-  "custom_emoji_requests.image": {
-    "defaultMessage": "画像",
-    "description": "Term of the description list of a custom emoji request whose image cannot be shown."
   },
   "custom_emoji_requests.no_image": {
     "defaultMessage": "残っていません",
@@ -10191,10 +10167,6 @@
     "defaultMessage": "記録の日時",
     "description": "Term of the time the payment provider booked a money movement."
   },
-  "admin.finance.movements.occurred_on": {
-    "defaultMessage": "数える日付",
-    "description": "Term of the date on which a money movement counts in the totals: the booking time as a date in the provider's reporting time zone."
-  },
   "admin.finance.movements.covers": {
     "defaultMessage": "支払いの対象の期間",
     "description": "Term of the billing period that a payment pays for."
@@ -12238,10 +12210,6 @@
   "supporters.list.more_failed": {
     "defaultMessage": "続きを読み込めませんでした",
     "description": "Heading when more of the list could not load."
-  },
-  "admin.list.column.actions": {
-    "defaultMessage": "アクション",
-    "description": "Header of the column of an admin table that holds the buttons of a row; visually hidden."
   },
   "admin.registrations.column.applicant": {
     "defaultMessage": "申請者",
