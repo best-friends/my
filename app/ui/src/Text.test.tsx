@@ -48,7 +48,7 @@ describe("Heading", () => {
       </Heading>,
     );
     const heading = screen.getByRole("heading", { level: 2, name: "Name" });
-    expect(heading).toHaveClass("font-semibold");
+    expect(heading).toHaveClass("font-bold");
     expect(heading).not.toHaveClass("text-lg");
     expect(heading).not.toHaveAttribute("tabindex");
   });

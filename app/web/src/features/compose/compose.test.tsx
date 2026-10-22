@@ -42,9 +42,9 @@ async function findToast(text: string) {
   return within(await screen.findByRole("region", { name: "Messages" })).findByText(text);
 }
 
-/** Opens the sheet from the floating button and returns it. */
+/** Opens the sheet from the navigation's button and returns it. */
 async function openSheet(user: Awaited<ReturnType<typeof renderApp>>["user"]) {
-  await user.click(await screen.findByRole("button", { name: "Write a post" }));
+  await user.click((await screen.findAllByRole("button", { name: "Write a post" }))[0] as HTMLElement);
   return screen.findByRole("dialog", { name: "New post" });
 }
 
@@ -695,7 +695,7 @@ function ReplyPage() {
 function createReplyRouter({ history, ...context }: RouterContext & { history: ReturnType<typeof createMemoryHistory> }) {
   const rootRoute = createRootRouteWithContext<RouterContext>()({
     component: () => (
-      <ComposeProvider layout="sheet">
+      <ComposeProvider>
         <ReplyPage />
         <ComposeEntry />
         <Outlet />
@@ -750,17 +750,21 @@ describe("replies", () => {
   });
 });
 
-describe("the floating button (web-client.md G4)", () => {
+describe("the new-post buttons (web-client.md G4)", () => {
   /** Matches the given media queries only, as a viewport of that width would. */
   function stubViewport(...matching: string[]) {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: matching.includes(query), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
   }
 
-  test.each(["/home", "/local", "/tags/hello", "/@bob"])("floats over %s, a feed", async (path) => {
+  /** The rail's button, in the navigation (the stylesheet shows it from md only). */
+  const railButton = () => within(screen.getByRole("navigation", { name: "Main" })).getByRole("button", { name: "Write a post" });
+
+  test.each(["/home", "/local", "/tags/hello", "/@bob"])("floats over %s, a feed, below md", async (path) => {
     signedIn();
     await renderApp({ path });
 
-    expect(await screen.findByRole("button", { name: "Write a post" })).toBeInTheDocument();
+    expect(await screen.findAllByRole("button", { name: "Write a post" })).toHaveLength(2);
+    expect(railButton()).toBeInTheDocument();
     expect(screen.getByRole("main")).toHaveAttribute("data-compose-fab");
   });
 
@@ -769,19 +773,27 @@ describe("the floating button (web-client.md G4)", () => {
     ["/search", "Search"],
     ["/settings", "Settings"],
     ["/@bob/followers", "Followers"],
-  ])("is not on %s", async (path, heading) => {
+  ])("does not float over %s, which has no feed, but the rail has the button", async (path, heading) => {
     signedIn();
     await renderApp({ path });
 
     expect(await screen.findByRole("heading", { level: 1, name: new RegExp(heading) })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
+    expect(await screen.findAllByRole("button", { name: "Write a post" })).toHaveLength(1);
+    expect(railButton()).toBeInTheDocument();
     expect(screen.getByRole("main")).not.toHaveAttribute("data-compose-fab");
   });
 
-  test("below md is only an icon, named by its label and with the label as its tooltip", async () => {
+  test("is not offered while signed out", async () => {
+    await renderApp({ path: "/local" });
+
+    expect(await screen.findByRole("navigation", { name: "Main" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
+  });
+
+  test("below md the floating button is only an icon, named by its label and with the label as its tooltip", async () => {
     signedIn();
     const { user } = await renderApp({ path: "/home" });
-    const button = await screen.findByRole("button", { name: "Write a post" });
+    const button = (await screen.findAllByRole("button", { name: "Write a post" })).at(-1) as HTMLElement;
     expect(button).toHaveTextContent("");
 
     // The button is the page's last focusable element: Shift+Tab from the start reaches it. On keyboard focus,
@@ -792,18 +804,31 @@ describe("the floating button (web-client.md G4)", () => {
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Write a post");
   });
 
-  test("from md shows its label", async () => {
+  test("from md nothing floats and the rail's button opens the form in a dialog, never inline, and posts from it", async () => {
     signedIn();
     stubViewport("(min-width: 48rem)");
-    await renderApp({ path: "/home" });
+    const sent = recordPosts();
+    const { user } = await renderApp({ path: "/home" });
+    expect(await screen.findAllByRole("button", { name: "Write a post" })).toHaveLength(1);
+    expect(screen.getByRole("main")).not.toHaveAttribute("data-compose-fab");
+    expect(screen.queryByRole("textbox", { name: "Your post" })).not.toBeInTheDocument();
 
-    expect(await screen.findByRole("button", { name: "Write a post" })).toHaveTextContent("Write a post");
+    await user.click(railButton());
+    const sheet = await screen.findByRole("dialog", { name: "New post" });
+    await user.type(within(sheet).getByRole("textbox", { name: "Your post" }), "From the rail");
+    await user.click(within(sheet).getByRole("button", { name: "Post" }));
+
+    expect(await findToast("Posted.")).toBeInTheDocument();
+    expect(sent[0]?.body["text"]).toBe("From the rail");
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "New post" })).not.toBeInTheDocument();
+    });
   });
 
-  test("gets focus back when the sheet it opened with the keyboard closes", async () => {
+  test("the floating button gets focus back when the sheet it opened with the keyboard closes", async () => {
     signedIn();
     const { user } = await renderApp({ path: "/home" });
-    const button = await screen.findByRole("button", { name: "Write a post" });
+    const button = (await screen.findAllByRole("button", { name: "Write a post" })).at(-1) as HTMLElement;
     button.focus();
 
     await user.keyboard("{Enter}");
@@ -818,23 +843,5 @@ describe("the floating button (web-client.md G4)", () => {
     await waitFor(() => {
       expect(button).toHaveFocus();
     });
-  });
-});
-
-describe("on wide screens", () => {
-  test("the form is a side panel next to the page", async () => {
-    signedIn();
-    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(min-width: 80rem)", media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
-    const sent = recordPosts();
-    const { user } = await renderApp();
-
-    const panel = await screen.findByRole("region", { name: "New post" });
-    expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
-    await user.type(await within(panel).findByRole("textbox", { name: "Your post" }), "From the panel");
-    await user.click(within(panel).getByRole("button", { name: "Post" }));
-
-    expect(await findToast("Posted.")).toBeInTheDocument();
-    expect(sent[0]?.body["text"]).toBe("From the panel");
-    expect(within(panel).getByRole("textbox", { name: "Your post" })).toHaveValue("");
   });
 });

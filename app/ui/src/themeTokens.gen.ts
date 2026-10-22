@@ -23,111 +23,227 @@ export const themeTokens: readonly ThemeToken[] = [
   {
     "name": "color-surface",
     "kind": "color",
-    "light": "#f9fafb",
-    "dark": "#060d1a"
+    "light": "#fcf9f6",
+    "dark": "#241f20"
   },
   {
     "name": "color-surface-raised",
     "kind": "color",
     "light": "#ffffff",
-    "dark": "#101828"
+    "dark": "#302829"
   },
   {
     "name": "color-surface-sunken",
     "kind": "color",
-    "light": "#f3f4f6",
-    "dark": "#000000"
+    "light": "#fff6ee",
+    "dark": "#1c1819"
+  },
+  {
+    "name": "color-soft",
+    "kind": "color",
+    "light": "#fff0e8",
+    "dark": "#513639"
   },
   {
     "name": "color-fg",
     "kind": "color",
-    "light": "#101828",
-    "dark": "#f9fafb"
+    "light": "#2e2e2e",
+    "dark": "#f5ebea"
   },
   {
     "name": "color-fg-muted",
     "kind": "color",
-    "light": "#4a5565",
-    "dark": "#99a1af"
+    "light": "#746e6c",
+    "dark": "#b7a7a5"
   },
   {
     "name": "color-accent",
     "kind": "color",
-    "light": "#155dfc",
-    "dark": "#57a2fe"
+    "light": "#b64d4d",
+    "dark": "#ff8585"
   },
   {
     "name": "color-accent-hover",
     "kind": "color",
-    "light": "#1447e6",
-    "dark": "#92c5fe"
+    "light": "#9b3c3c",
+    "dark": "#ffa8a8"
   },
   {
     "name": "color-accent-fg",
     "kind": "color",
     "light": "#ffffff",
-    "dark": "#060d1a"
+    "dark": "#241f20"
+  },
+  {
+    "name": "color-accent-fill",
+    "kind": "color",
+    "light": "#ff6b6b",
+    "dark": "#ff6b6b"
+  },
+  {
+    "name": "color-accent-fill-hover",
+    "kind": "color",
+    "light": "#ff8080",
+    "dark": "#ff8080"
+  },
+  {
+    "name": "color-accent-fill-fg",
+    "kind": "color",
+    "light": "#2e2e2e",
+    "dark": "#2e2e2e"
   },
   {
     "name": "color-danger",
     "kind": "color",
-    "light": "#be0010",
-    "dark": "#ff6668"
+    "light": "#a3214a",
+    "dark": "#ff8fb1"
   },
   {
     "name": "color-danger-fg",
     "kind": "color",
     "light": "#ffffff",
-    "dark": "#060d1a"
+    "dark": "#241f20"
+  },
+  {
+    "name": "color-danger-bg",
+    "kind": "color",
+    "light": "#fdebf0",
+    "dark": "#4a2433"
   },
   {
     "name": "color-success",
     "kind": "color",
-    "light": "#00813a",
-    "dark": "#05df72"
+    "light": "#397557",
+    "dark": "#86d0a5"
   },
   {
     "name": "color-success-fg",
     "kind": "color",
     "light": "#ffffff",
-    "dark": "#060d1a"
+    "dark": "#241f20"
+  },
+  {
+    "name": "color-success-bg",
+    "kind": "color",
+    "light": "#e8f6e9",
+    "dark": "#325342"
   },
   {
     "name": "color-warning",
     "kind": "color",
-    "light": "#953d00",
-    "dark": "#fabc00"
+    "light": "#8a5a1f",
+    "dark": "#f7c47a"
   },
   {
     "name": "color-warning-fg",
     "kind": "color",
     "light": "#ffffff",
-    "dark": "#060d1a"
+    "dark": "#241f20"
+  },
+  {
+    "name": "color-warning-bg",
+    "kind": "color",
+    "light": "#fff3de",
+    "dark": "#665232"
   },
   {
     "name": "color-border",
     "kind": "color",
-    "light": "#e5e7eb",
-    "dark": "#1e2939"
+    "light": "#f0e8e3",
+    "dark": "#493b3d"
   },
   {
     "name": "color-border-strong",
     "kind": "color",
-    "light": "#6a7282",
-    "dark": "#6a7282"
+    "light": "#928a86",
+    "dark": "#7d7374"
   },
   {
     "name": "color-focus",
     "kind": "color",
-    "light": "#155dfc",
-    "dark": "#57a2fe"
+    "light": "#b88133",
+    "dark": "#ffb347"
+  },
+  {
+    "name": "color-toast",
+    "kind": "color",
+    "light": "#352f30",
+    "dark": "#352f30"
+  },
+  {
+    "name": "color-toast-fg",
+    "kind": "color",
+    "light": "#ffffff",
+    "dark": "#ffffff"
+  },
+  {
+    "name": "color-toast-action",
+    "kind": "color",
+    "light": "#ff8585",
+    "dark": "#ff8585"
+  },
+  {
+    "name": "color-toast-success",
+    "kind": "color",
+    "light": "#86d0a5",
+    "dark": "#86d0a5"
+  },
+  {
+    "name": "color-toast-danger",
+    "kind": "color",
+    "light": "#ff8fb1",
+    "dark": "#ff8fb1"
+  },
+  {
+    "name": "color-toast-muted",
+    "kind": "color",
+    "light": "#b7a7a5",
+    "dark": "#b7a7a5"
   },
   {
     "name": "color-overlay",
     "kind": "color",
-    "light": "#00000066",
-    "dark": "#00000099",
+    "light": "#211c1c9e",
+    "dark": "#0d0a0bb3",
     "alpha": true
+  },
+  {
+    "name": "color-alt-overlay",
+    "kind": "color",
+    "light": "#000000cc",
+    "dark": "#000000cc",
+    "alpha": true
+  },
+  {
+    "name": "color-pressed",
+    "kind": "color",
+    "light": "#2e2e2e",
+    "dark": "#ff6b6b"
+  },
+  {
+    "name": "color-pressed-fg",
+    "kind": "color",
+    "light": "#ffffff",
+    "dark": "#2e2e2e"
+  },
+  {
+    "name": "color-media-chip",
+    "kind": "color",
+    "light": "#000000a6",
+    "dark": "#000000a6",
+    "alpha": true
+  },
+  {
+    "name": "color-wave",
+    "kind": "color",
+    "light": "#d97c7c",
+    "dark": "#d97c7c"
+  },
+  {
+    "name": "color-spark",
+    "kind": "color",
+    "light": "#ffb347",
+    "dark": "#ffb347"
   },
   {
     "name": "font-sans",
@@ -138,6 +254,11 @@ export const themeTokens: readonly ThemeToken[] = [
     "name": "font-mono",
     "kind": "font-family",
     "value": "ui-monospace, SFMono-Regular, Menlo, Consolas, \"Liberation Mono\", \"BIZ UDGothic\", \"Osaka-Mono\", \"Noto Sans Mono CJK JP\", monospace"
+  },
+  {
+    "name": "font-serif",
+    "kind": "font-family",
+    "value": "Georgia, \"Noto Serif JP\", serif"
   },
   {
     "name": "text-xs",
@@ -247,45 +368,57 @@ export const themeTokens: readonly ThemeToken[] = [
   {
     "name": "radius-sm",
     "kind": "length",
-    "value": "0.25rem",
+    "value": "0.375rem",
     "min": 0,
     "max": 2
   },
   {
     "name": "radius-md",
     "kind": "length",
-    "value": "0.5rem",
+    "value": "0.625rem",
     "min": 0,
     "max": 2
   },
   {
     "name": "radius-lg",
     "kind": "length",
-    "value": "0.75rem",
+    "value": "1rem",
     "min": 0,
     "max": 2
   },
   {
     "name": "radius-xl",
     "kind": "length",
-    "value": "1rem",
+    "value": "1.1875rem",
     "min": 0,
     "max": 2
   },
   {
+    "name": "radius-2xl",
+    "kind": "length",
+    "value": "1.5rem",
+    "min": 0,
+    "max": 2
+  },
+  {
+    "name": "elevation-card",
+    "kind": "shadow",
+    "value": "0 7px 28px 0 #502e260b"
+  },
+  {
     "name": "elevation-sm",
     "kind": "shadow",
-    "value": "0 1px 2px 0 oklch(0% 0 0 / 0.08)"
+    "value": "0 1px 2px 0 #502e2614"
   },
   {
     "name": "elevation-md",
     "kind": "shadow",
-    "value": "0 2px 6px -1px oklch(0% 0 0 / 0.12), 0 1px 3px -1px oklch(0% 0 0 / 0.08)"
+    "value": "0 7px 28px 0 #502e2614"
   },
   {
     "name": "elevation-lg",
     "kind": "shadow",
-    "value": "0 12px 24px -6px oklch(0% 0 0 / 0.18), 0 4px 8px -4px oklch(0% 0 0 / 0.1)"
+    "value": "0 16px 40px 0 #502e2624"
   },
   {
     "name": "ease-standard",

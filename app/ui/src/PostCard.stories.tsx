@@ -100,6 +100,7 @@ export const WithMedia: Story = {
         ]}
         noDescriptionLabel="No description"
         revealLabel="Show sensitive media"
+        audioLabels={{ play: "Play", pause: "Pause", seek: "Position" }}
       />
     ),
   },
@@ -131,6 +132,7 @@ export const WithContentWarning: Story = {
           sensitive
           noDescriptionLabel="No description"
           revealLabel="Show sensitive media"
+        audioLabels={{ play: "Play", pause: "Pause", seek: "Position" }}
         />
       </ContentWarning>
     ),
@@ -206,7 +208,7 @@ export const RightToLeftPost: Story = {
 };
 
 /**
- * The post a page is about: its own surface and a bar on its start edge, a name that tells it apart, and
+ * The post a page is about: a 2px accent border, a name that tells it apart, and
  * its full date and counts in words between the body and the actions.
  */
 export const Highlighted: Story = {

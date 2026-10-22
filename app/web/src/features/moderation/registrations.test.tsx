@@ -77,8 +77,8 @@ describe("the list of registrations", () => {
     await renderApp({ path: "/moderation/registrations" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Registrations" })).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual(["@bob", "@carol", "A removed account"]);
-    const [first, second, third] = within(screen.getByRole("main")).getAllByRole("listitem");
+    expect(within(screen.getByRole("table")).getAllByRole("rowheader").map((header) => header.textContent)).toEqual(["@bobbob@example.com", "@carolNone", "A removed accountbob@example.com"]);
+    const [first, second, third] = within(screen.getByRole("table")).getAllByRole("row").slice(1);
     if (first === undefined || second === undefined || third === undefined) throw new Error("a registration is missing");
 
     const bobRow = within(first);
@@ -117,10 +117,10 @@ describe("the list of registrations", () => {
     );
     const { user } = await renderApp({ path: "/moderation/registrations" });
 
-    await user.click(await screen.findByRole("button", { name: "Show more" }));
+    await user.click(within(await screen.findByRole("navigation", { name: "Pages" })).getByRole("button", { name: "Next" }));
 
-    expect(await screen.findByRole("heading", { level: 2, name: "@carol" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("rowheader", { name: /@carol/ })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Pages" })).getByRole("button", { name: "Next" })).toBeDisabled();
     expect(cursors).toEqual([null, "next"]);
   });
 });
@@ -143,7 +143,7 @@ describe("deciding a registration", () => {
     await user.click(within(dialog).getByRole("button", { name: "Approve" }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("heading", { level: 2, name: "@bob" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("rowheader", { name: /@bob/ })).not.toBeInTheDocument();
     });
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     await waitFor(() => {
@@ -192,7 +192,7 @@ describe("deciding a registration", () => {
     await waitFor(() => {
       expect(reject).toHaveFocus();
     });
-    expect(screen.getByRole("heading", { level: 2, name: "@bob" })).toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: /@bob/ })).toBeInTheDocument();
     expect(api.decisions).toEqual([]);
   });
 
@@ -223,7 +223,7 @@ describe("deciding a registration", () => {
 
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("Could not save the decision: Internal Server Error");
     // The page behind the modal dialog is hidden from assistive technology while it is open.
-    expect(screen.getByRole("heading", { level: 2, name: "@bob", hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: /@bob/, hidden: true })).toBeInTheDocument();
   });
 
   test("a registration another moderator decided first leaves the list, and the status says which decision stands", async () => {
@@ -234,7 +234,7 @@ describe("deciding a registration", () => {
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Approve" }));
 
     expect(await screen.findByText(`${isolated("@bob")} was already rejected by another moderator. That decision stands.`)).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: "@bob" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: /@bob/ })).not.toBeInTheDocument();
   });
 });
 

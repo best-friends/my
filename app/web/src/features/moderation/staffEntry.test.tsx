@@ -22,6 +22,11 @@ function navigation() {
   return screen.getByRole("navigation", { name: "Main" });
 }
 
+/** The menu of the admin and moderation mode, which replaces the app's navigation on the staff's screens. */
+function staffMenu() {
+  return screen.getByRole("navigation", { name: "Admin and moderation" });
+}
+
 /** The requests for the counts that the app sent. */
 function recordCountRequests() {
   const requests: string[] = [];
@@ -69,20 +74,40 @@ describe("the navigation's staff entries", () => {
     await waitFor(() => {
       expect(heading).toHaveFocus();
     });
-    expect(within(navigation()).getByRole("link", { name: "Moderation, 3 pending" })).toHaveAttribute("aria-current", "page");
+    // The page is in the mode: its menu leads with the moderation overview, and the app's navigation is not there.
+    expect(screen.queryByRole("navigation", { name: "Main" })).not.toBeInTheDocument();
+    expect(within(within(staffMenu()).getByRole("region", { name: "Moderation" })).getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(within(staffMenu()).getByRole("link", { name: "Registrations 1 awaits approval" })).toHaveAttribute("href", "/moderation/registrations");
     // The page links to the screens of the viewer's roles, each with its own count in its name.
     const main = within(screen.getByRole("main"));
     expect(main.getByRole("link", { name: "Registrations 1 awaits approval" })).toHaveAttribute("href", "/moderation/registrations");
     expect(main.getByRole("link", { name: "Registrations 1 awaits approval" })).toHaveAccessibleDescription("Sign-ups that await approval, and approving or rejecting them.");
   });
 
-  test("Moderation stays the current section on the moderation screens", async () => {
+  test("the moderation screens are in the mode, whose menu marks the screen and leads back to the app", async () => {
     server.use(operatorHandler(["manage_accounts"]));
-    await renderApp({ path: "/moderation/registrations" });
+    const { user } = await renderApp({ path: "/moderation/registrations" });
     await screen.findByRole("heading", { level: 1, name: "Registrations" });
 
-    expect(await within(navigation()).findByRole("link", { name: "Moderation" })).toHaveAttribute("aria-current", "page");
-    expect(within(navigation()).getByRole("link", { name: "Settings" })).not.toHaveAttribute("aria-current");
+    expect(await within(staffMenu()).findByRole("link", { name: /^Registrations/ })).toHaveAttribute("aria-current", "page");
+    expect(within(staffMenu()).getByRole("link", { name: "Accounts" })).not.toHaveAttribute("aria-current");
+    expect(screen.queryByRole("navigation", { name: "Main" })).not.toBeInTheDocument();
+
+    await user.click(within(staffMenu()).getByRole("link", { name: "Back to the app" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Admin and moderation" })).not.toBeInTheDocument();
+    expect(navigation()).toBeInTheDocument();
+  });
+
+  test("the settings page has one entry into the mode for staff and none for anybody else", async () => {
+    server.use(operatorHandler(["manage_reports", "manage_settings"]), countsHandler({ open_reports: 2 }));
+    const { user } = await renderApp({ path: "/settings" });
+
+    const entry = await screen.findByRole("link", { name: "Admin and moderation 2 pending" });
+    expect(entry).toHaveAttribute("href", "/moderation");
+    expect(screen.getAllByRole("link", { name: /^Admin and moderation/ })).toHaveLength(1);
+    await user.click(entry);
+    expect(await screen.findByRole("heading", { level: 1, name: "Moderation" })).toBeInTheDocument();
   });
 
   test("shows no badge without anything pending, and reads no counts for permissions that have none", async () => {
@@ -132,8 +157,11 @@ describe("the navigation's Administration", () => {
 
     await user.click(admin);
     expect(await screen.findByRole("heading", { level: 1, name: "Administration" })).toBeInTheDocument();
-    expect(admin).toHaveAttribute("aria-current", "page");
-    expect(within(navigation()).getByRole("link", { name: "Moderation, 2 pending" })).not.toHaveAttribute("aria-current");
+    // In the mode, Moderation's group comes first and counts; Administration's has none.
+    const groups = within(staffMenu());
+    expect(groups.getByRole("region", { name: "Moderation" }).compareDocumentPosition(groups.getByRole("region", { name: "Administration" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(groups.getByRole("region", { name: "Administration" })).getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(within(groups.getByRole("region", { name: "Moderation" })).getByRole("link", { name: "Reports 2 open reports" })).not.toHaveAttribute("aria-current");
     const main = within(screen.getByRole("main"));
     expect(main.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/settings", "/admin/theme", "/admin/documents", "/admin/relays", "/admin/jobs"]);
   });
@@ -144,8 +172,8 @@ describe("the navigation's Administration", () => {
     await renderApp({ path: "/admin/jobs" });
     await screen.findByRole("heading", { level: 1, name: "Jobs" });
 
-    expect(await within(navigation()).findByRole("link", { name: "Administration" })).toHaveAttribute("aria-current", "page");
-    expect(within(navigation()).queryByRole("link", { name: /^Moderation/ })).not.toBeInTheDocument();
+    expect(await within(staffMenu()).findByRole("link", { name: "Jobs" })).toHaveAttribute("aria-current", "page");
+    expect(within(staffMenu()).queryByRole("region", { name: "Moderation" })).not.toBeInTheDocument();
     expect(requests).toEqual([]);
   });
 });

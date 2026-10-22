@@ -5,7 +5,7 @@ import { type InstanceFilter, instanceFilters, InstanceList, instancesQueryOptio
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** `state`: the state filter of the list; omitted, or anything unknown, shows every server (web-client.md S3). */
 const searchSchema = z.object({
@@ -33,7 +33,7 @@ function InstancesPage() {
   };
   return (
     <>
-      <SettingsHeading>{t("client:admin.instances.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.instances.title")}</PageHeading>
       <InstanceList filter={filter} onFilterChange={changeFilter} />
     </>
   );

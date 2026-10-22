@@ -2,7 +2,7 @@
 import { tv } from "tailwind-variants";
 
 const codeList = tv({
-  base: "grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface-raised px-4 py-3 font-mono @md:grid-cols-2",
+  base: "grid grid-cols-1 gap-2 rounded-md bg-surface-sunken px-4 py-3 font-mono @md:grid-cols-2",
 });
 
 export type CodeListProps = {

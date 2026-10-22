@@ -10,7 +10,6 @@ import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/m
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { newSignupBlock, signupBlockFixture } from "./test/handlers";
-import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_accounts"]));
@@ -71,15 +70,19 @@ function signupBlocksServer(initial: SignupBlock[]) {
   return { lists, created, liftedIds };
 }
 
+/** The rows of the table of blocks, without its header row. */
+function rows() {
+  return within(screen.getByRole("table")).queryAllByRole("row").slice(1);
+}
+
 describe("the list of sign-up blocks", () => {
-  test("shows the blocks in effect with both forms of a domain, and all of them in the other tab", async () => {
+  test("shows the blocks in effect with both forms of a domain, and all of them under the other filter", async () => {
     const api = signupBlocksServer([idn, range, address]);
     const { user, router } = await renderApp({ path: "/moderation/signup-blocks" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign-up blocks" })).toBeInTheDocument();
-    const list = screen.getByRole("tabpanel");
-    expect(within(list).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual(["例え.jp (xn--r8jz45g.jp)", "192.0.2.0/24"]);
-    const [first, second] = within(list).getAllByRole("listitem");
+    expect(within(await screen.findByRole("table")).getAllByRole("rowheader").map((header) => header.textContent)).toEqual(["例え.jp (xn--r8jz45g.jp)", "192.0.2.0/24"]);
+    const [first, second] = rows();
     if (first === undefined || second === undefined) throw new Error("the blocks are not listed");
     const details = within(first);
     expect(details.getByText("Email domain")).toBeInTheDocument();
@@ -97,15 +100,15 @@ describe("the list of sign-up blocks", () => {
     expect(within(second).getByText("With a ban")).toBeInTheDocument();
     expect(within(second).getByText("Until lifted")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "All" }));
+    await user.click(screen.getByRole("button", { name: /Blocks to show/ }));
+    await user.click(await screen.findByRole("option", { name: "All" }));
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ filter: "all" });
     });
-    const all = within(screen.getByRole("tabpanel"));
-    expectSelectedTabControlsPanel("All");
-    expect(await all.findByRole("heading", { level: 3, name: hash })).toBeInTheDocument();
+    const all = within(screen.getByRole("table"));
+    expect(await all.findByRole("rowheader", { name: hash })).toBeInTheDocument();
     expect(all.getByText("Lifted", { selector: "span" })).toBeInTheDocument();
-    expect(all.getAllByRole("listitem")).toHaveLength(3);
+    expect(rows()).toHaveLength(3);
     // A lifted block has no lift button.
     expect(all.getAllByRole("button", { name: /^Lift / })).toHaveLength(2);
     expect(api.lists).toEqual(["limit=40&active=true", "limit=40"]);
@@ -125,7 +128,7 @@ describe("the list of sign-up blocks", () => {
     await user.click(await screen.findByRole("button", { name: /^Lift the block on the Email domain/ }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("heading", { level: 3, name: "例え.jp (xn--r8jz45g.jp)" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("rowheader", { name: "例え.jp (xn--r8jz45g.jp)" })).not.toBeInTheDocument();
     });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /^Lift the block on the IP range/ })).toHaveFocus();
@@ -141,9 +144,9 @@ describe("the list of sign-up blocks", () => {
     await user.click(await screen.findByRole("button", { name: /^Lift the block on the IP range/ }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { level: 3, name: "192.0.2.0/24" })).toHaveFocus();
+      expect(screen.getByRole("rowheader", { name: "192.0.2.0/24" })).toHaveFocus();
     });
-    expect(within(screen.getByRole("tabpanel")).getByText("Lifted", { selector: "span" })).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByText("Lifted", { selector: "span" })).toBeInTheDocument();
   });
 
   test("a block that cannot be lifted stays, and the failure says why", async () => {
@@ -175,7 +178,7 @@ describe("a new sign-up block", () => {
 
     expect(await screen.findByText(`Refuse is in effect for the Email domain ${isolated("例え.jp (xn--r8jz45g.jp)")}.`)).toBeInTheDocument();
     expect(api.created).toEqual([{ kind: "email_domain", value: "例え.jp", severity: "reject", comment: "Disposable addresses.", expires_in: 30 * 86_400 }]);
-    expect(await within(screen.getByRole("tabpanel")).findByRole("heading", { level: 3, name: "例え.jp (xn--r8jz45g.jp)" })).toBeInTheDocument();
+    expect(await within(screen.getByRole("table")).findByRole("rowheader", { name: "例え.jp (xn--r8jz45g.jp)" })).toBeInTheDocument();
     // The form is ready for the next block of the same kind.
     expect(form.getByRole("radio", { name: "Email domain" })).toBeChecked();
     expect(form.getByRole("textbox", { name: "Domain" })).toHaveValue("");
@@ -240,7 +243,7 @@ describe("permissions", () => {
   test("the screen is in the moderation menu of a user with manage_accounts", async () => {
     await renderApp({ path: "/moderation" });
 
-    const link = await screen.findByRole("link", { name: "Sign-up blocks" });
+    const link = await within(await screen.findByRole("main")).findByRole("link", { name: "Sign-up blocks" });
     expect(link).toHaveAttribute("href", "/moderation/signup-blocks");
     expect(link).toHaveAccessibleDescription("Email domains, email addresses and IP ranges whose sign-ups are refused or need approval.");
   });

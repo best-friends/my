@@ -74,7 +74,7 @@ async function serveApi(page: Page): Promise<void> {
       });
     }
     if (path === "/api/v1/instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (path === "/api/v1/preferences") {
       return json(route, { locale: test.info().project.use.locale ?? "en", time_zone: "UTC", default_visibility: "public", default_post_language: "en", require_media_description: false, timeline_languages: [] });
@@ -84,13 +84,11 @@ async function serveApi(page: Page): Promise<void> {
   });
 }
 
-/** Opens the form (the sheet, or the side panel from Tailwind's xl) and returns it. */
+/** Opens the form from the navigation's button and returns it. */
 async function openForm(page: Page, hasTouch: boolean) {
-  if ((page.viewportSize()?.width ?? 0) < 1280) {
-    const open = page.getByRole("button", { name: message("compose.open") });
-    if (hasTouch) await open.tap();
-    else await open.click();
-  }
+  const open = page.getByRole("button", { name: message("compose.open") });
+  if (hasTouch) await open.tap();
+  else await open.click();
   const form = page.getByRole("form", { name: message("compose.title") });
   await expect(form.getByRole("textbox", { name: message("compose.text.label") })).toBeVisible();
   return form;

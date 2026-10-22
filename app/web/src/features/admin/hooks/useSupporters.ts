@@ -10,7 +10,7 @@ import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { ApiError, errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { type PagedList, toPagedList } from "../../moderation";
+import { type PagedPages, toPagedList } from "../../moderation";
 import {
   cancelSupporterSubscriptionMutation,
   createSupporterPlanMutation,
@@ -379,7 +379,7 @@ export function usePlanActions(): PlanActions {
 }
 
 /** The subscriptions of the filter, newest first. */
-export function useSupporterSubscriptions(filter: SupporterSubscriptionFilter): PagedList<SupporterSubscription> {
+export function useSupporterSubscriptions(filter: SupporterSubscriptionFilter): PagedPages<SupporterSubscription> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(supporterSubscriptionsQueryOptions(api, filter)));
 }

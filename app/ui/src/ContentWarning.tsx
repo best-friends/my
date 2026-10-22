@@ -8,12 +8,14 @@
 import { type ComponentPropsWithRef, type ReactNode, useId, useState } from "react";
 import { tv } from "tailwind-variants";
 import { Button } from "./Button";
+import { WarningIcon } from "./Icons";
 
 const contentWarning = tv({
   slots: {
     base: "flex flex-col gap-2",
-    summary: "flex flex-wrap items-center gap-x-3 gap-y-2",
-    text: "min-w-0 font-medium wrap-anywhere text-fg",
+    summary: "flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-warning-bg py-2 ps-3 pe-3",
+    icon: "flex size-5 shrink-0 items-center justify-center text-warning [&>svg]:size-5",
+    text: "min-w-0 flex-1 font-bold wrap-anywhere text-fg",
     chevron: "size-4 shrink-0 fill-none stroke-current stroke-2 motion-safe:transition-transform",
     panel: "flex flex-col gap-2",
   },
@@ -61,11 +63,15 @@ export function ContentWarning({
   return (
     <div {...props} className={slots.base({ className })}>
       <div className={slots.summary()}>
+        <span aria-hidden="true" className={slots.icon()}>
+          <WarningIcon filled />
+        </span>
         <p dir="auto" lang={summaryLang} className={slots.text()}>
           {summary}
         </p>
         <Button
           size="sm"
+          className="bg-surface-raised"
           aria-expanded={expanded}
           aria-controls={panelId}
           onPress={() => {

@@ -4,7 +4,7 @@ import { adminAnnouncementsQueryOptions, AnnouncementSettings } from "../feature
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The server's announcements to every local user (FR-726): writing, publishing, editing and withdrawing them, for manage_announcements. */
 export const Route = createFileRoute("/admin/announcements")({
@@ -22,7 +22,7 @@ function AnnouncementsPage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.announcements.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.announcements.title")}</PageHeading>
       <AnnouncementSettings />
     </>
   );

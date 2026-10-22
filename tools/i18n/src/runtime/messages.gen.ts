@@ -168,8 +168,6 @@ export interface MessageArgs {
   "client:account_status.state.expired": {};
   /** Lifted */
   "client:account_status.state.lifted": {};
-  /** Moderation actions on your account, and appealing them */
-  "client:account_status.summary": {};
   /** Account status */
   "client:account_status.title": {};
   /** Block sign-ups with this email address */
@@ -512,6 +510,8 @@ export interface MessageArgs {
   "client:admin.account.two_factor.removed": { handle: string };
   /** Two-factor authentication */
   "client:admin.account.two_factor.title": {};
+  /** Account */
+  "client:admin.accounts.column.account": {};
   /** Joined */
   "client:admin.accounts.created_at": {};
   /** No accounts yet */
@@ -558,8 +558,6 @@ export interface MessageArgs {
   "client:admin.accounts.restriction.unsolicited_reach": {};
   /** Posts are followers-only */
   "client:admin.accounts.restriction.visibility_ceiling_private": {};
-  /** Restrictions */
-  "client:admin.accounts.restrictions": {};
   /** Could not search the accounts */
   "client:admin.accounts.results.failed": {};
   /** Loading accounts */
@@ -790,6 +788,8 @@ export interface MessageArgs {
   "client:admin.appeal.upheld": {};
   /** Uphold */
   "client:admin.appeal.uphold": {};
+  /** Appeal */
+  "client:admin.appeals.column.appeal": {};
   /** No appeals have been reviewed yet */
   "client:admin.appeals.empty.decided": {};
   /** No appeals await review */
@@ -1344,6 +1344,10 @@ export interface MessageArgs {
   "client:admin.domain_actions.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:admin.domain_actions.characters_over": { count: number };
+  /** Details */
+  "client:admin.domain_actions.column.details": {};
+  /** Domain */
+  "client:admin.domain_actions.column.domain": {};
   /** Cancel */
   "client:admin.domain_actions.confirm_suspend.cancel": {};
   /** Suspend */
@@ -1726,12 +1730,12 @@ export interface MessageArgs {
   "client:admin.finance.movements.no_subscriber": {};
   /** Booked at */
   "client:admin.finance.movements.occurred_at": {};
-  /** Counted on */
-  "client:admin.finance.movements.occurred_on": {};
   /** Of the payment */
   "client:admin.finance.movements.parent": {};
   /** ID at {provider} */
   "client:admin.finance.movements.provider_id": { provider: string };
+  /** Payment provider ID */
+  "client:admin.finance.movements.provider_id.header": {};
   /** Subscriber */
   "client:admin.finance.movements.subscriber": {};
   /** Payments and refunds */
@@ -1808,6 +1812,10 @@ export interface MessageArgs {
   "client:admin.home.none.heading": {};
   /** Back to remote servers */
   "client:admin.instance.back": {};
+  /** Event */
+  "client:admin.instance.column.event": {};
+  /** When */
+  "client:admin.instance.column.occurred_at": {};
   /** Deliveries resumed */
   "client:admin.instance.event.marked_available": {};
   /** Deliveries paused */
@@ -1860,6 +1868,8 @@ export interface MessageArgs {
   "client:admin.instance.state.available": {};
   /** Paused */
   "client:admin.instance.state.unavailable": {};
+  /** Server */
+  "client:admin.instances.column.server": {};
   /** No servers with failed deliveries */
   "client:admin.instances.empty": {};
   /** Servers that are not listed get every delivery. */
@@ -1876,6 +1886,8 @@ export interface MessageArgs {
   "client:admin.instances.summary": {};
   /** Remote servers */
   "client:admin.instances.title": {};
+  /** Invite code */
+  "client:admin.invites.column.invite": {};
   /** Copied the link of the invite {code}. */
   "client:admin.invites.copied": { code: string };
   /** Copy link */
@@ -2044,8 +2056,18 @@ export interface MessageArgs {
   "client:admin.jobs.unlisted.description": {};
   /** Worker */
   "client:admin.jobs.worker": {};
+  /** Actions */
+  "client:admin.list.column.actions": {};
+  /** Filters */
+  "client:admin.list.filters": {};
   /** Show more */
   "client:admin.list.more": {};
+  /** Next */
+  "client:admin.list.next": {};
+  /** Pages */
+  "client:admin.list.pages": {};
+  /** Previous */
+  "client:admin.list.previous": {};
   /** {count, plural, one {# open report} other {# open reports}} */
   "client:admin.menu.open_reports": { count: number };
   /** {count, plural, one {# awaits a decision} other {# await a decision}} */
@@ -2058,6 +2080,16 @@ export interface MessageArgs {
   "client:admin.missing_permission.description": { permission: string };
   /** You cannot use this screen */
   "client:admin.missing_permission.heading": {};
+  /** Back to the app */
+  "client:admin.mode.back": {};
+  /** Admin menu */
+  "client:admin.mode.menu": {};
+  /** Overview */
+  "client:admin.mode.overview": {};
+  /** The moderation and server administration screens, apart from the app. */
+  "client:admin.mode.summary": {};
+  /** Admin and moderation */
+  "client:admin.mode.title": {};
   /** Your roles grant none of the permissions that the moderation screens need. An administrator can grant them. */
   "client:admin.moderation.none.description": {};
   /** No moderation screens for your roles */
@@ -2100,6 +2132,8 @@ export interface MessageArgs {
   "client:admin.registrations.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:admin.registrations.characters_over": { count: number };
+  /** Applicant */
+  "client:admin.registrations.column.applicant": {};
   /** {applicant} can sign in and start posting. The decision cannot be changed afterwards. */
   "client:admin.registrations.confirm_approve.description": { applicant: string };
   /** Approve {applicant}? */
@@ -2154,8 +2188,6 @@ export interface MessageArgs {
   "client:admin.registrations.title": {};
   /** {count, plural, one {# activity} other {# activities}} */
   "client:admin.relays.activities": { count: number };
-  /** Relay actor */
-  "client:admin.relays.actor": {};
   /** Cancel */
   "client:admin.relays.cancel": {};
   /** Could not change the relay: {reason} */
@@ -2188,8 +2220,6 @@ export interface MessageArgs {
   "client:admin.relays.follow_relay": { name: string };
   /** The server asked to join {name} again. */
   "client:admin.relays.followed": { name: string };
-  /** Inbox */
-  "client:admin.relays.inbox": {};
   /** Relays of this server */
   "client:admin.relays.list.title": {};
   /** The public posts of this server go to every relay it joins, which passes them on to the other servers of the relay. Posts of other visibilities are never sent. */
@@ -2228,8 +2258,6 @@ export interface MessageArgs {
   "client:admin.relays.receive.yes": {};
   /** State */
   "client:admin.relays.state": {};
-  /** State changed */
-  "client:admin.relays.state_changed_at": {};
   /** Joined */
   "client:admin.relays.state.accepted": {};
   /** Left */
@@ -2422,6 +2450,8 @@ export interface MessageArgs {
   "client:admin.reports.category.spam": {};
   /** Breaks the server rules */
   "client:admin.reports.category.violation": {};
+  /** Report */
+  "client:admin.reports.column.report": {};
   /** No open reports */
   "client:admin.reports.empty.open": {};
   /** Reports from people here and from other servers show up here. */
@@ -3014,6 +3044,10 @@ export interface MessageArgs {
   "client:admin.signup_blocks.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:admin.signup_blocks.characters_over": { count: number };
+  /** Details */
+  "client:admin.signup_blocks.column.details": {};
+  /** Blocked */
+  "client:admin.signup_blocks.column.value": {};
   /** Comment */
   "client:admin.signup_blocks.comment": {};
   /** Seen by moderators only. */
@@ -3414,6 +3448,8 @@ export interface MessageArgs {
   "client:admin.supporters.state.pending": {};
   /** Refunded or charged back */
   "client:admin.supporters.state.revoked": {};
+  /** Account */
+  "client:admin.supporters.subscription.account": {};
   /** End now */
   "client:admin.supporters.subscription.cancel": {};
   /** Could not end the subscription: {reason} */
@@ -3434,6 +3470,8 @@ export interface MessageArgs {
   "client:admin.supporters.subscription.per_month": { amount: string };
   /** {amount} a year */
   "client:admin.supporters.subscription.per_year": { amount: string };
+  /** Period */
+  "client:admin.supporters.subscription.period": {};
   /** Period ends */
   "client:admin.supporters.subscription.period_ends_at": {};
   /** Plan */
@@ -3586,8 +3624,6 @@ export interface MessageArgs {
   "client:admin.webhooks.deliveries.empty": {};
   /** Last attempt */
   "client:admin.webhooks.deliveries.last_attempt": {};
-  /** Message ID */
-  "client:admin.webhooks.deliveries.message_id": {};
   /** Could not connect */
   "client:admin.webhooks.deliveries.outcome.connection_error": {};
   /** Destination not allowed */
@@ -4042,8 +4078,6 @@ export interface MessageArgs {
   "client:custom_emoji_requests.created_at": {};
   /** Ended */
   "client:custom_emoji_requests.decided_at": {};
-  /** Image */
-  "client:custom_emoji_requests.image": {};
   /** Asks for */
   "client:custom_emoji_requests.kind": {};
   /** A new emoji */
@@ -4160,8 +4194,6 @@ export interface MessageArgs {
   "client:custom_emojis.state.enabled": {};
   /** Request */
   "client:custom_emojis.submit": {};
-  /** Request custom emoji for this server, and change the ones you made */
-  "client:custom_emojis.summary": {};
   /** Your custom emoji */
   "client:custom_emojis.title": {};
   /** {emoji} is saved. */
@@ -4184,10 +4216,14 @@ export interface MessageArgs {
   "client:custom_emojis.withdraw_request": { emoji: string };
   /** The request for {emoji} is withdrawn. */
   "client:custom_emojis.withdrawn": { emoji: string };
+  /** Commerce disclosures */
+  "client:documents.commerce_disclosure": {};
   /** Terms and policies */
   "client:documents.label": {};
   /** Privacy policy */
   "client:documents.privacy_policy": {};
+  /** Last revised {date} */
+  "client:documents.revised": { date: string };
   /** Terms of service */
   "client:documents.terms": {};
   /** Add emoji */
@@ -4260,8 +4296,26 @@ export interface MessageArgs {
   "client:income.totals.gross": {};
   /** Income after fees */
   "client:income.totals.net": {};
+  /** On this page */
+  "client:info.contents": {};
   /** About this server */
   "client:landing.about.title": {};
+  /** React to posts with custom emoji, including those from other servers. */
+  "client:landing.features.emoji.body": {};
+  /** Say it with emoji */
+  "client:landing.features.emoji.title": {};
+  /** Follow and talk with people on Mastodon, Misskey and other servers that speak ActivityPub. */
+  "client:landing.features.federation.body": {};
+  /** Connect beyond this server */
+  "client:landing.features.federation.title": {};
+  /** Use the app in English or Japanese, and tag each post with its language. */
+  "client:landing.features.language.body": {};
+  /** In your language */
+  "client:landing.features.language.title": {};
+  /** What you can do with my */
+  "client:landing.features.title": {};
+  /** Welcome to my */
+  "client:landing.hero.eyebrow": {};
   /** No posts yet */
   "client:landing.posts.empty": {};
   /** Couldn't load the recent posts */
@@ -4796,8 +4850,6 @@ export interface MessageArgs {
   "client:settings.account.export.state.ready": {};
   /** Download your data */
   "client:settings.account.export.title": {};
-  /** Download your data, or delete your account */
-  "client:settings.account.summary": {};
   /** Your account */
   "client:settings.account.title": {};
   /** Delete posts older than */
@@ -4838,8 +4890,6 @@ export interface MessageArgs {
   "client:settings.auto_delete.saved_off": {};
   /** Saved. Posts older than {days, plural, one {# day} other {# days}} will be deleted, except those you keep. */
   "client:settings.auto_delete.saved_on": { days: number };
-  /** Delete your posts automatically once they are old, except those you choose to keep */
-  "client:settings.auto_delete.summary": {};
   /** {count, plural, one {# time} other {# times}} */
   "client:settings.auto_delete.threshold.count": { count: number };
   /** Don't keep posts for this */
@@ -4866,8 +4916,6 @@ export interface MessageArgs {
   "client:settings.back": {};
   /** You have not blocked anyone */
   "client:settings.blocks.empty": {};
-  /** Accounts that cannot follow you or see your posts */
-  "client:settings.blocks.summary": {};
   /** Blocked accounts */
   "client:settings.blocks.title": {};
   /** Unblock */
@@ -4908,8 +4956,6 @@ export interface MessageArgs {
   "client:settings.domain_mutes.new.title": {};
   /** Muted on {date} */
   "client:settings.domain_mutes.since": { date: string };
-  /** Servers whose posts and notifications you do not see */
-  "client:settings.domain_mutes.summary": {};
   /** Muted domains */
   "client:settings.domain_mutes.title": {};
   /** Unmute */
@@ -4926,8 +4972,6 @@ export interface MessageArgs {
   "client:settings.follow_requests.reject": {};
   /** You rejected the follow request of {name}. */
   "client:settings.follow_requests.rejected": { name: string };
-  /** People who asked to follow you */
-  "client:settings.follow_requests.summary": {};
   /** Follow requests */
   "client:settings.follow_requests.title": {};
   /** Download CSV files in the format Mastodon uses. Mastodon and other servers that read this format can import them. */
@@ -5018,8 +5062,6 @@ export interface MessageArgs {
   "client:settings.import_export.kind.following": {};
   /** Muted accounts */
   "client:settings.import_export.kind.mutes": {};
-  /** Move your follows, blocks, mutes, and bookmarks to or from another server */
-  "client:settings.import_export.summary": {};
   /** Import and export */
   "client:settings.import_export.title": {};
   /** {action}: {name} */
@@ -5044,8 +5086,6 @@ export interface MessageArgs {
   "client:settings.mutes.empty": {};
   /** Notifications hidden too */
   "client:settings.mutes.notifications": {};
-  /** Accounts whose posts you do not see */
-  "client:settings.mutes.summary": {};
   /** Muted accounts */
   "client:settings.mutes.title": {};
   /** Unmute */
@@ -5144,8 +5184,6 @@ export interface MessageArgs {
   "client:settings.passkeys.remove.title": { name: string };
   /** The passkey “{name}” was removed. */
   "client:settings.passkeys.removed": { name: string };
-  /** Sign in with your device's screen lock instead of your password */
-  "client:settings.passkeys.summary": {};
   /** Passkeys */
   "client:settings.passkeys.title": {};
   /** This browser cannot create passkeys. Open this page in a browser that supports them to add one. */
@@ -5202,16 +5240,12 @@ export interface MessageArgs {
   "client:settings.password.set.title": {};
   /** Change password */
   "client:settings.password.submit": {};
-  /** Change, set, or remove the password you sign in with */
-  "client:settings.password.summary": {};
   /** Password */
   "client:settings.password.title": {};
   /** The password is wrong. */
   "client:settings.password.wrong_password": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
-  /** Language, time zone, theme, the defaults of your posts, and the languages of your timelines */
-  "client:settings.preferences.summary": {};
   /** Preferences */
   "client:settings.preferences.title": {};
   /** Deny AI training and use */
@@ -5290,8 +5324,6 @@ export interface MessageArgs {
   "client:settings.profile.save": {};
   /** Your profile has been saved. */
   "client:settings.profile.saved": {};
-  /** Your name, bio, pictures and fields, and who may follow you */
-  "client:settings.profile.summary": {};
   /** Profile */
   "client:settings.profile.title": {};
   /** Use at most {max} characters. */
@@ -5372,6 +5404,10 @@ export interface MessageArgs {
   "client:settings.time_zone.option": { name: string; offset: string };
   /** Use this device's time zone */
   "client:settings.time_zone.use_device": {};
+  /** New posts appear at the top of your home timeline by themselves, and the post you are reading stays where it is. While you have focus or selected text in the timeline, they wait behind the "new posts" button instead. */
+  "client:settings.timeline_auto_insert.description": {};
+  /** Show new posts automatically */
+  "client:settings.timeline_auto_insert.label": {};
   /** Timelines show posts in the languages you check. Check none to see every language. */
   "client:settings.timeline_languages.description": {};
   /** Languages of your timelines */
@@ -5446,8 +5482,6 @@ export interface MessageArgs {
   "client:settings.two_factor.status.on": {};
   /** Current setting */
   "client:settings.two_factor.status.title": {};
-  /** Sign in with a code from an authenticator app as well as your password */
-  "client:settings.two_factor.summary": {};
   /** Two-factor authentication */
   "client:settings.two_factor.title": {};
   /** Mentioned people */
@@ -5968,8 +6002,6 @@ export interface MessageArgs {
   "client:supporter.subscription.title": {};
   /** Withdrew the scheduled change. */
   "client:supporter.subscription.unscheduled": {};
-  /** Support this server with a monthly or yearly plan, and manage your subscription. */
-  "client:supporter.summary": {};
   /** Supporter plans */
   "client:supporter.title": {};
   /** Withdraw the scheduled change */
@@ -6058,14 +6090,24 @@ export interface MessageArgs {
   "client:timeline.load_more.failed": { reason: string };
   /** Loading posts */
   "client:timeline.loading": {};
+  /** Pause */
+  "client:timeline.media.audio.pause": {};
+  /** Play */
+  "client:timeline.media.audio.play": {};
+  /** Position in the audio */
+  "client:timeline.media.audio.seek": {};
   /** No description */
   "client:timeline.media.no_description": {};
   /** Show sensitive media */
   "client:timeline.media.reveal": {};
+  /** Description */
+  "client:timeline.media.viewer.alt_text": {};
   /** Close */
   "client:timeline.media.viewer.close": {};
   /** Next image */
   "client:timeline.media.viewer.next": {};
+  /** {position, number} / {count, number} */
+  "client:timeline.media.viewer.position": { count: number; position: number };
   /** Previous image */
   "client:timeline.media.viewer.previous": {};
   /** Image {position, number} of {count, number} */
@@ -6162,22 +6204,12 @@ export interface MessageArgs {
   "server:auth.cross_origin": {};
   /** {page} – {instance} */
   "server:auth.document_title": { instance: string; page: string };
-  /** This server has not published commerce disclosures. */
-  "server:auth.document.commerce_missing": {};
-  /** Commerce disclosures */
-  "server:auth.document.commerce_title": {};
   /** Terms and policies */
   "server:auth.document.footer_label": {};
-  /** This server has not published a privacy policy. */
-  "server:auth.document.privacy_missing": {};
   /** Privacy policy */
   "server:auth.document.privacy_title": {};
-  /** This server has not published terms of service. */
-  "server:auth.document.terms_missing": {};
   /** Terms of service */
   "server:auth.document.terms_title": {};
-  /** Last updated: {date} */
-  "server:auth.document.updated": { date: string };
   /** Something went wrong */
   "server:auth.error.title": {};
   /** Email address */

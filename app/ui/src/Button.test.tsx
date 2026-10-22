@@ -63,7 +63,7 @@ describe("Button", () => {
       </Button>,
     );
     const button = screen.getByRole("button", { name: "Post" });
-    expect(button).toHaveClass("px-8", "bg-accent");
+    expect(button).toHaveClass("px-8", "bg-accent-fill");
     expect(button).not.toHaveClass("px-4");
   });
 });

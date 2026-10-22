@@ -653,6 +653,8 @@ CREATE TABLE user_preferences (
   require_media_description INTEGER NOT NULL CHECK (require_media_description IN (0, 1)),
   -- Whether the moderator notifications (admin_report, admin_sign_up) also come by email.
   email_moderator_notifications INTEGER NOT NULL CHECK (email_moderator_notifications IN (0, 1)),
+  -- Whether the web client inserts new timeline posts without asking (ADR-0077).
+  timeline_auto_insert INTEGER NOT NULL DEFAULT 0 CHECK (timeline_auto_insert IN (0, 1)),
   updated_at INTEGER NOT NULL
 ) STRICT;
 
@@ -743,17 +745,20 @@ CREATE TABLE instance_theme_revisions (
 CREATE TABLE instance_theme_tokens (
   theme_revision_id TEXT NOT NULL,
   token TEXT NOT NULL CHECK (token IN (
-    'color-surface', 'color-surface-raised', 'color-surface-sunken', 'color-fg', 'color-fg-muted',
-    'color-accent', 'color-accent-hover', 'color-accent-fg', 'color-danger', 'color-danger-fg',
-    'color-success', 'color-success-fg', 'color-warning', 'color-warning-fg', 'color-border',
-    'color-border-strong', 'color-focus', 'color-overlay', 'font-sans', 'font-mono', 'text-xs',
-    'text-xs--line-height', 'text-sm', 'text-sm--line-height', 'text-base',
-    'text-base--line-height', 'text-lg', 'text-lg--line-height', 'text-xl', 'text-xl--line-height',
-    'text-2xl', 'text-2xl--line-height', 'text-3xl', 'text-3xl--line-height', 'spacing',
-    'radius-sm', 'radius-md', 'radius-lg', 'radius-xl', 'elevation-sm', 'elevation-md',
-    'elevation-lg', 'ease-standard', 'ease-enter', 'ease-exit', 'transition-duration-fast',
-    'transition-duration-normal', 'transition-duration-slow', 'default-transition-duration',
-    'default-transition-timing-function'
+    'color-surface', 'color-surface-raised', 'color-surface-sunken', 'color-soft', 'color-fg',
+   'color-fg-muted', 'color-accent', 'color-accent-hover', 'color-accent-fg', 'color-accent-fill',
+   'color-accent-fill-hover', 'color-accent-fill-fg', 'color-danger', 'color-danger-fg',
+   'color-danger-bg', 'color-success', 'color-success-fg', 'color-success-bg', 'color-warning',
+   'color-warning-fg', 'color-warning-bg', 'color-border', 'color-border-strong', 'color-focus',
+   'color-toast', 'color-toast-fg', 'color-toast-action', 'color-toast-success',
+   'color-toast-danger', 'color-toast-muted', 'color-overlay', 'color-alt-overlay', 'color-pressed', 'color-pressed-fg', 'color-media-chip', 'color-wave', 'color-spark', 'font-sans',
+   'font-mono', 'font-serif', 'text-xs', 'text-xs--line-height', 'text-sm', 'text-sm--line-height',
+   'text-base', 'text-base--line-height', 'text-lg', 'text-lg--line-height', 'text-xl',
+   'text-xl--line-height', 'text-2xl', 'text-2xl--line-height', 'text-3xl', 'text-3xl--line-height',
+   'spacing', 'radius-sm', 'radius-md', 'radius-lg', 'radius-xl', 'radius-2xl', 'elevation-card',
+   'elevation-sm', 'elevation-md', 'elevation-lg', 'ease-standard', 'ease-enter', 'ease-exit',
+   'transition-duration-fast', 'transition-duration-normal', 'transition-duration-slow',
+   'default-transition-duration', 'default-transition-timing-function'
   )),
   scheme TEXT NOT NULL CHECK (scheme IN ('light', 'dark', 'all')),
   value TEXT NOT NULL,

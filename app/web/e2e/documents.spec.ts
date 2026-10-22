@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The terms of service and the privacy policy (#489) in every width × locale project: the server renders the
-// Markdown that e2e/server.ts writes on public pages that the registration page links to (against the real
-// `my serve`), the app links to them, and an administrator writes them on the terms and policies screen (against
+// The terms of service and the privacy policy (#489) in every width × locale project: the registration page
+// links to the web client's pages of the documents that e2e/server.ts writes (against the real `my serve`),
+// the app links to them, and an administrator writes them on the terms and policies screen (against
 // `vite preview`, whose API each test plays with page.route). Names change with the locale, so elements are found
 // by role, structure, addresses, and the documents' own text, which is in English in every project.
 import type { Page, Route } from "@playwright/test";
-import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 import { serverURL } from "./server-origin.ts";
 
-test.describe("the documents' pages on the server", () => {
+test.describe("the registration page on the server", () => {
   test.use({ baseURL: serverURL });
 
   test("the registration page asks to agree to both and links to them", async ({ page }) => {
@@ -16,8 +16,8 @@ test.describe("the documents' pages on the server", () => {
     const main = page.getByRole("main");
     await expect(main.locator("#sign-up-agreement")).toBeVisible();
     await expect(main.locator('button[type="submit"]')).toHaveAttribute("aria-describedby", "sign-up-agreement");
-    await expect(main.locator('.agreement a[href="/auth/terms"]')).toBeVisible();
-    await expect(main.locator('.agreement a[href="/auth/privacy"]')).toBeVisible();
+    await expect(main.locator('.agreement a[href="/about/terms"]')).toBeVisible();
+    await expect(main.locator('.agreement a[href="/about/privacy"]')).toBeVisible();
     // They open in a new tab, so the form keeps what was typed.
     await expect(main.locator(".agreement a")).toHaveCount(2);
     for (const link of await main.locator(".agreement a").all()) await expect(link).toHaveAttribute("target", "_blank");
@@ -26,58 +26,33 @@ test.describe("the documents' pages on the server", () => {
     await expect(footer.getByRole("link")).toHaveCount(2);
     await expectNoHorizontalScroll(page);
   });
+});
 
-  for (const { path, open, snapshot } of [
-    {
-      path: "/auth/terms",
-      open: 'footer a[href="/auth/terms"]',
-      snapshot: `
-        - main:
-          - heading [level=1]
-          - paragraph
-          - heading "Accounts" [level=2]
-          - paragraph
-          - list:
-            - listitem: No spam
-            - listitem: No harassment
-          - heading "Contact" [level=2]
-          - paragraph:
-            - link /a-very-long-path/
-      `,
-    },
-    {
-      path: "/auth/privacy",
-      open: 'footer a[href="/auth/privacy"]',
-      snapshot: `
-        - main:
-          - heading [level=1]
-          - paragraph
-          - heading "What we keep" [level=2]
-          - table:
-            - rowgroup:
-              - row "Data Why How long"
-      `,
-    },
-  ]) {
-    test(`${path} shows the rendered document without scrolling sideways`, async ({ page }) => {
-      await page.goto("/auth/sign_up");
-      await page.locator(open).click();
-      await expect(page).toHaveURL(new RegExp(`${path}$`));
-      const main = page.getByRole("main");
-      await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(main).toMatchAriaSnapshot(snapshot);
-      // The administrator's text, one value for every locale in a language the server does not know.
-      await expect(main.locator(".document")).toHaveAttribute("lang", "");
-      await expect(main.locator(".document")).toHaveAttribute("dir", "auto");
-      await expectNoHorizontalScroll(page);
-      for (const colorScheme of ["light", "dark"] as const) {
-        await page.emulateMedia({ colorScheme });
-        await page.reload();
-        await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
-        await expectNoAxeViolations(() => axeBuilder(page));
-      }
-    });
-  }
+test.describe("the pages of the documents on the server", () => {
+  test.use({ baseURL: serverURL });
+
+  test("the terms of service are an information page with a table of contents, without axe violations or scrolling sideways", async ({ page, makeAxeBuilder }) => {
+    await page.goto("/about/terms");
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(main.getByRole("heading", { level: 2, name: "Accounts" })).toBeVisible();
+    await expect(main.getByText("No spam")).toBeVisible();
+    // The table of contents is a collapsed disclosure on a narrow screen, so it is attached but not always visible.
+    await expect(main.locator('nav[aria-label] a[href^="#"]', { hasText: "Accounts" }).first()).toBeAttached();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("the privacy policy is one too, and the commerce disclosures, which the server does not have, are a not-found page", async ({ page }) => {
+    await page.goto("/about/privacy");
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+    const missing = await page.goto("/about/commerce");
+    expect(missing?.status()).toBeLessThan(500);
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+    // The not-found state has its own heading, and no table of contents.
+    await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveCount(1);
+    await expect(page.getByRole("main").locator("nav")).toHaveCount(0);
+  });
 });
 
 function json(route: Route, body: unknown, status = 200) {
@@ -127,15 +102,15 @@ async function administratorServer(page: Page, origin: string) {
         name: "my example",
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
-        registrations: { mode: "open" },
+        registrations: { mode: "open" }, federation: { mode: "both" },
         limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
         sends_email: true,
         search_indexing: "deny",
         ai_usage: "deny",
         rules: [],
-        ...(texts.some((text) => text.key === "terms") && { terms_url: `${origin}/auth/terms` }),
-        ...(texts.some((text) => text.key === "privacy_policy") && { privacy_policy_url: `${origin}/auth/privacy` }),
+        ...(texts.some((text) => text.key === "terms") && { terms_url: `${origin}/about/terms` }),
+        ...(texts.some((text) => text.key === "privacy_policy") && { privacy_policy_url: `${origin}/about/privacy` }),
       });
     }
     if (key === "GET /accounts/verify_credentials") return json(route, administrator);
@@ -168,7 +143,6 @@ test.describe("the terms and policies screen", () => {
     await expect(main).toMatchAriaSnapshot(`
       - main:
         - heading [level=1]
-        - link
         - region:
           - heading [level=2]
           - term
@@ -179,6 +153,13 @@ test.describe("the terms and policies screen", () => {
           - button
         - region:
           - heading [level=2]
+          - term
+          - definition
+          - textbox
+          - button
+        - region:
+          - heading [level=2]
+          - paragraph
           - term
           - definition
           - textbox
@@ -199,7 +180,8 @@ test.describe("the terms and policies screen", () => {
     await expect(privacy.locator('[role="status"] p')).toBeVisible();
     expect(saves).toEqual(["privacy_policy # What we keep\n\nYour email address."]);
     // The page of the new policy is linked once it is saved.
-    await expect(privacy.getByRole("link")).toHaveAttribute("href", /\/auth\/privacy$/);
+    await expect(privacy.getByRole("link")).toHaveAttribute("href", "/about/privacy");
+    expect(await privacy.getByRole("link").getAttribute("target")).toBeNull();
     await expectNoAxeViolations(makeAxeBuilder);
   });
 
@@ -209,7 +191,7 @@ test.describe("the terms and policies screen", () => {
     await page.goto("/login");
     const links = page.getByRole("main").getByRole("navigation");
     await expect(links.getByRole("link")).toHaveCount(1);
-    await expect(links.getByRole("link")).toHaveAttribute("href", /\/auth\/terms$/);
+    await expect(links.getByRole("link")).toHaveAttribute("href", "/about/terms");
     await expectNoHorizontalScroll(page);
   });
 });

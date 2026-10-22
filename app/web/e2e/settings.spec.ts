@@ -58,6 +58,7 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     default_post_language: "und",
     require_media_description: false,
     email_moderator_notifications: false,
+    timeline_auto_insert: false,
     timeline_languages: [] as string[],
   };
   let autoDeletePolicy = {
@@ -85,7 +86,7 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     switch (`${request.method()} ${path}`) {
       case "GET /instance":
-        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [], search_indexing: "deny", ai_usage: "deny" });
+        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [], search_indexing: "deny", ai_usage: "deny" });
       case "GET /accounts/verify_credentials":
         return json(route, { ...viewer, permissions });
       case "GET /preferences":
@@ -219,6 +220,27 @@ const pages = [
   "/settings/account",
   "/settings/import-export",
 ] as const;
+
+// Where the column is too narrow for the menu beside the page, the settings page still holds its own content under
+// the menu, and a section's page leads back to it.
+test("the settings page keeps signing out under the menu, and a section leads back to it", async ({ page }) => {
+  await signedInServer(page, projectLocale());
+  await page.goto("/settings");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("navigation").getByRole("link").first()).toBeVisible();
+  await expect(main.getByRole("button", { name: message("session.sign_out"), exact: true })).toBeVisible();
+  await page.goto("/settings/profile");
+  const back = main.getByRole("link", { name: message("settings.back"), exact: true });
+  // The way back is shown only while the menu is not beside the page.
+  if ((page.viewportSize()?.width ?? 0) < 768) {
+    await expect(back).toBeVisible();
+    await back.click();
+    await expect(page).toHaveURL(/\/settings$/);
+    await expect(main.getByRole("button", { name: message("session.sign_out"), exact: true })).toBeVisible();
+  } else {
+    await expect(back).toBeHidden();
+  }
+});
 
 /** A TOTP setup whose QR code is the three finder patterns of a 21-module code with its quiet zone. */
 const totpSetup = {

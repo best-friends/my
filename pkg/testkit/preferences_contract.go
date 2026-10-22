@@ -152,6 +152,7 @@ func preferencesSet(t *testing.T, e *accountEnv) {
 		DefaultVisibility:       identity.VisibilityUnlisted,
 		DefaultPostLanguage:     "iw",
 		RequireMediaDescription: true,
+		TimelineAutoInsert:      true,
 	})
 	if err != nil {
 		t.Fatalf("SetPreferences = %v", err)
@@ -166,6 +167,7 @@ func preferencesSet(t *testing.T, e *accountEnv) {
 			DefaultQuotePolicy:      identity.QuotePolicyPublic,
 			DefaultPostLanguage:     "he",
 			RequireMediaDescription: true,
+			TimelineAutoInsert:      true,
 			UpdatedAt:               e.clock.Now(),
 		},
 		TimelineLanguages: []string{},

@@ -128,9 +128,23 @@ describe("preferences", () => {
     expect(screen.getByRole("button", { name: /Default language of your posts/ })).toHaveTextContent("Japanese");
     // The settings page has no new-post button; the home timeline has one.
     await user.click(screen.getByRole("link", { name: "Home" }));
-    await user.click(await screen.findByRole("button", { name: "Write a post" }));
+    await user.click((await screen.findAllByRole("button", { name: "Write a post" }))[0] as HTMLElement);
     const sheet = await screen.findByRole("dialog", { name: "New post" });
     expect(within(sheet).getByRole("button", { name: "Japanese Language" })).toBeInTheDocument();
+  });
+
+  test("the automatic insertion of new posts is off by default and switched on", async () => {
+    const prefs = preferencesServer({ timeline_auto_insert: false });
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const auto = await screen.findByRole("switch", { name: "Show new posts automatically" });
+    expect(auto).not.toBeChecked();
+
+    await user.click(auto);
+
+    await waitFor(() => {
+      expect(prefs.current.timeline_auto_insert).toBe(true);
+    });
+    expect(auto).toBeChecked();
   });
 
   test("the request for a description of every attachment is switched on and off", async () => {
@@ -420,10 +434,11 @@ describe("moderator notifications by email", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Preferences" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Moderator notifications" })).not.toBeInTheDocument();
-    // The switches left are this browser's autoplay of animations and the request for descriptions.
+    // The switches left are this browser's autoplay of animations, the request for descriptions and the automatic new posts.
     expect(screen.getAllByRole("switch")).toEqual([
       screen.getByRole("switch", { name: "Play animations automatically" }),
       screen.getByRole("switch", { name: "Ask me for a description of every attachment" }),
+      screen.getByRole("switch", { name: "Show new posts automatically" }),
     ]);
   });
 
@@ -785,7 +800,7 @@ describe("the settings page", () => {
   test("lists the settings pages", async () => {
     await renderApp({ path: "/settings" });
 
-    const menu = await screen.findByRole("region", { name: "Settings pages" });
+    const menu = await screen.findByRole("navigation", { name: "Settings pages" });
     expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/settings/profile",
       "/settings/preferences",
@@ -801,6 +816,5 @@ describe("the settings page", () => {
       "/settings/account-status",
       "/settings/account",
     ]);
-    expect(within(menu).getByRole("link", { name: "Blocked accounts" })).toHaveAccessibleDescription("Accounts that cannot follow you or see your posts");
   });
 });

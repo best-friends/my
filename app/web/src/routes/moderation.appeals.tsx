@@ -5,7 +5,7 @@ import { type AppealFilter, AppealQueue, appealsQueryOptions } from "../features
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** `state`: the tab; omitted, or anything unknown, shows the appeals awaiting a decision (web-client.md S3). */
 const searchSchema = z.object({
@@ -30,7 +30,7 @@ function AppealsPage() {
   const navigate = Route.useNavigate();
   return (
     <>
-      <SettingsHeading>{t("client:admin.appeals.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.appeals.title")}</PageHeading>
       <AppealQueue
         filter={filter}
         onFilterChange={(next) => {

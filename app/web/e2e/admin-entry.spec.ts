@@ -86,11 +86,11 @@ async function moderatorServer(page: Page) {
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     const key = `${request.method()} ${path}`;
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "approval" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "approval" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials") return json(route, moderator);
     if (key === "GET /preferences") {
-      return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, email_moderator_notifications: false, timeline_languages: [] });
+      return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, email_moderator_notifications: false, timeline_auto_insert: false, timeline_languages: [] });
     }
     if (key === "GET /admin/counts") return json(route, { open_reports: 2, pending_registrations: 1 });
     if (key === "GET /admin/registrations") return json(route, { items: [] });

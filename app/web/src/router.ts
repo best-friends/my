@@ -59,6 +59,8 @@ declare module "@tanstack/react-router" {
      * the page and on its pending and error states (web-client.md Y5).
      */
     hideHeading?: boolean;
+    /** The shell gives the page a wide column (the signed-out landing, whose hero has posts beside its text). */
+    wideMain?: boolean;
     /**
      * The page's name, the text of its h1. RouteError keeps it as the heading when the page fails, so that the
      * page and the document title stay named after the page (web-client.md G16). A page whose name depends on

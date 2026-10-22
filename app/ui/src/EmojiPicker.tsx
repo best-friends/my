@@ -62,7 +62,7 @@ const picker = tv({
     root: "flex min-w-0 flex-col gap-2",
     grid: "flex max-h-64 min-w-0 flex-col gap-2 overflow-y-auto overscroll-contain outline-none",
     section: "flex flex-wrap gap-1",
-    header: "basis-full text-sm text-fg-muted",
+    header: "basis-full text-xs font-extrabold text-fg-muted",
     // As large as a tap target needs (D4); the emoji is as high as the text of the cell.
     item: [
       "flex size-10 cursor-default items-center justify-center rounded-md text-2xl outline-none pointer-coarse:size-11",

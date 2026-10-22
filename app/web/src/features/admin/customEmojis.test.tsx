@@ -142,10 +142,10 @@ describe("the custom emoji screen", () => {
     await user.click(within(dialog).getByRole("button", { name: "Delete" }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("heading", { level: 3, name: ":blobcat:" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("rowheader", { name: ":blobcat:" })).not.toBeInTheDocument();
     });
     expect(deleted).toBe("e1");
-    expect(screen.getByRole("heading", { level: 3, name: ":blobfox:" })).toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: ":blobfox:" })).toBeInTheDocument();
   });
 
   test("keeps the origin tab wired to its panel after switching", async () => {

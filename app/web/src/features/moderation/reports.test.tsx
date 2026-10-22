@@ -11,7 +11,6 @@ import { server } from "../../test/msw/server";
 import { watchAppearances } from "../../test/appearances";
 import { renderApp } from "../../test/render";
 import { newAccountAction, reportFixture } from "./test/handlers";
-import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_reports", "manage_accounts", "view_audit"]));
@@ -124,11 +123,9 @@ function reportsServer(initial: Report[]) {
   return { lists, actions, changes };
 }
 
-/** The rows of the queue: the items with a heading. */
+/** The rows of the queue's table, without its header row. */
 function rows() {
-  return within(screen.getByRole("tabpanel"))
-    .queryAllByRole("listitem")
-    .filter((item) => within(item).queryByRole("heading", { level: 2 }) !== null);
+  return within(screen.getByRole("table")).queryAllByRole("row").slice(1);
 }
 
 function region(name: string) {
@@ -143,7 +140,7 @@ describe("the report queue", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Reports" })).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: `Report on ${isolated("@bob")}` })).toHaveAttribute("href", `/moderation/reports/${spam.id}`);
-    expect(rows().map((row) => within(row).getByRole("heading", { level: 2 }).textContent)).toEqual([
+    expect(rows().map((row) => within(row).getByRole("link").textContent)).toEqual([
       `Report on ${isolated("@bob")}`,
       `Report on ${isolated("@carol@remote.example")}`,
     ]);
@@ -159,12 +156,36 @@ describe("the report queue", () => {
     expect(second.getByText("Breaks the server rules")).toBeInTheDocument();
     expect(await second.findByText("Mona")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "Resolved" }));
+    await user.click(screen.getByRole("button", { name: /Reports/ }));
+    await user.click(await screen.findByRole("option", { name: "Resolved" }));
     expect(await screen.findByText("No action")).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ state: "resolved" });
-    expectSelectedTabControlsPanel("Resolved");
     expect(rows()).toHaveLength(1);
     expect(api.lists).toEqual(["limit=40&state=open", "limit=40&state=resolved"]);
+  });
+
+  test("pages by cursor with previous and next, one page of the table at a time, by keyboard", async () => {
+    const cursors: (string | null)[] = [];
+    server.use(
+      http.get(`${apiBase}/admin/reports`, ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get("cursor");
+        cursors.push(cursor);
+        return HttpResponse.json(cursor === null ? { items: [spam], next_cursor: "next" } : { items: [older] });
+      }),
+    );
+    const { user } = await renderApp({ path: "/moderation/reports" });
+
+    const pages = await screen.findByRole("navigation", { name: "Pages" });
+    expect(within(pages).getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(rows()).toHaveLength(1);
+    await user.click(within(pages).getByRole("button", { name: "Next" }));
+
+    expect(await screen.findByRole("link", { name: `Report on ${isolated("@carol@remote.example")}` })).toBeInTheDocument();
+    expect(rows()).toHaveLength(1);
+    expect(within(pages).getByRole("button", { name: "Next" })).toBeDisabled();
+    await user.click(within(pages).getByRole("button", { name: "Previous" }));
+    expect(await screen.findByRole("link", { name: `Report on ${isolated("@bob")}` })).toBeInTheDocument();
+    expect(cursors).toEqual([null, "next"]);
   });
 
   test("an empty queue says what shows up there", async () => {
@@ -175,7 +196,7 @@ describe("the report queue", () => {
   });
 
   test("is in the moderation menu of a moderator", async () => {
-    await renderApp({ path: "/settings" });
+    await renderApp({ path: "/moderation" });
 
     const menu = await screen.findByRole("region", { name: "Moderation" });
     expect(within(menu).getByRole("link", { name: "Reports" })).toHaveAttribute("href", "/moderation/reports");

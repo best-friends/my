@@ -24,16 +24,14 @@ export const Route = createFileRoute("/")({
     // the page (the shell, which reads the same query, handles it). Cached data is shown at once (web-client.md S7).
     await queryClient.query({ ...instanceQueryOptions(api), staleTime: Infinity }).catch(() => undefined);
   },
+  staticData: { wideMain: true },
   component: LandingPage,
   errorComponent: LandingError,
 });
 
 function LandingPage() {
   return (
-    <>
-      <LandingHeading />
-      <Landing />
-    </>
+    <Landing heading={<LandingHeading />} />
   );
 }
 
@@ -41,7 +39,7 @@ function LandingPage() {
 function LandingHeading() {
   const t = useT();
   const instance = useInstanceName();
-  return <PageHeading>{t("client:landing.title", { instance })}</PageHeading>;
+  return <PageHeading spark="✳">{t("client:landing.title", { instance })}</PageHeading>;
 }
 
 function LandingError(props: ErrorComponentProps) {

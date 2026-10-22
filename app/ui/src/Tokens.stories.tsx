@@ -12,6 +12,11 @@ export default {
 
 type Story = StoryObj;
 
+/** The text color of a UI pair's label: the text pair checked on the same background, else fg. */
+function labelColor(bg: string): string {
+  return colorPairs.find((pair) => pair.bg === bg && pair.use === "text")?.fg ?? "fg";
+}
+
 function ColorPairs() {
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
@@ -19,8 +24,9 @@ function ColorPairs() {
         <li
           key={`${fg}/${bg}`}
           className="flex items-center gap-3 rounded-md border border-border p-3"
-          // A UI pair only needs 3:1, so its label is body text; the swatch shows the pair.
-          style={{ backgroundColor: `var(--color-${bg})`, color: `var(--color-${use === "text" ? fg : "fg"})` }}
+          // A UI pair only needs 3:1, so its label is in the text color checked on the same background (fg on most,
+          // toast-fg on the dark toast pill); the swatch shows the pair.
+          style={{ backgroundColor: `var(--color-${bg})`, color: `var(--color-${use === "text" ? fg : labelColor(bg)})` }}
         >
           {use === "text" ? (
             <span className="text-lg font-semibold">Aa あ ع</span>
@@ -88,7 +94,10 @@ function Shapes() {
             ["rounded-sm shadow-sm", "flex size-24 items-end rounded-sm bg-surface-raised p-2 shadow-sm"],
             ["rounded-md shadow-md", "flex size-24 items-end rounded-md bg-surface-raised p-2 shadow-md"],
             ["rounded-lg shadow-lg", "flex size-24 items-end rounded-lg bg-surface-raised p-2 shadow-lg"],
+            ["rounded-xl shadow-card", "flex size-24 items-end rounded-xl bg-surface-raised p-2 shadow-card"],
             ["rounded-xl shadow-lg", "flex size-24 items-end rounded-xl bg-surface-raised p-2 shadow-lg"],
+            ["rounded-2xl shadow-lg", "flex size-24 items-end rounded-2xl bg-surface-raised p-2 shadow-lg"],
+            ["rounded-avatar", "flex size-24 items-end rounded-avatar bg-soft p-2"],
           ] as const
         ).map(([name, classes]) => (
           <li key={name} className={classes}>

@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The layout around every page (ADR-0026). Mobile first (web-client.md D1): one column with the
 // navigation as a bottom tab bar; from md a side rail and the page; from xl a third column about the
-// server. Its look is @my/ui's AppShell; this file decides what goes in it.
+// server; the admin and moderation screens have a frame of their own (AdminLayout). Its look is @my/ui's AppShell; this file decides what goes in it.
 import { AppShell } from "@my/ui";
-import { Outlet, useMatches } from "@tanstack/react-router";
+import { Outlet, useLocation, useMatches } from "@tanstack/react-router";
 import { useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { ComposeEntry, ComposeProvider } from "../../features/compose";
 import { useViewer } from "../../features/session";
 import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
+import { AdminLayout, isStaffMode } from "./AdminLayout";
 import { ConnectionBanner } from "./ConnectionBanner";
-import { Navigation } from "./Navigation";
+import { Navigation, useSignedOut } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
 import { useLiveUpdates } from "./useLiveUpdates";
 import { useMediaQuery } from "./useMediaQuery";
@@ -20,10 +21,10 @@ import { useViewChange } from "./useViewChange";
 /** The id of the main landmark, the target of the skip link. */
 const mainId = "main";
 
-/** The `xl` breakpoint of Tailwind (80rem), from which the new-post form is a side panel instead of a sheet. */
+/** The `xl` breakpoint of Tailwind (80rem), from which the third column shows. */
 const wideQuery = "(min-width: 80rem)";
 
-/** The `md` breakpoint of Tailwind (48rem), from which the floating new-post button shows its label. */
+/** The `md` breakpoint of Tailwind (48rem), from which the rail has the new-post button and nothing floats. */
 const mediumQuery = "(min-width: 48rem)";
 
 export function AppLayout() {
@@ -35,40 +36,49 @@ export function AppLayout() {
   useUserDisplaySettings();
   const wide = useMediaQuery(wideQuery);
   const medium = useMediaQuery(mediumQuery);
-  // Only pages with a feed float the new-post button (timelines and profiles: their routes' static data).
+  // Only pages with a feed float the new-post button (timelines and profiles: their routes' static data), below md
+  // (ADR-0039); from md the rail has the button.
   const pageWantsButton = useMatches({ select: (matches) => matches.some((match) => match.staticData.composeButton === true) });
+  const wideMain = useMatches({ select: (matches) => matches.some((match) => match.staticData.wideMain === true) });
+  const signedOut = useSignedOut();
   const signedIn = useViewer().status === "signed-in";
-  const showButton = !wide && pageWantsButton && signedIn;
+  const showButton = !medium && pageWantsButton && signedIn;
+  // The admin and moderation screens are a mode of their own, with a frame and a menu of their own (ADR-0058).
+  const staffMode = isStaffMode(useLocation({ select: (location) => location.pathname }));
+  if (staffMode) {
+    return (
+      <ComposeProvider>
+        <ConnectionBanner />
+        <AdminLayout skipLinkLabel={t("client:shell.skip_to_main")} mainId={mainId} mainRef={mainRef}>
+          <Outlet />
+        </AdminLayout>
+      </ComposeProvider>
+    );
+  }
   return (
-    <ComposeProvider layout={wide ? "panel" : "sheet"}>
+    <ComposeProvider>
       {/* The one bar for being offline or rate-limited (web-client.md G17), in the page from the start so that the
           change is announced. It pads for the top safe-area inset itself, so it comes before the shell, which pads for it. */}
       <ConnectionBanner />
       <AppShell
         navigation={<Navigation />}
+        navigationPlacement={signedOut ? "top" : "side"}
         skipLinkLabel={t("client:shell.skip_to_main")}
+        width={wideMain ? "wide" : "narrow"}
         mainId={mainId}
         mainRef={mainRef}
         floatingVisible={showButton}
-        {...(wide
-          ? {
-              aside: (
-                // Independent sections: if one breaks, the page goes on without it (web-client.md E1).
-                <>
-                  <ErrorBoundary fallback={null}>
-                    <ComposeEntry />
-                  </ErrorBoundary>
-                  <ErrorBoundary fallback={null}>
-                    <ServerInfo />
-                  </ErrorBoundary>
-                </>
-              ),
-            }
-          : {
-              // Above the tab bar on phones (only its icon, named by its label), in the corner from md; it is empty while
-              // signed out. Pages without a feed keep the sheet, for replies, but not the button.
-              floating: <ComposeEntry trigger={showButton ? (medium ? "labelled" : "icon") : "none"} />,
-            })}
+        // Above the tab bar on phones (only its icon, named by its label). It always holds the new-post sheet, which pages
+        // without a feed keep for replies; the button shows only on pages with a feed.
+        floating={<ComposeEntry trigger={showButton ? "icon" : "none"} />}
+        {...(wide && {
+          aside: (
+            // Independent sections: if one breaks, the page goes on without it (web-client.md E1).
+            <ErrorBoundary fallback={null}>
+              <ServerInfo />
+            </ErrorBoundary>
+          ),
+        })}
       >
         <Outlet />
       </AppShell>

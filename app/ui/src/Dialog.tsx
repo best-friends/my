@@ -27,9 +27,9 @@ const modal = tv({
     // The panel is a flex column with a capped height, so the dialog and then its body shrink and scroll.
     dialog: "flex min-h-0 flex-col outline-none",
     header: "flex items-start gap-2 px-4 pt-4 pb-2",
-    title: "flex-1 text-lg font-semibold text-pretty",
+    title: "flex-1 text-xl font-extrabold tracking-tight text-pretty",
     close: [
-      "-me-2 -mt-1 grid size-9 shrink-0 place-items-center rounded-md text-fg-muted outline-none",
+      "-me-2 -mt-1 grid size-9 shrink-0 place-items-center rounded-full text-fg-muted outline-none",
       "data-hovered:bg-surface-sunken data-hovered:text-fg data-focus-visible:focus-ring pointer-coarse:size-11 [&>svg]:size-5",
     ],
     // React Aria cannot set overscroll-behavior on iOS WebKit under the shell's CSP, so each overlay's
@@ -40,13 +40,13 @@ const modal = tv({
     placement: {
       center: {
         overlay: "items-center p-4",
-        panel: "max-h-[min(85svh,100%)] rounded-lg data-entering:scale-95 data-entering:opacity-0 data-exiting:scale-95 data-exiting:opacity-0",
+        panel: "max-h-[min(85svh,100%)] rounded-xl data-entering:scale-95 data-entering:opacity-0 data-exiting:scale-95 data-exiting:opacity-0",
       },
       sheet: {
         overlay: "items-end @lg:items-center @lg:p-4",
         // The sheet sits on the bottom edge on phones, so the home indicator and rounded corners need room.
         panel: [
-          "max-h-[min(90svh,calc(100%-2rem))] rounded-t-xl pb-[env(safe-area-inset-bottom)] @lg:max-h-[min(85svh,100%)] @lg:max-w-lg @lg:rounded-b-xl @lg:pb-0",
+          "max-h-[min(90svh,calc(100%-2rem))] rounded-t-2xl pb-[env(safe-area-inset-bottom)] @lg:max-h-[min(85svh,100%)] @lg:max-w-lg @lg:rounded-xl @lg:pb-0",
           "data-entering:translate-y-full data-exiting:translate-y-full @lg:data-entering:translate-y-4 @lg:data-entering:opacity-0",
           "@lg:data-exiting:translate-y-4 @lg:data-exiting:opacity-0",
         ],

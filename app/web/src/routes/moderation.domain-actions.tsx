@@ -5,7 +5,7 @@ import { type DomainActionFilter, domainActionFilters, DomainActions, domainActi
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /**
  * `filter`: the tab of the list; omitted, or anything unknown, shows the actions in effect. `domain`: the one
@@ -42,7 +42,7 @@ function DomainActionsPage() {
   };
   return (
     <>
-      <SettingsHeading>{t("client:admin.domain_actions.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.domain_actions.title")}</PageHeading>
       <DomainActions filter={filter} domain={domain} onFilterChange={changeFilter} everyDomainHref={listHref(filter)} />
     </>
   );

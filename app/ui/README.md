@@ -39,7 +39,8 @@ The kit re-exports two React Aria providers that an app renders once at its root
 
 Colors have two layers in [src/theme.css](src/theme.css):
 
-- `--palette-*` is the primitive palette in OKLCH, inside the sRGB gamut so that a contrast ratio is the same on every screen.
+- `--palette-*` is the primitive palette of the my brand (cream, taupe, charcoal, cocoa, coral, mango, berry, mint, amber; the role badges
+  keep OKLCH steps), inside the sRGB gamut so that a contrast ratio is the same on every screen.
   It is not a Tailwind namespace, so it has no utilities; only the semantic tokens refer to it.
 - `--color-*` is the semantic layer. Each token is `light-dark(<light>, <dark>)` of palette colors.
 
@@ -47,18 +48,35 @@ Colors have two layers in [src/theme.css](src/theme.css):
 | --- | --- |
 | `surface` | Page background |
 | `surface-raised` | Cards, menus, popovers, dialogs |
-| `surface-sunken` | Inputs, wells |
+| `surface-sunken` | Inputs, wells, hover fills, media cells |
+| `soft` | The selection tint: the current navigation item, secondary buttons, the reader's own reaction |
 | `fg` | Body text and icons |
 | `fg-muted` | Secondary text: metadata, placeholders, hints |
-| `accent` / `accent-hover` | Links, primary actions, selected state |
+| `accent` / `accent-hover` | Coral as text and thin marks: links, selected tabs and toggles, checkboxes, switches |
 | `accent-fg` | Text and icons on `accent` / `accent-hover` |
+| `accent-fill` / `accent-fill-hover` | The bright brand coral as a fill: primary buttons, count badges, `NewItemsButton` |
+| `accent-fill-fg` | Text and icons on `accent-fill` / `accent-fill-hover`: charcoal, never white on coral |
 | `danger` / `success` / `warning` | Status text on a surface, or a solid status background |
 | `danger-fg` / `success-fg` / `warning-fg` | Text on the matching solid status background |
+| `danger-bg` / `success-bg` / `warning-bg` | The tinted box of a status message (`Callout`, `StatusMessage`), with `fg` or the matching status text on it |
+| `toast` / `toast-fg` | The dark pill of `Toast` and `Tooltip`, the same in both themes, and its text |
+| `toast-action` / `toast-success` / `toast-danger` / `toast-muted` | An action, a success mark, an error mark and secondary text on `toast` |
 | `border` | Decorative separators between regions that are already distinct |
 | `border-strong` | Boundaries of controls (inputs, checkboxes) that must be seen (WCAG 1.4.11) |
 | `focus` | The focus ring |
 | `overlay` | The translucent scrim behind modal dialogs and sheets |
+| `alt-overlay` | The translucent scrim under the alt text over a picture (`MediaViewer`); decorative, its contrast depends on the picture |
+| `avatar-<tint>` / `avatar-<tint>-fg` | The fill and the initial of an `Avatar` without a picture, for each of `lilac`, `peach`, `mint`, `lavender`, `yellow` (`avatarTints`); the same in both themes, fixed |
+| `spark` | The mango mark after a heading (`Spark`); decorative |
+| `pressed` / `pressed-fg` | The pressed button of `Segmented`: charcoal with white in light, coral with charcoal in dark |
 | `badge-<color>` / `badge-<color>-fg` | The background and the text of a role badge (`RoleBadge`, ADR-0071), for each of `neutral`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`, `pink` (`badgeColors`) |
+
+### Using the colors
+
+- `accent` is coral as text and thin marks; `accent-fill` is the one bright primary fill of a view (one primary action per view). Text on
+  `accent-fill` is charcoal (`accent-fill-fg`): never white on coral.
+- Mango is a small spark only (the heading spark, `spark`, and the focus ring in the dark theme), never a fill or a text color.
+- Selection is shown by `accent` plus a change of shape (a filled icon, a check, a dot), not by color alone.
 
 ### Contrast pairs
 
@@ -67,7 +85,9 @@ verifies each against WCAG 2.2 AA in both themes: 4.5:1 for text, 3:1 for contro
 
 - On each of `surface`, `surface-raised`, `surface-sunken`:
   `fg`, `fg-muted`, `accent`, `accent-hover`, `danger`, `success`, `warning` (text) and `border-strong`, `focus` (UI).
-- `accent-fg` on `accent` and `accent-hover`; `danger-fg` on `danger`; `success-fg` on `success`; `warning-fg` on `warning` (text).
+- `accent-fg` on `accent` and `accent-hover`; `accent-fill-fg` on `accent-fill` and `accent-fill-hover`; `danger-fg` on `danger`; `success-fg` on `success`; `warning-fg` on `warning` (text).
+- `fg`, `fg-muted`, `accent` on `soft`; `fg` and the status text on `danger-bg` / `success-bg` / `warning-bg`; `toast-fg`, `toast-action`
+  (text) and `toast-muted`, `toast-success`, `toast-danger` (UI) on `toast`.
 - `badge-<color>-fg` on `badge-<color>` for every badge color (text). A server theme cannot override the badge tokens, so their
   pairs hold under every theme; the color only decorates, and the badge's label carries its meaning (WCAG 1.4.1).
 - `border` and `overlay` are decorative and have no minimum.
@@ -103,7 +123,9 @@ changes the choice and the attribute together; both use the localStorage key `my
 
 - `font-sans` is OS fonts only: the platform UI font, then Japanese, Chinese and Korean system fonts (Hiragino, Yu Gothic UI, Meiryo,
   PingFang, Microsoft YaHei UI, Malgun Gothic), Arabic system fonts (Geeza Pro, Segoe UI Arabic, Tahoma), the Noto families
-  of Linux and Android, and emoji. `font-mono` follows the same order. There is no serif family.
+  of Linux and Android, and emoji. `font-mono` follows the same order.
+- `font-serif` is `Georgia, "Noto Serif JP", serif`, for brand moments only: display headlines, page titles, `EmptyState` headings and avatar
+  initials. Body text and controls stay `font-sans`.
 - Sizes are `text-xs` (0.75rem), `text-sm` (0.875rem), `text-base` (1rem), `text-lg` (1.125rem), `text-xl` (1.25rem), `text-2xl` (1.5rem)
   and `text-3xl` (1.875rem). Line heights are taller than Tailwind's defaults (1.7 for `text-base`) for CJK and Arabic, and `body`
   uses the `text-base` line height.
@@ -152,15 +174,42 @@ The utility is not named `text-*` because `tailwind-merge` would read that as a 
   | Sections of a page | `gap-6` (`gap-8` from `@3xl`) |
   | Around an `EmptyState` or a page-level spinner | `py-10` |
 
-- Radius: `rounded-sm` (0.25rem), `rounded-md` (0.5rem), `rounded-lg` (0.75rem), `rounded-xl` (1rem), and `rounded-full`.
-- Shadow: `shadow-sm`, `shadow-md`, `shadow-lg`. In the dark theme raised surfaces are told apart by `surface-raised`, not by shadow.
+- Radius: `rounded-sm`, `rounded-md`, `rounded-lg`, `rounded-xl`, `rounded-2xl`, `rounded-avatar` and `rounded-full`. The brand design's radii
+  are drawn on these steps, never as arbitrary values:
+
+  | Token | Value | Used for (design radius) |
+  | --- | --- | --- |
+  | `rounded-sm` | 0.375rem (6px) | Checkboxes, small marks |
+  | `rounded-md` | 0.625rem (10px) | Toggles, list items, text fields (the design's 11px), quotes (12px) |
+  | `rounded-lg` | 1rem (16px) | Menus, popovers, media |
+  | `rounded-xl` | 1.1875rem (19px) | Cards, posts, dialogs, toasts (the design's 18px) |
+  | `rounded-2xl` | 1.5rem (24px) | Sheets, the tile of an `EmptyState` |
+  | `rounded-avatar` | 21% | Avatars: a share of the side, so a server theme cannot override it (`radius-avatar` is in `fixedTokens`) |
+  | `rounded-full` | pill | Buttons, badges, search fields |
+
+- Shadow: `shadow-card` (cards and posts), `shadow-sm`, `shadow-md`, `shadow-lg`, warm-tinted. In the dark theme raised surfaces are told apart
+  by `surface-raised`, not by shadow: a server theme's shadow is one value for both themes (no `light-dark()`), so the black-based dark
+  shadows of the design are not used.
   Tailwind copies a `--shadow-*` value into its utilities, so the values live in `--elevation-sm|md|lg`, which the `--shadow-*` tokens refer to
-  and a server theme overrides.
+  and a server theme overrides (`--elevation-card`, `--elevation-sm|md|lg`).
 - Radius, shadow, duration, and easing utilities take tokens only: no arbitrary values (`rounded-[3px]`, `shadow-[…]`, `duration-[…]`).
+
+## Shape, elevation and states
+
+- **Pills** (`rounded-full`): buttons, badges, tags, toasts and the search field. **Cards** (`rounded-xl`): posts, cards and dialogs,
+  each with a 1px `border` and `shadow-card`. **List items** and toggles are `rounded-md`. **Avatars** are rounded squares
+  (`rounded-avatar`), never circles.
+- Borders come first: a card is told apart by its `border`, with the barely-there `shadow-card`. Floating layers use `shadow-sm` (media badges),
+  `shadow-md` (lists, tooltips, `NewItemsButton`) and `shadow-lg` (dialogs, menus, popovers, toasts).
+- **Serif** (`font-serif`) is for brand moments only: the display line of the brand, page titles, `EmptyState` headings and avatar
+  initials. All other UI is sans in heavy weights; the serif stays light.
+- States: hover is a `surface-sunken` fill or `accent-hover`; selected is `accent` plus a change of shape; invalid is a `danger` border plus a
+  message with a warning icon; disabled is half opacity; pending is a `Spinner` while the control keeps its focus.
+- Status messages, `RegionError` and `OfflineBanner` are tinted boxes with an icon, not a start-edge bar; `Toast` and `Tooltip` are dark pills.
 
 ## Focus
 
-`focus-ring` is a 2px `focus` outline with a 2px offset. Apply it as `focus-visible:focus-ring`, or `data-focus-visible:focus-ring`
+`focus-ring` is a 3px `focus` outline with a 2px offset. Apply it as `focus-visible:focus-ring`, or `data-focus-visible:focus-ring`
 on React Aria Components. It is an outline, so it stays visible in forced-colors mode. Every `:focus-visible` element also gets the
 same ring from the base layer when it sets none of its own.
 
@@ -196,6 +245,22 @@ Icons are part of the kit, so that every screen draws the same shapes at the sam
   (star, bookmark, warning) and the Bold weight for one that does not (boost).
 - Icons with a direction (reply, back, external link) mirror in right-to-left text with `rtl:-scale-x-100`; Phosphor's
   `mirrored` ignores the writing direction, so it is not used.
+
+## Logo
+
+The wordmark is the hand-lettered artwork in `src/logos/`, used as given and never redrawn or recolored. `App-Icon` is for app and
+avatar slots; the three spark strokes (`mango`, `logo-spark-coral`, `logo-spark-amber`) stay exactly as drawn:
+
+- **The inks are fixed SVG fills, not tokens.** The logo is a brand mark, not UI: its colors (`coral`, `logo-red`, the three
+  spark inks) must not follow a server theme override, and an `<img>` of the file cannot take a token anyway. The parts load the
+  files with `<img>`, so no `<svg>` is drawn in JSX and the token check has nothing to inspect.
+- `Wordmark` picks the variant by ground: `Wordmark-Primary-Color` on light, `Wordmark-DarkBg` on dark (the `dark:` variant,
+  so `data-theme` wins over the OS setting), `tone="monochrome"` for the single charcoal ink. `Wordmark-LightBg` (red letters
+  for light grounds where coral looks weak) is not bundled; add it with a `tone` when a screen needs it.
+- It is sized by height (`sm` / `md` / `lg`); the width follows the 1250 x 700 artwork. `name` is the accessible name ("my",
+  from the locale files); `decorative` is required, and `true` gives `alt=""` when the server name is shown next to it.
+- `BrandMark` is the wordmark next to the server name (`instanceName`, `dir="auto"`, truncated when long).
+- The favicon and PWA icons in `app/web/public` are made from `App-Icon.svg`.
 
 ## States of a region
 
@@ -238,11 +303,11 @@ every theme against them. A token that matches no rule (and is not in `fixedToke
 | Tokens | Kind | Override |
 | --- | --- | --- |
 | `color-*` (but `color-badge-*`) | color | `#rrggbb` per theme (`#rrggbbaa` for `color-overlay`); every contrast pair must keep AA in both themes |
-| `font-sans`, `font-mono` | font family | Family names, quoted or plain, comma-separated (at most 30) |
+| `font-sans`, `font-mono`, `font-serif` | font family | Family names, quoted or plain, comma-separated (at most 30) |
 | `text-*` | length | `0` or rem / px, 0.625rem to 3rem |
 | `text-*--line-height` | number | 1 to 2.5 |
 | `spacing` | length | 0.125rem to 0.5rem (half to twice the default step) |
-| `radius-*` | length | 0 to 2rem |
+| `radius-*` (but `radius-avatar`) | length | 0 to 2rem |
 | `elevation-*` | shadow | `none` or up to 4 `[inset] <x> <y> [<blur> [<spread>]] <#color>` layers, lengths within 4rem |
 | `transition-duration-*`, `default-transition-duration` | duration | ms / s, 0 to 1000ms |
 | `ease-*`, `default-transition-timing-function` | easing | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, or `cubic-bezier()` with x in 0..1 |
@@ -347,8 +412,9 @@ announces only changes made after it is in the page. A failure is not a status; 
 | `Picture`, `AutoplayContext` | An image in the rendition that fits (`srcset` / `sizes` from `ImageSources`). An animation's moving rendition is a `<source>` for `prefers-reduced-motion: no-preference` only, and with `AutoplayContext` off it moves only while pointed at or touched (ADR-0054 §3). `Avatar` (`sources`) and `MediaGrid` (`MediaItem.sources`) use it. |
 | `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
 | `DetailSection` | A titled region of a detail page: a `<section>` named by its `h2`; with `headingRef` the heading takes focus from script. |
-| `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
-| `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-sm border border-border px-1 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
+| `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). It sits in a focusable `group` named like the table that scrolls sideways by itself when the columns do not fit the width, so the page never does. `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
+| `Segmented`, `SegmentedItem` | A pill switcher for two to four views of the same content (`value` / `onChange` by segment `id`): a React Aria single-selection `ToggleButtonGroup`, so a radiogroup that the arrow keys move through; pressed is `pressed` / `pressed-fg`. |
+| `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-full border border-border px-2 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
 | `ProfileHeader`, `ProfileHeaderImage`, `ProfileFields` / `ProfileField` | The heading of a profile: header image (or band), overlapping avatar, actions slot, name, handle, badges, tag pills, text, metadata fields, joined line and counts; `ProfileHeaderImage size="preview"` is the 3:1 image of the profile form. |
 | `Poll`, `PollResults`, `PollChoices`, `PollSummary`, `PollHint` | A poll (FR-112): `Poll` is the named section; `PollResults` the list of shares with a decorative bar (`aria-hidden`; the percentage and the "your vote" word carry the meaning); `PollChoices` the radio or checkbox form with the vote button; `PollSummary` the total and deadline line; `PollHint` a note. Titles take `dir="auto"`, `lang` and custom emoji. |
 
@@ -365,11 +431,12 @@ arbitrary value. A look that no prop gives is a new prop or component in the kit
 | `Stack` | `flex flex-col` | `gap`; `align` (`stretch` default / `start` / `center` / `end` / `baseline`); `justify` (`start` / `center` / `end` / `between`); `divided` (`divide-y divide-border`: rows of a list, no gap, G3); `marker` (`disc` / `decimal` with `ps-6`, `discInside`); `rowAt` (`sm` / `md`: a row with centered items from that container width) |
 | `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line; `inline` (`inline-flex`, in the line of the text around it) |
 | `Grid` | `grid grid-cols-1`, then `columns` (`2` default / `3`) from the container width `at` (`sm` default / `md`) | `columns`; `at`; `gap` (both axes); `rowGap` |
-| `Box` | A block with no layout of its own | Only the box props below |
+| `Box` | A block with no layout of its own | Only the box props below. It stays beside `Card`: a `Box` is a layout primitive (a padded row, a size container, a capped width, an optional frame) with no surface, whereas a `Card` is the one raised surface of the brand (`bg-surface-raised`, `border`, `rounded-xl`, `shadow-card`) |
+| `Card` | A raised surface: `bg-surface-raised border rounded-xl shadow-card` (no shadow in dark), a `div` (or `as`: `section`, `article`, `aside`, `li`) | `padding` (`0` for rows with their own padding / `3` / `4` side panel / `6` page panel, default / `8` settings pane) |
 | `SectionHeader` | The heading (children) and `actions` (in a `flex flex-wrap gap-2` row): stacked with `items-start gap-2`, on one line with `justify-between` from `@md` | `actions` (nothing, `null` or `false` leaves the heading alone) |
 | `DialogActions` | `flex flex-wrap justify-end gap-2`: the buttons at the end of a dialog, cancel first | — |
-| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium` / `medium` `font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
-| `Text` | A `span` (or `as`: `p`, `div`, `li`, `dt`, `dd`, `code`, `time`, `strong`, `small`, `label`, `legend`) | `size` (`xs` / `sm` / `base` / `lg`), `tone` (`fg` / `muted` / `danger` / `warning` / `success` / `accent`), `weight` (`normal` / `medium` / `semibold`), each inherited when unset; `wrap` (`anywhere` / `truncate` / `pretty`); `whitespace` (`preWrap` / `preLine`); `numeric` (`tabular-nums`); `mono`; `block`; `align` (`start` / `center` / `matchParent`); `lineClamp` (`2` / `3`); `selectAll`; `shrink` |
+| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-bold` / `section` `text-lg font-bold` / `subsection` `font-bold` / `label` `text-sm font-bold` / `medium` `font-bold`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script); `spark` (`✳` / `✧`: a decorative mango mark after the text, `aria-hidden`; `PageHeading` has it too, and sets the text in the serif `page-title`) |
+| `Text` | A `span` (or `as`: `p`, `div`, `li`, `dt`, `dd`, `code`, `time`, `strong`, `small`, `label`, `legend`) | `size` (`xs` / `sm` / `base` / `lg`), `tone` (`fg` / `muted` / `danger` / `warning` / `success` / `accent`), `weight` (`normal` / `medium` / `semibold`), each inherited when unset; `wrap` (`anywhere` / `truncate` / `pretty`); `whitespace` (`preWrap` / `preLine`); `numeric` (`tabular-nums`); `mono`; `block`; `align` (`start` / `center` / `matchParent`); `lineClamp` (`2` / `3`); `selectAll`; `shrink`; `eyebrow` (small upper-case `text-accent` label above a heading) |
 | `Hint` | Secondary text (G6), a `p` (or `as` `span` / `div`): `text-sm text-fg-muted` | `size="inherit"` drops `text-sm`; the other props of `Text` but `tone` |
 | `InlineError` | An error in place, a `p` (or `as` `span` / `div`): `text-sm text-danger` | `size="inherit"` drops `text-sm`; `alert` (`role="alert"`, only for the result of the user's own action, G16); the other props of `Text` but `tone` |
 
@@ -495,7 +562,7 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 | `line-clamp-2 text-start wrap-anywhere whitespace-pre-wrap` (`p`) | `<Text as="p" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">` |
 | `truncate text-start font-semibold` / `truncate text-start text-sm text-fg-muted` (`span`) | `<Text wrap="truncate" align="start" weight="semibold">` / `<Text wrap="truncate" align="start" size="sm" tone="muted">` |
 | `text-start text-sm font-normal wrap-anywhere text-fg-muted` (`span`) | `<Text align="start" size="sm" weight="normal" wrap="anywhere" tone="muted">` |
-| `rounded-sm border border-border px-1 text-sm text-fg-muted` (`span`) | `<Tag>` |
+| `rounded-full border border-border px-2 text-sm text-fg-muted` (`span`) | `<Tag>` |
 | `<table className="w-full text-start">`, `th` `py-2 pe-3 text-start font-semibold`, rows `border-b border-border align-top` | `<Table caption={…}>` with `TableHead` › `TableColumnHeader`, `TableBody` › `TableRow` › `TableRowHeader` / `TableCell` |
 | `<table className="w-full table-fixed border-collapse text-sm">` with `tbody` `divide-y` | `<Table density="compact" aria-labelledby={…}>`, `TableColumnHeader width="narrow"` / `"wide"` for `w-16` / `w-2/5` |
 | `sr-only` | `VisuallyHidden` |
@@ -510,10 +577,13 @@ against viewport breakpoints.
 
 | Component | What it draws | Its props |
 | --- | --- | --- |
-| `AppShell` | The skip link, the navigation, `main` (padded at its end for the tab bar and the floating button) and the third column (xl) or the floating slot | `navigation`, `children`, `skipLinkLabel`, `mainId`, `mainRef`, `aside` (only where the third column shows), `floating`, `floatingVisible` (sets `data-compose-fab` on `main`, which `with-compose-fab:` and the app's `scroll-padding-block-end` follow) |
+| `AppShell` | The skip link, the navigation, `main` (padded at its end for the tab bar and the floating button), the third column (xl) and the floating slot | `navigation`, `children`, `skipLinkLabel`, `mainId`, `mainRef`, `aside` (only where the third column shows), `floating`, `floatingVisible` (sets `data-compose-fab` on `main`, which `with-compose-fab:` and the app's `scroll-padding-block-end` follow), `navigationPlacement` (`side` / `top`: the signed-out top bar above the page) |
 | `AsidePanel` | A section of the third column: an `aside` named by its small muted `h2` | `heading`, `children` |
-| `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` and `footer` (sidebar only), the items as children |
-| `AppNavItem` | An item: the icon in a pill (filled when current), the label, the count's `Badge` | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
+| `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` (the wordmark and server name: `AppNavBrand`), `action` (the rail's button: `AppNavAction`), `footer` (sidebar only), `placement` (`side` / `top`), the items as children |
+| `AppNavItem` | An item: a `RailItem` (icon, label, count's `Badge`; soft fill when current) | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
+| `FloatingButton` | The round primary button that starts the page's main action (below md; the rail has `AppNavAction`): `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s | `label`, `icon`, `iconOnly`, `onPress` |
+| `AppNavAction` | The rail's one `primary` button after the items: icon alone in the md rail, with its label from lg | `label`, `icon`, `onPress` |
+| `RailItem` | A navigation link: icon, label, optional count; `aria-current="page"` is soft-filled with an accent label | `href`, `icon`, `label`, `current`, `badge`, `form` (`tab` / `row` / `top`), `prominent`, `classNames` |
 | `AppNavMenu` | The tab bar's last item, a button that opens a `Sheet` | `label`, `badge`, `isOpen`, `onOpenChange`, `title`, `closeLabel`, the sheet's content |
 | `AppNavMenuList`, `AppNavMenuLink`, `AppNavMenuSection` | The sheet's list and its rows; a block under them, with a line above (`separator` `"3"` / `"4"`) or without | as `AppNavItem` but `shows`; `separator` |
 | `AppNavAccount` | The sidebar's signed-in account: avatar, display name and handle | `href`, `avatar`, `name`, `handle`, `description` |
@@ -579,7 +649,6 @@ Counts in `details` are `<Text numeric>`; several parts under a body are a `<Sta
 | `AttachmentItem` | An image of a draft: the `li` of a `<Stack as="ul">` with the preview, a `progressLabel` band (spinner) over it, and the description field, error and actions as children; a column below `@md` of the container |
 | `OutboxItem` | A post waiting to be sent: the `li` of a `<Stack as="ul">` with its text; `sendingLabel` (`aria-busy`, spinner) while it is sent, else `error` and the retry / edit / discard buttons as children |
 | `Fieldset` | A `fieldset` framed with a `legend` (`gap-3` between its controls); other attributes (`aria-describedby`) pass to the `fieldset` |
-| `FloatingButton` | The round primary button that starts the page's main action: `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s |
 | `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
 | `PostContent` `framed` | A border and padding around a post body shown as a preview |
 | `PostContent` `size="sm"` `lineClamp={3}` | An excerpt of a post in a form (the reply target), cut after three lines |

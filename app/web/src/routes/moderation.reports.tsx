@@ -5,7 +5,7 @@ import { type ReportFilter, ReportQueue, reportsQueryOptions } from "../features
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** `state`: the tab of the queue; omitted, or anything unknown, shows the open reports (web-client.md S3). */
 const searchSchema = z.object({
@@ -30,7 +30,7 @@ function ReportsPage() {
   const navigate = Route.useNavigate();
   return (
     <>
-      <SettingsHeading>{t("client:admin.reports.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.reports.title")}</PageHeading>
       <ReportQueue
         filter={filter}
         onFilterChange={(next) => {

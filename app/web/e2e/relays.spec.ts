@@ -72,7 +72,7 @@ async function administratorServer(page: Page) {
         name: "my example",
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
-        registrations: { mode: "approval" },
+        registrations: { mode: "approval" }, federation: { mode: "both" },
         limits: { max_post_characters: 500 },
         timelines: { local: true, federated: true },
         rules: [],
@@ -134,7 +134,7 @@ test.describe("relays", () => {
     await form.getByRole("button", { name: message("admin.relays.submit"), exact: true }).click();
 
     const list = main.getByRole("region", { name: message("admin.relays.list.title"), exact: true });
-    await expect(list.getByRole("heading", { level: 3, name: "relay.example", exact: true })).toBeVisible();
+    await expect(list.getByRole("rowheader", { name: /^relay\.example/u })).toBeVisible();
     await expect(list.getByText(message("admin.relays.state.pending"), { exact: true })).toBeVisible();
     expect(sent).toEqual([`create ${relayUrl} auto true`]);
     await expectNoAxeViolations(makeAxeBuilder);

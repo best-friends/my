@@ -5,9 +5,9 @@ import { tv } from "tailwind-variants";
 const tag = tv({
   variants: {
     variant: {
-      outlined: "rounded-sm border border-border px-1 text-sm text-fg-muted",
-      solid: "rounded-full bg-accent px-2 text-xs font-semibold text-accent-fg",
-      pill: "rounded-full bg-surface-sunken px-2 py-0.5 text-sm text-fg",
+      outlined: "rounded-full border border-border px-2 text-sm text-fg-muted",
+      solid: "rounded-full bg-accent-fill px-3 py-1 text-xs font-bold text-accent-fill-fg",
+      pill: "rounded-full bg-surface-sunken px-3 py-1 text-xs font-bold text-fg",
     },
   },
   defaultVariants: { variant: "outlined" },

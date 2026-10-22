@@ -14,7 +14,7 @@ import {
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 const text = z.string().trim().min(1).max(adminAccountSearchLimit).optional().catch(undefined);
 
@@ -70,7 +70,7 @@ function AccountsPage() {
   const navigate = Route.useNavigate();
   return (
     <>
-      <SettingsHeading>{t("client:admin.accounts.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.accounts.title")}</PageHeading>
       <AccountSearch
         search={search}
         onSearch={(next) => {

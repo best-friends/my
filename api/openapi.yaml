@@ -305,6 +305,35 @@ paths:
           $ref: '#/components/responses/CustomEmojiRequestProblem'
         default:
           $ref: '#/components/responses/Problem'
+  /instance/documents/{kind}:
+    get:
+      operationId: getInstanceDocument
+      summary: Get a document of the instance
+      description: |
+        The body of the terms of service (`terms`), the privacy policy (`privacy_policy`) or the
+        commerce disclosures of the supporter plans (`commerce_disclosure`) that the instance
+        has published, as sanitized HTML with the time of its last revision. A 404 when the
+        instance has not published the document (`Instance.terms_url`,
+        `Instance.privacy_policy_url` and `Instance.commerce_disclosure_url` are omitted then),
+        and for an unknown kind. The web client shows it at `/about/terms`, `/about/privacy`
+        and `/about/commerce`.
+      tags:
+        - instance
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/InstanceDocumentKind'
+      responses:
+        '200':
+          description: The document.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceDocument'
+        default:
+          $ref: '#/components/responses/Problem'
   /instance/domain_actions:
     get:
       operationId: listInstanceDomainActions
@@ -5215,7 +5244,8 @@ paths:
         the administrator writes it once, in any language, and readers of every locale see the
         same value. An empty `body` clears the text. The revision and the change are kept
         (`instance_text_revisions`, the audit log's `text_changed`). The terms of service and the privacy policy are Markdown, which the server renders and
-        sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
+        sanitizes for the web client's pages of them (`GET /instance/documents/{kind}`, linked from
+        `Instance.terms_url`, `Instance.privacy_policy_url` and `Instance.commerce_disclosure_url`);
         the other texts are plain text. The display name (`name`) names the instance to people
         in place of its domain: the web client's navigation and tab title, the server-rendered
         pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;
@@ -7083,6 +7113,13 @@ components:
         type: string
         minLength: 1
         maxLength: 256
+    InstanceDocumentKind:
+      name: kind
+      in: path
+      required: true
+      description: The kind of the document.
+      schema:
+        $ref: '#/components/schemas/InstanceDocumentKind'
     InstanceDomain:
       name: domain
       in: path
@@ -12125,20 +12162,23 @@ components:
             $ref: '#/components/schemas/InstanceRule'
         terms_url:
           description: |
-            The public page of the instance's terms of service, which needs no sign-in; omitted
-            when the instance has none, so that clients do not link to it.
+            The web client's page of the instance's terms of service (`/about/terms`), which needs no
+            sign-in and shows `GET /instance/documents/terms`; omitted when the instance has none,
+            so that clients do not link to it.
           type: string
           format: uri
         privacy_policy_url:
           description: |
-            The public page of the instance's privacy policy, which needs no sign-in; omitted
-            when the instance has none.
+            The web client's page of the instance's privacy policy (`/about/privacy`), which needs no
+            sign-in and shows `GET /instance/documents/privacy_policy`; omitted when the instance has
+            none.
           type: string
           format: uri
         commerce_disclosure_url:
           description: |
-            The public page of the commerce disclosures of the supporter plans (`/about/commerce`),
-            which needs no sign-in; omitted when the instance has none.
+            The web client's page of the commerce disclosures of the supporter plans (`/about/commerce`,
+            the URL that the operators give the payment provider), which needs no sign-in and shows
+            `GET /instance/documents/commerce_disclosure`; omitted when the instance has none.
           type: string
           format: uri
         supporters_enabled:
@@ -12313,6 +12353,39 @@ components:
           description: An explanation of the rule, as plain text; omitted or empty for none.
           type: string
           maxLength: 1000
+    InstanceDocument:
+      description: |
+        A document that the instance has published, rendered for reading. The administrators write
+        it once, in any language, so every locale gets the same text.
+      type: object
+      required:
+        - kind
+        - html
+        - revised_at
+      properties:
+        kind:
+          $ref: '#/components/schemas/InstanceDocumentKind'
+        html:
+          description: |
+            The document as HTML, which the server renders from the administrators' Markdown and
+            sanitizes (headings from `h2`, paragraphs, lists, quotes, code, rules, tables, and links
+            to `http`, `https` and `mailto`; no raw HTML, scripts or images). Clients put it in the
+            page as it is. The language of the text is unknown: mark it `lang=""`.
+          type: string
+        revised_at:
+          description: When the current revision of the document was recorded.
+          type: string
+          format: date-time
+    InstanceDocumentKind:
+      description: |
+        The kind of an instance document: the terms of service, the privacy policy, and the
+        commerce disclosures of the supporter plans. Each is the instance text of the same name
+        (`terms`, `privacy_policy`, `commerce_disclosure`).
+      type: string
+      enum:
+        - terms
+        - privacy_policy
+        - commerce_disclosure
     InstanceSettingKey:
       description: |
         The key of an instance setting (docs/operations/instance-settings.md). New keys may be
@@ -12375,7 +12448,7 @@ components:
         The key of an instance text: the name (one line), the short and full descriptions,
         the terms of service and the privacy policy (Markdown), the alternative texts of the
         preview image and the thumbnail, and the commerce disclosures of the supporter plans
-        (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
+        (Markdown, shown at `/about/commerce`; the server does not vouch for what they say).
       type: string
       enum:
         - name
@@ -13634,6 +13707,7 @@ components:
         - default_post_language
         - require_media_description
         - email_moderator_notifications
+        - timeline_auto_insert
         - timeline_languages
       properties:
         locale:
@@ -13664,6 +13738,11 @@ components:
             Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`,
             `admin_webhook_disabled`, `admin_custom_emoji_request`) also come by email, to the
             primary address. Off for a new user.
+          type: boolean
+        timeline_auto_insert:
+          description: |
+            Whether the web client inserts new timeline posts without asking, instead of offering them
+            behind a "show new posts" button (ADR-0077). Off for a new user; the same on every device.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, sorted; empty shows every language.
@@ -15299,6 +15378,9 @@ components:
           type: boolean
         email_moderator_notifications:
           description: Whether the moderator notifications also come by email.
+          type: boolean
+        timeline_auto_insert:
+          description: Whether the web client inserts new timeline posts without asking.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, at most 64; empty shows every language.

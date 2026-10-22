@@ -53,6 +53,9 @@ func (f *fakePreferences) UpdatePreferences(ctx context.Context, userID string, 
 	if in.EmailModeratorNotifications != nil {
 		p.EmailModeratorNotifications = *in.EmailModeratorNotifications
 	}
+	if in.TimelineAutoInsert != nil {
+		p.TimelineAutoInsert = *in.TimelineAutoInsert
+	}
 	f.p = p
 	return p, nil
 }
@@ -95,7 +98,7 @@ func TestGetPreferences(t *testing.T) {
 
 func TestUpdatePreferences(t *testing.T) {
 	e, prefs := newPreferencesEnv(t)
-	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","default_quote_policy":"followers","timeline_languages":["en","ja"],"email_moderator_notifications":true}`)
+	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","default_quote_policy":"followers","timeline_languages":["en","ja"],"email_moderator_notifications":true,"timeline_auto_insert":true}`)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", res.StatusCode)
 	}
@@ -104,7 +107,7 @@ func TestUpdatePreferences(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got.DefaultVisibility != clientapi.VisibilityLocal || !reflect.DeepEqual(got.TimelineLanguages, []string{"en", "ja"}) || got.Locale != "ja" ||
-		!got.EmailModeratorNotifications {
+		!got.EmailModeratorNotifications || !got.TimelineAutoInsert || !prefs.p.TimelineAutoInsert {
 		t.Errorf("preferences = %+v, want the change applied to the rest", got)
 	}
 	if prefs.p.DefaultVisibility != "local" || prefs.p.DefaultQuotePolicy != identity.QuotePolicyFollowers || got.DefaultQuotePolicy != clientapi.QuotePolicyFollowers {

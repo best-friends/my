@@ -4,7 +4,7 @@ import { tv, type VariantProps } from "tailwind-variants";
 
 const link = tv({
   base: [
-    "cursor-pointer rounded-sm text-accent underline-offset-2 data-hovered:text-accent-hover data-focus-visible:focus-ring",
+    "cursor-pointer rounded-sm text-accent underline-offset-3 data-hovered:text-accent-hover data-focus-visible:focus-ring",
     "data-disabled:cursor-not-allowed data-disabled:opacity-50 motion-safe:transition-colors",
   ],
   variants: {
@@ -19,7 +19,8 @@ const link = tv({
        * An item of the app's navigation: a 44 px target on coarse pointers and an icon at `size-6`, also
        * when the icon sits in an element of its own (the pill of the current item, with a badge).
        */
-      navigation: "inline-flex min-h-6 items-center font-medium no-underline pointer-coarse:min-h-11 [&_svg]:size-6 [&_svg]:shrink-0",
+      navigation:
+        "inline-flex min-h-6 items-center font-medium text-fg no-underline data-current:rounded-full data-current:bg-soft data-current:text-accent pointer-coarse:min-h-11 [&_svg]:size-6 [&_svg]:shrink-0",
     },
     /** The space between an icon and the text of the link (a step of `Space`). */
     gap: { 1: "gap-1", 2: "gap-2" },

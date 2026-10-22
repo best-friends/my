@@ -5,10 +5,10 @@ import { tv, type VariantProps } from "tailwind-variants";
 import { VisuallyHidden } from "./VisuallyHidden";
 
 const badge = tv({
-  base: "inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 align-middle text-xs leading-none font-semibold tabular-nums",
+  base: "inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 align-middle text-xs leading-none font-extrabold tabular-nums",
   variants: {
     tone: {
-      accent: "bg-accent text-accent-fg",
+      accent: "bg-accent-fill text-accent-fill-fg",
       danger: "bg-danger text-danger-fg",
       neutral: "bg-surface-sunken text-fg",
     },

@@ -65,3 +65,17 @@ export const CountChanges: Story = {
     await expect(simulate).toHaveFocus();
   },
 };
+
+/** Floating: the region has no height, so the post below keeps its place and the button stands above its edge. */
+export const Floating: Story = {
+  args: { sticky: true },
+  render: (args) => (
+    <div className="flex flex-col pt-10">
+      <NewItemsButton {...args} />
+      <p className="rounded-lg bg-surface-raised p-4 shadow-sm">The newest post stays where it is.</p>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("button", { name: "3 new posts" })).toBeVisible();
+  },
+};

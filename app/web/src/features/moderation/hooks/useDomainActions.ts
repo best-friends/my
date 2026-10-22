@@ -21,7 +21,7 @@ import {
   type NewDomainAction,
   refreshLiftedDomainAction,
 } from "../api/staff";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type PagedPages, toPagedList } from "./pagedList";
 
 export const domainActionKindLabels: Readonly<Record<DomainActionKind, ClientMessageKey>> = {
   limit: "client:admin.domain_actions.kind.limit",
@@ -40,7 +40,7 @@ export function domainInText(t: Translate, domain: string): string {
 }
 
 /** The domain actions of `scope`, newest first. */
-export function useDomainActions(scope: DomainActionScope): PagedList<DomainAction> {
+export function useDomainActions(scope: DomainActionScope): PagedPages<DomainAction> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(domainActionsQueryOptions(api, scope)));
 }

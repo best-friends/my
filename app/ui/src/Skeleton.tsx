@@ -10,9 +10,9 @@ const skeleton = tv({
       /** One line of text: as tall as the surrounding line box's text, full width unless the caller narrows it. */
       text: "h-[1em] w-full rounded-sm",
       /** An avatar or an icon; the caller sets the size. */
-      circle: "size-10 rounded-full",
+      circle: "size-10 rounded-avatar",
       /** A media preview or a card; the caller sets the size. */
-      rect: "h-24 w-full rounded-md",
+      rect: "h-24 w-full rounded-lg",
     },
   },
   defaultVariants: { shape: "text" },

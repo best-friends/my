@@ -11,7 +11,7 @@ export { Center, type CenterProps } from "./Center";
 export { I18nProvider, type I18nProviderProps, RouterProvider } from "react-aria-components";
 
 // Form controls.
-export { Button, type ButtonProps } from "./Button";
+export { Button, ButtonLink, type ButtonLinkProps, type ButtonProps } from "./Button";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
 export { DurationSelect, type DurationSelectProps } from "./DurationSelect";
 export type { FieldErrorMessage, FieldTextProps } from "./Field";
@@ -26,6 +26,7 @@ export { Switch, type SwitchProps } from "./Switch";
 export { TextArea, type TextAreaProps } from "./TextArea";
 export { TextField, type TextFieldProps } from "./TextField";
 export { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
+export { Segmented, SegmentedItem, type SegmentedItemProps, type SegmentedProps } from "./Segmented";
 
 // Overlays, tabs and announcements.
 export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog";
@@ -42,6 +43,7 @@ export {
   type MenuTriggerProps,
   type SubmenuTriggerProps,
 } from "./Menu";
+export { Pagination, type PaginationProps, type PaginationTarget } from "./Pagination";
 export { Popover, PopoverTrigger, type PopoverProps } from "./Popover";
 export { Tab, TabList, TabPanel, Tabs, type TabListProps, type TabPanelProps, type TabProps, type TabsProps } from "./Tabs";
 export { ToastProvider, useToast, type ToastApi, type ToastOptions, type ToastProviderProps, type ToastTone } from "./Toast";
@@ -50,6 +52,7 @@ export { Tooltip, TooltipTrigger, type TooltipProps, type TooltipTriggerProps } 
 // Display.
 export { Avatar, type AvatarProps } from "./Avatar";
 export { Badge, type BadgeProps } from "./Badge";
+export { RailItem, type RailItemBadge, type RailItemProps } from "./RailItem";
 export { RoleBadge, RoleBadgeList, type RoleBadgeListProps, type RoleBadgeProps } from "./RoleBadge";
 export { DescriptionItem, DescriptionList, type DescriptionItemProps, type DescriptionListProps } from "./DescriptionList";
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
@@ -61,13 +64,17 @@ export { RegionError, type RegionErrorProps } from "./RegionError";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { AccountRowSkeleton, NotificationRowSkeleton, PostSkeleton, type SkeletonRowProps } from "./SkeletonRows";
 export { Spinner, type SpinnerProps } from "./Spinner";
+export { BrandMark, type BrandMarkProps } from "./BrandMark";
+export { Wordmark, type WordmarkProps } from "./Wordmark";
 export { StatusMessage, type StatusMessageProps } from "./StatusMessage";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 
 // Icons (web-client.md §16.3): Phosphor through react-icons/pi (ADR-0043), decorative, sized by the control around them.
 export {
   AboutIcon,
+  CheckIcon,
   AdminIcon,
+  AltTextIcon,
   BackIcon,
   BookmarkIcon,
   BoostIcon,
@@ -108,6 +115,7 @@ export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, t
 export { EmojiPicker, type EmojiPickerLabels, type EmojiPickerProps, type PickerEmoji } from "./EmojiPicker";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { LinkCard, type LinkCardImage, type LinkCardProps } from "./LinkCard";
+export { AudioPlayer, type AudioPlayerLabels, type AudioPlayerProps } from "./AudioPlayer";
 export { MediaGrid, type MediaGridProps, type MediaItem, type MediaPlayback } from "./MediaGrid";
 export type { MediaViewerLabels } from "./MediaViewer";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
@@ -124,7 +132,15 @@ export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./theme
 
 // Layout and text (web-client.md §16.1, §16.2): screens lay themselves out with these instead of classes of their own.
 export { Box, type BoxProps } from "./Box";
+export { Card, type CardElement, type CardProps } from "./Card";
+export { SettingsLayout, type SettingsLayoutProps } from "./SettingsLayout";
+// The frame of the admin and moderation mode and the parts its list screens share.
+export { AdminNavBack, AdminNavSection, AdminShell, type AdminNavBackProps, type AdminNavSectionProps, type AdminShellProps } from "./AdminShell";
+export { ListToolbar, type ListToolbarProps } from "./ListToolbar";
+export { FeatureCard, type FeatureCardProps } from "./FeatureCard";
+export { Hero, type HeroProps } from "./Hero";
 export { Cluster, type ClusterProps } from "./Cluster";
+export { InfoPage, type InfoPageProps } from "./InfoPage";
 export { Grid, type GridProps } from "./Grid";
 export type { LayoutElement, Space } from "./layout";
 export { Stack, type StackProps } from "./Stack";
@@ -182,6 +198,10 @@ export { AppShell, AsidePanel, type AppShellProps, type AsidePanelProps } from "
 export {
   AppNav,
   AppNavAccount,
+  AppNavAction,
+  type AppNavActionProps,
+  AppNavBrand,
+  type AppNavBrandProps,
   AppNavItem,
   AppNavMenu,
   AppNavMenuLink,

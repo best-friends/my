@@ -64,7 +64,7 @@ func newTextsEnv(t *testing.T) (*authEnv, *fakeTexts) {
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
 		o.Instance, o.InstanceTexts = f.inst, f
-		o.TermsPath, o.PrivacyPolicyPath = "/auth/terms", "/auth/privacy"
+		o.TermsPath, o.PrivacyPolicyPath = "/about/terms", "/about/privacy"
 	})
 	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)
 	e.auth.tokens["admin-read"] = bearer("admin:read", aliceAccountID)
@@ -137,7 +137,7 @@ func TestManageInstanceTexts(t *testing.T) {
 	// GET /instance links to the terms for readers of every locale.
 	for _, lang := range []string{"ja", "en"} {
 		if terms, privacy := instanceLinks(map[string]string{"Accept-Language": lang}); terms == nil ||
-			*terms != "https://social.example/auth/terms" || privacy != nil {
+			*terms != "https://social.example/about/terms" || privacy != nil {
 			t.Errorf("links for %s = %v %v, want the terms only", lang, terms, privacy)
 		}
 	}

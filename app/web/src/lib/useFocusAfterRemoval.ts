@@ -26,7 +26,10 @@ export function useFocusAfterRemoval(list: RefObject<HTMLElement | null>, ids: r
   });
 
   return (id) => {
-    pendingRef.current = { id, index: ids.indexOf(id) };
+    // The place among the rows shown: a paged table shows a slice of `ids`, so the index in `ids` is not the row's place on the page.
+    const shown = Array.from(list.current?.querySelectorAll<HTMLElement>("[data-row-id]") ?? []);
+    const shownIndex = shown.findIndex((row) => row.dataset["rowId"] === id);
+    pendingRef.current = { id, index: shownIndex >= 0 ? shownIndex : ids.indexOf(id) };
   };
 }
 
@@ -51,7 +54,7 @@ export function useFocusHeadingAfterMove(list: RefObject<HTMLElement | null>): (
 
 /**
  * Keeps focus when a lifted action stays in the list without its lift button: once the row has rendered
- * without the button, focus moves to the row's heading (`h3`). Returns `lifted(id)`, to call when the action is lifted.
+ * without the button, focus moves to the row's heading (`h3`), or to its row header (`th`, with `tabIndex={-1}`) in a table. Returns `lifted(id)`, to call when the action is lifted.
  */
 export function useFocusHeadingAfterLift(list: RefObject<HTMLElement | null>): (id: string) => void {
   const pendingRef = useRef<string | null>(null);
@@ -62,7 +65,7 @@ export function useFocusHeadingAfterLift(list: RefObject<HTMLElement | null>): (
     const row = list.current?.querySelector<HTMLElement>(`[data-row-id="${id}"]`);
     if (row?.querySelector("button") != null) return;
     pendingRef.current = null;
-    row?.querySelector<HTMLElement>("h3")?.focus();
+    row?.querySelector<HTMLElement>("h3, th")?.focus();
   });
   return (id) => {
     pendingRef.current = id;

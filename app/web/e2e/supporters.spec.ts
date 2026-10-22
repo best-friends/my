@@ -117,7 +117,7 @@ async function serveApi(page: Page) {
         name: "my example",
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
-        registrations: { mode: "approval" },
+        registrations: { mode: "approval" }, federation: { mode: "both" },
         limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
         rules: [],
@@ -230,7 +230,7 @@ test.describe("supporters", () => {
     await expect(cancelDialog).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await cancelDialog.getByRole("button", { name: message("admin.supporters.subscription.cancel"), exact: true }).click();
-    await expect(subscriptionsRegion.getByRole("definition").getByText(message("admin.supporters.state.expired"), { exact: true })).toBeVisible();
+    await expect(subscriptionsRegion.getByRole("cell", { name: message("admin.supporters.state.expired"), exact: true })).toBeVisible();
     expect(sent).toContain("cancel");
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);

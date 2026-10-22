@@ -10,7 +10,7 @@ import { VisuallyHidden } from "./VisuallyHidden";
 const row = tv({
   slots: {
     others: "mb-1 flex flex-wrap gap-1",
-    mark: "inline-block size-2 shrink-0 self-center rounded-full bg-accent",
+    mark: "inline-block size-2 shrink-0 self-center rounded-full bg-accent-fill",
   },
 });
 

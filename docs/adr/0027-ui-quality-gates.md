@@ -1,6 +1,6 @@
 # ADR-0027: UI のアクセシビリティ・レスポンシブ・見た目の品質ゲート
 
-- Status: Accepted（E2E の頻度を ADR-0040（Web の E2E を main への push でだけ回す） が、検査の層の表の lint の行を ADR-0049（クライアントの lint を ESLint から Oxlint に移す） が置き換える）
+- Status: Accepted（E2E の頻度を ADR-0040（Web の E2E を main への push でだけ回す） が、検査の層の表の lint の行を ADR-0049（クライアントの lint を ESLint から Oxlint に移す） が、部品と画面のルールの「新しい投稿をタイムラインに自動で差し込まない」を ADR-0077（タイムラインの新着をユーザーの設定で自動で差し込む） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #87

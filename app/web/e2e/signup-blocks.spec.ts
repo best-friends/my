@@ -66,7 +66,7 @@ async function moderatorServer(page: Page) {
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     const key = `${request.method()} ${path}`;
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials") return json(route, moderator);
     if (key === "GET /preferences") {
@@ -120,7 +120,7 @@ test.describe("page /moderation/signup-blocks", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
     await page.goto("/moderation/signup-blocks");
-    await expect(page.getByRole("main").getByRole("heading", { level: 3 }).first()).toBeVisible();
+    await expect(page.getByRole("main").getByRole("table", { name: /./ })).toBeVisible();
   });
 
   test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -137,35 +137,16 @@ test.describe("sign-up blocks", () => {
     const requests = await moderatorServer(page);
     await page.goto("/moderation/signup-blocks");
     const main = page.getByRole("main");
-    const list = main.getByRole("tabpanel");
-    await expect(list.getByRole("heading", { level: 3 })).toHaveCount(2);
+    const list = main.getByRole("table").last();
+    await expect(list.getByRole("rowheader")).toHaveCount(2);
 
-    await expect(list).toMatchAriaSnapshot(`
-      - tabpanel:
-        - list:
-          - listitem:
-            - heading /${unicodeDomain.replaceAll(".", "\\.")}.*${asciiDomain.replaceAll(".", "\\.")}/ [level=3]
-            - button
-            - term
-            - definition
-            - term
-            - definition
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-            - term
-            - definition:
-              - time
-            - term
-            - definition
-            - term
-            - definition: ${longComment}
-          - listitem:
-            - heading "${hash}" [level=3]
-            - button
-    `);
+    // The first row names the domain in both forms and keeps its details: the source and the comment.
+    const first = list.getByRole("row").nth(1);
+    await expect(first.getByRole("rowheader")).toHaveText(new RegExp(`${unicodeDomain.replaceAll(".", "\\.")}.*${asciiDomain.replaceAll(".", "\\.")}`));
+    await expect(first).toContainText(longComment);
+    await expect(first.getByRole("button")).toHaveCount(1);
+    await expect(list.getByRole("row").nth(2).getByRole("rowheader")).toHaveText(hash);
+    await expect(list.getByRole("row").nth(2).getByRole("button")).toHaveCount(1);
 
     // The form with the keyboard: the kind is the email domain already; type the domain, then Tab to the first
     // effect of its radio group, which none is chosen in yet, and choose it with Space.
@@ -179,16 +160,16 @@ test.describe("sign-up blocks", () => {
     await main.locator('form button[type="submit"]').first().focus();
     await page.keyboard.press("Enter");
     await expect(main.getByRole("status").filter({ hasText: "spam.example" })).toBeVisible();
-    await expect(list.getByRole("heading", { level: 3, name: "spam.example" })).toBeVisible();
+    await expect(list.getByRole("rowheader", { name: "spam.example" })).toBeVisible();
     await expect(domain).toHaveValue("");
     expect(requests).toEqual(["POST /admin/signup_blocks email_domain spam.example require_approval"]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
-    await list.getByRole("listitem").filter({ hasText: unicodeDomain }).getByRole("button").click();
-    await expect(list.getByRole("heading", { level: 3 })).toHaveCount(2);
+    await list.getByRole("row").filter({ hasText: unicodeDomain }).getByRole("button").click();
+    await expect(list.getByRole("rowheader")).toHaveCount(2);
     // Focus moves to the button of the row that took the lifted one's place.
-    await expect(list.getByRole("listitem").filter({ hasText: hash }).getByRole("button")).toBeFocused();
+    await expect(list.getByRole("row").filter({ hasText: hash }).getByRole("button")).toBeFocused();
     expect(requests).toEqual(["POST /admin/signup_blocks email_domain spam.example require_approval", "POST /admin/signup_blocks/0192f0c4-7a8e-7000-8000-0000000001a2/lift"]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
@@ -200,7 +181,7 @@ test.describe("an import of a list of sign-up blocks", () => {
     const requests = await moderatorServer(page);
     await page.goto("/moderation/signup-blocks");
     const main = page.getByRole("main");
-    await expect(main.getByRole("tabpanel").getByRole("heading", { level: 3 })).toHaveCount(2);
+    await expect(main.getByRole("table").getByRole("rowheader")).toHaveCount(2);
     // The import is the second section; its kind is the email domain already.
     const section = main.getByRole("region").nth(1);
     const listField = section.getByRole("textbox").first();
@@ -237,7 +218,7 @@ test.describe("an import of a list of sign-up blocks", () => {
             - cell "not-a-domain"
             - cell
     `);
-    await expect(main.getByRole("tabpanel").getByRole("heading", { level: 3, name: "mailinator.example" })).toBeVisible();
+    await expect(main.getByRole("table").last().getByRole("rowheader", { name: "mailinator.example" })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

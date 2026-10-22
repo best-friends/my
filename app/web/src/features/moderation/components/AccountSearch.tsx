@@ -4,7 +4,7 @@
 // TextFields, checked by the browser's constraint validation before the search runs. The route keeps the search
 // in the address (web-client.md S3). A local account can be searched by its email address, its email domain or
 // an IP address it used, one of them at a time; the results never show them (the account's page does, when asked).
-import { AccountItem, Box, Button, DescriptionItem, DescriptionList, DetailSection, EmptyState, Grid, Heading, RegionError, Select, SelectItem, Spinner, Stack, Text, TextField } from "@my/ui";
+import { AccountItem, Box, Button, Card, DetailSection, EmptyState, Grid, RegionError, Select, SelectItem, Spinner, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, TextField } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import {
@@ -29,7 +29,7 @@ import {
   useAccountSearchResults,
 } from "../hooks/useAdminAccounts";
 import { accountName, handleOf } from "../hooks/useReports";
-import { DateTime, DomainName, RecordList, RequirePermission } from "./parts";
+import { DateTime, DomainName, RecordTable, RequirePermission } from "./parts";
 import { imageSources } from "../../../lib/images";
 
 export type AccountSearchProps = {
@@ -55,11 +55,13 @@ function isFiltered(search: AdminAccountSearch): boolean {
 function AccountSearchView({ search, onSearch }: AccountSearchProps) {
   const t = useT();
   return (
-    <Stack gap="8">
-      <DetailSection title={t("client:admin.accounts.search.title")}>
-        {/* Another search in the address (back, forward, a link) starts the form from it (web-client.md R10). */}
-        <SearchForm key={JSON.stringify(search)} search={search} onSearch={onSearch} />
-      </DetailSection>
+    <Stack gap="6">
+      <Card>
+        <DetailSection title={t("client:admin.accounts.search.title")}>
+          {/* Another search in the address (back, forward, a link) starts the form from it (web-client.md R10). */}
+          <SearchForm key={JSON.stringify(search)} search={search} onSearch={onSearch} />
+        </DetailSection>
+      </Card>
       <DetailSection title={t("client:admin.accounts.results.title")}>
         <Results search={search} />
       </DetailSection>
@@ -203,8 +205,11 @@ function Results({ search }: { search: AdminAccountSearch }) {
         <EmptyState headingLevel={3} heading={t("client:admin.accounts.empty")} />
       );
       return (
-        <RecordList
+        // Another search is another list: it starts at its first page.
+        <RecordTable
+          key={JSON.stringify(search)}
           list={list}
+          caption={t("client:admin.accounts.results.title")}
           getId={(account) => account.id}
           empty={
             <Stack gap="4">
@@ -213,9 +218,17 @@ function Results({ search }: { search: AdminAccountSearch }) {
             </Stack>
           }
           moreError={results.moreError !== undefined && <RegionError heading={t("client:admin.accounts.results.more_failed")} reason={results.moreError} />}
+          head={
+            <>
+              <TableColumnHeader>{t("client:admin.accounts.column.account")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.accounts.state")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.accounts.origin")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.accounts.created_at")}</TableColumnHeader>
+            </>
+          }
         >
           {(account) => <AccountRow account={account} />}
-        </RecordList>
+        </RecordTable>
       );
     }
   }
@@ -231,37 +244,40 @@ function AccountRow({ account }: { account: AdminAccount }) {
   const t = useT();
   const intl = useIntl();
   return (
-    <Stack gap="2">
-      <Heading level={3} shrink>
-        <AccountItem
-          name={accountName(account.account)}
-          handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
-          avatar={imageSources(account.account.avatar)}
-          href={`/moderation/accounts/${encodeURIComponent(account.id)}`}
-        />
-      </Heading>
-      <DescriptionList columns={3}>
-        <DescriptionItem term={t("client:admin.accounts.state")}>
-          <Text weight="semibold">{t(adminAccountStateLabels[account.state])}</Text>
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.accounts.origin")}>
-          <AccountOrigin account={account} />
-        </DescriptionItem>
+    <TableRow data-row-id={account.id}>
+      <TableRowHeader wrap="anywhere">
+        <Stack gap="1">
+          <AccountItem
+            name={accountName(account.account)}
+            handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
+            avatar={imageSources(account.account.avatar)}
+            avatarSeed={account.account.id}
+            href={`/moderation/accounts/${encodeURIComponent(account.id)}`}
+          />
+          {account.restrictions.length > 0 && (
+            <Text size="sm" tone="muted">
+              {intl.formatList(
+                account.restrictions.map((restriction) => t(adminAccountRestrictionLabels[restriction])),
+                { type: "conjunction" },
+              )}
+            </Text>
+          )}
+        </Stack>
+      </TableRowHeader>
+      <TableCell>
+        <Text weight="semibold">{t(adminAccountStateLabels[account.state])}</Text>
         {account.registration_state !== undefined && (
-          <DescriptionItem term={t("client:admin.accounts.registration")}>{t(adminAccountRegistrationStateLabels[account.registration_state])}</DescriptionItem>
+          <Text as="p" size="sm" tone="muted">
+            {t(adminAccountRegistrationStateLabels[account.registration_state])}
+          </Text>
         )}
-        <DescriptionItem term={t("client:admin.accounts.created_at")}>
-          <DateTime value={account.account.created_at} />
-        </DescriptionItem>
-        {account.restrictions.length > 0 && (
-          <DescriptionItem term={t("client:admin.accounts.restrictions")}>
-            {intl.formatList(
-              account.restrictions.map((restriction) => t(adminAccountRestrictionLabels[restriction])),
-              { type: "conjunction" },
-            )}
-          </DescriptionItem>
-        )}
-      </DescriptionList>
-    </Stack>
+      </TableCell>
+      <TableCell wrap="anywhere">
+        <AccountOrigin account={account} />
+      </TableCell>
+      <TableCell>
+        <DateTime value={account.account.created_at} />
+      </TableCell>
+    </TableRow>
   );
 }

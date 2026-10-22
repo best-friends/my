@@ -155,33 +155,13 @@
     "defaultMessage": "規約とポリシー",
     "description": "Accessible name of the navigation in the footer of the server-rendered pages that links to the terms of service and the privacy policy."
   },
-  "auth.document.privacy_missing": {
-    "defaultMessage": "このサーバーはプライバシーポリシーを公開していません。",
-    "description": "Error page (HTTP 404) at the privacy policy page when the administrators have not written a privacy policy."
-  },
   "auth.document.privacy_title": {
     "defaultMessage": "プライバシーポリシー",
     "description": "Title and heading of the public page of the instance's privacy policy, and the text of links to it."
   },
-  "auth.document.commerce_missing": {
-    "defaultMessage": "このサーバーは特定商取引法に基づく表記などを公開していません。",
-    "description": "Error page (HTTP 404) at the page of the commerce disclosures of the supporter plans (ADR-0072 §13) when the administrators have not written them."
-  },
-  "auth.document.commerce_title": {
-    "defaultMessage": "特定商取引法に基づく表記",
-    "description": "Title and heading of the public page of the disclosures that the law asks of the seller of the supporter plans (in Japan, 特定商取引法に基づく表記), and the text of links to it."
-  },
-  "auth.document.terms_missing": {
-    "defaultMessage": "このサーバーは利用規約を公開していません。",
-    "description": "Error page (HTTP 404) at the terms of service page when the administrators have not written terms of service."
-  },
   "auth.document.terms_title": {
     "defaultMessage": "利用規約",
     "description": "Title and heading of the public page of the instance's terms of service, and the text of links to it."
-  },
-  "auth.document.updated": {
-    "defaultMessage": "最終更新日：{date}",
-    "description": "Line under the heading of a terms of service or privacy policy page. {date} is the date of the last revision as YYYY-MM-DD."
   },
   "auth.document_title": {
     "defaultMessage": "{page} – {instance}",

@@ -108,7 +108,7 @@ describe("an import of a list of sign-up blocks", () => {
     expect(section.getAllByRole("definition").map((definition) => definition.textContent)).toEqual(["1 line", "1 line", "1 line"]);
 
     // The blocks are in the list below.
-    expect(await within(screen.getByRole("tabpanel")).findByRole("heading", { level: 3, name: "mail.example" })).toBeInTheDocument();
+    expect(await within(screen.getByRole("table", { name: "In effect" })).findByRole("rowheader", { name: "mail.example" })).toBeInTheDocument();
     // The form is ready for the next list with the same settings.
     expect(section.getByRole("textbox", { name: "List" })).toHaveValue("");
     expect(section.getByRole("textbox", { name: "Comment" })).toHaveValue("");

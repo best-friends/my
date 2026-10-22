@@ -8,6 +8,8 @@ export function useMediaViewerLabels(): MediaViewerLabels {
   return {
     title: (position, count) => t("client:timeline.media.viewer.title", { position, count }),
     close: t("client:timeline.media.viewer.close"),
+    position: (position, count) => t("client:timeline.media.viewer.position", { position, count }),
+    altText: t("client:timeline.media.viewer.alt_text"),
     previous: t("client:timeline.media.viewer.previous"),
     next: t("client:timeline.media.viewer.next"),
   };

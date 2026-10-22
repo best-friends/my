@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The audit log screen below its heading (FR-704): the filters, then the operations of the moderators and
-// administrators, newest first. The kind of operation and the kind of target are selects (React Aria Select, the
+// The audit log screen below its heading (FR-704): the filters in a toolbar, then the operations of the moderators and
+// administrators, newest first, in the admin mode's table form (one page at a time, previous / next). The kind of operation and the kind of target are selects (React Aria Select, the
 // WAI-ARIA APG select-only combobox); one actor and one target are chosen from a row's links. The route keeps the
 // filters and the number of loaded pages in the address (web-client.md S3). Each row links to its target's admin
 // screen where that kind of target has one and the target is still there, and shows the label recorded with the
 // operation otherwise.
-import { Box, Cluster, DescriptionItem, DescriptionList, EmptyState, Grid, Heading, Link, RegionError, Select, SelectItem, Stack, Text } from "@my/ui";
+import { Cluster, DescriptionItem, DescriptionList, EmptyState, Link, ListToolbar, RegionError, Select, SelectItem, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, VisuallyHidden } from "@my/ui";
 import { type RefObject, useEffect, useRef } from "react";
 import { useT } from "../../../lib/i18n";
 import { type AuditAction, auditActions, type AuditEntry, type AuditLogFilter, type AuditTargetKind, auditTargetKinds } from "../api/staff";
 import { auditActionLabels, auditActorKindLabels, auditTargetHref, auditTargetKindLabels, useAuditLog } from "../hooks/useAuditLog";
-import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
+import { DateTime, DomainName, RecordTable, RequirePermission } from "./parts";
 
 /** The option of a select that keeps every kind. */
 const every = "all";
@@ -91,45 +91,48 @@ function AuditLogView({ filter, onFilterChange, filterHref, onPagesLoaded }: Aud
     </Link>
   );
   const empty = filtered ? (
-    <EmptyState headingLevel={3} heading={t("client:admin.audit_log.empty.filtered")} description={t("client:admin.audit_log.empty.filtered.description")} action={clearAll} />
+    <EmptyState headingLevel={2} heading={t("client:admin.audit_log.empty.filtered")} description={t("client:admin.audit_log.empty.filtered.description")} action={clearAll} />
   ) : (
-    <EmptyState headingLevel={3} heading={t("client:admin.audit_log.empty")} description={t("client:admin.audit_log.empty.description")} />
+    <EmptyState headingLevel={2} heading={t("client:admin.audit_log.empty")} description={t("client:admin.audit_log.empty.description")} />
   );
   return (
-    <Stack gap="8">
-      <DetailSection title={t("client:admin.audit_log.filter.title")}>
-        <Stack ref={filtersRef} container gap="4">
-          <Grid at="md" gap="4">
-            <Select
-              label={t("client:admin.audit_log.filter.action")}
-              value={filter.action ?? every}
-              onChange={(key) => {
-                onFilterChange({ ...filter, action: isAction(key) ? key : undefined });
-              }}
-            >
-              <SelectItem id={every}>{t("client:admin.audit_log.filter.action.all")}</SelectItem>
-              {auditActions.map((action) => (
-                <SelectItem key={action} id={action}>
-                  {t(auditActionLabels[action])}
-                </SelectItem>
-              ))}
-            </Select>
-            <Select
-              label={t("client:admin.audit_log.filter.target_kind")}
-              value={filter.targetKind ?? every}
-              onChange={(key) => {
-                // One target is of one kind: another kind lets go of it.
-                onFilterChange({ ...filter, targetKind: isTargetKind(key) ? key : undefined, target: undefined });
-              }}
-            >
-              <SelectItem id={every}>{t("client:admin.audit_log.filter.target_kind.all")}</SelectItem>
-              {auditTargetKinds.map((kind) => (
-                <SelectItem key={kind} id={kind}>
-                  {t(auditTargetKindLabels[kind])}
-                </SelectItem>
-              ))}
-            </Select>
-          </Grid>
+    <Stack ref={filtersRef} gap="4">
+      <ListToolbar label={t("client:admin.audit_log.filter.title")}>
+        <Select
+          variant="toolbar"
+          aria-label={t("client:admin.audit_log.filter.action")}
+          value={filter.action ?? every}
+          onChange={(key) => {
+            onFilterChange({ ...filter, action: isAction(key) ? key : undefined });
+          }}
+        >
+          <SelectItem id={every}>{t("client:admin.audit_log.filter.action.all")}</SelectItem>
+          {auditActions.map((action) => (
+            <SelectItem key={action} id={action}>
+              {t(auditActionLabels[action])}
+            </SelectItem>
+          ))}
+        </Select>
+        <Select
+          variant="toolbar"
+          aria-label={t("client:admin.audit_log.filter.target_kind")}
+          value={filter.targetKind ?? every}
+          onChange={(key) => {
+            // One target is of one kind: another kind lets go of it.
+            onFilterChange({ ...filter, targetKind: isTargetKind(key) ? key : undefined, target: undefined });
+          }}
+        >
+          <SelectItem id={every}>{t("client:admin.audit_log.filter.target_kind.all")}</SelectItem>
+          {auditTargetKinds.map((kind) => (
+            <SelectItem key={kind} id={kind}>
+              {t(auditTargetKindLabels[kind])}
+            </SelectItem>
+          ))}
+        </Select>
+      </ListToolbar>
+      {/* Beside the selects the list would be as wide as nothing (it is a size container); under them it has the row. */}
+      {filtered && (
+        <Stack gap="3">
           {(filter.actor !== undefined || (filter.targetKind !== undefined && filter.target !== undefined)) && (
             <DescriptionList columns={2}>
               {filter.actor !== undefined && (
@@ -154,21 +157,30 @@ function AuditLogView({ filter, onFilterChange, filterHref, onPagesLoaded }: Aud
               )}
             </DescriptionList>
           )}
-          {filtered && <Box>{clearAll}</Box>}
+          {clearAll}
         </Stack>
-      </DetailSection>
-      <DetailSection title={t("client:admin.audit_log.list.title")}>
-        <RecordList
-          list={log}
-          getId={(entry) => entry.id}
-          empty={empty}
-          moreError={
-            log.loadMoreError !== undefined && <RegionError heading={t("client:admin.audit_log.more_failed")} reason={log.loadMoreError} />
-          }
-        >
-          {(entry) => <AuditEntryRow entry={entry} filter={filter} filterHref={filterHref} />}
-        </RecordList>
-      </DetailSection>
+      )}
+      {/* No key by the filter: the rows' links choose a filter and keep focus on the link pressed; another filter loads only its first page, so the table is back on it. */}
+      <RecordTable
+        list={log}
+        caption={t("client:admin.audit_log.list.title")}
+        getId={(entry) => entry.id}
+        empty={empty}
+        moreError={log.loadMoreError !== undefined && <RegionError heading={t("client:admin.audit_log.more_failed")} reason={log.loadMoreError} />}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.audit_log.filter.action")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.audit_log.actor")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.audit_log.filter.target_kind")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.audit_log.occurred_at")}</TableColumnHeader>
+            <TableColumnHeader>
+              <VisuallyHidden>{t("client:admin.list.filters")}</VisuallyHidden>
+            </TableColumnHeader>
+          </>
+        }
+      >
+        {(entry) => <AuditEntryRow entry={entry} filter={filter} filterHref={filterHref} />}
+      </RecordTable>
     </Stack>
   );
 }
@@ -183,54 +195,59 @@ function AuditEntryRow({ entry, filter, filterHref }: AuditEntryRowProps) {
   const isActorFilter = actorId !== undefined && actorId === filter.actor;
   const isTargetFilter = filter.targetKind === entry.target_kind && filter.target === entry.target_id;
   return (
-    <Stack gap="2">
-      <Heading level={3}>{t(auditActionLabels[entry.action])}</Heading>
-      <DescriptionList columns={3}>
-        <DescriptionItem term={t("client:admin.audit_log.actor")}>
-          {actor === undefined ? (
-            actorName
-          ) : (
-            <Stack as="span">
-              {/* A name the user chose, in any language. */}
-              <Text dir="auto" align="start">
-                {actorName}
-              </Text>
-              <Text dir="ltr" align="start" size="sm" tone="muted">
-                {handleOf(actor)}
-              </Text>
-            </Stack>
-          )}
-        </DescriptionItem>
-        <DescriptionItem term={t(auditTargetKindLabels[entry.target_kind])}>
+    <TableRow data-row-id={entry.id}>
+      <TableRowHeader wrap="anywhere">{t(auditActionLabels[entry.action])}</TableRowHeader>
+      <TableCell wrap="anywhere">
+        {actor === undefined ? (
+          actorName
+        ) : (
+          <Stack>
+            {/* A name the user chose, in any language. */}
+            <Text dir="auto" align="start">
+              {actorName}
+            </Text>
+            <Text dir="ltr" align="start" size="sm" tone="muted">
+              {handleOf(actor)}
+            </Text>
+          </Stack>
+        )}
+      </TableCell>
+      <TableCell wrap="anywhere">
+        <Stack>
+          <Text size="sm" tone="muted">
+            {t(auditTargetKindLabels[entry.target_kind])}
+          </Text>
           <AuditTarget entry={entry} />
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.audit_log.occurred_at")}>
-          <DateTime value={entry.occurred_at} />
-        </DescriptionItem>
-      </DescriptionList>
-      {/*
-        The row stays in the list under the filter its links choose, and so do the links, which then let go of it:
-        focus stays on the link that was pressed.
-      */}
-      <Cluster as="ul" gap="4" rowGap="0">
-        {actorId !== undefined && (
+        </Stack>
+      </TableCell>
+      <TableCell>
+        <DateTime value={entry.occurred_at} />
+      </TableCell>
+      <TableCell>
+        {/*
+          The row stays in the list under the filter its links choose, and so do the links, which then let go of it:
+          focus stays on the link that was pressed.
+        */}
+        <Stack as="ul" gap="1">
+          {actorId !== undefined && (
+            <li>
+              <Link href={filterHref({ ...filter, actor: isActorFilter ? undefined : actorId })} variant="standalone" wrap="anywhere">
+                {isActorFilter ? t("client:admin.audit_log.every_actor") : t("client:admin.audit_log.only_actor", { name: isolate(actorName) })}
+              </Link>
+            </li>
+          )}
           <li>
-            <Link href={filterHref({ ...filter, actor: isActorFilter ? undefined : actorId })} variant="standalone" wrap="anywhere">
-              {isActorFilter ? t("client:admin.audit_log.every_actor") : t("client:admin.audit_log.only_actor", { name: isolate(actorName) })}
+            <Link
+              href={filterHref(isTargetFilter ? { ...filter, target: undefined } : { ...filter, targetKind: entry.target_kind, target: entry.target_id })}
+              variant="standalone"
+              wrap="anywhere"
+            >
+              {isTargetFilter ? t("client:admin.audit_log.every_target") : t("client:admin.audit_log.only_target", { target: isolate(entry.target_label) })}
             </Link>
           </li>
-        )}
-        <li>
-          <Link
-            href={filterHref(isTargetFilter ? { ...filter, target: undefined } : { ...filter, targetKind: entry.target_kind, target: entry.target_id })}
-            variant="standalone"
-            wrap="anywhere"
-          >
-            {isTargetFilter ? t("client:admin.audit_log.every_target") : t("client:admin.audit_log.only_target", { target: isolate(entry.target_label) })}
-          </Link>
-        </li>
-      </Cluster>
-    </Stack>
+        </Stack>
+      </TableCell>
+    </TableRow>
   );
 }
 

@@ -5,7 +5,7 @@ import { type JobFilter, jobFilters, JobDashboard, jobQueueQueryOptions, jobsQue
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** `state`: the state filter of the job list; omitted, or anything unknown, shows the pending jobs (web-client.md S3). */
 const searchSchema = z.object({
@@ -38,7 +38,7 @@ function JobsPage() {
   };
   return (
     <>
-      <SettingsHeading>{t("client:admin.jobs.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.jobs.title")}</PageHeading>
       <JobDashboard filter={filter} onFilterChange={changeFilter} />
     </>
   );

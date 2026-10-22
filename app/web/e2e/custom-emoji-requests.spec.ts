@@ -86,7 +86,7 @@ async function serveApi(page: Page, permissions: Schemas["Permission"][]) {
         name: "my example",
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
-        registrations: { mode: "approval" },
+        registrations: { mode: "approval" }, federation: { mode: "both" },
         limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
         rules: [],
@@ -163,7 +163,7 @@ test.describe("custom emoji requests", () => {
     await page.goto("/admin/custom-emojis?tab=requests");
     const main = page.getByRole("main");
     const region = main.getByRole("region", { name: message("admin.custom_emoji_requests.title"), exact: true });
-    await expect(region.getByRole("heading", { level: 3, name: `:${longShortcode}:` })).toBeVisible();
+    await expect(region.getByRole("rowheader", { name: `:${longShortcode}:` })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
@@ -174,7 +174,7 @@ test.describe("custom emoji requests", () => {
     await expectNoAxeViolations(makeAxeBuilder);
     await dialog.getByRole("button", { name: message("admin.custom_emoji_requests.reject"), exact: true }).click();
     await expect(dialog).toBeHidden();
-    await expect(region.getByRole("heading", { level: 3, name: `:${longShortcode}:` })).toHaveCount(0);
+    await expect(region.getByRole("rowheader", { name: `:${longShortcode}:` })).toHaveCount(0);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

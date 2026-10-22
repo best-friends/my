@@ -28,6 +28,14 @@ export const badgeColors = ["neutral", "red", "orange", "yellow", "green", "teal
 
 export type BadgeColor = (typeof badgeColors)[number];
 
+/**
+ * The pastel tints of an avatar without a picture, in the order a seed picks from. Each is a pair of tokens,
+ * `avatar-<tint>` (fill) and `avatar-<tint>-fg` (the initial).
+ */
+export const avatarTints = ["lilac", "peach", "mint", "lavender", "yellow"] as const;
+
+export type AvatarTint = (typeof avatarTints)[number];
+
 const onEverySurface = (fg: string, use: ContrastUse): ColorPair[] => surfaces.map((bg) => ({ fg, bg, use }));
 
 export const colorPairs: readonly ColorPair[] = [
@@ -45,14 +53,35 @@ export const colorPairs: readonly ColorPair[] = [
   { fg: "danger-fg", bg: "danger", use: "text" },
   { fg: "success-fg", bg: "success", use: "text" },
   { fg: "warning-fg", bg: "warning", use: "text" },
+  // my brand additions.
+  { fg: "accent-fill-fg", bg: "accent-fill", use: "text" },
+  { fg: "accent-fill-fg", bg: "accent-fill-hover", use: "text" },
+  { fg: "fg", bg: "soft", use: "text" },
+  { fg: "fg-muted", bg: "soft", use: "text" },
+  { fg: "accent", bg: "soft", use: "text" },
+  { fg: "fg", bg: "danger-bg", use: "text" },
+  { fg: "danger", bg: "danger-bg", use: "text" },
+  { fg: "fg", bg: "success-bg", use: "text" },
+  { fg: "success", bg: "success-bg", use: "text" },
+  { fg: "fg", bg: "warning-bg", use: "text" },
+  { fg: "warning", bg: "warning-bg", use: "text" },
+  { fg: "pressed-fg", bg: "pressed", use: "text" },
+  { fg: "toast-fg", bg: "toast", use: "text" },
+  { fg: "toast-action", bg: "toast", use: "text" },
+  { fg: "toast-muted", bg: "toast", use: "ui" },
+  { fg: "toast-success", bg: "toast", use: "ui" },
+  { fg: "toast-danger", bg: "toast", use: "ui" },
+  ...avatarTints.map((t): ColorPair => ({ fg: `avatar-${t}-fg`, bg: `avatar-${t}`, use: "text" })),
   ...badgeColors.map((c): ColorPair => ({ fg: `badge-${c}-fg`, bg: `badge-${c}`, use: "text" })),
 ];
 
 /**
  * Semantic colors that carry no information on their own, so no contrast minimum applies:
- * border separates regions that are already distinguishable, and overlay is the modal scrim.
+ * border separates regions that are already distinguishable, and overlay is the modal scrim. alt-overlay is the scrim under white text over a
+ * picture (MediaViewer's alt text); its contrast depends on the picture. media-chip is the chip under a video's duration and wave
+ * the bars of AudioPlayer's waveform: a duration is also in the player's own text, and the bars only decorate. spark is the mango mark after a heading.
  */
-export const decorativeColors: readonly string[] = ["border", "overlay"];
+export const decorativeColors: readonly string[] = ["border", "overlay", "alt-overlay", "media-chip", "wave", "spark"];
 
 /**
  * The kind of value a token of theme.css holds, which decides how a server theme's override of it is
@@ -79,7 +108,7 @@ export type TokenRule = {
  */
 export const tokenRules: readonly TokenRule[] = [
   { pattern: /^color-/, kind: "color" },
-  { pattern: /^font-(?:sans|mono)$/, kind: "font-family" },
+  { pattern: /^font-(?:sans|mono|serif)$/, kind: "font-family" },
   { pattern: /^text-[a-z0-9]+--line-height$/, kind: "number", min: 1, max: 2.5 },
   { pattern: /^text-[a-z0-9]+$/, kind: "length", min: 0.625, max: 3 },
   { pattern: /^spacing$/, kind: "length", min: 0.125, max: 0.5 },
@@ -92,14 +121,14 @@ export const tokenRules: readonly TokenRule[] = [
 /**
  * Tokens of theme.css that a server theme cannot override: the primitive palette, an implementation
  * detail of the semantic colors (override those instead), `--shadow-*`, whose values Tailwind copies
- * into its utilities (override `--elevation-*`, which they refer to), and the badge colors, whose
- * pairs keep their contrast only as they are (ADR-0071).
+ * into its utilities (override `--elevation-*`, which they refer to), the badge and avatar colors, whose
+ * pairs keep their contrast only as they are (ADR-0071), and `--radius-avatar`, a percentage of the avatar's side.
  */
-export const fixedTokens: readonly RegExp[] = [/^palette-/, /^shadow-/, /^color-badge-/];
+export const fixedTokens: readonly RegExp[] = [/^palette-/, /^shadow-/, /^color-badge-/, /^color-avatar-/, /^radius-avatar$/];
 
 /**
  * The pairs of colorPairs that a server theme can change, which the server checks when it saves a theme
- * (ADR-0059): those whose two colors are overridable. The badge pairs are fixed, so no theme breaks them.
+ * (ADR-0059): those whose two colors are overridable. The badge and avatar pairs are fixed, so no theme breaks them.
  */
 export const themeColorPairs: readonly ColorPair[] = colorPairs.filter(
   ({ fg, bg }) => !fixedTokens.some((p) => p.test(`color-${fg}`) || p.test(`color-${bg}`)),

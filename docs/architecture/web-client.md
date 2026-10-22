@@ -102,12 +102,12 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | Y4 | フォーカスできる要素はすべて `focus-visible` のリングを持つ。固定ヘッダでフォーカスを隠さない（`scroll-padding`） | 見た目のスナップショット、レビュー |
 | Y5 | ルートが変わったら、新しい画面の `h1`（`tabindex="-1"`）にフォーカスを移し、`document.title` を更新する。外枠が 1 か所で行う（§9） | Playwright、統合テスト |
 | Y6 | タイムラインは feed パターンにする（`@my/ui` の `Feed`。`role="feed"`、`<article>`、`aria-posinset` / `aria-setsize`（総数が分からないときは `-1`）、`aria-busy` を必ず戻す、Page Down / Page Up で記事の間を移動し、Control + End / Control + Home で feed の外に出る）。仮想化しても、フォーカスのある記事は表示範囲の外でもマウントしておく | ARIA スナップショット、キーボードのテスト（`Feed` の部品のテストとストーリー） |
-| Y7 | 新しい投稿を自動で差し込まない。「N 件の新しい投稿」は `@my/ui` の `NewItemsButton`（`role="status"` の中のボタン）で知らせ、押されたときだけ差し込む。それ以外の件数・完了・エラーは、共通の `role="status"` / `role="alert"` の通知部品（`@my/ui` の `AnnouncerProvider` / `useAnnouncer`、見える通知は `ToastProvider` / `useToast`、操作の結果を画面に残すときは `StatusMessage`）だけで知らせる。フォーカスを奪わない | ARIA スナップショット、部品のテスト（Announcer・NewItemsButton のテストとストーリー）、レビュー |
+| Y7 | 新しい投稿は、利用者の設定 `timeline_auto_insert`（既定は偽）が真のときだけ自動で差し込む（[ADR-0077](../adr/0077-timeline-auto-insert.md)）。偽のときと、フォーカスや選択がフィードの中にある間は差し込まず、「N 件の新しい投稿」を `@my/ui` の `NewItemsButton`（`role="status"` の中のボタン）で知らせ、押されたときだけ差し込む。自動で差し込むときは、読んでいる投稿の位置をスクロールの補正で保ち、先頭から離れている間だけ `NewItemsButton` を浮かせる。差し込んだ投稿を 1 件ずつ読ませず、件数は `NewItemsButton` だけで知らせる。それ以外の件数・完了・エラーは、共通の `role="status"` / `role="alert"` の通知部品（`@my/ui` の `AnnouncerProvider` / `useAnnouncer`、見える通知は `ToastProvider` / `useToast`、操作の結果を画面に残すときは `StatusMessage`）だけで知らせる。フォーカスを奪わない | ARIA スナップショット、部品のテスト（Announcer・NewItemsButton のテストとストーリー）、レビュー |
 | Y8 | CW は disclosure パターン（`aria-expanded` のボタン、閉じた内容は `hidden`）にする | 部品のテスト |
 | Y9 | 画像の添付には代替テキストの入力欄を必ず出す。リモートの画像で代替テキストがないものには「説明なし」のバッジを付ける | 部品のテスト |
 | Y10 | 利用者が書いた内容（表示名・投稿・プロフィール）と管理者が書いた内容（インスタンスの説明・ルール・規約）は `dir="auto"` で表示し、分かる場合は `lang` を付ける。言語を記録しない管理者の文（どのロケールでも同じ 1 つの値）は `lang=""`（言語不明）にして、画面の言語を引き継がせない | 部品のテスト、ARIA スナップショット |
 | Y11 | モーダルのダイアログはクリック・タップだけで閉じられる（APG の dialog）。`@my/ui` の `Dialog` / `Sheet` は `role="dialog"` なら × ボタン（`closeLabel`）を必ず持ち、`alertdialog` は × ボタンの代わりに「キャンセル」を持つ（`closeLabel={null}`）。背景（スクリム）を押すと閉じる（`isDismissable` の既定は真）。閉じると入力を失うフォームのダイアログ（通報・投稿の編集・管理画面の編集、入力欄を持つ `ConfirmDialog`）だけは `isDismissable={false}` にして、背景を押しても閉じない。閉じても下書きが残る投稿のシートは背景で閉じる | 型（`closeLabel` が必須）、部品のテストとストーリー |
-| Y12 | アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、サーバーが描画する利用規約とプライバシーポリシーのページ、サーバーが描画した HTML（`PostContent`）の中の自インスタンスの画面以外へのリンク）は新しいタブで開く。`@my/ui` の `ExternalLink` が `target="_blank"`、`rel` の `noopener noreferrer`（呼び出し側の `nofollow` などは保つ）、外部へのリンクのアイコン、支援技術に読ませる「（新しいタブで開きます）」（`client:shell.link.new_tab`、`sr-only`。`aria-label` があればその後ろに足す）を付ける。文言と自インスタンスの画面かどうかの判定は、外枠（`App.tsx` の `ExternalLinks`）が `ExternalLinkContext` で 1 度だけ渡す。`Link` や `<a>` に `target` を書かず、`http(s):` の `href` は `ExternalLink` に渡す。`mailto:` はメールのアプリが開くので `Link` のままにする | `restrict/syntax`（`a` / `Link` の `target` と、`http(s):` の文字列の `href`）、部品のテスト（`ExternalLink`・`PostContent`） |
+| Y12 | アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、サーバーが描画した HTML（`PostContent`）の中の自インスタンスの画面以外へのリンク）は新しいタブで開く。`@my/ui` の `ExternalLink` が `target="_blank"`、`rel` の `noopener noreferrer`（呼び出し側の `nofollow` などは保つ）、外部へのリンクのアイコン、支援技術に読ませる「（新しいタブで開きます）」（`client:shell.link.new_tab`、`sr-only`。`aria-label` があればその後ろに足す）を付ける。文言と自インスタンスの画面かどうかの判定は、外枠（`App.tsx` の `ExternalLinks`）が `ExternalLinkContext` で 1 度だけ渡す。`Link` や `<a>` に `target` を書かず、`http(s):` の `href` は `ExternalLink` に渡す。`mailto:` はメールのアプリが開くので `Link` のままにする | `restrict/syntax`（`a` / `Link` の `target` と、`http(s):` の文字列の `href`）、部品のテスト（`ExternalLink`・`PostContent`） |
 
 ## 6. レスポンシブとスタイル
 
@@ -214,7 +214,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 
 ## 8. サーバーが描画する画面
 
-ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・パスワードリセット（リンクの要求 `/auth/forgot_password` と、リンクが開く新しいパスワードの設定 `/auth/reset_password`）・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログイン・登録・パスワードリセットのリンクの要求の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。ログインの画面は、Web クライアントのビルドが作るスクリプト（`src/server-pages/passkey-sign-in.ts`、CSP は `script-src 'self'`）を読み、パスキーに対応したブラウザでだけ「パスキーでログイン」のボタンを出す（FR-004）。ボタンのフォームは JavaScript がないと隠れたままで、メールアドレスとパスワードのフォームはスクリプトなしで動く。
+ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・パスワードリセット（リンクの要求 `/auth/forgot_password` と、リンクが開く新しいパスワードの設定 `/auth/reset_password`）・アカウントの状態・OAuth の認可同意の画面は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログイン・登録・パスワードリセットのリンクの要求の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。ログインの画面は、Web クライアントのビルドが作るスクリプト（`src/server-pages/passkey-sign-in.ts`、CSP は `script-src 'self'`）を読み、パスキーに対応したブラウザでだけ「パスキーでログイン」のボタンを出す（FR-004）。ボタンのフォームは JavaScript がないと隠れたままで、メールアドレスとパスワードのフォームはスクリプトなしで動く。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -225,10 +225,10 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - ダークモードは `prefers-color-scheme` に従う（トークンの `light-dark()` と `<meta name="color-scheme" content="light dark">`）。フォーカスのリングは `theme.css` の `:focus-visible`、
   タップ領域は `pointer-coarse:` で 44 px 以上、方向は論理プロパティ（`px-`・`ps-`・`pe-`）で書く（D4・D7・Y4）。
 - フォームは `<label for>`、`autocomplete`（`username`・`current-password`・`new-password`・`one-time-code`）、ヒントとエラーの `aria-describedby`、エラーの `aria-invalid` を持ち、ブラウザの制約検証（`required`・`minlength`）を使う。
-- 利用規約とプライバシーポリシーは、ランディングページ（§9）と違い、SPA のルートにしない。登録のフォームが同意を求める文書で、JavaScript なしで読めなければならず、
-  クライアント API には文書の本文がない（`GET /instance` が返すのは公開ページの URL の `terms_url` / `privacy_policy_url` だけ）ため。アドレスは `/auth/terms`・`/auth/privacy` のまま、SPA のどの画面からも新しいタブで開く（Y12）。
-- 利用規約とプライバシーポリシー（#489）: 管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズし（`internal/adapter/markdown`）、`.document` の区画に、`lang=""`（言語不明。文書はどのロケールでも同じ 1 つの値で、書かれた言語を記録しない）と `dir="auto"` で出す。見出しはページの `h1` の下の `h2` から始まり、幅の広い表は区画の中で横にスクロールして、ページは横にスクロールしない（D3）。
-  サーバーが公開している文書は、すべての画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からリンクする。公開していない文書はリンクせず、そのページは 404 にする。
+- 利用規約・プライバシーポリシー・特定商取引法に基づく表記（#489）の本文は、サーバーが描画せず、SPA のルート `/about/terms`・`/about/privacy`・`/about/commerce` が描く。
+  本文はクライアント API の匿名の `GET /instance/documents/{kind}` が返す（管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズしたもの、`internal/adapter/markdown`）。`GET /instance` の `terms_url` / `privacy_policy_url` / `commerce_disclosure_url` はこの 3 つのパスを指す。
+  3 つとも `routes/about_.<名前>.tsx` の情報ページ（`InfoLayout`、`routes/-layout/DocumentPage.tsx`）で、サインインしていなくても読める。`h1` は文書の名前、本文は `PostContent`（`lang=""`・`dir="auto"`）で出し、`h2` に `id` がなければクライアントが連番の `id` を足して目次（`h2[id]`）にする。本文の前に最終改定日（`revised_at`）を出す。loader は `GET /instance/documents/{kind}` を Query のキャッシュ経由で読み（S7）、公開していない文書（404）は見つからない画面になる。アプリの中のこの 3 つへのリンクは、`GET /instance` の絶対 URL のパスだけを取り出して同じタブの SPA の移動にする（`features/documents` の `DocumentLink`。Y12 の外へ出るリンクではない）。
+  文書の画面は JavaScript を前提にする（SPA のほかの画面と同じ）。サーバーが公開している文書は、すべてのサーバー描画の画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からこの SPA のパスへリンクする。公開していない文書はリンクしない。
 - サーバーが描画するページのリンクは、ページの間では同じタブで開く（フッターの文書のリンクも）。入力の途中で読むリンク、つまり登録のフォームの同意の文の文書と、ボットの確認の説明の後のサービスのプライバシーポリシーと利用規約（ほかのサイト）は、
   入力を失わないように `target="_blank" rel="noopener noreferrer"` で新しいタブで開き、末尾に `.visually-hidden` の「（新しいタブで開きます）」（`server:auth.link.new_tab`）を置く（Y12）。
 
@@ -334,12 +334,13 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   そのため平文 HTTP のローカルの構成（`apiOrigin` が `http://localhost:8080`）でも、TLS のない `https://` に移らずに該当の画面が開く。修飾キー付きで新しいタブやウィンドウで開くことはブラウザに任せる。
   サーバーはどのリンクにも `target="_blank"` を書くので、`PostContent` は描画の後にリンクごとに開き方を決める（Y12）。上の 3 種類の自インスタンスの画面へのリンク（`ExternalLinkContext` の `isAppLink`、`App.tsx` の `ExternalLinks` が `contentLinkPath` で判定）は `target` を外して同じタブで開き、
   ほかのリンクは新しいタブで開いて、サーバーの `rel`（`nofollow noopener noreferrer`）に `noopener noreferrer` を保ち、「（新しいタブで開きます）」を末尾に足す。
-  アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、利用規約とプライバシーポリシーの公開ページ）は `ExternalLink` で新しいタブで開く（Y12）。
+  アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先）は `ExternalLink` で新しいタブで開く（Y12）。
   それ以外のサーバー自身のパス（`/auth`・`/oauth`・`/api` などの予約パス、`lib/paths.ts` の `isServerPath`。登録の画面など）へのリンクはアプリのルートではないので、外枠の `navigate`（`App.tsx`）がルーターに渡さず、`leaveApp` でページごと開く。
-- **レイアウト**（`routes/-layout/AppLayout.tsx`。見た目は `@my/ui` の `AppShell`・`AppNavigation`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` から投稿フォームとサーバーについての 3 列目を出す。
-  `xl` 未満では、投稿フォームはタブバーの上（`md` からは画面の隅）に浮かぶボタンから開くシートになる（§12）。どちらにするかは外枠が `matchMedia` で決め（`useMediaQuery`）、ページに置くフォームは常に 1 つにする。
-  浮かぶボタンは、ルートの静的なデータ（TanStack Router の `staticData`、`composeButton: true`）を持つ画面（タイムラインとプロフィール）にだけ出す（G4）。外枠は今のマッチ（`useMatches`）からそれを読む。
-  ほかの画面でもシートは置いたままにし、返信のボタンはそこで開く。`md` 未満のボタンはアイコンだけで、「投稿を書く」をアクセシブルネーム（`aria-label`）と `Tooltip` にする（G12）。
+- **レイアウト**（`routes/-layout/AppLayout.tsx`。見た目は `@my/ui` の `AppShell`・`AppNavigation`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` からサーバーについての 3 列目を出す。`md` からのレールには「投稿を書く」の `primary` ボタンが 1 つあり（`lg` から文言付き、`md` はアイコンだけ）、`md` 未満のタブバーは場所だけにして投稿は浮かぶボタンから開く（ADR-0039）。
+  投稿フォームはページに置かず、常に `Sheet`（`lg` から画面の中央のパネル、§12）で開く。開くのは、レールのボタン、`md` 未満の浮かぶボタン、返信・引用のボタンで、ページに置くフォームは常に 1 つにする。
+  浮かぶボタンは `md` 未満の、ルートの静的なデータ（TanStack Router の `staticData`、`composeButton: true`）を持つ画面（タイムラインとプロフィール）にだけ、タブバーの上に出す（G4）。外枠は今のマッチ（`useMatches`）からそれを読む。
+  ほかの画面でもシートは置いたままにし、返信のボタンはそこで開く。浮かぶボタンはアイコンだけで、「投稿を書く」をアクセシブルネーム（`aria-label`）と `Tooltip` にする（G12）。レールのボタンは `md` ではアイコンだけで同じ名前を持つ。
+  `main` は終わりに、タブバーとボタン（出ているとき、`data-compose-fab`）の高さぶんの余白を取り、`index.css` の `scroll-padding-block-end` もフォーカスした要素を同じだけ避ける。`md` 未満のトーストは、タブバーの上に、ボタンが出ているときはボタンの上に出す（`with-compose-fab:` の variant）。
   `main` は終わりに、タブバーとボタン（出ているとき、`data-compose-fab`）の高さぶんの余白を取り、`index.css` の `scroll-padding-block-end` もフォーカスした要素を同じだけ避ける。`md` 未満のトーストは、タブバーの上に、ボタンが出ているときはボタンの上に出す（`with-compose-fab:` の variant）。
   `md` 未満で高さが 32rem 以下の画面（横向きの電話、400% の拡大の 320 × 225 CSS px）は `short:` の variant（`@my/ui/theme.css`）で、タブバーの項目を `min-h-12` にし、ボタンとの間を詰め、上端のオフラインの帯（G17）を粘着させずにページと一緒に流して、固定した要素を画面の高さの半分に収める（WCAG 1.4.10）。
   ナビゲーション（`routes/-layout/Navigation.tsx`）は 1 つの `nav` で、今いる区画のリンクに `aria-current="page"` を付ける。「プロフィール」の区画は自分のプロフィールとそのフォロワー / フォローの一覧で、
@@ -440,7 +441,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - **サポーターのプラン**（`/settings/supporter`、`routes/settings.supporter.tsx`、`features/supporters` の `SupporterSubscriptionSettings`、[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §6・§8・§13・§14）: 設定のメニューは、`GET /instance` の `supporters_enabled` が真のときだけ（Tauri のアプリでは出さない）「サポーターのプラン」を出す。
   loader は公開のプラン（`GET /instance/supporter_plans`）と自分の加入（`GET /supporter/subscription`。続いている加入と、加入できない理由 `ineligible_reason`）を待つが、失敗はページの失敗にせず本文に出す。どちらかが 404 なら、課金が無効でプランを提供していないことだけを出す。
   - **加入**: 続いている加入がなければ「プランを選ぶ」の区画に、プランの `RadioGroup`（名前は `dir="auto"`・`lang=""`、説明に月額と年額と管理者の説明）と支払いの間隔（月払い・年払い、選んだプランの額）の `RadioGroup` を出す。加入できない利用者には理由（メールの確認がまだ・このサーバーの利用者でない・凍結か削除の手続き中）を書き、「加入する」を出さない。
-    「加入する」は最終の確認（`ConfirmDialog`、`primary`）を開き、プランの名前・間隔ごとの額と更新しても同じであること・支払いの時期（いますぐ、以降は毎月か毎年）・特典が始まる時期・解約の方法と効果（このページからいつでも、支払った期間の終わりまで特典が続く）を説明リストで、特商法の表記（`commerce_disclosure_url`）があればそのリンク（`ExternalLink`）を出す（§13）。
+    「加入する」は最終の確認（`ConfirmDialog`、`primary`）を開き、プランの名前・間隔ごとの額と更新しても同じであること・支払いの時期（いますぐ、以降は毎月か毎年）・特典が始まる時期・解約の方法と効果（このページからいつでも、支払った期間の終わりまで特典が続く）を説明リストで、特商法の表記（`commerce_disclosure_url`）があればそのリンク（`DocumentLink`、同じタブ）を出す（§13）。
     「支払いへ進む」は `POST /supporter/checkout` を送り、応答の `redirect_url`（決済事業者のホスト型の決済画面）へ外枠の `leaveApp` で同じタブのままページごと移る。カード情報はこのアプリを通らない。断られたら（422 `supporter-ineligible`・`supporter-plan-unavailable`、409 `supporter-subscribed`）、`type` に対応する文言をダイアログに出す（E2）。
   - **戻り**: 決済画面は `?checkout=success`（済んだ）か `?checkout=canceled`（離れた）、顧客ポータルは `?portal=returned` を付けてこのページに戻す。検索条件は Zod で検証し、知らない値は無視する（S3）。`success` と `returned` では、loader が 1 度だけ `POST /supporter/subscription/sync`（事業者からの取り直しを積み、いまの加入を返す）を送って応答をキャッシュに書く。
     `success` で加入がまだ `pending` の間は、事業者の確認を待っていることを `StatusMessage` に出し、`GET /supporter/subscription` を 3 秒ごとに最大 20 回読み直す。確かめられたら礼を、`canceled` では請求されていないことを出す。
@@ -528,9 +529,16 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   本文は `lib/sse/parse.ts` が HTML Standard の手順で解釈する（`id` と `retry` は使わない）。
   - ストリームが終わったら約 1 秒後に、失敗したら失敗のたびに倍の間隔（最大 1 分、後半の半分にばらす）で接続し直す。セッションが終わるか外枠が消えると、Effect の後始末が要求を中止する。
   - サーバーは何も再送しないので、2 本目以降のストリームが開いたら、ホームの最初のページを読み直して新着を数え、未読数を読み直し、通知の一覧を古いことにする（再取得はしない）。
-  - `update` は表示中のタイムラインに差し込まず、Query のキャッシュの別の項目（`features/timeline/api/newStatuses.ts`）に待たせる。ホームの `NewItemsButton` が、読み込み済みの投稿にないものの数を出し、押されたら最初のページの先頭に差し込んで見出しにフォーカスを移す（Y7）。
+  - `update` は、まず Query のキャッシュの別の項目（`features/timeline/api/newStatuses.ts`）に待たせる。表示中のホームがそれをどう出すかは、利用者の設定 `timeline_auto_insert`（`GET /preferences`、既定は偽。設定の「表示と投稿」の `Switch` で選び、変えたとたんに保存する）で決まる（Y7、[ADR-0077](../adr/0077-timeline-auto-insert.md)）。
+    - 偽のとき: ホームの `NewItemsButton` が、読み込み済みの投稿にないものの数を出し、押されたら最初のページの先頭に差し込んで見出しにフォーカスを移す。
+    - 真のとき: 待たせた投稿をすぐ最初のページの先頭に差し込む。先頭にいる（フィードの先頭の目印が `IntersectionObserver` で見えている）ときはそのまま見せる。
+      先頭から離れているときは、差し込む前に画面の上端にかかる投稿の位置を測り、`useLayoutEffect` で差の分だけスクロールを足して、その投稿を同じ場所に保つ（安定版の Safari が `overflow-anchor` に対応しないので、フィードは `overflow-anchor: none` にして自分で補う）。
+      先頭から離れている間は、離れてから差し込んだ件数を `NewItemsButton`（`sticky`）で出し、押されたら先頭へ移って見出しにフォーカスを移す。自分で先頭へ戻ったら件数を 0 にする。差し込んだ投稿は動きなしで現れる。
+    - 真でも、フォーカスか文字の選択がフィードの中にある間は一時停止し、偽のときと同じく待たせて `NewItemsButton` で知らせる。フォーカスと選択がフィードの外に出たら、待たせた投稿を差し込む（WCAG 2.2.2）。
+    - どちらでも、差し込みはフォーカスを動かさず、差し込んだ投稿を 1 件ずつ読ませない。件数は `NewItemsButton` の `role="status"` だけで知らせ、先頭にいて一時停止していない間の差し込みは知らせない。
     ホームを表示していない（ホームのクエリを使う部品がない）ときは誰も読んでいないので、待たせずにキャッシュの最初のページの先頭に差し込む。ほかの画面からホームを開くときも、ルートの loader が待っている投稿を同じように差し込む。`staleTime` の間に開き直した、取り直さないホームも、最初の描画から新着を出す。
-    待つ投稿が読み込み済みの投稿とつながらないとき（再接続で 1 ページ分の新着が見つかった、または 200 件を超えた）は、押したときに最初のページだけを取り直す。
+    待つ投稿が読み込み済みの投稿とつながらないとき（再接続で 1 ページ分の新着が見つかった、または 200 件を超えた）は差し込まず、押したときに最初のページだけを取り直す。
+    設定が真で、先頭にいて一時停止していないときは、押されるのを待たずに最初のページだけを取り直す。
     タイムラインは、ウィンドウのフォーカスやオンライン復帰では取り直さない（取り直すと先頭に投稿が差し込まれる）。
   - `notification` は読み取り位置（`/notifications/marker`）の未読数を 1 つ増やし、通知の一覧を古いことにする。表示中の一覧は変わらない。
   - `announcement` はお知らせの一覧（`GET /announcements` のキャッシュ）の同じ ID のお知らせを置き換えるか、表示の始まりの順に加え、`announcement_removed` は一覧から外す。キャッシュがなければ何もしない（次に開いたときに読む）。
@@ -597,7 +605,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 `features/compose` が新しい投稿と返信のフォームを受け持つ（FR-101〜105、FR-110）。
 
-- **置き場所**: 外枠が `ComposeProvider` に `panel`（`xl` 以上の 3 列目）か `sheet`（浮かぶボタンと `Sheet`）を渡し、`ComposeEntry` がその場所に描画する。
+- **置き場所**: 外枠が `ComposeProvider` と、`Sheet` の `ComposeEntry` を 1 つ置く。フォームは常にシートで、レールのボタン（`useOpenCompose`）、`md` 未満の浮かぶボタン（`ComposeEntry` の `trigger`）、返信と引用のボタンが開く。`Sheet` は `lg` から画面の中央のパネルになる。
   シートは、フォームに要る `GET /instance` と `GET /preferences` の応答が届いて（または失敗して）から開き、開いたときに本文へ直接フォーカスを移す。
   読み込み中に開くとダイアログ自身にフォーカスが移り、React Aria がその 500 ms 後に（iOS の VoiceOver への対策として）フォーカスが body にあればダイアログへ戻すので、
   閉じた直後でトリガーへフォーカスを戻す途中のポップオーバーからフォーカスを奪う。
@@ -610,7 +618,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   ボタンはポップオーバー（APG の dialog）に `@my/ui` の `EmojiPicker` を開き、検索欄にフォーカスを移す。`EmojiPicker` は検索欄と、カテゴリごとの見出しで分けた絵文字のグリッド（React Aria の `GridList` の grid の配置。APG の grid のとおり、Tab で検索欄から入り、矢印キーで書字方向に沿って動き、Enter・Space・押下で選ぶ）で、
   検索は shortcode と別名の部分一致、各絵文字の名前は `:shortcode:` にする。選ぶと、対象の入力欄のカーソルの位置（選択していればその範囲）に `:shortcode:` を入れ（サーバーが前後に英数字とコロンのない shortcode だけを読むので、必要なら前後に空白を足す）、ポップオーバーを閉じて入力欄にフォーカスを戻す。
   最近使った絵文字は端末ごとに localStorage（`my:emoji:recent`、shortcode の配列）に 16 個まで持ち、検索していないときに「最近使った絵文字」として先頭に出す。動く絵文字は利用者の設定と `prefers-reduced-motion` に従って止める（`CustomEmoji` と同じ）。リアクション（ADR-0052）も同じ `EmojiPicker` を、Unicode 絵文字の群を足して使う（§13）。
-- **下書き**（`hooks/draftStore.ts`）: フォームの外のストア（`useSyncExternalStore`）に置き、パネル・シート・返信ボタンが同じ下書きを共有する。
+- **下書き**（`hooks/draftStore.ts`）: フォームの外のストア（`useSyncExternalStore`）に置き、シート・返信ボタンが同じ下書きを共有する。
   リロードやタブの異常終了で失わないように、アカウントごとのキー（`my:user:compose:<アカウント ID>`）で sessionStorage に保存する。このタブだけのもので、タブを閉じるかセッションが終わると消える（§10）。
   アップロードの途中のファイルは保存しない（再開できない）。アップロード済みの画像は ID と説明を保存し、リロード後はサーバーのサムネイルを表示する。
 - **既定値**: 公開範囲・引用できる人・言語は、利用者が選ぶまで `GET /preferences` の既定値に従う（state にコピーせず、表示のたびに求める）。返信の公開範囲の既定は、既定値と返信先のうち狭いほう（ADR-0017。`local` への返信は `local`）。
@@ -982,14 +990,14 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     投稿への処分は投稿を選ぶ通報の詳細から行うので、この画面では出さず、その旨をフォームの上に書く。成功したら区画の `StatusMessage` に結果を出し、処分の履歴・アカウント・検索・通報を無効にする。削除済みのアカウントにはフォームを出さない。
 - **規約とポリシー**（`/admin/documents`、FR-705、#489）: 利用規約・プライバシーポリシー・特定商取引法に基づく表記など（`commerce_disclosure`、ADR-0072 §13）の 3 つの区画（`h2` の `section`）。文書はどのロケールでも同じ 1 つの値で、言語を選ぶ欄はない。
   特定商取引法に基づく表記などの区画は、法的な正しさをサーバーが保証せず、運営者が自分の国の法令で確かめることを説明に書く。
-  各区画は、最後に保存した日時、公開ページへのリンク（公開しているときだけ）、本文（Markdown の `TextArea`、100,000 文字）と「保存する」の `form` で、文書ごとに別に保存する。
+  各区画は、最後に保存した日時、公開ページへのリンク（公開しているときだけ。同じタブの `DocumentLink`）、本文（Markdown の `TextArea`、100,000 文字）と「保存する」の `form` で、文書ごとに別に保存する。
   成功したら本文・`GET /instance`（リンク）・監査ログを取り直してから、監査ログに記録したことを区画の `StatusMessage` に出す。失敗はフォームの下（`role="alert"`）に出して入力を残す。保存してある本文を空にして保存すると削除になるので、`ConfirmDialog`（`danger`）で確かめる。
   下書きは文書ごとに持つ。下書きがあるまま別の画面へ移るときは、`features/settings` の `useUnsavedChangesGuard` で確かめる（§9 の未保存の変更）。
 - **投稿の取り直し**（FR-407、[federation.md §6.4](federation.md#64-投稿の取り直し)、`components/RefetchStatuses.tsx`・`hooks/useRefetch.ts`）: 保存したリモートの投稿を相手のサーバーから取り直すよう頼む。
   連合先の詳細とリモートのアカウントの管理画面は「投稿の取り直し」の区画（`h2` の `section`）に、何をするか（件数の上限と、裏で 1 分ごとに進むこと）の説明を `aria-describedby` にした「投稿を取り直す」を置く。
   押すと `POST /admin/instances/{domain}/refetch_statuses` か `POST /admin/accounts/{id}/refetch_statuses`（通報の投稿は `POST /admin/statuses/{id}/refetch`）を送り、監査ログに無効化の印を付けてから、頼んで監査ログに記録したことを区画の `StatusMessage` に出す。
   ボタンは残るのでフォーカスも残る。投稿は取り直したときに変わるので、投稿の一覧は取り直さない。失敗はトーストで知らせ、ボタンを残す（E2）。
-- **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection`、区画の中身が入れ替わって押したボタンが消えるときに区画の見出しへフォーカスを移すのは `useFocusAfterChange` にし（`features/moderation/components/parts.tsx`）、
+- **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`（管理のモードの表の一覧は `RecordTable`。`Card` の中の `Table` を 1 ページずつ見せ、下に前へ / 次への `Pagination` を置く。カーソルで送る API なので、次へは読み込み済みのページの先なら 1 ページ読み込んでから進む。絞り込みは `ListToolbar` に置き、行の最初のセルが詳細のページへのリンクになる。詳細のページのない行の操作ボタン（承認・取り消し）は最後の列に置いて見出しを視覚的に隠し、操作で行が残るときのフォーカスは行見出しの `th`（`tabIndex={-1}`）に移す）、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection`、区画の中身が入れ替わって押したボタンが消えるときに区画の見出しへフォーカスを移すのは `useFocusAfterChange` にし（`features/moderation/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
   開くと最初の入力欄（なければ「キャンセル」）にフォーカスが移り、Esc で閉じ、閉じると開いたボタンにフォーカスが戻る。失敗はダイアログの中（`errorMessage`）に出して開いたままにし、成功したら閉じて、結果を画面の `StatusMessage`（`role="status"`）に出す。
@@ -1026,7 +1034,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   `e2e/finance.spec.ts` は、費用の画面の集計（按分の既定、キーボードでの週のタブ、現金主義と URL）、年ごとの費用の登録、確認のダイアログを経た取り消し、取り込みの状態、収入の表とお金の動き（加入者のユーザー名、キーボードでの種類の絞り込みと URL）までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/webhooks.spec.ts` は、webhook の設定と一度だけの秘密の表示、一覧、無効化と有効化、確認のダイアログを経た削除までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/roles.spec.ts` は、ロールの区画の ARIA スナップショット（閲覧者より上のロールの理由）・axe・横スクロールと、キーボードで付与の確認のダイアログを経て、区画の見出しにフォーカスが移るまでを検査する。
-  `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターから文書の公開ページを開き、Markdown の見出し・箇条書き・表の ARIA スナップショット・両方のテーマの axe・横スクロールを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
+  `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターが文書の SPA のパス（`/about/terms`・`/about/privacy`）へリンクし、その情報ページが目次つきで描かれる（公開していない文書は見つからない画面）ことを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
   `e2e/appeals.spec.ts` は、異議申し立ての一覧の axe・横スクロール・ARIA スナップショットと、キーボードで申し立てを開き、撤回の確認のダイアログを経て処分が解除と出て、審査の見出しにフォーカスが移るまでを検査する。
   `features/moderation/staffEntry.test.tsx` は、ナビゲーションの「モデレーション」と「管理」の出し分け（モデレーターに「管理」が出ないこと、両方を持つ閲覧者での順番）・レールとメニューのボタンとシートの件数の名前・各区分の画面と `aria-current`・使える画面のない区分の画面・ストリームの通知での件数の読み直しを検査し、
   `e2e/admin-entry.spec.ts` は、各幅で「モデレーション」（`md` 未満はメニューのボタンとシート）の件数の名前と数字、モデレーターに「管理」がないこと、モデレーションの画面の ARIA スナップショット、サーバーからの通知の行とそのリンク（ARIA スナップショット）・axe・横スクロールを検査する。
@@ -1082,7 +1090,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
 | G1 | 間隔は Tailwind の 0.25rem 刻みのうち、`0.5`・`1`・`2`・`3`・`4`・`6`・`8`・`10` だけを使う。役割ごとの値は README の「Spacing」の表に従い、同じ役割に別の値を使わない | レビュー |
 | G2 | 画面の左右の余白（ガター）は `px-4`（16 px）にし、外枠（`AppLayout`）だけが付ける。画面と機能の部品は自分でガターを足さない。一覧の行とカードは、行の中の余白（`px-4 py-3`）だけを持つ | レビュー |
 | G3 | 一覧の項目の区切りは `divide-y divide-border` の線にし、項目のあいだに `gap` を足さない（タイムライン・通知・アカウントの一覧で同じ見た目にする） | レビュー |
-| G4 | 画面の端に浮かぶ要素（投稿のボタン、`NewItemsButton`、トースト）が一覧の最後の項目や操作を隠さないように、外枠がその高さぶんの余白を `main` の終わりに取る。浮かぶ要素は、それが役に立つ画面（タイムラインとプロフィール）にだけ出す | E2E のスクリーンショット、レビュー |
+| G4 | 画面の端に浮かぶ要素（`md` 未満の投稿のボタン、`NewItemsButton`、トースト）がが一覧の最後の項目や操作を隠さないように、外枠がその高さぶんの余白を `main` の終わりに取る。浮かぶ投稿のボタンは、それが役に立つ画面（タイムラインとプロフィール）にだけ出す | E2E のスクリーンショット、レビュー |
 
 ### 16.2 文字
 

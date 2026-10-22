@@ -144,7 +144,7 @@ async function moderatorServer(page: Page, permissions: readonly string[] = mode
     const key = `${request.method()} ${path}`;
     if (path.startsWith("/admin/account")) requests.push(key);
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials" || key === `GET /accounts/${moderator.id}`) return json(route, viewer);
     if (key === "GET /preferences") {
@@ -183,9 +183,9 @@ async function moderatorServer(page: Page, permissions: readonly string[] = mode
   return requests;
 }
 
-/** The rows of the results: the items with a heading. */
+/** The rows of the results table: its rows with a link, which leaves out the header row. */
 function rows(page: Page) {
-  return page.getByRole("main").getByRole("region").last().getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3 }) });
+  return page.getByRole("main").getByRole("region").last().getByRole("row").filter({ has: page.getByRole("link") });
 }
 
 test.describe("page /moderation/accounts", () => {
@@ -227,22 +227,9 @@ test.describe("accounts", () => {
     await expect(rows(page)).toHaveCount(2);
     const limitedRow = await rows(page).first().textContent();
 
-    await expect(rows(page).first()).toMatchAriaSnapshot(`
-      - listitem:
-        - heading /Maximiliana Theodora Wolfharte/ [level=3]:
-          - link /Maximiliana Theodora Wolfharte.*@maximiliana/
-        - term
-        - definition
-        - term
-        - definition
-        - term
-        - definition
-        - term
-        - definition:
-          - time
-        - term
-        - definition
-    `);
+    await expect(rows(page).first().getByRole("rowheader").getByRole("link")).toHaveAccessibleName(/Maximiliana Theodora Wolfharte.*@maximiliana/);
+    await expect(rows(page).first().getByRole("cell")).toHaveCount(3);
+    await expect(rows(page).first().getByRole("cell").last().getByRole("time")).toBeVisible();
     await expect(rows(page).last().getByText(`@carol@${longDomain}`)).toBeVisible();
 
     // By keyboard: the row's link opens the account's page, whose heading takes focus.
@@ -345,7 +332,7 @@ test.describe("accounts", () => {
     expect(requests).toContain(`POST /admin/accounts/${local.id}/actions ban block_email`);
 
     await page.goto("/moderation/signup-blocks");
-    await expect(page.getByRole("main").getByRole("tabpanel").getByRole("heading", { level: 3, name: emailHash })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("table").getByRole("rowheader", { name: emailHash })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

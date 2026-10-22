@@ -38,6 +38,9 @@ type Options struct {
 	// Instance reads the instance settings and texts; nil reads every setting as its default
 	// and no text.
 	Instance InstanceInfo
+	// Documents reads the rendered documents for GET /instance/documents/{kind}; nil answers
+	// 404 to it.
+	Documents InstanceDocuments
 	// InstanceThumbnail returns the image that represents the instance (the thumbnail setting)
 	// for a reader of locale, for Instance.thumbnail; nil, or a nil image, leaves it out.
 	InstanceThumbnail func(ctx context.Context) (*InstanceImage, error)
@@ -160,11 +163,11 @@ type Options struct {
 	// InstanceTexts reads and writes the instance texts for the admin operations
 	// (admin_instance_texts.go).
 	InstanceTexts InstanceTexts
-	// TermsPath and PrivacyPolicyPath are the paths, on Origin, of the public pages of the terms
-	// of service and the privacy policy, for Instance.terms_url and Instance.privacy_policy_url;
+	// TermsPath and PrivacyPolicyPath are the paths, on Origin, of the web client's pages of the
+	// terms of service and the privacy policy, for Instance.terms_url and Instance.privacy_policy_url;
 	// empty leaves the link out.
 	TermsPath, PrivacyPolicyPath string
-	// CommerceDisclosurePath is the path, on Origin, of the public page of the commerce
+	// CommerceDisclosurePath is the path, on Origin, of the web client's page of the commerce
 	// disclosures, for Instance.commerce_disclosure_url; empty leaves the link out.
 	CommerceDisclosurePath string
 	// CustomEmojis runs the custom emoji of the picker and the admin operations

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appinstance "github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/instance"
 )
@@ -18,6 +19,13 @@ type InstanceInfo interface {
 	Settings(ctx context.Context) (instance.Settings, error)
 	// Text returns the text of key, the same in every locale, and false when there is none.
 	Text(ctx context.Context, key instance.TextKey) (instance.Text, bool, error)
+}
+
+// InstanceDocuments reads the instance's documents, rendered. *appinstance.Service implements it.
+type InstanceDocuments interface {
+	// Document returns the document key rendered, and false when the instance has not
+	// published it.
+	Document(ctx context.Context, key instance.TextKey) (appinstance.Document, bool, error)
 }
 
 // InstanceImage is a processed image of the instance, as GET /instance presents it.
@@ -161,4 +169,34 @@ func (s *Server) instanceThumbnail(ctx context.Context) (*InstanceThumbnail, err
 		out.Alt = &img.Alt
 	}
 	return out, nil
+}
+
+// GetInstanceDocument serves GET /api/v1/instance/documents/{kind}: the sanitized HTML of a
+// document that the instance has published. A document that is not published, and a kind that
+// is not a document, is a 404. The text is the same in every locale.
+func (s *Server) GetInstanceDocument(ctx context.Context, req GetInstanceDocumentRequestObject) (GetInstanceDocumentResponseObject, error) {
+	key := instance.TextKey(req.Kind)
+	switch key {
+	case instance.TextTerms, instance.TextPrivacyPolicy, instance.TextCommerceDisclosure:
+	default:
+		return GetInstanceDocumentdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	if s.o.Documents == nil {
+		return GetInstanceDocumentdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	doc, ok, err := s.o.Documents.Document(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: instance document %s: %w", key, err)
+	}
+	if !ok {
+		return GetInstanceDocumentdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	cache := cachePublic
+	if _, ok := ViewerFrom(ctx); ok {
+		cache = cachePrivate
+	}
+	return GetInstanceDocument200JSONResponse{
+		Body:    InstanceDocument{Kind: req.Kind, Html: doc.HTML, RevisedAt: doc.RevisedAt.UTC()},
+		Headers: GetInstanceDocument200ResponseHeaders{CacheControl: &cache},
+	}, nil
 }

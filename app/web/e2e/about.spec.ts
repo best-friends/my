@@ -49,8 +49,8 @@ async function serveInstance(page: Page, origin: string, domains: { status: 200 
       { id: "0192f0c4-7a8e-7000-8000-0000000000e1", text: "Be kind", hint: "No insults, no harassment." },
       { id: "0192f0c4-7a8e-7000-8000-0000000000e2", text: "Mark sensitive media" },
     ],
-    terms_url: `${origin}/auth/terms`,
-    privacy_policy_url: `${origin}/auth/privacy`,
+    terms_url: `${origin}/about/terms`,
+    privacy_policy_url: `${origin}/about/privacy`,
   };
   await page.route("**/api/v1/instance", (route) => route.fulfill({ json: instance }));
   await page.route("**/api/v1/instance/domain_actions*", (route) =>
@@ -131,7 +131,7 @@ test("the information page of a server that lists the servers it moderates to no
   await serveInstance(page, new URL(baseURL ?? "").origin, { status: 404 });
   await page.goto("/about");
   const main = page.getByRole("main");
-  await expect(main.getByRole("navigation")).toBeVisible();
+  await expect(main.getByRole("region").getByRole("navigation")).toBeVisible();
   // The description, the rules, the documents, the statement to crawlers, and the source code.
   await expect(main.getByRole("region")).toHaveCount(5);
   await expect(main.locator("li", { hasText: "spam.example" })).toHaveCount(0);

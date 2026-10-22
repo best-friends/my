@@ -37,6 +37,8 @@ export type ProfileHeaderProps = {
   image?: ImageSources | undefined;
   /** The account's picture; decorative, as the name beside it says whose page this is. */
   avatar?: ImageSources | undefined;
+  /** What picks the tint of the avatar's letter, such as the account's ID (see `Avatar`). */
+  avatarSeed?: string | undefined;
   /** The account's name, for the avatar's fallback letter. */
   name: string;
   /** The relationship buttons, at the end of the avatar's row. */
@@ -60,13 +62,13 @@ export type ProfileHeaderProps = {
 };
 
 /** The profile's `<header>`. */
-export function ProfileHeader({ image, avatar, name, actions, heading, handle, badges, tags = noTags, note, fields, joined, counts = noCounts }: ProfileHeaderProps) {
+export function ProfileHeader({ image, avatar, avatarSeed, name, actions, heading, handle, badges, tags = noTags, note, fields, joined, counts = noCounts }: ProfileHeaderProps) {
   const styles = profileHeader();
   return (
     <header className={styles.root()}>
       <ProfileHeaderImage sources={image} size="banner" />
       <div className={styles.top()}>
-        <Avatar sources={avatar} name={name} decorative size="xl" className={styles.avatar()} />
+        <Avatar sources={avatar} name={name} seed={avatarSeed} decorative size="xl" className={styles.avatar()} />
         {actions}
       </div>
       <div className={styles.body()}>
@@ -104,8 +106,8 @@ export function ProfileHeader({ image, avatar, name, actions, heading, handle, b
 
 const headerImage = tv({
   slots: {
-    band: "rounded-lg bg-surface-sunken",
-    picture: "w-full rounded-lg bg-surface-sunken object-cover",
+    band: "rounded-xl bg-surface-sunken",
+    picture: "w-full rounded-xl bg-surface-sunken object-cover",
   },
   variants: {
     size: {

@@ -9,7 +9,7 @@ import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { cacheRevokedInvite, createInviteMutation, type Invite, invitesQueryOptions, type NewInvite, refreshInvites, revokeInviteMutation } from "../api/invites";
 import { instanceInfoQueryOptions } from "../api/reports";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type PagedPages, toPagedList } from "./pagedList";
 
 /** An hour and a day in seconds, the units of how long an invite works. */
 const hour = 3600;
@@ -22,7 +22,7 @@ export const inviteExpiries = [hour / 2, hour, 6 * hour, 12 * hour, day, 7 * day
 export const inviteMaxUses = [1, 5, 10, 25, 50, 100] as const;
 
 /** The invites, newest first. */
-export function useInvites(): PagedList<Invite> {
+export function useInvites(): PagedPages<Invite> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(invitesQueryOptions(api)));
 }

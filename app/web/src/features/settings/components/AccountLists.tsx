@@ -135,6 +135,7 @@ function AccountRow({ account, details, children }: AccountRowProps) {
       name={name}
       handle={handle}
       avatar={imageSources(account.avatar)}
+      avatarSeed={account.id}
       details={details}
       trailing={children}
       trailingPlacement="below"

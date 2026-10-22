@@ -102,7 +102,7 @@ async function moderatorServer(page: Page) {
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     const key = `${request.method()} ${path}`;
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials") return json(route, moderator);
     if (key === "GET /preferences") {
@@ -166,25 +166,16 @@ test.describe("appeals", () => {
     const decisions = await moderatorServer(page);
     await page.goto("/moderation/appeals");
     const main = page.getByRole("main");
-    const panel = main.getByRole("tabpanel");
-    await expect(panel.getByRole("listitem").first().getByText(appellant.display_name)).toBeVisible();
-    await expect(panel.getByRole("listitem").first()).toMatchAriaSnapshot(`
-      - listitem:
-        - heading [level=2]:
-          - link
-        - term
-        - definition: /Maximiliana Theodora Wolfharte/
-        - term
-        - definition:
-          - time
-        - term
-        - definition
-        - paragraph: ${JSON.stringify(longText)}
-    `);
-    await expect(panel.getByText(arabicText)).toHaveAttribute("dir", "auto");
+    const table = main.getByRole("table");
+    const firstRow = table.getByRole("row").nth(1);
+    await expect(firstRow.getByRole("cell").filter({ hasText: appellant.display_name })).toBeVisible();
+    await expect(firstRow.getByRole("rowheader")).toContainText(longText);
+    await expect(firstRow.getByRole("cell")).toHaveCount(3);
+    await expect(firstRow.getByRole("cell").last().getByRole("time")).toBeVisible();
+    await expect(table.getByText(arabicText)).toHaveAttribute("dir", "auto");
 
     // Open the first appeal from the keyboard.
-    const first = panel.getByRole("listitem").first().getByRole("link");
+    const first = firstRow.getByRole("link");
     await first.focus();
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(new RegExp(`/moderation/appeals/${appealId}$`));
@@ -235,8 +226,8 @@ test.describe("appeals", () => {
     // server answers the lists slowly now: the list is not shown from a cache older than the decision.
     await main.locator('a[href="/moderation/appeals"]').click();
     await expect(page).toHaveURL(/\/moderation\/appeals$/);
-    await expect(panel.locator(`a[href="/moderation/appeals/${otherAppealId}"]`)).toBeVisible();
-    expect(await panel.locator(`a[href="/moderation/appeals/${appealId}"]`).count()).toBe(0);
-    await expect(panel.locator('a[href^="/moderation/appeals/"]')).toHaveCount(1);
+    await expect(main.getByRole("table").locator(`a[href="/moderation/appeals/${otherAppealId}"]`)).toBeVisible();
+    expect(await main.getByRole("table").locator(`a[href="/moderation/appeals/${appealId}"]`).count()).toBe(0);
+    await expect(main.getByRole("table").locator('a[href^="/moderation/appeals/"]')).toHaveCount(1);
   });
 });

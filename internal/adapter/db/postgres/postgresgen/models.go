@@ -1093,6 +1093,7 @@ type UserPreference struct {
 	DefaultPostLanguage         string
 	RequireMediaDescription     bool
 	EmailModeratorNotifications bool
+	TimelineAutoInsert          bool
 	UpdatedAt                   time.Time
 }
 

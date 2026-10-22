@@ -32,7 +32,9 @@ type Preferences struct {
 	// EmailModeratorNotifications sends the moderator notifications (admin_report, admin_sign_up)
 	// that the user gets also by email (FR-712).
 	EmailModeratorNotifications bool
-	UpdatedAt                   time.Time
+	// TimelineAutoInsert inserts new timeline posts without asking (ADR-0077). Off for a new user.
+	TimelineAutoInsert bool
+	UpdatedAt          time.Time
 }
 
 // Defaults of a new user's preferences (data-model §4.1). The locale comes from the registration

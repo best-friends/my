@@ -28,6 +28,7 @@ func (r *IdentityRepository) InsertPreferences(ctx context.Context, tx uow.Tx, p
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     boolToInt(p.RequireMediaDescription),
 		EmailModeratorNotifications: boolToInt(p.EmailModeratorNotifications),
+		TimelineAutoInsert:          boolToInt(p.TimelineAutoInsert),
 		UpdatedAt:                   toMillis(p.UpdatedAt),
 	})
 	if err != nil {
@@ -49,6 +50,7 @@ func (r *IdentityRepository) UpdatePreferences(ctx context.Context, tx uow.Tx, p
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     boolToInt(p.RequireMediaDescription),
 		EmailModeratorNotifications: boolToInt(p.EmailModeratorNotifications),
+		TimelineAutoInsert:          boolToInt(p.TimelineAutoInsert),
 		UpdatedAt:                   toMillis(p.UpdatedAt),
 		UserID:                      p.UserID,
 	})
@@ -140,6 +142,7 @@ func userPreferencesFrom(ctx context.Context, q *sqlitegen.Queries, row sqlitege
 		DefaultPostLanguage:         row.DefaultPostLanguage,
 		RequireMediaDescription:     row.RequireMediaDescription != 0,
 		EmailModeratorNotifications: row.EmailModeratorNotifications != 0,
+		TimelineAutoInsert:          row.TimelineAutoInsert != 0,
 		UpdatedAt:                   fromMillis(row.UpdatedAt),
 	}, nil
 }

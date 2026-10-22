@@ -19,13 +19,14 @@ export { ownActionsQueryOptions } from "./api/actions";
 export { AccountStatus } from "./components/AccountStatus";
 // The menus and the navigation's entry.
 export { refreshAdminCounts } from "./api/counts";
-export { ModerationMenu, ModerationPages } from "./components/ModerationMenu";
+export { ModerationPages, useModerationBadges } from "./components/ModerationMenu";
+export { moderationPages } from "./components/moderationPages";
 export { useModerationEntry } from "./hooks/useModerationCounts";
 // What the server administration screens share.
 export { isMissingPermission, pageQuery, type Permission, refreshAuditLog } from "./api/staff";
-export { DateTime, DetailSection, DomainName, MissingPermission, RecordList, RequirePermission } from "./components/parts";
-export { type StaffPage, StaffMenuSection, StaffPages, useShownStaffPages } from "./components/StaffPages";
-export { type PagedList, toPagedList } from "./hooks/pagedList";
+export { DateTime, DetailSection, DomainName, MissingPermission, RecordList, RecordTable, RequirePermission } from "./components/parts";
+export { type StaffPage, type StaffPageBadge, StaffPages, useShownStaffPages } from "./components/StaffPages";
+export { type PagedList, type PagedPages, toPagedList, wholeList } from "./hooks/pagedList";
 export { useHasPermission, useViewerPermissions } from "./hooks/usePermissions";
 // The roles of the instance and of an account, which the roles screen (manage_roles) shares.
 export { accountRolesQueryOptions, rolesQueryOptions } from "./api/roles";

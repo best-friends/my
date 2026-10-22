@@ -108,7 +108,7 @@ async function operatorServer(page: Page) {
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     const key = `${request.method()} ${path}`;
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials") return json(route, operator);
     if (key === "GET /preferences") {
@@ -157,7 +157,8 @@ for (const path of pages) {
       await operatorServer(page);
       await page.goto(path);
       await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(page.getByRole("main").getByRole("heading", { level: 2 }).first()).toBeVisible();
+      // A list shows a table, a page of sections its headings.
+      await expect(page.getByRole("main").getByRole("heading", { level: 2 }).or(page.getByRole("main").getByRole("table")).first()).toBeVisible();
     });
 
     test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -176,48 +177,19 @@ test.describe("remote servers", () => {
     await page.goto("/moderation/instances");
     const main = page.getByRole("main");
 
-    await expect(main).toMatchAriaSnapshot(`
-      - heading [level=1]
-      - link
-      - tablist:
-        - tab [selected]
-        - tab
-        - tab
-      - tabpanel:
-        - list:
-          - listitem:
-            - heading "${longDomain}" [level=2]:
-              - link "${longDomain}"
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-          - listitem:
-            - heading "flaky.example" [level=2]:
-              - link "flaky.example"
-            - term
-            - definition
-            - term
-            - definition
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-    `);
+    const servers = main.getByRole("table");
+    await expect(servers.getByRole("rowheader")).toHaveText([longDomain, "flaky.example"]);
+    await expect(servers.getByRole("row").nth(1).getByRole("link", { name: longDomain })).toBeVisible();
+    await expect(servers.getByRole("row").nth(2).getByRole("link", { name: "flaky.example" })).toBeVisible();
+    // The first server's state change and the last failure day of each.
+    await expect(servers.locator("time")).toHaveCount(3);
 
     await main.getByRole("link", { name: longDomain }).click();
     await expect(main.getByRole("heading", { level: 1, name: longDomain })).toBeFocused();
     const resume = main.getByRole("button", { name: message("admin.instance.mark_available"), exact: true });
     await resume.click();
     await expect(resume).toBeHidden();
-    await expect(main.getByRole("region", { name: message("admin.instance.history.title"), exact: true }).getByRole("listitem")).toHaveCount(2);
+    await expect(main.getByRole("table", { name: message("admin.instance.history.title"), exact: true }).getByRole("rowheader")).toHaveCount(2);
     expect(actions).toEqual([`POST /admin/instances/${longDomain}/mark_available`]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);

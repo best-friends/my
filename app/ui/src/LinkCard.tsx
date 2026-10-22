@@ -16,21 +16,21 @@ const linkCard = tv({
     image: "relative size-full object-cover",
     blur: "absolute inset-0",
     text: "flex min-w-0 flex-col gap-0.5 px-3 py-2",
-    site: "min-w-0 truncate text-xs text-fg-muted",
+    site: "min-w-0 truncate text-xs font-bold text-fg-muted",
     // The link's ::after covers the card, so that the whole card is one link without nesting the toggle in it.
     link: [
-      "min-w-0 font-semibold wrap-anywhere text-fg no-underline after:absolute after:inset-0 after:rounded-lg",
+      "min-w-0 font-extrabold wrap-anywhere text-fg no-underline after:absolute after:inset-0 after:rounded-lg",
       "data-hovered:text-fg data-hovered:underline data-focus-visible:underline",
     ],
     description: "line-clamp-2 min-w-0 text-sm wrap-anywhere text-fg-muted",
     byline: "min-w-0 text-xs wrap-anywhere text-fg-muted",
     // Above the link's hit area, so that it stays its own control.
     toggle:
-      "absolute z-10 cursor-default rounded-md bg-surface-raised font-medium text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
+      "absolute z-10 cursor-default rounded-full bg-surface-raised font-extrabold text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
   },
   variants: {
     revealed: {
-      false: { toggle: "inset-0 m-auto size-fit min-h-10 max-w-[calc(100%-1rem)] px-4 py-2 text-base shadow-md pointer-coarse:min-h-11" },
+      false: { toggle: "inset-0 m-auto size-fit min-h-10 max-w-[calc(100%-1rem)] px-4 py-2 text-sm shadow-md pointer-coarse:min-h-11" },
       true: { toggle: "inset-s-1.5 top-1.5 grid size-8 place-items-center shadow-sm pointer-coarse:size-11 [&>svg]:size-5" },
     },
   },

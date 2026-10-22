@@ -21,10 +21,14 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PublicRouteImport } from './routes/public'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
+import { Route as AboutCommerceRouteImport } from './routes/about_.commerce'
 import { Route as AboutCostsRouteImport } from './routes/about_.costs'
+import { Route as AboutPrivacyRouteImport } from './routes/about_.privacy'
 import { Route as AboutSupportersRouteImport } from './routes/about_.supporters'
+import { Route as AboutTermsRouteImport } from './routes/about_.terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
@@ -135,6 +139,11 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AtChar123acctChar125FollowersRoute =
   AtChar123acctChar125FollowersRouteImport.update({
     id: '/@{$acct}_/followers',
@@ -147,14 +156,29 @@ const AtChar123acctChar125FollowingRoute =
     path: '/@{$acct}/following',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AboutCommerceRoute = AboutCommerceRouteImport.update({
+  id: '/about_/commerce',
+  path: '/about/commerce',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutCostsRoute = AboutCostsRouteImport.update({
   id: '/about_/costs',
   path: '/about/costs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutPrivacyRoute = AboutPrivacyRouteImport.update({
+  id: '/about_/privacy',
+  path: '/about/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutSupportersRoute = AboutSupportersRouteImport.update({
   id: '/about_/supporters',
   path: '/about/supporters',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutTermsRoute = AboutTermsRouteImport.update({
+  id: '/about_/terms',
+  path: '/about/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -278,84 +302,84 @@ const ModerationSignupBlocksRoute = ModerationSignupBlocksRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
-  id: '/settings/',
-  path: '/settings/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsAccountRoute = SettingsAccountRouteImport.update({
-  id: '/settings/account',
-  path: '/settings/account',
-  getParentRoute: () => rootRouteImport,
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
-  id: '/settings/account-status',
-  path: '/settings/account-status',
-  getParentRoute: () => rootRouteImport,
+  id: '/account-status',
+  path: '/account-status',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsAutoDeleteRoute = SettingsAutoDeleteRouteImport.update({
-  id: '/settings/auto-delete',
-  path: '/settings/auto-delete',
-  getParentRoute: () => rootRouteImport,
+  id: '/auto-delete',
+  path: '/auto-delete',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
-  id: '/settings/blocks',
-  path: '/settings/blocks',
-  getParentRoute: () => rootRouteImport,
+  id: '/blocks',
+  path: '/blocks',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsCustomEmojisRoute = SettingsCustomEmojisRouteImport.update({
-  id: '/settings/custom-emojis',
-  path: '/settings/custom-emojis',
-  getParentRoute: () => rootRouteImport,
+  id: '/custom-emojis',
+  path: '/custom-emojis',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsDomainMutesRoute = SettingsDomainMutesRouteImport.update({
-  id: '/settings/domain-mutes',
-  path: '/settings/domain-mutes',
-  getParentRoute: () => rootRouteImport,
+  id: '/domain-mutes',
+  path: '/domain-mutes',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsFollowRequestsRoute = SettingsFollowRequestsRouteImport.update({
-  id: '/settings/follow-requests',
-  path: '/settings/follow-requests',
-  getParentRoute: () => rootRouteImport,
+  id: '/follow-requests',
+  path: '/follow-requests',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsImportExportRoute = SettingsImportExportRouteImport.update({
-  id: '/settings/import-export',
-  path: '/settings/import-export',
-  getParentRoute: () => rootRouteImport,
+  id: '/import-export',
+  path: '/import-export',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsMutesRoute = SettingsMutesRouteImport.update({
-  id: '/settings/mutes',
-  path: '/settings/mutes',
-  getParentRoute: () => rootRouteImport,
+  id: '/mutes',
+  path: '/mutes',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsPasskeysRoute = SettingsPasskeysRouteImport.update({
-  id: '/settings/passkeys',
-  path: '/settings/passkeys',
-  getParentRoute: () => rootRouteImport,
+  id: '/passkeys',
+  path: '/passkeys',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsPasswordRoute = SettingsPasswordRouteImport.update({
-  id: '/settings/password',
-  path: '/settings/password',
-  getParentRoute: () => rootRouteImport,
+  id: '/password',
+  path: '/password',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsPreferencesRoute = SettingsPreferencesRouteImport.update({
-  id: '/settings/preferences',
-  path: '/settings/preferences',
-  getParentRoute: () => rootRouteImport,
+  id: '/preferences',
+  path: '/preferences',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
-  id: '/settings/profile',
-  path: '/settings/profile',
-  getParentRoute: () => rootRouteImport,
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsSupporterRoute = SettingsSupporterRouteImport.update({
-  id: '/settings/supporter',
-  path: '/settings/supporter',
-  getParentRoute: () => rootRouteImport,
+  id: '/supporter',
+  path: '/supporter',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsTwoFactorRoute = SettingsTwoFactorRouteImport.update({
-  id: '/settings/two-factor',
-  path: '/settings/two-factor',
-  getParentRoute: () => rootRouteImport,
+  id: '/two-factor',
+  path: '/two-factor',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const TagsTagRoute = TagsTagRouteImport.update({
   id: '/tags/$tag',
@@ -420,10 +444,14 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/about/commerce': typeof AboutCommerceRoute
   '/about/costs': typeof AboutCostsRoute
+  '/about/privacy': typeof AboutPrivacyRoute
   '/about/supporters': typeof AboutSupportersRoute
+  '/about/terms': typeof AboutTermsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -489,8 +517,11 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/about/commerce': typeof AboutCommerceRoute
   '/about/costs': typeof AboutCostsRoute
+  '/about/privacy': typeof AboutPrivacyRoute
   '/about/supporters': typeof AboutSupportersRoute
+  '/about/terms': typeof AboutTermsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -555,10 +586,14 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
+  '/about_/commerce': typeof AboutCommerceRoute
   '/about_/costs': typeof AboutCostsRoute
+  '/about_/privacy': typeof AboutPrivacyRoute
   '/about_/supporters': typeof AboutSupportersRoute
+  '/about_/terms': typeof AboutTermsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -624,10 +659,14 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
+    | '/settings'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/about/commerce'
     | '/about/costs'
+    | '/about/privacy'
     | '/about/supporters'
+    | '/about/terms'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -693,8 +732,11 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/about/commerce'
     | '/about/costs'
+    | '/about/privacy'
     | '/about/supporters'
+    | '/about/terms'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -758,10 +800,14 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
+    | '/settings'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
+    | '/about_/commerce'
     | '/about_/costs'
+    | '/about_/privacy'
     | '/about_/supporters'
+    | '/about_/terms'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -826,10 +872,14 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   PublicRoute: typeof PublicRoute
   SearchRoute: typeof SearchRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
+  AboutCommerceRoute: typeof AboutCommerceRoute
   AboutCostsRoute: typeof AboutCostsRoute
+  AboutPrivacyRoute: typeof AboutPrivacyRoute
   AboutSupportersRoute: typeof AboutSupportersRoute
+  AboutTermsRoute: typeof AboutTermsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
@@ -852,25 +902,9 @@ export interface RootRouteChildren {
   ModerationRegistrationsRoute: typeof ModerationRegistrationsRoute
   ModerationReportsRoute: typeof ModerationReportsRoute
   ModerationSignupBlocksRoute: typeof ModerationSignupBlocksRoute
-  SettingsAccountRoute: typeof SettingsAccountRoute
-  SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
-  SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
-  SettingsBlocksRoute: typeof SettingsBlocksRoute
-  SettingsCustomEmojisRoute: typeof SettingsCustomEmojisRoute
-  SettingsDomainMutesRoute: typeof SettingsDomainMutesRoute
-  SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
-  SettingsImportExportRoute: typeof SettingsImportExportRoute
-  SettingsMutesRoute: typeof SettingsMutesRoute
-  SettingsPasskeysRoute: typeof SettingsPasskeysRoute
-  SettingsPasswordRoute: typeof SettingsPasswordRoute
-  SettingsPreferencesRoute: typeof SettingsPreferencesRoute
-  SettingsProfileRoute: typeof SettingsProfileRoute
-  SettingsSupporterRoute: typeof SettingsSupporterRoute
-  SettingsTwoFactorRoute: typeof SettingsTwoFactorRoute
   TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
-  SettingsIndexRoute: typeof SettingsIndexRoute
   AtChar123acctChar125StatusIdRoute: typeof AtChar123acctChar125StatusIdRoute
   AdminWebhooksIdRoute: typeof AdminWebhooksIdRoute
   ModerationAccountsIdRoute: typeof ModerationAccountsIdRoute
@@ -967,6 +1001,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/@{$acct}_/followers': {
       id: '/@{$acct}_/followers'
       path: '/@{$acct}/followers'
@@ -981,6 +1022,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtChar123acctChar125FollowingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about_/commerce': {
+      id: '/about_/commerce'
+      path: '/about/commerce'
+      fullPath: '/about/commerce'
+      preLoaderRoute: typeof AboutCommerceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about_/costs': {
       id: '/about_/costs'
       path: '/about/costs'
@@ -988,11 +1036,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutCostsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about_/privacy': {
+      id: '/about_/privacy'
+      path: '/about/privacy'
+      fullPath: '/about/privacy'
+      preLoaderRoute: typeof AboutPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about_/supporters': {
       id: '/about_/supporters'
       path: '/about/supporters'
       fullPath: '/about/supporters'
       preLoaderRoute: typeof AboutSupportersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about_/terms': {
+      id: '/about_/terms'
+      path: '/about/terms'
+      fullPath: '/about/terms'
+      preLoaderRoute: typeof AboutTermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -1165,115 +1227,115 @@ declare module '@tanstack/react-router' {
     }
     '/settings/': {
       id: '/settings/'
-      path: '/settings'
+      path: '/'
       fullPath: '/settings/'
       preLoaderRoute: typeof SettingsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/account': {
       id: '/settings/account'
-      path: '/settings/account'
+      path: '/account'
       fullPath: '/settings/account'
       preLoaderRoute: typeof SettingsAccountRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/account-status': {
       id: '/settings/account-status'
-      path: '/settings/account-status'
+      path: '/account-status'
       fullPath: '/settings/account-status'
       preLoaderRoute: typeof SettingsAccountStatusRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/auto-delete': {
       id: '/settings/auto-delete'
-      path: '/settings/auto-delete'
+      path: '/auto-delete'
       fullPath: '/settings/auto-delete'
       preLoaderRoute: typeof SettingsAutoDeleteRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/blocks': {
       id: '/settings/blocks'
-      path: '/settings/blocks'
+      path: '/blocks'
       fullPath: '/settings/blocks'
       preLoaderRoute: typeof SettingsBlocksRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/custom-emojis': {
       id: '/settings/custom-emojis'
-      path: '/settings/custom-emojis'
+      path: '/custom-emojis'
       fullPath: '/settings/custom-emojis'
       preLoaderRoute: typeof SettingsCustomEmojisRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/domain-mutes': {
       id: '/settings/domain-mutes'
-      path: '/settings/domain-mutes'
+      path: '/domain-mutes'
       fullPath: '/settings/domain-mutes'
       preLoaderRoute: typeof SettingsDomainMutesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/follow-requests': {
       id: '/settings/follow-requests'
-      path: '/settings/follow-requests'
+      path: '/follow-requests'
       fullPath: '/settings/follow-requests'
       preLoaderRoute: typeof SettingsFollowRequestsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/import-export': {
       id: '/settings/import-export'
-      path: '/settings/import-export'
+      path: '/import-export'
       fullPath: '/settings/import-export'
       preLoaderRoute: typeof SettingsImportExportRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/mutes': {
       id: '/settings/mutes'
-      path: '/settings/mutes'
+      path: '/mutes'
       fullPath: '/settings/mutes'
       preLoaderRoute: typeof SettingsMutesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/passkeys': {
       id: '/settings/passkeys'
-      path: '/settings/passkeys'
+      path: '/passkeys'
       fullPath: '/settings/passkeys'
       preLoaderRoute: typeof SettingsPasskeysRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/password': {
       id: '/settings/password'
-      path: '/settings/password'
+      path: '/password'
       fullPath: '/settings/password'
       preLoaderRoute: typeof SettingsPasswordRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/preferences': {
       id: '/settings/preferences'
-      path: '/settings/preferences'
+      path: '/preferences'
       fullPath: '/settings/preferences'
       preLoaderRoute: typeof SettingsPreferencesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/profile': {
       id: '/settings/profile'
-      path: '/settings/profile'
+      path: '/profile'
       fullPath: '/settings/profile'
       preLoaderRoute: typeof SettingsProfileRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/supporter': {
       id: '/settings/supporter'
-      path: '/settings/supporter'
+      path: '/supporter'
       fullPath: '/settings/supporter'
       preLoaderRoute: typeof SettingsSupporterRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/two-factor': {
       id: '/settings/two-factor'
-      path: '/settings/two-factor'
+      path: '/two-factor'
       fullPath: '/settings/two-factor'
       preLoaderRoute: typeof SettingsTwoFactorRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/tags/$tag': {
       id: '/tags/$tag'
@@ -1341,6 +1403,48 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteChildren {
+  SettingsAccountRoute: typeof SettingsAccountRoute
+  SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
+  SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
+  SettingsBlocksRoute: typeof SettingsBlocksRoute
+  SettingsCustomEmojisRoute: typeof SettingsCustomEmojisRoute
+  SettingsDomainMutesRoute: typeof SettingsDomainMutesRoute
+  SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
+  SettingsImportExportRoute: typeof SettingsImportExportRoute
+  SettingsMutesRoute: typeof SettingsMutesRoute
+  SettingsPasskeysRoute: typeof SettingsPasskeysRoute
+  SettingsPasswordRoute: typeof SettingsPasswordRoute
+  SettingsPreferencesRoute: typeof SettingsPreferencesRoute
+  SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsSupporterRoute: typeof SettingsSupporterRoute
+  SettingsTwoFactorRoute: typeof SettingsTwoFactorRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsAccountRoute: SettingsAccountRoute,
+  SettingsAccountStatusRoute: SettingsAccountStatusRoute,
+  SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
+  SettingsBlocksRoute: SettingsBlocksRoute,
+  SettingsCustomEmojisRoute: SettingsCustomEmojisRoute,
+  SettingsDomainMutesRoute: SettingsDomainMutesRoute,
+  SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
+  SettingsImportExportRoute: SettingsImportExportRoute,
+  SettingsMutesRoute: SettingsMutesRoute,
+  SettingsPasskeysRoute: SettingsPasskeysRoute,
+  SettingsPasswordRoute: SettingsPasswordRoute,
+  SettingsPreferencesRoute: SettingsPreferencesRoute,
+  SettingsProfileRoute: SettingsProfileRoute,
+  SettingsSupporterRoute: SettingsSupporterRoute,
+  SettingsTwoFactorRoute: SettingsTwoFactorRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtChar123acctChar125Route: AtChar123acctChar125Route,
@@ -1354,10 +1458,14 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   PublicRoute: PublicRoute,
   SearchRoute: SearchRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
+  AboutCommerceRoute: AboutCommerceRoute,
   AboutCostsRoute: AboutCostsRoute,
+  AboutPrivacyRoute: AboutPrivacyRoute,
   AboutSupportersRoute: AboutSupportersRoute,
+  AboutTermsRoute: AboutTermsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
@@ -1380,25 +1488,9 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationRegistrationsRoute: ModerationRegistrationsRoute,
   ModerationReportsRoute: ModerationReportsRoute,
   ModerationSignupBlocksRoute: ModerationSignupBlocksRoute,
-  SettingsAccountRoute: SettingsAccountRoute,
-  SettingsAccountStatusRoute: SettingsAccountStatusRoute,
-  SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
-  SettingsBlocksRoute: SettingsBlocksRoute,
-  SettingsCustomEmojisRoute: SettingsCustomEmojisRoute,
-  SettingsDomainMutesRoute: SettingsDomainMutesRoute,
-  SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
-  SettingsImportExportRoute: SettingsImportExportRoute,
-  SettingsMutesRoute: SettingsMutesRoute,
-  SettingsPasskeysRoute: SettingsPasskeysRoute,
-  SettingsPasswordRoute: SettingsPasswordRoute,
-  SettingsPreferencesRoute: SettingsPreferencesRoute,
-  SettingsProfileRoute: SettingsProfileRoute,
-  SettingsSupporterRoute: SettingsSupporterRoute,
-  SettingsTwoFactorRoute: SettingsTwoFactorRoute,
   TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,
-  SettingsIndexRoute: SettingsIndexRoute,
   AtChar123acctChar125StatusIdRoute: AtChar123acctChar125StatusIdRoute,
   AdminWebhooksIdRoute: AdminWebhooksIdRoute,
   ModerationAccountsIdRoute: ModerationAccountsIdRoute,

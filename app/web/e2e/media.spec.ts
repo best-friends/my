@@ -111,7 +111,7 @@ async function serveApi(page: Page): Promise<void> {
     const path = new URL(route.request().url()).pathname.replace("/api/v1", "");
     if (path === "/accounts/verify_credentials") return json(route, alice);
     if (path === "/instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (path === "/preferences") {
       // The user's locale is the project's: the app displays itself in the signed-in user's locale.
@@ -138,10 +138,17 @@ test.describe("a post with videos and audio", () => {
     const audio = article.locator("audio");
     await expect(videos).toHaveCount(2);
     await expect(audio).toHaveCount(1);
-    for (const player of [videos.first(), videos.nth(1), audio]) {
+    for (const player of [videos.first(), videos.nth(1)]) {
       await expect(player).toHaveAttribute("controls", "");
-      await expect(player).not.toHaveAttribute("autoplay");
-      await expect(player).toHaveJSProperty("paused", true);
+    }
+    // The audio file has the page's own player (a play button and a seek slider) in place of the browser's controls.
+    await expect(audio).not.toHaveAttribute("controls");
+    const player = audio.locator("xpath=..");
+    await expect(player.getByRole("button")).toHaveCount(1);
+    await expect(player.getByRole("slider")).toHaveCount(1);
+    for (const element of [videos.first(), videos.nth(1), audio]) {
+      await expect(element).not.toHaveAttribute("autoplay");
+      await expect(element).toHaveJSProperty("paused", true);
     }
     await expect(videos.first()).toHaveAccessibleName("A cat jumps onto a sofa");
     await expect(videos.first()).toHaveAttribute("poster", `${mediaBase}/poster.svg`);

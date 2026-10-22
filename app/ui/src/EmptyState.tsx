@@ -5,9 +5,9 @@ import { tv } from "tailwind-variants";
 const emptyState = tv({
   slots: {
     base: "flex flex-col items-center gap-3 px-4 py-10 text-center",
-    illustration: "text-fg-muted [&>svg]:size-16",
-    heading: "text-lg font-semibold text-fg",
-    description: "max-w-prose text-sm text-fg-muted",
+    illustration: "grid size-22 place-items-center rounded-2xl bg-surface-sunken text-accent [&>svg]:size-11",
+    heading: "font-serif text-2xl font-medium tracking-tight text-fg",
+    description: "max-w-[60ch] text-sm text-fg-muted",
     action: "mt-2 flex flex-wrap justify-center gap-2",
   },
 });

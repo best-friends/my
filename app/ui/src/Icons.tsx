@@ -21,6 +21,7 @@ import {
   PiBookmarkSimple,
   PiBookmarkSimpleFill,
   PiCaretLeft,
+  PiCheck,
   PiCaretRight,
   PiChartBarHorizontal,
   PiChartBarHorizontalFill,
@@ -34,6 +35,9 @@ import {
   PiInfo,
   PiList,
   PiMagnifyingGlass,
+  PiNote,
+  PiPauseFill,
+  PiPlayFill,
   PiPlus,
   PiQuotes,
   PiRepeat,
@@ -77,6 +81,8 @@ const glyph = (icon: typeof PiX, phosphor: string): Glyph => ({ icon, phosphor }
 export const iconTable = {
   // Actions.
   CloseIcon: { off: glyph(PiX, "PiX") },
+  // Done and succeeded, for a success message and toast; a check does not point anywhere, so it does not mirror.
+  CheckIcon: { off: glyph(PiCheck, "PiCheck") },
   PlusIcon: { off: glyph(PiPlus, "PiPlus") },
   // Regular's dots are too small to read at size-5, so the overflow menu uses Bold's.
   MoreIcon: { off: glyph(PiDotsThreeBold, "PiDotsThreeBold") },
@@ -94,6 +100,8 @@ export const iconTable = {
   // The image viewer steps through a post's pictures in the order of the line, so they mirror.
   PreviousIcon: { off: glyph(PiCaretLeft, "PiCaretLeft"), directional: true },
   NextIcon: { off: glyph(PiCaretRight, "PiCaretRight"), directional: true },
+  // A note: the button that lays a picture's description over it. The page has no direction, so it does not mirror.
+  AltTextIcon: { off: glyph(PiNote, "PiNote") },
   // A loop means a loop and not a direction, so it does not mirror; it has nothing to fill, so on is Bold.
   BoostIcon: { off: glyph(PiRepeat, "PiRepeat"), on: glyph(PiRepeatBold, "PiRepeatBold") },
   StarIcon: { off: glyph(PiStar, "PiStar"), on: glyph(PiStarFill, "PiStarFill") },
@@ -103,6 +111,10 @@ export const iconTable = {
   },
   // Quotation marks are not a direction, so they do not mirror.
   QuoteIcon: { off: glyph(PiQuotes, "PiQuotes") },
+  // Playback of audio and video: a triangle pointing along the line would flip, but a play button points to the
+  // end of the line in left-to-right text and the media's time still runs that way, so it does not mirror.
+  PlayIcon: { off: glyph(PiPlayFill, "PiPlayFill") },
+  PauseIcon: { off: glyph(PiPauseFill, "PiPauseFill") },
   // The new-post form.
   ImageIcon: { off: glyph(PiImage, "PiImage") },
   // Filled, the exclamation mark stays cut out of the triangle.
@@ -140,6 +152,11 @@ function renderIcon(entry: IconEntry, on = false) {
 }
 
 // Actions.
+
+/** A check mark, for something that succeeded. */
+export function CheckIcon() {
+  return renderIcon(iconTable.CheckIcon);
+}
 
 /** The × of close and dismiss buttons. */
 export function CloseIcon() {
@@ -193,6 +210,16 @@ export function NewItemsIcon() {
   return renderIcon(iconTable.NewItemsIcon);
 }
 
+/** A filled triangle, for the button that plays audio or video. */
+export function PlayIcon() {
+  return renderIcon(iconTable.PlayIcon);
+}
+
+/** Two filled bars, for the button that pauses audio or video. */
+export function PauseIcon() {
+  return renderIcon(iconTable.PauseIcon);
+}
+
 /** An eye struck through, for the button that conceals sensitive media again. */
 export function HideMediaIcon() {
   return renderIcon(iconTable.HideMediaIcon);
@@ -201,6 +228,11 @@ export function HideMediaIcon() {
 /** A caret to the start of the line, for the button that shows the picture before. It flips in right-to-left text. */
 export function PreviousIcon() {
   return renderIcon(iconTable.PreviousIcon);
+}
+
+/** A note, for the button of the image viewer that shows or hides the picture's description. */
+export function AltTextIcon() {
+  return renderIcon(iconTable.AltTextIcon);
 }
 
 /** A caret to the end of the line, for the button that shows the next picture. It flips in right-to-left text. */

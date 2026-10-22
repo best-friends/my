@@ -3,6 +3,7 @@ import { Avatar, ContentWarning, EmojiText, MediaGrid, PostCardAuthorLink, PostC
 import { useT } from "../../../lib/i18n";
 import type { Status, StatusQuote } from "../api/status";
 import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
+import { useAudioPlayerLabels } from "../hooks/useAudioPlayerLabels";
 import { useQuoteView } from "../hooks/useQuoteView";
 import { useStatusView } from "../hooks/useStatusView";
 
@@ -22,6 +23,7 @@ function QuotedPost({ status, notice }: { status: Status; notice: string | null 
   const t = useT();
   const view = useStatusView(status);
   const viewerLabels = useMediaViewerLabels();
+  const audioLabels = useAudioPlayerLabels();
   const body = (
     <>
       <PostContent html={view.html} lang={view.lang} emojis={view.emojis} onLinkClick={view.onLinkClick} />
@@ -32,6 +34,7 @@ function QuotedPost({ status, notice }: { status: Status; notice: string | null 
           noDescriptionLabel={t("client:timeline.media.no_description")}
           revealLabel={t("client:timeline.media.reveal")}
           viewerLabels={viewerLabels}
+          audioLabels={audioLabels}
         />
       )}
     </>
@@ -39,7 +42,7 @@ function QuotedPost({ status, notice }: { status: Status; notice: string | null 
   return (
     <QuoteCard
       label={t("client:status.quote.label")}
-      avatar={<Avatar sources={view.author.avatar} name={view.author.name} size="xs" decorative />}
+      avatar={<Avatar sources={view.author.avatar} name={view.author.name} seed={view.author.id} size="xs" decorative />}
       author={
         <PostCardAuthorLink href={view.author.href} name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />
       }

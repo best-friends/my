@@ -740,8 +740,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		ReportCounts:  a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
 		OwnAccount: a.Identity, Exports: a.Exports, Imports: a.Imports,
-		// The instance texts and the public pages of the documents among them (#489).
-		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
+		// The instance texts and the web client's pages of the documents among them (#489), which
+		// GET /instance/documents/{kind} feeds.
+		InstanceTexts: a.Instance, Documents: a.Instance, TermsPath: web.PathAboutTerms, PrivacyPolicyPath: web.PathAboutPrivacyPolicy,
 		// The instance settings, and the invites with the registration page they open (#624).
 		Settings: a.Instance, Invites: a.Identity, SignUpPath: authpages.PathSignUp,
 		// The instance theme (ADR-0059) and the URLs of its stylesheets, which the web handler serves.
@@ -761,7 +762,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The instance's costs (ADR-0067).
 		Costs: a.Finance, Income: a.Finance,
 		// The supporter program (ADR-0072) and the page of its commerce disclosures (§13).
-		Supporters: a.Supporters, OwnSupporters: a.Supporters, CommerceDisclosurePath: authpages.PathCommerceDisclosure,
+		Supporters: a.Supporters, OwnSupporters: a.Supporters, CommerceDisclosurePath: web.PathAboutCommerceDisclosure,
 		// The payment provider's state and the reconciliation by hand (ADR-0074 §4).
 		Payments:    a.paymentsAPI(),
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,

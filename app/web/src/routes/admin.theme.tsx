@@ -4,7 +4,7 @@ import { ThemeSettings, themeQueryOptions } from "../features/admin";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /** The server's theme (ADR-0059): overrides of the design tokens and a custom CSS for every visitor, for manage_settings. */
 export const Route = createFileRoute("/admin/theme")({
@@ -20,7 +20,7 @@ function ThemePage() {
   const t = useT();
   return (
     <>
-      <SettingsHeading>{t("client:admin.theme.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.theme.title")}</PageHeading>
       <ThemeSettings />
     </>
   );

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Real-time updates in every width × locale project (FR-207, ADR-0027, web-client.md Y7): a new post from
 // GET /api/v1/streaming waits behind the "N new posts" button and is not inserted until the button is
-// pressed, and a notification raises the unread badge. `vite preview` has no API, so the spec answers the
+// pressed (or is inserted at once when the reader chose it), and a notification raises the unread badge. `vite preview` has no API, so the spec answers the
 // OAuth refresh and the client API with `page.route`; each answer to the stream is one response body
 // that ends, so the client also reconnects throughout, as it does after the server ends a stream.
 import type { Page } from "@playwright/test";
@@ -115,6 +115,116 @@ test.describe("new posts in the home timeline", () => {
     await expect(page.getByRole("main").getByRole("status")).toBeEmpty();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("new posts inserted on their own (ADR-0077)", () => {
+  test("appear at the top at once, without a button, when the reader chose it", async ({ page, makeAxeBuilder }) => {
+    await signedInServer(page, sse("update", arriving));
+    await page.route("**/api/v1/preferences", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          locale: test.info().project.use.locale ?? "en",
+          time_zone: "UTC",
+          time_zone_chosen: true,
+          default_visibility: "public",
+          default_quote_policy: "public",
+          default_post_language: "en",
+          require_media_description: false,
+          email_moderator_notifications: false,
+          timeline_auto_insert: true,
+          timeline_languages: [],
+        }),
+      }),
+    );
+    await page.goto("/home");
+    const feed = page.getByRole("feed");
+    await expect(feed.getByRole("article")).toHaveCount(3);
+    await expect(feed.getByRole("article").first()).toContainText("arrived through the stream");
+    await expect(page.getByRole("main").getByRole("status").getByRole("button")).toHaveCount(0);
+    // Nothing took focus.
+    await expect(page.getByRole("heading", { level: 1 })).not.toBeFocused();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+/** The reader chose the automatic insertion; the stream sends `arriving` only once `release()` is called, after the page has settled. */
+async function autoInsertServer(page: Page, many: Status[]) {
+  const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let sent = false;
+  await page.route("**/oauth/token/refresh", (route) => route.fulfill(json({ access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 })));
+  await page.route("**/api/v1/timelines/home*", (route) => route.fulfill(json({ items: many })));
+  await page.route("**/api/v1/notifications/marker", (route) => route.fulfill(json({ last_read_id: "0", unread_count: 0 })));
+  await page.route("**/api/v1/preferences", (route) =>
+    route.fulfill(
+      json({
+        locale: test.info().project.use.locale ?? "en",
+        time_zone: "UTC",
+        time_zone_chosen: true,
+        default_visibility: "public",
+        default_quote_policy: "public",
+        default_post_language: "en",
+        require_media_description: false,
+        email_moderator_notifications: false,
+        timeline_auto_insert: true,
+        timeline_languages: [],
+      }),
+    ),
+  );
+  await page.route("**/api/v1/streaming", async (route) => {
+    // A connection the client drops and opens again waits for the release too; the first one answered carries the post.
+    await gate;
+    const first = !sent;
+    sent = true;
+    await route.fulfill({ status: 200, contentType: "text/event-stream", body: `: connected\n\n${first ? sse("update", status(11, "A post that arrived through the stream.")) : ""}` }).catch(() => undefined);
+  });
+  return release;
+}
+
+test.describe("automatic insertion while the reader is away or reading (ADR-0077)", () => {
+  const many = Array.from({ length: 10 }, (_, i) => status(10 - i, `Post number ${String(10 - i)} of the feed.`));
+
+  test("keeps the post being read in place when away from the top", async ({ page }) => {
+    const release = await autoInsertServer(page, many);
+    await page.goto("/home");
+    const articles = page.getByRole("feed").getByRole("article");
+    await expect(articles).toHaveCount(10);
+    await articles.nth(9).scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      window.scrollBy(0, 40);
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(200);
+    const reading = articles.filter({ hasText: "Post number 6 of the feed." });
+    const before = (await reading.boundingBox())?.y ?? Number.NaN;
+    release();
+    await expect(reading).toHaveAttribute("aria-setsize", "11");
+    // The feed shows a window of its posts, so the new one is not necessarily in the page; the post being read stays where it was.
+    await expect(reading).toHaveAttribute("aria-posinset", "6");
+    await expect.poll(async () => Math.abs(((await reading.boundingBox())?.y ?? Number.NaN) - before)).toBeLessThan(2);
+  });
+
+  test("waits while the focus is in the feed, and inserts once it leaves", async ({ page }) => {
+    const release = await autoInsertServer(page, many);
+    await page.goto("/home");
+    const articles = page.getByRole("feed").getByRole("article");
+    await expect(articles).toHaveCount(10);
+    await articles.first().focus();
+    release();
+    const button = page.getByRole("main").getByRole("status").getByRole("button");
+    await expect(button).toBeVisible();
+    await expect(articles).toHaveCount(10);
+    await page.evaluate(() => {
+      (document.activeElement as HTMLElement | null)?.blur();
+    });
+    await expect(articles.first()).toHaveAttribute("aria-setsize", "11");
+    await expect(button).toHaveCount(0);
   });
 });
 

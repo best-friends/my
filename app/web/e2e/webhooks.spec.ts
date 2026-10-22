@@ -69,7 +69,7 @@ async function administratorServer(page: Page) {
         name: "my example",
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
-        registrations: { mode: "approval" },
+        registrations: { mode: "approval" }, federation: { mode: "both" },
         limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
         rules: [],
@@ -136,7 +136,7 @@ test.describe("webhooks", () => {
     await expect(form.getByText(secret, { exact: true })).toBeVisible();
     expect(sent).toEqual(["create https://hooks.example/in report.created"]);
     const list = main.getByRole("region", { name: message("admin.webhooks.list.title"), exact: true });
-    await expect(list.getByRole("heading", { level: 3, name: description, exact: true })).toBeVisible();
+    await expect(list.getByRole("rowheader", { name: description })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 

@@ -212,7 +212,7 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
         tone: narrowed ? "neutral" : "success",
         ...(narrowed ? { timeout: null } : {}),
       });
-      if (controller.layout === "sheet" && store.getSnapshot().outbox.length === 0 && isEmptyDraft(store.getSnapshot().draft)) {
+      if (store.getSnapshot().outbox.length === 0 && isEmptyDraft(store.getSnapshot().draft)) {
         controller.setSheetOpen(false);
       }
     },

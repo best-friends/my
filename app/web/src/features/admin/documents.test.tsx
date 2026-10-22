@@ -10,7 +10,6 @@ import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/m
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { instanceTextFixture } from "./test/handlers";
-import { newTabName } from "../../test/links";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_settings"]));
@@ -51,7 +50,7 @@ function section(name: string): HTMLElement {
 describe("the terms and policies screen", () => {
   test("shows each document, when it was saved, and its page", async () => {
     textsServer([terms]);
-    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, terms_url: "http://localhost:3000/auth/terms" })));
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, terms_url: "http://localhost:3000/about/terms" })));
     await renderApp({ path: "/admin/documents" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Terms and policies" })).toBeInTheDocument();
@@ -65,10 +64,10 @@ describe("the terms and policies screen", () => {
     expect(privacy.getByText("Not written yet, so the page and its links are hidden")).toBeInTheDocument();
     expect(privacy.queryByRole("link")).not.toBeInTheDocument();
 
-    // The public page is the server's own, outside the app: it opens in a new tab.
-    const page = await termsSection.findByRole("link", { name: newTabName("Open the terms of service page") });
-    expect(page).toHaveAttribute("href", "http://localhost:3000/auth/terms");
-    expect(page).toHaveAttribute("target", "_blank");
+    // The public page is an information page of the app: it opens in the same tab.
+    const page = await termsSection.findByRole("link", { name: "Open the terms of service page" });
+    expect(page).toHaveAttribute("href", "/about/terms");
+    expect(page).not.toHaveAttribute("target");
   });
 
   test("saves a text and says that the audit log records it", async () => {
@@ -149,6 +148,6 @@ describe("the terms and policies screen", () => {
   test("the admin page links to it for manage_settings", async () => {
     await renderApp({ path: "/admin" });
 
-    expect(await screen.findByRole("link", { name: "Terms and policies" })).toHaveAttribute("href", "/admin/documents");
+    expect(await within(await screen.findByRole("main")).findByRole("link", { name: "Terms and policies" })).toHaveAttribute("href", "/admin/documents");
   });
 });

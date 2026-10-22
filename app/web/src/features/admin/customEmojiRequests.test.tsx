@@ -30,7 +30,7 @@ describe("the requests tab of the custom emoji screen", () => {
     await user.click(tab);
 
     const region = await screen.findByRole("region", { name: "Requests for custom emoji" });
-    expect(await within(region).findByRole("heading", { level: 3, name: ":blobcat:" })).toBeInTheDocument();
+    expect(await within(region).findByRole("rowheader", { name: ":blobcat:" })).toBeInTheDocument();
     expect(within(region).getByText("A new image")).toBeInTheDocument();
     expect(within(region).getAllByRole("link", { name: "@bob" })[0]).toHaveAttribute("href", "/@bob");
   });
@@ -50,7 +50,7 @@ describe("the requests tab of the custom emoji screen", () => {
     const region = screen.getByRole("region", { name: "Requests for custom emoji" });
     expect(await within(region).findByText("The request for ⁦:blobcat:⁩ is approved.")).toBeInTheDocument();
     expect(approved).toBe("r1");
-    expect(within(region).queryByRole("heading", { level: 3, name: ":blobcat:" })).not.toBeInTheDocument();
+    expect(within(region).queryByRole("rowheader", { name: ":blobcat:" })).not.toBeInTheDocument();
   });
 
   test("rejects a request with a reason after asking", async () => {
@@ -96,7 +96,7 @@ describe("the requests tab of the custom emoji screen", () => {
 
     const region = screen.getByRole("region", { name: "Requests for custom emoji" });
     expect(await within(region).findByRole("alert")).toHaveTextContent("Could not decide the request: The requester can no longer create custom emoji. Reject the request instead.");
-    expect(screen.getByRole("heading", { level: 3, name: ":blobcat:" })).toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: ":blobcat:" })).toBeInTheDocument();
   });
 
   test("lists the requests in another state from the URL, with the reason of a rejection", async () => {

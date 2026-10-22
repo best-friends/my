@@ -7,9 +7,9 @@ import { tv } from "tailwind-variants";
 const descriptionList = tv({
   slots: {
     root: "@container min-w-0",
-    list: "grid grid-cols-1 gap-3",
+    list: "grid grid-cols-1 gap-x-6 gap-y-3",
     item: "flex min-w-0 flex-col",
-    term: "text-sm text-fg-muted",
+    term: "text-sm font-bold text-fg-muted",
     value: "min-w-0 wrap-anywhere",
   },
   variants: {

@@ -11,6 +11,8 @@ import { timelineQueryOptions } from "../api/timelines";
 export type NewHomeStatuses = {
   /** How many new entries wait; 0 hides the button. */
   count: number;
+  /** Whether the waiting entries may not join the loaded ones: showing them loads the first page again. */
+  gap: boolean;
   /** Inserts the waiting entries at the top of the timeline. A failure is announced. */
   show: () => void;
 };
@@ -38,5 +40,6 @@ export function useNewHomeStatuses(): NewHomeStatuses {
     });
   };
 
-  return { count: waiting?.gap === true ? Math.max(count, 1) : count, show };
+  const gap = waiting?.gap === true;
+  return { count: gap ? Math.max(count, 1) : count, gap, show };
 }

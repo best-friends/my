@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DialogTrigger, EmptyState, ExternalLink, Heading, Hint, InlineError, Radio, RadioGroup, RegionError, Spinner, Stack, StatusMessage, Text } from "@my/ui";
+import { Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DialogTrigger, EmptyState, Heading, Hint, InlineError, Radio, RadioGroup, RegionError, Spinner, Stack, StatusMessage, Text } from "@my/ui";
 import { type ReactNode, useId, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFormatMoney } from "../../costs";
+import { DocumentLink } from "../../documents";
 import { type SupporterIneligibleReason, type SupporterInterval, supporterIntervals, type SupporterPlan, type SupporterSubscription } from "../api/supporters";
 import {
   changeTiming,
@@ -261,9 +262,9 @@ function CheckoutConfirmation({
       </DescriptionList>
       {commerceDisclosureUrl !== undefined && (
         <p>
-          <ExternalLink href={commerceDisclosureUrl} variant="standalone">
+          <DocumentLink href={commerceDisclosureUrl}>
             {t("client:supporter.commerce")}
-          </ExternalLink>
+            </DocumentLink>
         </p>
       )}
     </ConfirmDialog>
@@ -440,9 +441,9 @@ function SubscriptionActions({
       )}
       {commerceDisclosureUrl !== undefined && (
         <p>
-          <ExternalLink href={commerceDisclosureUrl} variant="standalone">
+          <DocumentLink href={commerceDisclosureUrl}>
             {t("client:supporter.commerce")}
-          </ExternalLink>
+            </DocumentLink>
         </p>
       )}
     </Stack>

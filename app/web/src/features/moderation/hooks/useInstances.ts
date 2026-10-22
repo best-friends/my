@@ -16,10 +16,10 @@ import {
   instancesQueryOptions,
   markAvailableMutation,
 } from "../api/staff";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type PagedPages, toPagedList } from "./pagedList";
 
 /** The remote servers under `filter`, in domain order. */
-export function useInstances(filter: InstanceFilter): PagedList<InstanceHealth> {
+export function useInstances(filter: InstanceFilter): PagedPages<InstanceHealth> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(instancesQueryOptions(api, filter)));
 }
@@ -27,7 +27,7 @@ export function useInstances(filter: InstanceFilter): PagedList<InstanceHealth> 
 /** One remote server: its health, why and when its availability changed, and marking it available. */
 export type InstanceView = {
   health: InstanceHealth;
-  events: PagedList<AvailabilityEvent>;
+  events: PagedPages<AvailabilityEvent>;
   /** Clears the server's failures so that deliveries to it resume; the result is announced once the lists have it. */
   markAvailable: () => void;
   isMarking: boolean;

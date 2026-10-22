@@ -54,3 +54,8 @@ export const Open: Story = {
 export const RightToLeftWarning: Story = {
   args: { summary: "تحذير: حرق لأحداث الحلقة الأخيرة", summaryLang: "ar" },
 };
+
+/** In a right-to-left page the icon, the text and the button swap sides. */
+export const RightToLeftPage: Story = {
+  args: { dir: "rtl", summary: "تحذير: حرق لأحداث الحلقة الأخيرة", summaryLang: "ar", toggleLabel: "عرض المحتوى", defaultExpanded: true },
+};

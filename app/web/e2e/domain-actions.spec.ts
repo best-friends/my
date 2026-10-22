@@ -65,7 +65,7 @@ async function operatorServer(page: Page) {
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     const key = `${request.method()} ${path}`;
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials") return json(route, operator);
     if (key === "GET /preferences") {
@@ -115,7 +115,7 @@ test.describe("page /moderation/domain-actions", () => {
   test.beforeEach(async ({ page }) => {
     await operatorServer(page);
     await page.goto("/moderation/domain-actions");
-    await expect(page.getByRole("main").getByRole("heading", { level: 3 }).first()).toBeVisible();
+    await expect(page.getByRole("main").getByRole("table")).toBeVisible();
   });
 
   test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -132,32 +132,15 @@ test.describe("domain actions", () => {
     const requests = await operatorServer(page);
     await page.goto("/moderation/domain-actions");
     const main = page.getByRole("main");
-    const list = main.getByRole("tabpanel");
-    await expect(list.getByRole("heading", { level: 3 })).toHaveCount(1);
+    const list = main.getByRole("table");
+    await expect(list.getByRole("rowheader")).toHaveCount(1);
 
-    await expect(list).toMatchAriaSnapshot(`
-      - tabpanel:
-        - list:
-          - listitem:
-            - heading /${unicodeDomain.replaceAll(".", "\\.")}.*${asciiDomain.replaceAll(".", "\\.")}/ [level=3]
-            - button
-            - term
-            - definition
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-            - term
-            - definition:
-              - time
-            - term
-            - definition
-            - term
-            - definition: ${longComment}
-            - term
-            - definition: See the reports.
-    `);
+    // The row names the domain in both forms and keeps its details: the comment and the private note.
+    const action = list.getByRole("row").nth(1);
+    await expect(action.getByRole("rowheader")).toHaveText(new RegExp(`${unicodeDomain.replaceAll(".", "\\.")}.*${asciiDomain.replaceAll(".", "\\.")}`));
+    await expect(action).toContainText(longComment);
+    await expect(action).toContainText("See the reports.");
+    await expect(action.getByRole("button")).toHaveCount(1);
 
     // The form: a domain, then the last kind (suspend), whose confirmation sends nothing yet.
     await main.getByRole("textbox").first().fill("spam.example");
@@ -183,11 +166,11 @@ test.describe("domain actions", () => {
     await dialog.getByRole("button").last().click();
     await expect(dialog).toBeHidden();
     await expect(main.getByRole("status").filter({ hasText: "spam.example" })).toBeVisible();
-    await expect(list.getByRole("heading", { level: 3, name: "spam.example" })).toBeVisible();
+    await expect(list.getByRole("rowheader", { name: "spam.example" })).toBeVisible();
     expect(requests).toEqual(["POST /admin/domain_actions suspend spam.example"]);
 
-    await list.getByRole("listitem").filter({ hasText: unicodeDomain }).getByRole("button").click();
-    await expect(list.getByRole("heading", { level: 3 })).toHaveCount(1);
+    await list.getByRole("row").filter({ hasText: unicodeDomain }).getByRole("button").click();
+    await expect(list.getByRole("rowheader")).toHaveCount(1);
     await expect(list.getByRole("button")).toBeFocused();
     expect(requests).toEqual(["POST /admin/domain_actions suspend spam.example", "POST /admin/domain_actions/0192f0c4-7a8e-7000-8000-0000000000a2/lift"]);
     await expectNoAxeViolations(makeAxeBuilder);
@@ -200,7 +183,7 @@ test.describe("Mastodon's domain block CSV", () => {
     const requests = await operatorServer(page);
     await page.goto("/moderation/domain-actions");
     const main = page.getByRole("main");
-    await expect(main.getByRole("tabpanel").getByRole("heading", { level: 3 })).toHaveCount(1);
+    await expect(main.getByRole("table").getByRole("rowheader")).toHaveCount(1);
 
     // The CSV's text area is the last text box of the page; the preview is the submit button of the last form.
     await main.getByRole("textbox").last().fill("#domain,#severity\nspam.example,silence\n");

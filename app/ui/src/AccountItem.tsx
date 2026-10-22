@@ -12,7 +12,7 @@ const accountItem = tv({
     root: "flex min-w-0 flex-col gap-3",
     body: "grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3",
     avatar: "",
-    name: "font-semibold align-match-parent",
+    name: "font-extrabold align-match-parent",
     handle: "text-start text-sm font-normal text-fg-muted",
     details: "flex flex-col text-sm text-fg-muted",
     trailing: "flex shrink-0 flex-wrap items-center gap-2",
@@ -22,7 +22,7 @@ const accountItem = tv({
       /** Fills the width it is in. */
       row: { body: "w-full text-fg data-hovered:text-fg" },
       /** A row of a list that is a whole target: padded, with a hover background. */
-      padded: { body: "w-full px-4 py-3 text-fg data-hovered:bg-surface-sunken data-hovered:text-fg" },
+      padded: { body: "w-full rounded-md px-4 py-3 text-fg data-hovered:bg-surface-sunken data-hovered:text-fg" },
       /** Only as wide as its text, for an account named in running content. */
       inline: { body: "inline-grid max-w-full" },
     },
@@ -51,6 +51,8 @@ export type AccountItemProps = {
   avatar?: ImageSources | undefined;
   /** The avatar image URL, for an account that has no renditions. */
   avatarSrc?: string | undefined;
+  /** What picks the tint of the avatar's letter, such as the account's ID (see `Avatar`). */
+  avatarSeed?: string | undefined;
   /** Makes the account a link to this address, named "name handle". Without it the item is plain text. */
   href?: string | undefined;
   /** `row` fills the width, `padded` is a whole-row target with a hover background, `inline` is as wide as its text. */
@@ -76,6 +78,7 @@ export function AccountItem({
   handle,
   avatar,
   avatarSrc,
+  avatarSeed,
   href,
   layout,
   details,
@@ -89,7 +92,7 @@ export function AccountItem({
   const slots = accountItem({ layout, link: isLink, trailing: hasTrailing ? trailingPlacement : "none" });
   const content = (
     <>
-      <Avatar sources={avatar} src={avatarSrc} name={name} decorative className={slots.avatar({ className: showDetails ? "row-span-3" : "row-span-2" })} />
+      <Avatar sources={avatar} src={avatarSrc} name={name} seed={avatarSeed} decorative className={slots.avatar({ className: showDetails ? "row-span-3" : "row-span-2" })} />
       <span dir="auto" className={slots.name()}>
         {nameContent ?? name}
       </span>

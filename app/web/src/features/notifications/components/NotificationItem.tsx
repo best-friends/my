@@ -75,7 +75,7 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
       {...(actor !== null && {
         avatar: (
           <PostCardAvatarLink href={actor.href}>
-            <Avatar sources={actor.avatar} name={actor.name} decorative />
+            <Avatar sources={actor.avatar} name={actor.name} seed={actor.id} decorative />
           </PostCardAvatarLink>
         ),
       })}
@@ -154,7 +154,7 @@ function OtherAvatars({ others }: { others: readonly NotificationActor[] }) {
     <NotificationOthers>
       {others.map((other) => (
         <PostCardAvatarLink key={other.href} href={other.href}>
-          <Avatar sources={other.avatar} name={other.name} size="xs" decorative />
+          <Avatar sources={other.avatar} name={other.name} seed={other.id} size="xs" decorative />
         </PostCardAvatarLink>
       ))}
     </NotificationOthers>

@@ -3,10 +3,8 @@
 package platform_test
 
 import (
-	"io"
 	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"slices"
 	"strconv"
 	"strings"
@@ -319,27 +317,25 @@ func (e *accountsEnv) roleKeys(admin, of testUser) []string {
 	return out
 }
 
-// TestCommerceDisclosurePage serves the commerce disclosures at /about/commerce once an
+// TestCommerceDisclosurePage serves the commerce disclosures at GET /instance/documents/commerce_disclosure once an
 // administrator writes them, and links to them from GET /instance (ADR-0072 §13).
 func TestCommerceDisclosurePage(t *testing.T) {
 	t.Parallel()
 	e, _ := newSupportersEnv(t)
 	admin := e.user("alice")
-	page := func() (int, string) {
-		req := httptest.NewRequest(http.MethodGet, "/about/commerce", nil)
-		rec := httptest.NewRecorder()
-		e.h.ServeHTTP(rec, req)
-		b, _ := io.ReadAll(rec.Body)
-		return rec.Code, string(b)
+	page := func() (int, clientapi.InstanceDocument) {
+		var doc clientapi.InstanceDocument
+		res := e.do(http.MethodGet, "/instance/documents/commerce_disclosure", "", nil, &doc)
+		return res.StatusCode, doc
 	}
 	if code, _ := page(); code != http.StatusNotFound {
 		t.Errorf("without disclosures: %d", code)
 	}
 	e.want(e.do(http.MethodPut, "/admin/instance_texts/commerce_disclosure", admin.token, map[string]any{"body": "# Seller\n\nExample Inc."}, nil),
 		http.StatusOK, "PUT commerce_disclosure")
-	code, body := page()
-	if code != http.StatusOK || !strings.Contains(body, "Example Inc.") {
-		t.Errorf("with disclosures: %d %q", code, body)
+	code, doc := page()
+	if code != http.StatusOK || !strings.Contains(doc.Html, "Example Inc.") {
+		t.Errorf("with disclosures: %d %q", code, doc.Html)
 	}
 	var inst clientapi.Instance
 	e.want(e.do(http.MethodGet, "/instance", "", nil, &inst), http.StatusOK, "GET /instance")

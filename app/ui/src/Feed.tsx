@@ -14,7 +14,7 @@
 // Only the articles near the viewport are mounted (TanStack Virtual, ADR-0025), and the article that has
 // focus stays mounted when it scrolls away, so focus is never lost to virtualization.
 import { defaultRangeExtractor, type Range, useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
-import { type ComponentPropsWithRef, createContext, type Key, type ReactNode, type Ref, use, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentPropsWithRef, createContext, type Key, type ReactNode, type Ref, use, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { mergeRefs, useKeyboard } from "react-aria";
 import { tv } from "tailwind-variants";
 import { Button } from "./Button";
@@ -23,10 +23,16 @@ import { Spinner } from "./Spinner";
 const feed = tv({
   slots: {
     base: "flex flex-col",
+    // Items inserted above are kept in place by the feed itself when `keepPosition` is set, so the browser must not also anchor.
     list: "relative w-full",
+    top: "h-0",
     more: "flex justify-center p-4",
   },
 });
+
+// The space between two articles (`gap-3`, 0.75rem at the default spacing), kept by the virtualizer because the articles are
+// positioned absolutely. Cards are raised, so they sit apart.
+const cardGap = 12;
 
 const article = tv({ base: "outline-none focus-visible:focus-ring" });
 
@@ -68,6 +74,7 @@ export function FeedArticle({ ref, style, className, ...props }: FeedArticleProp
 type VirtualFeedOptions = {
   count: number;
   estimateSize: number;
+  gap: number;
   overscan: number;
   scrollMargin: number;
   getItemKey: (index: number) => Key;
@@ -78,7 +85,14 @@ type VirtualFeed = {
   virtualItems: VirtualItem[];
   totalSize: number;
   measureElement: (node: HTMLElement | null) => void;
+  /** The item (its key, and its top edge relative to the viewport) that crosses the top of the viewport, or undefined. */
+  readAnchor: () => FeedAnchor | undefined;
+  /** The top edge of the item at an index relative to the viewport, or undefined when there is no such item. */
+  viewportTopOf: (index: number) => number | undefined;
 };
+
+/** The item the reader is looking at, remembered to keep it in place when items are inserted above it. */
+type FeedAnchor = { key: Key; index: number; viewportTop: number };
 
 /**
  * The window virtualizer, read into plain values. The virtualizer is one mutable object for the life of
@@ -94,6 +108,7 @@ function useVirtualFeed(options: VirtualFeedOptions): VirtualFeed {
   const virtualizer = useWindowVirtualizer<HTMLElement>({
     count: options.count,
     estimateSize: () => options.estimateSize,
+    gap: options.gap,
     overscan: options.overscan,
     scrollMargin: options.scrollMargin,
     getItemKey: options.getItemKey,
@@ -103,6 +118,16 @@ function useVirtualFeed(options: VirtualFeedOptions): VirtualFeed {
     virtualItems: virtualizer.getVirtualItems(),
     totalSize: virtualizer.getTotalSize(),
     measureElement: virtualizer.measureElement,
+    // Both read the virtualizer when called, in an effect or an event handler, never during render.
+    readAnchor: () => {
+      const scrollY = window.scrollY;
+      const item = virtualizer.measurementsCache.find((measured) => measured.end > scrollY);
+      return item === undefined ? undefined : { key: item.key, index: item.index, viewportTop: item.start - scrollY };
+    },
+    viewportTopOf: (index) => {
+      const item = virtualizer.measurementsCache[index];
+      return item === undefined ? undefined : item.start - window.scrollY;
+    },
   };
 }
 
@@ -160,12 +185,20 @@ export type FeedProps<T> = Omit<ComponentPropsWithRef<"div">, "children" | "role
   /** How many articles to keep mounted beyond each end of the viewport. */
   overscan?: number;
   /** A ref to the element with role="feed". */
-  feedRef?: Ref<HTMLDivElement>;
+  feedRef?: Ref<HTMLDivElement> | undefined;
+  /**
+   * Keeps the item the reader is looking at where it is on screen when items are inserted above it, unless the
+   * feed's top is in view (then the new items show). The feed does this itself, since the browser's scroll
+   * anchoring is not in every browser (Safari), and turns the browser's off for it (ADR-0077).
+   */
+  keepPosition?: boolean | undefined;
+  /** Called with whether the feed's first item is in view, when that changes (the reader is at the top). */
+  onTopChange?: ((atTop: boolean) => void) | undefined;
 };
 
 /**
- * A timeline that scrolls with the page. New items are never inserted while the reader is in it; show
- * a NewItemsButton above it instead (web-client.md Y7). The keys are listed in the module comment above;
+ * A timeline that scrolls with the page. Items are not inserted above the reader on their own unless the caller sets
+ * `keepPosition`; by default show a NewItemsButton above it instead (web-client.md Y7, ADR-0077). The keys are listed in the module comment above;
  * document them to users where the feed is used, since the feed role has no keyboard convention.
  */
 export function Feed<T>({
@@ -182,6 +215,8 @@ export function Feed<T>({
   estimateSize = 200,
   overscan = 4,
   feedRef,
+  keepPosition = false,
+  onTopChange,
   className,
   ...props
 }: FeedProps<T>) {
@@ -198,9 +233,10 @@ export function Feed<T>({
   const focusedIndex = focusedKey === null ? -1 : items.findIndex((item) => getKey(item) === focusedKey);
   const size = setSize ?? (hasMore ? -1 : items.length);
 
-  const { virtualItems, totalSize, measureElement } = useVirtualFeed({
+  const { virtualItems, totalSize, measureElement, readAnchor, viewportTopOf } = useVirtualFeed({
     count: items.length,
     estimateSize,
+    gap: cardGap,
     overscan,
     scrollMargin,
     getItemKey: (index) => {
@@ -226,6 +262,51 @@ export function Feed<T>({
       observer.disconnect();
     };
   }, []);
+
+  // Whether the feed's top is in view, seen through a marker at its start (a ref, so that a change renders nothing).
+  const topRef = useRef<HTMLDivElement>(null);
+  const atTopRef = useRef(true);
+  const topChanged = useEffectEvent((atTop: boolean) => {
+    onTopChange?.(atTop);
+  });
+  useEffect(() => {
+    const top = topRef.current;
+    if (top === null || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      const last = entries.at(-1);
+      if (last === undefined || last.isIntersecting === atTopRef.current) return;
+      atTopRef.current = last.isIntersecting;
+      topChanged(last.isIntersecting);
+    });
+    observer.observe(top);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // The item being read, as it was on screen before the last render; items inserted above it move it down in the
+  // layout, and the scroll position is corrected before the browser paints (react.dev: useLayoutEffect).
+  const anchorRef = useRef<FeedAnchor | undefined>(undefined);
+  const rememberAnchor = () => {
+    if (keepPosition) anchorRef.current = readAnchor();
+  };
+  useEffect(() => {
+    if (!keepPosition) return;
+    window.addEventListener("scroll", rememberAnchor, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", rememberAnchor);
+    };
+  });
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    if (keepPosition && anchor !== undefined && !atTopRef.current) {
+      const index = items.findIndex((item) => getKey(item) === anchor.key);
+      // Only a move of the item's index means items were inserted above it; a resize or a scroll moves nothing to correct.
+      const top = index < 0 || index === anchor.index ? undefined : viewportTopOf(index);
+      if (top !== undefined && Math.abs(top - anchor.viewportTop) >= 1) window.scrollBy({ top: top - anchor.viewportTop, behavior: "instant" });
+    }
+    rememberAnchor();
+  });
 
   // Load the next page when the "load more" button comes near the viewport. The observer is created again
   // when a page has loaded, so a short page that leaves the button in view loads the next one too.
@@ -301,13 +382,14 @@ export function Feed<T>({
 
   return (
     <div {...props} className={slots.base({ className })}>
+      {(keepPosition || onTopChange !== undefined) && <div ref={topRef} aria-hidden="true" className={slots.top()} />}
       <div
         {...keyboardProps}
         ref={mergeRefs(listRef, feedRef)}
         role="feed"
         aria-labelledby={labelledBy}
         aria-busy={isLoading}
-        className={slots.list()}
+        className={slots.list({ className: keepPosition ? "[overflow-anchor:none]" : undefined })}
         style={{ blockSize: totalSize }}
         onFocus={(event) => {
           const index = indexOf(event.target);
