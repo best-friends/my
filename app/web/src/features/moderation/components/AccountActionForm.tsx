@@ -6,7 +6,7 @@
 // validation (React Aria's native validation). An action that cannot be undone asks first in an alert dialog
 // (ConfirmDialog, NFR-MOD-7), whose failure stays in it; a failure of another kind is shown under the form and
 // keeps what was filled in.
-import { Button, Checkbox, ConfirmDialog, DurationSelect, PostContent, Radio, RadioGroup, ReasonField, Select, SelectItem, serverSanitizedHtml } from "@my/ui";
+import { Box, Button, Checkbox, ConfirmDialog, DurationSelect, InlineError, PostContent, Radio, RadioGroup, ReasonField, Select, SelectItem, serverSanitizedHtml, Stack, Text } from "@my/ui";
 import { useId } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, type Translate, useT } from "../../../lib/i18n";
@@ -69,7 +69,7 @@ export function AccountActionForm({ target, handle, posts, onIssued }: AccountAc
   const confirmation = form.confirmation === null ? undefined : confirmationOf(t, form.confirmation.kind, isolate(handle), form.chosenStatusIds.length);
   return (
     <>
-      <form onSubmit={form.submit} className="flex flex-col gap-6">
+      <Stack as="form" onSubmit={form.submit} gap="6">
         <RadioGroup
           label={t("client:admin.account_actions.kind")}
           value={draft.kind}
@@ -162,16 +162,16 @@ export function AccountActionForm({ target, handle, posts, onIssued }: AccountAc
           </Checkbox>
         )}
         {form.confirmation === null && form.error !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError size="inherit" alert>
             {form.error}
-          </p>
+          </InlineError>
         )}
-        <div>
+        <Box>
           <Button type="submit" variant="primary" isPending={form.isPending && form.confirmation === null}>
             {target.reportId === undefined ? t("client:admin.account_actions.submit") : t("client:admin.account_actions.submit_and_resolve")}
           </Button>
-        </div>
-      </form>
+        </Box>
+      </Stack>
       {/* Outside the form: React sends the dialog's own submit event up its component tree, through a portal too. */}
       <ConfirmDialog
         isOpen={form.confirmation !== null}
@@ -198,21 +198,21 @@ function PostChoices({ form, posts }: { form: Form; posts: readonly Status[] }) 
   const labelId = useId();
   const errorId = useId();
   return (
-    <div role="group" aria-labelledby={labelId} {...(form.isPostMissing && { "aria-describedby": errorId })} className="flex flex-col gap-2">
-      <span id={labelId} className="font-medium">
+    <Stack role="group" aria-labelledby={labelId} {...(form.isPostMissing && { "aria-describedby": errorId })} gap="2">
+      <Text id={labelId} weight="medium">
         {t("client:admin.account_actions.posts")}
-      </span>
-      <ul className="flex flex-col divide-y divide-border">
+      </Text>
+      <Stack as="ul" divided>
         {posts.map((post) => (
           <PostChoice key={post.id} post={post} form={form} />
         ))}
-      </ul>
+      </Stack>
       {form.isPostMissing && (
-        <p id={errorId} role="alert" className="text-sm text-danger">
+        <InlineError id={errorId} alert>
           {t("client:admin.account_actions.posts.required")}
-        </p>
+        </InlineError>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -222,7 +222,7 @@ function PostChoice({ post, form }: { post: Status; form: Form }) {
   const intl = useIntl();
   const previewId = useId();
   return (
-    <li className="flex flex-col gap-1 py-2">
+    <Stack as="li" gap="1" paddingY="2">
       <Checkbox
         isSelected={form.chosenStatusIds.includes(post.id)}
         isInvalid={form.isPostMissing}
@@ -234,15 +234,15 @@ function PostChoice({ post, form }: { post: Status; form: Form }) {
         {t("client:admin.account_actions.posts.item", { date: intl.formatDate(post.created_at, { dateStyle: "medium", timeStyle: "short" }) })}
       </Checkbox>
       {/* The post describes its checkbox; it is inert, so its links are no stops on the way through the list. */}
-      <div id={previewId} inert className="ms-8 text-sm">
+      <Box id={previewId} inert marginStart="8" textSize="sm">
         {post.spoiler_text === "" ? (
-          <PostContent html={serverSanitizedHtml(post.content)} lang={post.language} className="line-clamp-2" />
+          <PostContent html={serverSanitizedHtml(post.content)} lang={post.language} lineClamp={2} />
         ) : (
-          <p dir="auto" lang={post.language} className="text-start wrap-anywhere">
+          <Text as="p" dir="auto" lang={post.language} align="start" wrap="anywhere">
             {t("client:admin.account_actions.posts.content_warning", { text: post.spoiler_text })}
-          </p>
+          </Text>
         )}
-      </div>
-    </li>
+      </Box>
+    </Stack>
   );
 }

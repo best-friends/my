@@ -3,7 +3,7 @@
 // newest first. The tabs follow the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs), kept
 // in the URL by the route (web-client.md S3); only the selected panel is mounted. Each row's heading links to the
 // report's page, where it is handled.
-import { DescriptionItem, DescriptionList, EmptyState, Link, Tab, TabList, TabPanel, Tabs } from "@my/ui";
+import { DescriptionItem, DescriptionList, EmptyState, Heading, Link, Stack, Tab, TabList, TabPanel, Tabs, Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type Report, type ReportFilter, reportFilters } from "../api/reports";
 import { handleOf, isolate, reportCategoryLabels, reportOutcomeLabels, useReports } from "../hooks/useReports";
@@ -76,14 +76,14 @@ function ReportList({ filter }: { filter: ReportFilter }) {
 function ReportRow({ report }: { report: Report }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className="font-semibold">
-        <Link href={`/moderation/reports/${encodeURIComponent(report.id)}`} variant="standalone" className="wrap-anywhere">
+    <Stack gap="2">
+      <Heading level={2} size="subsection">
+        <Link href={`/moderation/reports/${encodeURIComponent(report.id)}`} variant="standalone" wrap="anywhere">
           {report.target_account === undefined
             ? t("client:admin.report.of_deleted")
             : t("client:admin.report.of", { target: isolate(handleOf(report.target_account)) })}
         </Link>
-      </h2>
+      </Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.report.category")}>{t(reportCategoryLabels[report.category])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.report.reporter")}>
@@ -96,7 +96,7 @@ function ReportRow({ report }: { report: Report }) {
           {report.assignee_account_id === undefined ? t("client:admin.report.assignee.none") : <AssigneeName id={report.assignee_account_id} />}
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.report.posts")}>
-          <span className="tabular-nums">{t("client:admin.report.posts.count", { count: report.status_ids.length })}</span>
+          <Text numeric>{t("client:admin.report.posts.count", { count: report.status_ids.length })}</Text>
         </DescriptionItem>
         {report.state === "resolved" && (
           <>
@@ -111,10 +111,10 @@ function ReportRow({ report }: { report: Report }) {
       </DescriptionList>
       {report.comment !== "" && (
         // Written by the reporter, in any language; the report's page shows it whole.
-        <p dir="auto" className="line-clamp-2 text-start wrap-anywhere whitespace-pre-wrap">
+        <Text as="p" dir="auto" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">
           {report.comment}
-        </p>
+        </Text>
       )}
-    </div>
+    </Stack>
   );
 }
