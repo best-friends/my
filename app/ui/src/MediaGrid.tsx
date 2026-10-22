@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { type ComponentPropsWithRef, use, useState, useSyncExternalStore } from "react";
-import { Button, ToggleButton } from "react-aria-components";
+import { Button, ToggleButton, useLocale } from "react-aria-components";
 import { tv } from "tailwind-variants";
+import { AudioPlayer, type AudioPlayerLabels } from "./AudioPlayer";
 import { Blurhash } from "./Blurhash";
-import { HideMediaIcon } from "./Icons";
+import { formatClock } from "./clock";
+import { HideMediaIcon, PlayIcon } from "./Icons";
 import { MediaViewer, type MediaViewerLabels } from "./MediaViewer";
 import { AutoplayContext, type ImageSources, Picture } from "./Picture";
 import { VisuallyHidden } from "./VisuallyHidden";
@@ -21,7 +23,11 @@ const mediaGrid = tv({
     ],
     // A video keeps its whole frame in the cell, letterboxed on the cell's surface.
     video: "relative size-full object-contain",
-    audio: "absolute inset-x-2 bottom-2 w-[calc(100%-1rem)]",
+    audio: "absolute inset-x-2 bottom-2",
+    // The play disc and the length over a video's poster only show what the native controls do; pointer events pass through to them.
+    disc: "pointer-events-none absolute inset-0 m-auto grid size-14 place-items-center rounded-full bg-accent-fill text-accent-fill-fg [&>svg]:size-6",
+    // At the top, clear of the native controls along the bottom edge.
+    length: "pointer-events-none absolute inset-e-2 top-2 rounded-md bg-media-chip px-2 py-0.5 text-xs font-bold text-toast-fg tabular-nums",
     blur: "absolute inset-0",
     badge: "absolute inset-e-1.5 bottom-1.5 rounded-full bg-surface-raised px-2 py-0.5 text-xs font-extrabold text-fg shadow-sm",
     toggle: "absolute cursor-default rounded-full bg-surface-raised font-extrabold text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
@@ -44,8 +50,7 @@ const mediaGrid = tv({
 });
 
 /**
- * A video or audio file that a cell plays (ADR-0054 §6). A `video` and an `audio` file never play by themselves and have
- * controls; a `gifv` (a short silent video in place of an animated image) loops muted without controls while animations
+ * A video or audio file that a cell plays (ADR-0054 §6). A `video` never plays by itself and has the browser's controls, and an `audio` file never plays by itself and has an `AudioPlayer`; a `gifv` (a short silent video in place of an animated image) loops muted without controls while animations
  * play by themselves (`AutoplayContext`) and the system does not ask for reduced motion, and has controls otherwise.
  */
 export type MediaPlayback = { kind: "video" | "audio" | "gifv"; url: string };
@@ -105,6 +110,8 @@ export type MediaGridProps = Omit<ComponentPropsWithRef<"div">, "children"> & {
    * pictures do not open.
    */
   viewerLabels?: MediaViewerLabels | undefined;
+  /** The texts of the player of an audio file. */
+  audioLabels: AudioPlayerLabels;
 };
 
 type MediaCellProps = {
@@ -112,6 +119,7 @@ type MediaCellProps = {
   revealed: boolean;
   count: 1 | 2 | 3 | 4;
   noDescriptionLabel: string;
+  audioLabels: AudioPlayerLabels;
   /** Opens the viewer at this picture; undefined when the picture does not open. */
   onOpen?: (() => void) | undefined;
 };
@@ -141,8 +149,11 @@ function usePrefersReducedMotion(): boolean {
  * `<video>` with its poster, or the poster with an `<audio>` over its bottom edge. The player is named by the
  * description, or by `noDescriptionLabel` with the badge when there is none.
  */
-function PlaybackCell({ item, playback, revealed, count, noDescriptionLabel }: MediaCellProps & { playback: MediaPlayback }) {
+function PlaybackCell({ item, playback, revealed, count, noDescriptionLabel, audioLabels }: MediaCellProps & { playback: MediaPlayback }) {
   const [loaded, setLoaded] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [length, setLength] = useState(0);
+  const { locale } = useLocale();
   const autoplay = use(AutoplayContext);
   const reducedMotion = usePrefersReducedMotion();
   const slots = mediaGrid({ count, revealed });
@@ -168,9 +179,10 @@ function PlaybackCell({ item, playback, revealed, count, noDescriptionLabel }: M
                   className={slots.image()}
                 />
               )}
-              <audio src={playback.url} controls preload="none" aria-label={name} className={slots.audio()} />
+              <AudioPlayer src={playback.url} name={name} lang={item.alt === null ? undefined : item.lang} labels={audioLabels} className={slots.audio()} />
             </>
           ) : (
+            <>
             <video
               // A new source or a change of autoplay starts the element again.
               key={playsByItself ? "loop" : "still"}
@@ -186,8 +198,28 @@ function PlaybackCell({ item, playback, revealed, count, noDescriptionLabel }: M
               onLoadedData={() => {
                 setLoaded(true);
               }}
+              onLoadedMetadata={(event) => {
+                setLength(event.currentTarget.duration);
+              }}
+              onPlay={() => {
+                setPlaying(true);
+              }}
+              onPause={() => {
+                setPlaying(false);
+              }}
               className={slots.video()}
             />
+            {!playing && !playsByItself && (
+              <span aria-hidden="true" className={slots.disc()}>
+                <PlayIcon />
+              </span>
+            )}
+            {!playing && !loops && Number.isFinite(length) && length > 0 && (
+              <span aria-hidden="true" className={slots.length()}>
+                {formatClock(locale, length)}
+              </span>
+            )}
+            </>
           )}
           {item.alt === null && (
             <span aria-hidden="true" className={slots.badge()}>
@@ -249,8 +281,8 @@ function MediaCell({ item, revealed, count, noDescriptionLabel, onOpen }: MediaC
 }
 
 /**
- * The pictures, videos, and audio files of a post in a 16:9 grid of one to four cells. A video or audio file plays in
- * its cell with the browser's controls and never starts by itself (`MediaPlayback`). An item without a description is
+ * The pictures, videos, and audio files of a post in a 16:9 grid of one to four cells. A video plays in
+ * its cell with the browser's controls under a play disc and its length, an audio file in an `AudioPlayer`, and neither starts by itself (`MediaPlayback`). An item without a description is
  * named by `noDescriptionLabel` and carries a visible badge saying so (web-client.md Y9). Sensitive media are
  * concealed behind a toggle button (`aria-pressed`): while concealed, the images are neither loaded nor
  * exposed and each cell shows the blur of its picture, and the button keeps its place in the tab order and its focus when it is pressed.
@@ -266,6 +298,7 @@ export function MediaGrid({
   defaultRevealed = false,
   onRevealedChange,
   viewerLabels,
+  audioLabels,
   className,
   ...props
 }: MediaGridProps) {
@@ -295,10 +328,11 @@ export function MediaGrid({
             revealed={revealed}
             count={count}
             noDescriptionLabel={noDescriptionLabel}
+            audioLabels={audioLabels}
             onOpen={openerOf(viewable.findIndex((viewed) => viewed.id === item.id))}
           />
         ) : (
-          <PlaybackCell key={item.id} item={item} playback={item.playback} revealed={revealed} count={count} noDescriptionLabel={noDescriptionLabel} />
+          <PlaybackCell key={item.id} item={item} playback={item.playback} revealed={revealed} count={count} noDescriptionLabel={noDescriptionLabel} audioLabels={audioLabels} />
         ),
       )}
       {sensitive && (

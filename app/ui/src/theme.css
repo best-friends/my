@@ -47,6 +47,9 @@
   --palette-cocoa-900: #241f20;
   --palette-cocoa-950: #1c1819;
 
+  /* Rose (decorative: the waveform of AudioPlayer) */
+  --palette-rose-400: #d97c7c;
+
   /* Coral (brand primary) */
   --palette-coral-300: #ffa8a8;
   --palette-coral-350: #ff8585;
@@ -167,6 +170,10 @@
   /* Scrims: behind modal dialogs and sheets, and under MediaViewer's alt text. */
   --color-overlay: light-dark(#211c1c9e, #0d0a0bb3);
   --color-alt-overlay: #000000cc;
+
+  /* Decorative marks on media: the duration chip over a video's poster (with toast-fg text), and AudioPlayer's waveform. */
+  --color-media-chip: #000000a6;
+  --color-wave: var(--palette-rose-400);
 
   /* Role badges (ADR-0071): badge-<color> is the background and badge-<color>-fg the text on it.
      The color only decorates; the badge's name carries its meaning. Server themes cannot override them. */
