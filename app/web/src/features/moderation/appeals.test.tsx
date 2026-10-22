@@ -9,7 +9,6 @@ import type { Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
-import { expectSelectedTabControlsPanel } from "../../test/tabs";
 import { appealFixture, decidedAppeal } from "./test/handlers";
 
 beforeEach(() => {
@@ -67,11 +66,11 @@ describe("the list of appeals", () => {
     await renderApp({ path: "/moderation/appeals" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Appeals" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Awaiting review", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Appeals by state/ })).toHaveTextContent("Awaiting review");
     const links = screen.getAllByRole("link", { name: "Appeal of Suspend" });
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute("href", `/moderation/appeals/${pending.id}`);
-    const [first] = within(screen.getByRole("tabpanel")).getAllByRole("listitem");
+    const [first] = within(screen.getByRole("table")).getAllByRole("row").slice(1);
     if (first === undefined) throw new Error("an appeal is missing");
     expect(await within(first).findByText("Bob")).toBeInTheDocument();
     expect(within(first).getByText(/^Oct 16, 2026/)).toBeInTheDocument();
@@ -85,13 +84,13 @@ describe("the list of appeals", () => {
     appealsServer([pending, upheld]);
     const { user, router } = await renderApp({ path: "/moderation/appeals" });
 
-    await user.click(await screen.findByRole("tab", { name: "Reviewed" }));
+    await user.click(await screen.findByRole("button", { name: /Appeals by state/ }));
+    await user.click(await screen.findByRole("option", { name: "Reviewed" }));
 
     expect(await screen.findByRole("link", { name: "Appeal of Limit" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Appeal of Suspend" })).not.toBeInTheDocument();
     expect(screen.getByText("Upheld")).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ state: "decided" });
-    expectSelectedTabControlsPanel("Reviewed");
   });
 
   test("the reviewed tab reads on past pages of pending appeals only", async () => {

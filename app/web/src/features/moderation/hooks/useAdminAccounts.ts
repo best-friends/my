@@ -37,7 +37,7 @@ import {
 } from "../api/accounts";
 import { refreshAuditLog } from "../api/staff";
 import type { AccountAction } from "../api/reports";
-import type { PagedList } from "./pagedList";
+import { type PagedPages, toPagedList } from "./pagedList";
 
 export const adminAccountStateLabels: Readonly<Record<AdminAccountState, ClientMessageKey>> = {
   active: "client:admin.accounts.state.active",
@@ -166,7 +166,7 @@ export function useAccountSearchForm(search: AdminAccountSearch, onSearch: (sear
 export type AccountSearchResults =
   | { status: "loading" }
   | { status: "error"; reason: string; retry: () => void; isRetrying: boolean }
-  | { status: "ready"; list: PagedList<AdminAccount>; moreError: string | undefined };
+  | { status: "ready"; list: PagedPages<AdminAccount>; moreError: string | undefined };
 
 /**
  * The accounts of `search`. The route's loader has just tried the first page; a failure (a search the server
@@ -188,15 +188,13 @@ export function useAccountSearchResults(search: AdminAccountSearch): AccountSear
   }
   return {
     status: "ready",
-    list: {
-      items: query.data.pages.flatMap((page) => page.items),
-      hasMore: query.hasNextPage,
-      isLoadingMore: query.isFetchingNextPage,
-      loadMore: () => {
-        // A fetch in progress would be overwritten by the page fetched now (TanStack Query, "Infinite Queries").
-        if (!query.isFetching) void query.fetchNextPage();
-      },
-    },
+    list: toPagedList({
+      data: query.data,
+      hasNextPage: query.hasNextPage,
+      isFetchingNextPage: query.isFetchingNextPage,
+      isFetching: query.isFetching,
+      fetchNextPage: query.fetchNextPage,
+    }),
     moreError: query.isFetchNextPageError ? errorMessage(query.error) : undefined,
   };
 }

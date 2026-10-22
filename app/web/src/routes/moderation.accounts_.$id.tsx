@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link, Stack } from "@my/ui";
+import { Card, Link, Stack } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { AccountDetailView, adminAccountQueryOptions } from "../features/moderation";
@@ -40,7 +40,9 @@ function AccountPage() {
     <>
       <AccountHeading />
       {/* Another account is another page: nothing of the previous one carries over, its private data least of all (web-client.md R10). */}
-      <AccountDetailView key={id} id={id} />
+      <Card>
+        <AccountDetailView key={id} id={id} />
+      </Card>
     </>
   );
 }

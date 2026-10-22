@@ -40,11 +40,9 @@ function region(name: string) {
   return screen.getByRole("region", { name });
 }
 
-/** The rows of a list in `container`: its items with a heading of `level`. */
-function rows(container: HTMLElement, level: number) {
-  return within(container)
-    .queryAllByRole("listitem")
-    .filter((item) => within(item).queryByRole("heading", { level }) !== null);
+/** The rows of the table in `container`, without its header row. */
+function rows(container: HTMLElement) {
+  return within(container).queryAllByRole("row").slice(1);
 }
 
 const dave = accountFixture(4, "Dave", "my.example");
@@ -59,12 +57,12 @@ describe("the account search", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Accounts" })).toBeInTheDocument();
     const results = region("Results");
     expect(await within(results).findByRole("link", { name: /^Bob\s?@bob$/ })).toHaveAttribute("href", `/moderation/accounts/${otherAccountFixture.id}`);
-    const first = within(rows(results, 3)[0] as HTMLElement);
+    const first = within(rows(results)[0] as HTMLElement);
     expect(first.getByText("Limited")).toBeInTheDocument();
     expect(first.getByText("This server")).toBeInTheDocument();
     expect(first.getByText("Approved")).toBeInTheDocument();
     expect(first.getByText("Posts are followers-only and Posts stay off the public timelines and search")).toBeInTheDocument();
-    const second = within(rows(results, 3)[1] as HTMLElement);
+    const second = within(rows(results)[1] as HTMLElement);
     expect(second.getByRole("link", { name: /^Carol\s?@carol@remote\.example$/ })).toBeInTheDocument();
     expect(second.getByText("Suspended")).toBeInTheDocument();
     expect(second.getByText("remote.example")).toHaveAttribute("dir", "ltr");
@@ -111,7 +109,7 @@ describe("the account search", () => {
       expect(router.state.location.search).toEqual({ origin: "remote", state: "suspended", ip: "192.0.2.7" });
     });
     await waitFor(() => {
-      expect(rows(region("Results"), 3)).toHaveLength(1);
+      expect(rows(region("Results"))).toHaveLength(1);
     });
     expect(requests).toEqual([
       "GET /admin/accounts?limit=40",
@@ -475,7 +473,7 @@ describe("an account's admin page", () => {
     await user.click(screen.getByRole("link", { name: "Back to the accounts" }));
     const results = await screen.findByRole("region", { name: "Results" });
     expect(await within(results).findByRole("link", { name: /^Carol/ })).toBeInTheDocument();
-    const [row] = rows(results, 3);
+    const [row] = rows(results);
     if (row === undefined) throw new Error("Carol is not listed");
     expect(within(row).getByText("Suspended")).toBeInTheDocument();
   });
@@ -494,7 +492,7 @@ describe("an account's admin page", () => {
     await user.click(screen.getByRole("link", { name: "Back to the accounts" }));
     const results = await screen.findByRole("region", { name: "Results" });
     expect(await within(results).findByRole("link", { name: /^Bob/ })).toBeInTheDocument();
-    const [row] = rows(results, 3);
+    const [row] = rows(results);
     if (row === undefined) throw new Error("Bob is not listed");
     expect(within(row).getByText("Active")).toBeInTheDocument();
     expect(within(row).queryByText("Limited")).not.toBeInTheDocument();

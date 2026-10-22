@@ -3,13 +3,13 @@
 // same shape: the permission gate and its message, the paged list of records (rows with dividers, the empty
 // state and "show more"), the titled section of a detail page, a server's state in words, a domain in both
 // of its forms, and dates in the viewer's locale and time zone. The facts of a record are @my/ui's DescriptionList.
-import { Box, Button, DetailSection, EmptyState, Stack, Text } from "@my/ui";
-import { type ReactNode, type Ref, type RefObject, useEffect, useRef } from "react";
+import { Box, Button, Card, DetailSection, EmptyState, Pagination, Stack, Table, TableBody, TableHead, Text } from "@my/ui";
+import { Fragment, type ReactNode, type Ref, type RefObject, useEffect, useRef } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { domainToUnicode } from "../../../lib/idn";
 import type { InstanceState, Permission } from "../api/staff";
-import type { PagedList } from "../hooks/pagedList";
+import { type PagedList, type PagedPages, useListPages } from "../hooks/pagedList";
 import { useHasPermission } from "../hooks/usePermissions";
 
 export { DetailSection };
@@ -122,6 +122,59 @@ export function RecordList<T>({ list, getId, children, empty, listRef, moreError
       </Stack>
       {moreError}
       <MoreButton list={list} />
+    </Stack>
+  );
+}
+
+export type RecordTableProps<T> = {
+  /** The records loaded so far and loading more. */
+  list: PagedPages<T>;
+  /** What the table holds; visually hidden, as the heading and the toolbar around it already say it. */
+  caption: string;
+  /** The `TableColumnHeader`s of the one header row. */
+  head: ReactNode;
+  /** A stable id of a record: the row's key. */
+  getId: (item: T) => string;
+  /** One row: a `TableRow` (with `data-row-id`, lib/useFocusAfterRemoval.ts) whose `TableRowHeader` names the record. */
+  children: (item: T) => ReactNode;
+  /** What an empty list shows, an `EmptyState`. */
+  empty: ReactNode;
+  /** Why the next page failed to load (a `RegionError` without a retry of its own), above the pagination, whose next tries again. */
+  moreError?: ReactNode;
+};
+
+/**
+ * The list of an admin screen in the admin mode's form (design/layouts/my-layout-05-admin.html): a `Table` in a
+ * `Card`, one page of it at a time, with `Pagination` below. The API pages by cursor, so the pagination has
+ * previous and next only; next past the loaded pages loads one more (useListPages). Key the component by whatever
+ * the list is of (the filter), so that another list starts at its first page.
+ */
+export function RecordTable<T>({ list, caption, head, getId, children, empty, moreError }: RecordTableProps<T>) {
+  const t = useT();
+  const pages = useListPages(list);
+  if (list.items.length === 0) return empty;
+  return (
+    <Stack gap="4">
+      <Card padding="0">
+        <Table caption={caption}>
+          <TableHead>{head}</TableHead>
+          <TableBody>
+            {pages.items.map((item) => (
+              <Fragment key={getId(item)}>{children(item)}</Fragment>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+      {moreError}
+      {(pages.previous !== undefined || pages.next !== undefined) && (
+        <Pagination
+          label={t("client:admin.list.pages")}
+          previousLabel={t("client:admin.list.previous")}
+          nextLabel={t("client:admin.list.next")}
+          previous={pages.previous === undefined ? null : { onPress: pages.previous }}
+          next={pages.next === undefined ? null : { onPress: pages.next }}
+        />
+      )}
     </Stack>
   );
 }

@@ -510,6 +510,8 @@ export interface MessageArgs {
   "client:admin.account.two_factor.removed": { handle: string };
   /** Two-factor authentication */
   "client:admin.account.two_factor.title": {};
+  /** Account */
+  "client:admin.accounts.column.account": {};
   /** Joined */
   "client:admin.accounts.created_at": {};
   /** No accounts yet */
@@ -788,6 +790,8 @@ export interface MessageArgs {
   "client:admin.appeal.upheld": {};
   /** Uphold */
   "client:admin.appeal.uphold": {};
+  /** Appeal */
+  "client:admin.appeals.column.appeal": {};
   /** No appeals have been reviewed yet */
   "client:admin.appeals.empty.decided": {};
   /** No appeals await review */
@@ -2042,8 +2046,16 @@ export interface MessageArgs {
   "client:admin.jobs.unlisted.description": {};
   /** Worker */
   "client:admin.jobs.worker": {};
+  /** Filters */
+  "client:admin.list.filters": {};
   /** Show more */
   "client:admin.list.more": {};
+  /** Next */
+  "client:admin.list.next": {};
+  /** Pages */
+  "client:admin.list.pages": {};
+  /** Previous */
+  "client:admin.list.previous": {};
   /** {count, plural, one {# open report} other {# open reports}} */
   "client:admin.menu.open_reports": { count: number };
   /** {count, plural, one {# awaits a decision} other {# await a decision}} */
@@ -2430,6 +2442,8 @@ export interface MessageArgs {
   "client:admin.reports.category.spam": {};
   /** Breaks the server rules */
   "client:admin.reports.category.violation": {};
+  /** Report */
+  "client:admin.reports.column.report": {};
   /** No open reports */
   "client:admin.reports.empty.open": {};
   /** Reports from people here and from other servers show up here. */

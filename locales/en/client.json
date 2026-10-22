@@ -3019,6 +3019,34 @@
     "defaultMessage": "Show more",
     "description": "Button under a list of an admin screen that loads more of it."
   },
+  "admin.list.filters": {
+    "defaultMessage": "Filters",
+    "description": "Accessible name of the row of filters above a list of an admin screen."
+  },
+  "admin.list.pages": {
+    "defaultMessage": "Pages",
+    "description": "Accessible name of the previous / next navigation under a list of an admin screen."
+  },
+  "admin.list.previous": {
+    "defaultMessage": "Previous",
+    "description": "Button under a list of an admin screen that shows the previous page."
+  },
+  "admin.list.next": {
+    "defaultMessage": "Next",
+    "description": "Button under a list of an admin screen that shows the next page, loading it if needed."
+  },
+  "admin.reports.column.report": {
+    "defaultMessage": "Report",
+    "description": "Header of the column of the reports table that names the reported account and links to the report."
+  },
+  "admin.appeals.column.appeal": {
+    "defaultMessage": "Appeal",
+    "description": "Header of the column of the appeals table that names the appeal and links to it."
+  },
+  "admin.accounts.column.account": {
+    "defaultMessage": "Account",
+    "description": "Header of the column of the accounts table that names the account and links to it."
+  },
   "admin.menu.open_reports": {
     "defaultMessage": "{count, plural, one {# open report} other {# open reports}}",
     "description": "Badge of the reports item of the administration menu: how many reports are open."

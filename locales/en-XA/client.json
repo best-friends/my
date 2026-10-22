@@ -1015,6 +1015,10 @@
     "defaultMessage": "[Ŭşḗḗ ȧȧŧ ḿǿǿşŧ {max, number} ƈħȧȧřȧȧƈŧḗḗřş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.accounts.column.account": {
+    "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.accounts.created_at": {
     "defaultMessage": "[Ĵǿǿīƞḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1569,6 +1573,10 @@
   },
   "admin.appeal.uphold": {
     "defaultMessage": "[Ŭƥħǿǿŀḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.appeals.column.appeal": {
+    "defaultMessage": "[Ȧƥƥḗḗȧȧŀ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.appeals.empty.decided": {
@@ -4079,8 +4087,24 @@
     "defaultMessage": "[Ẇǿǿřķḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.list.filters": {
+    "defaultMessage": "[Ƒīŀŧḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.list.more": {
     "defaultMessage": "[Şħǿǿẇ ḿǿǿřḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.list.next": {
+    "defaultMessage": "[Ƞḗḗẋŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.list.pages": {
+    "defaultMessage": "[Ƥȧȧɠḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.list.previous": {
+    "defaultMessage": "[Ƥřḗḗṽīǿǿŭŭş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.menu.open_reports": {
@@ -4853,6 +4877,10 @@
   },
   "admin.reports.category.violation": {
     "defaultMessage": "[Ɓřḗḗȧȧķş ŧħḗḗ şḗḗřṽḗḗř řŭŭŀḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.reports.column.report": {
+    "defaultMessage": "[Řḗḗƥǿǿřŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.reports.empty.open": {

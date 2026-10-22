@@ -20,7 +20,7 @@ import {
   refreshDecidedAppeal,
   storeAppeal,
 } from "../api/appeals";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type PagedPages, toPagedList } from "./pagedList";
 import { accountActionKindLabels } from "./useReports";
 
 export const appealStateLabels: Readonly<Record<AppealState, ClientMessageKey>> = {
@@ -30,7 +30,7 @@ export const appealStateLabels: Readonly<Record<AppealState, ClientMessageKey>> 
 };
 
 /** The appeals of a tab, newest first. */
-export function useAppeals(filter: AppealFilter): PagedList<Appeal> {
+export function useAppeals(filter: AppealFilter): PagedPages<Appeal> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(appealsQueryOptions(api, filter)));
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link, Stack } from "@my/ui";
+import { Card, Link, Stack } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { AppealDetailView, appealQueryOptions } from "../features/moderation";
@@ -40,7 +40,9 @@ function AppealPage() {
     <>
       <AppealHeading />
       {/* Another appeal is another page: nothing of the previous one carries over (web-client.md R10). */}
-      <AppealDetailView key={id} id={id} />
+      <Card>
+        <AppealDetailView key={id} id={id} />
+      </Card>
     </>
   );
 }
