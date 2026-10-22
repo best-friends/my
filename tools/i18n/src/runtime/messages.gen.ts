@@ -6368,6 +6368,8 @@ export interface MessageArgs {
   "server:errors.export.in_progress": {};
   /** This archive cannot be downloaded. */
   "server:errors.export.not_ready": {};
+  /** This server does not federate in the direction that this needs. */
+  "server:errors.federation_restricted": {};
   /** You are not allowed to do this. */
   "server:errors.forbidden": {};
   /** Another import is in progress. Wait until it finishes. */

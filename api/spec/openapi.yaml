@@ -1085,6 +1085,8 @@ components:
       $ref: ./components/schemas/InstanceDomainAction.yaml
     InstanceDomainActionPage:
       $ref: ./components/schemas/InstanceDomainActionPage.yaml
+    InstanceFederation:
+      $ref: ./components/schemas/InstanceFederation.yaml
     InstanceLimits:
       $ref: ./components/schemas/InstanceLimits.yaml
     InstanceRegistrations:

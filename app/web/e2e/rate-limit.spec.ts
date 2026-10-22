@@ -87,6 +87,7 @@ const instance: Schemas["Instance"] = {
   registrations: { mode: "open" },
   limits: { max_post_characters: 500, require_media_description: false },
   timelines: { local: true, federated: true },
+  federation: { mode: "both" },
   sends_email: false,
   search_indexing: "deny",
   ai_usage: "deny",

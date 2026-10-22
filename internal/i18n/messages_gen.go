@@ -1166,6 +1166,13 @@ func (l *Localizer) ServerErrorsExportNotReady() string {
 	return l.format("server:errors.export.not_ready", nil)
 }
 
+// ServerErrorsFederationRestricted formats "server:errors.federation_restricted". API error title for HTTP 403 when the instance's federation mode (off, inbound only, or outbound only) does not let the operation through: following or resolving a remote account, or quoting a remote post.
+//
+//	en: This server does not federate in the direction that this needs.
+func (l *Localizer) ServerErrorsFederationRestricted() string {
+	return l.format("server:errors.federation_restricted", nil)
+}
+
 // ServerErrorsForbidden formats "server:errors.forbidden". API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post.
 //
 //	en: You are not allowed to do this.

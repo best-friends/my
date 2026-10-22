@@ -8,7 +8,10 @@ post:
     account that the viewer already follows or has requested to follow changes only the
     preferences in the body. Following an account that the viewer blocks is a 409
     `/api/v1/problems/blocking`. A follow of an account on another server is a request
-    until that server accepts it.
+    until that server accepts it. While the instance does not follow remote accounts
+    (`Instance.federation.mode` `off` or `outbound`), following an account on another
+    server that the viewer does not follow or request yet is a 403
+    `/api/v1/problems/federation-restricted`.
   tags: [accounts]
   security:
     - oauth2: ["write:follows"]
