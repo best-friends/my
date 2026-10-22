@@ -70,7 +70,7 @@ export const CountChanges: Story = {
 export const Floating: Story = {
   args: { sticky: true },
   render: (args) => (
-    <div className="flex flex-col pt-12">
+    <div className="flex flex-col pt-10">
       <NewItemsButton {...args} />
       <p className="rounded-lg bg-surface-raised p-4 shadow-sm">The newest post stays where it is.</p>
     </div>
