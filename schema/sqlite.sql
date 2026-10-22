@@ -2945,7 +2945,8 @@ CREATE UNIQUE INDEX supporter_plan_heads_rank ON supporter_plan_heads (rank);
 
 -- Resource: a recurring price that the supporters.ensure_prices job made at the provider for a
 -- plan, an interval, and an amount (ADR-0072 §3). A price's amount never changes: a new amount is
--- a new price.
+-- a new price. A plan may have any number of prices of the same interval and amount (an
+-- amount the plan had before comes back as a new price); only the provider's ID is unique.
 CREATE TABLE supporter_plan_prices (
   id TEXT NOT NULL PRIMARY KEY,
   plan_id TEXT NOT NULL,
@@ -2957,9 +2958,9 @@ CREATE TABLE supporter_plan_prices (
   created_at INTEGER NOT NULL
 ) STRICT;
 CREATE UNIQUE INDEX supporter_plan_prices_provider_price ON supporter_plan_prices (provider, provider_price_id);
-CREATE UNIQUE INDEX supporter_plan_prices_plan_interval_amount ON supporter_plan_prices (plan_id, interval, amount_minor, provider);
 
--- Projection: the price of each plan and interval that new subscriptions and changes of plan use.
+-- Projection: the price of each plan and interval that new subscriptions and changes of plan use:
+-- the newest price of the plan and the interval that is not archived.
 CREATE TABLE supporter_plan_price_heads (
   plan_id TEXT NOT NULL,
   interval TEXT NOT NULL,

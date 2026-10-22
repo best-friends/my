@@ -439,12 +439,9 @@ func (s *Service) EnsurePrices(ctx context.Context, planID string) queue.Result 
 			if err := s.d.Repository.InsertPrice(ctx, tx, price); err != nil {
 				return err
 			}
+			// A price recorded already (EnsurePlan again for the same terms) keeps its row; an
+			// amount the plan had before comes back as a new price beside the old one.
 			stored, err := s.d.Repository.FindPriceByRef(ctx, tx, name, pp.Ref)
-			if errors.Is(err, ErrNotFound) {
-				// Another price of the plan has the interval and the amount: the provider made a
-				// new one for an amount the plan had before instead of its old one.
-				return fmt.Errorf("%w: the provider's price %s repeats a price of plan %s", errPriceConflict, pp.Ref, p.ID)
-			}
 			if err != nil {
 				return err
 			}
@@ -466,20 +463,11 @@ func (s *Service) EnsurePrices(ctx context.Context, planID string) queue.Result 
 		}
 		return nil
 	})
-	if errors.Is(err, errPriceConflict) {
-		s.d.Logger.WarnContext(ctx, "the plan stays without its prices", slog.String("plan", p.ID), slog.Any("error", err))
-		return queue.Done()
-	}
 	if err != nil {
 		return queue.Retry(0, err)
 	}
 	return queue.Done()
 }
-
-// errPriceConflict reports a provider's price that repeats the interval and the amount of
-// another price of the plan, which the plan cannot take (supporter_plan_prices is unique by
-// them); the plan stays "preparing" until its terms change again.
-var errPriceConflict = errors.New("supporters: the provider's price repeats one of the plan's")
 
 // providerFailure returns the result of a job whose call of the provider failed: a retry for a
 // failure that passes, and done with a warning otherwise (the admin screen shows the state).

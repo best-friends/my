@@ -1417,7 +1417,7 @@ flowchart LR
 | `supporter_plan_revisions` | イベント（版） | `id`, `plan_id`, `name`（`string(50)`）, `description`（`string(1000)`）, `rank`（`int`、0〜1,000,000）, `monthly_amount_minor`（`bigint`、1 以上）, `annual_discount_percent`（`int`、0〜90）, `emoji_limit`（`int`、0〜10,000）, `visibility`（`enum(public, hidden)`）, `revised_by_user_id`（NULL 可）, `revised_at` | インデックス `(plan_id, id DESC)` |
 | `supporter_plan_retirements` | イベント | `plan_id`（PK）, `retired_by_user_id`（NULL 可）, `retired_at` | |
 | `supporter_plan_heads` | 投影 | `plan_id`（PK）, `revision_id`, `rank`, `visibility` | 廃止していないプランだけ。一意 `(rank)` |
-| `supporter_plan_prices` | リソース | `id`, `plan_id`, `interval`（`enum(month, year)`）, `amount_minor`, `currency`, `provider`, `provider_price_id`, `created_at` | 一意 `(provider, provider_price_id)`, `(plan_id, interval, amount_minor, provider)` |
+| `supporter_plan_prices` | リソース | `id`, `plan_id`, `interval`（`enum(month, year)`）, `amount_minor`, `currency`, `provider`, `provider_price_id`, `created_at` | 一意 `(provider, provider_price_id)`。同じプラン・間隔・金額の価格を何本でも持てる（以前の金額に戻すと、事業者が作った新しい価格が古い価格と並ぶ） |
 | `supporter_plan_price_heads` | 投影 | `plan_id`, `interval`, `price_id` | PK `(plan_id, interval)`。新しい加入と変更に使う価格。アーカイブされていない最新の価格 |
 | `supporter_plan_price_archivals` | イベント | `price_id`（PK）, `archived_at` | |
 | `supporter_customers` | リソース | `id`, `user_id`, `provider`, `provider_customer_id`, `created_at` | 一意 `(provider, user_id)`, `(provider, provider_customer_id)` |
@@ -1439,8 +1439,9 @@ flowchart LR
   一覧（`GET /instance/supporters`）は、行と加入中の加入の投影と廃止していないプランの投影を結合し、プランの順位の順・載せた新しい順に読みます。
 - 期限は、`pending` が開始から 24 時間（`checkout`）、`active`・`canceling` が期間の終わり（`period_end`）、`past_due` が猶予の終わり（`grace`）です。5 分ごとのジョブ `supporters.deadlines` が期限の来た行に `supporters.sync` を積みます。
 - 事業者への命令（すぐ解約・期間の終わりの解約）は、遷移のトランザクションで積むジョブ `supporters.command` がコミットの後に送り、取り直したスナップショットを当てます。全額の返金とチャージバック、アカウントの削除（BAN の予約を含む）、管理者による解約は、こちらの状態を先に終端にしてから事業者をすぐ解約します。凍結は期間の終わりの解約を予約します。
-- プランの作成と、条件の版を足す変更は、同じトランザクションでジョブ `supporters.ensure_prices`（冪等キー `ensure_prices:<版の ID>`）を積みます。ジョブは事業者に月と年の価格を作らせ（`EnsurePlan`）、`supporter_plan_prices` と今の価格、アーカイブを記録します。既存の加入はもとの価格のまま続きます。
+- プランの作成と、条件の版を足す変更は、同じトランザクションでジョブ `supporters.ensure_prices`（冪等キー `ensure_prices:<版の ID>`）を積みます。ジョブは事業者に月と年の価格を作らせ（`EnsurePlan`）、`supporter_plan_prices` と今の価格、アーカイブを記録します。今の価格は、事業者が今の条件に返した価格で、プランと間隔ごとにアーカイブされていない最新の価格（作った順）と一致します。金額を以前の金額に戻しても新しい価格として記録するので、プランは毎回使える状態になります。既存の加入はもとの価格のまま続きます。
 - 決済画面の行（`supporter_checkouts`）は ADR-0072 §15 の表にない追加で、`pending` の加入の取り直しと定期の照合（`Syncer.OpenCheckouts`）が読みます。
+- `supporter_plan_prices` は、ADR-0072 §15 の表の一意 `(plan_id, interval, amount_minor, provider)` を持ちません（決定者の指示、[#942](https://github.com/best-friends/my/issues/942)）。一意は事業者の価格の ID だけです。
 
 ## 5. 状態とポリシー
 
