@@ -161,6 +161,7 @@ export {
   type ProfileHeaderProps,
 } from "./ProfileHeader";
 export { AccountItem, type AccountItemProps } from "./AccountItem";
+export {
   PostCardAuthorLink,
   PostCardAvatarLink,
   PostCardBoostContext,
@@ -173,3 +174,5 @@ export { AccountItem, type AccountItemProps } from "./AccountItem";
   type PostCardOriginProps,
   type PostCardTimeLinkProps,
 } from "./PostCardParts";
+export { NotificationLinks, NotificationOthers, NotificationSentence, type NotificationOthersProps, type NotificationSentenceProps } from "./NotificationRow";
+export { PostExcerpt, PostExcerptText, QuoteBlock, type PostExcerptProps, type PostExcerptTextProps, type QuoteBlockProps } from "./Quote";
