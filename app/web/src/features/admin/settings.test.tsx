@@ -258,6 +258,22 @@ describe("the server's policies", () => {
     expect(breakdown).toBeChecked();
   });
 
+  test("publishes the supporter list to everyone or to signed-in users, to nobody by default", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const list = await screen.findByRole("region", { name: "Supporter list" });
+    const choice = within(list).getByRole("radiogroup", { name: "Who may read the supporter list" });
+    expect(within(choice).getByRole("radio", { name: "Nobody" })).toBeChecked();
+    const signedIn = within(choice).getByRole("radio", { name: "Signed-in users" });
+    expect(signedIn).toHaveAccessibleDescription(/Only people signed in to this server/u);
+
+    await user.click(signedIn);
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { supporter_list_visibility: "signed_in" } }]);
+  });
+
   test("chooses what the holders of view_finance see, nothing of the items by default", async () => {
     const settings = settingsServer();
     const { user } = await renderApp({ path: "/admin/settings" });

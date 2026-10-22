@@ -87,6 +87,10 @@
     "defaultMessage": "Read posts and timelines",
     "description": "Permission (OAuth scope read:statuses) listed on the authorization page."
   },
+  "auth.authorize.scope.read_supporters": {
+    "defaultMessage": "Read your subscription to the supporter plans",
+    "description": "Permission (OAuth scope read:supporters) listed on the authorization page."
+  },
   "auth.authorize.scope.write": {
     "defaultMessage": "Post and change things for you",
     "description": "Permission (OAuth scope write) listed on the authorization page."
@@ -134,6 +138,10 @@
   "auth.authorize.scope.write_statuses": {
     "defaultMessage": "Post, edit, delete, boost, and pin posts",
     "description": "Permission (OAuth scope write:statuses) listed on the authorization page."
+  },
+  "auth.authorize.scope.write_supporters": {
+    "defaultMessage": "Subscribe to the supporter plans, and change, cancel, and resume your subscription",
+    "description": "Permission (OAuth scope write:supporters) listed on the authorization page."
   },
   "auth.authorize.title": {
     "defaultMessage": "Authorize {app}",
@@ -826,6 +834,34 @@
   "errors.supporters.subscription_ended": {
     "defaultMessage": "The subscription has ended.",
     "description": "API error title for HTTP 409 when an administrator cancels a subscription to a supporter plan that has ended."
+  },
+  "errors.supporters.ineligible": {
+    "defaultMessage": "You cannot subscribe to the supporter plans.",
+    "description": "API error title for HTTP 422 when a user who may not subscribe starts a subscription to a supporter plan (ADR-0072 §6); the detail says why."
+  },
+  "errors.supporters.ineligible_detail": {
+    "defaultMessage": "{reason, select, not_local {Only the users of this server can subscribe.} email_unverified {Verify your email address first.} restricted {Your account is restricted.} other {You cannot subscribe now.}}",
+    "description": "API error detail for HTTP 422 when a user may not subscribe to a supporter plan. {reason} is not_local, email_unverified, or restricted."
+  },
+  "errors.supporters.subscribed": {
+    "defaultMessage": "You have a subscription already.",
+    "description": "API error title for HTTP 409 when a user who has a subscription to a supporter plan starts another one (ADR-0072 §6: one plan at a time)."
+  },
+  "errors.supporters.subscribed_detail": {
+    "defaultMessage": "Change the plan of your subscription instead.",
+    "description": "API error detail for HTTP 409 when a user who has a subscription starts another one."
+  },
+  "errors.supporters.plan_unavailable": {
+    "defaultMessage": "The supporter plan takes no subscriptions.",
+    "description": "API error title for HTTP 422 when a user subscribes or changes to a supporter plan that takes no subscriptions (hidden, retired, not ready, or of another currency)."
+  },
+  "errors.supporters.subscription_state": {
+    "defaultMessage": "Your subscription cannot do that in its current state.",
+    "description": "API error title for HTTP 409 when the state of a user's subscription to a supporter plan does not allow the operation (ADR-0072 §8): a change needs an active subscription, a cancellation an active or past-due one, a resumption a canceling one."
+  },
+  "errors.supporters.same_plan": {
+    "defaultMessage": "Your subscription has this plan and interval already.",
+    "description": "API error title for HTTP 422 when a user changes their subscription to the plan and interval it has."
   },
   "errors.self_relationship": {
     "defaultMessage": "You cannot do this to your own account.",

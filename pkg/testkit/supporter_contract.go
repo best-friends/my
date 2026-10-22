@@ -46,7 +46,8 @@ type SupporterFactory func(t *testing.T, opts uow.Options) SupporterHarness
 // cancellation, the 7-day grace, refunds and chargebacks, changes of plan at once and at the end
 // of the period); a user subscribes once at a time and only when eligible; new prices go to the
 // new subscriptions only; retiring a plan ends its subscriptions and frees its role; a staff
-// member cancels at once; and the projections rebuild to what the use cases wrote.
+// member cancels at once; the supporter list shows only the members who chose to be listed, by
+// plan, until their subscription ends; and the projections rebuild to what the use cases wrote.
 func SupporterRepositoryContract(t *testing.T, newHarness SupporterFactory) {
 	t.Helper()
 	cases := []struct {
@@ -66,6 +67,7 @@ func SupporterRepositoryContract(t *testing.T, newHarness SupporterFactory) {
 		{"ChargesNewPricesToNewSubscriptions", supporterPrices},
 		{"RetiresPlans", supporterRetire},
 		{"CancelsByStaff", supporterStaffCancel},
+		{"ListsOnlyTheMembersWhoChoseTo", supporterListings},
 		{"RebuildsItsProjections", supporterRebuild},
 	}
 	for _, tc := range cases {
@@ -87,6 +89,18 @@ func (u *supporterUsers) SupporterUser(_ context.Context, id string) (supporters
 		return supporters.User{}, fmt.Errorf("%w: user %s", supporters.ErrNotFound, id)
 	}
 	return user, nil
+}
+
+func (u *supporterUsers) AccountIDs(_ context.Context, ids []string) (map[string]string, error) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	out := map[string]string{}
+	for _, id := range ids {
+		if user, ok := u.users[id]; ok {
+			out[id] = user.AccountID
+		}
+	}
+	return out, nil
 }
 
 func (u *supporterUsers) put(user supporters.User) {
@@ -993,4 +1007,105 @@ func supporterRebuild(t *testing.T, e *supporterEnv) {
 		t.Errorf("the projections differ after the rebuild:\nbefore %+v\nafter  %+v", before, after)
 	}
 	_, _ = ida, co
+}
+
+// supporterListings checks the supporter list (ADR-0071 §4, §6): only a member chooses to be
+// listed; the list shows the listed members of the plans that are not retired, by the plan's
+// rank and newest first, page by page; and the end of a subscription takes its member off.
+func supporterListings(t *testing.T, e *supporterEnv) {
+	ctx := t.Context()
+	e.enable(t)
+	small, large := e.plan(t, "small", 1, 10, 500), e.plan(t, "large", 2, 11, 1000)
+	alice, bob, carol, dave := e.user("alice"), e.user("bob"), e.user("carol"), e.user("dave")
+	names := map[string]string{alice: "alice", bob: "bob", carol: "carol"}
+	e.subscribe(t, alice, small, domain.IntervalMonth)
+	e.subscribe(t, bob, small, domain.IntervalYear)
+	carolID, carolRef := e.subscribe(t, carol, large, domain.IntervalMonth)
+	if _, err := e.svc.StartCheckout(ctx, supporters.CheckoutInput{UserID: dave, PlanID: small.ID, Interval: domain.IntervalMonth}); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{dave, "nobody"} {
+		if _, err := e.svc.SetListed(ctx, id, true); !errors.Is(err, supporters.ErrNotMember) {
+			t.Errorf("SetListed(%s) = %v, want ErrNotMember", id, err)
+		}
+		if _, err := e.svc.Listed(ctx, id); !errors.Is(err, supporters.ErrNotMember) {
+			t.Errorf("Listed(%s) = %v, want ErrNotMember", id, err)
+		}
+	}
+	if listed, err := e.svc.Listed(ctx, alice); err != nil || listed {
+		t.Fatalf("Listed before choosing = %v, %v; nobody is listed by default", listed, err)
+	}
+	for _, id := range []string{alice, bob, carol, alice} {
+		if listed, err := e.svc.SetListed(ctx, id, true); err != nil || !listed {
+			t.Fatalf("SetListed(%s) = %v, %v", id, listed, err)
+		}
+		e.clock.Advance(time.Second)
+	}
+	page := func(f supporters.ListingFilter) ([]string, *supporters.Listing) {
+		t.Helper()
+		l, err := e.svc.SupporterList(ctx, f)
+		if err != nil {
+			t.Fatalf("SupporterList(%+v) = %v", f, err)
+		}
+		var out []string
+		for _, m := range l.Members {
+			if want := "acct-" + names[m.UserID]; m.AccountID != want {
+				t.Errorf("the account of %s: %q, want %q", m.UserID, m.AccountID, want)
+			}
+			out = append(out, m.UserID)
+		}
+		return out, l.Last
+	}
+	if got, last := page(supporters.ListingFilter{Limit: 10}); !reflect.DeepEqual(got, []string{bob, alice, carol}) || last != nil {
+		t.Errorf("the list: %v (last %v), want bob and alice of the small plan, newest first, then carol", got, last)
+	}
+	var walked []string
+	var after *supporters.Listing
+	for range 4 {
+		got, last := page(supporters.ListingFilter{After: after, Limit: 1})
+		walked = append(walked, got...)
+		if last == nil {
+			break
+		}
+		after = last
+	}
+	if !reflect.DeepEqual(walked, []string{bob, alice, carol}) {
+		t.Errorf("the pages: %v", walked)
+	}
+	if got, _ := page(supporters.ListingFilter{PlanID: large.ID, Limit: 10}); !reflect.DeepEqual(got, []string{carol}) {
+		t.Errorf("the large plan: %v", got)
+	}
+	if l, _ := e.svc.SupporterList(ctx, supporters.ListingFilter{Limit: 10}); len(l.Plans) != 2 || l.Plans[0].ID != small.ID || l.Plans[1].ID != large.ID {
+		t.Errorf("the plans of the list: %+v", l.Plans)
+	}
+	if listed, err := e.svc.SetListed(ctx, bob, false); err != nil || listed {
+		t.Fatalf("SetListed(bob, false) = %v, %v", listed, err)
+	}
+	if got, _ := page(supporters.ListingFilter{Limit: 10}); !reflect.DeepEqual(got, []string{alice, carol}) {
+		t.Errorf("after bob left the list: %v", got)
+	}
+	// The end of a subscription takes its member off the list for good.
+	if _, err := e.svc.Cancel(ctx, carol); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := page(supporters.ListingFilter{Limit: 10}); !reflect.DeepEqual(got, []string{alice, carol}) {
+		t.Errorf("a canceling member is a member until the period's end: %v", got)
+	}
+	e.clock.Advance(31 * 24 * time.Hour)
+	e.change(t, carolID, carolRef, func(s *supporters.SubscriptionSnapshot) { s.Status = supporters.StatusCanceled })
+	if got, _ := page(supporters.ListingFilter{Limit: 10}); !reflect.DeepEqual(got, []string{alice}) {
+		t.Errorf("after carol's subscription ended: %v", got)
+	}
+	if listed, err := e.h.Supporters.HasListing(ctx, nil, carol); err != nil || listed {
+		t.Errorf("carol's choice stays after the end: %v, %v", listed, err)
+	}
+	// A retired plan leaves the list with its members, who stay listed until the period's end.
+	if err := e.svc.RetirePlan(ctx, small.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	l, err := e.svc.SupporterList(ctx, supporters.ListingFilter{Limit: 10})
+	if err != nil || len(l.Members) != 0 || len(l.Plans) != 1 || l.Plans[0].ID != large.ID {
+		t.Errorf("the list after the small plan retired: %+v, %v", l, err)
+	}
 }

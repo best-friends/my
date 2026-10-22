@@ -1,0 +1,205 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { Avatar, Button, EmptyState, Link, RegionError, Spinner, Switch } from "@my/ui";
+import { type ReactNode, useId } from "react";
+import { handleOf } from "../../../lib/handle";
+import { useT } from "../../../lib/i18n";
+import { imageSources } from "../../../lib/images";
+import { profilePath } from "../../../lib/paths";
+import { useFormatMoney } from "../../costs";
+import type { SupporterListEntry } from "../api/supporters";
+import { type SupporterGroup, useAboutSupporters, useSupporterList, useSupporterListing } from "../hooks/useSupporterList";
+
+/** A section: an `h2` that names a `<section>`. */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <h2 id={headingId} className="text-lg font-semibold">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * The body of the supporter list (`/about/supporters`, ADR-0071 §4): the members who chose to be listed, under a
+ * heading per plan, each as their avatar, name and handle linking to their profile, and never an amount, a date or a
+ * count. The instance's setting decides who may read it.
+ */
+export function SupporterListView() {
+  const t = useT();
+  const list = useSupporterList();
+  switch (list.status) {
+    case "hidden":
+      return (
+        <EmptyState
+          heading={t("client:supporters.list.hidden")}
+          action={
+            <Link href="/about" variant="standalone">
+              {t("client:supporters.list.about")}
+            </Link>
+          }
+        />
+      );
+    case "signed-in-only":
+      return (
+        <p className="flex flex-wrap gap-x-1">
+          <span>{t("client:supporters.list.signed_in_only")}</span>
+          <Link href={`/login?${new URLSearchParams({ return_to: "/about/supporters" }).toString()}`} variant="standalone">
+            {t("client:supporters.list.sign_in")}
+          </Link>
+        </p>
+      );
+    case "loading":
+      return (
+        <div aria-busy="true">
+          <Spinner label={t("client:supporters.list.loading")} />
+        </div>
+      );
+    case "error":
+      return (
+        <RegionError
+          heading={t("client:supporters.list.failed")}
+          reason={list.reason}
+          retryLabel={t("client:supporters.list.retry")}
+          onRetry={list.retry}
+          isRetrying={list.isRetrying}
+        />
+      );
+    case "ready":
+      return (
+        <div className="flex flex-col gap-8">
+          <p className="text-fg-muted">{t("client:supporters.list.description")}</p>
+          {list.groups.length === 0 ? (
+            <EmptyState heading={t("client:supporters.list.empty")} />
+          ) : (
+            list.groups.map((group) => <PlanGroup key={group.plan.id} group={group} />)
+          )}
+          {list.moreError !== undefined && <RegionError heading={t("client:supporters.list.more_failed")} reason={list.moreError} />}
+          {list.hasMore && (
+            <div>
+              <Button onPress={list.loadMore} isPending={list.isLoadingMore}>
+                {t("client:supporters.list.more")}
+              </Button>
+            </div>
+          )}
+        </div>
+      );
+  }
+}
+
+function PlanGroup({ group }: { group: SupporterGroup }) {
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      {/* The administrators' name of the plan, in a language the app does not know (web-client.md Y10). */}
+      <h2 id={headingId} dir="auto" lang="" className="text-lg font-semibold">
+        {group.plan.name}
+      </h2>
+      <ul className="flex flex-col gap-3">
+        {group.members.map((member) => (
+          <li key={member.account.id}>
+            <Member member={member} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** A member as one link to their profile: the avatar, the name and the handle. */
+function Member({ member }: { member: SupporterListEntry }) {
+  const { account } = member;
+  return (
+    <Link href={profilePath(account.acct)} variant="standalone" className="inline-grid max-w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3">
+      <>
+        <Avatar sources={imageSources(account.avatar)} name={account.display_name || account.username} decorative className="row-span-2" />
+        {/* The user's own text, in any language (web-client.md Y10). */}
+        <span dir="auto" className="font-semibold wrap-anywhere">
+          {account.display_name || account.username}
+        </span>
+        {/* The space keeps the name and the handle apart in the link's name. */}{" "}
+        <span dir="ltr" className="text-start text-sm font-normal wrap-anywhere text-fg-muted">
+          {handleOf(account.acct)}
+        </span>
+      </>
+    </Link>
+  );
+}
+
+/**
+ * The supporter program on the information page (ADR-0072 §14, ADR-0071 §4): the plans that take subscriptions with
+ * their prices and the way to subscribe, which the Tauri app does not show, and the link to the supporter list while
+ * the instance publishes it. Absent when there is neither.
+ */
+export function AboutSupportersSection() {
+  const t = useT();
+  const format = useFormatMoney();
+  const about = useAboutSupporters();
+  const plans = about.plans;
+  if ((plans === undefined || plans.length === 0) && !about.listPublished) return null;
+  return (
+    <Section title={t("client:supporters.about.title")}>
+      {plans !== undefined && plans.length > 0 && (
+        <>
+          <p>{t("client:supporters.about.description")}</p>
+          <ul className="flex flex-col gap-3">
+            {plans.map((plan) => (
+              <li key={plan.id} className="flex flex-col gap-1">
+                <span dir="auto" lang="" className="font-medium">
+                  {plan.name}
+                </span>
+                <span className="text-sm text-fg-muted">
+                  {t("client:supporter.plans.prices", {
+                    monthly: t("client:supporter.per_month", { amount: format(plan.monthly_price) }),
+                    yearly: t("client:supporter.per_year", { amount: format(plan.yearly_price) }),
+                  })}
+                </span>
+                {plan.description !== "" && (
+                  <span dir="auto" lang="" className="text-sm whitespace-pre-line">
+                    {plan.description}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p>
+            <Link href="/settings/supporter" variant="standalone">
+              {t("client:supporters.about.subscribe")}
+            </Link>
+          </p>
+        </>
+      )}
+      {about.listPublished && (
+        <p>
+          <Link href="/about/supporters" variant="standalone">
+            {t("client:supporters.about.list")}
+          </Link>
+        </p>
+      )}
+    </Section>
+  );
+}
+
+/**
+ * The user's choice to be on the supporter list (ADR-0071 §4), on the profile settings: one switch, saved as soon as
+ * it changes. Shown only to a member of a plan while the instance publishes the list; it stays in the Tauri app.
+ */
+export function SupporterListingSettings() {
+  const t = useT();
+  const listing = useSupporterListing();
+  if (listing === undefined) return null;
+  return (
+    <Section title={t("client:supporter.listing.title")}>
+      <p className="text-sm text-fg-muted">{t("client:supporter.listing.description")}</p>
+      <Switch
+        isSelected={listing.listed}
+        onChange={listing.onChange}
+        {...(listing.error !== undefined && { isInvalid: true, errorMessage: t("client:supporter.listing.failed", { reason: listing.error }) })}
+      >
+        {t("client:supporter.listing.switch")}
+      </Switch>
+    </Section>
+  );
+}

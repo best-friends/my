@@ -248,6 +248,14 @@ type Repository interface {
 	// SubscriptionUsers returns the subscribers of the subscriptions among ids that exist.
 	SubscriptionUsers(ctx context.Context, ids []string) ([]SubscriptionUser, error)
 
+	// InsertListing puts a user on the supporter list at at; a listed user stays as listed.
+	InsertListing(ctx context.Context, tx uow.Tx, userID string, at time.Time) error
+	// HasListing reports whether a user is on the supporter list; tx may be nil.
+	HasListing(ctx context.Context, tx uow.Tx, userID string) (bool, error)
+	// ListListings returns a page of the listed users whose live subscription is in a member
+	// state, of the plans that are not retired: by the plan's rank, then newest first, then by
+	// user ID from the last.
+	ListListings(ctx context.Context, f ListingFilter) ([]Listing, error)
 	// DeleteListing removes a user from the supporter list.
 	DeleteListing(ctx context.Context, tx uow.Tx, userID string) error
 	// EraseUser deletes the listing and the customers of an erased user (ADR-0072 §10).

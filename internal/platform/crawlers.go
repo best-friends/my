@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"slices"
 	"strings"
 
 	domaininstance "github.com/best-friends/my/internal/domain/instance"
@@ -17,6 +18,10 @@ import (
 // API, the sign-in and OAuth screens, ActivityPub documents, /.well-known/, and NodeInfo
 // (ADR-0057). Their responses carry X-Robots-Tag: noindex.
 var noIndexPrefixes = []string{"/api/", "/oauth/", "/auth/", "/ap/", "/.well-known/", "/nodeinfo/"}
+
+// noArchivePaths are the API paths whose responses, problems included, carry X-Robots-Tag:
+// noindex, noarchive whatever the instance states: the supporter list (ADR-0071 §4).
+var noArchivePaths = []string{"/api/v1/instance/supporters"}
 
 // noIndexTypes are the media types of documents that are not pages, wherever they are served:
 // ActivityPub documents negotiated at a page's URL, and problem documents.
@@ -41,6 +46,8 @@ func (a *App) crawlerHeaders(next http.Handler) http.Handler {
 				s = domaininstance.Settings{}
 			}
 			web.SetMediaHeaders(w.Header(), s)
+		case slices.Contains(noArchivePaths, p):
+			w.Header().Set("X-Robots-Tag", "noindex, noarchive")
 		case hasAnyPrefix(p, noIndexPrefixes):
 			w.Header().Set("X-Robots-Tag", web.HeaderNoIndex)
 		default:

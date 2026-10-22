@@ -75,6 +75,12 @@ tags:
       The instance's finances as the holders of the `view_finance` permission read them, as far
       as the instance settings show (ADR-0070 §5). The operations need a `read` scope and the
       `view_finance` or the `manage_finance` permission, never an `admin` scope.
+  - name: supporters
+    description: |
+      The authenticated user's own subscription to the supporter plans (ADR-0072 §18):
+      subscribing through the payment provider's hosted checkout, changing the plan, canceling
+      and resuming, and the provider's portal. The operations need a `read:supporters` or
+      `write:supporters` scope.
   - name: admin-moderation
     description: |
       The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
@@ -108,6 +114,8 @@ paths:
     $ref: ./paths/instance_cost_totals.yaml
   /instance/supporter_plans:
     $ref: ./paths/instance_supporter_plans.yaml
+  /instance/supporters:
+    $ref: ./paths/instance_supporters.yaml
   /accounts/verify_credentials:
     $ref: ./paths/accounts_verify_credentials.yaml
   /accounts/update_credentials:
@@ -120,6 +128,8 @@ paths:
     $ref: ./paths/preferences_badges.yaml
   /preferences/badges/{role_id}:
     $ref: ./paths/preferences_badges_{role_id}.yaml
+  /preferences/supporter_listing:
+    $ref: ./paths/preferences_supporter_listing.yaml
   /accounts/delete:
     $ref: ./paths/accounts_delete.yaml
   /accounts/password:
@@ -260,6 +270,22 @@ paths:
     $ref: ./paths/streaming.yaml
   /finance/cost_totals:
     $ref: ./paths/finance_cost_totals.yaml
+  /supporter/subscription:
+    $ref: ./paths/supporter_subscription.yaml
+  /supporter/checkout:
+    $ref: ./paths/supporter_checkout.yaml
+  /supporter/subscription/sync:
+    $ref: ./paths/supporter_subscription_sync.yaml
+  /supporter/subscription/change:
+    $ref: ./paths/supporter_subscription_change.yaml
+  /supporter/subscription/cancel:
+    $ref: ./paths/supporter_subscription_cancel.yaml
+  /supporter/subscription/resume:
+    $ref: ./paths/supporter_subscription_resume.yaml
+  /supporter/subscription/cancel_scheduled_change:
+    $ref: ./paths/supporter_subscription_cancel_scheduled_change.yaml
+  /supporter/portal:
+    $ref: ./paths/supporter_portal.yaml
   /admin/queue:
     $ref: ./paths/admin_queue.yaml
   /admin/jobs:
@@ -486,6 +512,7 @@ components:
             "read:notifications": Read the user's notifications.
             "read:reports": Read the reports the user filed and whether they are resolved.
             "read:statuses": Read posts and timelines.
+            "read:supporters": Read the user's own supporter subscription.
             "write:accounts": Change the user's profile and preferences.
             "write:blocks": Block and unblock accounts.
             "write:bookmarks": Bookmark posts and remove bookmarks.
@@ -497,9 +524,12 @@ components:
             "write:notifications": Mark notifications read and dismiss them.
             "write:reports": Report accounts and posts to the moderators.
             "write:statuses": Post, edit, delete, boost, and pin posts.
+            "write:supporters": Subscribe to the supporter plans, and change, cancel, and resume the subscription.
   headers:
     CacheControl:
       $ref: ./components/headers/CacheControl.yaml
+    XRobotsTag:
+      $ref: ./components/headers/XRobotsTag.yaml
   parameters:
     AccountActionId:
       $ref: ./components/parameters/AccountActionId.yaml
@@ -1099,6 +1129,8 @@ components:
       $ref: ./components/schemas/OwnCustomEmoji.yaml
     OwnCustomEmojiPage:
       $ref: ./components/schemas/OwnCustomEmojiPage.yaml
+    OwnSupporterSubscription:
+      $ref: ./components/schemas/OwnSupporterSubscription.yaml
     PageInfo:
       $ref: ./components/schemas/PageInfo.yaml
     Passkey:
@@ -1239,10 +1271,26 @@ components:
       $ref: ./components/schemas/StatusTag.yaml
     StatusText:
       $ref: ./components/schemas/StatusText.yaml
+    SupporterCheckout:
+      $ref: ./components/schemas/SupporterCheckout.yaml
+    SupporterIneligibleReason:
+      $ref: ./components/schemas/SupporterIneligibleReason.yaml
     SupporterInterval:
       $ref: ./components/schemas/SupporterInterval.yaml
+    SupporterListEntry:
+      $ref: ./components/schemas/SupporterListEntry.yaml
+    SupporterListPage:
+      $ref: ./components/schemas/SupporterListPage.yaml
+    SupporterListPlan:
+      $ref: ./components/schemas/SupporterListPlan.yaml
+    SupporterListVisibility:
+      $ref: ./components/schemas/SupporterListVisibility.yaml
+    SupporterListing:
+      $ref: ./components/schemas/SupporterListing.yaml
     SupporterPlan:
       $ref: ./components/schemas/SupporterPlan.yaml
+    SupporterPlanChoice:
+      $ref: ./components/schemas/SupporterPlanChoice.yaml
     SupporterPlanList:
       $ref: ./components/schemas/SupporterPlanList.yaml
     SupporterPlanProblem:
@@ -1251,8 +1299,14 @@ components:
       $ref: ./components/schemas/SupporterPlanProblemReason.yaml
     SupporterPlanVisibility:
       $ref: ./components/schemas/SupporterPlanVisibility.yaml
+    SupporterPortal:
+      $ref: ./components/schemas/SupporterPortal.yaml
     SupporterProgramWarning:
       $ref: ./components/schemas/SupporterProgramWarning.yaml
+    SupporterScheduledChange:
+      $ref: ./components/schemas/SupporterScheduledChange.yaml
+    SupporterSubscription:
+      $ref: ./components/schemas/SupporterSubscription.yaml
     SupporterSubscriptionState:
       $ref: ./components/schemas/SupporterSubscriptionState.yaml
     ThemeError:

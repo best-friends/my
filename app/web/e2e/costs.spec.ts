@@ -58,6 +58,7 @@ async function serveCosts(page: Page, visibility: Instance["finance_visibility"]
     ai_usage: "deny",
     finance_visibility: visibility,
     supporters_enabled: false,
+    supporter_list_visibility: "off",
     rules: [],
   };
   await page.route("**/api/v1/instance", (route) => route.fulfill({ json: instance }));

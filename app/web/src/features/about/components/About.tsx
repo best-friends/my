@@ -7,6 +7,7 @@ import { domainToUnicode } from "../../../lib/idn";
 import { imageSources } from "../../../lib/images";
 import { profilePath } from "../../../lib/paths";
 import { DocumentsSection } from "../../documents";
+import { AboutSupportersSection } from "../../supporters";
 import type { Instance, PublicDomainAction } from "../api/about";
 import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/useAbout";
 
@@ -14,7 +15,7 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
  * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
  * description, the rules followed by its terms of service and privacy policy, the remote domains it moderates as far
  * as the instance lists them, what it states to search engines and AI crawlers, what running it costs as far as the
- * instance publishes it, its commerce disclosures, how to reach the operators, and where to get its source code.
+ * instance publishes it, its supporter plans and the supporter list, its commerce disclosures, how to reach the operators, and where to get its source code.
  * Everyone may read it, signed in or not.
  */
 export function About() {
@@ -37,6 +38,7 @@ export function About() {
       {about.crawlers !== undefined && <Crawlers searchIndexing={about.crawlers.searchIndexing} aiUsage={about.crawlers.aiUsage} />}
       {/* Who runs the server, what it costs and what it runs. */}
       {(about.finance === "totals" || about.finance === "breakdown") && <Costs visibility={about.finance} />}
+      <AboutSupportersSection />
       {about.commerceDisclosureUrl !== undefined && <CommerceDisclosure url={about.commerceDisclosureUrl} />}
       {about.contact !== undefined && <Contact contact={about.contact} />}
       {about.sourceUrl !== undefined && <SourceCode url={about.sourceUrl} />}

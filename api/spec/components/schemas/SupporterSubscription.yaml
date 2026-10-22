@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The authenticated user's subscription to a supporter plan. `price` is what it renews at,
+  which may be lower than the plan's current price (a price change does not apply to the
+  subscriptions that go on). The plan's name is written by the administrators in any
+  language; render it with `dir="auto"`.
+type: object
+required: [id, state, plan_id, plan_name, interval, price, started_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  state:
+    $ref: ./SupporterSubscriptionState.yaml
+  plan_id:
+    $ref: ./Id.yaml
+  plan_name:
+    type: string
+  interval:
+    $ref: ./SupporterInterval.yaml
+  price:
+    $ref: ./Money.yaml
+  period_ends_at:
+    description: |
+      The end of the current period: when it renews, or, while `canceling`, when it ends;
+      omitted for `pending`.
+    type: string
+    format: date-time
+  grace_ends_at:
+    description: When a `past_due` subscription loses the plan's role unless a payment succeeds.
+    type: string
+    format: date-time
+  scheduled_change:
+    $ref: ./SupporterScheduledChange.yaml
+  started_at:
+    type: string
+    format: date-time

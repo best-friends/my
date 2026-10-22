@@ -73,6 +73,12 @@ tags:
       The instance's finances as the holders of the `view_finance` permission read them, as far
       as the instance settings show (ADR-0070 §5). The operations need a `read` scope and the
       `view_finance` or the `manage_finance` permission, never an `admin` scope.
+  - name: supporters
+    description: |
+      The authenticated user's own subscription to the supporter plans (ADR-0072 §18):
+      subscribing through the payment provider's hosted checkout, changing the plan, canceling
+      and resuming, and the provider's portal. The operations need a `read:supporters` or
+      `write:supporters` scope.
   - name: admin-moderation
     description: |
       The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
@@ -405,6 +411,48 @@ paths:
                 $ref: '#/components/schemas/SupporterPlanList'
         default:
           $ref: '#/components/responses/Problem'
+  /instance/supporters:
+    get:
+      operationId: listInstanceSupporters
+      summary: List the supporters who chose to be listed
+      description: |
+        The members of the supporter plans who chose to be listed (`PUT
+        /preferences/supporter_listing`), by plan in the plans' order and newest first within a
+        plan, with the plans that are not retired for the headings (ADR-0071 §4). Only each
+        member's account is listed: never an amount, an interval, a date, or a count. Accounts
+        that the viewer may not see are left out, so a page may be shorter than `limit`. The
+        instance setting `supporter_list_visibility` decides who may read it: `off` makes it a
+        404, `signed_in` a 401 `/api/v1/problems/unauthenticated` for a request without an access
+        token, and `public` serves everyone. The responses always carry `X-Robots-Tag: noindex,
+        noarchive`.
+      tags:
+        - instance
+      security:
+        - {}
+        - oauth2:
+            - read:accounts
+      parameters:
+        - name: plan_id
+          in: query
+          description: Only the members of this plan.
+          schema:
+            $ref: '#/components/schemas/Id'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: A page of listed supporters.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Robots-Tag:
+              $ref: '#/components/headers/XRobotsTag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterListPage'
+        default:
+          $ref: '#/components/responses/Problem'
   /accounts/verify_credentials:
     get:
       operationId: verifyAccountCredentials
@@ -623,6 +671,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadgeChoice'
+        default:
+          $ref: '#/components/responses/Problem'
+  /preferences/supporter_listing:
+    get:
+      operationId: getSupporterListing
+      summary: Get whether the authenticated user is on the supporter list
+      description: |
+        Whether the user chose to be listed on the supporter list (`GET /instance/supporters`,
+        ADR-0071 §4). Nobody is listed until they choose to be, and the choice ends with the
+        subscription. A 404 for a user who is not a member of a plan (an `active`, `canceling`,
+        or `past_due` subscription) and while the program is disabled.
+      tags:
+        - preferences
+      security:
+        - oauth2:
+            - read:accounts
+      responses:
+        '200':
+          description: The choice.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterListing'
+        default:
+          $ref: '#/components/responses/Problem'
+    put:
+      operationId: updateSupporterListing
+      summary: Choose whether the authenticated user is on the supporter list
+      description: |
+        Lists the user on the supporter list or takes them off it. The choice is one per user,
+        whichever plan they are a member of; it stays when the plan changes and is deleted when
+        the subscription ends. A 404 for a user who is not a member of a plan and while the
+        program is disabled.
+      tags:
+        - preferences
+      security:
+        - oauth2:
+            - write:accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupporterListing'
+      responses:
+        '200':
+          description: The choice as saved.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterListing'
         default:
           $ref: '#/components/responses/Problem'
   /accounts/delete:
@@ -3014,6 +3119,229 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FinanceCostTotals'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/subscription:
+    get:
+      operationId: getOwnSupporterSubscription
+      summary: Get the authenticated user's supporter subscription
+      description: |
+        The user's subscription that goes on (any state but `expired`, `revoked`, and
+        `abandoned`), and why the user cannot subscribe when they cannot (ADR-0072 §6, §18). A 404
+        while the supporter program is disabled (`Instance.supporters_enabled`).
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - read:supporters
+      responses:
+        '200':
+          description: The subscription, or none.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnSupporterSubscription'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/checkout:
+    post:
+      operationId: startSupporterCheckout
+      summary: Start a subscription to a supporter plan
+      description: |
+        Starts a subscription to a plan at an interval and returns the payment provider's hosted
+        checkout, which the client opens in the same tab; no card details reach this server
+        (ADR-0072 §6, ADR-0074). The checkout returns to `/settings/supporter` of the web client.
+        Starting again while the subscription is `pending` makes a new checkout of the same
+        subscription. Only a local user with a verified primary address and without another
+        subscription may subscribe: a 422 `/api/v1/problems/supporter-ineligible` otherwise, a 409
+        `/api/v1/problems/supporter-subscribed` with a subscription that is not pending, and a 422
+        `/api/v1/problems/supporter-plan-unavailable` for a plan that takes no subscriptions. A 404
+        for an unknown plan and while the program is disabled.
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - write:supporters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupporterPlanChoice'
+      responses:
+        '200':
+          description: The checkout to open.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterCheckout'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/subscription/sync:
+    post:
+      operationId: syncOwnSupporterSubscription
+      summary: Re-read the authenticated user's subscription from the payment provider
+      description: |
+        What the web client sends when the payment provider's checkout or portal returns to it:
+        it queues a re-read of the user's subscription from the provider, without waiting for its
+        webhook (ADR-0072 §6), and answers the subscription as it is now. Read it again to see the
+        result. A 404 while the program is disabled.
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - write:supporters
+      responses:
+        '200':
+          description: The subscription as it is now, or none.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnSupporterSubscription'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/subscription/change:
+    post:
+      operationId: changeOwnSupporterSubscription
+      summary: Change the plan or the interval of the authenticated user's subscription
+      description: |
+        Changes an `active` subscription to another plan or interval (ADR-0072 §8): to a higher
+        plan or to the yearly price at once, with the difference charged pro rata; to a lower plan
+        or to the monthly price at the end of the period, as `scheduled_change`. The new plan's
+        current price applies. A 409 `/api/v1/problems/supporter-subscription-state` unless the
+        subscription is `active`, a 422 `/api/v1/problems/supporter-plan-unavailable` for a plan
+        that takes no subscriptions, and a 422 `/api/v1/problems/supporter-same-plan` for the
+        current plan and interval.
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - write:supporters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupporterPlanChoice'
+      responses:
+        '200':
+          description: The subscription after the change.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterSubscription'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/subscription/cancel:
+    post:
+      operationId: cancelOwnSupporterSubscription
+      summary: Cancel the authenticated user's subscription at the end of its period
+      description: |
+        Cancels an `active` or `past_due` subscription at the end of its period: the plan's role
+        stays until then (`canceling`, ADR-0072 §7). A 409
+        `/api/v1/problems/supporter-subscription-state` in another state.
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - write:supporters
+      responses:
+        '200':
+          description: The subscription after the cancellation.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterSubscription'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/subscription/resume:
+    post:
+      operationId: resumeOwnSupporterSubscription
+      summary: Withdraw the cancellation of the authenticated user's subscription
+      description: |
+        Withdraws the cancellation of a `canceling` subscription, which then renews as before. A
+        409 `/api/v1/problems/supporter-subscription-state` in another state.
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - write:supporters
+      responses:
+        '200':
+          description: The subscription after the resumption.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterSubscription'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/subscription/cancel_scheduled_change:
+    post:
+      operationId: cancelOwnSupporterScheduledChange
+      summary: Withdraw the scheduled change of the authenticated user's subscription
+      description: |
+        Withdraws the change to a lower plan or to the monthly price that waits for the end of
+        the period (ADR-0072 §8); the subscription renews at its current plan and interval. A 409
+        `/api/v1/problems/supporter-subscription-state` without a scheduled change.
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - write:supporters
+      responses:
+        '200':
+          description: The subscription without the scheduled change.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterSubscription'
+        default:
+          $ref: '#/components/responses/Problem'
+  /supporter/portal:
+    post:
+      operationId: openSupporterPortal
+      summary: Open the payment provider's portal of the authenticated user
+      description: |
+        The payment provider's portal of the user's payment methods and invoices, which returns
+        to `/settings/supporter` of the web client (ADR-0072 §8). Plans change on this server, not in
+        the portal. A 409 `/api/v1/problems/subscription-ended` for a user whom the provider does not
+        know.
+      tags:
+        - supporters
+      security:
+        - oauth2:
+            - write:supporters
+      responses:
+        '200':
+          description: The portal to open.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupporterPortal'
         default:
           $ref: '#/components/responses/Problem'
   /admin/queue:
@@ -6382,6 +6710,7 @@ components:
             read:notifications: Read the user's notifications.
             read:reports: Read the reports the user filed and whether they are resolved.
             read:statuses: Read posts and timelines.
+            read:supporters: Read the user's own supporter subscription.
             write:accounts: Change the user's profile and preferences.
             write:blocks: Block and unblock accounts.
             write:bookmarks: Bookmark posts and remove bookmarks.
@@ -6393,9 +6722,14 @@ components:
             write:notifications: Mark notifications read and dismiss them.
             write:reports: Report accounts and posts to the moderators.
             write:statuses: Post, edit, delete, boost, and pin posts.
+            write:supporters: Subscribe to the supporter plans, and change, cancel, and resume the subscription.
   headers:
     CacheControl:
       description: The caching policy. Anonymous public GETs are cacheable by shared caches (ADR-0016).
+      schema:
+        type: string
+    XRobotsTag:
+      description: The statement to search engines (ADR-0057) of a response that states more than the default `noindex`.
       schema:
         type: string
   parameters:
@@ -11202,6 +11536,7 @@ components:
         - ai_usage
         - finance_visibility
         - supporters_enabled
+        - supporter_list_visibility
       properties:
         domain:
           description: The domain that serves the instance.
@@ -11268,6 +11603,8 @@ components:
             Whether the supporter program is enabled: its plans (`GET /instance/supporter_plans`)
             and the subscriptions show only then.
           type: boolean
+        supporter_list_visibility:
+          $ref: '#/components/schemas/SupporterListVisibility'
         theme:
           $ref: '#/components/schemas/InstanceTheme'
         contact:
@@ -11438,6 +11775,7 @@ components:
         - finance_viewer_item_names
         - finance_viewer_item_memos
         - finance_viewer_income
+        - supporter_list_visibility
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
@@ -12266,6 +12604,15 @@ components:
               description: How many the user may have; absent for no limit.
               type: integer
               minimum: 0
+    OwnSupporterSubscription:
+      description: |
+        The authenticated user's subscription that goes on, and whether they may subscribe.
+      type: object
+      properties:
+        subscription:
+          $ref: '#/components/schemas/SupporterSubscription'
+        ineligible_reason:
+          $ref: '#/components/schemas/SupporterIneligibleReason'
     PageInfo:
       description: The pagination of a collection page; collection responses embed it with allOf.
       type: object
@@ -12733,6 +13080,17 @@ components:
         - `/api/v1/problems/supporter-plan-retired` (409): the supporter plan is retired and does
           not change any more.
         - `/api/v1/problems/subscription-ended` (409): the subscription has ended already.
+        - `/api/v1/problems/supporter-ineligible` (422): the user may not subscribe to a supporter
+          plan: not a local user, the primary email address is not verified, or the account is
+          restricted.
+        - `/api/v1/problems/supporter-subscribed` (409): the user has a subscription that goes on
+          already; change its plan instead.
+        - `/api/v1/problems/supporter-plan-unavailable` (422): the supporter plan takes no
+          subscriptions: hidden, retired, not ready, or of another currency.
+        - `/api/v1/problems/supporter-subscription-state` (409): the subscription's state does not
+          allow the operation.
+        - `/api/v1/problems/supporter-same-plan` (422): the subscription has that plan and interval
+          already.
       type: object
       required:
         - type
@@ -13692,12 +14050,98 @@ components:
       description: The plain text; the server links mentions, hashtags, and URLs.
       type: string
       minLength: 1
+    SupporterCheckout:
+      description: The payment provider's hosted checkout of a subscription.
+      type: object
+      required:
+        - subscription_id
+        - redirect_url
+      properties:
+        subscription_id:
+          $ref: '#/components/schemas/Id'
+        redirect_url:
+          description: The checkout, to open in the same tab.
+          type: string
+          format: uri
+    SupporterIneligibleReason:
+      description: |
+        Why the user may not subscribe to a supporter plan (ADR-0072 §6): `not_local`, not a user
+        of this server; `email_unverified`, the primary email address is not verified;
+        `restricted`, the account is suspended or its deletion is done or scheduled. Omitted when
+        the user may subscribe.
+      type: string
+      enum:
+        - not_local
+        - email_unverified
+        - restricted
     SupporterInterval:
       description: How often a subscription renews.
       type: string
       enum:
         - month
         - year
+    SupporterListEntry:
+      description: A member on the supporter list.
+      type: object
+      required:
+        - plan_id
+        - account
+      properties:
+        plan_id:
+          $ref: '#/components/schemas/Id'
+        account:
+          $ref: '#/components/schemas/Account'
+    SupporterListPage:
+      description: |
+        A page of the supporter list: the members by plan, in the order of `plans`, newest first
+        within a plan.
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+        - type: object
+          required:
+            - plans
+            - items
+          properties:
+            plans:
+              description: The plans that are not retired, in their order (the lowest first), on every page.
+              type: array
+              items:
+                $ref: '#/components/schemas/SupporterListPlan'
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/SupporterListEntry'
+    SupporterListPlan:
+      description: |
+        A plan of the supporter list. The name is written by the administrators in any language;
+        render it with `dir="auto"`.
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+    SupporterListVisibility:
+      description: |
+        Who may read the supporter list (the instance setting `supporter_list_visibility`, ADR-0071
+        §4): `off`, nobody, and `GET /instance/supporters` is a 404; `public`, everyone;
+        `signed_in`, the users signed in to this server.
+      type: string
+      enum:
+        - 'off'
+        - public
+        - signed_in
+    SupporterListing:
+      description: Whether the user is on the supporter list.
+      type: object
+      required:
+        - listed
+      properties:
+        listed:
+          type: boolean
     SupporterPlan:
       description: |
         A supporter plan that takes subscriptions. The name and the description are written by
@@ -13724,6 +14168,17 @@ components:
           $ref: '#/components/schemas/Money'
         yearly_price:
           $ref: '#/components/schemas/Money'
+    SupporterPlanChoice:
+      description: A plan and how often its subscription renews.
+      type: object
+      required:
+        - plan_id
+        - interval
+      properties:
+        plan_id:
+          $ref: '#/components/schemas/Id'
+        interval:
+          $ref: '#/components/schemas/SupporterInterval'
     SupporterPlanList:
       description: The supporter plans that take subscriptions, by rank.
       type: object
@@ -13783,6 +14238,16 @@ components:
       enum:
         - public
         - hidden
+    SupporterPortal:
+      description: The payment provider's portal of the user's payment methods and invoices.
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          description: The portal, to open in the same tab.
+          type: string
+          format: uri
     SupporterProgramWarning:
       description: |
         What an administrator should look at in the supporter program. `no_provider`: no payment
@@ -13797,6 +14262,70 @@ components:
         - no_email
         - provider_mismatch
         - no_commerce_disclosure
+    SupporterScheduledChange:
+      description: A change to a lower plan or to the monthly price that waits for the end of the period.
+      type: object
+      required:
+        - plan_id
+        - plan_name
+        - interval
+        - price
+        - effective_at
+      properties:
+        plan_id:
+          $ref: '#/components/schemas/Id'
+        plan_name:
+          type: string
+        interval:
+          $ref: '#/components/schemas/SupporterInterval'
+        price:
+          $ref: '#/components/schemas/Money'
+        effective_at:
+          type: string
+          format: date-time
+    SupporterSubscription:
+      description: |
+        The authenticated user's subscription to a supporter plan. `price` is what it renews at,
+        which may be lower than the plan's current price (a price change does not apply to the
+        subscriptions that go on). The plan's name is written by the administrators in any
+        language; render it with `dir="auto"`.
+      type: object
+      required:
+        - id
+        - state
+        - plan_id
+        - plan_name
+        - interval
+        - price
+        - started_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        state:
+          $ref: '#/components/schemas/SupporterSubscriptionState'
+        plan_id:
+          $ref: '#/components/schemas/Id'
+        plan_name:
+          type: string
+        interval:
+          $ref: '#/components/schemas/SupporterInterval'
+        price:
+          $ref: '#/components/schemas/Money'
+        period_ends_at:
+          description: |
+            The end of the current period: when it renews, or, while `canceling`, when it ends;
+            omitted for `pending`.
+          type: string
+          format: date-time
+        grace_ends_at:
+          description: When a `past_due` subscription loses the plan's role unless a payment succeeds.
+          type: string
+          format: date-time
+        scheduled_change:
+          $ref: '#/components/schemas/SupporterScheduledChange'
+        started_at:
+          type: string
+          format: date-time
     SupporterSubscriptionState:
       description: |
         The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:

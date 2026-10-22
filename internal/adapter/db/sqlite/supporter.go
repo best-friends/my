@@ -658,6 +658,42 @@ func (r *SupporterRepository) SubscriptionUsers(ctx context.Context, ids []strin
 	return out, nil
 }
 
+// InsertListing implements supporters.Repository.
+func (r *SupporterRepository) InsertListing(ctx context.Context, tx uow.Tx, userID string, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertSupporterListing(ctx, sqlitegen.InsertSupporterListingParams{UserID: userID, CreatedAt: toMillis(at)}), "insert supporter listing")
+}
+
+// HasListing implements supporters.Repository.
+func (r *SupporterRepository) HasListing(ctx context.Context, tx uow.Tx, userID string) (bool, error) {
+	q, err := r.q(tx)
+	if err != nil {
+		return false, err
+	}
+	found, err := q.HasSupporterListing(ctx, userID)
+	return found != 0, wrap(err, "find supporter listing")
+}
+
+// ListListings implements supporters.Repository.
+func (r *SupporterRepository) ListListings(ctx context.Context, f supporters.ListingFilter) ([]supporters.Listing, error) {
+	params := sqlitegen.ListSupporterListingsParams{PlanID: f.PlanID, Lim: int64(f.Limit)}
+	if f.After != nil {
+		params.AfterUserID, params.AfterRank, params.AfterAt = f.After.UserID, int64(f.After.Rank), toMillis(f.After.ListedAt)
+	}
+	rows, err := r.db.reader().ListSupporterListings(ctx, params)
+	if err != nil {
+		return nil, wrap(err, "list supporter listings")
+	}
+	out := make([]supporters.Listing, len(rows))
+	for i, row := range rows {
+		out[i] = supporters.Listing{UserID: row.UserID, PlanID: row.PlanID, Rank: int(row.Rank), ListedAt: fromMillis(row.CreatedAt)}
+	}
+	return out, nil
+}
+
 // DeleteListing implements supporters.Repository.
 func (r *SupporterRepository) DeleteListing(ctx context.Context, tx uow.Tx, userID string) error {
 	q, err := queries(tx)

@@ -59,6 +59,7 @@
 | `finance_viewer_item_names` | `true` / `false` | `false` | 権限 `view_finance` を持つ利用者が会計の画面（`/finance`、`GET /api/v1/finance/cost_totals`）で、費用の項目の名前と、取り込んだ費用のサービス名を見るか（[ADR-0070](../adr/0070-permission-split-emoji-finance.md) §5）。合計と事業者・区分ごとの内訳はこの設定によらずいつも見せる |
 | `finance_viewer_item_memos` | `true` / `false` | `false` | 権限 `view_finance` を持つ利用者が会計の画面で費用の項目のメモを見るか（ADR-0070 §5）。名前かメモのどちらかが `true` なら、期間ごとに項目の行（事業者・区分・その期間の額に、有効なら名前・メモ）を出す。`manage_finance` を持つ人は設定によらずすべてを見る |
 | `finance_viewer_income` | `totals` / `plans` | `totals` | 権限 `view_finance` を持つ利用者に、収入を合計だけ（`totals`）か、加えてプランごとの加入者の数まで（`plans`）見せるか（ADR-0070 §5）。プランごとの金額と誰が払ったかはどの値でも見せない。収入の表示はまだなく、この値は会計の画面と `/admin/finance` に出るだけ |
+| `supporter_list_visibility` | `off` / `public` / `signed_in` | `off` | サポーターの一覧（`GET /api/v1/instance/supporters` と `/about/supporters`、[ADR-0071](../adr/0071-role-badges-and-supporter-list.md) §4）を誰に見せるか。`off` は誰にも見せない（API は 404、`/about` からのリンクも出ない）、`public` は誰にでも、`signed_in` はこのサーバーにサインインした人だけに見せる（サインインしていなければ API は 401）。一覧に出るのは、加入中の人のうち自分で掲載を選んだ人のアカウントとプランだけで、金額・月払いか年払いか・日付・人数はどの値でも出さない。一覧のページと API の応答は、`search_indexing` に関わらずいつも `noindex, noarchive` |
 
 - 値は保存前に正規形にします（`TRUE` → `true`、`0750` → `750`、`ja_jp` → `ja-JP`、メディア ID は小文字）。不正な値は何も書き込まずに拒否します。
 - `preview_image` と `thumbnail` は、存在する画像のメディア（処理中を含む）だけを受け付けます。`preview_image` は、処理が終わるまでと、処理に失敗した画像の代わりには既定画像が出ます。
@@ -161,6 +162,7 @@ CLI で変えられる設定値は、Web クライアントの管理画面とク
   | 連合 | `authorized_fetch`・`remote_media_policy`・`remote_media_cache_ttl`（1 時間・1 日・7 日・30 日・365 日から選ぶ）・`link_cards_enabled` |
   | 制限・凍結したサーバー | `domain_actions_visibility`・`domain_actions_rationale_visibility` |
   | 運営の費用 | `finance_visibility`（`breakdown` の選択肢に、事業者と区分が知られることを書く）・`finance_viewer_item_names`・`finance_viewer_item_memos`・`finance_viewer_income`（会計を閲覧できる人に見せる範囲） |
+  | サポーターの一覧 | `supporter_list_visibility` |
   | 検索エンジンと AI | `search_indexing`・`indexable_default`・`ai_usage`・`security_contact` |
 
   連絡先とサムネイル（`contact_account`・`contact_email`・`thumbnail` と文章 `thumbnail_alt`）は、名前と説明の下の「連絡先とサムネイル」の区画で変えます。画像は選んだときにアップロードされ、保存したときにサムネイルになります。

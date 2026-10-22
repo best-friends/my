@@ -98,7 +98,12 @@ func TestCrawlerStatements(t *testing.T) {
 		instance.SettingSecurityContact: "mailto:security@social.example",
 	})
 	register("bob")
-	for path, want := range map[string]string{"/": "", "/@alice": "noindex, noarchive", "/@bob": "", "/home": "noindex, noarchive"} {
+	// The supporter list is never for search engines (ADR-0071 §4): its page, and its API with
+	// its problems.
+	for path, want := range map[string]string{
+		"/": "", "/@alice": "noindex, noarchive", "/@bob": "", "/home": "noindex, noarchive",
+		"/about/supporters": "noindex, noarchive", "/api/v1/instance/supporters": "noindex, noarchive",
+	} {
 		if got := get(path, acceptBrowser).Header().Get("X-Robots-Tag"); got != want {
 			t.Errorf("GET %s: X-Robots-Tag = %q, want %q", path, got, want)
 		}

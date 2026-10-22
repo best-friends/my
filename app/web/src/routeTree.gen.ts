@@ -24,6 +24,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as AboutCostsRouteImport } from './routes/about_.costs'
+import { Route as AboutSupportersRouteImport } from './routes/about_.supporters'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
@@ -62,6 +63,7 @@ import { Route as SettingsPasskeysRouteImport } from './routes/settings.passkeys
 import { Route as SettingsPasswordRouteImport } from './routes/settings.password'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
+import { Route as SettingsSupporterRouteImport } from './routes/settings.supporter'
 import { Route as SettingsTwoFactorRouteImport } from './routes/settings.two-factor'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 import { Route as AtChar123acctChar125StatusIdRouteImport } from './routes/@{$acct}_.status.$id'
@@ -148,6 +150,11 @@ const AtChar123acctChar125FollowingRoute =
 const AboutCostsRoute = AboutCostsRouteImport.update({
   id: '/about_/costs',
   path: '/about/costs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutSupportersRoute = AboutSupportersRouteImport.update({
+  id: '/about_/supporters',
+  path: '/about/supporters',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -340,6 +347,11 @@ const SettingsProfileRoute = SettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsSupporterRoute = SettingsSupporterRouteImport.update({
+  id: '/settings/supporter',
+  path: '/settings/supporter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsTwoFactorRoute = SettingsTwoFactorRouteImport.update({
   id: '/settings/two-factor',
   path: '/settings/two-factor',
@@ -411,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/about/costs': typeof AboutCostsRoute
+  '/about/supporters': typeof AboutSupportersRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -446,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/settings/password': typeof SettingsPasswordRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/supporter': typeof SettingsSupporterRoute
   '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
@@ -476,6 +490,7 @@ export interface FileRoutesByTo {
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/about/costs': typeof AboutCostsRoute
+  '/about/supporters': typeof AboutSupportersRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -511,6 +526,7 @@ export interface FileRoutesByTo {
   '/settings/password': typeof SettingsPasswordRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/supporter': typeof SettingsSupporterRoute
   '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin': typeof AdminIndexRoute
@@ -542,6 +558,7 @@ export interface FileRoutesById {
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
   '/about_/costs': typeof AboutCostsRoute
+  '/about_/supporters': typeof AboutSupportersRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -577,6 +594,7 @@ export interface FileRoutesById {
   '/settings/password': typeof SettingsPasswordRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/supporter': typeof SettingsSupporterRoute
   '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
@@ -609,6 +627,7 @@ export interface FileRouteTypes {
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/about/costs'
+    | '/about/supporters'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -644,6 +663,7 @@ export interface FileRouteTypes {
     | '/settings/password'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/supporter'
     | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin/'
@@ -674,6 +694,7 @@ export interface FileRouteTypes {
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/about/costs'
+    | '/about/supporters'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -709,6 +730,7 @@ export interface FileRouteTypes {
     | '/settings/password'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/supporter'
     | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin'
@@ -739,6 +761,7 @@ export interface FileRouteTypes {
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
     | '/about_/costs'
+    | '/about_/supporters'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -774,6 +797,7 @@ export interface FileRouteTypes {
     | '/settings/password'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/supporter'
     | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin/'
@@ -805,6 +829,7 @@ export interface RootRouteChildren {
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
   AboutCostsRoute: typeof AboutCostsRoute
+  AboutSupportersRoute: typeof AboutSupportersRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
@@ -840,6 +865,7 @@ export interface RootRouteChildren {
   SettingsPasswordRoute: typeof SettingsPasswordRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsSupporterRoute: typeof SettingsSupporterRoute
   SettingsTwoFactorRoute: typeof SettingsTwoFactorRoute
   TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -960,6 +986,13 @@ declare module '@tanstack/react-router' {
       path: '/about/costs'
       fullPath: '/about/costs'
       preLoaderRoute: typeof AboutCostsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about_/supporters': {
+      id: '/about_/supporters'
+      path: '/about/supporters'
+      fullPath: '/about/supporters'
+      preLoaderRoute: typeof AboutSupportersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -1228,6 +1261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/supporter': {
+      id: '/settings/supporter'
+      path: '/settings/supporter'
+      fullPath: '/settings/supporter'
+      preLoaderRoute: typeof SettingsSupporterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/two-factor': {
       id: '/settings/two-factor'
       path: '/settings/two-factor'
@@ -1317,6 +1357,7 @@ const rootRouteChildren: RootRouteChildren = {
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
   AboutCostsRoute: AboutCostsRoute,
+  AboutSupportersRoute: AboutSupportersRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
@@ -1352,6 +1393,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsPasswordRoute: SettingsPasswordRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsSupporterRoute: SettingsSupporterRoute,
   SettingsTwoFactorRoute: SettingsTwoFactorRoute,
   TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,

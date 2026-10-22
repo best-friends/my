@@ -168,6 +168,7 @@ Allow: /
 | プロフィールと `public` の投稿の外枠（ADR-0028） | `<meta name="robots" content="noindex, noarchive">` と `X-Robots-Tag: noindex, noarchive` | `Content-Usage`（`train-ai=n` か `train-ai=n, ai-use=n`）、`tdm-reservation: 1`、meta と `X-Robots-Tag` に `noai, noimageai` |
 | `unlisted` の投稿、見せない・存在しないページの 404 | 常に `noindex`（現状どおり） | サーバーの設定に従う |
 | リモートのアカウントのページ・アプリの画面（`/home` `/settings` `/admin` など） | 常に `noindex` | サーバーの設定に従う |
+| サポーターの一覧（`/about/supporters` の外枠と `GET /api/v1/instance/supporters`、[ADR-0071](0071-role-badges-and-supporter-list.md) §4） | 常に `noindex, noarchive`（meta と `X-Robots-Tag`。API は問題の応答も） | 外枠はサーバーの設定に従う。API は付けない |
 | `/`（汎用の外枠） | サーバーの設定に従う | サーバーの設定に従う |
 | `/media/`（このサーバーが返すとき） | `search_indexing = deny` のとき `X-Robots-Tag: noindex`。持ち主ごとの表明はしない | サーバーの設定に従う。持ち主ごとの表明はしない |
 | クライアント API・AP の JSON・`/.well-known/` | `X-Robots-Tag: noindex` | 付けない（robots.txt で足りる） |

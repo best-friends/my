@@ -673,6 +673,49 @@ func (r *SupporterRepository) SubscriptionUsers(ctx context.Context, ids []strin
 	return out, nil
 }
 
+// InsertListing implements supporters.Repository.
+func (r *SupporterRepository) InsertListing(ctx context.Context, tx uow.Tx, userID string, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertSupporterListing(ctx, postgresgen.InsertSupporterListingParams{UserID: userID, CreatedAt: at}), "insert supporter listing")
+}
+
+// HasListing implements supporters.Repository.
+func (r *SupporterRepository) HasListing(ctx context.Context, tx uow.Tx, userID string) (bool, error) {
+	q, err := r.q(tx)
+	if err != nil {
+		return false, err
+	}
+	found, err := q.HasSupporterListing(ctx, userID)
+	return found, wrap(err, "find supporter listing")
+}
+
+// ListListings implements supporters.Repository.
+func (r *SupporterRepository) ListListings(ctx context.Context, f supporters.ListingFilter) ([]supporters.Listing, error) {
+	lim, err := toInt32(f.Limit, "limit")
+	if err != nil {
+		return nil, err
+	}
+	params := postgresgen.ListSupporterListingsParams{PlanID: f.PlanID, Lim: lim}
+	if f.After != nil {
+		if params.AfterRank, err = toInt32(f.After.Rank, "rank"); err != nil {
+			return nil, err
+		}
+		params.AfterUserID, params.AfterAt = f.After.UserID, f.After.ListedAt
+	}
+	rows, err := r.db.reader().ListSupporterListings(ctx, params)
+	if err != nil {
+		return nil, wrap(err, "list supporter listings")
+	}
+	out := make([]supporters.Listing, len(rows))
+	for i, row := range rows {
+		out[i] = supporters.Listing{UserID: row.UserID, PlanID: row.PlanID, Rank: int(row.Rank), ListedAt: utc(row.CreatedAt)}
+	}
+	return out, nil
+}
+
 // DeleteListing implements supporters.Repository.
 func (r *SupporterRepository) DeleteListing(ctx context.Context, tx uow.Tx, userID string) error {
 	q, err := queries(tx)

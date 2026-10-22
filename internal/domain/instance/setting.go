@@ -82,6 +82,9 @@ const (
 	SettingFinanceViewerItemNames SettingKey = "finance_viewer_item_names"
 	SettingFinanceViewerItemMemos SettingKey = "finance_viewer_item_memos"
 	SettingFinanceViewerIncome    SettingKey = "finance_viewer_income"
+	// SettingSupporterListVisibility decides who may read the supporter list of the members who
+	// chose to be listed (ADR-0071 §4).
+	SettingSupporterListVisibility SettingKey = "supporter_list_visibility"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -145,6 +148,17 @@ type FinanceViewerIncome string
 const (
 	FinanceViewerIncomeTotals FinanceViewerIncome = "totals" // the total of each currency by period
 	FinanceViewerIncomePlans  FinanceViewerIncome = "plans"  // the totals and the number of members of each plan
+)
+
+// SupporterListVisibility is the value of SettingSupporterListVisibility (ADR-0071 §4): who may
+// read the supporter list.
+type SupporterListVisibility string
+
+// Supporter list visibilities.
+const (
+	SupporterListOff      SupporterListVisibility = "off"       // nobody: the API is a 404
+	SupporterListPublic   SupporterListVisibility = "public"    // everyone
+	SupporterListSignedIn SupporterListVisibility = "signed_in" // the users signed in to this server
 )
 
 // FinanceViewer is what the holders of view_finance read of the instance's finances beyond the
@@ -367,6 +381,11 @@ var definitions = []Definition{
 		Key: SettingFinanceViewerIncome, Kind: KindEnum, Default: string(FinanceViewerIncomeTotals),
 		Choices: []string{string(FinanceViewerIncomeTotals), string(FinanceViewerIncomePlans)},
 		Doc:     "How much of the income the holders of the view_finance permission read on /finance: totals (the total of each currency by period) or plans (also the number of members of each plan, never its amounts) (ADR-0070 §5).",
+	},
+	{
+		Key: SettingSupporterListVisibility, Kind: KindEnum, Default: string(SupporterListOff),
+		Choices: []string{string(SupporterListOff), string(SupporterListPublic), string(SupporterListSignedIn)},
+		Doc:     "Who may read the supporter list (GET /instance/supporters and /about/supporters) of the members of the supporter plans who chose to be listed: off (nobody), public (everyone), or signed_in (the users signed in to this server); it shows their accounts and plans only, never amounts or dates (ADR-0071 §4).",
 	},
 }
 
@@ -747,6 +766,18 @@ func (s Settings) FinanceViewer() FinanceViewer {
 	return FinanceViewer{
 		ItemNames: s.boolValue(SettingFinanceViewerItemNames), ItemMemos: s.boolValue(SettingFinanceViewerItemMemos), Income: income,
 	}
+}
+
+// SupporterListVisibility returns the value of SettingSupporterListVisibility; an unexpected value
+// is off.
+func (s Settings) SupporterListVisibility() SupporterListVisibility {
+	switch v, _ := s.Value(SettingSupporterListVisibility); SupporterListVisibility(v) {
+	case SupporterListPublic:
+		return SupporterListPublic
+	case SupporterListSignedIn:
+		return SupporterListSignedIn
+	}
+	return SupporterListOff
 }
 
 // LinkCardsEnabled returns the value of SettingLinkCardsEnabled.

@@ -226,6 +226,11 @@ const choices = {
     { value: "totals", label: "client:admin.settings.finance.viewer.income.totals", description: "client:admin.settings.finance.viewer.income.totals.description" },
     { value: "plans", label: "client:admin.settings.finance.viewer.income.plans", description: "client:admin.settings.finance.viewer.income.plans.description" },
   ],
+  supporter_list_visibility: [
+    { value: "off", label: "client:admin.settings.supporter_list.off", description: "client:admin.settings.supporter_list.off.description" },
+    { value: "public", label: "client:admin.settings.supporter_list.public", description: "client:admin.settings.supporter_list.public.description" },
+    { value: "signed_in", label: "client:admin.settings.supporter_list.signed_in", description: "client:admin.settings.supporter_list.signed_in.description" },
+  ],
   search_indexing: [
     { value: "allow", label: "client:admin.settings.crawlers.search.allow", description: "client:admin.settings.crawlers.search.allow.description" },
     { value: "deny", label: "client:admin.settings.crawlers.search.deny", description: "client:admin.settings.crawlers.search.deny.description" },
@@ -372,6 +377,10 @@ function PoliciesForm() {
           description={t("client:admin.settings.finance.viewer.item_memos.description")}
         />
         <PolicyRadios form={form} setting="finance_viewer_income" label={t("client:admin.settings.finance.viewer.income")} />
+      </DetailSection>
+      <DetailSection title={t("client:admin.settings.supporter_list.title")}>
+        <p className="text-fg-muted">{t("client:admin.settings.supporter_list.description")}</p>
+        <PolicyRadios form={form} setting="supporter_list_visibility" label={t("client:admin.settings.supporter_list.visibility")} />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.crawlers.title")}>
         <p className="text-fg-muted">{t("client:admin.settings.crawlers.description")}</p>

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The payment provider's portal of the user's payment methods and invoices.
+type: object
+required: [url]
+properties:
+  url:
+    description: The portal, to open in the same tab.
+    type: string
+    format: uri

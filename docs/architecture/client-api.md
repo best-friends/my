@@ -103,6 +103,15 @@ oapi-codegen は分割したファイルを直接読めないので、バンド�
 - 匿名で取れる公開リソースの GET には `Cache-Control: public, max-age=60` を付けます（spec の `#/components/headers/CacheControl`）。
   利用者ごとに変わる応答には `private` か `no-store` を付けます。問題の応答は `no-store` です。
   匿名でも使える操作にトークン付きで来た要求は利用者のロケールで答えるので、`public` の代わりに `private, max-age=60` を付けます。
+- 閲覧できる範囲をインスタンス設定で選ぶ公開の一覧は、`security: [{}, {oauth2: [...]}]` にして、ハンドラが設定を読んで答えます。誰にも見せない設定では 404、サインインした人だけに見せる設定では、トークンのない要求に 401（`/api/v1/problems/unauthenticated`、`WWW-Authenticate: Bearer`）を返します。
+
+  | 操作 | 設定 | 値（見せない / サインインした人 / 誰にでも） | `Cache-Control` |
+  | --- | --- | --- | --- |
+  | `GET /instance/domain_actions` | `domain_actions_visibility` | `none` / `users` / `all` | 匿名は `public, max-age=60`、トークン付きは `private, max-age=60` |
+  | `GET /instance/cost_totals` | `finance_visibility` | `private`（404。ほかの値は公開する範囲） | 同上 |
+  | `GET /instance/supporters` | `supporter_list_visibility`（ADR-0071 §4） | `off` / `signed_in` / `public` | `public` は同上、`signed_in` は `private, no-store` |
+
+  サポーターの一覧（`GET /instance/supporters`）の応答は、問題の応答も含め、`search_indexing` に関わらずいつも `X-Robots-Tag: noindex, noarchive` です（`platform` の `noArchivePaths`、ADR-0057）。
 - `/api/v1` のすべての応答はローカライズされうるので、`Vary: Accept-Language` を付けます（`localize`）。
   `Vary` は spec の応答ヘッダに書きません（生成コードが `Set` で上書きし、CORS の `Vary: Origin` を消すため）。
 - 匿名でも使える操作の応答はトークンの有無で変わるので、`guard` がすべての操作の応答に `Vary: Authorization` を付けます（匿名の応答をキャッシュがログイン中の要求に返さないため）。
@@ -218,6 +227,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 ハンドラが最初に `Server.requirePermission` で `Options.Permissions`（`identity.Service.HasPermission`）に問い合わせ、持たなければ 403 にします。
 権限は spec の `security` に書けないので、操作の `description` に書きます。
 経路とスコープは区分で分けません（[ADR-0058](../adr/0058-moderation-admin-separation.md)）。新しい操作は区分によらず `/admin/<資源>` に置き、タグで区分を示します。
+利用者自身のサポーターの加入（タグ `supporters`、`/supporter/*`、ADR-0072 §18）は権限を要さず、スコープ `read:supporters` / `write:supporters` だけを要します。決済画面と顧客ポータルの戻り先は Web クライアントの `/settings/supporter`（`Options.WebOrigin`）です。
 利用者の機能の区分の権限（`view_finance` など、[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）を要する操作は `/admin/*` に置かず、利用者の名前空間（`GET /finance/cost_totals`、`/custom_emoji_requests`、`/custom_emojis/mine` など）に置いて、`admin:*` ではなく `read:*` / `write:*` のスコープ（`read:finance`、`read:custom_emojis`・`write:custom_emojis` など）と、ハンドラの `Server.requirePermission` の検査を要します。スタッフでない利用者のトークンに `admin:*` を求めないためです。
 クライアントが管理の画面を出し分けられるように、`GET /accounts/verify_credentials` の `CredentialAccount.permissions` が利用者のロールの権限を返します（`identity.Service.Permissions`。ロールがなければ空）。画面を隠すのは案内のためだけで、守るのは各操作の検査です。
 

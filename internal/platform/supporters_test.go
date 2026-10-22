@@ -263,3 +263,100 @@ func TestCommerceDisclosurePage(t *testing.T) {
 		t.Errorf("commerce_disclosure_url %v", inst.CommerceDisclosureUrl)
 	}
 }
+
+// TestSupporterSubscriptionAndList drives a user's subscription and the supporter list on
+// SQLite (ADR-0072 §6, §18, ADR-0071 §4): the user subscribes through the provider's checkout,
+// which returns to the web client, and cannot subscribe to another plan while subscribed; the
+// list shows only the members who chose to be listed, by plan, with their accounts and never an
+// amount or a date; supporter_list_visibility decides who reads it; and the end of the
+// subscription takes the member off it.
+func TestSupporterSubscriptionAndList(t *testing.T) {
+	t.Parallel()
+	e, prov := newSupportersEnv(t)
+	ctx := t.Context()
+	admin := e.user("alice")
+	bob, carol := e.user("bob"), e.user("carol")
+	e.want(e.do(http.MethodGet, "/supporter/subscription", bob.token, nil, nil), http.StatusNotFound, "the subscription while disabled")
+
+	e.want(e.do(http.MethodPost, "/admin/roles", admin.token, map[string]any{"key": "supporter", "position": 10, "permissions": []string{}}, nil),
+		http.StatusOK, "POST /admin/roles")
+	var plan clientapi.AdminSupporterPlan
+	e.want(e.do(http.MethodPost, "/admin/supporter_plans", admin.token, map[string]any{
+		"role": "supporter", "name": "Supporter", "monthly_price": map[string]string{"amount": "500", "currency": "JPY"},
+		"annual_discount_percent": 0, "emoji_limit": 0, "rank": 1, "visibility": "public",
+	}, &plan), http.StatusOK, "POST /admin/supporter_plans")
+	e.want(e.do(http.MethodPut, "/admin/supporter_program", admin.token, map[string]any{"enabled": true}, nil), http.StatusOK, "enable")
+
+	var own clientapi.OwnSupporterSubscription
+	e.want(e.do(http.MethodGet, "/supporter/subscription", bob.token, nil, &own), http.StatusOK, "the subscription before subscribing")
+	if own.Subscription != nil || own.IneligibleReason != nil {
+		t.Fatalf("before subscribing: %+v", own)
+	}
+	choice := map[string]any{"plan_id": plan.Id, "interval": "month"}
+	var co clientapi.SupporterCheckout
+	e.want(e.do(http.MethodPost, "/supporter/checkout", bob.token, choice, &co), http.StatusOK, "POST /supporter/checkout")
+	sub, err := e.app.Supporters.Subscription(ctx, co.SubscriptionId)
+	if err != nil || sub.Checkout == nil || co.RedirectUrl == "" {
+		t.Fatalf("the checkout: %+v, %+v, %v", co, sub, err)
+	}
+	// The provider completes the checkout; its return asks for a re-read.
+	prov.PutCheckout(supporters.CheckoutResult{Ref: sub.Checkout.Ref, Status: supporters.CheckoutCompleted, LocalID: co.SubscriptionId, Customer: "cus_b", Subscription: "sub_b"})
+	prov.PutSubscription(supporters.SubscriptionSnapshot{
+		Ref: "sub_b", Customer: "cus_b", LocalID: co.SubscriptionId, Price: sub.Price.Ref, Status: supporters.StatusActive,
+		PeriodStart: time.Now(), PeriodEnd: time.Now().Add(30 * 24 * time.Hour),
+	})
+	e.want(e.do(http.MethodPost, "/supporter/subscription/sync", bob.token, nil, nil), http.StatusOK, "POST /supporter/subscription/sync")
+	e.want(e.do(http.MethodGet, "/supporter/subscription", bob.token, nil, &own), http.StatusOK, "the subscription after the return")
+	if own.Subscription == nil || own.Subscription.State != clientapi.SupporterSubscriptionStateActive || own.Subscription.PlanName != "Supporter" {
+		t.Fatalf("after the return: %+v", own.Subscription)
+	}
+	// One plan at a time.
+	res := e.do(http.MethodPost, "/supporter/checkout", bob.token, choice, nil)
+	if typ := e.want(res, http.StatusConflict, "a second checkout"); typ != clientapi.ProblemTypeSupporterSubscribed {
+		t.Errorf("problem %s", typ)
+	}
+	// Carol, who does not subscribe, has no choice of the list.
+	res = e.do(http.MethodPut, "/preferences/supporter_listing", carol.token, map[string]any{"listed": true}, nil)
+	e.want(res, http.StatusNotFound, "carol's listing")
+
+	setVisibility := func(v string) {
+		t.Helper()
+		e.want(e.do(http.MethodPatch, "/admin/settings", admin.token, map[string]any{"values": map[string]string{"supporter_list_visibility": v}}, nil),
+			http.StatusOK, "set supporter_list_visibility "+v)
+	}
+	list := func(token string) clientapi.SupporterListPage {
+		t.Helper()
+		var page clientapi.SupporterListPage
+		e.want(e.do(http.MethodGet, "/instance/supporters", token, nil, &page), http.StatusOK, "GET /instance/supporters")
+		return page
+	}
+	e.want(e.do(http.MethodGet, "/instance/supporters", "", nil, nil), http.StatusNotFound, "the list while off")
+	setVisibility("public")
+	if page := list(""); len(page.Items) != 0 || len(page.Plans) != 1 || page.Plans[0].Name != "Supporter" {
+		t.Errorf("nobody is listed before choosing to be: %+v", page)
+	}
+	var listing clientapi.SupporterListing
+	e.want(e.do(http.MethodPut, "/preferences/supporter_listing", bob.token, map[string]any{"listed": true}, &listing), http.StatusOK, "bob's listing")
+	if page := list(""); len(page.Items) != 1 || page.Items[0].Account.Username != "bob" || page.Items[0].PlanId != plan.Id {
+		t.Errorf("the list after bob chose to be listed: %+v", page)
+	}
+	setVisibility("signed_in")
+	e.want(e.do(http.MethodGet, "/instance/supporters", "", nil, nil), http.StatusUnauthorized, "the list of the signed-in users, anonymous")
+	if page := list(carol.token); len(page.Items) != 1 {
+		t.Errorf("the list of the signed-in users: %+v", page)
+	}
+
+	// The subscription ends: bob leaves the list.
+	e.want(e.do(http.MethodPost, "/supporter/subscription/cancel", bob.token, nil, nil), http.StatusOK, "cancel")
+	prov.PutSubscription(supporters.SubscriptionSnapshot{
+		Ref: "sub_b", Customer: "cus_b", LocalID: co.SubscriptionId, Price: sub.Price.Ref, Status: supporters.StatusCanceled,
+		PeriodStart: time.Now(), PeriodEnd: time.Now(),
+	})
+	if r := e.app.Supporters.Sync(ctx, co.SubscriptionId); !r.IsDone() {
+		t.Fatalf("Sync = %v", r.Err())
+	}
+	if page := list(carol.token); len(page.Items) != 0 {
+		t.Errorf("the list after bob's subscription ended: %+v", page)
+	}
+	e.want(e.do(http.MethodGet, "/preferences/supporter_listing", bob.token, nil, nil), http.StatusNotFound, "bob's listing after the end")
+}

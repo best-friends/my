@@ -75,6 +75,8 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	out.SearchIndexing, out.AiUsage = SearchIndexing(settings.SearchIndexing()), AIUsage(settings.AIUsage())
 	// How much of the costs GET /instance/cost_totals publishes (FR-903, ADR-0067 §8).
 	out.FinanceVisibility = FinanceVisibility(settings.FinanceVisibility())
+	// Who may read the supporter list of GET /instance/supporters (ADR-0071 §4).
+	out.SupporterListVisibility = SupporterListVisibility(settings.SupporterListVisibility())
 	// Whether the supporter program shows its plans (ADR-0072 §2).
 	if s.o.Supporters != nil {
 		enabled, err := s.o.Supporters.Enabled(ctx)

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: resumeOwnSupporterSubscription
+  summary: Withdraw the cancellation of the authenticated user's subscription
+  description: |
+    Withdraws the cancellation of a `canceling` subscription, which then renews as before. A
+    409 `/api/v1/problems/supporter-subscription-state` in another state.
+  tags: [supporters]
+  security:
+    - oauth2: ["write:supporters"]
+  responses:
+    "200":
+      description: The subscription after the resumption.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SupporterSubscription.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
