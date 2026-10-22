@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -24,8 +25,19 @@ import (
 // answers), and the fake payment provider.
 func newSupportersEnv(t *testing.T) (*accountsEnv, *fake.Provider) {
 	t.Helper()
+	return newSupportersEnvOn(t, "sqlite")
+}
+
+// newSupportersEnvOn is newSupportersEnv on a dialect: sqlite or postgres (pgmem in pull
+// requests).
+func newSupportersEnvOn(t *testing.T, dialect string) (*accountsEnv, *fake.Provider) {
+	t.Helper()
+	dbURL := newDatabase(t, true)
+	if dialect == "postgres" {
+		dbURL = newPostgresDatabase(t)
+	}
 	cfg := loadConfig(t, map[string]string{
-		"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline",
+		"MY_DB": dialect, "MY_DATABASE_URL": dbURL, "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline",
 		"MY_MAIL": "smtp", "MY_MAIL_FROM": "noreply@example.test", "MY_SMTP_HOST": "127.0.0.1", "MY_SMTP_PORT": "1",
 	})
 	prov := fake.New(fake.Options{Name: "stripe"})
@@ -149,6 +161,78 @@ func TestSupporterProgram(t *testing.T) {
 	}
 	if !slices.Equal(actions, want) {
 		t.Errorf("audit log %v, want %v", actions, want)
+	}
+}
+
+// TestSupporterPlanAmountComesBack changes a plan's monthly amount A -> B -> A on both dialects:
+// each change makes the plan ready again with the new price as its current one, an amount the
+// plan had before comes back as a new price beside the old one, the price heads stay what a
+// rebuild derives, and the subscription on the first price keeps it (ADR-0072 §3).
+func TestSupporterPlanAmountComesBack(t *testing.T) {
+	t.Parallel()
+	for _, dialect := range []string{"sqlite", "postgres"} {
+		t.Run(dialect, func(t *testing.T) {
+			t.Parallel()
+			e, prov := newSupportersEnvOn(t, dialect)
+			ctx := t.Context()
+			admin := e.user("alice")
+			e.want(e.do(http.MethodPost, "/admin/roles", admin.token, map[string]any{"key": "supporter", "position": 10, "permissions": []string{}}, nil),
+				http.StatusOK, "POST /admin/roles")
+			var plan clientapi.AdminSupporterPlan
+			e.want(e.do(http.MethodPost, "/admin/supporter_plans", admin.token, map[string]any{
+				"role": "supporter", "name": "Supporter", "monthly_price": map[string]string{"amount": "500", "currency": "JPY"},
+				"annual_discount_percent": 0, "emoji_limit": 0, "rank": 1, "visibility": "public",
+			}, &plan), http.StatusOK, "POST /admin/supporter_plans")
+			e.want(e.do(http.MethodPut, "/admin/supporter_program", admin.token, map[string]any{"enabled": true}, nil), http.StatusOK, "enable")
+			bob := e.user("bob")
+			subID := subscribeOnFake(t, e.app, prov, bob.id, plan.Id, "sub_1")
+			first, err := e.app.Supporters.Plan(ctx, plan.Id)
+			if err != nil {
+				t.Fatal(err)
+			}
+			firstPrice := first.Prices[domain.IntervalMonth]
+			seen := map[string]bool{firstPrice.ID: true}
+
+			for _, amount := range []string{"800", "500", "800"} {
+				e.want(e.do(http.MethodPatch, "/admin/supporter_plans/"+plan.Id, admin.token,
+					map[string]any{"monthly_price": map[string]string{"amount": amount, "currency": "JPY"}}, nil),
+					http.StatusOK, "PATCH the monthly amount to "+amount)
+				var plans clientapi.AdminSupporterPlanList
+				e.want(e.do(http.MethodGet, "/admin/supporter_plans", admin.token, nil, &plans), http.StatusOK, "GET /admin/supporter_plans")
+				if len(plans.Items) != 1 || !plans.Items[0].PricesReady || plans.Items[0].MonthlyPrice.Amount != amount {
+					t.Fatalf("after %s: plans %+v", amount, plans.Items)
+				}
+				p, err := e.app.Supporters.Plan(ctx, plan.Id)
+				if err != nil {
+					t.Fatal(err)
+				}
+				price := p.Prices[domain.IntervalMonth]
+				if !p.Offered() || price.Archived || seen[price.ID] || strconv.FormatInt(price.AmountMinor, 10) != amount {
+					t.Fatalf("after %s: offered %v, the monthly price %+v (seen before: %v)", amount, p.Offered(), price, seen[price.ID])
+				}
+				seen[price.ID] = true
+			}
+
+			for _, pr := range e.app.Projections.List() {
+				if pr.Name != "supporters" {
+					continue
+				}
+				r, err := e.app.Projections.Verify(ctx, pr)
+				if err != nil || r.Drifted() {
+					t.Errorf("Verify(supporters) = %+v, %v; want no drift", r.Tables, err)
+				}
+			}
+			v, err := e.app.Supporters.Subscription(ctx, subID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if v.Price.ID != firstPrice.ID || v.Price.AmountMinor != 500 || !v.Price.Archived {
+				t.Errorf("the subscription's price %+v, want the first price %+v, archived", v.Price, firstPrice)
+			}
+			if s, _ := prov.Subscription("sub_1"); s.Status != supporters.StatusActive || s.Price != firstPrice.Ref {
+				t.Errorf("the provider's subscription %+v", s)
+			}
+		})
 	}
 }
 
