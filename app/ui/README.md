@@ -560,6 +560,7 @@ Counts in `details` are `<Text numeric>`; several parts under a body are a `<Sta
 | `FloatingButton` | The round primary button that starts the page's main action: `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s |
 | `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
 | `PostContent` `framed` | A border and padding around a post body shown as a preview |
+| `PostContent` `size="sm"` `lineClamp={3}` | An excerpt of a post in a form (the reply target), cut after three lines |
 
 ## Reactions
 
