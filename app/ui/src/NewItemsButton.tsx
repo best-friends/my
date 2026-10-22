@@ -15,9 +15,12 @@ const newItemsButton = tv({
   },
   variants: {
     sticky: {
-      // The region keeps the button's height; only the button takes pointer input, so the region never blocks the post under it.
+      // The region has no height, so the posts below never move and no space is kept above the newest one: the button
+      // stands just above the region's edge (in the page's top padding at the top of the page) and, once the reader
+      // scrolls, floats over the feed's top. Only the button takes pointer input, so nothing under it is blocked.
       true: {
-        base: "pointer-events-none sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 h-8 items-start pointer-coarse:h-11 *:pointer-events-auto",
+        base: "pointer-events-none sticky top-[calc(env(safe-area-inset-top)+2.75rem)] z-10 h-0 pointer-coarse:top-[calc(env(safe-area-inset-top)+3.75rem)] *:pointer-events-auto",
+        button: "absolute bottom-0 pointer-coarse:min-h-11",
       },
     },
   },
@@ -30,7 +33,7 @@ export type NewItemsButtonProps = Omit<ComponentPropsWithRef<"div">, "children" 
   label: string;
   /** Shows the waiting items: the caller inserts them and moves the reader to the top of the feed. */
   onPress: () => void;
-  /** Sticks the region to the top of the viewport while the reader scrolls, always as tall as the button. */
+  /** Floats the button over the feed's top while the reader scrolls, in a region with no height of its own. */
   sticky?: boolean;
 };
 

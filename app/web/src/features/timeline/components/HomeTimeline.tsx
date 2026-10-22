@@ -52,12 +52,11 @@ export function HomeTimeline({ "aria-labelledby": labelledBy, saved = false }: H
 }
 
 /**
- * The feed with the "N new posts" button above it (web-client.md Y7): the stream's new entries wait until
- * the reader presses it. Its region always keeps the button's height above the feed, so neither its
- * appearance nor its count moves the posts being read, and at the top of the page it covers no post.
- * The region sticks to the top of the viewport while the reader scrolls; only the button takes pointer
- * input, so the empty region never blocks the post under it. Pressing it moves focus to the page heading,
- * above the inserted posts, since the button goes away (WCAG 2.4.3).
+ * The feed with the "N new posts" button over its top (web-client.md Y7): the stream's new entries wait until
+ * the reader presses it. Its region has no height, so neither its appearance nor its count moves the posts being
+ * read and no space is kept above the newest post; the button floats over the feed's top while the reader scrolls.
+ * Only the button takes pointer input, so the empty region never blocks the post under it. Pressing it moves focus
+ * to the page heading, above the inserted posts, since the button goes away (WCAG 2.4.3).
  * While it is shown, the newest posts are kept on this browser for reading offline (FR-604).
  */
 function SignedInHomeTimeline({ "aria-labelledby": labelledBy }: HomeTimelineProps) {
