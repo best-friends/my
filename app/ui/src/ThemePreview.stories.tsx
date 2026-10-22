@@ -23,4 +23,12 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 /** The overrides apply to the preview alone. */
-export const Overridden: Story = { args: { tokens: { "--color-accent": "#0d9488", "--color-surface": "#fdf6e3" } as CSSProperties } };
+export const Overridden: Story = {
+  args: {
+    tokens: {
+      "--color-accent": "light-dark(#0f766e, #5eead4)",
+      "--color-accent-fg": "light-dark(#ffffff, #042f2e)",
+      "--color-surface": "light-dark(#fdf6e3, #002b36)",
+    } as CSSProperties,
+  },
+};
