@@ -45,6 +45,9 @@ type ProbeDeps struct {
 	Batch int
 	// Logger logs servers that stay unavailable; nil means slog.Default().
 	Logger *slog.Logger
+	// Modes reads the federation mode (ADR-0076): the probe reads NodeInfo (identify) unless it
+	// is off. nil federates both ways.
+	Modes ModeSettings
 }
 
 // Prober runs JobProbeInstances.
@@ -89,6 +92,9 @@ func (p *Prober) handle(ctx context.Context, j queue.Job) queue.Result {
 // Run probes the batch of unavailable servers after the domain after, marks those that answer
 // available again, and enqueues the next batch when this one was full. It is safe to repeat.
 func (p *Prober) Run(ctx context.Context, after string) error {
+	if ok, err := modeAllows(ctx, p.d.Modes, federation.FlowIdentify); err != nil || !ok {
+		return err
+	}
 	servers, err := p.d.Repository.ListUnavailableInstances(ctx, after, p.d.Batch)
 	if err != nil {
 		return err

@@ -144,6 +144,30 @@ func TestAuthorizedFetchSetting(t *testing.T) {
 	}
 }
 
+func TestFederationModeSetting(t *testing.T) {
+	var zero instance.Settings
+	if got := zero.FederationMode(); got != instance.FederationBoth {
+		t.Errorf("zero Settings federate %q, want both by default", got)
+	}
+	for _, m := range []instance.FederationMode{instance.FederationOff, instance.FederationInbound, instance.FederationOutbound, instance.FederationBoth} {
+		d, err := instance.Lookup(instance.SettingFederationMode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := d.Parse(string(m)); err != nil {
+			t.Errorf("Parse(%s) = %v", m, err)
+		}
+		s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingFederationMode, RevisionID: "r1", Value: string(m)}})
+		if got := s.FederationMode(); got != m {
+			t.Errorf("FederationMode() = %q, want %q", got, m)
+		}
+	}
+	d, _ := instance.Lookup(instance.SettingFederationMode)
+	if _, err := d.Parse("sideways"); !errors.Is(err, instance.ErrInvalidValue) {
+		t.Errorf("Parse(sideways) = %v, want ErrInvalidValue", err)
+	}
+}
+
 func TestDomainActionsVisibilitySettings(t *testing.T) {
 	var zero instance.Settings
 	if zero.DomainActionsVisibility() != instance.AudienceNone || zero.DomainActionsRationaleVisibility() != instance.AudienceNone {

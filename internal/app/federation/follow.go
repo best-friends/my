@@ -268,6 +268,15 @@ type FollowHandlerDeps struct {
 	// Quotes receives the answers to this server's QuoteRequests (ADR-0069 §3); nil takes them
 	// as answers about follows, which drops them.
 	Quotes QuoteAnswers
+	// Refusals answers the Follows that the federation mode refuses with a Reject (ADR-0076);
+	// nil drops them.
+	Refusals FollowRefuser
+}
+
+// FollowRefuser answers a Follow of a local actor that the federation mode refuses;
+// *FollowRefusals implements it.
+type FollowRefuser interface {
+	Refuse(ctx context.Context, in *InboxActivity, followee appaccount.Actor) error
 }
 
 // QuoteAnswers receives the Accept and Reject of this server's QuoteRequests; *QuoteHandlers
@@ -289,6 +298,11 @@ type QuoteAnswers interface {
 //   - Accept and Reject of the Follow of a relay, and Follow of the instance actor: Relays
 //     (ADR-0061).
 //   - Accept and Reject of a QuoteRequest this server sent: Quotes (ADR-0069 §3).
+//
+// The federation mode decides the flows (ADR-0076): a Follow that it refuses (follow_in) gets a
+// Reject from Refusals and records nothing; the answers of the relays are about the instance
+// actor's membership, which passes whenever the processor lets them through; the answers to
+// QuoteRequests need publish, and the answers to the follows of local accounts follow_out.
 //
 // The embedded Follow is a hint only: the graph module matches it against the follows of the
 // sender.
@@ -347,9 +361,19 @@ func graphError(err error) error {
 }
 
 func (h followHandlers) follow(ctx context.Context, in *InboxActivity) error {
+	mode := in.mode()
+	refused := !federation.Allows(mode, federation.FlowFollowIn)
+	if refused && !federation.Refuses(mode, federation.FlowFollowIn) {
+		return fmt.Errorf("%w: %w: Follow in mode %s", ErrDropActivity, ErrFederationRestricted, mode)
+	}
 	if object := in.Activity.Object().ID; object != "" {
 		a, err := h.d.Accounts.FindByURI(ctx, string(object))
 		switch {
+		case err == nil && a.Account.IsLocal() && refused:
+			if h.d.Refusals == nil {
+				return fmt.Errorf("%w: %w: a Follow in mode %s", ErrDropActivity, ErrFederationRestricted, mode)
+			}
+			return h.d.Refusals.Refuse(ctx, in, a)
 		case err == nil && a.IsInstanceActor():
 			if h.d.Relays == nil {
 				return fmt.Errorf("%w: a Follow of the instance actor", ErrDropActivity)
@@ -363,7 +387,7 @@ func (h followHandlers) follow(ctx context.Context, in *InboxActivity) error {
 	if err != nil {
 		return err
 	}
-	if followee == "" {
+	if followee == "" || refused {
 		return fmt.Errorf("%w: %s is not a local actor", ErrDropActivity, in.Activity.Object().ID)
 	}
 	uri := in.Activity.ID
@@ -384,10 +408,13 @@ func (h followHandlers) respond(accepted bool, use func(context.Context, appgrap
 				return err
 			}
 		}
-		if h.d.Quotes != nil {
+		if h.d.Quotes != nil && federation.Allows(in.mode(), federation.FlowPublish) {
 			if handled, err := h.d.Quotes.ReceiveQuoteAnswer(ctx, in, accepted); handled {
 				return err
 			}
+		}
+		if !federation.Allows(in.mode(), federation.FlowFollowOut) {
+			return fmt.Errorf("%w: %w: %s in mode %s", ErrDropActivity, ErrFederationRestricted, in.Activity.RawType, in.mode())
 		}
 		ref := in.Activity.Object()
 		follow, err := embeddedFollow(ref)

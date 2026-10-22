@@ -143,7 +143,7 @@ func (r *RemoteActors) actorKeys(ctx context.Context, a *federation.Actor, raw [
 			continue
 		}
 		fetched++
-		got, err := r.d.Fetcher.Fetch(ctx, id)
+		got, err := r.d.Fetcher.FetchActor(ctx, id)
 		if err != nil || got.Document.ID() != iri {
 			continue
 		}

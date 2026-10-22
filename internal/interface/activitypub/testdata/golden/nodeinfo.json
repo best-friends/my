@@ -20,6 +20,7 @@
     "localPosts": 42
   },
   "metadata": {
+    "federationMode": "both",
     "maintainer": {
       "name": "Alice",
       "email": "admin@example.com"

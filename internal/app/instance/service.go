@@ -125,6 +125,16 @@ func (s *Service) AuthorizedFetch(ctx context.Context) (bool, error) {
 	return settings.AuthorizedFetch(), nil
 }
 
+// FederationMode returns the current value of the federation_mode setting (FR-413, ADR-0076).
+// It is read per request and per job, so that a change applies at once.
+func (s *Service) FederationMode(ctx context.Context) (instance.FederationMode, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return "", err
+	}
+	return settings.FederationMode(), nil
+}
+
 // SetSettingInput describes a change of a setting.
 type SetSettingInput struct {
 	Key   instance.SettingKey

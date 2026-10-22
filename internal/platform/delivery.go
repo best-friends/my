@@ -28,10 +28,13 @@ func (a *App) setUpDelivery(repo federation.Repository) error {
 		LinkedData: ld,
 		Domains:    a.ModerationPolicy,
 		Clock:      a.Clock, IDs: a.IDs, Logger: a.Logger, Meter: a.Meter, Tracer: a.Tracer,
+		// The federation mode decides what goes out when each delivery runs (ADR-0076).
+		Modes: federationModes{a},
 	})
 	a.Deliverer.RegisterJobs(a.Handlers)
 	federation.NewProber(federation.ProbeDeps{
 		Repository: repo, Health: a.InstanceHealth, HTTP: a.HTTPClient, Jobs: a.Jobs, Logger: a.Logger,
+		Modes: federationModes{a},
 	}).RegisterJobs(a.Handlers, a.Scheduler)
 	return nil
 }

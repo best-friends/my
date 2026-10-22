@@ -237,6 +237,26 @@ func (h *QuoteHandlers) store(ctx context.Context, tx uow.Tx, act federation.Out
 	return h.rec.enqueue(ctx, tx, act, fanOutPayload{Inbox: string(inbox)})
 }
 
+// answer decides a remote QuoteRequest of the local status quoted by the post quoting: the
+// content module's decision, or, when the federation mode does not take the quoting post in
+// (ingest, outbound in ADR-0076), a refusal without asking it, since the quote would never be
+// shown here. A status that is not a local one fails with appcontent.ErrNotFound.
+func (h *QuoteHandlers) answer(ctx context.Context, in *InboxActivity, quoted, quoting federation.IRI) (appcontent.QuoteAuthorization, appcontent.Status, error) {
+	if federation.Allows(in.mode(), federation.FlowIngest) {
+		return h.d.Approvals.AnswerQuoteRequest(ctx, appcontent.QuoteRequestInput{
+			QuotedURI: string(quoted), QuotingURI: string(quoting), QuoterAccountID: in.Actor.Account.ID,
+		})
+	}
+	st, err := h.d.Statuses.FindStatusByURI(ctx, string(quoted))
+	switch {
+	case err != nil:
+		return appcontent.QuoteAuthorization{}, appcontent.Status{}, err
+	case !st.IsLocal:
+		return appcontent.QuoteAuthorization{}, appcontent.Status{}, fmt.Errorf("status %s: %w", st.ID, appcontent.ErrNotFound)
+	}
+	return appcontent.QuoteAuthorization{}, st, fmt.Errorf("%w: %w: mode %s", appcontent.ErrQuoteRefused, ErrFederationRestricted, in.mode())
+}
+
 // quoteRequest answers a remote QuoteRequest of a quote of a local status (ADR-0069 §2): the
 // content module decides it, and the Accept with this server's QuoteAuthorization as result, or
 // the Reject, goes to the actor's inbox. The quoting post (instrument) must be of the actor's
@@ -250,9 +270,7 @@ func (h *QuoteHandlers) quoteRequest(ctx context.Context, in *InboxActivity) err
 	case quoting == "" || !federation.SameOrigin(quoting, act.Actor):
 		return fmt.Errorf("%w: QuoteRequest of %q by %s", ErrDropActivity, quoting, act.Actor)
 	}
-	auth, st, err := h.d.Approvals.AnswerQuoteRequest(ctx, appcontent.QuoteRequestInput{
-		QuotedURI: string(quoted), QuotingURI: string(quoting), QuoterAccountID: in.Actor.Account.ID,
-	})
+	auth, st, err := h.answer(ctx, in, quoted, quoting)
 	accepted := err == nil
 	switch {
 	case errors.Is(err, appcontent.ErrQuoteRefused):

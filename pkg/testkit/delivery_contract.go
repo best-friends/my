@@ -46,6 +46,17 @@ type deliveryEnv struct {
 	meter *Meter
 	// actor is a local account with a signing key.
 	actor string
+	// mode is the federation mode that the deliveries read when they run (ADR-0076); "" is
+	// both.
+	mode federation.Mode
+}
+
+// FederationMode implements appfederation.ModeSettings with d.mode.
+func (d *deliveryEnv) FederationMode(context.Context) (federation.Mode, error) {
+	if d.mode == "" {
+		return federation.ModeBoth, nil
+	}
+	return d.mode, nil
 }
 
 func newDeliveryEnv(t *testing.T, e *fedEnv) *deliveryEnv {
@@ -73,7 +84,7 @@ func newDeliveryEnv(t *testing.T, e *fedEnv) *deliveryEnv {
 		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Federation,
 		Client: appfederation.NewSignedHTTPClient(d.net, deliverySigner{}, NewKeyValueStore(e.clock), e.clock),
 		Keys:   d.keys, Proofs: d.proofs, Domains: e.domains, Breaker: d.breaker, Clock: e.clock, IDs: e.ids,
-		Logger: slog.New(slog.DiscardHandler), Meter: d.meter,
+		Logger: slog.New(slog.DiscardHandler), Meter: d.meter, Modes: d,
 	})
 	d.deliverer.RegisterJobs(e.handlers)
 	return d
@@ -467,6 +478,42 @@ func fedClassifiesResponses(t *testing.T, e *fedEnv) {
 
 func answer(status int) deliveryRoute {
 	return func(*kernel.HTTPRequest) (int, http.Header, string, error) { return status, nil, "", nil }
+}
+
+// fedSkipsWhatTheModeDoesNotSend checks that a delivery asks the federation mode when it runs
+// (ADR-0076): what the mode does not send is a skipped attempt without a request, done for good,
+// so that widening the mode later does not send it.
+func fedSkipsWhatTheModeDoesNotSend(t *testing.T, e *fedEnv) {
+	d := newDeliveryEnv(t, e)
+	d.net.answer("remote.example", http.StatusAccepted)
+	cases := []struct {
+		mode federation.Mode
+		typ  federation.ActivityType
+		sent bool
+	}{
+		{federation.ModeOff, federation.ActivityCreate, false},
+		{federation.ModeOff, federation.ActivityDelete, false},
+		{federation.ModeInbound, federation.ActivityCreate, false},
+		{federation.ModeInbound, federation.ActivityDelete, true},
+		{federation.ModeOutbound, federation.ActivityCreate, true},
+		{federation.ModeOutbound, federation.ActivityDelete, true},
+		{federation.ModeBoth, federation.ActivityCreate, true},
+	}
+	for _, tc := range cases {
+		d.mode = tc.mode
+		before := d.net.count("remote.example")
+		del := d.delivery(t, tc.typ, "remote.example")
+		if r := d.deliver(t, del); !r.IsDone() {
+			t.Fatalf("%s of %s: %+v, want Done", tc.mode, tc.typ, r)
+		}
+		sent := d.net.count("remote.example") > before
+		if sent != tc.sent {
+			t.Errorf("%s of %s: sent = %v, want %v", tc.mode, tc.typ, sent, tc.sent)
+		}
+		if a := d.last(t, del); !tc.sent && a.Outcome != federation.DeliverySkipped {
+			t.Errorf("%s of %s: attempt %+v, want skipped", tc.mode, tc.typ, a)
+		}
+	}
 }
 
 func fedBreaksTheCircuit(t *testing.T, e *fedEnv) {

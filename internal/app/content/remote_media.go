@@ -145,8 +145,20 @@ type ProxyDeps struct {
 	// LinkCardMedia reads the images of link cards (ADR-0062 §3), which the proxy serves as the
 	// remote media files; nil serves none.
 	LinkCardMedia LinkCardMediaReader
+	// Federation says whether the federation mode lets the proxy fetch a remote media file
+	// (ADR-0076): not at all when it is off, and only the avatars and headers of the remote
+	// followers of local accounts when it is outbound. nil lets every file through.
+	Federation MediaFederation
 	// Logger logs unexpected errors; nil means slog.Default().
 	Logger *slog.Logger
+}
+
+// MediaFederation is the port through which the media proxy asks the federation mode
+// (ADR-0076) whether it fetches a remote media file; federation.MediaGate implements it.
+type MediaFederation interface {
+	// ProxiesMedia reports whether a remote media file of the account ownerAccountID ("" for none,
+	// as the images of link cards) may be fetched now; profileImage tells an avatar or a header.
+	ProxiesMedia(ctx context.Context, ownerAccountID string, profileImage bool) (bool, error)
 }
 
 // LinkCardMediaReader reads the images of link cards. LinkCardRepository implements it.
@@ -292,6 +304,15 @@ func (p *MediaProxy) open(ctx context.Context, mediaID string, variant ProxyVari
 		return nil, err
 	case rejected != "":
 		return nil, notFound("media of " + rejected + " are rejected")
+	}
+	if p.d.Federation != nil {
+		profile := m.Purpose == content.PurposeAvatar || m.Purpose == content.PurposeHeader
+		switch ok, err := p.d.Federation.ProxiesMedia(ctx, m.OwnerAccountID, profile); {
+		case err != nil:
+			return nil, err
+		case !ok:
+			return nil, notFound("the federation mode does not fetch it")
+		}
 	}
 	settings, err := p.d.Settings(ctx)
 	if err != nil {

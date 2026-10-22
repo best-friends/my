@@ -217,6 +217,9 @@ type App struct {
 	Refetches *federation.Refetches
 	// Relays joins and leaves the relays and admits what they bring in (ADR-0061).
 	Relays *federation.Relays
+	// FederationSever ends the follows with remote accounts for `my admin federation sever`
+	// (ADR-0076).
+	FederationSever *federation.Severance
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -634,7 +637,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	a.setUpRemoteActors(cfg, feds)
 	a.setUpRelays(cfg, feds)
-	a.setUpInbox(feds)
+	a.setUpInbox(cfg, feds)
+	a.setUpFederationSever()
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: a.AccountPolicy.Content(), Media: a.Media, Clock: a.Clock, LinkCards: a.LinkCards,
@@ -679,6 +683,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		LocalPosts:  a.Content.LocalPostCount,
 		Images:      a.Media.Images,
 		EmojiTags:   a.Media.EmojiTags,
+		// The federation mode decides which documents are served (ADR-0076).
+		Modes: federationModes{a},
 	})
 	ap.Register(surfaceRouter{a, surfaceActivityPub})
 	// The web client's pages answer the requests that ask for ActivityPub: a post page redirects
@@ -838,6 +844,8 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
+		// The federation mode decides what goes out when each batch runs (ADR-0076).
+		Modes: federationModes{a},
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
 }
@@ -1018,6 +1026,8 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, cards conte
 		UnitOfWork: a.UnitOfWork, Blobs: a.Blobs, Clock: a.Clock, ProfileImages: a.Accounts,
 		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes, EmojiMaxBytes: cfg.RemoteCustomEmojiMaxBytes, Processor: a.MediaProcessor,
 		Keys: keys, BaseURL: cfg.ServerOrigin(), Logger: a.Logger,
+		// The federation mode decides which remote files are fetched (ADR-0076).
+		Federation: a.mediaGate(),
 		// The images of link cards are remote files without an owner (ADR-0062 §3).
 		LinkCardMedia: cards,
 	})

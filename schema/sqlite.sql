@@ -687,7 +687,7 @@ CREATE TABLE instance_setting_revisions (
     'retention_moderation_actions', 'retention_audit_log',
     'search_indexing', 'ai_usage', 'indexable_default', 'security_contact', 'require_media_description', 'link_cards_enabled',
     'finance_visibility', 'finance_viewer_item_names', 'finance_viewer_item_memos', 'finance_viewer_income',
-    'supporter_list_visibility', 'income_visibility'
+    'supporter_list_visibility', 'income_visibility', 'federation_mode'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
@@ -1772,7 +1772,7 @@ CREATE TABLE outbound_activities (
   activity_uri TEXT NOT NULL,
   type TEXT NOT NULL,
   actor_account_id TEXT NOT NULL,
-  object_type TEXT NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report', 'poll_vote', 'relay', 'quote')),
+  object_type TEXT NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report', 'poll_vote', 'relay', 'quote', 'refusal')),
   object_id TEXT NOT NULL,
   created_at INTEGER NOT NULL
 ) STRICT;

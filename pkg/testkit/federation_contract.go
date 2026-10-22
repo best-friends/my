@@ -86,6 +86,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"ClassifiesDeliveryResponses", fedClassifiesResponses},
 		{"SignsIntegrityProofs", fedSignsIntegrityProofs},
 		{"BreaksTheCircuitOfAHost", fedBreaksTheCircuit},
+		{"SkipsWhatTheFederationModeDoesNotSend", fedSkipsWhatTheModeDoesNotSend},
 		{"MarksServersUnavailableAndBack", fedMarksServersUnavailable},
 		{"BuriesExhaustedDeliveries", fedBuriesExhaustedDeliveries},
 		{"ProbesUnavailableServers", fedProbesUnavailableServers},

@@ -104,6 +104,9 @@ func parseAcct(subject string) (user, domain string, ok bool) {
 // webFinger looks resource up at origin's /.well-known/webfinger. It is not signed: WebFinger
 // is public (FR-401).
 func (r *RemoteActors) webFinger(ctx context.Context, origin, resource string) (jrd, error) {
+	if err := r.identifies(ctx); err != nil {
+		return jrd{}, fmt.Errorf("%w: %w", errWebFingerUnanswered, err)
+	}
 	u := origin + "/.well-known/webfinger?resource=" + url.QueryEscape(resource)
 	resp, err := r.d.HTTP.Do(ctx, &kernel.HTTPRequest{
 		Method: http.MethodGet, URL: u, Header: http.Header{"Accept": {webFingerAccept}}, Purpose: kernel.HTTPPurposeJSON,

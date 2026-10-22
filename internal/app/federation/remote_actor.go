@@ -183,7 +183,7 @@ func (r *RemoteActors) store(ctx context.Context, actor *federation.Actor, raw [
 // fetchActor fetches uri and returns the actor it is or, for a key document, the actor that
 // owns the key.
 func (r *RemoteActors) fetchActor(ctx context.Context, uri string) (*federation.Actor, []byte, error) {
-	got, err := r.d.Fetcher.Fetch(ctx, uri)
+	got, err := r.d.Fetcher.FetchActor(ctx, uri)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -194,7 +194,7 @@ func (r *RemoteActors) fetchActor(ctx context.Context, uri string) (*federation.
 	if owner == "" || !federation.SameOrigin(owner, got.Document.ID()) {
 		return nil, nil, fmt.Errorf("%w: %s is not an actor", ErrFetchNotFound, uri)
 	}
-	got, err = r.d.Fetcher.Fetch(ctx, string(owner))
+	got, err = r.d.Fetcher.FetchActor(ctx, string(owner))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -252,8 +252,8 @@ func (r *RemoteActors) seeInstance(ctx context.Context, tx uow.Tx, domain string
 // recordFailure keeps the outcome of a failed fetch of a stored actor: 410 Gone marks it
 // deleted on its server, other fetch failures count in its head.
 func (r *RemoteActors) recordFailure(ctx context.Context, uri string, cause error) {
-	if !isFetchError(cause) {
-		return
+	if !isFetchError(cause) || errors.Is(cause, ErrFederationRestricted) {
+		return // a fetch that the federation mode does not make says nothing of the actor
 	}
 	target, err := fetchTarget(uri)
 	if err != nil {

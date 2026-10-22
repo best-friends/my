@@ -94,6 +94,8 @@ type Options struct {
 	EmojiTags appfederation.EmojiTagReader
 	// Inbox receives the activities POSTed to the inboxes; nil serves no inbox.
 	Inbox Inbox
+	// Modes reads the federation mode (ADR-0076) per request; nil federates both ways.
+	Modes appfederation.ModeSettings
 	// HTML serves the web client's page for profile pages (/@alice) and other single-segment
 	// paths when the request does not ask for ActivityPub; nil answers 404.
 	HTML http.Handler
@@ -139,23 +141,29 @@ const (
 	PathNodeInfo      = "/nodeinfo/2.1"
 )
 
-// Register registers every endpoint on r.
+// Register registers every endpoint on r. The federation mode (ADR-0076) gates the GETs by their
+// flow: the discovery documents and the actors identify (404 when the mode is off), and the
+// statuses, their activities, the collections, the custom emoji, and the approvals of quotes
+// publish (404 when the mode does not send the local posts out; never 410, so that nothing tells
+// what exists).
 func (h *Handler) Register(r Router) {
-	r.Handle("GET "+PathWebFinger, h.wellKnown(h.webFinger))
-	r.Handle("GET "+PathHostMeta, h.wellKnown(h.hostMeta))
-	r.Handle("GET "+PathHostMetaJSON, h.wellKnown(h.hostMetaJSON))
-	r.Handle("GET "+PathNodeInfoIndex, h.wellKnown(h.nodeInfoIndex))
-	r.Handle("GET "+PathNodeInfo, http.HandlerFunc(h.nodeInfo))
-	r.Handle("GET "+actorsPrefix+"{id}", http.HandlerFunc(h.actor))
-	r.Handle("GET "+actorsPrefix+"{id}/{collection}", http.HandlerFunc(h.collection))
+	identify := func(next http.HandlerFunc) http.HandlerFunc { return h.gate(federation.FlowIdentify, next) }
+	publish := func(next http.HandlerFunc) http.HandlerFunc { return h.gate(federation.FlowPublish, next) }
+	r.Handle("GET "+PathWebFinger, h.wellKnown(identify(h.webFinger)))
+	r.Handle("GET "+PathHostMeta, h.wellKnown(identify(h.hostMeta)))
+	r.Handle("GET "+PathHostMetaJSON, h.wellKnown(identify(h.hostMetaJSON)))
+	r.Handle("GET "+PathNodeInfoIndex, h.wellKnown(identify(h.nodeInfoIndex)))
+	r.Handle("GET "+PathNodeInfo, identify(h.nodeInfo))
+	r.Handle("GET "+actorsPrefix+"{id}", identify(h.actor))
+	r.Handle("GET "+actorsPrefix+"{id}/{collection}", publish(h.collection))
 	if h.o.Inbox != nil {
 		r.Handle("POST "+sharedInboxPath, http.HandlerFunc(h.sharedInbox))
 		r.Handle("POST "+actorsPrefix+"{id}/"+collInbox, http.HandlerFunc(h.actorInbox))
 	}
-	r.Handle("GET "+objectsPrefix+"{id}", http.HandlerFunc(h.object))
-	r.Handle("GET "+objectsPrefix+"{id}/"+activitySegment, http.HandlerFunc(h.object))
-	r.Handle("GET "+emojisPrefix+"{id}", http.HandlerFunc(h.emoji))
-	r.Handle("GET "+quoteAuthorizationsPrefix+"{id}", http.HandlerFunc(h.quoteAuthorization))
+	r.Handle("GET "+objectsPrefix+"{id}", publish(h.object))
+	r.Handle("GET "+objectsPrefix+"{id}/"+activitySegment, publish(h.object))
+	r.Handle("GET "+emojisPrefix+"{id}", publish(h.emoji))
+	r.Handle("GET "+quoteAuthorizationsPrefix+"{id}", publish(h.quoteAuthorization))
 	// A wildcard cannot share a path segment with "@", so every single-segment GET that no
 	// more specific pattern serves comes here; profilePage passes those that are not profile
 	// pages to the HTML handler.
@@ -174,6 +182,37 @@ const (
 	typeJSON         = "application/json; charset=utf-8"
 	typeNodeInfo     = `application/json; profile="` + nodeInfoSchema + `#"`
 )
+
+// mode returns the federation mode for the request. A failure to read it is answered with 500,
+// and ok is false.
+func (h *Handler) mode(w http.ResponseWriter, r *http.Request) (mode federation.Mode, ok bool) {
+	if h.o.Modes == nil {
+		return federation.DefaultMode, true
+	}
+	mode, err := h.o.Modes.FederationMode(r.Context())
+	if err != nil {
+		h.o.Logger.ErrorContext(r.Context(), "activitypub: read the federation mode failed", slog.Any("error", err))
+		h.o.Problem(w, r, http.StatusInternalServerError)
+		return "", false
+	}
+	return mode, true
+}
+
+// gate serves next only when the federation mode lets flow through, and otherwise the 404 of a
+// missing resource (ADR-0076).
+func (h *Handler) gate(flow federation.Flow, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mode, ok := h.mode(w, r)
+		if !ok {
+			return
+		}
+		if !federation.Allows(mode, flow) {
+			h.notFound(w, r)
+			return
+		}
+		next(w, r)
+	}
+}
 
 // notFound answers with the one 404 response that missing and hidden resources share.
 func (h *Handler) notFound(w http.ResponseWriter, r *http.Request) {

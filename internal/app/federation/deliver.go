@@ -104,6 +104,9 @@ type DeliverDeps struct {
 	LinkedData Canonicalizer
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
 	Domains DomainPolicy
+	// Modes reads the federation mode when each delivery runs (ADR-0076); nil federates both
+	// ways.
+	Modes ModeSettings
 	// Breaker is the process's circuit breaker; nil means a new one.
 	Breaker *CircuitBreaker
 	Clock   kernel.Clock
@@ -122,7 +125,9 @@ type DeliverDeps struct {
 // (federation.md §7.3).
 //
 //  1. When the inbox's server does not get the activity (unavailable, or suspended by a domain
-//     block; federation.Deliverable), it records a skipped attempt and is done.
+//     block; federation.Deliverable), or the federation mode at the time does not send it
+//     (federation.Sends, ADR-0076), it records a skipped attempt and is done: a skipped
+//     delivery is never sent again.
 //  2. When the circuit breaker of the host is open, it records a retryable failure without
 //     sending and retries on the schedule.
 //  3. It adds the linked data signature of the actor's key to the stored document of the
@@ -200,6 +205,14 @@ func (d *Deliverer) Deliver(ctx context.Context, deliveryID string) queue.Result
 			why = "domain suspended"
 		}
 		return d.finish(ctx, del, federation.DeliveryAttempt{Outcome: federation.DeliverySkipped, Error: why}, 0)
+	}
+	switch sends, err := d.sends(ctx, act); {
+	case errors.Is(err, ErrNotFound):
+		return queue.Fail(err)
+	case err != nil:
+		return queue.Retry(0, err)
+	case !sends:
+		return d.finish(ctx, del, federation.DeliveryAttempt{Outcome: federation.DeliverySkipped, Error: "federation mode"}, 0)
 	}
 
 	now := d.d.Clock.Now()
@@ -364,4 +377,33 @@ func (d *Deliverer) finish(ctx context.Context, del federation.Delivery, a feder
 			slog.String("inbox", string(del.InboxURL)), slog.Int("status", a.HTTPStatus), slog.String("error", a.Error))
 	}
 	return queue.Done()
+}
+
+// sends reports whether the federation mode at the time lets act go out (federation.Sends). The
+// Update of an actor tells its suspension by its stored document, which is marked suspended.
+func (d *Deliverer) sends(ctx context.Context, act federation.OutboundActivity) (bool, error) {
+	mode, err := currentMode(ctx, d.d.Modes)
+	if err != nil {
+		return false, err
+	}
+	suspension := false
+	if act.ObjectKind == federation.OutboundAccount && act.Type == federation.ActivityUpdate && !federation.Sends(mode, act, false) {
+		document, err := d.d.Repository.FindOutboundDocument(ctx, act.ID)
+		if err != nil {
+			return false, err
+		}
+		suspension = suspendedActorUpdate(document)
+	}
+	return federation.Sends(mode, act, suspension), nil
+}
+
+// suspendedActorUpdate reports whether document is the Update of an actor marked suspended
+// (ADR-0036).
+func suspendedActorUpdate(document []byte) bool {
+	var doc struct {
+		Object struct {
+			Suspended bool `json:"suspended"`
+		} `json:"object"`
+	}
+	return json.Unmarshal(document, &doc) == nil && doc.Object.Suspended
 }
