@@ -138,6 +138,7 @@ function AccountRow({ account, details, children }: AccountRowProps) {
       details={details}
       trailing={children}
       trailingPlacement="below"
+      paragraph
     />
   );
 }

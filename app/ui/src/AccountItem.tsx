@@ -61,6 +61,8 @@ export type AccountItemProps = {
   trailing?: ReactNode;
   /** Where `trailing` goes: always `beside` the account (default), or `below` it until the container is wide. */
   trailingPlacement?: "beside" | "below";
+  /** Draws the plain-text form (without `href`) as a paragraph, for a row whose account is a statement of its own. */
+  paragraph?: boolean;
 };
 
 /**
@@ -79,6 +81,7 @@ export function AccountItem({
   details,
   trailing,
   trailingPlacement = "beside",
+  paragraph = false,
 }: AccountItemProps) {
   const isLink = href !== undefined;
   const hasTrailing = trailing !== undefined && trailing !== null && trailing !== false;
@@ -105,6 +108,8 @@ export function AccountItem({
     <Link href={href} variant="standalone" className={slots.body()}>
       <>{content}</>
     </Link>
+  ) : paragraph ? (
+    <p className={slots.body()}>{content}</p>
   ) : (
     <div className={slots.body()}>{content}</div>
   );
