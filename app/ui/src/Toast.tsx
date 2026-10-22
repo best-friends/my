@@ -83,6 +83,9 @@ const toast = tv({
     ],
   },
   variants: {
+    clearsTabBar: {
+      true: { region: "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] pb-4 short:bottom-[calc(3rem+1px+env(safe-area-inset-bottom))] md:bottom-0 md:pb-[max(--spacing(4),env(safe-area-inset-bottom))] with-compose-fab:bottom-[calc(8rem+env(safe-area-inset-bottom))] with-compose-fab:short:bottom-[calc(6.5rem+env(safe-area-inset-bottom))] with-compose-fab:md:bottom-0" },
+    },
     tone: {
       neutral: { item: "border-s-border-strong" },
       success: { item: "border-s-success" },
@@ -100,16 +103,18 @@ export type ToastProviderProps = {
   /** The timeout of a toast without an action, in ms. */
   defaultTimeout?: number;
   /**
-   * Classes merged into the region's, such as a bottom offset that keeps the toasts clear of a bar along
-   * the bottom edge of the screen, which they would otherwise cover.
+   * Below md the toasts stand above the app's tab bar along the bottom edge (4rem high, 3rem on short screens, with a 1px
+   * border above and the safe-area inset below), which they would otherwise cover. On a page with a floating new-post
+   * button (`[data-compose-fab]` in the document) they stand above it too (web-client.md G4). From md the navigation is a
+   * side rail and the toasts go back to the bottom edge.
    */
-  regionClassName?: string;
+  clearsTabBar?: boolean;
 };
 
 /**
  * Renders the toasts and gives `useToast()` to its children. Mount it once, inside the AnnouncerProvider.
  */
-export function ToastProvider({ children, regionLabel, dismissLabel, defaultTimeout = 5000, regionClassName }: ToastProviderProps) {
+export function ToastProvider({ children, regionLabel, dismissLabel, defaultTimeout = 5000, clearsTabBar = false }: ToastProviderProps) {
   const announce = useAnnouncer();
   const [toasts, setToasts] = useState<readonly QueuedToast[]>([]);
   const nextIdRef = useRef(0);
@@ -175,7 +180,7 @@ export function ToastProvider({ children, regionLabel, dismissLabel, defaultTime
     return id;
   };
 
-  const styles = toast();
+  const styles = toast({ clearsTabBar });
   return (
     <ToastContext value={{ show, dismiss }}>
       {children}
@@ -185,7 +190,7 @@ export function ToastProvider({ children, regionLabel, dismissLabel, defaultTime
           aria-label={regionLabel}
           // Stays reachable while a modal hides the rest of the page (React Aria's ariaHideOutside).
           data-react-aria-top-layer="true"
-          className={styles.region({ class: regionClassName })}
+          className={styles.region()}
           onPointerEnter={() => {
             holdRef.current.hovered = true;
             pause();

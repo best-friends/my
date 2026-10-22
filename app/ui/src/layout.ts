@@ -66,13 +66,15 @@ export type BoxProps = {
   paddingTop?: Space;
   /** Padding on the block end, in a spacing step. */
   paddingBottom?: Space;
+  /** Margin on the block start, in a spacing step: sets a block apart from the content above it. */
+  marginTop?: Space;
   /** Margin on the inline start, in a spacing step: indents a block under the control it describes. */
   marginStart?: Space;
   /**
-   * A border: `md` / `lg` (a box with `rounded-md` / `rounded-lg`), `y` (the block edges, a list between other content), `bottom` (a rule under a region),
+   * A border: `md` / `lg` (a box with `rounded-md` / `rounded-lg`), `y` (the block edges, a list between other content), `top` (a rule above a region), `bottom` (a rule under a region),
    * `start` (a 2px rule on the inline start with `ps-3`, a quoted or nested block).
    */
-  border?: "md" | "lg" | "y" | "bottom" | "start";
+  border?: "md" | "lg" | "y" | "top" | "bottom" | "start";
   /**
    * A background: `surface` (`bg-surface`, a row that stands on the page background) or `sunken` (`bg-surface-sunken`, a
    * well inside a raised surface, such as the quote of the post a form replies to).
@@ -189,6 +191,17 @@ export const box = tv({
       "8": "pb-8",
       "10": "pb-10",
     },
+    marginTop: {
+      "0": "mt-0",
+      "0.5": "mt-0.5",
+      "1": "mt-1",
+      "2": "mt-2",
+      "3": "mt-3",
+      "4": "mt-4",
+      "6": "mt-6",
+      "8": "mt-8",
+      "10": "mt-10",
+    },
     marginStart: {
       "0": "ms-0",
       "0.5": "ms-0.5",
@@ -204,6 +217,7 @@ export const box = tv({
       md: "rounded-md border border-border",
       lg: "rounded-lg border border-border",
       y: "border-y border-border",
+      top: "border-t border-border",
       bottom: "border-b border-border",
       start: "border-s-2 border-border ps-3",
     },
@@ -237,6 +251,7 @@ export function splitBox<P extends BoxProps>({
   paddingY,
   paddingTop,
   paddingBottom,
+  marginTop,
   marginStart,
   border,
   background,
@@ -245,7 +260,7 @@ export function splitBox<P extends BoxProps>({
   textSize,
   ...rest
 }: P) {
-  return [{ container, width, shrink, grow, fullRow, self, padding, paddingX, paddingY, paddingTop, paddingBottom, marginStart, border, background, pushEnd, tone, textSize }, rest] as const;
+  return [{ container, width, shrink, grow, fullRow, self, padding, paddingX, paddingY, paddingTop, paddingBottom, marginTop, marginStart, border, background, pushEnd, tone, textSize }, rest] as const;
 }
 
 

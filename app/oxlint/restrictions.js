@@ -5,7 +5,7 @@
 // written in app/.oxlintrc.json per path; restrictions.test.js proves that each one rejects a violation
 // and accepts the intended alternative.
 //
-// The six rules share one implementation and differ only in where .oxlintrc.json enables them, so that
+// The seven rules share one implementation and differ only in where .oxlintrc.json enables them, so that
 // a path can drop one set of selectors (an override replaces a rule's options) without repeating the others:
 // - syntax: every client source file.
 // - svg: every client source file but the few that may draw SVG (G10).
@@ -13,6 +13,7 @@
 // - test: test files.
 // - storage: every client source file but lib/storage and the tests (S11).
 // - html: every client source file but PostContent and the tests: the Trusted Types sinks (A8).
+// - classes: every file of web/src, tests included: no className and no class-composing helper (A4).
 
 /** @typedef {{ selector: string, message: string }} Restriction */
 
@@ -48,5 +49,5 @@ const rule = {
 
 export default {
   meta: { name: "restrict" },
-  rules: { syntax: rule, svg: rule, feature: rule, test: rule, storage: rule, html: rule },
+  rules: { syntax: rule, svg: rule, feature: rule, test: rule, storage: rule, html: rule, classes: rule },
 };
