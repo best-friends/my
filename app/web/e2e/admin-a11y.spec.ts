@@ -442,6 +442,10 @@ async function moderatorServer(page: Page) {
     if (key === "GET /finance/cost_totals") {
       return json(route, { ...costTotals, periods: costTotals.periods.map((period) => ({ ...period, items: [] })), viewer: { item_names: false, item_memos: false, income: "totals" } });
     }
+    if (key === "GET /admin/supporter_program") return json(route, supporterProgram);
+    if (key === "GET /admin/payment_status") return json(route, paymentStatus);
+    if (key === "GET /admin/supporter_plans") return json(route, { items: [supporterPlan] });
+    if (key === "GET /admin/supporter_subscriptions") return json(route, { items: [supporterSubscription] });
     if (key === "GET /admin/billing_imports") return json(route, { items: [] });
     if (key === "GET /admin/income_totals") return json(route, incomeTotals);
     if (key === "GET /admin/income_movements") return json(route, { items: [incomeMovement] });
@@ -526,6 +530,52 @@ const incomeMovement: Schemas["IncomeMovement"] = {
   recorded_at: "2026-10-10T03:01:00Z",
 };
 
+/** A supporter plan, as GET /admin/supporter_plans lists it. */
+const supporterPlan: Schemas["AdminSupporterPlan"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000c1",
+  name: "Supporter plan of a very long name that does not wrap",
+  description: "",
+  rank: 1,
+  visibility: "public",
+  monthly_price: { amount: "500", currency: "JPY" },
+  yearly_price: { amount: "5400", currency: "JPY" },
+  annual_discount_percent: 10,
+  emoji_limit: 5,
+  role: { id: "role-supporter", key: "supporter", position: 10, permissions: [] },
+  prices_ready: true,
+  retired: false,
+  members: 1,
+  created_at: "2026-10-20T00:00:00Z",
+  revised_at: "2026-10-20T00:00:00Z",
+};
+
+/** A subscription to that plan, as GET /admin/supporter_subscriptions lists it. */
+const supporterSubscription: Schemas["AdminSupporterSubscription"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e1",
+  state: "active",
+  plan_id: supporterPlan.id,
+  plan_name: supporterPlan.name,
+  interval: "month",
+  price: { amount: "500", currency: "JPY" },
+  period_ends_at: "2026-11-20T00:00:00Z",
+  account_id: "0192f0c4-7a8e-7000-8000-000000000002",
+  username: "bob",
+  started_at: "2026-10-20T00:00:00Z",
+};
+
+const supporterProgram: Schemas["AdminSupporterProgram"] = {
+  enabled: true,
+  provider: "stripe",
+  configured_provider: "stripe",
+  sends_email: true,
+  commerce_disclosure: true,
+  live_subscriptions: 1,
+  can_enable: true,
+  warnings: [],
+};
+
+const paymentStatus: Schemas["PaymentStatus"] = { provider: "stripe", mode: "test", time_zone: "UTC", warnings: [] };
+
 /** The terms of service, as GET /admin/instance_texts lists them. */
 const documentText: Schemas["AdminInstanceText"] = { key: "terms", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" };
 /** The server's name, written in Arabic (a language without a catalog), which reads right to left in every project. */
@@ -575,6 +625,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.rules": { path: "/admin/rules", ready: rule.hint ?? "" },
   "admin.roles": { path: "/admin/roles", ready: roles[2]?.key ?? "" },
   "admin.finance": { path: "/admin/finance", ready: costItem.provider },
+  "admin.supporters": { path: "/admin/supporters", ready: supporterSubscription.plan_name },
   "moderation.invites": { path: "/moderation/invites", ready: invite.code },
 };
 
