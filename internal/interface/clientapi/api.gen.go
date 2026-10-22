@@ -6272,8 +6272,8 @@ type IncomeKind string
 // date in the provider's reporting time zone. A payment carries the billing period it pays
 // for (`covers_starts_on` to `covers_ends_on`) when it has one; a refund, a chargeback, or a
 // reversal carries the provider ID of its payment (`parent_provider_id`). `subscription_id`
-// and `account_id` name the subscription and its subscriber's account while they are known;
-// a fee of no subscription has neither.
+// names the subscription while it is known, and `account_id` and `username` its subscriber's
+// local account while the account exists; a fee of no subscription has none of them.
 type IncomeMovement struct {
 	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
 	//
@@ -6324,6 +6324,9 @@ type IncomeMovement struct {
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	SubscriptionId *Id `json:"subscription_id,omitempty"`
+
+	// Username The subscriber's username; omitted with `account_id` for an erased account.
+	Username *string `json:"username,omitempty"`
 }
 
 // IncomeMovementPage A page of money movements, newest first.

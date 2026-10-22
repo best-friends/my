@@ -109,6 +109,13 @@ type ProviderRule struct {
 	Location *time.Location
 }
 
+// Subscriber is the local account of the subscriber of a subscription: its ID and its username
+// without the leading "@".
+type Subscriber struct {
+	AccountID string
+	Username  string
+}
+
 // SupporterDirectory is what the finance module reads of the supporters module (ADR-0073 §1):
 // internal/platform implements it on the supporters module. It reads nothing while the program
 // is disabled.
@@ -118,7 +125,7 @@ type SupporterDirectory interface {
 	PlanCounts(ctx context.Context) ([]PlanCount, error)
 	// SubscriptionAccounts returns the local account of the subscriber of each subscription
 	// among ids, by subscription ID; an unknown subscription or an erased account is left out.
-	SubscriptionAccounts(ctx context.Context, ids []string) (map[string]string, error)
+	SubscriptionAccounts(ctx context.Context, ids []string) (map[string]Subscriber, error)
 	// ProviderRules returns the time zone of the configured payment provider; none without one.
 	ProviderRules() []ProviderRule
 }
@@ -325,10 +332,10 @@ func (s *Service) IncomeRules() []ProviderRule {
 }
 
 // IncomeEntry is a recorded movement with the local account of its subscriber, as the
-// administrators see it (ADR-0073 §6); AccountID is "" without one.
+// administrators see it (ADR-0073 §6); Subscriber is the zero value without one.
 type IncomeEntry struct {
 	IncomeRecord
-	AccountID string
+	Subscriber Subscriber
 }
 
 // ListIncome returns up to limit movements of f, newest first, before the movement before (""
@@ -344,7 +351,7 @@ func (s *Service) ListIncome(ctx context.Context, f IncomeFilter, before string,
 			ids = append(ids, r.SubscriptionID)
 		}
 	}
-	accounts := map[string]string{}
+	accounts := map[string]Subscriber{}
 	if s.d.Supporters != nil && len(ids) > 0 {
 		if accounts, err = s.d.Supporters.SubscriptionAccounts(ctx, ids); err != nil {
 			return nil, fmt.Errorf("finance: read the subscribers: %w", err)
@@ -352,7 +359,7 @@ func (s *Service) ListIncome(ctx context.Context, f IncomeFilter, before string,
 	}
 	out := make([]IncomeEntry, len(rows))
 	for i, r := range rows {
-		out[i] = IncomeEntry{IncomeRecord: r, AccountID: accounts[r.SubscriptionID]}
+		out[i] = IncomeEntry{IncomeRecord: r, Subscriber: accounts[r.SubscriptionID]}
 	}
 	return out, nil
 }

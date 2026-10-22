@@ -297,8 +297,8 @@ func newIncomeMovement(e appfinance.IncomeEntry) IncomeMovement {
 	if e.SubscriptionID != "" {
 		out.SubscriptionId = &e.SubscriptionID
 	}
-	if e.AccountID != "" {
-		out.AccountId = &e.AccountID
+	if e.Subscriber.AccountID != "" {
+		out.AccountId, out.Username = &e.Subscriber.AccountID, &e.Subscriber.Username
 	}
 	if e.Covers != nil {
 		start, end := e.Covers.Start.String(), e.Covers.End.String()
