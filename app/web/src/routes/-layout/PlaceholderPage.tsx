@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { PageHeading } from "./PageHeading";
 
@@ -10,7 +11,7 @@ export function PlaceholderPage({ titleKey }: PlaceholderPageProps) {
   return (
     <>
       <PageHeading>{t(titleKey)}</PageHeading>
-      <p className="text-fg-muted">{t("client:page.not_built")}</p>
+      <Text as="p" tone="muted">{t("client:page.not_built")}</Text>
     </>
   );
 }

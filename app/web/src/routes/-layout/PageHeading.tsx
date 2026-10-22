@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { PageHeading as PageHeadingView } from "@my/ui";
 import { useMatch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -25,8 +26,8 @@ export function PageHeading({ children, id, visuallyHidden }: PageHeadingProps) 
   const hideHeading = useMatch({ strict: false, select: (match) => match.staticData.hideHeading === true });
   const hidden = visuallyHidden ?? hideHeading;
   return (
-    <h1 id={id} tabIndex={-1} className={hidden ? "sr-only" : "text-2xl font-semibold"}>
+    <PageHeadingView {...(id !== undefined && { id })} visuallyHidden={hidden}>
       {children}
-    </h1>
+    </PageHeadingView>
   );
 }

@@ -173,3 +173,26 @@ export { AccountItem, type AccountItemProps } from "./AccountItem";
   type PostCardOriginProps,
   type PostCardTimeLinkProps,
 } from "./PostCardParts";
+
+// The app shell (web-client.md §9): the frame, the navigation, the page heading and the routes' states.
+export { AppShell, AsidePanel, type AppShellProps, type AsidePanelProps } from "./AppShell";
+export {
+  AppNav,
+  AppNavAccount,
+  AppNavItem,
+  AppNavMenu,
+  AppNavMenuLink,
+  AppNavMenuList,
+  AppNavMenuSection,
+  type AppNavAccountProps,
+  type AppNavBadge,
+  type AppNavItemProps,
+  type AppNavMenuLinkProps,
+  type AppNavMenuListProps,
+  type AppNavMenuProps,
+  type AppNavMenuSectionProps,
+  type AppNavProps,
+} from "./AppNavigation";
+export { BackLinkHeading, PageHeading, type BackLinkHeadingProps, type PageHeadingProps } from "./PageHeading";
+export { RouteLoading, StandalonePage, type RouteLoadingProps, type StandalonePageProps } from "./RouteStates";
+export { ServerNameLink, type ServerNameLinkProps } from "./ServerNameLink";
