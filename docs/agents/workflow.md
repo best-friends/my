@@ -134,7 +134,16 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
     [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`.
 - Never run two issues that touch the same shared files at the same time: when the next issue in line shares files
   with a running one, start a different issue for the free slot, and start the held issue after the running one has
-  merged.
+  opened its PR, on that PR's branch (a stacked PR: `--base <that branch>`, "Stacked on #N" at the top of the body;
+  GitHub retargets it to `main` when the base merges, and the agent then merges `origin/main`).
+- Split implementation work by layer: one issue for the server (domain, application, adapters, schema, client API)
+  and one for the web client (screens, `client*` messages), the web issue stacked on the server PR. A smaller issue
+  reads and checks less.
+- Pick the agent's model by the kind of work: the default model for spikes, new ADRs, and implementation; a lighter
+  model (`model: "sonnet"`) for mechanical work, such as folding the decider's answers into an ADR, editing issue
+  bodies, docs-only changes, and resolving a conflict by regenerating files.
+- Ask every agent for a final report of three items only: the PR number, the CI status, and the decisions needed.
+  Everything else belongs in the PR description.
 
 ### Agents in the queue
 
@@ -144,7 +153,7 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 - Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R best-friends/my --json mergeable`).
   CI does not start on a conflicting PR; merge `origin/main` into the branch first, as in §7.
 - Resolve conflicts in generated files by regenerating them (§7), never by hand.
-- Once the PR is open and its CI is green, report the PR number to the orchestrator and finish. Never queue or merge the PR.
+- Once the PR is open and its CI is green, report the PR number, the CI status, and the decisions needed (nothing else) to the orchestrator and finish. Never queue or merge the PR.
 
 ### Merging (orchestrator)
 
