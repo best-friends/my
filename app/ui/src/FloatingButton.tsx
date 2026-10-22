@@ -6,7 +6,7 @@ import { Button } from "./Button";
 import { Tooltip, TooltipTrigger } from "./Tooltip";
 
 const floatingButton = tv({
-  base: "rounded-full shadow-lg",
+  base: "rounded-full shadow-md",
   variants: { iconOnly: { true: "size-12 px-0", false: "min-h-12 px-4" } },
 });
 

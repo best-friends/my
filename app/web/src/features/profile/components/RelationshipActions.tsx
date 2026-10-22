@@ -62,14 +62,14 @@ function followButtonOf(t: Translate, account: Account, state: OtherActionsProps
         : state.relationship.followed_by
           ? t("client:profile.follow.back")
           : t("client:profile.follow");
-      return { label, variant: "primary", press: "follow" } as const;
+      return { label, variant: "outline", press: "follow" } as const;
     }
     case "requested":
-      return { label: t("client:profile.follow.requested"), variant: "secondary", press: "withdraw" } as const;
+      return { label: t("client:profile.follow.requested"), variant: "outline", press: "withdraw" } as const;
     case "following":
-      return { label: t("client:profile.follow.following"), variant: "secondary", press: "unfollow" } as const;
+      return { label: t("client:profile.follow.following"), variant: "outline", press: "unfollow" } as const;
     case "blocking":
-      return { label: t("client:profile.follow.blocked"), variant: "secondary", press: "unblock" } as const;
+      return { label: t("client:profile.follow.blocked"), variant: "outline", press: "unblock" } as const;
   }
 }
 

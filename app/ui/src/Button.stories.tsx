@@ -17,10 +17,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = { args: { variant: "primary" } };
 export const Secondary: Story = { args: { variant: "secondary" } };
+export const Outline: Story = { args: { variant: "outline", children: "Follow" } };
 export const Ghost: Story = { args: { variant: "ghost" } };
 export const Danger: Story = { args: { variant: "danger", children: "Delete post" } };
 
-const variants = ["primary", "secondary", "ghost", "danger"] as const;
+const variants = ["primary", "secondary", "outline", "ghost", "danger"] as const;
 const sizes = ["sm", "md"] as const;
 
 /** Every variant × size, enabled, disabled and pending. */

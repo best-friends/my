@@ -4,17 +4,20 @@ import { tv, type VariantProps } from "tailwind-variants";
 
 const button = tv({
   base: [
-    "inline-flex cursor-default items-center justify-center gap-2 rounded-md text-center font-medium select-none",
-    "data-disabled:opacity-50 data-focus-visible:focus-ring data-pending:cursor-wait motion-safe:transition-colors",
+    "inline-flex cursor-default items-center justify-center gap-2 rounded-full text-center font-extrabold select-none",
+    "data-disabled:opacity-50 data-focus-visible:focus-ring data-pending:cursor-wait motion-safe:transition-[color,background-color,translate]",
     // The button sizes a child icon, which sets no size of its own (web-client.md G11).
     "pointer-coarse:min-h-11 [&>svg]:shrink-0",
   ],
   variants: {
     variant: {
       /** The one main action of a view. */
-      primary: "bg-accent text-accent-fg data-hovered:bg-accent-hover data-pressed:bg-accent-hover",
+      primary:
+        "bg-accent-fill text-accent-fill-fg data-hovered:bg-accent-fill-hover data-pressed:bg-accent-fill-hover motion-safe:data-hovered:-translate-y-px",
       /** Other actions. */
-      secondary: "border border-border-strong bg-surface-raised text-fg data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
+      secondary: "bg-soft text-accent data-hovered:text-accent-hover data-pressed:text-accent-hover",
+      /** A rule and the accent color on a clear ground: the follow button. */
+      outline: "border border-accent text-accent data-hovered:bg-soft data-pressed:bg-soft",
       /** Low-emphasis actions in toolbars and lists. */
       ghost: "text-fg data-hovered:bg-surface-sunken data-pressed:bg-surface-sunken",
       /** A low-emphasis action beside content, in the muted text color: the actions of a post's toolbar that are not toggles, the button that lists who reacted. */
