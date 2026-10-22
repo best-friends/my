@@ -113,7 +113,7 @@ function ScreenTabs({ tab, onTabChange, requestState, onRequestStateChange, ...l
           </span>
         </Tab>
       </TabList>
-      <TabPanel id="emoji" className="flex flex-col gap-8 pt-4">
+      <TabPanel id="emoji" gap="8" offset="4">
         <DetailSection title={t("client:admin.custom_emojis.new.title")}>
           <NewCustomEmojiForm />
         </DetailSection>
@@ -121,7 +121,7 @@ function ScreenTabs({ tab, onTabChange, requestState, onRequestStateChange, ...l
           <CustomEmojiTabs {...list} />
         </DetailSection>
       </TabPanel>
-      <TabPanel id="requests" className="flex flex-col gap-8 pt-4">
+      <TabPanel id="requests" gap="8" offset="4">
         <DetailSection title={t("client:admin.custom_emoji_requests.title")}>
           <CustomEmojiRequests state={requestState} onStateChange={onRequestStateChange} />
         </DetailSection>
@@ -244,7 +244,7 @@ function CustomEmojiTabs({ filter, onFilterChange }: EmojiListProps) {
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter.origin} className="flex flex-col gap-4 pt-3">
+      <TabPanel id={filter.origin} gap="4" offset="3">
         <SearchForm key={`${filter.origin}:${filter.shortcode ?? ""}:${filter.domain ?? ""}`} filter={filter} onFilterChange={onFilterChange} />
         <CustomEmojiList filter={filter} />
       </TabPanel>
