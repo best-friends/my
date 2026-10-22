@@ -62,12 +62,16 @@ export function FieldError({ children, className }: PartProps<FieldErrorMessage>
   // The warning icon keeps an error from resting on colour alone.
   return (
     <RACFieldError className={field().error({ className })}>
-      {(validation) => (
-        <>
-          <WarningIcon filled />
-          <span>{typeof children === "function" ? children(validation) : children}</span>
-        </>
-      )}
+      {(validation) => {
+        const message = typeof children === "function" ? children(validation) : (children ?? validation.validationErrors.join(" "));
+        if (message === undefined || message === null || message === false || message === "") return null;
+        return (
+          <>
+            <WarningIcon filled />
+            <span>{message}</span>
+          </>
+        );
+      }}
     </RACFieldError>
   );
 }
