@@ -2,6 +2,7 @@
 // Pieces of the report queue and the report's page: an account as a row shows it (its display name and handle,
 // or that it is gone) and an account known by ID only (the moderator who handles a report or wrote a note, or the
 // user who appealed an action).
+import { Stack, Text } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import type { Account } from "../../profile";
 import { useViewer } from "../../session";
@@ -14,21 +15,21 @@ export function AccountLabel({ account }: { account: Account | undefined }) {
   // Without a display name, the handle is the name: it is shown once.
   if (account.display_name === "") {
     return (
-      <span dir="ltr" className="text-start wrap-anywhere">
+      <Text dir="ltr" align="start" wrap="anywhere">
         {handleOf(account)}
-      </span>
+      </Text>
     );
   }
   return (
-    <span className="flex min-w-0 flex-col">
+    <Stack as="span" shrink>
       {/* A name the user chose, in any language (web-client.md G9). */}
-      <span dir="auto" className="text-start wrap-anywhere">
+      <Text dir="auto" align="start" wrap="anywhere">
         {accountName(account)}
-      </span>
-      <span dir="ltr" className="text-start text-sm wrap-anywhere text-fg-muted">
+      </Text>
+      <Text dir="ltr" align="start" size="sm" wrap="anywhere" tone="muted">
         {handleOf(account)}
-      </span>
-    </span>
+      </Text>
+    </Stack>
   );
 }
 
@@ -46,7 +47,7 @@ export function AccountByIdLabel({ id }: { id: string }) {
   const account = useAccountById(id);
   switch (account.status) {
     case "loading":
-      return <span className="text-fg-muted">{t("client:admin.report.account.loading")}</span>;
+      return <Text tone="muted">{t("client:admin.report.account.loading")}</Text>;
     case "missing":
       return t("client:admin.report.account.deleted");
     case "found":

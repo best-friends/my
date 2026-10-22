@@ -5,13 +5,13 @@
 // that takes the explanation the user is shown; an overturn lifts the action, and the action's state on the page
 // says so. What the decision did stays in the decision region in a StatusMessage (role="status"), and focus
 // moves to that region's heading, since its buttons give way to the decision.
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, Link, ReasonField, StatusMessage } from "@my/ui";
+import { Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DetailSection, Hint, Link, ReasonField, Stack, StatusMessage, Text } from "@my/ui";
 import { useRef } from "react";
 import { type Translate, useT } from "../../../lib/i18n";
 import { type Appeal, type AppealDecision, appealReasonLimit } from "../api/appeals";
 import { type AppealReview, appealStateLabels, useAppeal, useAppealReview } from "../hooks/useAppeals";
 import { accountActionKindLabels, accountActionStateLabels, reportCategoryLabels } from "../hooks/useReports";
-import { DateTime, DetailSection, RequirePermission, useFocusAfterChange } from "./parts";
+import { DateTime, RequirePermission, useFocusAfterChange } from "./parts";
 import { AccountByIdLabel, AssigneeName } from "./reportParts";
 
 export function AppealDetailView({ id }: { id: string }) {
@@ -29,7 +29,7 @@ function AppealPage({ id }: { id: string }) {
   const focusDecision = useFocusAfterChange(decisionHeadingRef, appeal.state);
   const review = useAppealReview(id, focusDecision);
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <DetailSection title={t("client:admin.appeal.appeal.title")}>
         <AppealSummary appeal={appeal} />
       </DetailSection>
@@ -41,17 +41,17 @@ function AppealPage({ id }: { id: string }) {
         {appeal.state === "pending" ? <PendingDecision review={review} /> : <Decision appeal={appeal} />}
       </DetailSection>
       <DecisionDialog review={review} appeal={appeal} />
-    </div>
+    </Stack>
   );
 }
 
 function AppealSummary({ appeal }: { appeal: Appeal }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.appeal.state")}>
-          <span className="font-semibold">{t(appealStateLabels[appeal.state])}</span>
+          <Text weight="semibold">{t(appealStateLabels[appeal.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.appeal.account")}>
           <AccountByIdLabel id={appeal.account_id} />
@@ -60,31 +60,31 @@ function AppealSummary({ appeal }: { appeal: Appeal }) {
           <DateTime value={appeal.submitted_at} />
         </DescriptionItem>
       </DescriptionList>
-      <div>
+      <Box>
         <Link href={`/moderation/accounts/${encodeURIComponent(appeal.account_id)}`} variant="standalone">
           {t("client:admin.appeal.account.admin")}
         </Link>
-      </div>
+      </Box>
       <DescriptionList>
         <DescriptionItem term={t("client:admin.appeal.text")}>
           {/* Written by the user who appealed, in any language (Y10). */}
-          <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+          <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
             {appeal.text}
-          </span>
+          </Text>
         </DescriptionItem>
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }
 
 /** A moderator's text, in any language, or the word for none. */
 function ModeratorText({ text }: { text: string | undefined }) {
   const t = useT();
-  if (text === undefined || text === "") return <span className="text-fg-muted">{t("client:admin.appeal.none")}</span>;
+  if (text === undefined || text === "") return <Text tone="muted">{t("client:admin.appeal.none")}</Text>;
   return (
-    <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+    <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
       {text}
-    </span>
+    </Text>
   );
 }
 
@@ -92,11 +92,11 @@ function ActionSummary({ appeal }: { appeal: Appeal }) {
   const t = useT();
   const { action } = appeal;
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.appeal.action.kind")}>{t(accountActionKindLabels[action.kind])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.account_actions.state")}>
-          <span className="font-semibold">{t(accountActionStateLabels[action.state])}</span>
+          <Text weight="semibold">{t(accountActionStateLabels[action.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.account_actions.category")}>{t(reportCategoryLabels[action.reason_category])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.account_actions.issued_at")}>
@@ -112,7 +112,7 @@ function ActionSummary({ appeal }: { appeal: Appeal }) {
         )}
         {action.status_ids !== undefined && (
           <DescriptionItem term={t("client:admin.report.posts")}>
-            <span className="tabular-nums">{t("client:admin.report.posts.count", { count: action.status_ids.length })}</span>
+            <Text numeric>{t("client:admin.report.posts.count", { count: action.status_ids.length })}</Text>
           </DescriptionItem>
         )}
         {action.report_id !== undefined && (
@@ -131,7 +131,7 @@ function ActionSummary({ appeal }: { appeal: Appeal }) {
           <ModeratorText text={action.private_note} />
         </DescriptionItem>
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }
 
@@ -162,9 +162,9 @@ const decisions = ["uphold", "overturn"] as const satisfies readonly AppealDecis
 function PendingDecision({ review }: { review: AppealReview }) {
   const t = useT();
   return (
-    <div className="flex flex-col items-start gap-3">
-      <p className="text-sm text-fg-muted">{t("client:admin.appeal.decision.description")}</p>
-      <div className="flex flex-wrap gap-2">
+    <Stack align="start" gap="3">
+      <Hint>{t("client:admin.appeal.decision.description")}</Hint>
+      <Cluster gap="2">
         {decisions.map((decision) => (
           <Button
             key={decision}
@@ -176,8 +176,8 @@ function PendingDecision({ review }: { review: AppealReview }) {
             {decision === "uphold" ? t("client:admin.appeal.uphold") : t("client:admin.appeal.overturn")}
           </Button>
         ))}
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -186,7 +186,7 @@ function Decision({ appeal }: { appeal: Appeal }) {
   return (
     <DescriptionList columns={3}>
       <DescriptionItem term={t("client:admin.appeal.decision")}>
-        <span className="font-semibold">{t(appealStateLabels[appeal.state])}</span>
+        <Text weight="semibold">{t(appealStateLabels[appeal.state])}</Text>
       </DescriptionItem>
       {appeal.decided_at !== undefined && (
         <DescriptionItem term={t("client:admin.appeal.decided_at")}>

@@ -1,5 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, Button, Checkbox, ConfirmDialog, FileTrigger, TextArea, TextField } from "@my/ui";
+import {
+  Avatar,
+  Button,
+  Checkbox,
+  Cluster,
+  ConfirmDialog,
+  FileTrigger,
+  Heading,
+  Hint,
+  InlineError,
+  ProfileHeaderImage,
+  Stack,
+  Text,
+  TextArea,
+  TextField,
+} from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { EmojiPickerButton } from "../../emoji";
@@ -24,7 +39,7 @@ export function ProfileForm() {
     characterCount(value) > max ? { isInvalid: true, errorMessage: t("client:settings.profile.too_long", { max: String(max) }) } : {};
   return (
     <>
-      <form onSubmit={form.submit} className="flex flex-col gap-6">
+      <Stack as="form" onSubmit={form.submit} gap="6">
         <ImageSection
           titleKey="client:settings.profile.avatar"
           control={form.avatar}
@@ -34,12 +49,10 @@ export function ProfileForm() {
           titleKey="client:settings.profile.header"
           control={form.header}
           preview={
-            form.header.url === undefined ? null : (
-              <img src={form.header.url} alt="" className="aspect-3/1 w-full rounded-md bg-surface-sunken object-cover" />
-            )
+            form.header.url === undefined ? null : <ProfileHeaderImage sources={{ still: [{ url: form.header.url }] }} size="preview" />
           }
         />
-        <div className="flex flex-col gap-1">
+        <Stack gap="1">
           <TextField
             id={displayNameId}
             label={t("client:settings.profile.display_name")}
@@ -57,8 +70,8 @@ export function ProfileForm() {
               label={t("client:settings.profile.display_name.emoji")}
             />
           </div>
-        </div>
-        <div className="flex flex-col gap-1">
+        </Stack>
+        <Stack gap="1">
           <TextArea
             id={noteId}
             label={t("client:settings.profile.note")}
@@ -74,28 +87,28 @@ export function ProfileForm() {
           <div>
             <EmojiPickerButton fieldId={noteId} value={form.note.value} onChange={form.note.onChange} label={t("client:settings.profile.note.emoji")} />
           </div>
-        </div>
+        </Stack>
         <ProfileFields fields={form.fields} lengthCheck={lengthCheck} />
-        <div className="flex flex-col gap-2">
+        <Stack gap="2">
           <Checkbox {...form.locked} description={t("client:settings.profile.locked.description")}>
             {t("client:settings.profile.locked")}
           </Checkbox>
           <Checkbox {...form.bot} description={t("client:settings.profile.bot.description")}>
             {t("client:settings.profile.bot")}
           </Checkbox>
-        </div>
+        </Stack>
         <CrawlerSettings indexable={form.indexable} aiOptOut={form.aiOptOut} serverPolicy={form.serverPolicy} />
         {form.saveError !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError alert size="inherit">
             {form.saveError}
-          </p>
+          </InlineError>
         )}
         <div>
           <Button type="submit" variant="primary" isPending={form.isSaving} isDisabled={form.isBusy && !form.isSaving}>
             {t("client:settings.profile.save")}
           </Button>
         </div>
-      </form>
+      </Stack>
       {/* Outside the form: React bubbles the dialog's own submit event through its portal to an enclosing form. */}
       <UnsavedChangesDialog hasChanges={form.hasChanges} />
     </>
@@ -138,21 +151,25 @@ function CrawlerSettings({ indexable, aiOptOut, serverPolicy }: CrawlerSettingsP
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h2 id={headingId} className="text-sm font-medium text-fg">
+    <Stack as="section" aria-labelledby={headingId} gap="2">
+      <Heading level={2} id={headingId} size="label" tone="fg">
         {t("client:settings.profile.crawlers")}
-      </h2>
+      </Heading>
       <Checkbox {...indexable} description={t("client:settings.profile.indexable.description")}>
         {t("client:settings.profile.indexable")}
       </Checkbox>
-      {serverPolicy?.searchIndexing === "deny" && <p className="text-sm text-fg-muted">{t("client:settings.profile.indexable.server_denies")}</p>}
+      {serverPolicy?.searchIndexing === "deny" && <Hint>{t("client:settings.profile.indexable.server_denies")}</Hint>}
       <Checkbox {...aiOptOut} description={t("client:settings.profile.ai_opt_out.description")}>
         {t("client:settings.profile.ai_opt_out")}
       </Checkbox>
       {serverPolicy !== undefined && serverPolicy.aiUsage !== "allow" && (
-        <p className="text-sm text-fg-muted">{t("client:settings.profile.ai_opt_out.server_denies", { usage: serverPolicy.aiUsage })}</p>
+        <Hint>
+          {t("client:settings.profile.ai_opt_out.server_denies", {
+            usage: serverPolicy.aiUsage,
+          })}
+        </Hint>
       )}
-    </section>
+    </Stack>
   );
 }
 
@@ -164,12 +181,12 @@ function ImageSection({ titleKey, control, preview }: ImageSectionProps) {
   const headingId = useId();
   const errorId = useId();
   return (
-    <section aria-labelledby={headingId} aria-busy={control.isUploading} className="flex flex-col gap-2">
-      <h2 id={headingId} className="text-sm font-medium text-fg">
+    <Stack as="section" aria-labelledby={headingId} aria-busy={control.isUploading} gap="2">
+      <Heading level={2} id={headingId} size="label" tone="fg">
         {t(titleKey)}
-      </h2>
+      </Heading>
       {preview}
-      <div className="flex flex-wrap gap-2">
+      <Cluster gap="2">
         <FileTrigger
           acceptedFileTypes={acceptedImageTypes}
           onSelect={(files) => {
@@ -186,13 +203,13 @@ function ImageSection({ titleKey, control, preview }: ImageSectionProps) {
             {t("client:settings.profile.image.remove")}
           </Button>
         )}
-      </div>
+      </Cluster>
       {control.error !== undefined && (
-        <p id={errorId} role="alert" className="text-sm text-danger">
+        <InlineError id={errorId} alert>
           {control.error}
-        </p>
+        </InlineError>
       )}
-    </section>
+    </Stack>
   );
 }
 
@@ -209,11 +226,15 @@ function ProfileFields({ fields, lengthCheck }: ProfileFieldsProps) {
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-sm font-medium text-fg">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId} size="label" tone="fg">
         {t("client:settings.profile.fields")}
-      </h2>
-      <p className="text-sm text-fg-muted">{t("client:settings.profile.fields.description", { max: String(profileLimits.fields) })}</p>
+      </Heading>
+      <Hint>
+        {t("client:settings.profile.fields.description", {
+          max: String(profileLimits.fields),
+        })}
+      </Hint>
       {fields.rows.map((field, index) => (
         <FieldRow
           key={field.key}
@@ -233,7 +254,7 @@ function ProfileFields({ fields, lengthCheck }: ProfileFieldsProps) {
           {t("client:settings.profile.fields.add")}
         </Button>
       </div>
-    </section>
+    </Stack>
   );
 }
 
@@ -248,8 +269,10 @@ type FieldRowProps = {
 function FieldRow({ field, number, onChange, onRemove, lengthCheck }: FieldRowProps) {
   const t = useT();
   return (
-    <fieldset className="flex min-w-0 flex-col gap-2 rounded-md border border-border p-3">
-      <legend className="px-1 text-sm font-medium text-fg">{t("client:settings.profile.field", { number: String(number) })}</legend>
+    <Stack as="fieldset" shrink gap="2" border="md" padding="3">
+      <Text as="legend" inset size="sm" weight="medium" tone="fg">
+        {t("client:settings.profile.field", { number: String(number) })}
+      </Text>
       <TextField
         label={t("client:settings.profile.field.name")}
         value={field.name}
@@ -273,6 +296,6 @@ function FieldRow({ field, number, onChange, onRemove, lengthCheck }: FieldRowPr
           {t("client:settings.profile.field.remove", { number: String(number) })}
         </Button>
       </div>
-    </fieldset>
+    </Stack>
   );
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a route shows instead of its page: while it loads, when it fails, and for an unknown address
 // (web-client.md E1, E3, G16). Each has the page's h1, so the layout moves focus to it and titles the document.
-import { Center, RegionError, Spinner } from "@my/ui";
+import { RegionError, RouteLoading, StandalonePage, Text } from "@my/ui";
 import { useQueryClient, useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { type ErrorComponentProps, useMatch, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
@@ -14,11 +14,7 @@ import { HomeLink } from "./HomeLink";
 /** The router's defaultPendingComponent: shown only when a page takes longer than defaultPendingMs to load. */
 export function RoutePending() {
   const t = useT();
-  return (
-    <div className="grid place-items-center py-10">
-      <Spinner size="lg" label={t("client:shell.loading")} />
-    </div>
-  );
+  return <RouteLoading label={t("client:shell.loading")} />;
 }
 
 /** What happened, for each kind of failure (web-client.md G16). */
@@ -109,13 +105,9 @@ export function RouteError({ error: pageError, reset, heading }: RouteErrorProps
 /** The error of the layout itself: the whole page, since the layout cannot be shown. */
 export function RootError(props: ErrorComponentProps) {
   return (
-    <main className="px-4">
-      <Center>
-        <div className="flex max-w-prose flex-col gap-4">
-          <RouteError {...props} />
-        </div>
-      </Center>
-    </main>
+    <StandalonePage>
+      <RouteError {...props} />
+    </StandalonePage>
   );
 }
 
@@ -125,7 +117,7 @@ export function NotFound() {
   return (
     <>
       <PageHeading>{t("client:shell.not_found.title")}</PageHeading>
-      <p>{t("client:shell.not_found.body")}</p>
+      <Text as="p">{t("client:shell.not_found.body")}</Text>
       <HomeLink />
     </>
   );

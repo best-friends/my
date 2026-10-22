@@ -6,25 +6,7 @@
 // enabled or disabled, or copied into one of this server under a shortcode chosen in a dialog. What a change did stays above the list in a StatusMessage (role="status"), and a
 // failure stays there too (role="alert"). A second tab (kept in the URL too) holds the requests of the holders of
 // create_custom_emojis (ADR-0070 §2), with the number of the pending ones in its name (ADR-0070 §9).
-import {
-  Badge,
-  Button,
-  Checkbox,
-  ConfirmDialog,
-  CustomEmoji,
-  DescriptionItem,
-  DescriptionList,
-  Dialog,
-  DialogTrigger,
-  EmptyState,
-  FileTrigger,
-  StatusMessage,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
-  TextField,
-} from "@my/ui";
+import { Badge, Button, Checkbox, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmojiTile, EmptyState, FileTrigger, Heading, Hint, InlineError, Stack, StatusMessage, Tab, TabList, TabPanel, Tabs, Text, TextField } from "@my/ui";
 import { type SubmitEvent, useId, useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
@@ -101,7 +83,7 @@ function ScreenTabs({ tab, onTabChange, requestState, onRequestStateChange, ...l
       <TabList aria-label={t("client:admin.custom_emojis.tabs.label")}>
         <Tab id="emoji">{t("client:admin.custom_emojis.tabs.emoji")}</Tab>
         <Tab id="requests">
-          <span className="inline-flex items-center gap-2">
+          <Cluster as="span" inline align="center" gap="2" wrap={false}>
             {t("client:admin.custom_emojis.tabs.requests")}
             {pending !== undefined && pending.count > 0 && (
               <Badge
@@ -110,10 +92,10 @@ function ScreenTabs({ tab, onTabChange, requestState, onRequestStateChange, ...l
                 label={t(pending.more ? "client:admin.custom_emojis.tabs.pending_more" : "client:admin.custom_emojis.tabs.pending", { count: pending.count })}
               />
             )}
-          </span>
+          </Cluster>
         </Tab>
       </TabList>
-      <TabPanel id="emoji" className="flex flex-col gap-8 pt-4">
+      <TabPanel id="emoji" gap="8" offset="4">
         <DetailSection title={t("client:admin.custom_emojis.new.title")}>
           <NewCustomEmojiForm />
         </DetailSection>
@@ -121,7 +103,7 @@ function ScreenTabs({ tab, onTabChange, requestState, onRequestStateChange, ...l
           <CustomEmojiTabs {...list} />
         </DetailSection>
       </TabPanel>
-      <TabPanel id="requests" className="flex flex-col gap-8 pt-4">
+      <TabPanel id="requests" gap="8" offset="4">
         <DetailSection title={t("client:admin.custom_emoji_requests.title")}>
           <CustomEmojiRequests state={requestState} onStateChange={onRequestStateChange} />
         </DetailSection>
@@ -138,12 +120,12 @@ function NewCustomEmojiForm() {
   const { draft } = form;
   const aliasCount = parseAliases(draft.aliases).length;
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
-      <div role="group" aria-labelledby={imageId} className="flex flex-col gap-2">
-        <span id={imageId} className="text-sm font-medium text-fg">
+    <Stack as="form" gap="6" onSubmit={form.submit}>
+      <Stack gap="2" role="group" aria-labelledby={imageId}>
+        <Text size="sm" tone="fg" weight="medium" id={imageId}>
           {t("client:admin.custom_emojis.image")}
-        </span>
-        <p className="text-sm text-fg-muted">{t("client:admin.custom_emojis.image.description")}</p>
+        </Text>
+        <Hint>{t("client:admin.custom_emojis.image.description")}</Hint>
         <div>
           <FileTrigger
             acceptedFileTypes={acceptedEmojiTypes}
@@ -158,17 +140,17 @@ function NewCustomEmojiForm() {
           </FileTrigger>
         </div>
         {draft.file !== null && (
-          <p className="text-sm wrap-anywhere">
+          <Text as="p" size="sm" wrap="anywhere">
             {t("client:admin.custom_emojis.image.chosen", { name: draft.file.name })}
-          </p>
+          </Text>
         )}
-        {draft.file !== null && draft.file.size > federatedEmojiBytes && <p className="text-sm text-warning">{t("client:admin.custom_emojis.image.large_hint")}</p>}
+        {draft.file !== null && draft.file.size > federatedEmojiBytes && <Text as="p" size="sm" tone="warning">{t("client:admin.custom_emojis.image.large_hint")}</Text>}
         {form.missingImage && (
-          <p id={imageErrorId} role="alert" className="text-sm text-danger">
+          <InlineError alert id={imageErrorId}>
             {t("client:admin.custom_emojis.image.required")}
-          </p>
+          </InlineError>
         )}
-      </div>
+      </Stack>
       <TextField
         label={t("client:admin.custom_emojis.shortcode")}
         description={t("client:admin.custom_emojis.shortcode.description")}
@@ -214,9 +196,9 @@ function NewCustomEmojiForm() {
         {t("client:admin.custom_emojis.visible_in_picker")}
       </Checkbox>
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.custom_emojis.create_failed", { reason: form.error })}
-        </p>
+        </InlineError>
       )}
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -224,7 +206,7 @@ function NewCustomEmojiForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -244,10 +226,13 @@ function CustomEmojiTabs({ filter, onFilterChange }: EmojiListProps) {
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter.origin} className="flex flex-col gap-4 pt-3">
-        <SearchForm key={`${filter.origin}:${filter.shortcode ?? ""}:${filter.domain ?? ""}`} filter={filter} onFilterChange={onFilterChange} />
-        <CustomEmojiList filter={filter} />
-      </TabPanel>
+      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+      {customEmojiOrigins.map((item) => (
+        <TabPanel key={item} id={item} gap="4" offset="3">
+          <SearchForm key={`${filter.origin}:${filter.shortcode ?? ""}:${filter.domain ?? ""}`} filter={filter} onFilterChange={onFilterChange} />
+          <CustomEmojiList filter={filter} />
+        </TabPanel>
+      ))}
     </Tabs>
   );
 }
@@ -269,7 +254,7 @@ function SearchForm({ filter, onFilterChange }: EmojiListProps) {
     });
   };
   return (
-    <form role="search" aria-label={t("client:admin.custom_emojis.search.label")} onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
+    <Cluster as="form" gap="2" align="end" role="search" aria-label={t("client:admin.custom_emojis.search.label")} onSubmit={onSubmit}>
       <TextField
         type="search"
         label={t("client:admin.custom_emojis.search.shortcode")}
@@ -293,7 +278,7 @@ function SearchForm({ filter, onFilterChange }: EmojiListProps) {
           {t("client:admin.custom_emojis.search.clear")}
         </Button>
       )}
-    </form>
+    </Cluster>
   );
 }
 
@@ -315,17 +300,17 @@ function CustomEmojiList({ filter }: { filter: CustomEmojiFilter }) {
     <EmptyState headingLevel={3} heading={t("client:admin.custom_emojis.empty.remote")} />
   );
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{actions.status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.custom_emojis.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       <RecordList list={list} getId={(emoji) => emoji.id} listRef={listRef} empty={empty}>
         {(emoji) => <CustomEmojiRow emoji={emoji} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -335,16 +320,14 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
   const heading = `:${emoji.shortcode}:`;
   const isPending = actions.pendingId === emoji.id;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+    <Stack gap="3">
+      <Cluster gap="3" align="center" wrap={false}>
         {/* The heading names the emoji; the image beside it repeats it. */}
-        <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-3xl">
-          {emoji.url !== undefined && emoji.static_url !== undefined && <CustomEmoji emoji={{ shortcode: emoji.shortcode, url: emoji.url, static_url: emoji.static_url }} />}
-        </span>
-        <h3 className="min-w-0 font-mono font-semibold wrap-anywhere">
+<EmojiTile emoji={emoji.url !== undefined && emoji.static_url !== undefined ? { shortcode: emoji.shortcode, url: emoji.url, static_url: emoji.static_url } : undefined} />
+        <Heading level={3} wrap="anywhere" mono shrink>
           <span dir="ltr">{heading}</span>
-        </h3>
-      </div>
+        </Heading>
+      </Cluster>
       <DescriptionList columns={2}>
         {emoji.domain !== undefined && (
           <DescriptionItem term={t("client:admin.custom_emojis.domain")}>
@@ -383,7 +366,7 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
           <DateTime value={emoji.updated_at} />
         </DescriptionItem>
       </DescriptionList>
-      <div className="flex flex-wrap gap-2">
+      <Cluster gap="2">
         {emoji.local ? (
           <>
             <EditCustomEmoji emoji={emoji} actions={actions} isPending={isPending} />
@@ -415,8 +398,8 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
             <CopyCustomEmoji emoji={emoji} actions={actions} isPending={isPending} />
           </>
         )}
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -458,7 +441,7 @@ function EditCustomEmojiForm({ emoji, actions, close }: { emoji: AdminCustomEmoj
     });
   };
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <Stack as="form" gap="4" onSubmit={onSubmit}>
       <TextField
         label={t("client:admin.custom_emojis.category")}
         description={t("client:admin.custom_emojis.category.description", { max: String(categoryLimit) })}
@@ -484,17 +467,17 @@ function EditCustomEmojiForm({ emoji, actions, close }: { emoji: AdminCustomEmoj
         {t("client:admin.custom_emojis.enabled")}
       </Checkbox>
       {error && actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.custom_emojis.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:admin.custom_emojis.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:admin.custom_emojis.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -531,8 +514,8 @@ function CopyCustomEmojiForm({ emoji, actions, close }: { emoji: AdminCustomEmoj
     });
   };
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <p className="text-sm text-fg-muted">{t("client:admin.custom_emojis.copy.description")}</p>
+    <Stack as="form" gap="4" onSubmit={onSubmit}>
+      <Hint>{t("client:admin.custom_emojis.copy.description")}</Hint>
       <TextField
         label={t("client:admin.custom_emojis.shortcode")}
         description={t("client:admin.custom_emojis.shortcode.description")}
@@ -547,17 +530,17 @@ function CopyCustomEmojiForm({ emoji, actions, close }: { emoji: AdminCustomEmoj
         autoFocus
       />
       {error && actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.custom_emojis.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:admin.custom_emojis.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isCopying}>
           {t("client:admin.custom_emojis.copy.submit")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 

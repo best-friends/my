@@ -4,7 +4,7 @@
 // form of its own (an `h2` section) with a Markdown text area, when it was saved, and a link to its public page. Each
 // is one text, written in any language, that every language shows. Removing a saved text asks first (the APG alert
 // dialog pattern, web-client.md G22).
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, ExternalLink, StatusMessage, TextArea } from "@my/ui";
+import { Button, ConfirmDialog, DescriptionItem, DescriptionList, ExternalLink, Hint, InlineError, Stack, StatusMessage, TextArea } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { useUnsavedChangesGuard } from "../../settings";
 import { documentTextLimit } from "../api/documents";
@@ -23,7 +23,7 @@ function DocumentSettingsForms() {
   const t = useT();
   const settings = useDocumentSettings();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <DetailSection title={t("client:admin.documents.terms")}>
         <DocumentForm
           editor={settings.terms}
@@ -39,7 +39,7 @@ function DocumentSettingsForms() {
         />
       </DetailSection>
       <DetailSection title={t("client:admin.documents.commerce_disclosure")}>
-        <p className="text-fg-muted">{t("client:admin.documents.commerce_disclosure.description")}</p>
+        <Hint size="inherit">{t("client:admin.documents.commerce_disclosure.description")}</Hint>
         <DocumentForm
           editor={settings.commerceDisclosure}
           viewLabel={t("client:admin.documents.view_commerce_disclosure")}
@@ -47,7 +47,7 @@ function DocumentSettingsForms() {
         />
       </DetailSection>
       <UnsavedChangesDialog hasChanges={settings.hasChanges} />
-    </div>
+    </Stack>
   );
 }
 
@@ -79,7 +79,7 @@ function DocumentForm({ editor, viewLabel, confirmTitle }: DocumentFormProps) {
           </ExternalLink>
         </p>
       )}
-      <form onSubmit={editor.submit} className="flex flex-col gap-4">
+      <Stack as="form" gap="4" onSubmit={editor.submit}>
         <TextArea
           label={t("client:admin.documents.body")}
           description={t("client:admin.documents.body.description")}
@@ -91,9 +91,9 @@ function DocumentForm({ editor, viewLabel, confirmTitle }: DocumentFormProps) {
           errorMessage={t("client:admin.documents.too_long", { max: documentTextLimit })}
         />
         {editor.confirmation === null && failed !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError size="inherit" alert>
             {failed}
-          </p>
+          </InlineError>
         )}
         <div>
           <Button type="submit" variant="primary" isPending={editor.isPending && editor.confirmation === null}>
@@ -101,7 +101,7 @@ function DocumentForm({ editor, viewLabel, confirmTitle }: DocumentFormProps) {
           </Button>
         </div>
         <StatusMessage>{editor.status}</StatusMessage>
-      </form>
+      </Stack>
       {/* Outside the form: React sends the dialog's own submit event up its component tree, through a portal too. */}
       <ConfirmDialog
         isOpen={editor.confirmation !== null}

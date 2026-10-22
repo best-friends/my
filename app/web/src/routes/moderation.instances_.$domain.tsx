@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link } from "@my/ui";
+import { Link, Stack, Text } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { availabilityEventsQueryOptions, DomainName, InstanceDetail, instanceQueryOptions } from "../features/moderation";
@@ -30,23 +30,23 @@ export const Route = createFileRoute("/moderation/instances_/$domain")({
 function PageName() {
   const { domain } = Route.useParams();
   return (
-    <span className="wrap-anywhere">
+    <Text wrap="anywhere">
       <DomainName domain={domain} />
-    </span>
+    </Text>
   );
 }
 
 function InstanceHeading() {
   const t = useT();
   return (
-    <div className="flex flex-col items-start gap-1">
+    <Stack align="start" gap="1">
       <PageHeading>
         <PageName />
       </PageHeading>
-      <Link href="/moderation/instances" variant="standalone" className="text-sm">
+      <Link href="/moderation/instances" variant="standalone" size="sm">
         {t("client:admin.instance.back")}
       </Link>
-    </div>
+    </Stack>
   );
 }
 

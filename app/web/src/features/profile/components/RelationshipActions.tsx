@@ -6,7 +6,7 @@
 // pattern). A follow request to an account of another server says which server it waits for. A list of
 // accounts (the notifications) can show the follow button alone, and leave mute, block and report to the
 // profile.
-import { Button, Dialog, Link, Menu, MenuItem, MenuTrigger, MoreIcon } from "@my/ui";
+import { Box, Button, Cluster, Dialog, DialogActions, Hint, Link, Menu, MenuItem, MenuTrigger, MoreIcon, Stack } from "@my/ui";
 import { useId, useState } from "react";
 import { type Translate, useT } from "../../../lib/i18n";
 import { ReportDialog } from "../../report";
@@ -44,7 +44,7 @@ export function RelationshipActions({ account, name, state, showMenu = true }: R
     case "loading":
       return null;
     case "error":
-      return <p className="text-sm text-fg-muted">{t("client:profile.relationship_failed", { reason: state.message })}</p>;
+      return <Hint>{t("client:profile.relationship_failed", { reason: state.message })}</Hint>;
     case "other":
       return <OtherActions account={account} name={name} state={state} showMenu={showMenu} />;
   }
@@ -91,7 +91,7 @@ function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
+      <Cluster align="center" gap="2">
         {/* One button for every state, so that it keeps the focus when its label changes. */}
         <Button
           variant={followButton.variant}
@@ -106,7 +106,7 @@ function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
         </Button>
         {showMenu && (
           <MenuTrigger>
-            <Button variant="ghost" isPending={isPending} aria-label={moreLabel} className="px-2">
+            <Button variant="ghost" size="compact" isPending={isPending} aria-label={moreLabel}>
               <MoreIcon />
             </Button>
             <Menu
@@ -141,12 +141,14 @@ function OtherActions({ account, name, state, showMenu }: OtherActionsProps) {
             change(action);
           }}
         />
-      </div>
+      </Cluster>
       {/* A line of its own in the header's wrapping row, below the picture and the buttons. */}
       {pendingRemote && (
-        <p id={pendingId} className="basis-full text-sm wrap-anywhere text-fg-muted">
-          {t("client:profile.follow.pending_remote", { host: isolate(account.domain) })}
-        </p>
+        <Box fullRow>
+          <Hint id={pendingId} wrap="anywhere">
+            {t("client:profile.follow.pending_remote", { host: isolate(account.domain) })}
+          </Hint>
+        </Box>
       )}
     </>
   );
@@ -210,8 +212,9 @@ function ConfirmDialog({ isOpen, kind, name, onCancel, onConfirm }: ConfirmDialo
         if (!open) onCancel();
       }}
     >
-      <p>{text.body}</p>
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <Stack gap="4">
+        <p>{text.body}</p>
+        <DialogActions>
         <Button onPress={onCancel}>{t("client:profile.confirm.cancel")}</Button>
         <Button
           variant={text.run === "block" ? "danger" : "primary"}
@@ -221,7 +224,8 @@ function ConfirmDialog({ isOpen, kind, name, onCancel, onConfirm }: ConfirmDialo
         >
           {text.action}
         </Button>
-      </div>
+        </DialogActions>
+      </Stack>
     </Dialog>
   );
 }

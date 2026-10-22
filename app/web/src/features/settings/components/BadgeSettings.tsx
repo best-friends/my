@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { RoleBadge, Switch } from "@my/ui";
+import { Heading, Hint, RoleBadge, Stack, Switch } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { useBadgeChoices } from "../hooks/useBadgeChoices";
@@ -14,12 +14,12 @@ export function BadgeSettings() {
   const badges = useBadgeChoices();
   if (badges.length === 0) return null;
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:settings.profile.badges")}
-      </h2>
-      <p className="text-sm text-fg-muted">{t("client:settings.profile.badges.description")}</p>
-      <ul className="flex flex-col gap-3">
+      </Heading>
+      <Hint>{t("client:settings.profile.badges.description")}</Hint>
+      <Stack as="ul" gap="3">
         {badges.map((badge) => (
           <li key={badge.roleId}>
             <Switch
@@ -34,7 +34,7 @@ export function BadgeSettings() {
             </Switch>
           </li>
         ))}
-      </ul>
-    </section>
+      </Stack>
+    </Stack>
   );
 }

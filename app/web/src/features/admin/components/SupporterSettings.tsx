@@ -7,24 +7,7 @@
 // one at once. The plans' names and descriptions are the administrators' text, shown with dir="auto". What a change did
 // stays in a StatusMessage (role="status"), and a refusal is said in the server's words next to its field or under the
 // form (role="alert"). Retiring a plan and ending a subscription ask first in an alert dialog: neither can be undone.
-import {
-  Button,
-  ConfirmDialog,
-  DescriptionItem,
-  DescriptionList,
-  Dialog,
-  DialogTrigger,
-  EmptyState,
-  Link,
-  Radio,
-  RadioGroup,
-  Select,
-  SelectItem,
-  StatusMessage,
-  Switch,
-  TextArea,
-  TextField,
-} from "@my/ui";
+import { Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Link, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, Switch, Text, TextArea, TextField } from "@my/ui";
 import { type SubmitEvent, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -130,7 +113,7 @@ export function SupporterSettings({ filter, onFilterChange }: SupporterSettingsP
   const t = useT();
   return (
     <RequirePermission permission="manage_supporters">
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <DetailSection title={t("client:admin.supporters.program.title")}>
           <Program />
         </DetailSection>
@@ -142,7 +125,7 @@ export function SupporterSettings({ filter, onFilterChange }: SupporterSettingsP
         <DetailSection title={t("client:admin.supporters.subscriptions.title")}>
           <Subscriptions filter={filter} onFilterChange={onFilterChange} />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -152,8 +135,8 @@ function Program() {
   const { program, set, isPending, error, status } = useSupporterProgram();
   const none = t("client:admin.supporters.program.none");
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-fg-muted">{t("client:admin.supporters.program.description")}</p>
+    <Stack gap="4">
+      <Hint size="inherit">{t("client:admin.supporters.program.description")}</Hint>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.supporters.program.provider")}>
           <span dir="ltr">{program.provider ?? none}</span>
@@ -169,9 +152,9 @@ function Program() {
         </DescriptionItem>
       </DescriptionList>
       {program.warnings.length > 0 && (
-        <ul className="flex flex-col gap-1">
+        <Stack as="ul" gap="1">
           {program.warnings.map((warning) => (
-            <li key={warning} className="text-warning">
+            <Text as="li" tone="warning" key={warning}>
               {t(warningLabels[warning])}
               {warning === "no_commerce_disclosure" && (
                 <>
@@ -181,9 +164,9 @@ function Program() {
                   </Link>
                 </>
               )}
-            </li>
+            </Text>
           ))}
-        </ul>
+        </Stack>
       )}
       <Switch
         isSelected={program.enabled}
@@ -194,12 +177,12 @@ function Program() {
         {t("client:admin.supporters.program.switch")}
       </Switch>
       {error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.supporters.program.failed", { reason: error })}
-        </p>
+        </InlineError>
       )}
       <StatusMessage>{status}</StatusMessage>
-    </div>
+    </Stack>
   );
 }
 
@@ -222,8 +205,8 @@ function PaymentStatusView() {
   const reconcile = useRunPaymentReconcile();
   const last = status.last_reconcile;
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-fg-muted">{t("client:admin.supporters.payment.description")}</p>
+    <Stack gap="4">
+      <Hint size="inherit">{t("client:admin.supporters.payment.description")}</Hint>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.supporters.payment.provider")}>
           <span dir="ltr">{status.provider}</span>
@@ -239,10 +222,10 @@ function PaymentStatusView() {
           {last === undefined ? (
             t("client:admin.supporters.payment.never")
           ) : (
-            <span className="flex flex-col">
+            <Stack as="span">
               <DateTime value={last.occurred_at} />
               <span>{t(reconcileOutcomeLabels[last.outcome])}</span>
-            </span>
+            </Stack>
           )}
         </DescriptionItem>
         {last !== undefined && (
@@ -254,30 +237,30 @@ function PaymentStatusView() {
         )}
       </DescriptionList>
       {last !== undefined && last.error_kind !== "none" && (
-        <p className={last.outcome === "failed" ? "text-danger" : "text-fg-muted"}>{t(reconcileErrorFixes[last.error_kind])}</p>
+        <Text as="p" tone={last.outcome === "failed" ? "danger" : "muted"}>{t(reconcileErrorFixes[last.error_kind])}</Text>
       )}
       {status.warnings.length > 0 && (
-        <ul className="flex flex-col gap-1">
+        <Stack as="ul" gap="1">
           {status.warnings.map((warning) => (
-            <li key={warning} className="text-warning">
+            <Text as="li" tone="warning" key={warning}>
               {t(paymentWarningLabels[warning])}
-            </li>
+            </Text>
           ))}
-        </ul>
+        </Stack>
       )}
-      <div className="flex flex-col items-start gap-2">
-        <p className="text-fg-muted">{t("client:admin.supporters.payment.reconcile.description")}</p>
+      <Stack gap="2" align="start">
+        <Hint size="inherit">{t("client:admin.supporters.payment.reconcile.description")}</Hint>
         <Button size="sm" isPending={reconcile.isPending} onPress={reconcile.run}>
           {t("client:admin.supporters.payment.reconcile.run")}
         </Button>
-      </div>
+      </Stack>
       {reconcile.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {reconcile.error}
-        </p>
+        </InlineError>
       )}
       <StatusMessage>{reconcile.status}</StatusMessage>
-    </div>
+    </Stack>
   );
 }
 
@@ -340,7 +323,7 @@ function PlanFields({ draft, change, error, isNew, autoFocus = false }: PlanFiel
         formatRemaining={formatRemaining}
         {...fieldError(error, "description")}
       />
-      <div className="flex flex-wrap gap-4">
+      <Cluster gap="4">
         <TextField
           label={t("client:admin.supporters.plan.amount")}
           description={t("client:admin.supporters.plan.amount.description")}
@@ -367,8 +350,8 @@ function PlanFields({ draft, change, error, isNew, autoFocus = false }: PlanFiel
             {...fieldError(error, "currency")}
           />
         )}
-      </div>
-      <div className="flex flex-wrap gap-4">
+      </Cluster>
+      <Cluster gap="4">
         <TextField
           label={t("client:admin.supporters.plan.discount")}
           description={t("client:admin.supporters.plan.discount.description")}
@@ -419,7 +402,7 @@ function PlanFields({ draft, change, error, isNew, autoFocus = false }: PlanFiel
             {...fieldError(error, "rolePosition")}
           />
         )}
-      </div>
+      </Cluster>
       <RadioGroup
         label={t("client:admin.supporters.plan.visibility")}
         orientation="horizontal"
@@ -437,9 +420,9 @@ function PlanFields({ draft, change, error, isNew, autoFocus = false }: PlanFiel
         ))}
       </RadioGroup>
       {error?.field === "form" && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.supporters.plan.save_failed", { reason: error.message })}
-        </p>
+        </InlineError>
       )}
     </>
   );
@@ -449,8 +432,8 @@ function NewPlanForm() {
   const t = useT();
   const form = useNewPlanForm();
   return (
-    <form onSubmit={form.submit} className="@container flex flex-col gap-4" noValidate>
-      <p className="text-fg-muted">{t("client:admin.supporters.new.description")}</p>
+    <Stack as="form" container gap="4" onSubmit={form.submit} noValidate>
+      <Hint size="inherit">{t("client:admin.supporters.new.description")}</Hint>
       <PlanFields draft={form.draft} change={form.change} error={form.error} isNew />
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -458,7 +441,7 @@ function NewPlanForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -470,12 +453,12 @@ function Plans() {
   return (
     <>
       <DetailSection title={t("client:admin.supporters.plans.title")}>
-        <div className="flex flex-col gap-3">
+        <Stack gap="3">
           <StatusMessage>{actions.status}</StatusMessage>
           {actions.error !== undefined && (
-            <p role="alert" className="text-danger">
+            <InlineError size="inherit" alert>
               {t("client:admin.supporters.plan.change_failed", { reason: actions.error })}
-            </p>
+            </InlineError>
           )}
           <RecordList
             list={list(active)}
@@ -484,7 +467,7 @@ function Plans() {
           >
             {(plan) => <PlanRow plan={plan} actions={actions} />}
           </RecordList>
-        </div>
+        </Stack>
       </DetailSection>
       {retired.length > 0 && (
         <DetailSection title={t("client:admin.supporters.retired.title")}>
@@ -508,18 +491,18 @@ function PlanRow({ plan, actions }: { plan: SupporterPlan; actions: PlanActions 
   const t = useT();
   const format = useFormatMoney();
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="min-w-0 font-semibold wrap-anywhere">
+    <Stack gap="3">
+      <Heading level={3} wrap="anywhere" shrink>
         <span dir="auto" lang="">
           {plan.name}
         </span>
-      </h3>
-      {!plan.retired && !plan.prices_ready && <p className="text-warning">{t("client:admin.supporters.plan.preparing")}</p>}
-      {!plan.retired && plan.visibility === "hidden" && <p className="text-fg-muted">{t("client:admin.supporters.plan.visibility.hidden")}</p>}
+      </Heading>
+      {!plan.retired && !plan.prices_ready && <Text as="p" tone="warning">{t("client:admin.supporters.plan.preparing")}</Text>}
+      {!plan.retired && plan.visibility === "hidden" && <Hint size="inherit">{t("client:admin.supporters.plan.visibility.hidden")}</Hint>}
       {plan.description !== "" && (
-        <p dir="auto" lang="" className="whitespace-pre-line">
+        <Text as="p" whitespace="preLine" dir="auto" lang="">
           {plan.description}
-        </p>
+        </Text>
       )}
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.supporters.plan.monthly")}>{format(plan.monthly_price)}</DescriptionItem>
@@ -544,12 +527,12 @@ function PlanRow({ plan, actions }: { plan: SupporterPlan; actions: PlanActions 
         )}
       </DescriptionList>
       {!plan.retired && (
-        <div className="flex flex-wrap items-center gap-2">
+        <Cluster gap="2" align="center">
           <EditPlan plan={plan} actions={actions} />
           <RetirePlan plan={plan} actions={actions} />
-        </div>
+        </Cluster>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -585,8 +568,8 @@ function EditPlanForm({ plan, actions, close }: { plan: SupporterPlan; actions: 
     });
   };
   return (
-    <form onSubmit={onSubmit} className="@container flex flex-col gap-4" noValidate>
-      <p className="text-sm text-fg-muted">{t("client:admin.supporters.plan.edit.description")}</p>
+    <Stack as="form" container gap="4" onSubmit={onSubmit} noValidate>
+      <Hint>{t("client:admin.supporters.plan.edit.description")}</Hint>
       <PlanFields
         draft={draft}
         change={(change) => {
@@ -596,13 +579,13 @@ function EditPlanForm({ plan, actions, close }: { plan: SupporterPlan; actions: 
         isNew={false}
         autoFocus
       />
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:admin.supporters.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:admin.supporters.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -653,8 +636,8 @@ function Subscriptions({ filter, onFilterChange }: SupporterSettingsProps) {
     ...supporterSubscriptionStates.map((state) => ({ id: state, name: t(stateLabels[state]) })),
   ];
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-4">
+    <Stack gap="4">
+      <Cluster gap="4">
         <Select
           label={t("client:admin.supporters.filter.plan")}
           value={filter.planId ?? anyChoice}
@@ -684,7 +667,7 @@ function Subscriptions({ filter, onFilterChange }: SupporterSettingsProps) {
             </SelectItem>
           )}
         </Select>
-      </div>
+      </Cluster>
       <StatusMessage>{actions.status}</StatusMessage>
       <RecordList
         list={list}
@@ -693,7 +676,7 @@ function Subscriptions({ filter, onFilterChange }: SupporterSettingsProps) {
       >
         {(subscription) => <SubscriptionRow subscription={subscription} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -702,10 +685,10 @@ function SubscriptionRow({ subscription, actions }: { subscription: SupporterSub
   const format = useFormatMoney();
   const who = subscription.username === undefined ? t("client:admin.supporters.subscription.deleted_account") : `@${subscription.username}`;
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="min-w-0 font-semibold wrap-anywhere">
+    <Stack gap="3">
+      <Heading level={3} wrap="anywhere" shrink>
         <span dir="ltr">{who}</span>
-      </h3>
+      </Heading>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.supporters.subscription.state")}>{t(stateLabels[subscription.state])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.supporters.subscription.plan")}>
@@ -738,7 +721,7 @@ function SubscriptionRow({ subscription, actions }: { subscription: SupporterSub
         )}
       </DescriptionList>
       {isLive(subscription.state) && <CancelSubscription subscription={subscription} who={who} actions={actions} />}
-    </div>
+    </Stack>
   );
 }
 

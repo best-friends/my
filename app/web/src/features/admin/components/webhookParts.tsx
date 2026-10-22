@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the webhook screens share (ADR-0060): the labels of the events, the fields of a webhook's settings, and the
 // secret shown once after it is made.
-import { Button, Checkbox, TextField } from "@my/ui";
+import { Button, Checkbox, Grid, Hint, InlineError, Stack, Text, TextField } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { webhookDescriptionLimit, type WebhookEventType, webhookEvents, type WebhookMessageType, webhookUrlLimit } from "../api/webhooks";
@@ -72,19 +72,17 @@ export function WebhookFields({ draft, change, error, autoFocus = false }: Webho
         autoComplete="off"
         {...fieldError("description")}
       />
-      <div
+      <Stack gap="2"
         role="group"
         aria-labelledby={eventsId}
-        aria-describedby={error?.field === "events" ? `${eventsHintId} ${eventsErrorId}` : eventsHintId}
-        className="flex flex-col gap-2"
-      >
-        <span id={eventsId} className="text-sm font-medium text-fg">
+        aria-describedby={error?.field === "events" ? `${eventsHintId} ${eventsErrorId}` : eventsHintId}>
+        <Text size="sm" tone="fg" weight="medium" id={eventsId}>
           {t("client:admin.webhooks.events")}
-        </span>
-        <p id={eventsHintId} className="text-sm text-fg-muted">
+        </Text>
+        <Hint id={eventsHintId}>
           {t("client:admin.webhooks.events.description")}
-        </p>
-        <div className="grid gap-2 @md:grid-cols-2">
+        </Hint>
+        <Grid at="md" gap="2">
           {webhookEvents.map((event) => (
             <Checkbox
               key={event}
@@ -96,18 +94,18 @@ export function WebhookFields({ draft, change, error, autoFocus = false }: Webho
               {t(webhookEventLabels[event])}
             </Checkbox>
           ))}
-        </div>
+        </Grid>
         {error?.field === "events" && (
-          <div id={eventsErrorId} role="alert" className="flex flex-col gap-1 text-sm text-danger">
+          <Stack gap="1" tone="danger" textSize="sm" id={eventsErrorId} role="alert">
             <p>{error.message}</p>
             {error.missing.length > 0 && <p>{t("client:admin.webhooks.missing_permissions", { permissions: `⁦${error.missing.join(", ")}⁩` })}</p>}
-          </div>
+          </Stack>
         )}
-      </div>
+      </Stack>
       {error?.field === "form" && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.webhooks.save_failed", { reason: error.message })}
-        </p>
+        </InlineError>
       )}
     </>
   );
@@ -119,14 +117,14 @@ export function SecretNotice({ shown }: { shown: ShownSecret }) {
   const copy = useCopySecret();
   const labelId = useId();
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border p-3">
-      <p id={labelId} className="font-medium">
+    <Stack gap="2" border="md" padding="3">
+      <Text as="p" weight="medium" id={labelId}>
         {t("client:admin.webhooks.secret.title", { name: webhookName(shown.webhook) })}
-      </p>
-      <p className="text-sm text-fg-muted">{t("client:admin.webhooks.secret.notice")}</p>
-      <p aria-labelledby={labelId} dir="ltr" className="font-mono wrap-anywhere select-all">
+      </Text>
+      <Hint>{t("client:admin.webhooks.secret.notice")}</Hint>
+      <Text as="p" wrap="anywhere" mono selectAll aria-labelledby={labelId} dir="ltr">
         {shown.secret}
-      </p>
+      </Text>
       <div>
         <Button
           size="sm"
@@ -137,6 +135,6 @@ export function SecretNotice({ shown }: { shown: ShownSecret }) {
           {t("client:admin.webhooks.secret.copy")}
         </Button>
       </div>
-    </div>
+    </Stack>
   );
 }

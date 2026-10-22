@@ -10,23 +10,7 @@
 // in the URL (web-client.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
 // memos are the operator's words, shown with dir="auto". What a change did stays in a StatusMessage above the list;
 // a failure stays there too (role="alert", web-client.md E2).
-import {
-  Button,
-  ConfirmDialog,
-  DescriptionItem,
-  DescriptionList,
-  Dialog,
-  DialogTrigger,
-  EmptyState,
-  Link,
-  Radio,
-  RadioGroup,
-  Select,
-  SelectItem,
-  StatusMessage,
-  TextArea,
-  TextField,
-} from "@my/ui";
+import { Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Link, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, Text, TextArea, TextField } from "@my/ui";
 import { type ReactNode, useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
@@ -133,12 +117,12 @@ export function FinanceSettings(props: FinanceSettingsProps) {
   const t = useT();
   return (
     <RequirePermission permission="manage_finance">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-2">
-          <p className="text-fg-muted">{t("client:admin.finance.description")}</p>
+      <Stack gap="8">
+        <Stack gap="2">
+          <Hint size="inherit">{t("client:admin.finance.description")}</Hint>
           <Publication />
           <ViewerSettings granularity={props.granularity} basis={props.basis} today={props.today} />
-        </div>
+        </Stack>
         <DetailSection title={t("client:admin.finance.totals.title")}>
           <TotalsSection {...props} />
         </DetailSection>
@@ -154,7 +138,7 @@ export function FinanceSettings(props: FinanceSettingsProps) {
         <DetailSection title={t("client:admin.finance.movements.title")}>
           <IncomeMovements filter={props.movements} onFilterChange={props.onMovementsChange} />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -171,7 +155,7 @@ function Publication() {
   const maySet = useHasPermission("manage_settings");
   if (instance === undefined) return null;
   return (
-    <p className="flex flex-wrap gap-x-2">
+    <Cluster as="p" gap="2" rowGap="0">
       <span>{t("client:admin.finance.visibility", { visibility: instance.finance_visibility })}</span>
       <span>{t("client:admin.finance.income_visibility", { visibility: instance.income_visibility })}</span>
       {maySet && (
@@ -179,7 +163,7 @@ function Publication() {
           {t("client:admin.finance.visibility.change")}
         </Link>
       )}
-    </p>
+    </Cluster>
   );
 }
 
@@ -220,15 +204,15 @@ function Totals({ granularity, basis, today }: { granularity: CostGranularity; b
   const income = useAdminIncomeTotals(granularity, basis, today);
   const incomeId = useId();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <CostTotalsView totals={totals} breakdown />
-      <section aria-labelledby={incomeId} className="flex flex-col gap-3">
-        <h3 id={incomeId} className="font-semibold">
+      <Stack as="section" gap="3" aria-labelledby={incomeId}>
+        <Heading level={3} id={incomeId}>
           {t("client:income.title")}
-        </h3>
+        </Heading>
         <IncomeTotalsView totals={income} detailed headingLevel={4} />
-      </section>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -314,7 +298,7 @@ function PriceFields({
 }) {
   const t = useT();
   return (
-    <div className="flex flex-wrap gap-4">
+    <Cluster gap="4">
       <TextField
         label={t("client:admin.finance.amount")}
         description={t("client:admin.finance.amount.description")}
@@ -324,7 +308,7 @@ function PriceFields({
         }}
         inputMode="decimal"
         isRequired
-        className="grow"
+        grow
         {...(errors.amount !== undefined && { isInvalid: true, errorMessage: errors.amount })}
       />
       <TextField
@@ -339,7 +323,7 @@ function PriceFields({
         isRequired
         {...(errors.currency !== undefined && { isInvalid: true, errorMessage: errors.currency })}
       />
-    </div>
+    </Cluster>
   );
 }
 
@@ -349,7 +333,7 @@ function NewCostItemForm() {
   const form = useNewCostItemForm(items.items[0]?.prices[0]?.price.currency ?? "USD");
   const { draft, errors } = form;
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6" noValidate>
+    <Stack as="form" gap="6" onSubmit={form.submit} noValidate>
       <LabelFields
         label={draft}
         onChange={form.change}
@@ -408,9 +392,9 @@ function NewCostItemForm() {
       )}
       <PriceFields price={draft} onChange={form.change} errors={errors} />
       {form.failure !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.finance.create_failed", { reason: form.failure })}
-        </p>
+        </InlineError>
       )}
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -418,7 +402,7 @@ function NewCostItemForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -440,12 +424,12 @@ function CostItemList({ today }: { today: string }) {
     setStatus(done);
   });
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.finance.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       <RecordList
         list={list}
@@ -455,7 +439,7 @@ function CostItemList({ today }: { today: string }) {
       >
         {(item) => <CostItemRow item={item} today={today} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -484,10 +468,10 @@ function CostItemRow({ item, today, actions }: { item: CostItem; today: string; 
   // Before the start date, the price of the first payment.
   const price = priceOn(item, today) ?? item.prices[0]?.price;
   return (
-    <div className="flex flex-col gap-3">
-      <h3 tabIndex={-1} dir="auto" className="font-semibold wrap-anywhere outline-none">
+    <Stack gap="3">
+      <Heading level={3} wrap="anywhere" focusable dir="auto">
         {item.name}
-      </h3>
+      </Heading>
       <DescriptionList>
         <DescriptionItem term={t("client:admin.finance.provider")}>
           <span dir="auto">{item.provider}</span>
@@ -504,38 +488,38 @@ function CostItemRow({ item, today, actions }: { item: CostItem; today: string; 
         )}
         {price !== undefined && (
           <DescriptionItem term={t("client:admin.finance.price")}>
-            <span className="tabular-nums">{format(price)}</span>
+            <Text numeric>{format(price)}</Text>
           </DescriptionItem>
         )}
         {item.prices.length > 1 && (
           <DescriptionItem term={t("client:admin.finance.prices")}>
-            <ul className="flex flex-col">
+            <Stack as="ul">
               {item.prices.map((revision) => (
-                <li key={`${revision.effective_on} ${revision.revised_at}`} className="tabular-nums">
+                <Text as="li" numeric key={`${revision.effective_on} ${revision.revised_at}`}>
                   {t("client:admin.finance.price_from", { date: formatDay(revision.effective_on), amount: format(revision.price) })}
-                </li>
+                </Text>
               ))}
-            </ul>
+            </Stack>
           </DescriptionItem>
         )}
         {item.memo !== "" && (
           <DescriptionItem term={t("client:admin.finance.memo")}>
-            <span dir="auto" lang="" className="whitespace-pre-wrap wrap-anywhere">
+            <Text wrap="anywhere" whitespace="preWrap" dir="auto" lang="">
               {item.memo}
-            </span>
+            </Text>
           </DescriptionItem>
         )}
         <DescriptionItem term={t("client:admin.finance.created_at")}>
           <DateTime value={item.created_at} />
         </DescriptionItem>
       </DescriptionList>
-      <div className="flex flex-wrap gap-2">
+      <Cluster gap="2">
         <EditLabel item={item} actions={actions} />
         <RevisePrice item={item} actions={actions} />
         {item.schedule !== "once" && <SetEnd item={item} actions={actions} />}
         <CancelItem item={item} actions={actions} />
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -557,7 +541,7 @@ function DialogForm({
   const [isSaving, setIsSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   return (
-    <form
+    <Stack as="form" gap="4"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -571,22 +555,20 @@ function DialogForm({
           if (saved) close();
           else setFailed(true);
         });
-      }}
-      className="flex flex-col gap-4"
-    >
+      }}>
       {children}
       {failed && actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.finance.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:admin.finance.cancel_dialog")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:admin.finance.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -770,21 +752,21 @@ function BillingImports() {
     return <EmptyState headingLevel={3} heading={t("client:admin.finance.imports.none")} description={t("client:admin.finance.imports.none.description")} />;
   }
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{run.status}</StatusMessage>
       {run.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {run.error}
-        </p>
+        </InlineError>
       )}
-      <ul className="flex flex-col divide-y divide-border">
+      <Stack as="ul" divided>
         {sources.map((source) => (
-          <li key={source.source} className="@container py-3">
+          <Box as="li" container paddingY="3" key={source.source}>
             <BillingImportRow source={source} isPending={run.pendingSource === source.source} onRun={run.run} />
-          </li>
+          </Box>
         ))}
-      </ul>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -795,9 +777,9 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
   const count = (used: number, max: number | undefined) =>
     max === undefined ? intl.formatNumber(used) : t("client:admin.finance.imports.used_of", { used: intl.formatNumber(used), max: intl.formatNumber(max) });
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="font-semibold">{source.provider}</h3>
-      {source.method === "budget" && <p className="text-fg-muted">{t("client:admin.finance.imports.method.budget")}</p>}
+    <Stack gap="3">
+      <Heading level={3}>{source.provider}</Heading>
+      {source.method === "budget" && <Hint size="inherit">{t("client:admin.finance.imports.method.budget")}</Hint>}
       <DescriptionList>
         <DescriptionItem term={t("client:admin.finance.imports.time_zone")}>{source.time_zone}</DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.imports.last_success")}>
@@ -807,10 +789,10 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
           {source.last_run === undefined ? (
             t("client:admin.finance.imports.never")
           ) : (
-            <span className="flex flex-col">
+            <Stack as="span">
               <DateTime value={source.last_run.occurred_at} />
               <span>{t(errorKindLabels[source.last_run.error_kind])}</span>
-            </span>
+            </Stack>
           )}
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.imports.requests_today")}>{count(source.requests_today, source.max_requests_per_day)}</DescriptionItem>
@@ -822,15 +804,15 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
         )}
       </DescriptionList>
       {source.months.length > 0 && (
-        <ul aria-label={t("client:admin.finance.imports.months", { provider: source.provider })} className="flex flex-col gap-1">
+        <Stack as="ul" gap="1" aria-label={t("client:admin.finance.imports.months", { provider: source.provider })}>
           {source.months.map((month) => (
-            <li key={month.month} className="flex flex-wrap gap-x-2">
+            <Cluster as="li" gap="2" rowGap="0" key={month.month}>
               <span>{intl.formatDate(utcDate(`${month.month}-01`), { year: "numeric", month: "long", timeZone: "UTC" })}</span>
-              <span className="text-fg-muted">{t(monthKindLabels[month.kind])}</span>
-              <span className="tabular-nums">{formatTotals(month.totals)}</span>
-            </li>
+              <Text tone="muted">{t(monthKindLabels[month.kind])}</Text>
+              <Text numeric>{formatTotals(month.totals)}</Text>
+            </Cluster>
           ))}
-        </ul>
+        </Stack>
       )}
       <div>
         <Button
@@ -844,7 +826,7 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
           {t("client:admin.finance.imports.run")}
         </Button>
       </div>
-    </div>
+    </Stack>
   );
 }
 
@@ -872,9 +854,9 @@ function IncomeMovements({ filter, onFilterChange }: { filter: IncomeMovementFil
     </Button>
   );
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-fg-muted">{t("client:admin.finance.movements.description")}</p>
-      <div ref={filtersRef} className="flex flex-col gap-4">
+    <Stack gap="3">
+      <Hint size="inherit">{t("client:admin.finance.movements.description")}</Hint>
+      <Stack gap="4" ref={filtersRef}>
         <Select
           label={t("client:admin.finance.movements.filter.kind")}
           value={filter.kind ?? anyKind}
@@ -889,8 +871,8 @@ function IncomeMovements({ filter, onFilterChange }: { filter: IncomeMovementFil
             </SelectItem>
           )}
         </Select>
-        <form onSubmit={dates.submit} className="flex flex-col items-start gap-4" noValidate>
-          <div className="flex flex-wrap items-start gap-4">
+        <Stack as="form" gap="4" align="start" onSubmit={dates.submit} noValidate>
+          <Cluster gap="4" align="start">
           <TextField
             type="date"
             label={t("client:admin.finance.movements.filter.from")}
@@ -908,13 +890,13 @@ function IncomeMovements({ filter, onFilterChange }: { filter: IncomeMovementFil
             }}
             {...(dates.toError !== undefined && { isInvalid: true, errorMessage: dates.toError })}
           />
-          </div>
+          </Cluster>
           <Button type="submit">
             {t("client:admin.finance.movements.filter.apply")}
           </Button>
-        </form>
+        </Stack>
         {filtered && <div>{clearButton}</div>}
-      </div>
+      </Stack>
       <RecordList
         list={list}
         getId={(movement) => movement.id}
@@ -933,7 +915,7 @@ function IncomeMovements({ filter, onFilterChange }: { filter: IncomeMovementFil
       >
         {(movement) => <IncomeMovementRow movement={movement} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -951,14 +933,14 @@ function Subscriber({ movement }: { movement: IncomeMovement }) {
   const handle = `@${movement.username}`;
   return mayOpenAccount ? (
     <Link href={`/moderation/accounts/${movement.account_id}`}>
-      <span dir="ltr" className="wrap-anywhere">
+      <Text wrap="anywhere" dir="ltr">
         {handle}
-      </span>
+      </Text>
     </Link>
   ) : (
-    <span dir="ltr" className="wrap-anywhere">
+    <Text wrap="anywhere" dir="ltr">
       {handle}
-    </span>
+    </Text>
   );
 }
 
@@ -968,11 +950,13 @@ function IncomeMovementRow({ movement }: { movement: IncomeMovement }) {
   const format = useFormatMoney();
   const formatDay = useFormatDay();
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="flex flex-wrap gap-x-2 font-semibold">
-        <span>{t(incomeKindLabels[movement.kind])}</span>
-        <span className="tabular-nums">{format(movement.net)}</span>
-      </h3>
+    <Stack gap="3">
+      <Heading level={3}>
+        <Cluster as="span" gap="2" rowGap="0">
+          <span>{t(incomeKindLabels[movement.kind])}</span>
+          <Text numeric>{format(movement.net)}</Text>
+        </Cluster>
+      </Heading>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.finance.movements.occurred_at")}>
           <DateTime value={movement.occurred_at} />
@@ -988,20 +972,20 @@ function IncomeMovementRow({ movement }: { movement: IncomeMovement }) {
         )}
         {movement.parent_provider_id !== undefined && (
           <DescriptionItem term={t("client:admin.finance.movements.parent")}>
-            <span dir="ltr" className="wrap-anywhere">
+            <Text wrap="anywhere" dir="ltr">
               {movement.parent_provider_id}
-            </span>
+            </Text>
           </DescriptionItem>
         )}
         <DescriptionItem term={t("client:admin.finance.movements.subscriber")}>
           <Subscriber movement={movement} />
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.movements.provider_id", { provider: movement.provider })}>
-          <span dir="ltr" className="wrap-anywhere">
+          <Text wrap="anywhere" dir="ltr">
             {movement.provider_id}
-          </span>
+          </Text>
         </DescriptionItem>
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }

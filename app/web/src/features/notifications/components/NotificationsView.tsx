@@ -3,7 +3,7 @@
 // route (web-client.md S3), and the notifications of the selected filter as a feed (Y6). The tabs follow
 // the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs); only the selected panel is
 // mounted, and switching tabs keeps focus on the tab (the layout moves focus only when the path changes).
-import { EmptyState, Feed, Link, RegionError, Tab, TabList, TabPanel, Tabs } from "@my/ui";
+import { EmptyState, Feed, Hint, Link, RegionError, Stack, Tab, TabList, TabPanel, Tabs } from "@my/ui";
 import { useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type NotificationFilter, notificationFilters } from "../api/notifications";
@@ -48,9 +48,12 @@ export function NotificationsView({ filter, onFilterChange, headingId }: Notific
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter}>
-        <NotificationList filter={filter} headingId={headingId} />
-      </TabPanel>
+      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+      {notificationFilters.map((item) => (
+        <TabPanel key={item} id={item}>
+          <NotificationList filter={filter} headingId={headingId} />
+        </TabPanel>
+      ))}
     </Tabs>
   );
 }
@@ -86,10 +89,10 @@ function NotificationList({ filter, headingId }: { filter: NotificationFilter; h
   switch (list.status) {
     case "signed-out":
       return (
-        <div className="flex flex-col items-start gap-2">
-          <p className="text-fg-muted">{t("client:notifications.signed_out")}</p>
+        <Stack gap="2" align="start">
+          <Hint size="inherit">{t("client:notifications.signed_out")}</Hint>
           <Link href="/login?return_to=/notifications">{t("client:notifications.sign_in")}</Link>
-        </div>
+        </Stack>
       );
     case "loading":
       return <NotificationsSkeleton />;

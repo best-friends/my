@@ -1,5 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, Checkbox, Radio, RadioGroup, Select, SelectItem, Switch } from "@my/ui";
+import {
+  Button,
+  Callout,
+  Checkbox,
+  Grid,
+  Heading,
+  Hint,
+  InlineError,
+  Radio,
+  RadioGroup,
+  Select,
+  SelectItem,
+  Stack,
+  Switch,
+  Text,
+} from "@my/ui";
 import { useId, useRef } from "react";
 import { languageOptions, quotePolicies, quotePolicyDescription, quotePolicyLabel } from "../../compose";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -40,8 +55,8 @@ export function PreferencesForm() {
     emailModeratorNotifications,
   } = usePreferences();
   return (
-    <div className="flex flex-col gap-8">
-      <p className="text-fg-muted">{t("client:settings.preferences.autosave")}</p>
+    <Stack gap="8">
+      <Hint size="inherit">{t("client:settings.preferences.autosave")}</Hint>
       <DisplayLanguageSelect control={locale} />
       <TimeZoneSelect control={timeZone} />
       <ThemeRadioGroup />
@@ -94,7 +109,7 @@ export function PreferencesForm() {
       <TimelineLanguages control={timelineLanguages} />
       <PushNotifications />
       <ModeratorNotifications control={emailModeratorNotifications} />
-    </div>
+    </Stack>
   );
 }
 
@@ -109,12 +124,12 @@ function PushNotifications() {
   const push = usePushNotifications();
   if (push.status === "hidden") return null;
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:settings.push.title")}
-      </h2>
-      {push.status === "unsupported" && <p className="text-sm text-fg-muted">{t("client:settings.push.unsupported")}</p>}
-      {push.status === "denied" && <p className="text-sm text-fg-muted">{t("client:settings.push.denied")}</p>}
+      </Heading>
+      {push.status === "unsupported" && <Hint>{t("client:settings.push.unsupported")}</Hint>}
+      {push.status === "denied" && <Hint>{t("client:settings.push.denied")}</Hint>}
       {push.status === "available" && (
         <>
           <Switch
@@ -126,12 +141,12 @@ function PushNotifications() {
             {t("client:settings.push.enable")}
           </Switch>
           {push.enabled && (
-            <fieldset aria-describedby={kindsId} className="@container flex min-w-0 flex-col gap-2">
-              <legend className="text-sm font-medium text-fg">{t("client:settings.push.types.label")}</legend>
-              <p id={kindsId} className="text-sm text-fg-muted">
-                {t("client:settings.push.types.description")}
-              </p>
-              <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @sm:grid-cols-2">
+            <Stack as="fieldset" aria-describedby={kindsId} container shrink gap="2">
+              <Text as="legend" size="sm" weight="medium" tone="fg">
+                {t("client:settings.push.types.label")}
+              </Text>
+              <Hint id={kindsId}>{t("client:settings.push.types.description")}</Hint>
+              <Grid as="ul" gap="6" rowGap="1">
                 {push.groups.map((group) => (
                   <li key={group.id}>
                     <Checkbox
@@ -145,17 +160,13 @@ function PushNotifications() {
                     </Checkbox>
                   </li>
                 ))}
-              </ul>
-            </fieldset>
+              </Grid>
+            </Stack>
           )}
-          {push.error !== undefined && (
-            <p role="alert" className="text-sm text-danger">
-              {push.error}
-            </p>
-          )}
+          {push.error !== undefined && <InlineError alert>{push.error}</InlineError>}
         </>
       )}
-    </section>
+    </Stack>
   );
 }
 
@@ -169,12 +180,12 @@ function ModeratorNotifications({ control }: { control: PreferenceControl<boolea
   const email = useModeratorEmail(control);
   if (email.status === "hidden") return null;
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:settings.moderator_notifications.title")}
-      </h2>
+      </Heading>
       {email.status === "no-email" ? (
-        <p className="text-sm text-fg-muted">{t("client:settings.moderator_notifications.no_email")}</p>
+        <Hint>{t("client:settings.moderator_notifications.no_email")}</Hint>
       ) : (
         <Switch
           isSelected={email.control.value}
@@ -186,7 +197,7 @@ function ModeratorNotifications({ control }: { control: PreferenceControl<boolea
           {t("client:settings.moderator_notifications.email")}
         </Switch>
       )}
-    </section>
+    </Stack>
   );
 }
 
@@ -256,11 +267,15 @@ function TimeZoneSelect({ control }: { control: PreferenceControl<string> }) {
   const differs = !sameTimeZone(control.value, device);
   const deviceLabel = options.find((option) => sameTimeZone(option.id, device))?.label ?? device;
   return (
-    <div ref={groupRef} className="flex flex-col gap-3">
+    <Stack ref={groupRef} gap="3">
       <TimeZoneField control={control} options={options} />
       {differs && (
-        <div className="flex flex-col items-start gap-2 rounded-md border border-s-4 border-border border-s-border-strong bg-surface-raised px-4 py-3">
-          <p className="text-sm wrap-anywhere text-fg">{t("client:settings.time_zone.device_differs", { zone: deviceLabel })}</p>
+        <Callout>
+          <Text as="p" size="sm" tone="fg" wrap="anywhere">
+            {t("client:settings.time_zone.device_differs", {
+              zone: deviceLabel,
+            })}
+          </Text>
           <Button
             size="sm"
             onPress={() => {
@@ -271,9 +286,9 @@ function TimeZoneSelect({ control }: { control: PreferenceControl<string> }) {
           >
             {t("client:settings.time_zone.use_device")}
           </Button>
-        </div>
+        </Callout>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -316,15 +331,18 @@ function TimelineLanguages({ control }: { control: PreferenceControl<string[]> }
     control.onChange(next.toSorted());
   };
   return (
-    <fieldset
+    <Stack
+      as="fieldset"
       aria-describedby={control.error === undefined ? descriptionId : `${descriptionId} ${errorId}`}
-      className="@container flex min-w-0 flex-col gap-2"
+      container
+      shrink
+      gap="2"
     >
-      <legend className="text-sm font-medium text-fg">{t("client:settings.timeline_languages.label")}</legend>
-      <p id={descriptionId} className="text-sm text-fg-muted">
-        {t("client:settings.timeline_languages.description")}
-      </p>
-      <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @sm:grid-cols-2">
+      <Text as="legend" size="sm" weight="medium" tone="fg">
+        {t("client:settings.timeline_languages.label")}
+      </Text>
+      <Hint id={descriptionId}>{t("client:settings.timeline_languages.description")}</Hint>
+      <Grid as="ul" gap="6" rowGap="1">
         {timelineLanguageOptions(control.value, i18n.locale).map((option) => (
           <li key={option.id}>
             <Checkbox
@@ -337,12 +355,12 @@ function TimelineLanguages({ control }: { control: PreferenceControl<string[]> }
             </Checkbox>
           </li>
         ))}
-      </ul>
+      </Grid>
       {control.error !== undefined && (
-        <p id={errorId} role="alert" className="text-sm text-danger">
+        <InlineError id={errorId} alert>
           {control.error}
-        </p>
+        </InlineError>
       )}
-    </fieldset>
+    </Stack>
   );
 }

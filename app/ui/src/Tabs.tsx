@@ -25,6 +25,7 @@ import {
   type TabsProps as AriaTabsProps,
 } from "react-aria-components";
 import { tv } from "tailwind-variants";
+import type { Space } from "./layout";
 
 const tabs = tv({
   slots: {
@@ -47,6 +48,22 @@ const tabs = tv({
       "motion-safe:transition-colors",
     ],
     panel: "outline-none data-focus-visible:rounded-md data-focus-visible:focus-ring",
+  },
+  variants: {
+    // The panel's content one above another, as a `Stack` with the same `gap` would lay it out.
+    gap: {
+      "0": { panel: "flex flex-col gap-0" },
+      "0.5": { panel: "flex flex-col gap-0.5" },
+      "1": { panel: "flex flex-col gap-1" },
+      "2": { panel: "flex flex-col gap-2" },
+      "3": { panel: "flex flex-col gap-3" },
+      "4": { panel: "flex flex-col gap-4" },
+      "6": { panel: "flex flex-col gap-6" },
+      "8": { panel: "flex flex-col gap-8" },
+      "10": { panel: "flex flex-col gap-10" },
+    },
+    // Room between the tab list and the panel, added to the `gap-4` of `Tabs`.
+    offset: { "3": { panel: "pt-3" }, "4": { panel: "pt-4" } },
   },
 });
 
@@ -185,10 +202,14 @@ export function Tab({ className, ...props }: TabProps) {
 export type TabPanelProps = Omit<AriaTabPanelProps, "className" | "style" | "children"> & {
   id: Key;
   children: ReactNode;
+  /** Lays the panel's content out one above another with this gap, in a spacing step (as a `Stack`). */
+  gap?: Space;
+  /** More room between the tab list and the panel than the `gap-4` of `Tabs`: `pt-3` or `pt-4` on the panel. */
+  offset?: "3" | "4";
   className?: string;
   ref?: Ref<HTMLDivElement>;
 };
 
-export function TabPanel({ className, ...props }: TabPanelProps) {
-  return <AriaTabPanel {...props} className={tabs().panel({ class: className })} />;
+export function TabPanel({ gap, offset, className, ...props }: TabPanelProps) {
+  return <AriaTabPanel {...props} className={tabs({ gap, offset }).panel({ class: className })} />;
 }

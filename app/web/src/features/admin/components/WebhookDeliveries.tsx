@@ -3,7 +3,7 @@
 // 14 days, newest first, each with its event, whether it succeeded, how many times it was sent and its last attempt,
 // and a button that sends it again with the same webhook-id. What a redelivery did stays above the list in a
 // StatusMessage, and a failure in an alert.
-import { Button, DescriptionItem, DescriptionList, EmptyState, StatusMessage } from "@my/ui";
+import { Button, Cluster, DescriptionItem, DescriptionList, EmptyState, Heading, Hint, InlineError, Stack, StatusMessage, Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { DateTime, DetailSection, RecordList, RequirePermission } from "../../moderation";
 import type { WebhookAttemptOutcome, WebhookDelivery, WebhookDeliveryStatus } from "../api/webhooks";
@@ -29,14 +29,14 @@ export function WebhookDeliveries({ id }: { id: string }) {
   const t = useT();
   return (
     <RequirePermission permission="manage_webhooks">
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <DetailSection title={t("client:admin.webhooks.details.title")}>
           <Facts id={id} />
         </DetailSection>
         <DetailSection title={t("client:admin.webhooks.deliveries.title")}>
           <DeliveryList id={id} />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -50,13 +50,13 @@ function DeliveryList({ id }: { id: string }) {
   const list = useWebhookDeliveries(id);
   const redeliver = useRedeliver(id);
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-fg-muted">{t("client:admin.webhooks.deliveries.description")}</p>
+    <Stack gap="3">
+      <Hint>{t("client:admin.webhooks.deliveries.description")}</Hint>
       <StatusMessage>{redeliver.status}</StatusMessage>
       {redeliver.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.webhooks.deliveries.redeliver_failed", { reason: redeliver.error })}
-        </p>
+        </InlineError>
       )}
       <RecordList list={list} getId={(delivery) => delivery.id} empty={<EmptyState headingLevel={3} heading={t("client:admin.webhooks.deliveries.empty")} />}>
         {(delivery) => (
@@ -69,7 +69,7 @@ function DeliveryList({ id }: { id: string }) {
           />
         )}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -78,11 +78,11 @@ function DeliveryRow({ delivery, isPending, onRedeliver }: { delivery: WebhookDe
   const event = t(webhookEventLabels[delivery.event_type]);
   const last = delivery.last_attempt;
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="font-semibold">{event}</h3>
+    <Stack gap="3">
+      <Heading level={3}>{event}</Heading>
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.webhooks.deliveries.status")}>
-          <span className={delivery.status === "failing" ? "text-warning" : undefined}>{t(statusLabels[delivery.status])}</span>
+          <Text {...(delivery.status === "failing" && { tone: "warning" as const })}>{t(statusLabels[delivery.status])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.webhooks.deliveries.attempts")}>{t("client:admin.webhooks.deliveries.attempts.count", { count: delivery.attempts })}</DescriptionItem>
         <DescriptionItem term={t("client:admin.webhooks.deliveries.created_at")}>
@@ -90,17 +90,17 @@ function DeliveryRow({ delivery, isPending, onRedeliver }: { delivery: WebhookDe
         </DescriptionItem>
         {last !== undefined && (
           <DescriptionItem term={t("client:admin.webhooks.deliveries.last_attempt")}>
-            <span className="flex flex-wrap gap-x-1">
+            <Cluster as="span" gap="1" rowGap="0">
               <span>{t(outcomeLabels[last.outcome])}</span>
               {last.status_code !== undefined && <span dir="ltr">{t("client:admin.webhooks.deliveries.status_code", { code: String(last.status_code) })}</span>}
               <DateTime value={last.attempted_at} />
-            </span>
+            </Cluster>
           </DescriptionItem>
         )}
         <DescriptionItem term={t("client:admin.webhooks.deliveries.message_id")}>
-          <span dir="ltr" className="font-mono wrap-anywhere">
+          <Text wrap="anywhere" mono dir="ltr">
             {delivery.message_id}
-          </span>
+          </Text>
         </DescriptionItem>
       </DescriptionList>
       <div>
@@ -108,6 +108,6 @@ function DeliveryRow({ delivery, isPending, onRedeliver }: { delivery: WebhookDe
           {t("client:admin.webhooks.deliveries.redeliver")}
         </Button>
       </div>
-    </div>
+    </Stack>
   );
 }

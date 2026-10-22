@@ -6,7 +6,7 @@
 // the list and focus moves to the next job's button. A queue that cannot list its pending jobs (Cloud Tasks, SQS)
 // says so, and still lists the dead jobs. The tabs follow the WAI-ARIA APG tabs pattern with automatic activation
 // (React Aria Tabs); only the selected panel is mounted.
-import { Button, DescriptionItem, DescriptionList, EmptyState, RegionError, Spinner, Tab, TabList, TabPanel, Tabs } from "@my/ui";
+import { Box, Button, CodeBlock, DescriptionItem, DescriptionList, EmptyState, Heading, Hint, RegionError, SectionHeader, Spinner, Stack, Tab, TabList, TabPanel, Tabs, Text } from "@my/ui";
 import { useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -58,7 +58,7 @@ function Dashboard({ filter, onFilterChange }: JobDashboardProps) {
   const t = useT();
   const queue = useJobQueue();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <DetailSection title={t("client:admin.jobs.queue.heading")}>
         <QueueSummary queue={queue} />
       </DetailSection>
@@ -76,16 +76,19 @@ function Dashboard({ filter, onFilterChange }: JobDashboardProps) {
               </Tab>
             ))}
           </TabList>
-          <TabPanel id={filter}>
-            {filter !== "dead" && !queue.pending_listing ? (
-              <EmptyState headingLevel={3} heading={t("client:admin.jobs.unlisted")} description={t("client:admin.jobs.unlisted.description")} />
-            ) : (
-              <Jobs filter={filter} />
-            )}
-          </TabPanel>
+          {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+          {jobFilters.map((item) => (
+            <TabPanel key={item} id={item}>
+              {filter !== "dead" && !queue.pending_listing ? (
+                <EmptyState headingLevel={3} heading={t("client:admin.jobs.unlisted")} description={t("client:admin.jobs.unlisted.description")} />
+              ) : (
+                <Jobs filter={filter} />
+              )}
+            </TabPanel>
+          ))}
         </Tabs>
       </DetailSection>
-    </div>
+    </Stack>
   );
 }
 
@@ -97,7 +100,7 @@ function QueueSummary({ queue }: { queue: JobQueue }) {
   const count = (state: JobState, type?: string) =>
     queue.counts.filter((item) => item.state === state && (type === undefined || item.type === type)).reduce((sum, item) => sum + item.count, 0);
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       <DescriptionList columns={2}>
         <DescriptionItem term={t("client:admin.jobs.queue.adapter")}>
           <code dir="ltr">{queue.adapter}</code>
@@ -118,13 +121,13 @@ function QueueSummary({ queue }: { queue: JobQueue }) {
             ))}
           </DescriptionList>
           {types.length > 0 && (
-            <ul aria-label={t("client:admin.jobs.queue.by_type")} className="flex flex-col divide-y divide-border">
+            <Stack as="ul" divided aria-label={t("client:admin.jobs.queue.by_type")}>
               {types.map((type) => (
-                <li key={type} className="@container flex flex-col gap-2 py-3">
+                <Stack as="li" container gap="2" paddingY="3" key={type}>
                   {/* Job types are identifiers, read left to right in every locale. */}
-                  <h3 className="font-mono font-semibold wrap-anywhere">
+                  <Heading level={3} wrap="anywhere" mono>
                     <span dir="ltr">{type}</span>
-                  </h3>
+                  </Heading>
                   <DescriptionList columns={4}>
                     {jobStates.map((state) => (
                       <DescriptionItem key={state} term={t(stateLabels[state])}>
@@ -132,15 +135,15 @@ function QueueSummary({ queue }: { queue: JobQueue }) {
                       </DescriptionItem>
                     ))}
                   </DescriptionList>
-                </li>
+                </Stack>
               ))}
-            </ul>
+            </Stack>
           )}
         </>
       ) : (
-        <p className="text-sm text-fg-muted">{t("client:admin.jobs.queue.no_listing")}</p>
+        <Hint>{t("client:admin.jobs.queue.no_listing")}</Hint>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -169,13 +172,10 @@ function JobRow({ job, retry }: { job: Job; retry: RetryJob }) {
   const t = useT();
   const intl = useIntl();
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        {/* Job types are identifiers, read left to right in every locale. */}
-        <h3 className="font-mono font-semibold wrap-anywhere">
-          <span dir="ltr">{job.type}</span>
-        </h3>
-        {job.state === "dead" && job.failed_at !== undefined && (
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          job.state === "dead" && job.failed_at !== undefined && (
           <Button
             size="sm"
             isPending={retry.pendingIds.includes(job.id)}
@@ -186,8 +186,14 @@ function JobRow({ job, retry }: { job: Job; retry: RetryJob }) {
           >
             {t("client:admin.jobs.retry")}
           </Button>
-        )}
-      </div>
+          )
+        }
+      >
+        {/* Job types are identifiers, read left to right in every locale. */}
+        <Heading level={3} wrap="anywhere" mono>
+          <span dir="ltr">{job.type}</span>
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.jobs.state")}>{t(stateLabels[job.state])}</DescriptionItem>
         {job.failed_at !== undefined && (
@@ -229,19 +235,17 @@ function JobRow({ job, retry }: { job: Job; retry: RetryJob }) {
         {job.last_error !== undefined && (
           <DescriptionItem term={t("client:admin.jobs.last_error")}>
             {/* Errors and payloads are the server's own text, in English or JSON. */}
-            <span dir="auto" className="whitespace-pre-wrap">
+            <Text whitespace="preWrap" dir="auto">
               {job.last_error}
-            </span>
+            </Text>
           </DescriptionItem>
         )}
         <DescriptionItem term={t("client:admin.jobs.payload")}>
-          <pre dir="ltr" className="rounded-md bg-surface-sunken p-2 text-sm whitespace-pre-wrap wrap-anywhere">
-            <code>{job.payload}</code>
-          </pre>
+          <CodeBlock dir="ltr">{job.payload}</CodeBlock>
         </DescriptionItem>
       </DescriptionList>
       <JobHistory job={job} />
-    </div>
+    </Stack>
   );
 }
 
@@ -254,7 +258,7 @@ function JobHistory({ job }: { job: Job }) {
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
   return (
-    <div className="flex flex-col items-start gap-2">
+    <Stack gap="2" align="start">
       <Button
         size="sm"
         aria-expanded={expanded}
@@ -266,10 +270,10 @@ function JobHistory({ job }: { job: Job }) {
       >
         {t("client:admin.jobs.history.toggle")}
       </Button>
-      <div id={panelId} hidden={!expanded} className="w-full">
+      <Box width="full" id={panelId} hidden={!expanded}>
         {expanded && <JobAttempts id={job.id} />}
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }
 
@@ -299,14 +303,14 @@ function JobAttempts({ id }: { id: string }) {
         return <EmptyState headingLevel={4} heading={t("client:admin.jobs.history.empty")} description={t("client:admin.jobs.history.empty.description")} />;
       }
       return (
-        <div className="flex flex-col gap-3">
-          <ol className="flex flex-col divide-y divide-border rounded-md border border-border">
+        <Stack gap="3">
+          <Stack as="ol" divided border="md">
             {attempts.items.map((attempt) => (
-              <li key={`${attempt.finished_at} ${String(attempt.attempt)}`} className="@container flex flex-col gap-2 px-3 py-2">
+              <Stack as="li" container gap="2" paddingX="3" paddingY="2" key={`${attempt.finished_at} ${String(attempt.attempt)}`}>
                 <AttemptRecord attempt={attempt} />
-              </li>
+              </Stack>
             ))}
-          </ol>
+          </Stack>
           {attempts.moreError !== undefined && <RegionError heading={t("client:admin.jobs.history.more_failed")} reason={attempts.moreError} />}
           {attempts.hasMore && (
             <div>
@@ -315,7 +319,7 @@ function JobAttempts({ id }: { id: string }) {
               </Button>
             </div>
           )}
-        </div>
+        </Stack>
       );
   }
 }
@@ -324,7 +328,7 @@ function AttemptRecord({ attempt }: { attempt: JobAttempt }) {
   const t = useT();
   return (
     <>
-      <h4 className="font-semibold">{t("client:admin.jobs.history.attempt", { number: attempt.attempt, outcome: t(outcomeLabels[attempt.outcome]) })}</h4>
+      <Heading level={4}>{t("client:admin.jobs.history.attempt", { number: attempt.attempt, outcome: t(outcomeLabels[attempt.outcome]) })}</Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.jobs.history.started_at")}>
           <DateTime value={attempt.started_at} />
@@ -338,9 +342,9 @@ function AttemptRecord({ attempt }: { attempt: JobAttempt }) {
       </DescriptionList>
       <DescriptionList>
         <DescriptionItem term={t("client:admin.jobs.history.error")}>
-          <span dir="auto" className="whitespace-pre-wrap wrap-anywhere">
+          <Text wrap="anywhere" whitespace="preWrap" dir="auto">
             {attempt.error}
-          </span>
+          </Text>
         </DescriptionItem>
       </DescriptionList>
     </>

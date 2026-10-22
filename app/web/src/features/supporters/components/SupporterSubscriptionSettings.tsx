@@ -1,18 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import {
-  Button,
-  ConfirmDialog,
-  DescriptionItem,
-  DescriptionList,
-  DialogTrigger,
-  EmptyState,
-  ExternalLink,
-  Radio,
-  RadioGroup,
-  RegionError,
-  Spinner,
-  StatusMessage,
-} from "@my/ui";
+import { Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DialogTrigger, EmptyState, ExternalLink, Heading, Hint, InlineError, Radio, RadioGroup, RegionError, Spinner, Stack, StatusMessage, Text } from "@my/ui";
 import { type ReactNode, useId, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -58,14 +45,14 @@ export function SupporterSubscriptionSettings({ returned }: { returned: Supporte
       );
     case "ready":
       return (
-        <div className="flex flex-col gap-8">
+        <Stack gap="8">
           <ReturnMessage returned={returned} confirming={page.confirming} subscription={page.subscription} />
           {page.subscription === undefined ? (
             <Subscribe plans={page.plans} ineligible={page.ineligible} commerceDisclosureUrl={page.commerceDisclosureUrl} />
           ) : (
             <CurrentSubscription subscription={page.subscription} plans={page.plans} commerceDisclosureUrl={page.commerceDisclosureUrl} />
           )}
-        </div>
+        </Stack>
       );
   }
 }
@@ -86,12 +73,12 @@ function ReturnMessage({ returned, confirming, subscription }: { returned: Suppo
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" gap="4" aria-labelledby={headingId}>
+      <Heading level={2} id={headingId}>
         {title}
-      </h2>
+      </Heading>
       {children}
-    </section>
+    </Stack>
   );
 }
 
@@ -124,11 +111,11 @@ function Subscribe({
   const plan = plans.find((p) => p.id === planId) ?? plans[0];
   return (
     <Section title={t("client:supporter.plans.title")}>
-      <p className="text-fg-muted">{t("client:supporter.plans.description")}</p>
+      <Hint size="inherit">{t("client:supporter.plans.description")}</Hint>
       {ineligible !== undefined && (
-        <p role="note" className="rounded-lg border border-border p-4">
+        <Box as="p" border="lg" padding="4" role="note">
           {t(ineligibleMessages[ineligible])}
-        </p>
+        </Box>
       )}
       {plans.length === 0 || plan === undefined ? (
         <EmptyState headingLevel={3} heading={t("client:supporter.plans.empty")} />
@@ -176,14 +163,14 @@ function PlanChooser({
   const format = useFormatMoney();
   const perInterval = usePerInterval();
   return (
-    <div className="flex flex-col gap-6">
+    <Stack gap="6">
       <RadioGroup label={t("client:supporter.plans.plan")} value={plan.id} onChange={onPlanChange}>
         {plans.map((p) => (
           <Radio
             key={p.id}
             value={p.id}
             description={
-              <span className="flex flex-col gap-1">
+              <Stack as="span" gap="1">
                 <span>
                   {t("client:supporter.plans.prices", {
                     monthly: perInterval(format(p.monthly_price), "month"),
@@ -192,11 +179,11 @@ function PlanChooser({
                 </span>
                 {p.description !== "" && (
                   // The administrators' text, in a language the app does not know (web-client.md Y10).
-                  <span dir="auto" lang="" className="whitespace-pre-line">
+                  <Text whitespace="preLine" dir="auto" lang="">
                     {p.description}
-                  </span>
+                  </Text>
                 )}
-              </span>
+              </Stack>
             }
           >
             <span dir="auto" lang="">
@@ -219,7 +206,7 @@ function PlanChooser({
           </Radio>
         ))}
       </RadioGroup>
-    </div>
+    </Stack>
   );
 }
 
@@ -395,8 +382,8 @@ function SubscriptionActions({
   const state = subscription.state;
   const failed = (kind: string) => (commands.failed === kind ? commands.error : undefined);
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
+    <Stack gap="3">
+      <Cluster gap="2">
         {state === "pending" && (
           <Button
             variant="primary"
@@ -435,21 +422,21 @@ function SubscriptionActions({
           </Button>
         )}
         {(state === "active" || state === "past_due") && <CancelSubscription subscription={subscription} commands={commands} />}
-      </div>
+      </Cluster>
       {checkout.error !== undefined && (
-        <p role="alert" className="text-sm text-danger">
+        <InlineError alert>
           {t("client:supporter.confirm.failed", { reason: checkout.error })}
-        </p>
+        </InlineError>
       )}
       {portal.error !== undefined && (
-        <p role="alert" className="text-sm text-danger">
+        <InlineError alert>
           {t("client:supporter.portal.failed", { reason: portal.error })}
-        </p>
+        </InlineError>
       )}
       {(failed("resume") ?? failed("cancel_scheduled_change")) !== undefined && (
-        <p role="alert" className="text-sm text-danger">
+        <InlineError alert>
           {t("client:supporter.command.failed", { reason: failed("resume") ?? failed("cancel_scheduled_change") ?? "" })}
-        </p>
+        </InlineError>
       )}
       {commerceDisclosureUrl !== undefined && (
         <p>
@@ -458,7 +445,7 @@ function SubscriptionActions({
           </ExternalLink>
         </p>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -503,7 +490,7 @@ function ChangePlan({ subscription, plans, commands }: { subscription: Supporter
     timing === "now" ? "client:supporter.change.now" : timing === "period_end" ? "client:supporter.change.period_end" : "client:supporter.change.rules";
   return (
     <Section title={t("client:supporter.change.title")}>
-      <p className="text-fg-muted">{t("client:supporter.change.description")}</p>
+      <Hint size="inherit">{t("client:supporter.change.description")}</Hint>
       {keepsLowerPrice && <p>{t("client:supporter.change.price_kept", { price: format(subscription.price) })}</p>}
       <PlanChooser plans={plans} plan={plan} onPlanChange={setPlanId} interval={interval} onIntervalChange={setInterval} />
       <div>
@@ -525,7 +512,7 @@ function ChangePlan({ subscription, plans, commands }: { subscription: Supporter
           />
         </DialogTrigger>
       </div>
-      {unchanged && <p className="text-sm text-fg-muted">{t("client:supporter.change.unchanged")}</p>}
+      {unchanged && <Hint>{t("client:supporter.change.unchanged")}</Hint>}
     </Section>
   );
 }

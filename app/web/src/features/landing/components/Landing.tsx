@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, EmptyState, Feed, Link, PostSkeleton, RegionError, VisuallyHidden } from "@my/ui";
+import { Button, Cluster, EmptyState, Feed, Heading, Hint, Link, PostSkeleton, RegionError, Stack, Text, VisuallyHidden } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { aboutPath } from "../../../lib/paths";
@@ -21,17 +21,17 @@ export function Landing() {
   const t = useT();
   const landing = useLanding();
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4">
+    <Stack gap="8">
+      <Stack gap="4">
         {landing.thumbnail !== undefined && <ServerThumbnail thumbnail={landing.thumbnail} />}
         {landing.summary !== "" && (
           // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
-          <p dir="auto" lang="" className="text-lg">
+          <Text as="p" dir="auto" lang="" size="lg">
             {landing.summary}
-          </p>
+          </Text>
         )}
         <Entry mode={landing.registrationMode} signUpHref={landing.signUpHref} />
-      </div>
+      </Stack>
       {landing.description.length > 0 && <About paragraphs={landing.description} />}
       {/* A sample of what the server is: its latest public posts. */}
       {landing.recentPosts.status !== "off" && <RecentPostsSection posts={landing.recentPosts} />}
@@ -50,7 +50,7 @@ export function Landing() {
           <SourceCodeLink url={landing.sourceUrl} />
         </p>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -76,8 +76,8 @@ function Entry({ mode, signUpHref }: { mode: RegistrationMode | undefined; signU
   const { signIn, isPending } = useSignIn("/");
   const note = mode === undefined || mode === "closed" ? undefined : registrationNotes[mode];
   return (
-    <div className="flex flex-col items-start gap-3">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+    <Stack align="start" gap="3">
+      <Cluster align="center" gap="6" rowGap="3">
         <Button variant="primary" onPress={signIn} isPending={isPending}>
           {t("client:landing.sign_in")}
         </Button>
@@ -87,14 +87,10 @@ function Entry({ mode, signUpHref }: { mode: RegistrationMode | undefined; signU
             {t(signUpLabels[mode])}
           </Link>
         )}
-      </div>
-      {note !== undefined && (
-        <p id={noteId} className="text-sm text-fg-muted">
-          {t(note)}
-        </p>
-      )}
-      {mode === "closed" && <p className="text-sm text-fg-muted">{t("client:landing.registrations.closed")}</p>}
-    </div>
+      </Cluster>
+      {note !== undefined && <Hint id={noteId}>{t(note)}</Hint>}
+      {mode === "closed" && <Hint>{t("client:landing.registrations.closed")}</Hint>}
+    </Stack>
   );
 }
 
@@ -102,17 +98,17 @@ function About({ paragraphs }: { paragraphs: readonly string[] }) {
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:landing.about.title")}
-      </h2>
+      </Heading>
       {paragraphs.map((paragraph) => (
         // Paragraphs of one text have no IDs; the text itself is the key (two equal paragraphs are not expected).
-        <p key={paragraph} dir="auto" lang="" className="whitespace-pre-line">
+        <Text as="p" key={paragraph} dir="auto" lang="" whitespace="preLine">
           {paragraph}
-        </p>
+        </Text>
       ))}
-    </section>
+    </Stack>
   );
 }
 
@@ -120,27 +116,23 @@ function Rules({ rules }: { rules: LandingData["rules"] }) {
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:landing.rules.title")}
-      </h2>
-      <ol className="flex list-decimal flex-col gap-2 ps-6">
+      </Heading>
+      <Stack as="ol" marker="decimal" gap="2">
         {rules.map((rule) => (
           // The item follows the page's direction, so that its number stays in the list's padding; the rule's text
           // follows its own (dir="auto"); lang="" because the administrator's text has no known language.
           <li key={rule.id} lang="">
-            <p dir="auto" className="font-medium">
+            <Text as="p" dir="auto" weight="medium">
               {rule.text}
-            </p>
-            {rule.hint !== undefined && (
-              <p dir="auto" className="text-sm text-fg-muted">
-                {rule.hint}
-              </p>
-            )}
+            </Text>
+            {rule.hint !== undefined && <Hint dir="auto">{rule.hint}</Hint>}
           </li>
         ))}
-      </ol>
-    </section>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -151,17 +143,17 @@ function RecentPostsSection({ posts }: { posts: Exclude<RecentPosts, { status: "
   const t = useT();
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="3">
+      <Heading level={2} id={headingId}>
         {t("client:landing.posts.title")}
-      </h2>
+      </Heading>
       <RecentPostsBody posts={posts} headingId={headingId} />
       <p>
         <Link href="/local" variant="standalone">
           {t("client:landing.posts.more")}
         </Link>
       </p>
-    </section>
+    </Stack>
   );
 }
 
@@ -170,12 +162,12 @@ function RecentPostsBody({ posts, headingId }: { posts: Exclude<RecentPosts, { s
   switch (posts.status) {
     case "loading":
       return (
-        <div aria-busy="true" className="flex flex-col">
+        <Stack aria-busy="true">
           <VisuallyHidden>{t("client:timeline.loading")}</VisuallyHidden>
           {placeholders.map((key) => (
             <PostSkeleton key={key} />
           ))}
-        </div>
+        </Stack>
       );
     case "error":
       return (
@@ -191,7 +183,7 @@ function RecentPostsBody({ posts, headingId }: { posts: Exclude<RecentPosts, { s
     case "ready":
       if (posts.posts.length === 0) return <EmptyState headingLevel={3} heading={t("client:landing.posts.empty")} />;
       return (
-        <div className="flex flex-col">
+        <Stack>
           {/* The feed role has no keyboard convention, so its keys are told before it (Feed's documentation). */}
           <VisuallyHidden>
             <p>{t("client:timeline.keyboard_hint")}</p>
@@ -208,7 +200,7 @@ function RecentPostsBody({ posts, headingId }: { posts: Exclude<RecentPosts, { s
             loadMoreLabel={t("client:timeline.load_more")}
             loadingLabel={t("client:timeline.loading")}
           />
-        </div>
+        </Stack>
       );
   }
 }

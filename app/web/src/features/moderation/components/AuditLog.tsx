@@ -5,7 +5,7 @@
 // filters and the number of loaded pages in the address (web-client.md S3). Each row links to its target's admin
 // screen where that kind of target has one and the target is still there, and shows the label recorded with the
 // operation otherwise.
-import { DescriptionItem, DescriptionList, EmptyState, Link, RegionError, Select, SelectItem } from "@my/ui";
+import { Box, Cluster, DescriptionItem, DescriptionList, EmptyState, Grid, Heading, Link, RegionError, Select, SelectItem, Stack, Text } from "@my/ui";
 import { type RefObject, useEffect, useRef } from "react";
 import { useT } from "../../../lib/i18n";
 import { type AuditAction, auditActions, type AuditEntry, type AuditLogFilter, type AuditTargetKind, auditTargetKinds } from "../api/staff";
@@ -96,10 +96,10 @@ function AuditLogView({ filter, onFilterChange, filterHref, onPagesLoaded }: Aud
     <EmptyState headingLevel={3} heading={t("client:admin.audit_log.empty")} description={t("client:admin.audit_log.empty.description")} />
   );
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <DetailSection title={t("client:admin.audit_log.filter.title")}>
-        <div ref={filtersRef} className="@container flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-4 @md:grid-cols-2">
+        <Stack ref={filtersRef} container gap="4">
+          <Grid at="md" gap="4">
             <Select
               label={t("client:admin.audit_log.filter.action")}
               value={filter.action ?? every}
@@ -129,33 +129,33 @@ function AuditLogView({ filter, onFilterChange, filterHref, onPagesLoaded }: Aud
                 </SelectItem>
               ))}
             </Select>
-          </div>
+          </Grid>
           {(filter.actor !== undefined || (filter.targetKind !== undefined && filter.target !== undefined)) && (
             <DescriptionList columns={2}>
               {filter.actor !== undefined && (
                 <DescriptionItem term={t("client:admin.audit_log.filter.actor")}>
-                  <span className="flex flex-wrap items-baseline gap-x-3">
+                  <Cluster as="span" align="baseline" gap="3" rowGap="0">
                     <span dir="auto">{log.actorAccount === undefined ? t("client:admin.audit_log.filter.actor.unknown") : accountName(log.actorAccount)}</span>
                     <Link href={filterHref({ ...filter, actor: undefined })} variant="standalone" onPress={cleared}>
                       {t("client:admin.audit_log.filter.actor.clear")}
                     </Link>
-                  </span>
+                  </Cluster>
                 </DescriptionItem>
               )}
               {filter.targetKind !== undefined && filter.target !== undefined && (
                 <DescriptionItem term={t("client:admin.audit_log.filter.target")}>
-                  <span className="flex flex-wrap items-baseline gap-x-3">
+                  <Cluster as="span" align="baseline" gap="3" rowGap="0">
                     <span dir="auto">{log.targetLabel ?? filter.target}</span>
                     <Link href={filterHref({ ...filter, target: undefined })} variant="standalone" onPress={cleared}>
                       {t("client:admin.audit_log.filter.target.clear")}
                     </Link>
-                  </span>
+                  </Cluster>
                 </DescriptionItem>
               )}
             </DescriptionList>
           )}
-          {filtered && <div>{clearAll}</div>}
-        </div>
+          {filtered && <Box>{clearAll}</Box>}
+        </Stack>
       </DetailSection>
       <DetailSection title={t("client:admin.audit_log.list.title")}>
         <RecordList
@@ -169,7 +169,7 @@ function AuditLogView({ filter, onFilterChange, filterHref, onPagesLoaded }: Aud
           {(entry) => <AuditEntryRow entry={entry} filter={filter} filterHref={filterHref} />}
         </RecordList>
       </DetailSection>
-    </div>
+    </Stack>
   );
 }
 
@@ -183,20 +183,22 @@ function AuditEntryRow({ entry, filter, filterHref }: AuditEntryRowProps) {
   const isActorFilter = actorId !== undefined && actorId === filter.actor;
   const isTargetFilter = filter.targetKind === entry.target_kind && filter.target === entry.target_id;
   return (
-    <div className="flex flex-col gap-2">
-      <h3 className="font-semibold">{t(auditActionLabels[entry.action])}</h3>
+    <Stack gap="2">
+      <Heading level={3}>{t(auditActionLabels[entry.action])}</Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.audit_log.actor")}>
           {actor === undefined ? (
             actorName
           ) : (
-            <span className="flex flex-col">
+            <Stack as="span">
               {/* A name the user chose, in any language. */}
-              <span dir="auto" className="text-start">
+              <Text dir="auto" align="start">
                 {actorName}
-              </span>
-              <span dir="ltr" className="text-start text-sm text-fg-muted">{handleOf(actor)}</span>
-            </span>
+              </Text>
+              <Text dir="ltr" align="start" size="sm" tone="muted">
+                {handleOf(actor)}
+              </Text>
+            </Stack>
           )}
         </DescriptionItem>
         <DescriptionItem term={t(auditTargetKindLabels[entry.target_kind])}>
@@ -210,10 +212,10 @@ function AuditEntryRow({ entry, filter, filterHref }: AuditEntryRowProps) {
         The row stays in the list under the filter its links choose, and so do the links, which then let go of it:
         focus stays on the link that was pressed.
       */}
-      <ul className="flex flex-wrap gap-x-4">
+      <Cluster as="ul" gap="4" rowGap="0">
         {actorId !== undefined && (
           <li>
-            <Link href={filterHref({ ...filter, actor: isActorFilter ? undefined : actorId })} variant="standalone" className="wrap-anywhere">
+            <Link href={filterHref({ ...filter, actor: isActorFilter ? undefined : actorId })} variant="standalone" wrap="anywhere">
               {isActorFilter ? t("client:admin.audit_log.every_actor") : t("client:admin.audit_log.only_actor", { name: isolate(actorName) })}
             </Link>
           </li>
@@ -222,13 +224,13 @@ function AuditEntryRow({ entry, filter, filterHref }: AuditEntryRowProps) {
           <Link
             href={filterHref(isTargetFilter ? { ...filter, target: undefined } : { ...filter, targetKind: entry.target_kind, target: entry.target_id })}
             variant="standalone"
-            className="wrap-anywhere"
+            wrap="anywhere"
           >
             {isTargetFilter ? t("client:admin.audit_log.every_target") : t("client:admin.audit_log.only_target", { target: isolate(entry.target_label) })}
           </Link>
         </li>
-      </ul>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -238,7 +240,7 @@ function AuditTarget({ entry }: { entry: AuditEntry }) {
   const label = entry.target_kind === "domain" ? <DomainName domain={entry.target_id} /> : <span dir="auto">{entry.target_label}</span>;
   if (href === undefined) return label;
   return (
-    <Link href={href} variant="inline" className="wrap-anywhere">
+    <Link href={href} variant="inline" wrap="anywhere">
       {label}
     </Link>
   );

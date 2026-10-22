@@ -3,21 +3,24 @@
 // follow counts and the relationship buttons, then its posts in tabs (WAI-ARIA APG, tabs pattern) whose
 // selection the route keeps in the URL (web-client.md S3), the posts tab starting with its pinned posts.
 import {
-  Avatar,
+  Box,
   EmojiText,
   ExternalLink,
-  type ImageSources,
+  Hint,
   Link,
-  Picture,
   PostContent,
+  ProfileField,
+  ProfileFields,
+  ProfileHeader,
   RoleBadgeList,
+  Stack,
   Tab,
   TabList,
   TabPanel,
   Tabs,
   VisuallyHidden,
 } from "@my/ui";
-import { type ComponentProps, type ReactNode, useId, useState } from "react";
+import { type ComponentProps, type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed, useRemoteFetch } from "../../timeline";
 import { usePinnedStatuses } from "../hooks/usePinnedStatuses";
@@ -59,102 +62,62 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
   ].filter((tag) => tag !== false);
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* The size container of the header and the tabs (web-client.md D2). */}
-      <header className="@container flex flex-col">
-        <HeaderImage sources={imageSources(account.header)} />
-        <div className="flex flex-wrap items-end justify-between gap-3 px-4">
-          <Avatar sources={imageSources(account.avatar)} name={profile.name} decorative size="xl" className="-mt-10 ring-4 ring-surface" />
-          <RelationshipActions account={account} name={profile.name} state={relationship} />
-        </div>
-        <div className="mt-3 flex flex-col gap-3 px-4">
-          <div className="min-w-0 wrap-anywhere">
-            {renderHeading(
-              <span dir="auto">
-                <EmojiText text={profile.name} emojis={account.emojis} />
-              </span>,
-            )}
-            {/* The handle reads left to right, and lines up with the page's start in either direction. */}
-            <p className="text-fg-muted">
-              <span dir="ltr">{profile.handle}</span>
-            </p>
-          </div>
-          <RoleBadgeList label={t("client:profile.badges")} badges={profile.badges} />
-          {tags.length > 0 && (
-            <ul className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <li key={tag} className="rounded-full bg-surface-sunken px-2 py-0.5 text-sm text-fg">
-                  {tag}
-                </li>
-              ))}
-            </ul>
-          )}
-          {profile.note !== null && <PostContent html={profile.note} emojis={account.emojis} onLinkClick={profile.onLinkClick} />}
-          {profile.fields.length > 0 && (
-            <dl className="flex flex-col divide-y divide-border rounded-lg border border-border">
+    <Stack gap="4">
+      <ProfileHeader
+        image={imageSources(account.header)}
+        avatar={imageSources(account.avatar)}
+        name={profile.name}
+        actions={<RelationshipActions account={account} name={profile.name} state={relationship} />}
+        heading={renderHeading(
+          <span dir="auto">
+            <EmojiText text={profile.name} emojis={account.emojis} />
+          </span>,
+        )}
+        handle={profile.handle}
+        badges={<RoleBadgeList label={t("client:profile.badges")} badges={profile.badges} />}
+        tags={tags}
+        note={profile.note !== null && <PostContent html={profile.note} emojis={account.emojis} onLinkClick={profile.onLinkClick} />}
+        fields={
+          profile.fields.length > 0 && (
+            <ProfileFields>
               {profile.fields.map((field) => (
-                <div key={field.key} className="flex flex-col gap-1 px-3 py-2 @md:flex-row @md:gap-4">
-                  <dt dir="auto" className="text-sm font-semibold wrap-anywhere text-fg-muted align-match-parent @md:w-1/3 @md:shrink-0">
-                    <EmojiText text={field.name} emojis={account.emojis} />
-                  </dt>
-                  <dd className="min-w-0">
-                    <PostContent html={field.value} emojis={account.emojis} onLinkClick={profile.onLinkClick} />
-                  </dd>
-                </div>
+                <ProfileField key={field.key} term={<EmojiText text={field.name} emojis={account.emojis} />}>
+                  <PostContent html={field.value} emojis={account.emojis} onLinkClick={profile.onLinkClick} />
+                </ProfileField>
               ))}
-            </dl>
-          )}
-          <p className="text-sm text-fg-muted">
-            {t("client:profile.joined", { date: profile.joined.date })}
-          </p>
-          {(profile.following !== null || profile.followers !== null) && (
-            <ul className="flex flex-wrap gap-x-4 gap-y-1">
-              {profile.following !== null && (
-                <li>
-                  <Link href={profile.following.href} variant="standalone">
-                    {t("client:profile.following_count", { count: profile.following.count })}
-                  </Link>
-                </li>
-              )}
-              {profile.followers !== null && (
-                <li>
-                  <Link href={profile.followers.href} variant="standalone">
-                    {t("client:profile.followers_count", { count: profile.followers.count })}
-                  </Link>
-                </li>
-              )}
-            </ul>
-          )}
-        </div>
-      </header>
+            </ProfileFields>
+          )
+        }
+        joined={t("client:profile.joined", { date: profile.joined.date })}
+        counts={[
+          ...(profile.following === null
+            ? []
+            : [
+                {
+                  key: "following",
+                  content: (
+                    <Link href={profile.following.href} variant="standalone">
+                      {t("client:profile.following_count", { count: profile.following.count })}
+                    </Link>
+                  ),
+                },
+              ]),
+          ...(profile.followers === null
+            ? []
+            : [
+                {
+                  key: "followers",
+                  content: (
+                    <Link href={profile.followers.href} variant="standalone">
+                      {t("client:profile.followers_count", { count: profile.followers.count })}
+                    </Link>
+                  ),
+                },
+              ]),
+        ]}
+      />
       <ProfileTabs accountId={account.id} name={profile.name} original={profile.original} tab={tab} onTabChange={onTabChange} />
-    </div>
-  );
-}
-
-/**
- * The account's header image, or a plain band when it has none or the image fails to load. Either is
- * decorative (`alt=""`, ADR-0027): the name and the profile below it say whose page this is.
- */
-function HeaderImage({ sources }: { sources: ImageSources | undefined }) {
-  // The URL that failed, not a flag: a new src is tried again without resetting state in an Effect.
-  const [failedSrc, setFailedSrc] = useState<string>();
-  const src = sources?.still[0]?.url;
-  if (sources === undefined || src === undefined || src === "" || src === failedSrc) {
-    return <div aria-hidden="true" className="h-24 rounded-lg bg-surface-sunken @md:h-36" />;
-  }
-  return (
-    <Picture
-      sources={sources}
-      // The page's column is at most about 40rem wide.
-      sizes="(min-width: 40rem) 40rem, 100vw"
-      alt=""
-      decoding="async"
-      className="h-24 w-full rounded-lg bg-surface-sunken object-cover @md:h-36"
-      onError={() => {
-        setFailedSrc(src);
-      }}
-    />
+    </Stack>
   );
 }
 
@@ -221,17 +184,19 @@ function AccountPosts({ accountId, filter, original, labelledBy }: AccountPostsP
           ),
         };
   return (
-    <div className="flex flex-col">
+    <Stack>
       {/* Visible only: useRemoteFetch announces it in the app's polite live region, which was in the page before it. */}
       {fetching && (
-        <p className="px-4 py-3 text-sm text-fg-muted">{t("client:profile.remote.fetching")}</p>
+        <Box paddingX="4" paddingY="3">
+          <Hint>{t("client:profile.remote.fetching")}</Hint>
+        </Box>
       )}
       {filter === "posts" ? (
         <PostsWithPinned accountId={accountId} labelledBy={labelledBy} origin={origin} />
       ) : (
         <TimelineFeed timeline={{ kind: "account", id: accountId, filter }} aria-labelledby={labelledBy} {...(origin !== undefined && { origin })} />
       )}
-    </div>
+    </Stack>
   );
 }
 

@@ -11,6 +11,7 @@ import { server } from "../../test/msw/server";
 import { watchAppearances } from "../../test/appearances";
 import { renderApp } from "../../test/render";
 import { newAccountAction, reportFixture } from "./test/handlers";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_reports", "manage_accounts", "view_audit"]));
@@ -161,6 +162,7 @@ describe("the report queue", () => {
     await user.click(screen.getByRole("tab", { name: "Resolved" }));
     expect(await screen.findByText("No action")).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ state: "resolved" });
+    expectSelectedTabControlsPanel("Resolved");
     expect(rows()).toHaveLength(1);
     expect(api.lists).toEqual(["limit=40&state=open", "limit=40&state=resolved"]);
   });

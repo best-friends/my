@@ -10,6 +10,7 @@ import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/m
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { newSignupBlock, signupBlockFixture } from "./test/handlers";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_accounts"]));
@@ -101,6 +102,7 @@ describe("the list of sign-up blocks", () => {
       expect(router.state.location.search).toEqual({ filter: "all" });
     });
     const all = within(screen.getByRole("tabpanel"));
+    expectSelectedTabControlsPanel("All");
     expect(await all.findByRole("heading", { level: 3, name: hash })).toBeInTheDocument();
     expect(all.getByText("Lifted", { selector: "span" })).toBeInTheDocument();
     expect(all.getAllByRole("listitem")).toHaveLength(3);

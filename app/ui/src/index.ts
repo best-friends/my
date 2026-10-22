@@ -121,3 +121,112 @@ export type { TokenKind } from "./tokens";
 export { badgeColors, type BadgeColor } from "./tokens";
 export { themeTokens, type ThemeToken } from "./themeTokens.gen";
 export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./themeContrast";
+
+// Layout and text (web-client.md §16.1, §16.2): screens lay themselves out with these instead of classes of their own.
+export { Box, type BoxProps } from "./Box";
+export { Cluster, type ClusterProps } from "./Cluster";
+export { Grid, type GridProps } from "./Grid";
+export type { LayoutElement, Space } from "./layout";
+export { Stack, type StackProps } from "./Stack";
+export { Heading, type HeadingProps } from "./Heading";
+export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
+export { Hint, InlineError, Text, type HintProps, type InlineErrorProps, type TextElement, type TextProps } from "./Text";
+export { DialogActions, type DialogActionsProps } from "./DialogActions";
+export { Tag, type TagProps } from "./Tag";
+export { Form, type FormProps } from "./Form";
+export {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeader,
+  TableHead,
+  TableRow,
+  TableRowHeader,
+  type TableBodyProps,
+  type TableCellProps,
+  type TableColumnHeaderProps,
+  type TableHeadProps,
+  type TableProps,
+  type TableRowHeaderProps,
+  type TableRowProps,
+} from "./Table";
+export {
+  ProfileField,
+  ProfileFields,
+  ProfileHeader,
+  ProfileHeaderImage,
+  type ProfileFieldProps,
+  type ProfileHeaderCount,
+  type ProfileHeaderImageProps,
+  type ProfileHeaderProps,
+} from "./ProfileHeader";
+export { AccountItem, type AccountItemProps } from "./AccountItem";
+export {
+  PostCardAuthorLink,
+  PostCardAvatarLink,
+  PostCardBoostContext,
+  PostCardNameLink,
+  PostCardOrigin,
+  PostCardTimeLink,
+  type PostCardAuthorLinkProps,
+  type PostCardAvatarLinkProps,
+  type PostCardNameLinkProps,
+  type PostCardOriginProps,
+  type PostCardTimeLinkProps,
+} from "./PostCardParts";
+export { NotificationLinks, NotificationOthers, NotificationSentence, type NotificationOthersProps, type NotificationSentenceProps } from "./NotificationRow";
+export { PostExcerpt, PostExcerptText, QuoteBlock, type PostExcerptProps, type PostExcerptTextProps, type QuoteBlockProps } from "./Quote";
+
+// The app shell (web-client.md §9): the frame, the navigation, the page heading and the routes' states.
+export { AppShell, AsidePanel, type AppShellProps, type AsidePanelProps } from "./AppShell";
+export {
+  AppNav,
+  AppNavAccount,
+  AppNavItem,
+  AppNavMenu,
+  AppNavMenuLink,
+  AppNavMenuList,
+  AppNavMenuSection,
+  type AppNavAccountProps,
+  type AppNavBadge,
+  type AppNavItemProps,
+  type AppNavMenuLinkProps,
+  type AppNavMenuListProps,
+  type AppNavMenuProps,
+  type AppNavMenuSectionProps,
+  type AppNavProps,
+} from "./AppNavigation";
+export { BackLinkHeading, PageHeading, type BackLinkHeadingProps, type PageHeadingProps } from "./PageHeading";
+export { RouteLoading, StandalonePage, type RouteLoadingProps, type StandalonePageProps } from "./RouteStates";
+export { ServerNameLink, type ServerNameLinkProps } from "./ServerNameLink";
+
+// The display of a poll (FR-112).
+export {
+  Poll,
+  PollChoices,
+  PollHint,
+  PollResults,
+  PollSummary,
+  type PollChoicesProps,
+  type PollHintProps,
+  type PollOptionProps,
+  type PollProps,
+  type PollResultsProps,
+  type PollSummaryProps,
+} from "./Poll";
+export { EmojiTile, type EmojiTileProps } from "./EmojiTile";
+export { CodeBlock, type CodeBlockProps } from "./CodeBlock";
+export { PreviewImage, type PreviewImageProps } from "./PreviewImage";
+export { ThemePreview, type ThemePreviewProps } from "./ThemePreview";
+export { ReactionChip, ReactionEmoji, ReactionRow, type ReactionChipProps, type ReactionEmojiProps, type ReactionRowProps } from "./ReactionChip";
+export { DetailSection, type DetailSectionProps } from "./DetailSection";
+export { BannerImage, type BannerImageProps } from "./BannerImage";
+export { IconLabel, type IconLabelProps } from "./IconLabel";
+export { Callout, type CalloutProps } from "./Callout";
+export { CodeList, type CodeListProps } from "./CodeList";
+
+// The parts of the post form (FR-101): an image of a draft, a framed group of controls, the floating compose button.
+export { AttachmentItem, type AttachmentItemProps } from "./AttachmentItem";
+export { Fieldset, type FieldsetProps } from "./Fieldset";
+export { FloatingButton, type FloatingButtonProps } from "./FloatingButton";
+export { OutboxItem, type OutboxItemProps } from "./OutboxItem";
