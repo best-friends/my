@@ -78,7 +78,7 @@ async function serveApi(page: Page, permissions: Schemas["Permission"][], extra:
         name: "my example",
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
-        registrations: { mode: "approval" },
+        registrations: { mode: "approval" }, federation: { mode: "both" },
         limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
         rules: [],
