@@ -181,11 +181,16 @@ export async function expectNoAxeViolations(makeAxeBuilder: () => AxeBuilder): P
 
 /** Asserts that the page does not scroll horizontally at the current viewport width (web-client.md D3). */
 export async function expectNoHorizontalScroll(page: Page): Promise<void> {
-  const { scrollWidth, clientWidth } = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth,
-  }));
-  expect(scrollWidth, `scrollWidth ${scrollWidth}px exceeds clientWidth ${clientWidth}px`).toBeLessThanOrEqual(
+  const { scrollWidth, clientWidth, wide } = await page.evaluate(() => {
+    const clientWidth = document.documentElement.clientWidth;
+    // What lies past the edge outside a table's own scroller, to name the culprit in the failure.
+    const wide = [...document.body.querySelectorAll("*")]
+      .filter((element) => element.getBoundingClientRect().right > clientWidth + 1 && element.closest('[role="group"][tabindex="0"]') === null)
+      .slice(0, 4)
+      .map((element) => `${element.tagName.toLowerCase()} ${Math.round(element.getBoundingClientRect().width)}px`);
+    return { scrollWidth: document.documentElement.scrollWidth, clientWidth, wide };
+  });
+  expect(scrollWidth, `scrollWidth ${scrollWidth}px exceeds clientWidth ${clientWidth}px (past the edge: ${wide.join(", ")})`).toBeLessThanOrEqual(
     clientWidth,
   );
 }

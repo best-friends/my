@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A table to read: rows of values under column headers, each row named by its row header. It is the native `table`,
 // which assistive technology already reads by row and column; a table people select or sort in is React Aria's Table,
-// which the kit does not wrap yet (ADR-0031). It never scrolls sideways: values wrap where `wrap="anywhere"` allows.
+// which the kit does not wrap yet (ADR-0031). The page never scrolls sideways: values wrap where `wrap="anywhere"` allows,
+// and a table of more columns than the width holds scrolls inside its own focusable group (a data table is exempt from
+// WCAG 1.4.10, and stacking its cells would leave them without their column headers).
 import { type ComponentPropsWithRef, createContext, type ReactNode, use, useId } from "react";
 import { tv } from "tailwind-variants";
 
 const table = tv({
   slots: {
+    // relative: the visually hidden parts of the table are absolute and would else escape the scroller and widen the page.
+    scroller: "relative overflow-x-auto outline-none focus-visible:focus-ring",
     root: "w-full",
     caption: "sr-only",
     headRow: "border-b",
     body: "",
     row: "",
     columnHeader: "px-3 py-2 text-start text-xs font-extrabold text-fg-muted wrap-anywhere",
-    rowHeader: "p-3 text-start font-normal",
+    rowHeader: "min-w-48 p-3 text-start font-normal",
     cell: "p-3",
   },
   variants: {
@@ -57,16 +61,19 @@ export type TableProps = Omit<ComponentPropsWithRef<"table">, "className" | "sty
 export function Table({ children, caption, density = "regular", ...props }: TableProps) {
   const captionId = useId();
   const styles = table({ density });
+  const labelledBy = caption === undefined ? props["aria-labelledby"] : captionId;
   return (
     <DensityContext value={density}>
-      <table aria-labelledby={caption === undefined ? undefined : captionId} {...props} className={styles.root()}>
-        {caption !== undefined && (
-          <caption id={captionId} className={styles.caption()}>
-            {caption}
-          </caption>
-        )}
-        {children}
-      </table>
+      <div role="group" aria-labelledby={labelledBy} tabIndex={0} className={styles.scroller()}>
+        <table aria-labelledby={labelledBy} {...props} className={styles.root()}>
+          {caption !== undefined && (
+            <caption id={captionId} className={styles.caption()}>
+              {caption}
+            </caption>
+          )}
+          {children}
+        </table>
+      </div>
     </DensityContext>
   );
 }

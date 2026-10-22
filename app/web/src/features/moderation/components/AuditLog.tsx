@@ -129,32 +129,37 @@ function AuditLogView({ filter, onFilterChange, filterHref, onPagesLoaded }: Aud
             </SelectItem>
           ))}
         </Select>
-        {(filter.actor !== undefined || (filter.targetKind !== undefined && filter.target !== undefined)) && (
-          <DescriptionList columns={2}>
-            {filter.actor !== undefined && (
-              <DescriptionItem term={t("client:admin.audit_log.filter.actor")}>
-                <Cluster as="span" align="baseline" gap="3" rowGap="0">
-                  <span dir="auto">{log.actorAccount === undefined ? t("client:admin.audit_log.filter.actor.unknown") : accountName(log.actorAccount)}</span>
-                  <Link href={filterHref({ ...filter, actor: undefined })} variant="standalone" onPress={cleared}>
-                    {t("client:admin.audit_log.filter.actor.clear")}
-                  </Link>
-                </Cluster>
-              </DescriptionItem>
-            )}
-            {filter.targetKind !== undefined && filter.target !== undefined && (
-              <DescriptionItem term={t("client:admin.audit_log.filter.target")}>
-                <Cluster as="span" align="baseline" gap="3" rowGap="0">
-                  <span dir="auto">{log.targetLabel ?? filter.target}</span>
-                  <Link href={filterHref({ ...filter, target: undefined })} variant="standalone" onPress={cleared}>
-                    {t("client:admin.audit_log.filter.target.clear")}
-                  </Link>
-                </Cluster>
-              </DescriptionItem>
-            )}
-          </DescriptionList>
-        )}
-        {filtered && clearAll}
       </ListToolbar>
+      {/* Beside the selects the list would be as wide as nothing (it is a size container); under them it has the row. */}
+      {filtered && (
+        <Stack gap="3">
+          {(filter.actor !== undefined || (filter.targetKind !== undefined && filter.target !== undefined)) && (
+            <DescriptionList columns={2}>
+              {filter.actor !== undefined && (
+                <DescriptionItem term={t("client:admin.audit_log.filter.actor")}>
+                  <Cluster as="span" align="baseline" gap="3" rowGap="0">
+                    <span dir="auto">{log.actorAccount === undefined ? t("client:admin.audit_log.filter.actor.unknown") : accountName(log.actorAccount)}</span>
+                    <Link href={filterHref({ ...filter, actor: undefined })} variant="standalone" onPress={cleared}>
+                      {t("client:admin.audit_log.filter.actor.clear")}
+                    </Link>
+                  </Cluster>
+                </DescriptionItem>
+              )}
+              {filter.targetKind !== undefined && filter.target !== undefined && (
+                <DescriptionItem term={t("client:admin.audit_log.filter.target")}>
+                  <Cluster as="span" align="baseline" gap="3" rowGap="0">
+                    <span dir="auto">{log.targetLabel ?? filter.target}</span>
+                    <Link href={filterHref({ ...filter, target: undefined })} variant="standalone" onPress={cleared}>
+                      {t("client:admin.audit_log.filter.target.clear")}
+                    </Link>
+                  </Cluster>
+                </DescriptionItem>
+              )}
+            </DescriptionList>
+          )}
+          {clearAll}
+        </Stack>
+      )}
       {/* No key by the filter: the rows' links choose a filter and keep focus on the link pressed; another filter loads only its first page, so the table is back on it. */}
       <RecordTable
         list={log}
