@@ -51,7 +51,7 @@ describe("a new post", () => {
 
     await user.click(within(navigation()).getByRole("link", { name: "Home" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
-    await user.click(await screen.findByRole("button", { name: "Write a post" }));
+    await user.click((await screen.findAllByRole("button", { name: "Write a post" }))[0] as HTMLElement);
     const sheet = await screen.findByRole("dialog", { name: "New post" });
     await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Fresh from the oven");
     await user.click(within(sheet).getByRole("button", { name: "Post" }));

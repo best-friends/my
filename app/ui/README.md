@@ -553,10 +553,13 @@ against viewport breakpoints.
 
 | Component | What it draws | Its props |
 | --- | --- | --- |
-| `AppShell` | The skip link, the navigation, `main` (padded at its end for the tab bar and the floating button) and the third column (xl) or the floating slot | `navigation`, `children`, `skipLinkLabel`, `mainId`, `mainRef`, `aside` (only where the third column shows), `floating`, `floatingVisible` (sets `data-compose-fab` on `main`, which `with-compose-fab:` and the app's `scroll-padding-block-end` follow) |
+| `AppShell` | The skip link, the navigation, `main` (padded at its end for the tab bar) and the third column (xl) | `navigation`, `children`, `skipLinkLabel`, `mainId`, `mainRef`, `aside` (only where the third column shows), `navigationPlacement` (`side` / `top`: the signed-out top bar above the page) |
 | `AsidePanel` | A section of the third column: an `aside` named by its small muted `h2` | `heading`, `children` |
-| `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` and `footer` (sidebar only), the items as children |
-| `AppNavItem` | An item: the icon in a pill (filled when current), the label, the count's `Badge` | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
+| `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` (the wordmark and server name: `AppNavBrand`), `action` (the rail's button: `AppNavAction`), `footer` (sidebar only), `placement` (`side` / `top`), the items as children |
+| `AppNavItem` | An item: a `RailItem` (icon, label, count's `Badge`; soft fill when current) | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
+| `AppNavCompose` | The tab bar's coral new-post button, an item of the list (below md only) | `label`, `icon`, `onPress` |
+| `AppNavAction` | The rail's one `primary` button after the items: icon alone in the md rail, with its label from lg | `label`, `icon`, `onPress` |
+| `RailItem` | A navigation link: icon, label, optional count; `aria-current="page"` is soft-filled with an accent label | `href`, `icon`, `label`, `current`, `badge`, `form` (`tab` / `row` / `top`), `prominent`, `classNames` |
 | `AppNavMenu` | The tab bar's last item, a button that opens a `Sheet` | `label`, `badge`, `isOpen`, `onOpenChange`, `title`, `closeLabel`, the sheet's content |
 | `AppNavMenuList`, `AppNavMenuLink`, `AppNavMenuSection` | The sheet's list and its rows; a block under them, with a line above (`separator` `"3"` / `"4"`) or without | as `AppNavItem` but `shows`; `separator` |
 | `AppNavAccount` | The sidebar's signed-in account: avatar, display name and handle | `href`, `avatar`, `name`, `handle`, `description` |
@@ -622,7 +625,6 @@ Counts in `details` are `<Text numeric>`; several parts under a body are a `<Sta
 | `AttachmentItem` | An image of a draft: the `li` of a `<Stack as="ul">` with the preview, a `progressLabel` band (spinner) over it, and the description field, error and actions as children; a column below `@md` of the container |
 | `OutboxItem` | A post waiting to be sent: the `li` of a `<Stack as="ul">` with its text; `sendingLabel` (`aria-busy`, spinner) while it is sent, else `error` and the retry / edit / discard buttons as children |
 | `Fieldset` | A `fieldset` framed with a `legend` (`gap-3` between its controls); other attributes (`aria-describedby`) pass to the `fieldset` |
-| `FloatingButton` | The round primary button that starts the page's main action: `label`, `icon`, `iconOnly` (a 3rem circle named by `aria-label`, with the label as a tooltip); its place on the page is `AppShell`'s |
 | `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
 | `PostContent` `framed` | A border and padding around a post body shown as a preview |
 | `PostContent` `size="sm"` `lineClamp={3}` | An excerpt of a post in a form (the reply target), cut after three lines |

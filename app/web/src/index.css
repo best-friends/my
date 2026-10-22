@@ -17,33 +17,17 @@
   }
   /* Below md the navigation is a tab bar fixed to the bottom edge: scroll focused elements clear of it
      (web-client.md Y4). Its height is the min-h-16 of its links (min-h-12 on short screens) plus the
-     safe-area inset. On pages with the floating new-post button (data-compose-fab on the main of @my/ui AppShell)
-     they also clear the button: 3rem above the tab bar with a 1rem gap (0.5rem on short screens), or in the
-     corner from md. From xl the form is a side panel and nothing floats. */
+     safe-area inset. From md it is a side rail and nothing is fixed to the bottom edge. */
   :root {
     scroll-padding-block-end: calc(4rem + env(safe-area-inset-bottom));
-  }
-  :root:has([data-compose-fab]) {
-    scroll-padding-block-end: calc(8.5rem + env(safe-area-inset-bottom));
   }
   @variant short {
     :root {
       scroll-padding-block-end: calc(3rem + env(safe-area-inset-bottom));
     }
-    :root:has([data-compose-fab]) {
-      scroll-padding-block-end: calc(7rem + env(safe-area-inset-bottom));
-    }
   }
   @variant md {
     :root {
-      scroll-padding-block-end: 0;
-    }
-    :root:has([data-compose-fab]) {
-      scroll-padding-block-end: calc(5rem + env(safe-area-inset-bottom));
-    }
-  }
-  @variant xl {
-    :root:has([data-compose-fab]) {
       scroll-padding-block-end: 0;
     }
   }

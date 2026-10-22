@@ -56,9 +56,9 @@ async function signIn(page: Page, email: string, password: string): Promise<void
   await expect(pageHeading(page)).toHaveText(message("home.title"));
 }
 
-/** Posts `text` from the new-post form: the sheet below Tailwind's xl, the panel that is always there above it. */
+/** Posts `text` from the new-post sheet, opened by the navigation's button. */
 async function post(page: Page, text: string): Promise<void> {
-  if ((page.viewportSize()?.width ?? 0) < 1280) await page.getByRole("button", { name: message("compose.open") }).click();
+  await page.getByRole("button", { name: message("compose.open") }).click();
   const form = page.getByRole("form", { name: message("compose.title") });
   await form.getByRole("textbox", { name: message("compose.text.label") }).fill(text);
   await form.getByRole("button", { name: message("compose.submit") }).click();

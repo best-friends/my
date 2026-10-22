@@ -84,11 +84,9 @@ async function slowDown(page: Page): Promise<void> {
   });
 }
 
-/** Posts `text` from the new-post form (a sheet below 1280 px, the side panel from there) and waits until it is done. */
+/** Posts `text` from the new-post sheet, opened by the navigation's button, and waits until it is done. */
 async function post(page: Page, text: string): Promise<void> {
-  if ((page.viewportSize()?.width ?? 0) < 1280) {
-    await page.getByRole("button", { name: message("compose.open") }).click();
-  }
+  await page.getByRole("button", { name: message("compose.open") }).click();
   const form = page.getByRole("form", { name: message("compose.title") });
   await form.getByRole("textbox", { name: message("compose.text.label") }).fill(text);
   // The toast of an earlier post would pass for this one's: it goes after 5 s, unless the pointer is over it.

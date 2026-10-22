@@ -279,12 +279,9 @@
 }
 
 /* A short screen below md, such as a phone in landscape or a 320 × 225 viewport at 400% zoom: the tab bar
-   and the floating new-post button shrink so that the fixed elements stay within half the screen's height.
+   and its coral new-post button shrink so that the fixed elements stay within half the screen's height.
    The app shell only (AppShell, AppNavigation, OfflineBanner; web-client.md D2). */
 @custom-variant short (@media (width < 48rem) and (height <= 32rem));
-/* While the page floats the new-post button (data-compose-fab on main, AppShell's floatingVisible), for
-   the other elements fixed to the bottom edge that must stand clear of it (web-client.md G4). */
-@custom-variant with-compose-fab (:root:has([data-compose-fab]) &);
 
 /* A visible focus indicator. Use it as `focus-visible:focus-ring` (or `data-focus-visible:focus-ring`
    on React Aria Components); an outline survives forced-colors mode, unlike a box-shadow. */

@@ -45,6 +45,8 @@ import {
   AdminIcon,
   AppNav,
   AppNavAccount,
+  AppNavAction,
+  AppNavCompose,
   AppNavBrand,
   type AppNavBadge,
   AppNavItem,
@@ -56,12 +58,14 @@ import {
   FinanceIcon,
   Link,
   ModerationIcon,
+  PlusIcon,
   SignInIcon,
   SignUpIcon,
   Text,
 } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useState } from "react";
+import { useOpenCompose } from "../../features/compose";
 import { useAdminEntry } from "../../features/admin";
 import { useFinanceEntry } from "../../features/costs";
 import { DocumentLinks } from "../../features/documents";
@@ -191,6 +195,9 @@ function inSection(pathname: string, section: Section, ownAcct: string | null): 
 type ItemBadge = AppNavBadge | undefined;
 
 /** Whether nobody is signed in (offline, a session that could not be resumed counts as still there): the pages then have a top bar. */
+/** Where the tab bar's coral new-post button stands: after this many links, the centre of the five. */
+const composeTabIndex = 2;
+
 export function useSignedOut(): boolean {
   const status = useSessionStatus();
   const unreachable = useSessionUnreachable();
@@ -212,6 +219,7 @@ export function Navigation() {
   const viewer = useViewer();
   const ownAcct = viewer.status === "signed-in" ? viewer.account.acct : null;
   const timelines = useTimelineAvailability();
+  const openCompose = useOpenCompose();
   // The user's shown items in their order, the first ones in the tab bar, then the staff's areas.
   const userItems = useNavigationEntries()
     .filter((entry) => entry.shown)
@@ -253,21 +261,27 @@ export function Navigation() {
       }
       // Signed out, the navigation is a light bar along the top (AppLayout puts it above the page).
       placement={signedOut ? "top" : "side"}
+      action={openCompose === null ? undefined : <AppNavAction label={t("client:compose.open")} icon={<PlusIcon />} onPress={openCompose} />}
       footer={<ViewerLink />}
     >
-      {shown.map((item) => {
+      {shown.map((item, index) => {
         const badge = badgeOf(item.section);
         return (
-          <AppNavItem
-            key={item.id}
-            href={item.href}
-            icon={item.icon}
-            label={t(item.label)}
-            current={current(item.section)}
-            shows={item.shows}
-            {...(item.id === "sign-up" && { prominent: true })}
-            {...(badge !== undefined && { badge })}
-          />
+          <Fragment key={item.id}>
+            {/* The tab bar's coral button is its centre item, among the first links (the rail has its own button). */}
+            {index === composeTabIndex && openCompose !== null && (
+              <AppNavCompose label={t("client:compose.open")} icon={<PlusIcon />} onPress={openCompose} />
+            )}
+            <AppNavItem
+              href={item.href}
+              icon={item.icon}
+              label={t(item.label)}
+              current={current(item.section)}
+              shows={item.shows}
+              {...(item.id === "sign-up" && { prominent: true })}
+              {...(badge !== undefined && { badge })}
+            />
+          </Fragment>
         );
       })}
       {status !== "unknown" && <NavigationMenu items={shown.filter((item) => item.shows === "rail")} current={current} badgeOf={badgeOf} />}

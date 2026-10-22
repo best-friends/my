@@ -4,10 +4,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
-import { AppNav, AppNavAccount, AppNavBrand, AppNavItem, AppNavMenu, AppNavMenuLink, AppNavMenuList, AppNavMenuSection, type AppNavBadge } from "./AppNavigation";
+import { AppNav, AppNavAccount, AppNavAction, AppNavBrand, AppNavCompose, AppNavItem, AppNavMenu, AppNavMenuLink, AppNavMenuList, AppNavMenuSection, type AppNavBadge } from "./AppNavigation";
 import { AppShell, AsidePanel } from "./AppShell";
 import { Avatar } from "./Avatar";
-import { Button } from "./Button";
 import {
   AdminIcon,
   BookmarkIcon,
@@ -90,6 +89,7 @@ function SampleNav({ labels: l = labels, serverName = "my example", accountName 
     <AppNav
       label="Main"
       header={<Brand name={serverName} />}
+      action={<AppNavAction label="Write a post" icon={<PlusIcon />} onPress={() => undefined} />}
       footer={
         <AppNavAccount
           href="#profile"
@@ -103,6 +103,7 @@ function SampleNav({ labels: l = labels, serverName = "my example", accountName 
       <AppNavItem href="#home" icon={<HomeIcon />} label={l.home} current />
       <AppNavItem href="#local" icon={<LocalIcon />} label={l.local} />
       <AppNavItem href="#public" icon={<FederatedIcon />} label={l.federated} />
+      <AppNavCompose label="Write a post" icon={<PlusIcon />} onPress={() => undefined} />
       <AppNavItem href="#notifications" icon={<NotificationsIcon />} label={l.notifications} badge={unread} />
       <AppNavItem href="#search" icon={<SearchIcon />} label={l.search} />
       <AppNavItem href="#profile" icon={<ProfileIcon />} label={l.profile} shows="rail" />
@@ -153,17 +154,8 @@ function SamplePage() {
   );
 }
 
-/** A stand-in for the new-post button, whose own look is not the shell's. */
-const floatingButton = (
-  <Button variant="primary" aria-label="New post">
-    <PlusIcon />
-  </Button>
-);
-
-/** The third column: a stand-in for the new-post form, and the server's information. */
+/** The third column: the server's information. */
 const aside = (
-  <>
-    <Hint>The new-post form goes here.</Hint>
     <AsidePanel heading="About this server">
       <ServerNameLink name="my example" description="The server's top page" size="lg" />
       <Hint>Handles on this server end with @my.example</Hint>
@@ -173,7 +165,6 @@ const aside = (
         </Link>
       </Text>
     </AsidePanel>
-  </>
 );
 
 const meta = {
@@ -201,24 +192,13 @@ export const Phone: Story = {
     // The rail's items, the server's name and the account are not in the tab bar.
     await expect(within(nav).queryByRole("link", { name: "Bookmarks" })).toBeNull();
     await expect(within(nav).queryByRole("link", { name: "my example" })).toBeNull();
-    await expect(canvas.getByRole("main")).not.toHaveAttribute("data-compose-fab");
+    await expect(within(nav).getByRole("button", { name: "Write a post" })).toBeVisible();
   },
 };
 
-/** Phones on a page with a feed: the floating button above the tab bar, and the page's end clear of both. */
-export const PhoneWithFloatingButton: Story = {
-  globals: atViewport("phone"),
-  args: { floating: floatingButton, floatingVisible: true },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "New post" })).toBeVisible();
-    await expect(canvas.getByRole("main")).toHaveAttribute("data-compose-fab", "");
-  },
-};
-
-/** A short screen (a phone in landscape, 400% zoom): the smaller tab bar and the button closer to it. */
+/** A short screen (a phone in landscape, 400% zoom): the smaller tab bar and its smaller coral button. */
 export const ShortScreen: Story = {
   globals: atViewport("short"),
-  args: { floating: floatingButton, floatingVisible: true },
 };
 
 /** The menu's sheet, open: the rail's items with the current one and their counts, then the server's links. */
@@ -232,13 +212,13 @@ export const PhoneMenuOpen: Story = {
   },
 };
 
-/** Tablets (md): the rail of icons with short labels, every item, and the floating button in the corner. */
+/** Tablets (md): the rail of icons with short labels, every item, and the icon-only new-post button. */
 export const Tablet: Story = {
   globals: atViewport("tablet"),
-  args: { floating: floatingButton, floatingVisible: true },
   play: async ({ canvas }) => {
     const nav = canvas.getByRole("navigation", { name: "Main" });
     await expect(within(nav).getByRole("link", { name: "Moderation, 12 pending" })).toBeVisible();
+    await expect(within(nav).getByRole("button", { name: "Write a post" })).toBeVisible();
     await expect(within(nav).queryByRole("button", { name: /^Menu/ })).toBeNull();
   },
 };
@@ -246,7 +226,6 @@ export const Tablet: Story = {
 /** Laptops (lg): the sidebar with full labels, the server's name above the list and the account below it. */
 export const Laptop: Story = {
   globals: atViewport("laptop"),
-  args: { floating: floatingButton, floatingVisible: true },
   play: async ({ canvas }) => {
     const nav = canvas.getByRole("navigation", { name: "Main" });
     await expect(within(nav).getByRole("link", { name: "my example" })).toBeVisible();
@@ -254,7 +233,7 @@ export const Laptop: Story = {
   },
 };
 
-/** Desktops (xl): the third column with the new-post form and the server's information; nothing floats. */
+/** Desktops (xl): the third column with the server's information. */
 export const Desktop: Story = {
   globals: atViewport("desktop"),
   args: { aside },

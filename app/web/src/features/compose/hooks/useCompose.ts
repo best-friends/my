@@ -8,17 +8,13 @@ import { cacheReplyTarget, type Status } from "../api/compose";
 import { type ComposeState, DraftStore } from "./draftStore";
 import { replyMentions } from "./policy";
 
-/** Where the form is: always on screen in a side panel (wide screens), or in a sheet opened by a button. */
-export type ComposeLayout = "panel" | "sheet";
-
 /** The id of the post's text area, which a reply focuses. Only one form is on the page at a time. */
 export const composeTextId = "compose-text";
 
-/** What the compose provider shares; it changes only when the account, the layout or the sheet changes. */
+/** What the compose provider shares; it changes only when the account or the sheet changes. */
 export type ComposeController = {
   accountId: string;
   store: DraftStore;
-  layout: ComposeLayout;
   isSheetOpen: boolean;
   setSheetOpen: (isOpen: boolean) => void;
   /** Starts a reply to `status`: the form names it and starts with its mentions, then gets focus. */
@@ -30,7 +26,7 @@ export type ComposeController = {
 export const ComposeContext = createContext<ComposeController | null>(null);
 
 /** The controller for the signed-in viewer, or null while nobody is signed in. */
-export function useComposeController(layout: ComposeLayout): ComposeController | null {
+export function useComposeController(): ComposeController | null {
   const viewer = useViewer();
   const api = useApi();
   const queryClient = useQueryClient();
@@ -47,7 +43,6 @@ export function useComposeController(layout: ComposeLayout): ComposeController |
   return {
     accountId,
     store: draftStore,
-    layout,
     isSheetOpen,
     setSheetOpen: setIsSheetOpen,
     reply(status) {
@@ -58,14 +53,12 @@ export function useComposeController(layout: ComposeLayout): ComposeController |
         text: draft.text.trim() === "" ? replyMentions(status, accountId) : draft.text,
       });
       cacheReplyTarget(api, queryClient, status);
-      if (layout === "sheet") setIsSheetOpen(true);
-      else document.getElementById(composeTextId)?.focus();
+      setIsSheetOpen(true);
     },
     quote(status) {
       draftStore.edit({ quoteId: status.id });
       cacheReplyTarget(api, queryClient, status);
-      if (layout === "sheet") setIsSheetOpen(true);
-      else document.getElementById(composeTextId)?.focus();
+      setIsSheetOpen(true);
     },
   };
 }

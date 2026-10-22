@@ -149,17 +149,10 @@ async function navigate(page: Page, label: "home" | "local" | "notifications" | 
   await expect(pageHeading(page)).toHaveText(message(`${label}.title`));
 }
 
-/** Whether the project's viewport shows the new-post form as a side panel (Tailwind's xl). */
-function isWide(page: Page): boolean {
-  return (page.viewportSize()?.width ?? 0) >= 1280;
-}
-
-/** Opens the new-post form (the sheet, or the panel that is always there) and returns it. */
+/** Opens the new-post form from the navigation's button (the tab bar's or the rail's) and returns it. */
 async function openComposer(page: Page) {
-  if (!isWide(page)) {
-    await page.getByRole("button", { name: message("compose.open") }).click();
-    await expect(page.getByRole("dialog", { name: message("compose.title") })).toBeVisible();
-  }
+  await page.getByRole("button", { name: message("compose.open") }).click();
+  await expect(page.getByRole("dialog", { name: message("compose.title") })).toBeVisible();
   const form = page.getByRole("form", { name: message("compose.title") });
   await expect(form.getByRole("textbox", { name: message("compose.text.label") })).toBeVisible();
   return form;
