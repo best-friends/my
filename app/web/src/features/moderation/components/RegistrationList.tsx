@@ -4,7 +4,7 @@
 // changed afterwards, so both ask first in an alert dialog (ConfirmDialog, NFR-MOD-7) that takes an optional
 // note for the moderators. A decided registration leaves the list, focus moves to the next one's buttons
 // (lib/useFocusAfterRemoval), and the result stays above the list in a StatusMessage (role="status").
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, ReasonField, StatusMessage } from "@my/ui";
+import { Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, Heading, ReasonField, SectionHeader, Stack, StatusMessage, Text } from "@my/ui";
 import { useRef } from "react";
 import { type Translate, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
@@ -54,7 +54,7 @@ function Registrations() {
   );
   const review = useRegistrationReview(removed);
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       <StatusMessage>{review.status}</StatusMessage>
       <RecordList
         list={list}
@@ -65,7 +65,7 @@ function Registrations() {
         {(registration) => <RegistrationRow registration={registration} review={review} />}
       </RecordList>
       <DecisionDialog review={review} />
-    </div>
+    </Stack>
   );
 }
 
@@ -74,13 +74,10 @@ function RegistrationRow({ registration, review }: { registration: Registration;
   const applicant = applicantInText(t, registration);
   const handle = registration.username === undefined ? undefined : `@${registration.username}`;
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        <h2 className="font-semibold wrap-anywhere">
-          {/* A username reads left to right in every locale. */}
-          {handle === undefined ? t("client:admin.registrations.account_gone") : <span dir="ltr">{handle}</span>}
-        </h2>
-        <div className="flex flex-wrap gap-2">
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          <>
           {decisions.map((decision) => {
             const texts = decisionTexts(t, decision, applicant);
             return (
@@ -97,8 +94,14 @@ function RegistrationRow({ registration, review }: { registration: Registration;
               </Button>
             );
           })}
-        </div>
-      </div>
+          </>
+        }
+      >
+        <Heading level={2} size="subsection" wrap="anywhere">
+          {/* A username reads left to right in every locale. */}
+          {handle === undefined ? t("client:admin.registrations.account_gone") : <span dir="ltr">{handle}</span>}
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.registrations.submitted_at")}>
           <DateTime value={registration.submitted_at} />
@@ -107,9 +110,9 @@ function RegistrationRow({ registration, review }: { registration: Registration;
           {registration.email === "" ? (
             t("client:admin.registrations.email.none")
           ) : (
-            <span dir="ltr" className="wrap-anywhere">
+            <Text dir="ltr" wrap="anywhere">
               {registration.email}
-            </span>
+            </Text>
           )}
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.registrations.email_verified")}>
@@ -125,13 +128,13 @@ function RegistrationRow({ registration, review }: { registration: Registration;
             t("client:admin.registrations.reason.none")
           ) : (
             // Written by the applicant, in any language and direction (web-client.md Y10).
-            <span dir="auto" className="whitespace-pre-wrap wrap-anywhere">
+            <Text dir="auto" whitespace="preWrap" wrap="anywhere">
               {registration.reason}
-            </span>
+            </Text>
           )}
         </DescriptionItem>
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }
 
