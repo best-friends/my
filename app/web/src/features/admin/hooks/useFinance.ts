@@ -28,6 +28,7 @@ import {
   costTotalsQueryOptions,
   createCostItemMutation,
   type IncomeMovement,
+  type IncomeMovementFilter,
   incomeMovementsQueryOptions,
   maxCostInterval,
   refreshBillingImports,
@@ -57,10 +58,42 @@ export function useAdminIncomeTotals(granularity: CostGranularity, basis: CostBa
   return useSuspenseQuery(adminIncomeTotalsQueryOptions(api, granularity, basis, today)).data;
 }
 
-/** The payment provider's money movements of the income, newest first. */
-export function useIncomeMovements(): PagedList<IncomeMovement> {
+/** The payment provider's money movements of the income, newest first, narrowed by the filter. */
+export function useIncomeMovements(filter: IncomeMovementFilter): PagedList<IncomeMovement> {
   const api = useApi();
-  return toPagedList(useSuspenseInfiniteQuery(incomeMovementsQueryOptions(api)));
+  return toPagedList(useSuspenseInfiniteQuery(incomeMovementsQueryOptions(api, filter)));
+}
+
+/** The dates of the movements' filter as typed: empty is no date. */
+export type MovementDatesDraft = { from: string; to: string };
+
+/**
+ * The dates of the movements' filter, typed and applied at once (a date field changes its value while the year is
+ * typed, digit by digit). The draft follows the filter in the URL when it changes there (back and forward, clearing
+ * the filters), as react.dev's "Adjusting some state when a prop changes" does; a last date before the first is not
+ * applied and says why.
+ */
+export function useMovementDates(filter: IncomeMovementFilter, onFilterChange: (filter: IncomeMovementFilter) => void) {
+  const t = useT();
+  const [shown, setShown] = useState({ from: filter.from, to: filter.to });
+  const [draft, setDraft] = useState<MovementDatesDraft>({ from: filter.from ?? "", to: filter.to ?? "" });
+  if (shown.from !== filter.from || shown.to !== filter.to) {
+    setShown({ from: filter.from, to: filter.to });
+    setDraft({ from: filter.from ?? "", to: filter.to ?? "" });
+  }
+  const toError = draft.from !== "" && draft.to !== "" && draft.to < draft.from ? t("client:admin.finance.movements.filter.to_before_from") : undefined;
+  return {
+    draft,
+    change: (patch: Partial<MovementDatesDraft>) => {
+      setDraft((current) => ({ ...current, ...patch }));
+    },
+    toError,
+    submit: (event: SyntheticEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (toError !== undefined) return;
+      onFilterChange({ ...filter, from: draft.from === "" ? undefined : draft.from, to: draft.to === "" ? undefined : draft.to });
+    },
+  };
 }
 
 /** The state of the imports of every billing source, in the order of billing_sources. */

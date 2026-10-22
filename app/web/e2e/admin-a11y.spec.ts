@@ -515,6 +515,7 @@ const incomeMovement: Schemas["IncomeMovement"] = {
   kind: "payment",
   subscription_id: "0192f0c4-7a8e-7000-8000-0000000000d2",
   account_id: "0192f0c4-7a8e-7000-8000-0000000000d3",
+  username: "carol",
   occurred_at: "2026-10-10T03:00:00Z",
   occurred_on: "2026-10-10",
   covers_starts_on: "2026-10-10",

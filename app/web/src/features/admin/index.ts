@@ -52,6 +52,8 @@ export {
   billingImportsQueryOptions,
   costItemsQueryOptions,
   costTotalsQueryOptions,
+  type IncomeMovementFilter,
+  incomeKinds,
   incomeMovementsQueryOptions,
 } from "./api/finance";
 export { FinanceSettings } from "./components/FinanceSettings";
