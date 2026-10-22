@@ -11,7 +11,7 @@ export type IconLabelProps = {
 /** An icon and the word it stands for on one line, such as the name of a page in a list of pages. */
 export function IconLabel({ icon, children }: IconLabelProps) {
   return (
-    <span className="flex min-w-0 items-center gap-2 wrap-anywhere [&_svg]:size-5 [&_svg]:shrink-0">
+    <span className="flex min-w-0 items-center gap-2 font-extrabold wrap-anywhere [&_svg]:size-5 [&_svg]:shrink-0">
       {icon}
       {children}
     </span>
