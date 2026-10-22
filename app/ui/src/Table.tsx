@@ -12,7 +12,7 @@ const table = tv({
     headRow: "border-b",
     body: "",
     row: "",
-    columnHeader: "py-2 pe-3 text-start last:pe-0",
+    columnHeader: "py-2 pe-3 text-start wrap-anywhere last:pe-0",
     rowHeader: "py-2 pe-3 text-start font-normal last:pe-0",
     cell: "py-2 pe-3 last:pe-0",
   },
