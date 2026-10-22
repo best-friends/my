@@ -105,7 +105,9 @@ func runPR(r *repo.Repo, args []string) error {
 		if err != nil {
 			return err
 		}
-		res := ops.Wait(n, *timeout, *interval, *all, dir)
+		branch, _ := r.Branch()
+		head, _ := repo.Git(r.Root, "rev-parse", "HEAD")
+		res := ops.Wait(n, branch, strings.TrimSpace(head), *timeout, *interval, *all, dir)
 		fmt.Println(strings.Join(res.Lines, "\n"))
 		if res.Code != 0 {
 			return exitError{res.Code, ""}

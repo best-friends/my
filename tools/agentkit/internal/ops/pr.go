@@ -218,13 +218,14 @@ type prState struct {
 	Mergeable         string  `json:"mergeable"`
 	URL               string  `json:"url"`
 	HeadRefOid        string  `json:"headRefOid"`
+	HeadRefName       string  `json:"headRefName"`
 	StatusCheckRollup []check `json:"statusCheckRollup"`
 	AutoMergeRequest  *struct {
 		EnabledAt string `json:"enabledAt"`
 	} `json:"autoMergeRequest"`
 }
 
-const prFields = "number,title,state,mergeable,url,headRefOid,statusCheckRollup,autoMergeRequest"
+const prFields = "number,title,state,mergeable,url,headRefOid,headRefName,statusCheckRollup,autoMergeRequest"
 
 func viewPR(n int) (prState, error) {
 	var p prState
@@ -268,8 +269,10 @@ var reJob = regexp.MustCompile(`/actions/runs/\d+/job/(\d+)`)
 
 // Wait polls a pull request until its CI ends, it conflicts, it merges, or the timeout passes. With all false
 // it returns at the first failed check instead of waiting for the others. A failure comes with the failing
-// lines of the failed jobs' logs, which are saved under logDir.
-func Wait(n int, timeout, interval time.Duration, all bool, logDir string) WaitResult {
+// lines of the failed jobs' logs, which are saved under logDir. When the pull request's branch is branch, the
+// checks count only once its head is head, so that a wait right after a push does not read the previous
+// commit's results.
+func Wait(n int, branch, head string, timeout, interval time.Duration, all bool, logDir string) WaitResult {
 	deadline := time.Now().Add(timeout)
 	started := time.Now()
 	for {
@@ -281,6 +284,8 @@ func Wait(n int, timeout, interval time.Duration, all bool, logDir string) WaitR
 			return WaitResult{0, []string{fmt.Sprintf("PR #%d is merged", n)}}
 		case p.State == "CLOSED":
 			return WaitResult{1, []string{fmt.Sprintf("PR #%d is closed", n)}}
+		case p.HeadRefName == branch && head != "" && p.HeadRefOid != head:
+			// GitHub has not seen the push yet.
 		case p.Mergeable == "CONFLICTING":
 			return WaitResult{3, []string{fmt.Sprintf("PR #%d conflicts with its base: CI does not run. Merge origin/main, regenerate generated files (agentkit regen), agentkit check, push (workflow.md §7)", n)}}
 		default:
