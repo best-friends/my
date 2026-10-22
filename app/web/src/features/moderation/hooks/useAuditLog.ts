@@ -84,6 +84,7 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   custom_emoji_request_withdrawn: "client:admin.audit_log.action.custom_emoji_request_withdrawn",
   custom_emoji_request_approved: "client:admin.audit_log.action.custom_emoji_request_approved",
   custom_emoji_request_rejected: "client:admin.audit_log.action.custom_emoji_request_rejected",
+  payment_reconcile_queued: "client:admin.audit_log.action.payment_reconcile_queued",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -108,6 +109,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   supporter_plan: "client:admin.audit_log.target_kind.supporter_plan",
   supporter_subscription: "client:admin.audit_log.target_kind.supporter_subscription",
   custom_emoji_request: "client:admin.audit_log.target_kind.custom_emoji_request",
+  payment_provider: "client:admin.audit_log.target_kind.payment_provider",
 };
 
 /** Who performed an operation without a user's account to show. */
@@ -162,7 +164,9 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "supporter_program":
     case "supporter_plan":
     case "supporter_subscription":
-      // The supporters screen shows the program, every plan (retired ones too) and the subscriptions.
+    case "payment_provider":
+      // The supporters screen shows the program, every plan (retired ones too), the subscriptions and the
+      // state of the payment provider.
       return "/admin/supporters";
     case "custom_emoji_request":
       // A request has no screen of its own: the requests of the custom emoji screen, in every state.

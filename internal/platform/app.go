@@ -755,6 +755,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Costs: a.Finance, Income: a.Finance,
 		// The supporter program (ADR-0072) and the page of its commerce disclosures (§13).
 		Supporters: a.Supporters, OwnSupporters: a.Supporters, CommerceDisclosurePath: authpages.PathCommerceDisclosure,
+		// The payment provider's state and the reconciliation by hand (ADR-0074 §4).
+		Payments:    a.paymentsAPI(),
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})

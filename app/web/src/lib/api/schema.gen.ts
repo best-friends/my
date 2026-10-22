@@ -4854,6 +4854,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/payment_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the state of the payment provider
+         * @description The payment provider of the deployment's configuration (ADR-0074 §4): its name and mode
+         *     (test or live), when it last delivered a webhook, and the last attempt of the
+         *     reconciliation with its failure. `warnings` names the signs of a webhook that is not set
+         *     up right: no delivery is recorded, or the last reconciliation corrected subscriptions
+         *     that the webhooks had not. A deployment without a payment provider is a 404. Needs the
+         *     `manage_supporters` permission.
+         */
+        get: operations["getPaymentStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/payment_reconciles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile with the payment provider now
+         * @description Queues a reconciliation with the payment provider now, besides the periodic one
+         *     (ADR-0074 §4). Its requests count toward `payments_reconcile_max_requests` like the
+         *     others. One per UTC hour: another request in the hour after its reconciliation ran is a
+         *     429. A deployment without a payment provider is a 404. The request is recorded in the
+         *     audit log. Needs the `manage_supporters` permission.
+         */
+        post: operations["runPaymentReconcile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/supporter_program": {
         parameters: {
             query?: never;
@@ -5466,10 +5515,12 @@ export interface components {
          *     `custom_emoji_request_submitted` and `custom_emoji_request_withdrawn` by the requester, and
          *     `custom_emoji_request_approved` (which also records the emoji's `custom_emoji_created` or
          *     `custom_emoji_image_replaced`) and `custom_emoji_request_rejected`; the label is the
-         *     `:shortcode:` of the request.
+         *     `:shortcode:` of the request. On a `payment_provider`: `payment_reconcile_queued`, a
+         *     reconciliation with the payment provider started by hand; the ID and the label are the
+         *     provider's name (`stripe`).
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued" | "billing_import_queued" | "cost_item_created" | "cost_item_relabeled" | "cost_item_price_revised" | "cost_item_end_changed" | "cost_item_canceled" | "supporter_program_enabled" | "supporter_program_disabled" | "supporter_plan_created" | "supporter_plan_revised" | "supporter_plan_retired" | "supporter_subscription_canceled" | "custom_emoji_request_submitted" | "custom_emoji_request_withdrawn" | "custom_emoji_request_approved" | "custom_emoji_request_rejected";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued" | "billing_import_queued" | "cost_item_created" | "cost_item_relabeled" | "cost_item_price_revised" | "cost_item_end_changed" | "cost_item_canceled" | "supporter_program_enabled" | "supporter_program_disabled" | "supporter_plan_created" | "supporter_plan_revised" | "supporter_plan_retired" | "supporter_subscription_canceled" | "custom_emoji_request_submitted" | "custom_emoji_request_withdrawn" | "custom_emoji_request_approved" | "custom_emoji_request_rejected" | "payment_reconcile_queued";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -5526,7 +5577,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay" | "billing_source" | "cost_item" | "supporter_program" | "supporter_plan" | "supporter_subscription" | "custom_emoji_request";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay" | "billing_source" | "cost_item" | "supporter_program" | "supporter_plan" | "supporter_subscription" | "custom_emoji_request" | "payment_provider";
         /** @description The time a remote server was marked unavailable or available again, and why. */
         AdminAvailabilityEvent: {
             id: components["schemas"]["Id"];
@@ -8356,6 +8407,58 @@ export interface components {
              *     passkeys sign in.
              */
             has_password: boolean;
+        };
+        /** @description The last attempt of the reconciliation with the payment provider; omitted before the first. */
+        PaymentReconcileRun: {
+            /**
+             * @description `succeeded`; `partial` when it used its `payments_reconcile_max_requests` and a
+             *     continuation takes over; `failed` when the provider failed.
+             * @enum {string}
+             */
+            outcome: "succeeded" | "partial" | "failed";
+            /**
+             * @description Why it stopped: `request_cap` (a partial attempt), `permission` (the API key is wrong
+             *     or lacks permissions), `not_found`, `invalid_request`, `throttled` and `unavailable`
+             *     (the provider is busy or down; the next reconciliation tries again),
+             *     `invalid_signature`, `stale_signature`, `mode_mismatch` (the key's mode differs from
+             *     the account's), `invalid_response`; `none` for a success.
+             * @enum {string}
+             */
+            error_kind: "none" | "request_cap" | "permission" | "not_found" | "invalid_request" | "throttled" | "unavailable" | "invalid_signature" | "stale_signature" | "mode_mismatch" | "invalid_response";
+            /** @description The requests it sent to the provider. */
+            requests: number;
+            /** @description The subscriptions it read again from the provider. */
+            checked_subscriptions: number;
+            /** @description The subscriptions among them whose state it changed here. */
+            corrected_subscriptions: number;
+            /** Format: date-time */
+            occurred_at: string;
+        };
+        /** @description The state of the payment provider (ADR-0074 §4). */
+        PaymentStatus: {
+            /** @description The provider of `payments_provider` (`stripe`). */
+            provider: string;
+            /**
+             * @description `test` for test credentials, with which nothing is charged, and `live` for live
+             *     credentials.
+             * @enum {string}
+             */
+            mode: "test" | "live";
+            /** @description The IANA time zone of the provider's reports (`UTC`), in which the income is dated. */
+            time_zone: string;
+            /**
+             * Format: date-time
+             * @description When the newest webhook delivery was received; omitted when none is recorded (the
+             *     deliveries are kept 45 days).
+             */
+            last_webhook_at?: string;
+            last_reconcile?: components["schemas"]["PaymentReconcileRun"];
+            /**
+             * @description The signs that the provider's webhook is not set up right: `no_webhook` (no delivery is
+             *     recorded) and `reconcile_corrected` (the last reconciliation corrected subscriptions,
+             *     which a webhook delivery should have done).
+             */
+            warnings: ("no_webhook" | "reconcile_corrected")[];
         };
         /**
          * @description A capability that a role grants. `manage_accounts`: the accounts and their moderation
@@ -15254,6 +15357,47 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The refetch is queued. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getPaymentStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state of the payment provider. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentStatus"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    runPaymentReconcile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The reconciliation is queued. */
             204: {
                 headers: {
                     [name: string]: unknown;

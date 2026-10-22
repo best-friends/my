@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getPaymentStatus
+  summary: Get the state of the payment provider
+  description: |
+    The payment provider of the deployment's configuration (ADR-0074 §4): its name and mode
+    (test or live), when it last delivered a webhook, and the last attempt of the
+    reconciliation with its failure. `warnings` names the signs of a webhook that is not set
+    up right: no delivery is recorded, or the last reconciliation corrected subscriptions
+    that the webhooks had not. A deployment without a payment provider is a 404. Needs the
+    `manage_supporters` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      description: The state of the payment provider.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PaymentStatus.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

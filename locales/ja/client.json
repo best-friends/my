@@ -10799,6 +10799,14 @@
     "defaultMessage": "カスタム絵文字の申請",
     "description": "Kind of target of an audited operation: a request for a custom emoji or a new image of one, shown as the :shortcode: of the emoji."
   },
+  "admin.audit_log.action.payment_reconcile_queued": {
+    "defaultMessage": "決済の事業者との照合を開始",
+    "description": "Kind of an audited operation: an administrator started a reconciliation with the payment provider of the supporter program (Stripe) now, besides the periodic one."
+  },
+  "admin.audit_log.target_kind.payment_provider": {
+    "defaultMessage": "決済の事業者",
+    "description": "Kind of target of an audited operation: the payment provider of the supporter program, shown by its name (stripe)."
+  },
   "admin.supporters.title": {
     "defaultMessage": "サポーター",
     "description": "Title of the supporters screen (manage_supporters) and of its entry in the administration menu."

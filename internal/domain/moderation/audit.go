@@ -86,6 +86,9 @@ const (
 	// AuditTargetCustomEmojiRequest is a request of a holder of create_custom_emojis (ADR-0070
 	// §8); its label is the :shortcode: of the requested emoji.
 	AuditTargetCustomEmojiRequest AuditTargetKind = "custom_emoji_request"
+	// AuditTargetPaymentProvider is the payment provider of the supporter program (ADR-0074);
+	// its ID and its label are the provider's name (stripe).
+	AuditTargetPaymentProvider AuditTargetKind = "payment_provider"
 )
 
 var auditTargetKinds = []AuditTargetKind{
@@ -93,7 +96,7 @@ var auditTargetKinds = []AuditTargetKind{
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
 	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite, AuditTargetRelay,
 	AuditTargetBillingSource, AuditTargetCostItem, AuditTargetSupporterProgram, AuditTargetSupporterPlan,
-	AuditTargetSupporterSubscription, AuditTargetCustomEmojiRequest,
+	AuditTargetSupporterSubscription, AuditTargetCustomEmojiRequest, AuditTargetPaymentProvider,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -276,6 +279,9 @@ const (
 	AuditCustomEmojiRequestWithdrawn AuditAction = "custom_emoji_request_withdrawn"
 	AuditCustomEmojiRequestApproved  AuditAction = "custom_emoji_request_approved"
 	AuditCustomEmojiRequestRejected  AuditAction = "custom_emoji_request_rejected"
+	// AuditPaymentReconcileQueued: an administrator queued a reconciliation with the payment
+	// provider now (ADR-0074 §4); the operation has no row of its own.
+	AuditPaymentReconcileQueued AuditAction = "payment_reconcile_queued"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -357,6 +363,7 @@ var auditActions = []struct {
 	{AuditCustomEmojiRequestWithdrawn, AuditTargetCustomEmojiRequest},
 	{AuditCustomEmojiRequestApproved, AuditTargetCustomEmojiRequest},
 	{AuditCustomEmojiRequestRejected, AuditTargetCustomEmojiRequest},
+	{AuditPaymentReconcileQueued, AuditTargetPaymentProvider},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

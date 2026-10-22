@@ -1755,6 +1755,10 @@
     "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ īşşŭŭḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.payment_reconcile_queued": {
+    "defaultMessage": "[Řḗḗƈǿǿƞƈīŀīȧȧŧīǿǿƞ ẇīŧħ ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř şŧȧȧřŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.registration_approved": {
     "defaultMessage": "[Řḗḗɠīşŧřȧȧŧīǿǿƞ ȧȧƥƥřǿǿṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2065,6 +2069,10 @@
   },
   "admin.audit_log.target_kind.invite": {
     "defaultMessage": "[Īƞṽīŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.payment_provider": {
+    "defaultMessage": "[Ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.target_kind.relay": {

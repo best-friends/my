@@ -2413,12 +2413,13 @@ CREATE TABLE audit_log_entries (
     'supporter_program_enabled', 'supporter_program_disabled', 'supporter_plan_created', 'supporter_plan_revised',
     'supporter_plan_retired', 'supporter_subscription_canceled',
     'custom_emoji_request_submitted', 'custom_emoji_request_withdrawn', 'custom_emoji_request_approved',
-    'custom_emoji_request_rejected'
+    'custom_emoji_request_rejected', 'payment_reconcile_queued'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
     'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay', 'billing_source',
-    'cost_item', 'supporter_program', 'supporter_plan', 'supporter_subscription', 'custom_emoji_request'
+    'cost_item', 'supporter_program', 'supporter_plan', 'supporter_subscription', 'custom_emoji_request',
+    'payment_provider'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,

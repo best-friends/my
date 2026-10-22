@@ -880,6 +880,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.invite_revoked": {};
   /** Password reset link issued */
   "client:admin.audit_log.action.password_reset_link_issued": {};
+  /** Reconciliation with the payment provider started */
+  "client:admin.audit_log.action.payment_reconcile_queued": {};
   /** Registration approved */
   "client:admin.audit_log.action.registration_approved": {};
   /** Registration rejected */
@@ -1036,6 +1038,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.domain": {};
   /** Invite */
   "client:admin.audit_log.target_kind.invite": {};
+  /** Payment provider */
+  "client:admin.audit_log.target_kind.payment_provider": {};
   /** Relay */
   "client:admin.audit_log.target_kind.relay": {};
   /** Report */

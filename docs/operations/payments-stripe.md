@@ -83,7 +83,9 @@
 受けたイベントは ID ごとに 1 回だけ記録してジョブに積み、`2xx` を返します。DB に書けなかったときは `503` を返し、Stripe が送り直します。本文は 1 MiB までです。
 署名シークレットをローテーションしている間は Stripe が新旧の両方で署名するので、設定には新しいシークレットを置けば足ります。
 
-事業者の状態（モード、最後に webhook を受けた時刻、最後の照合の結果と失敗の種類）は管理者向けに示されます（ADR-0074 §4）。webhook を一度も受けていない、または照合が加入を直したときは、webhook の設定の誤りを疑ってください。
+事業者の状態（モード、最後に webhook を受けた時刻、最後の照合の結果と失敗の種類）は、管理 API の `GET /api/v1/admin/payment_status`（権限 `manage_supporters`）で見られます（ADR-0074 §4）。
+webhook の受信の記録が 1 件もない（`no_webhook`）、または最後の照合が加入を直した（`reconcile_corrected`）ときは `warnings` に出ます。webhook の設定の誤りを疑ってください。
+`POST /api/v1/admin/payment_reconciles` は、定期の照合を待たずに今すぐ照合します。UTC の 1 時間に 1 回までで（同じ時間の 2 回目は `429`）、監査ログに `payment_reconcile_queued` が残ります。
 
 ## 4. サーバーの設定
 

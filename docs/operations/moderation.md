@@ -312,6 +312,11 @@ my admin report reopen <report id>
 | `invite` | `invite_created`・`invite_revoked`（招待の作成・失効。対象の名前はコードの先頭 4 文字） |
 | `billing_source` | `billing_import_queued`（利用料金の取り込みを手で始めた。対象の名前は事業者の名前） |
 | `cost_item` | `cost_item_created`・`cost_item_relabeled`・`cost_item_price_revised`・`cost_item_end_changed`・`cost_item_canceled`（費用の登録・名前などの変更・金額の改定・終了日の変更・取り消し。対象の名前は項目の名前） |
+| `supporter_program` | `supporter_program_enabled`・`supporter_program_disabled`（課金の有効化・無効化。対象の名前は決済の事業者の名前） |
+| `supporter_plan` | `supporter_plan_created`・`supporter_plan_revised`・`supporter_plan_retired`（サポーターのプランの作成・変更・廃止。対象の名前はプランの名前） |
+| `supporter_subscription` | `supporter_subscription_canceled`（管理者による加入の解約。対象の名前はプランの名前と利用者のハンドル） |
+| `custom_emoji_request` | `custom_emoji_request_submitted`・`custom_emoji_request_withdrawn`・`custom_emoji_request_approved`・`custom_emoji_request_rejected`（カスタム絵文字の申請・取り下げ・承認・却下。対象の名前は `:shortcode:`） |
+| `payment_provider` | `payment_reconcile_queued`（決済の事業者との照合を手で始めた。対象の名前は事業者の名前） |
 
 一覧は、対象が今もあるかを示します。保持期間を過ぎて消えたアカウント・通報・異議申し立て・登録の拒否と、削除されたロール・カスタム絵文字・webhook は、記録時の名前だけを出し、画面へのリンクを出しません。
 

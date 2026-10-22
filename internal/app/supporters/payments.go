@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 )
@@ -464,6 +465,16 @@ type PaymentStatus struct {
 	LastRun     *ReconcileRun
 }
 
+// NoWebhook reports whether no webhook delivery is recorded (within ReceiptRetention): the
+// provider's webhook may not be set up (ADR-0074 §4).
+func (s PaymentStatus) NoWebhook() bool { return s.LastWebhook == nil }
+
+// ReconcileCorrected reports whether the last reconciliation changed subscriptions that the
+// webhook deliveries should have changed: the provider's webhook may miss events.
+func (s PaymentStatus) ReconcileCorrected() bool {
+	return s.LastRun != nil && s.LastRun.CorrectedSubscriptions > 0
+}
+
 // Status returns the state of the provider.
 func (p *Payments) Status(ctx context.Context) (PaymentStatus, error) {
 	prov := p.d.Provider
@@ -483,4 +494,38 @@ func (p *Payments) Status(ctx context.Context) (PaymentStatus, error) {
 		return PaymentStatus{}, err
 	}
 	return st, nil
+}
+
+// ErrReconcileTooSoon: a reconciliation by hand already ran in this UTC hour.
+var ErrReconcileTooSoon = errors.New("supporters: the reconciliation of this hour already ran")
+
+// ManualReconcileKey returns the idempotency key of a reconciliation by hand of provider at t:
+// one per UTC hour (ADR-0074 §4).
+func ManualReconcileKey(provider string, t time.Time) string {
+	return "manual:" + provider + ":" + t.UTC().Format("2006-01-02T15")
+}
+
+// RequestReconcile queues a reconciliation now, besides the periodic one, at most once per UTC
+// hour (ADR-0074 §4), and records the request in the audit log. byUserID is the administrator,
+// "" for the CLI. It fails with ErrReconcileTooSoon when the reconciliation of the hour already
+// ran. Its requests count toward ReconcileMaxRequests like the others.
+func (p *Payments) RequestReconcile(ctx context.Context, byUserID string) error {
+	name := p.d.Provider.Name()
+	now := p.now()
+	key := ManualReconcileKey(name, now)
+	used, err := p.d.Repository.ReconcileRunKeyUsed(ctx, name, key)
+	if err != nil {
+		return err
+	}
+	if used {
+		return fmt.Errorf("%w: %s", ErrReconcileTooSoon, name)
+	}
+	e := audit(p.d.IDs.NewID(), byUserID, appmoderation.AuditPaymentReconcileQueued, appmoderation.AuditTargetPaymentProvider,
+		name, name, "", now)
+	return p.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if err := tx.Emit(ctx, e); err != nil {
+			return err
+		}
+		return p.d.Outbox.EnqueueTx(ctx, tx, p.reconcileJob(key, time.Time{}))
+	})
 }
