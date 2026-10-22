@@ -20,13 +20,14 @@
 #   docker  the Dockerfile and the deployments                   (make docker-check, the Docker smoke test)
 #   shell   the shell scripts                                    (make lint-shell)
 #   schema  the desired-state schema files                       (make db-check)
+#   agentkit tools/agentkit and its context map, which covers every path (make agentkit-check)
 #
 # A change to shared configuration (the Makefile, .tool-versions, the workflows, the Go or Bun lockfiles,
 # api/, locales/, tools/i18n/) selects every context, and so does any path no rule below knows:
 # a new kind of file runs everything until a rule is added for it.
 set -euo pipefail
 
-ALL=(docs go i18n api ui web docker shell schema)
+ALL=(docs go i18n api ui web docker shell schema agentkit)
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -67,12 +68,28 @@ select_contexts() {
 # classify PATH selects the contexts of one changed path. Rules add up: app/ui/README.md is docs, ui, and web.
 classify() {
   local path="$1" known=0
+  # tools/agentkit/context-map.yaml must cover every path, so any change can break `agentkit map check`.
+  select_contexts agentkit
   case "$path" in
     # Shared configuration: everything.
     Makefile | .tool-versions | .github/workflows/* | scripts/changed-contexts.sh | \
       go.mod | go.sum | tools/go.mod | tools/go.sum | \
       app/bun.lock | app/bunfig.toml | app/package.json | api/* | locales/* | tools/i18n/*)
       select_contexts "${ALL[@]}"
+      return
+      ;;
+  esac
+  case "$path" in
+    # A Go module of its own: its Go files are not the go context's.
+    tools/agentkit/*.md)
+      select_contexts docs
+      return
+      ;;
+    tools/agentkit/*)
+      return
+      ;;
+    scripts/agentkit*.sh)
+      select_contexts shell
       return
       ;;
   esac

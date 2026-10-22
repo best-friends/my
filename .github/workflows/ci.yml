@@ -35,6 +35,7 @@ jobs:
       docker: ${{ steps.contexts.outputs.docker }}
       shell: ${{ steps.contexts.outputs.shell }}
       schema: ${{ steps.contexts.outputs.schema }}
+      agentkit: ${{ steps.contexts.outputs.agentkit }}
       smoke: ${{ steps.contexts.outputs.smoke }}
       # The input `scope` of the ctx-*.yml: `queue` in the merge queue, `pr` on pull requests.
       scope: ${{ github.event_name == 'merge_group' && 'queue' || 'pr' }}
@@ -61,7 +62,7 @@ jobs:
             contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
           fi
           echo "contexts: ${contexts//$'\n'/ }"
-          for c in docs go i18n api ui web docker shell schema; do
+          for c in docs go i18n api ui web docker shell schema agentkit; do
             if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
           done
           # The Docker smoke test runs on a change to the docker context and on one to cmd/ or internal/platform/,
@@ -144,6 +145,13 @@ jobs:
     with:
       scope: ${{ needs.changes.outputs.scope }}
 
+  agentkit:
+    needs: changes
+    if: needs.changes.outputs.agentkit == 'true'
+    uses: ./.github/workflows/ctx-agentkit.yml
+    with:
+      scope: ${{ needs.changes.outputs.scope }}
+
   check:
     # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when
     # every context job above passed, or was skipped because the change does not touch its context. A job that calls
@@ -151,7 +159,7 @@ jobs:
     # docker-arm64 job fails `check`. `always()` makes it report a result even when every other job is skipped, so
     # neither a pull request nor a merge group waits on it.
     if: always()
-    needs: [changes, docs, go, i18n, api, web, schema, docker, shell]
+    needs: [changes, docs, go, i18n, api, web, schema, docker, shell, agentkit]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if a check job failed or was cancelled

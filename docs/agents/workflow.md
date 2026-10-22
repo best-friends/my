@@ -18,9 +18,14 @@ gh issue list -R best-friends/my --label agent:ready --search "no:assignee" --js
 - Read the full issue including comments: `gh issue view <N> --comments`.
 - Check that every ADR the issue depends on is `Accepted` in [docs/adr/README.md](../adr/README.md). If not, comment and stop.
 - Claim it: `gh issue edit <N> --add-assignee @me` and comment a one-line plan.
+  `scripts/agentkit.sh issue claim <N> --plan "<one line>"` checks the conditions above (and that nothing the issue waits
+  for is still open), then claims it; it refuses with the reason when a condition fails.
 
 ## 2. Understand
 
+- Start from `scripts/agentkit.sh ctx <N>`: the issue, its requirements, the Decision of its ADRs, the sections it names,
+  the rules of the areas it touches (`tools/agentkit/context-map.yaml`), and the code to start from, within a token budget.
+  Read more with `show`, `find`, `refs`, and `trace` ([tools/agentkit/README.md](../../tools/agentkit/README.md)), by section, not whole files.
 - Read the requirement IDs (`FR-xxx`, `NFR-xxx`) and ADRs referenced by the issue.
 - If the acceptance criteria are ambiguous, ask in an issue comment, add `agent:blocked`, and stop — do not guess on scope.
 
@@ -44,6 +49,7 @@ git switch -c <type>/<N>-<short-slug>     # e.g. task/42-sqlite-adapter, spike/1
 ## 5. Verify
 
 ```sh
+scripts/agentkit.sh check # make check-changed, printing the contexts, their results, and only the failing lines
 make check-changed        # the contexts changed since origin/main and their dependents, in parallel
 make go-check             # or one context: docs-check, go-check, i18n-check, api-check, ui-check, web-check, docker-check
 make check                # every context, when the change touches shared configuration
@@ -87,7 +93,10 @@ EOF
 ```
 
 - Comment on the issue with the PR link. Do not merge or queue it yourself; the orchestrator or the decider queues it (§7).
-- Wait for the PR's CI (`gh pr checks <PR> -R best-friends/my --watch`) and fix failures until it is green.
+  `scripts/agentkit.sh pr open [--summary-file f] [--decisions text] [--confirm]` pushes, fills the template from the issue
+  and the commits, and comments the link on the issue.
+- Wait for the PR's CI and fix failures until it is green: run `scripts/agentkit.sh pr wait <PR>` in the background. It
+  prints one line when CI passes, or the failing lines of the failed jobs, and exits 3 when the PR conflicts.
 
 ## 7. Merge through the merge queue
 
@@ -103,15 +112,15 @@ EOF
 
 ```sh
 git fetch origin && git merge origin/main
-make generate sqlc i18n-gen web-dist   # the ones whose sources changed: client API code, sqlc code, i18n accessors
-                                       # and pseudo-locales, app/web/src/routeTree.gen.ts
-make check-changed
+scripts/agentkit.sh regen              # runs the generators whose sources changed: make generate, sqlc, i18n-gen,
+                                       # web-dist (app/web/src/routeTree.gen.ts), config-docs, adr-index
+scripts/agentkit.sh check
 ```
 
 ## 8. When blocked
 
 - Comment on the issue: what you tried, what decision is needed, the options you see, and your recommendation.
-- `gh issue edit <N> --add-label agent:blocked`
+- `gh issue edit <N> --add-label agent:blocked` (`scripts/agentkit.sh issue block <N> --reason-file f` does both)
 - If the decision is architectural, draft a Proposed ADR in the same branch and link it.
 
 ## 9. Parallel batches
@@ -142,6 +151,8 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 - Pick the agent's model by the kind of work: the default model for spikes, new ADRs, and implementation; a lighter
   model (`model: "sonnet"`) for mechanical work, such as folding the decider's answers into an ADR, editing issue
   bodies, docs-only changes, and resolving a conflict by regenerating files.
+- Hand each agent the issue's context pack (`scripts/agentkit.sh ctx <N> --layer server|web --quiet` writes
+  `.tmp/agentkit/ctx/<N>.md`) so that it does not explore again.
 - Ask every agent for a final report of three items only: the PR number, the CI status, and the decisions needed.
   Everything else belongs in the PR description.
 
@@ -159,7 +170,8 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 
 - Enable auto-merge as soon as a PR is opened (`gh pr merge <PR> -R best-friends/my --auto --merge`); the merge queue
   takes it when its `check` is green.
-- Watch every open PR with one watcher for three events: merged, conflicting, and CI failure.
+- Watch every open PR with one watcher for three events: merged, conflicting, and CI failure: `scripts/agentkit.sh pr watch`
+  under the Monitor tool prints one line per event (also opened, ci-green, and dequeued).
 - A conflict drops the PR from the queue and turns off its auto-merge. Have the agent that owns the PR merge `main`
   into the branch, then enable auto-merge again.
 - Never remove a worktree that an agent still works in.

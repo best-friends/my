@@ -1,0 +1,298 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The map from the repository's paths to what governs them: the document sections an agent reads before
+# changing them (docs), the `make check` contexts they need (checks), whether parallel work must treat them as
+# shared files (shared, docs/agents/workflow.md §9), and short notes printed in every context pack.
+#
+# `agentkit ctx` and `agentkit map show <path>` read it. `agentkit map check` (make agentkit-check, CI) fails when
+# a tracked file matches no entry and no ignore pattern, when a directory matching a strict pattern is not
+# named literally by some entry, or when a docs reference names a missing file or heading.
+# When you add a directory, a module, an adapter, or a feature, add or extend its entry in the same change.
+#
+# Patterns: `*` matches within one path segment, `**` any number of segments.
+# Docs: <path> or <path>#<anchor>, the anchor as GitHub generates it (agentkit outline <path> prints them).
+
+ignore:
+  - "**/*.gen.go"
+  - "**/*.gen.ts"
+  - "**/testdata/**"
+  - "**/__screenshots__/**"
+  - "internal/adapter/db/*/*gen/**"
+  - "internal/adapter/queue/db/internal/**"
+  - "api/openapi.yaml"
+  - "internal/interface/web/dist/**"
+  - ".tmp/**"
+
+strict:
+  - "*"
+  - "docs/*"
+  - "internal/*"
+  - "internal/domain/*"
+  - "internal/app/*"
+  - "internal/adapter/*"
+  - "internal/interface/*"
+  - "app/*"
+  - "app/web/src/features/*"
+  - "app/web/src/lib/*"
+  - "pkg/testkit/*"
+
+entries:
+  # --- Repository-wide ------------------------------------------------------------------------------
+  - name: repo-meta
+    paths: ["*.md", "LICENSE", ".editorconfig", ".gitattributes", ".gitignore", ".dockerignore", ".markdownlint-cli2.jsonc", ".tool-versions"]
+    docs: ["AGENTS.md#hard-rules"]
+    checks: [docs]
+  - name: build-and-ci
+    paths: ["Makefile", ".github/**", "scripts/**", ".claude/**"]
+    docs: ["docs/agents/workflow.md#what-ci-runs-where", "docs/adr/0047-ci-protection-layers.md"]
+    checks: [docs, go, i18n, api, ui, web, docker, agentkit]
+    shared: true
+    notes:
+      - "Makefile, workflows and scripts/changed-contexts.sh select every check context: run `make check`."
+
+  # --- Documents --------------------------------------------------------------------------------------
+  - name: adr
+    paths: ["docs/adr/**"]
+    docs: ["docs/agents/writing-adrs.md", "AGENTS.md#hard-rules"]
+    checks: [docs]
+    shared: true
+    notes:
+      - "Never set Accepted/Rejected yourself; run `make adr-index` after adding or renaming an ADR."
+  - name: requirements
+    paths: ["docs/requirements/**"]
+    docs: ["docs/requirements/00-vision.md"]
+    checks: [docs]
+    shared: true
+  - name: architecture-docs
+    paths: ["docs/architecture/**", "docs/README.md"]
+    docs: ["AGENTS.md#hard-rules"]
+    checks: [docs]
+    shared: true
+    notes:
+      - "Documents describe the present (ADR-0021): no history, no changelog wording."
+  - name: agent-docs
+    paths: ["docs/agents/**"]
+    docs: ["docs/adr/0014-task-management-and-agent-workflow.md"]
+    checks: [docs]
+  - name: operations-docs
+    paths: ["docs/operations/**"]
+    docs: ["AGENTS.md#hard-rules"]
+    checks: [docs]
+  - name: reference-docs
+    paths: ["docs/reference/**"]
+    docs: ["docs/reference/build-tags.md"]
+    checks: [docs, go]
+    notes:
+      - "docs/reference/configuration.md is generated: `make config-docs`."
+
+  # --- Server: shared rules ---------------------------------------------------------------------------
+  - name: go-server
+    paths: ["internal/**", "cmd/**", "pkg/**", "go.mod", "go.sum", ".golangci.yml"]
+    docs: ["AGENTS.md#design-rules", "docs/architecture/overview.md#依存ルール"]
+    checks: [go]
+    notes:
+      - "depguard enforces the layer rules; restructure instead of weakening a rule."
+      - "Transactions are short and free of external I/O; enqueue jobs via the outbox; handlers are idempotent."
+  - name: go-module-index
+    paths: ["internal/domain/**", "internal/app/**"]
+    docs: ["docs/architecture/overview.md#2-モジュール境界づけられたコンテキスト", "docs/architecture/data-model.md#40-所有モジュール"]
+    checks: [go]
+  - name: i18n
+    paths: ["internal/i18n/**", "locales/**", "tools/i18n/**"]
+    docs: ["docs/adr/0009-internationalization.md"]
+    checks: [i18n, go, web]
+    shared: true
+    notes:
+      - "Add messages to locales/en and locales/ja, then `make i18n-gen` and commit the result."
+  - name: platform
+    paths: ["internal/platform/**", "cmd/my/**"]
+    docs: ["docs/architecture/overview.md#6-リポジトリ構成", "docs/adr/0010-configuration-and-packaging.md"]
+    checks: [go, docker]
+    notes:
+      - "A change to the config schema regenerates docs/reference/configuration.md (`make config-docs`)."
+
+  # --- Server: modules (internal/domain/<m>, internal/app/<m>) ----------------------------------------
+  - name: module-identity
+    paths: ["internal/domain/identity/**", "internal/app/identity/**"]
+    docs: ["docs/architecture/data-model.md#41-identity", "docs/operations/registration.md"]
+  - name: module-account
+    paths: ["internal/domain/account/**", "internal/app/account/**"]
+    docs: ["docs/architecture/data-model.md#42-account", "docs/architecture/data-model.md#5-状態とポリシー"]
+  - name: module-moderation
+    paths: ["internal/domain/moderation/**", "internal/app/moderation/**"]
+    docs: ["docs/architecture/data-model.md#43-moderation", "docs/operations/moderation.md", "docs/adr/0058-moderation-admin-separation.md"]
+  - name: module-content
+    paths: ["internal/domain/content/**", "internal/app/content/**"]
+    docs: ["docs/architecture/data-model.md#44-content", "docs/architecture/visibility.md"]
+    notes:
+      - "Visibility checks go through the single domain policy function; never re-implement them."
+  - name: module-graph
+    paths: ["internal/domain/graph/**", "internal/app/graph/**"]
+    docs: ["docs/architecture/data-model.md#45-graph"]
+  - name: module-timeline
+    paths: ["internal/domain/timeline/**", "internal/app/timeline/**"]
+    docs: ["docs/architecture/data-model.md#46-timeline", "docs/architecture/data-model.md#6-タイムラインのクエリ", "docs/adr/0013-timeline-strategy.md"]
+  - name: module-notification
+    paths: ["internal/domain/notification/**", "internal/app/notification/**"]
+    docs: ["docs/architecture/data-model.md#47-notification"]
+  - name: module-federation
+    paths: ["internal/domain/federation/**", "internal/app/federation/**"]
+    docs: ["docs/architecture/data-model.md#48-federation", "docs/architecture/federation.md#1-構成"]
+    notes:
+      - "ActivityPub wire formats and federated URIs stay spec-compliant even in v0."
+  - name: module-instance
+    paths: ["internal/domain/instance/**", "internal/app/instance/**"]
+    docs: ["docs/architecture/data-model.md#49-instance", "docs/operations/instance-settings.md"]
+  - name: module-webhook
+    paths: ["internal/domain/webhook/**", "internal/app/webhook/**"]
+    docs: ["docs/architecture/data-model.md#411-webhook", "docs/reference/webhooks.md"]
+  - name: module-finance
+    paths: ["internal/domain/finance/**", "internal/app/finance/**"]
+    docs: ["docs/architecture/data-model.md#412-finance", "docs/adr/0067-finance-cost-records.md", "docs/adr/0068-billing-import.md"]
+  - name: module-supporters
+    paths: ["internal/domain/supporters/**", "internal/app/supporters/**"]
+    docs: ["docs/architecture/data-model.md#413-supporters", "docs/adr/0072-supporter-plans-and-roles.md", "docs/operations/supporters.md"]
+  - name: app-infrastructure
+    paths: ["internal/app/kernel/**", "internal/app/uow/**", "internal/app/queue/**", "internal/app/stream/**", "internal/app/projection/**", "internal/app/blob/**", "internal/app/media/**", "internal/app/metrics/**"]
+    docs: ["docs/architecture/overview.md#3-ポート一覧", "docs/architecture/data-model.md#2-整合性モデル"]
+    notes:
+      - "Every external resource goes through a port, and every adapter passes the port's contract suite (pkg/testkit)."
+
+  # --- Server: adapters ---------------------------------------------------------------------------------
+  - name: adapter-db
+    paths: ["internal/adapter/db/**", "internal/adapter/kv/**", "internal/adapter/queue/**"]
+    docs: ["docs/architecture/data-model.md#1-共通規約", "docs/architecture/data-model.md#2-整合性モデル", "docs/adr/0003-database-abstraction.md", "docs/operations/database.md"]
+    checks: [go, schema]
+  - name: adapter-messaging
+    paths: ["internal/adapter/stream/**", "internal/adapter/valkey/**", "internal/adapter/telemetry/**"]
+    docs: ["docs/adr/0050-stream-pubsub-across-processes.md", "docs/architecture/deployment-targets.md#ストリームプロセス間の知らせ"]
+  - name: adapter-media
+    paths: ["internal/adapter/blob/**", "internal/adapter/media/**"]
+    docs: ["docs/adr/0005-blob-storage-and-media.md", "docs/adr/0054-media-variants-video-audio.md"]
+  - name: adapter-federation
+    paths: ["internal/adapter/httpsig/**", "internal/adapter/jsonld/**", "internal/adapter/htmlsanitizer/**", "internal/adapter/keymanager/**"]
+    docs: ["docs/architecture/federation.md#2-署名", "docs/architecture/federation.md#4-as2-の正規化", "docs/architecture/federation.md#5-リモート-html-のサニタイズ", "docs/operations/key-management.md"]
+  - name: adapter-http
+    paths: ["internal/adapter/httpclient/**"]
+    docs: ["docs/adr/0019-security-baseline.md"]
+    notes:
+      - "Outbound HTTP that remote parties influence goes through the SSRF-guarded kernel.HTTPClient."
+  - name: adapter-user-facing
+    paths: ["internal/adapter/mail/**", "internal/adapter/captcha/**", "internal/adapter/webauthn/**", "internal/adapter/webpush/**", "internal/adapter/markdown/**", "internal/adapter/system/**"]
+    docs: ["docs/architecture/overview.md#3-ポート一覧", "docs/operations/captcha.md"]
+  - name: adapter-billing
+    paths: ["internal/adapter/billing/**"]
+    docs: ["docs/adr/0068-billing-import.md", "docs/operations/billing-import.md"]
+  - name: adapter-payment
+    paths: ["internal/adapter/payment/**"]
+    docs: ["docs/adr/0074-payment-provider-port.md", "docs/operations/payments-stripe.md"]
+
+  # --- Server: interfaces -------------------------------------------------------------------------------
+  - name: client-api
+    paths: ["internal/interface/clientapi/**", "api/**"]
+    docs: ["docs/architecture/client-api.md#3-エンドポイントを追加する手順", "docs/architecture/client-api.md#2-規約"]
+    checks: [api, go, web]
+    shared: true
+    notes:
+      - "Edit api/spec/ (one file per path and component; list new files in api/spec/openapi.yaml), never api/openapi.yaml; then `make generate`."
+  - name: oauth
+    paths: ["internal/interface/oauth/**", "internal/interface/authpages/**"]
+    docs: ["docs/architecture/client-api.md#4-認可oauth-20", "docs/architecture/web-client.md#8-サーバーが描画する画面"]
+  - name: activitypub
+    paths: ["internal/interface/activitypub/**"]
+    docs: ["docs/architecture/federation.md#3-受信inbox", "docs/architecture/federation.md#10-コレクションとオブジェクトの-get"]
+  - name: interface-other
+    paths: ["internal/interface/media/**", "internal/interface/payments/**", "internal/interface/web/**"]
+    docs: ["docs/architecture/overview.md#6-リポジトリ構成", "docs/adr/0028-html-shell-link-previews-and-pwa.md"]
+
+  # --- Schema and queries -------------------------------------------------------------------------------
+  - name: schema
+    paths: ["schema/**", "queries/**", "sqlc.yaml"]
+    docs: ["docs/architecture/data-model.md#1-共通規約", "docs/adr/0020-data-modeling-principles.md", "docs/adr/0023-declarative-schema-management.md"]
+    checks: [schema, go]
+    shared: true
+    notes:
+      - "Edit schema/<dialect>.sql for every dialect together; never hand-write migrations; `make sqlc` after query changes. Query files stay ASCII-only."
+
+  # --- Test kits ------------------------------------------------------------------------------------------
+  - name: testkit
+    paths: ["pkg/testkit/**"]
+    docs: ["docs/adr/0015-testing-strategy.md", "docs/adr/0041-postgres-tests-on-pgmem.md"]
+  - name: testkit-backends
+    paths: ["pkg/testkit/pgtest/**", "pkg/testkit/valkeytest/**", "pkg/testkit/awstest/**", "pkg/testkit/fixtures/**"]
+    docs: ["docs/adr/0041-postgres-tests-on-pgmem.md"]
+
+  # --- Clients --------------------------------------------------------------------------------------------
+  - name: client-workspace
+    paths: ["app/*", "app/oxlint/**"]
+    docs: ["docs/adr/0025-web-client-stack.md", "docs/adr/0049-client-lint-oxlint.md"]
+    checks: [web]
+    shared: true
+  - name: ui-kit
+    paths: ["app/ui/**"]
+    docs: ["app/ui/README.md", "docs/architecture/web-client.md#16-見た目状態文言", "docs/architecture/web-client.md#5-アクセシビリティ"]
+    checks: [ui, web]
+  - name: web-client
+    paths: ["app/web/**"]
+    docs: ["docs/architecture/web-client.md#1-react-の基本", "docs/architecture/web-client.md#2-状態とデータ", "docs/architecture/web-client.md#3-構成と責務分離", "docs/architecture/web-client.md#5-アクセシビリティ"]
+    checks: [web]
+    notes:
+      - "Follow docs/architecture/web-client.md; never write React from memory. User-facing strings go through `client*` messages."
+  - name: web-tests
+    paths: ["app/web/e2e/**", "app/web/src/test/**", "app/web/**/*.test.ts", "app/web/**/*.test.tsx"]
+    docs: ["docs/architecture/web-client.md#テストの置き場所と道具"]
+  - name: web-shell
+    paths: ["app/web/src/*", "app/web/src/routes/**", "app/web/sw/**", "app/web/public/**", "app/web/vite-plugins/**", "app/web/*"]
+    docs: ["docs/architecture/web-client.md#9-アプリの外枠", "docs/architecture/web-client.md#11-pwa"]
+    shared: true
+    notes:
+      - "A new route regenerates app/web/src/routeTree.gen.ts (`make web-dist`)."
+  - name: web-server-pages
+    paths: ["app/web/src/server-pages/**", "app/web/src/server-pages.css"]
+    docs: ["docs/architecture/web-client.md#8-サーバーが描画する画面"]
+  - name: web-lib
+    paths: ["app/web/src/lib/api/**", "app/web/src/lib/auth/**", "app/web/src/lib/sse/**"]
+    docs: ["docs/architecture/web-client.md#10-api-クライアントと認証", "docs/adr/0030-web-client-token-handling.md", "docs/adr/0045-client-server-cache-policy.md"]
+  - name: web-feature-admin
+    paths: ["app/web/src/features/admin/**", "app/web/src/features/moderation/**", "app/web/src/features/announcements/**", "app/web/src/features/documents/**"]
+    docs: ["docs/architecture/web-client.md#14-管理画面"]
+  - name: web-feature-compose
+    paths: ["app/web/src/features/compose/**"]
+    docs: ["docs/architecture/web-client.md#12-投稿フォーム", "docs/adr/0039-mobile-navigation-and-compose-entry.md"]
+  - name: web-feature-status
+    paths: ["app/web/src/features/status/**", "app/web/src/features/timeline/**", "app/web/src/features/notifications/**", "app/web/src/features/profile/**"]
+    docs: ["docs/architecture/web-client.md#13-投稿の詳細と投稿への操作", "docs/architecture/web-client.md#9-アプリの外枠"]
+  - name: web-feature-emoji
+    paths: ["app/web/src/features/emoji/**", "app/web/src/features/custom-emojis/**"]
+    docs: ["docs/adr/0051-custom-emoji.md", "docs/adr/0052-emoji-reactions.md", "docs/adr/0070-permission-split-emoji-finance.md"]
+  - name: web-feature-search
+    paths: ["app/web/src/features/search/**"]
+    docs: ["docs/architecture/web-client.md#15-検索とほかのサーバーのアカウントのフォロー"]
+  - name: web-feature-report
+    paths: ["app/web/src/features/report/**"]
+    docs: ["docs/architecture/web-client.md#17-通報", "docs/architecture/web-client.md#18-アカウントの状態と異議申し立て"]
+  - name: web-feature-settings
+    paths: ["app/web/src/features/settings/**", "app/web/src/features/session/**"]
+    docs: ["docs/architecture/web-client.md#19-インポートとエクスポート", "docs/architecture/web-client.md#10-api-クライアントと認証"]
+  - name: web-feature-supporters
+    paths: ["app/web/src/features/supporters/**"]
+    docs: ["docs/adr/0072-supporter-plans-and-roles.md", "docs/adr/0071-role-badges-and-supporter-list.md", "docs/operations/supporters.md"]
+  - name: web-feature-public
+    paths: ["app/web/src/features/about/**", "app/web/src/features/landing/**", "app/web/src/features/costs/**"]
+    docs: ["docs/architecture/web-client.md#9-アプリの外枠", "docs/adr/0073-income-records-and-publication.md"]
+
+  # --- Deployment -----------------------------------------------------------------------------------------
+  - name: deploy
+    paths: ["deploy/**", "Dockerfile"]
+    docs: ["docs/architecture/deployment-targets.md#self-hosteddocker--microk8s", "docs/operations/running.md"]
+    checks: [docker]
+
+  # --- Tools ----------------------------------------------------------------------------------------------
+  - name: agentkit
+    paths: ["tools/agentkit/**"]
+    docs: ["tools/agentkit/README.md"]
+    checks: [agentkit]
+  - name: go-tools
+    paths: ["tools/go.mod", "tools/go.sum"]
+    docs: ["docs/reference/commands.md"]
+    checks: [go]

@@ -32,7 +32,7 @@ help: ## Show available targets
 # the installs are skipped (CHECK_INSTALLED), so no two contexts write node_modules at once, and no two contexts
 # write the same file: web-check builds into app/web/dist only (web-dist), never into internal/interface/web/dist
 # that the Go builds embed. scripts/changed-contexts.sh maps changed paths to contexts and their dependents.
-CHECKS := docs-check go-check i18n-check api-check ui-check web-check docker-check
+CHECKS := docs-check go-check i18n-check api-check ui-check web-check docker-check agentkit-check
 CHECK_JOBS ?= $(words $(CHECKS))
 CHECK_STATUS := .tmp/check
 # The revision `make check-changed` compares with: the changes since its merge base with HEAD, uncommitted and
@@ -91,6 +91,24 @@ adr-index-check: ## Fail if the ADR index is stale
 adr-new: ## Create a new ADR: make adr-new TITLE="..." [SLUG=...]
 	@test -n "$(TITLE)" || { echo 'usage: make adr-new TITLE="..." [SLUG=kebab-slug]'; exit 2; }
 	scripts/adr-new.sh "$(TITLE)" $(SLUG)
+
+# --- agentkit (tools/agentkit) -----------------------------------------------------------------
+# The context and workflow tools for coding agents, a Go module of its own (tools/agentkit/README.md).
+# Its dependencies stay within the server's go.sum, so `make go-licenses` covers their licenses.
+AGENTKIT := tools/agentkit
+
+.PHONY: agentkit agentkit-check
+
+agentkit: ## Build bin/agentkit, the context and workflow tools for coding agents (scripts/agentkit.sh builds it on demand)
+	cd $(AGENTKIT) && CGO_ENABLED=0 go build -o ../../bin/agentkit ./cmd/agentkit
+
+agentkit-check: agentkit ## Check tools/agentkit (tidy, vet, lint, tests, dependencies) and that its context map covers every path
+	cd $(AGENTKIT) && go mod tidy -diff
+	cd $(AGENTKIT) && go vet ./...
+	cd $(AGENTKIT) && golangci-lint run ./...
+	cd $(AGENTKIT) && go test ./...
+	scripts/agentkit-deps-check.sh
+	bin/agentkit map check
 
 build: web-build ## Build bin/my, with the web client embedded, and the version from git (override: make build VERSION=v1.2.3; leave adapters out: GO_TAGS=no_postgres,no_valkey)
 	CGO_ENABLED=0 go build -trimpath -tags "$(GO_TAGS)" -ldflags "-X main.version=$(VERSION)" -o bin/my ./cmd/my

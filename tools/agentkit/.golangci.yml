@@ -1,0 +1,41 @@
+# golangci-lint v2 configuration of tools/agentkit, a module of its own (the version is pinned in .tool-versions).
+# The linters follow the repository's .golangci.yml; its depguard architecture rules are about the server and do
+# not apply here.
+version: "2"
+
+run:
+  modules-download-mode: readonly
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - errorlint
+    - gocritic
+    - gosec
+    - misspell
+    - nolintlint
+    - revive
+    - unconvert
+  settings:
+    gosec:
+      excludes:
+        - G204 # agentkit runs git, gh and make with arguments it builds on purpose
+        - G304 # agentkit reads the repository's files by path on purpose
+        - G306 # files under .tmp are the user's own scratch files
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+  exclusions:
+    presets:
+      - comments
+      - std-error-handling
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/best-friends/my
