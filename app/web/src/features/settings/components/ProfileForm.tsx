@@ -43,7 +43,7 @@ export function ProfileForm() {
         <ImageSection
           titleKey="client:settings.profile.avatar"
           control={form.avatar}
-          preview={<Avatar src={form.avatar.url} name={form.displayName.value || form.account.username} decorative size="xl" />}
+          preview={<Avatar src={form.avatar.url} name={form.displayName.value || form.account.username} seed={form.account.id} decorative size="xl" />}
         />
         <ImageSection
           titleKey="client:settings.profile.header"

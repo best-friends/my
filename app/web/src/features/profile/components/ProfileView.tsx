@@ -66,6 +66,7 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
       <ProfileHeader
         image={imageSources(account.header)}
         avatar={imageSources(account.avatar)}
+        avatarSeed={account.id}
         name={profile.name}
         actions={<RelationshipActions account={account} name={profile.name} state={relationship} />}
         heading={renderHeading(

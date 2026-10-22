@@ -237,6 +237,7 @@ function AccountRow({ account }: { account: AdminAccount }) {
           name={accountName(account.account)}
           handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
           avatar={imageSources(account.account.avatar)}
+          avatarSeed={account.account.id}
           href={`/moderation/accounts/${encodeURIComponent(account.id)}`}
         />
       </Heading>

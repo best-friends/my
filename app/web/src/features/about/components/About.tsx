@@ -122,6 +122,7 @@ function Contact({ contact }: { contact: NonNullable<Instance["contact"]> }) {
                 name={account.display_name || account.username}
                 handle={handleOf(account.acct)}
                 avatar={imageSources(account.avatar)}
+                avatarSeed={account.id}
                 href={profilePath(account.acct)}
                 layout="inline"
               />

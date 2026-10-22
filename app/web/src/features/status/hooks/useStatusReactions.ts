@@ -66,6 +66,7 @@ export function useStatusReactions(status: Status): ReactionChip[] {
 /** One account that reacted, as the list of reactions shows it. */
 type Reactor = {
   key: string;
+  id: string;
   name: string;
   emojis: Status["account"]["emojis"];
   handle: string;
@@ -113,6 +114,7 @@ export function useReactors(id: string, enabled: boolean): ReactorsState {
     items: query.data.pages.flatMap((page) =>
       page.items.map((item) => ({
         key: `${item.account.id}:${item.emoji.name}`,
+        id: item.account.id,
         name: item.account.display_name || item.account.username,
         emojis: item.account.emojis,
         handle: handleOf(item.account.acct),

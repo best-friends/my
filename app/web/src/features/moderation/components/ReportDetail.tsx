@@ -79,6 +79,7 @@ function ReportPage({ id }: { id: string }) {
               name={accountName(target)}
               handle={target.display_name === "" ? undefined : handleOf(target)}
               avatar={imageSources(target.avatar)}
+              avatarSeed={target.id}
             />
             <Cluster as="ul" gap="4" rowGap="1">
               <li>

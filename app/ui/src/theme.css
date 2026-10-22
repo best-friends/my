@@ -168,6 +168,23 @@
   --color-overlay: light-dark(#211c1c9e, #0d0a0bb3);
   --color-alt-overlay: #000000cc;
 
+  /* The pastel tints of an avatar without a picture: avatar-<tint> is the fill and avatar-<tint>-fg the initial on it.
+     The same in both themes; the tint is picked per account, stable by its id. Server themes cannot override them. */
+  --color-avatar-lilac: #e8d9f5;
+  --color-avatar-lilac-fg: #7c5571;
+  --color-avatar-peach: #ffe2d2;
+  --color-avatar-peach-fg: #945947;
+  --color-avatar-mint: #dcefe2;
+  --color-avatar-mint-fg: #52715d;
+  --color-avatar-lavender: #e8dcef;
+  --color-avatar-lavender-fg: #6c5d7b;
+  --color-avatar-yellow: #ffebbd;
+  --color-avatar-yellow-fg: #856631;
+
+  /* The pressed button of a Segmented: charcoal with white in light, the brand coral with charcoal in dark. */
+  --color-pressed: light-dark(var(--palette-charcoal-900), var(--palette-coral-500));
+  --color-pressed-fg: light-dark(var(--palette-white), var(--palette-charcoal-900));
+
   /* Role badges (ADR-0071): badge-<color> is the background and badge-<color>-fg the text on it.
      The color only decorates; the badge's name carries its meaning. Server themes cannot override them. */
   --color-badge-neutral: light-dark(var(--palette-cream-200), var(--palette-cocoa-700));
