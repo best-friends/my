@@ -47,7 +47,9 @@ description: |
   `custom_emoji_request_submitted` and `custom_emoji_request_withdrawn` by the requester, and
   `custom_emoji_request_approved` (which also records the emoji's `custom_emoji_created` or
   `custom_emoji_image_replaced`) and `custom_emoji_request_rejected`; the label is the
-  `:shortcode:` of the request.
+  `:shortcode:` of the request. On a `payment_provider`: `payment_reconcile_queued`, a
+  reconciliation with the payment provider started by hand; the ID and the label are the
+  provider's name (`stripe`).
 type: string
 enum:
   - account_action_issued
@@ -124,3 +126,4 @@ enum:
   - custom_emoji_request_withdrawn
   - custom_emoji_request_approved
   - custom_emoji_request_rejected
+  - payment_reconcile_queued

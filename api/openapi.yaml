@@ -6683,6 +6683,54 @@ paths:
           description: The refetch is queued.
         default:
           $ref: '#/components/responses/Problem'
+  /admin/payment_status:
+    get:
+      operationId: getPaymentStatus
+      summary: Get the state of the payment provider
+      description: |
+        The payment provider of the deployment's configuration (ADR-0074 §4): its name and mode
+        (test or live), when it last delivered a webhook, and the last attempt of the
+        reconciliation with its failure. `warnings` names the signs of a webhook that is not set
+        up right: no delivery is recorded, or the last reconciliation corrected subscriptions
+        that the webhooks had not. A deployment without a payment provider is a 404. Needs the
+        `manage_supporters` permission.
+      tags:
+        - admin-server
+      security:
+        - oauth2:
+            - admin:read
+      responses:
+        '200':
+          description: The state of the payment provider.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatus'
+        default:
+          $ref: '#/components/responses/Problem'
+  /admin/payment_reconciles:
+    post:
+      operationId: runPaymentReconcile
+      summary: Reconcile with the payment provider now
+      description: |
+        Queues a reconciliation with the payment provider now, besides the periodic one
+        (ADR-0074 §4). Its requests count toward `payments_reconcile_max_requests` like the
+        others. One per UTC hour: another request in the hour after its reconciliation ran is a
+        429. A deployment without a payment provider is a 404. The request is recorded in the
+        audit log. Needs the `manage_supporters` permission.
+      tags:
+        - admin-server
+      security:
+        - oauth2:
+            - admin:write
+      responses:
+        '204':
+          description: The reconciliation is queued.
+        default:
+          $ref: '#/components/responses/Problem'
   /admin/supporter_program:
     get:
       operationId: getSupporterProgram
@@ -8220,7 +8268,9 @@ components:
         `custom_emoji_request_submitted` and `custom_emoji_request_withdrawn` by the requester, and
         `custom_emoji_request_approved` (which also records the emoji's `custom_emoji_created` or
         `custom_emoji_image_replaced`) and `custom_emoji_request_rejected`; the label is the
-        `:shortcode:` of the request.
+        `:shortcode:` of the request. On a `payment_provider`: `payment_reconcile_queued`, a
+        reconciliation with the payment provider started by hand; the ID and the label are the
+        provider's name (`stripe`).
       type: string
       enum:
         - account_action_issued
@@ -8297,6 +8347,7 @@ components:
         - custom_emoji_request_withdrawn
         - custom_emoji_request_approved
         - custom_emoji_request_rejected
+        - payment_reconcile_queued
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -8404,6 +8455,7 @@ components:
         - supporter_plan
         - supporter_subscription
         - custom_emoji_request
+        - payment_provider
     AdminAvailabilityEvent:
       description: The time a remote server was marked unavailable or available again, and why.
       type: object
@@ -13217,6 +13269,103 @@ components:
             Whether the password signs in; false after the user removed it, when only the
             passkeys sign in.
           type: boolean
+    PaymentReconcileRun:
+      description: The last attempt of the reconciliation with the payment provider; omitted before the first.
+      type: object
+      required:
+        - outcome
+        - error_kind
+        - requests
+        - checked_subscriptions
+        - corrected_subscriptions
+        - occurred_at
+      properties:
+        outcome:
+          description: |
+            `succeeded`; `partial` when it used its `payments_reconcile_max_requests` and a
+            continuation takes over; `failed` when the provider failed.
+          type: string
+          enum:
+            - succeeded
+            - partial
+            - failed
+        error_kind:
+          description: |
+            Why it stopped: `request_cap` (a partial attempt), `permission` (the API key is wrong
+            or lacks permissions), `not_found`, `invalid_request`, `throttled` and `unavailable`
+            (the provider is busy or down; the next reconciliation tries again),
+            `invalid_signature`, `stale_signature`, `mode_mismatch` (the key's mode differs from
+            the account's), `invalid_response`; `none` for a success.
+          type: string
+          enum:
+            - none
+            - request_cap
+            - permission
+            - not_found
+            - invalid_request
+            - throttled
+            - unavailable
+            - invalid_signature
+            - stale_signature
+            - mode_mismatch
+            - invalid_response
+        requests:
+          description: The requests it sent to the provider.
+          type: integer
+          minimum: 0
+        checked_subscriptions:
+          description: The subscriptions it read again from the provider.
+          type: integer
+          minimum: 0
+        corrected_subscriptions:
+          description: The subscriptions among them whose state it changed here.
+          type: integer
+          minimum: 0
+        occurred_at:
+          type: string
+          format: date-time
+    PaymentStatus:
+      description: The state of the payment provider (ADR-0074 §4).
+      type: object
+      required:
+        - provider
+        - mode
+        - time_zone
+        - warnings
+      properties:
+        provider:
+          description: The provider of `payments_provider` (`stripe`).
+          type: string
+        mode:
+          description: |
+            `test` for test credentials, with which nothing is charged, and `live` for live
+            credentials.
+          type: string
+          enum:
+            - test
+            - live
+        time_zone:
+          description: The IANA time zone of the provider's reports (`UTC`), in which the income is dated.
+          type: string
+        last_webhook_at:
+          description: |
+            When the newest webhook delivery was received; omitted when none is recorded (the
+            deliveries are kept 45 days).
+          type: string
+          format: date-time
+        last_reconcile:
+          $ref: '#/components/schemas/PaymentReconcileRun'
+        warnings:
+          description: |
+            The signs that the provider's webhook is not set up right: `no_webhook` (no delivery is
+            recorded) and `reconcile_corrected` (the last reconciliation corrected subscriptions,
+            which a webhook delivery should have done).
+          type: array
+          items:
+            type: string
+            enum:
+              - no_webhook
+              - reconcile_corrected
     Permission:
       description: |
         A capability that a role grants. `manage_accounts`: the accounts and their moderation

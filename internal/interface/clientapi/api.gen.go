@@ -300,6 +300,7 @@ const (
 	AdminAuditActionInviteCreated                 AdminAuditAction = "invite_created"
 	AdminAuditActionInviteRevoked                 AdminAuditAction = "invite_revoked"
 	AdminAuditActionPasswordResetLinkIssued       AdminAuditAction = "password_reset_link_issued"
+	AdminAuditActionPaymentReconcileQueued        AdminAuditAction = "payment_reconcile_queued"
 	AdminAuditActionRegistrationApproved          AdminAuditAction = "registration_approved"
 	AdminAuditActionRegistrationRejected          AdminAuditAction = "registration_rejected"
 	AdminAuditActionRelayAccepted                 AdminAuditAction = "relay_accepted"
@@ -411,6 +412,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionInviteRevoked:
 		return true
 	case AdminAuditActionPasswordResetLinkIssued:
+		return true
+	case AdminAuditActionPaymentReconcileQueued:
 		return true
 	case AdminAuditActionRegistrationApproved:
 		return true
@@ -534,6 +537,7 @@ const (
 	AdminAuditTargetKindCustomEmojiRequest    AdminAuditTargetKind = "custom_emoji_request"
 	AdminAuditTargetKindDomain                AdminAuditTargetKind = "domain"
 	AdminAuditTargetKindInvite                AdminAuditTargetKind = "invite"
+	AdminAuditTargetKindPaymentProvider       AdminAuditTargetKind = "payment_provider"
 	AdminAuditTargetKindRelay                 AdminAuditTargetKind = "relay"
 	AdminAuditTargetKindReport                AdminAuditTargetKind = "report"
 	AdminAuditTargetKindRole                  AdminAuditTargetKind = "role"
@@ -568,6 +572,8 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindDomain:
 		return true
 	case AdminAuditTargetKindInvite:
+		return true
+	case AdminAuditTargetKindPaymentProvider:
 		return true
 	case AdminAuditTargetKindRelay:
 		return true
@@ -2035,6 +2041,108 @@ func (e NotificationType) Valid() bool {
 	}
 }
 
+// Defines values for PaymentReconcileRunErrorKind.
+const (
+	PaymentReconcileRunErrorKindInvalidRequest   PaymentReconcileRunErrorKind = "invalid_request"
+	PaymentReconcileRunErrorKindInvalidResponse  PaymentReconcileRunErrorKind = "invalid_response"
+	PaymentReconcileRunErrorKindInvalidSignature PaymentReconcileRunErrorKind = "invalid_signature"
+	PaymentReconcileRunErrorKindModeMismatch     PaymentReconcileRunErrorKind = "mode_mismatch"
+	PaymentReconcileRunErrorKindNone             PaymentReconcileRunErrorKind = "none"
+	PaymentReconcileRunErrorKindNotFound         PaymentReconcileRunErrorKind = "not_found"
+	PaymentReconcileRunErrorKindPermission       PaymentReconcileRunErrorKind = "permission"
+	PaymentReconcileRunErrorKindRequestCap       PaymentReconcileRunErrorKind = "request_cap"
+	PaymentReconcileRunErrorKindStaleSignature   PaymentReconcileRunErrorKind = "stale_signature"
+	PaymentReconcileRunErrorKindThrottled        PaymentReconcileRunErrorKind = "throttled"
+	PaymentReconcileRunErrorKindUnavailable      PaymentReconcileRunErrorKind = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PaymentReconcileRunErrorKind enum.
+func (e PaymentReconcileRunErrorKind) Valid() bool {
+	switch e {
+	case PaymentReconcileRunErrorKindInvalidRequest:
+		return true
+	case PaymentReconcileRunErrorKindInvalidResponse:
+		return true
+	case PaymentReconcileRunErrorKindInvalidSignature:
+		return true
+	case PaymentReconcileRunErrorKindModeMismatch:
+		return true
+	case PaymentReconcileRunErrorKindNone:
+		return true
+	case PaymentReconcileRunErrorKindNotFound:
+		return true
+	case PaymentReconcileRunErrorKindPermission:
+		return true
+	case PaymentReconcileRunErrorKindRequestCap:
+		return true
+	case PaymentReconcileRunErrorKindStaleSignature:
+		return true
+	case PaymentReconcileRunErrorKindThrottled:
+		return true
+	case PaymentReconcileRunErrorKindUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PaymentReconcileRunOutcome.
+const (
+	PaymentReconcileRunOutcomeFailed    PaymentReconcileRunOutcome = "failed"
+	PaymentReconcileRunOutcomePartial   PaymentReconcileRunOutcome = "partial"
+	PaymentReconcileRunOutcomeSucceeded PaymentReconcileRunOutcome = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the PaymentReconcileRunOutcome enum.
+func (e PaymentReconcileRunOutcome) Valid() bool {
+	switch e {
+	case PaymentReconcileRunOutcomeFailed:
+		return true
+	case PaymentReconcileRunOutcomePartial:
+		return true
+	case PaymentReconcileRunOutcomeSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PaymentStatusMode.
+const (
+	PaymentStatusModeLive PaymentStatusMode = "live"
+	PaymentStatusModeTest PaymentStatusMode = "test"
+)
+
+// Valid indicates whether the value is a known member of the PaymentStatusMode enum.
+func (e PaymentStatusMode) Valid() bool {
+	switch e {
+	case PaymentStatusModeLive:
+		return true
+	case PaymentStatusModeTest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PaymentStatusWarnings.
+const (
+	PaymentStatusWarningsNoWebhook          PaymentStatusWarnings = "no_webhook"
+	PaymentStatusWarningsReconcileCorrected PaymentStatusWarnings = "reconcile_corrected"
+)
+
+// Valid indicates whether the value is a known member of the PaymentStatusWarnings enum.
+func (e PaymentStatusWarnings) Valid() bool {
+	switch e {
+	case PaymentStatusWarningsNoWebhook:
+		return true
+	case PaymentStatusWarningsReconcileCorrected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Permission.
 const (
 	PermissionCreateCustomEmojis  Permission = "create_custom_emojis"
@@ -3364,7 +3472,9 @@ type AdminAppealPage struct {
 // `custom_emoji_request_submitted` and `custom_emoji_request_withdrawn` by the requester, and
 // `custom_emoji_request_approved` (which also records the emoji's `custom_emoji_created` or
 // `custom_emoji_image_replaced`) and `custom_emoji_request_rejected`; the label is the
-// `:shortcode:` of the request.
+// `:shortcode:` of the request. On a `payment_provider`: `payment_reconcile_queued`, a
+// reconciliation with the payment provider started by hand; the ID and the label are the
+// provider's name (`stripe`).
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -3421,7 +3531,9 @@ type AdminAuditEntry struct {
 	// `custom_emoji_request_submitted` and `custom_emoji_request_withdrawn` by the requester, and
 	// `custom_emoji_request_approved` (which also records the emoji's `custom_emoji_created` or
 	// `custom_emoji_image_replaced`) and `custom_emoji_request_rejected`; the label is the
-	// `:shortcode:` of the request.
+	// `:shortcode:` of the request. On a `payment_provider`: `payment_reconcile_queued`, a
+	// reconciliation with the payment provider started by hand; the ID and the label are the
+	// provider's name (`stripe`).
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -7207,6 +7319,73 @@ type PasswordStatus struct {
 	HasPassword bool `json:"has_password"`
 }
 
+// PaymentReconcileRun The last attempt of the reconciliation with the payment provider; omitted before the first.
+type PaymentReconcileRun struct {
+	// CheckedSubscriptions The subscriptions it read again from the provider.
+	CheckedSubscriptions int `json:"checked_subscriptions"`
+
+	// CorrectedSubscriptions The subscriptions among them whose state it changed here.
+	CorrectedSubscriptions int `json:"corrected_subscriptions"`
+
+	// ErrorKind Why it stopped: `request_cap` (a partial attempt), `permission` (the API key is wrong
+	// or lacks permissions), `not_found`, `invalid_request`, `throttled` and `unavailable`
+	// (the provider is busy or down; the next reconciliation tries again),
+	// `invalid_signature`, `stale_signature`, `mode_mismatch` (the key's mode differs from
+	// the account's), `invalid_response`; `none` for a success.
+	ErrorKind  PaymentReconcileRunErrorKind `json:"error_kind"`
+	OccurredAt time.Time                    `json:"occurred_at"`
+
+	// Outcome `succeeded`; `partial` when it used its `payments_reconcile_max_requests` and a
+	// continuation takes over; `failed` when the provider failed.
+	Outcome PaymentReconcileRunOutcome `json:"outcome"`
+
+	// Requests The requests it sent to the provider.
+	Requests int `json:"requests"`
+}
+
+// PaymentReconcileRunErrorKind Why it stopped: `request_cap` (a partial attempt), `permission` (the API key is wrong
+// or lacks permissions), `not_found`, `invalid_request`, `throttled` and `unavailable`
+// (the provider is busy or down; the next reconciliation tries again),
+// `invalid_signature`, `stale_signature`, `mode_mismatch` (the key's mode differs from
+// the account's), `invalid_response`; `none` for a success.
+type PaymentReconcileRunErrorKind string
+
+// PaymentReconcileRunOutcome `succeeded`; `partial` when it used its `payments_reconcile_max_requests` and a
+// continuation takes over; `failed` when the provider failed.
+type PaymentReconcileRunOutcome string
+
+// PaymentStatus The state of the payment provider (ADR-0074 §4).
+type PaymentStatus struct {
+	// LastReconcile The last attempt of the reconciliation with the payment provider; omitted before the first.
+	LastReconcile *PaymentReconcileRun `json:"last_reconcile,omitempty"`
+
+	// LastWebhookAt When the newest webhook delivery was received; omitted when none is recorded (the
+	// deliveries are kept 45 days).
+	LastWebhookAt *time.Time `json:"last_webhook_at,omitempty"`
+
+	// Mode `test` for test credentials, with which nothing is charged, and `live` for live
+	// credentials.
+	Mode PaymentStatusMode `json:"mode"`
+
+	// Provider The provider of `payments_provider` (`stripe`).
+	Provider string `json:"provider"`
+
+	// TimeZone The IANA time zone of the provider's reports (`UTC`), in which the income is dated.
+	TimeZone string `json:"time_zone"`
+
+	// Warnings The signs that the provider's webhook is not set up right: `no_webhook` (no delivery is
+	// recorded) and `reconcile_corrected` (the last reconciliation corrected subscriptions,
+	// which a webhook delivery should have done).
+	Warnings []PaymentStatusWarnings `json:"warnings"`
+}
+
+// PaymentStatusMode `test` for test credentials, with which nothing is charged, and `live` for live
+// credentials.
+type PaymentStatusMode string
+
+// PaymentStatusWarnings defines model for PaymentStatus.Warnings.
+type PaymentStatusWarnings string
+
 // Permission A capability that a role grants. `manage_accounts`: the accounts and their moderation
 // actions.
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
@@ -10062,6 +10241,12 @@ type ServerInterface interface {
 	// RetryAdminJob Run a dead job again
 	// (POST /admin/jobs/{id}/retry)
 	RetryAdminJob(w http.ResponseWriter, r *http.Request, id Id)
+	// RunPaymentReconcile Reconcile with the payment provider now
+	// (POST /admin/payment_reconciles)
+	RunPaymentReconcile(w http.ResponseWriter, r *http.Request)
+	// GetPaymentStatus Get the state of the payment provider
+	// (GET /admin/payment_status)
+	GetPaymentStatus(w http.ResponseWriter, r *http.Request)
 	// GetAdminQueue Get the state of the job queue
 	// (GET /admin/queue)
 	GetAdminQueue(w http.ResponseWriter, r *http.Request)
@@ -13441,6 +13626,34 @@ func (siw *ServerInterfaceWrapper) RetryAdminJob(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RetryAdminJob(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunPaymentReconcile operation middleware
+func (siw *ServerInterfaceWrapper) RunPaymentReconcile(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunPaymentReconcile(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPaymentStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetPaymentStatus(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPaymentStatus(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -17923,6 +18136,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/statuses/{id}/refetch", wrapper.RefetchStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/refetch_statuses", wrapper.RefetchAccountStatuses)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/instances/{domain}/refetch_statuses", wrapper.RefetchInstanceStatuses)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/payment_status", wrapper.GetPaymentStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/payment_reconciles", wrapper.RunPaymentReconcile)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/supporter_program", wrapper.GetSupporterProgram)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/supporter_program", wrapper.SetSupporterProgram)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/supporter_plans", wrapper.ListAdminSupporterPlans)
@@ -23341,6 +23556,112 @@ type RetryAdminJobdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response RetryAdminJobdefaultApplicationProblemPlusJSONResponse) VisitRetryAdminJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunPaymentReconcileRequestObject struct {
+}
+
+type RunPaymentReconcileResponseObject interface {
+	VisitRunPaymentReconcileResponse(w http.ResponseWriter) error
+}
+
+type RunPaymentReconcile204Response struct {
+}
+
+func (response RunPaymentReconcile204Response) VisitRunPaymentReconcileResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RunPaymentReconciledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RunPaymentReconciledefaultApplicationProblemPlusJSONResponse) VisitRunPaymentReconcileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPaymentStatusRequestObject struct {
+}
+
+type GetPaymentStatusResponseObject interface {
+	VisitGetPaymentStatusResponse(w http.ResponseWriter) error
+}
+
+type GetPaymentStatus200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetPaymentStatus200JSONResponse struct {
+	Body    PaymentStatus
+	Headers GetPaymentStatus200ResponseHeaders
+}
+
+func (response GetPaymentStatus200JSONResponse) VisitGetPaymentStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPaymentStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetPaymentStatusdefaultApplicationProblemPlusJSONResponse) VisitGetPaymentStatusResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -32890,6 +33211,12 @@ type StrictServerInterface interface {
 	// RetryAdminJob Run a dead job again
 	// (POST /admin/jobs/{id}/retry)
 	RetryAdminJob(ctx context.Context, request RetryAdminJobRequestObject) (RetryAdminJobResponseObject, error)
+	// RunPaymentReconcile Reconcile with the payment provider now
+	// (POST /admin/payment_reconciles)
+	RunPaymentReconcile(ctx context.Context, request RunPaymentReconcileRequestObject) (RunPaymentReconcileResponseObject, error)
+	// GetPaymentStatus Get the state of the payment provider
+	// (GET /admin/payment_status)
+	GetPaymentStatus(ctx context.Context, request GetPaymentStatusRequestObject) (GetPaymentStatusResponseObject, error)
 	// GetAdminQueue Get the state of the job queue
 	// (GET /admin/queue)
 	GetAdminQueue(ctx context.Context, request GetAdminQueueRequestObject) (GetAdminQueueResponseObject, error)
@@ -35797,6 +36124,54 @@ func (sh *strictHandler) RetryAdminJob(w http.ResponseWriter, r *http.Request, i
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RetryAdminJobResponseObject); ok {
 		if err := validResponse.VisitRetryAdminJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunPaymentReconcile operation middleware
+func (sh *strictHandler) RunPaymentReconcile(w http.ResponseWriter, r *http.Request) {
+	var request RunPaymentReconcileRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunPaymentReconcile(ctx, request.(RunPaymentReconcileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunPaymentReconcile")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunPaymentReconcileResponseObject); ok {
+		if err := validResponse.VisitRunPaymentReconcileResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPaymentStatus operation middleware
+func (sh *strictHandler) GetPaymentStatus(w http.ResponseWriter, r *http.Request) {
+	var request GetPaymentStatusRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPaymentStatus(ctx, request.(GetPaymentStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPaymentStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPaymentStatusResponseObject); ok {
+		if err := validResponse.VisitGetPaymentStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

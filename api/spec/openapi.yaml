@@ -474,6 +474,10 @@ paths:
     $ref: ./paths/admin_accounts_{id}_refetch_statuses.yaml
   /admin/instances/{domain}/refetch_statuses:
     $ref: ./paths/admin_instances_{domain}_refetch_statuses.yaml
+  /admin/payment_status:
+    $ref: ./paths/admin_payment_status.yaml
+  /admin/payment_reconciles:
+    $ref: ./paths/admin_payment_reconciles.yaml
   /admin/supporter_program:
     $ref: ./paths/admin_supporter_program.yaml
   /admin/supporter_plans:
@@ -1177,6 +1181,10 @@ components:
       $ref: ./components/schemas/PasskeyRegistrationRequest.yaml
     PasswordStatus:
       $ref: ./components/schemas/PasswordStatus.yaml
+    PaymentReconcileRun:
+      $ref: ./components/schemas/PaymentReconcileRun.yaml
+    PaymentStatus:
+      $ref: ./components/schemas/PaymentStatus.yaml
     Permission:
       $ref: ./components/schemas/Permission.yaml
     PickerCustomEmoji:

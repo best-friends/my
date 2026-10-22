@@ -9,6 +9,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/best-friends/my/internal/interface/clientapi"
 	paymentshttp "github.com/best-friends/my/internal/interface/payments"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -36,6 +37,15 @@ func newPaymentProvider(ctx context.Context, cfg *config.Config, opts AppOptions
 		return nil, fmt.Errorf("payments_provider = %s: %w", cfg.PaymentsProvider, err)
 	}
 	return prov, nil
+}
+
+// paymentsAPI returns the Payments of the admin API: nil without a payment provider, so that its
+// operations answer 404 rather than call a nil *supporters.Payments.
+func (a *App) paymentsAPI() clientapi.Payments {
+	if a.Payments == nil {
+		return nil
+	}
+	return a.Payments
 }
 
 // setUpPayments builds what carries the payment provider's facts to the supporters module

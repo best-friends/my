@@ -197,6 +197,9 @@ type Options struct {
 	// Supporters runs the supporter program, its plans, and their subscriptions
 	// (admin_supporters.go); nil answers 404 to their operations and a disabled program.
 	Supporters Supporters
+	// Payments reads the state of the payment provider and reconciles with it
+	// (admin_payments.go); nil, without a provider, answers 404 to their operations.
+	Payments Payments
 	// OwnSupporters runs the users' own subscriptions and the supporter list (supporters.go);
 	// nil answers 404 to their operations.
 	OwnSupporters OwnSupporters

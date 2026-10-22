@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The last attempt of the reconciliation with the payment provider; omitted before the first.
+type: object
+required: [outcome, error_kind, requests, checked_subscriptions, corrected_subscriptions, occurred_at]
+properties:
+  outcome:
+    description: |
+      `succeeded`; `partial` when it used its `payments_reconcile_max_requests` and a
+      continuation takes over; `failed` when the provider failed.
+    type: string
+    enum: [succeeded, partial, failed]
+  error_kind:
+    description: |
+      Why it stopped: `request_cap` (a partial attempt), `permission` (the API key is wrong
+      or lacks permissions), `not_found`, `invalid_request`, `throttled` and `unavailable`
+      (the provider is busy or down; the next reconciliation tries again),
+      `invalid_signature`, `stale_signature`, `mode_mismatch` (the key's mode differs from
+      the account's), `invalid_response`; `none` for a success.
+    type: string
+    enum: [none, request_cap, permission, not_found, invalid_request, throttled, unavailable, invalid_signature, stale_signature, mode_mismatch, invalid_response]
+  requests:
+    description: The requests it sent to the provider.
+    type: integer
+    minimum: 0
+  checked_subscriptions:
+    description: The subscriptions it read again from the provider.
+    type: integer
+    minimum: 0
+  corrected_subscriptions:
+    description: The subscriptions among them whose state it changed here.
+    type: integer
+    minimum: 0
+  occurred_at:
+    type: string
+    format: date-time

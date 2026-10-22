@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The state of the payment provider (ADR-0074 §4).
+type: object
+required: [provider, mode, time_zone, warnings]
+properties:
+  provider:
+    description: The provider of `payments_provider` (`stripe`).
+    type: string
+  mode:
+    description: |
+      `test` for test credentials, with which nothing is charged, and `live` for live
+      credentials.
+    type: string
+    enum: [test, live]
+  time_zone:
+    description: The IANA time zone of the provider's reports (`UTC`), in which the income is dated.
+    type: string
+  last_webhook_at:
+    description: |
+      When the newest webhook delivery was received; omitted when none is recorded (the
+      deliveries are kept 45 days).
+    type: string
+    format: date-time
+  last_reconcile:
+    $ref: ./PaymentReconcileRun.yaml
+  warnings:
+    description: |
+      The signs that the provider's webhook is not set up right: `no_webhook` (no delivery is
+      recorded) and `reconcile_corrected` (the last reconciliation corrected subscriptions,
+      which a webhook delivery should have done).
+    type: array
+    items:
+      type: string
+      enum: [no_webhook, reconcile_corrected]

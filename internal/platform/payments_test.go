@@ -5,6 +5,7 @@ package platform_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -14,8 +15,11 @@ import (
 	"time"
 
 	"github.com/best-friends/my/internal/adapter/payment/fake"
+	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/internal/interface/clientapi/apitest"
 	"github.com/best-friends/my/internal/platform"
 )
 
@@ -130,5 +134,90 @@ func TestPaymentWebhooksOff(t *testing.T) {
 	app.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/payments/webhooks/stripe", bytes.NewReader([]byte("{}"))))
 	if rec.Code != http.StatusNotFound && rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("POST /payments/webhooks/stripe without a provider = %d, want 404", rec.Code)
+	}
+}
+
+// TestPaymentReconcileByHand reads the state of the payment provider through the admin API and
+// reconciles with it by hand (ADR-0074 §4): without a delivery the state warns of the webhook,
+// the reconciliation runs once an hour and is audited, and the state then shows the attempt
+// and warns of the subscriptions it corrected.
+func TestPaymentReconcileByHand(t *testing.T) {
+	t.Parallel()
+	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline"})
+	prov := fake.New(fake.Options{Name: "stripe"})
+	prov.PutSubscription(supporters.SubscriptionSnapshot{Ref: "sub_1", LocalID: "local-1", Status: supporters.StatusActive})
+	synced := &syncedSubscriptions{}
+	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{
+		Logger: slog.New(slog.DiscardHandler), PaymentProvider: prov, SupporterSync: synced,
+	})
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+	h, spec, ctx := app.Handler(), apitest.Load(t), t.Context()
+	admin, err := app.Identity.CreateAdmin(ctx, identity.CreateAdminInput{
+		Username: "alice", Email: "alice@example.com", Password: "correct horse battery staple",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := issueAccessToken(t, app, admin.User.ID, "read write admin")
+	api := func(method, path string, out any) int {
+		t.Helper()
+		req := httptest.NewRequest(method, clientapi.BasePath+path, nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		res := spec.Serve(t, h, req)
+		if out != nil && res.StatusCode == http.StatusOK {
+			if err := json.NewDecoder(res.Body).Decode(out); err != nil {
+				t.Fatalf("%s %s: %v", method, path, err)
+			}
+		}
+		return res.StatusCode
+	}
+
+	var st clientapi.PaymentStatus
+	if code := api(http.MethodGet, "/admin/payment_status", &st); code != http.StatusOK {
+		t.Fatalf("GET /admin/payment_status = %d", code)
+	}
+	if st.Provider != "stripe" || st.Mode != clientapi.PaymentStatusModeTest || st.LastWebhookAt != nil || st.LastReconcile != nil ||
+		!slices.Equal(st.Warnings, []clientapi.PaymentStatusWarnings{clientapi.PaymentStatusWarningsNoWebhook}) {
+		t.Errorf("status before = %+v", st)
+	}
+
+	if code := api(http.MethodPost, "/admin/payment_reconciles", nil); code != http.StatusNoContent {
+		t.Fatalf("POST /admin/payment_reconciles = %d, want 204", code)
+	}
+	if code := api(http.MethodPost, "/admin/payment_reconciles", nil); code != http.StatusTooManyRequests {
+		t.Errorf("a second reconciliation in the hour = %d, want 429", code)
+	}
+	if n := synced.count(); n != 1 {
+		t.Errorf("the reconciliation synced %d subscriptions, want 1", n)
+	}
+
+	st = clientapi.PaymentStatus{}
+	if code := api(http.MethodGet, "/admin/payment_status", &st); code != http.StatusOK {
+		t.Fatalf("GET /admin/payment_status = %d", code)
+	}
+	if r := st.LastReconcile; r == nil || r.Outcome != clientapi.PaymentReconcileRunOutcomeSucceeded ||
+		r.ErrorKind != clientapi.PaymentReconcileRunErrorKindNone || r.CheckedSubscriptions != 1 || r.CorrectedSubscriptions != 1 {
+		t.Errorf("last reconcile = %+v", r)
+	}
+	if !slices.Contains(st.Warnings, clientapi.PaymentStatusWarningsReconcileCorrected) {
+		t.Errorf("warnings = %v, want reconcile_corrected", st.Warnings)
+	}
+
+	var audit clientapi.AdminAuditEntryPage
+	if code := api(http.MethodGet, "/admin/audit_log", &audit); code != http.StatusOK {
+		t.Fatalf("GET /admin/audit_log = %d", code)
+	}
+	n := 0
+	for _, e := range audit.Items {
+		if e.Action == clientapi.AdminAuditActionPaymentReconcileQueued && e.TargetKind == clientapi.AdminAuditTargetKindPaymentProvider &&
+			e.TargetId == "stripe" && e.TargetLabel == "stripe" {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("audit log has %d payment_reconcile_queued on stripe, want 1", n)
 	}
 }
