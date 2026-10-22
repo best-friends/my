@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The supporters screen (ADR-0072, manage_supporters): the supporter program with enabling and disabling it, the plans
-// with creating, changing and retiring them, and the subscriptions with ending one at once. The server keeps every
+// with creating, changing and retiring them, the subscriptions with ending one at once, and the state of the payment
+// provider with reconciling with it now (ADR-0074 §4, at most once an hour). The server keeps every
 // rule (the plan's role, the order of the plans, the provider's minimum amount); a refusal is said in the server's
 // words next to the field it is about, and what a change did is announced and kept in a StatusMessage.
 import { useAnnouncer } from "@my/ui";
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
-import { errorMessage } from "../../../lib/errors";
+import { ApiError, errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { type PagedList, toPagedList } from "../../moderation";
 import {
@@ -16,8 +17,12 @@ import {
   maxAnnualDiscount,
   maxEmojiLimit,
   maxPlanRank,
+  type PaymentStatus,
+  paymentStatusQueryOptions,
+  refreshPaymentStatus,
   refreshSupporters,
   retireSupporterPlanMutation,
+  runPaymentReconcileMutation,
   setSupporterProgramMutation,
   type SupporterPlan,
   type SupporterPlanChange,
@@ -72,6 +77,54 @@ export function useSupporterProgram() {
     /** Why the server refused, in its words, until the next change. */
     error: mutation.isError ? errorMessage(mutation.error) : undefined,
     status,
+  };
+}
+
+/** The payment provider of the deployment's configuration, or undefined for none (from the program). */
+export function useConfiguredPaymentProvider(): string | undefined {
+  const api = useApi();
+  return useSuspenseQuery(supporterProgramQueryOptions(api)).data.configured_provider;
+}
+
+/** The state of the payment provider: read only when the program names a configured provider (a 404 without one). */
+export function usePaymentStatus(): PaymentStatus {
+  const api = useApi();
+  return useSuspenseQuery(paymentStatusQueryOptions(api)).data;
+}
+
+/** Reconciling with the payment provider now: at most once an hour (429), which the screen explains. */
+export function useRunPaymentReconcile() {
+  const api = useApi();
+  const t = useT();
+  const queryClient = useQueryClient();
+  const announce = useAnnouncer();
+  const [result, setResult] = useState<{ status: string } | { error: string } | undefined>(undefined);
+  const mutation = useMutation({
+    ...runPaymentReconcileMutation(api),
+    onMutate: () => {
+      setResult(undefined);
+    },
+    onSuccess: async () => {
+      await refreshPaymentStatus(queryClient);
+      const message = t("client:admin.supporters.payment.reconcile.queued");
+      setResult({ status: message });
+      announce(message);
+    },
+    onError: (failure) => {
+      const tooSoon = failure instanceof ApiError && failure.status === 429;
+      setResult({
+        error: tooSoon ? t("client:admin.supporters.payment.reconcile.too_soon") : t("client:admin.supporters.payment.reconcile.failed", { reason: errorMessage(failure) }),
+      });
+    },
+  });
+  return {
+    run: () => {
+      if (mutation.isPending) return;
+      mutation.mutate();
+    },
+    isPending: mutation.isPending,
+    status: result !== undefined && "status" in result ? result.status : undefined,
+    error: result !== undefined && "error" in result ? result.error : undefined,
   };
 }
 

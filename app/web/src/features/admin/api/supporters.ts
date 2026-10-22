@@ -2,8 +2,10 @@
 // The queries and mutations of the supporters screen (ADR-0072 §2, §3, §9, §10, manage_supporters, web-client.md S1):
 // the supporter program (GET / PUT /admin/supporter_program), every plan, retired ones too (GET /admin/supporter_plans),
 // creating, changing and retiring one, and the subscriptions (GET /admin/supporter_subscriptions, newest first, as an
-// infinite query narrowed to a plan and a state) with cancelling one at once. A plan that breaks a rule is a 422
-// `invalid-supporter-plan` problem whose `reason` says which. Every change is recorded in the audit log.
+// infinite query narrowed to a plan and a state) with cancelling one at once, and the state of the payment provider
+// (GET /admin/payment_status, ADR-0074 §4) with reconciling with it now (POST /admin/payment_reconciles, once an hour). A
+// plan that breaks a rule is a 422 `invalid-supporter-plan` problem whose `reason` says which. Every change is recorded
+// in the audit log.
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -21,6 +23,9 @@ export type SupporterPlanVisibility = Schemas["SupporterPlanVisibility"];
 export type SupporterPlanProblemReason = Schemas["SupporterPlanProblemReason"];
 export type SupporterSubscription = Schemas["AdminSupporterSubscription"];
 export type SupporterSubscriptionState = Schemas["SupporterSubscriptionState"];
+export type PaymentStatus = Schemas["PaymentStatus"];
+export type PaymentStatusWarning = PaymentStatus["warnings"][number];
+export type PaymentReconcileRun = Schemas["PaymentReconcileRun"];
 
 /** The visibilities of a plan, in the order of the form. */
 export const supporterPlanVisibilities = ["public", "hidden"] as const satisfies readonly SupporterPlanVisibility[];
@@ -82,6 +87,11 @@ export function supporterProgramQueryOptions(api: Api) {
 /** Every plan, retired ones too, by rank. */
 export function supporterPlansQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/admin/supporter_plans");
+}
+
+/** The state of the payment provider of the configuration; a 404 without one, so it is read only when the program names one. */
+export function paymentStatusQueryOptions(api: Api) {
+  return api.query.queryOptions("get", "/admin/payment_status");
 }
 
 /** Which subscriptions the list shows: those of one plan and in one state; undefined keeps every one. */
@@ -158,6 +168,22 @@ export function cancelSupporterSubscriptionMutation(api: Api) {
       await api.fetch.POST("/admin/supporter_subscriptions/{id}/cancel", { params: { path: { id } } });
     },
   };
+}
+
+/** Queues a reconciliation with the payment provider now (POST /admin/payment_reconciles), as the options of useMutation. */
+export function runPaymentReconcileMutation(api: Api) {
+  return {
+    mutationKey: ["post", "/admin/payment_reconciles"] as const,
+    mutationFn: async (): Promise<void> => {
+      // The middleware throws for every error status (a 429 within the hour); a 204 has no body to read.
+      await api.fetch.POST("/admin/payment_reconciles");
+    },
+  };
+}
+
+/** Marks what a reconciliation started by hand changes: the state of the payment provider and the audit log. */
+export async function refreshPaymentStatus(queryClient: QueryClient): Promise<void> {
+  await Promise.all([queryClient.invalidateQueries({ queryKey: ["get", "/admin/payment_status"] }), refreshAuditLog(queryClient)]);
 }
 
 /**

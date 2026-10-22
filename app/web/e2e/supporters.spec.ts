@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The supporters screen in every width × locale project (ADR-0072, ADR-0027): an administrator with
-// manage_supporters sees the program and its warning, the plans with a name in Arabic (dir="auto") and the
-// subscriptions, enables the program, creates a plan, retires one and ends a subscription after their dialogs. Each
+// manage_supporters sees the program and its warning, the payment provider's state with how to fix its last
+// reconciliation, the plans with a name in Arabic (dir="auto") and the subscriptions, reconciles now and sees why a
+// second one is too soon, enables the program, creates a plan, retires one and ends a subscription after their dialogs. Each
 // step passes axe without scrolling sideways. `vite preview` has no API, so the test plays the server with page.route;
 // names change with the locale, so the elements are found by role and by the names in the project's locale catalog.
 import { readFileSync } from "node:fs";
@@ -86,6 +87,14 @@ async function serveApi(page: Page) {
   let enabled = false;
   let plans = [plan("0192f0c4-7a8e-7000-8000-0000000000c1"), plan("0192f0c4-7a8e-7000-8000-0000000000c2", { name: "داعم ذهبي", rank: 2, members: 0 })];
   let subscriptions = [subscription];
+  let reconciles = 0;
+  const paymentStatus: Schemas["PaymentStatus"] = {
+    provider: "stripe",
+    mode: "test",
+    time_zone: "UTC",
+    last_reconcile: { outcome: "failed", error_kind: "permission", requests: 1, checked_subscriptions: 0, corrected_subscriptions: 0, occurred_at: "2026-10-22T00:00:00Z" },
+    warnings: ["no_webhook"],
+  };
   const program = (): Schemas["AdminSupporterProgram"] => ({
     enabled,
     ...(enabled ? { provider: "stripe" } : {}),
@@ -127,6 +136,13 @@ async function serveApi(page: Page) {
       sent.push(`program ${String(enabled)}`);
       return json(route, program());
     }
+    if (key === "GET /admin/payment_status") return json(route, paymentStatus);
+    if (key === "POST /admin/payment_reconciles") {
+      reconciles += 1;
+      sent.push(`reconcile ${String(reconciles)}`);
+      if (reconciles > 1) return json(route, { type: "about:blank", title: "Too Many Requests", status: 429 }, 429);
+      return route.fulfill({ status: 204 });
+    }
     if (key === "GET /admin/supporter_plans") return json(route, { items: plans });
     if (key === "POST /admin/supporter_plans") {
       const body = request.postDataJSON() as Schemas["AdminSupporterPlanCreateRequest"];
@@ -152,6 +168,26 @@ async function serveApi(page: Page) {
 }
 
 test.describe("supporters", () => {
+  test("shows the payment provider's state and reconciles now once an hour", async ({ page, makeAxeBuilder }) => {
+    const sent = await serveApi(page);
+    await page.goto("/admin/supporters");
+    const payment = page.getByRole("main").getByRole("region", { name: message("admin.supporters.payment.title"), exact: true });
+    await expect(payment.getByText(message("admin.supporters.payment.mode.test"), { exact: true })).toBeVisible();
+    await expect(payment.getByText(message("admin.supporters.payment.error.permission"), { exact: true })).toBeVisible();
+    await expect(payment.getByText(message("admin.supporters.payment.warning.no_webhook"), { exact: true })).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    const reconcile = payment.getByRole("button", { name: message("admin.supporters.payment.reconcile.run"), exact: true });
+    await reconcile.click();
+    await expect(payment.getByRole("status")).toHaveText(message("admin.supporters.payment.reconcile.queued"));
+    await reconcile.click();
+    await expect(payment.getByRole("alert")).toHaveText(message("admin.supporters.payment.reconcile.too_soon"));
+    expect(sent).toEqual(["reconcile 1", "reconcile 2"]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
   test("enables the program, creates and retires a plan, and ends a subscription after their dialogs", async ({ page, makeAxeBuilder }) => {
     const sent = await serveApi(page);
     await page.goto("/admin/supporters");

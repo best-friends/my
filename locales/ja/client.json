@@ -10891,6 +10891,142 @@
     "defaultMessage": "規約とポリシーで書く",
     "description": "Link from the warning to the terms and policies screen."
   },
+  "admin.supporters.payment.title": {
+    "defaultMessage": "決済の事業者",
+    "description": "Heading of the section of the payment provider's state on the supporters screen."
+  },
+  "admin.supporters.payment.description": {
+    "defaultMessage": "サーバーの設定の決済の事業者です。モード、事業者から届く webhook、数時間ごとに事業者から加入とお金の動きを読み直す照合の状態を出します。",
+    "description": "Description of the payment provider section."
+  },
+  "admin.supporters.payment.provider": {
+    "defaultMessage": "事業者",
+    "description": "Term of the payment provider's name."
+  },
+  "admin.supporters.payment.mode": {
+    "defaultMessage": "モード",
+    "description": "Term of the payment provider's mode (test or live)."
+  },
+  "admin.supporters.payment.mode.test": {
+    "defaultMessage": "テスト（実際の請求は起きません）",
+    "description": "Value of the mode for test credentials."
+  },
+  "admin.supporters.payment.mode.live": {
+    "defaultMessage": "ライブ",
+    "description": "Value of the mode for live credentials."
+  },
+  "admin.supporters.payment.time_zone": {
+    "defaultMessage": "レポートのタイムゾーン",
+    "description": "Term of the time zone in which the provider's income is dated."
+  },
+  "admin.supporters.payment.last_webhook": {
+    "defaultMessage": "最後の webhook",
+    "description": "Term of when the newest webhook delivery was received."
+  },
+  "admin.supporters.payment.no_webhook": {
+    "defaultMessage": "45 日以内にはありません",
+    "description": "Value of the last webhook when no delivery is recorded (deliveries are kept 45 days)."
+  },
+  "admin.supporters.payment.last_reconcile": {
+    "defaultMessage": "最後の照合",
+    "description": "Term of the last reconciliation attempt with its outcome."
+  },
+  "admin.supporters.payment.never": {
+    "defaultMessage": "まだありません",
+    "description": "Value of the last reconciliation before the first."
+  },
+  "admin.supporters.payment.outcome.succeeded": {
+    "defaultMessage": "成功",
+    "description": "Outcome of a reconciliation that succeeded."
+  },
+  "admin.supporters.payment.outcome.partial": {
+    "defaultMessage": "途中まで（続きが引き継ぎます）",
+    "description": "Outcome of a reconciliation that used its request cap; a continuation goes on."
+  },
+  "admin.supporters.payment.outcome.failed": {
+    "defaultMessage": "失敗",
+    "description": "Outcome of a reconciliation that failed."
+  },
+  "admin.supporters.payment.requests": {
+    "defaultMessage": "事業者への要求",
+    "description": "Term of the requests the last reconciliation sent."
+  },
+  "admin.supporters.payment.checked": {
+    "defaultMessage": "読み直した加入",
+    "description": "Term of the subscriptions the last reconciliation read again."
+  },
+  "admin.supporters.payment.corrected": {
+    "defaultMessage": "直した加入",
+    "description": "Term of the subscriptions whose state the last reconciliation changed."
+  },
+  "admin.supporters.payment.error.request_cap": {
+    "defaultMessage": "1 回の照合の要求の上限（payments_reconcile_max_requests）に達し、1 分後に続きが引き継ぎます。多くの回でこうなるなら、payments_reconcile_max_requests を上げるか payments_reconcile_interval を延ばしてください。",
+    "description": "How to fix a reconciliation that stopped at its request cap."
+  },
+  "admin.supporters.payment.error.permission": {
+    "defaultMessage": "事業者が API の鍵を拒みました。鍵の誤りか権限の不足です。サーバーの環境変数の秘密の鍵と、制限付きのキーの権限を確かめて、再デプロイしてください。",
+    "description": "How to fix a reconciliation refused for the API key."
+  },
+  "admin.supporters.payment.error.not_found": {
+    "defaultMessage": "サーバーが求めたものが事業者に見つかりませんでした。鍵がこれまでサーバーが使ってきたアカウントのものか、事業者のダッシュボードで商品や価格を削除していないかを確かめてください。",
+    "description": "How to fix a reconciliation that failed for a missing object."
+  },
+  "admin.supporters.payment.error.invalid_request": {
+    "defaultMessage": "事業者がサーバーの要求を拒みました。サーバーのログと事業者のダッシュボードでその要求を確かめ、続くようなら my の開発者に報告してください。",
+    "description": "How to fix a reconciliation that failed for an invalid request."
+  },
+  "admin.supporters.payment.error.throttled": {
+    "defaultMessage": "事業者がサーバーの要求を制限しました。次の照合で再び試すので、続かない限り直すことはありません。",
+    "description": "How to fix a reconciliation that was rate limited."
+  },
+  "admin.supporters.payment.error.unavailable": {
+    "defaultMessage": "事業者が混み合っていたか、つながりませんでした。次の照合で再び試します。続くようなら、サーバーのネットワークと事業者の稼働状況を確かめてください。",
+    "description": "How to fix a reconciliation that failed because the provider was unavailable."
+  },
+  "admin.supporters.payment.error.invalid_signature": {
+    "defaultMessage": "署名が一致しませんでした。サーバーの環境変数の webhook の署名シークレットが、事業者に登録したエンドポイントのものかを確かめてください。",
+    "description": "How to fix a failure for an invalid signature."
+  },
+  "admin.supporters.payment.error.stale_signature": {
+    "defaultMessage": "署名の時刻が 5 分より大きくずれていました。サーバーの時計が合っているかを確かめてください。",
+    "description": "How to fix a failure for a stale signature."
+  },
+  "admin.supporters.payment.error.mode_mismatch": {
+    "defaultMessage": "API の鍵のモード（テストかライブ）が事業者の側と違います。同じモードの API の鍵と webhook の署名シークレットを使って、再デプロイしてください。",
+    "description": "How to fix a failure for a mode mismatch."
+  },
+  "admin.supporters.payment.error.invalid_response": {
+    "defaultMessage": "事業者がサーバーの読めない形で答えました。次の照合で再び試します。続くようなら my の開発者に報告してください。",
+    "description": "How to fix a failure for an unreadable response."
+  },
+  "admin.supporters.payment.warning.no_webhook": {
+    "defaultMessage": "45 日以内に webhook を受けた記録がありません。事業者にこのサーバーの URL で webhook のエンドポイントが登録され、その署名シークレットがサーバーの環境変数にあるかを確かめてください。",
+    "description": "Warning of the payment provider section: no webhook delivery is recorded."
+  },
+  "admin.supporters.payment.warning.reconcile_corrected": {
+    "defaultMessage": "最後の照合が、webhook で更新されるはずの加入を直しました。webhook のエンドポイントの URL・送るイベント・署名シークレットを確かめてください。",
+    "description": "Warning of the payment provider section: the last reconciliation corrected subscriptions."
+  },
+  "admin.supporters.payment.reconcile.description": {
+    "defaultMessage": "照合は、定期の照合を待たずに、事業者から加入とお金の動きを今すぐ読み直します。1 時間（UTC）に 1 回まで実行でき、監査ログに残ります。",
+    "description": "Description of the button that reconciles with the payment provider now."
+  },
+  "admin.supporters.payment.reconcile.run": {
+    "defaultMessage": "今すぐ照合する",
+    "description": "Button that reconciles with the payment provider now."
+  },
+  "admin.supporters.payment.reconcile.queued": {
+    "defaultMessage": "照合を予約しました。実行されると、その結果がここに出ます。",
+    "description": "Status message after queueing a reconciliation."
+  },
+  "admin.supporters.payment.reconcile.too_soon": {
+    "defaultMessage": "この 1 時間（UTC）の照合はもう実行されています。次の 1 時間に試してください。",
+    "description": "Error of a reconciliation started again within the same UTC hour."
+  },
+  "admin.supporters.payment.reconcile.failed": {
+    "defaultMessage": "照合を始められませんでした：{reason}",
+    "description": "Error of starting a reconciliation, with the server's reason."
+  },
   "admin.supporters.new.title": {
     "defaultMessage": "プランを作成する",
     "description": "Heading of the section of the supporters screen with the form of a new plan."
