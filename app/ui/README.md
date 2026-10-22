@@ -379,6 +379,14 @@ arbitrary value. A look that no prop gives is a new prop or component in the kit
 | `tone` | `fg` / `muted` / `danger` / `warning`: the text color inside |
 | `textSize` | `xs` / `sm` / `base` / `lg`: the text size inside |
 
+### Notification rows and quotes
+
+`NotificationSentence` is the sentence of a notification in the author slot of a `PostCard` (`isUnread` adds the dot, the heavier
+weight and the hidden `unreadLabel`), `NotificationOthers` the row of the other people of a group above it (`PostCardAvatarLink`s
+around `xs` avatars), and `NotificationLinks` the links that lead on, in the actions slot. `QuoteBlock` is lines with a rule at the
+start (a moderation notice, a reason); `PostExcerpt` is that rule on a link to a post, around a `PostExcerptText` (its direction,
+language and line breaks, cut after three lines). The form's quote of the post being replied to uses the same parts.
+
 ### Account rows
 
 `AccountItem` is the avatar, the display name and the handle of an account: a link to the profile with `href`, plain text

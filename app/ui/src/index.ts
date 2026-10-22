@@ -174,6 +174,8 @@ export {
   type PostCardOriginProps,
   type PostCardTimeLinkProps,
 } from "./PostCardParts";
+export { NotificationLinks, NotificationOthers, NotificationSentence, type NotificationOthersProps, type NotificationSentenceProps } from "./NotificationRow";
+export { PostExcerpt, PostExcerptText, QuoteBlock, type PostExcerptProps, type PostExcerptTextProps, type QuoteBlockProps } from "./Quote";
 
 // The app shell (web-client.md §9): the frame, the navigation, the page heading and the routes' states.
 export { AppShell, AsidePanel, type AppShellProps, type AsidePanelProps } from "./AppShell";
