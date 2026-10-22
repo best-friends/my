@@ -6219,6 +6219,38 @@
     "defaultMessage": "No posts yet",
     "description": "Heading shown in place of the recent posts of the landing page when there are none."
   },
+  "landing.hero.eyebrow": {
+    "defaultMessage": "Welcome to my",
+    "description": "Small line above the landing page's heading; uppercase Latin letters in both languages (the product's name is not translated)."
+  },
+  "landing.features.title": {
+    "defaultMessage": "What you can do with my",
+    "description": "Heading of the landing page's section with three cards about the software's features."
+  },
+  "landing.features.federation.title": {
+    "defaultMessage": "Connect beyond this server",
+    "description": "Title of the landing page's card about federation."
+  },
+  "landing.features.federation.body": {
+    "defaultMessage": "Follow and talk with people on Mastodon, Misskey and other servers that speak ActivityPub.",
+    "description": "Text of the landing page's card about federation."
+  },
+  "landing.features.emoji.title": {
+    "defaultMessage": "Say it with emoji",
+    "description": "Title of the landing page's card about custom emoji and reactions."
+  },
+  "landing.features.emoji.body": {
+    "defaultMessage": "React to posts with custom emoji, including those from other servers.",
+    "description": "Text of the landing page's card about custom emoji and reactions."
+  },
+  "landing.features.language.title": {
+    "defaultMessage": "In your language",
+    "description": "Title of the landing page's card about languages."
+  },
+  "landing.features.language.body": {
+    "defaultMessage": "Use the app in English or Japanese, and tag each post with its language.",
+    "description": "Text of the landing page's card about languages."
+  },
   "local.title": {
     "defaultMessage": "Local timeline",
     "description": "Heading and document title of the page with the public posts of this server's accounts."

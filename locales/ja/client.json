@@ -6219,6 +6219,38 @@
     "defaultMessage": "まだ投稿はありません",
     "description": "Heading shown in place of the recent posts of the landing page when there are none."
   },
+  "landing.hero.eyebrow": {
+    "defaultMessage": "Welcome to my",
+    "description": "Small line above the landing page's heading; uppercase Latin letters in both languages (the product's name is not translated)."
+  },
+  "landing.features.title": {
+    "defaultMessage": "my でできること",
+    "description": "Heading of the landing page's section with three cards about the software's features."
+  },
+  "landing.features.federation.title": {
+    "defaultMessage": "このサーバーの外ともつながる",
+    "description": "Title of the landing page's card about federation."
+  },
+  "landing.features.federation.body": {
+    "defaultMessage": "Mastodon や Misskey など、ActivityPub に対応したサーバーの人をフォローして、話せます。",
+    "description": "Text of the landing page's card about federation."
+  },
+  "landing.features.emoji.title": {
+    "defaultMessage": "絵文字で気持ちを伝える",
+    "description": "Title of the landing page's card about custom emoji and reactions."
+  },
+  "landing.features.emoji.body": {
+    "defaultMessage": "ほかのサーバーのものも含め、カスタム絵文字で投稿にリアクションできます。",
+    "description": "Text of the landing page's card about custom emoji and reactions."
+  },
+  "landing.features.language.title": {
+    "defaultMessage": "あなたの言葉で",
+    "description": "Title of the landing page's card about languages."
+  },
+  "landing.features.language.body": {
+    "defaultMessage": "画面は日本語と英語で使え、投稿には言語を付けられます。",
+    "description": "Text of the landing page's card about languages."
+  },
   "local.title": {
     "defaultMessage": "ローカルタイムライン",
     "description": "Heading and document title of the page with the public posts of this server's accounts."

@@ -8519,6 +8519,38 @@
     "defaultMessage": "‮∀qonʇ ʇɥıs sǝɹʌǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "landing.features.emoji.body": {
+    "defaultMessage": "‮ᴚǝɐɔʇ ʇo dosʇs ʍıʇɥ ɔnsʇoɯ ǝɯoɾı, ıuɔʅnpıuƃ ʇɥosǝ ɟɹoɯ oʇɥǝɹ sǝɹʌǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.emoji.title": {
+    "defaultMessage": "‮Sɐʎ ıʇ ʍıʇɥ ǝɯoɾı‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.federation.body": {
+    "defaultMessage": "‮Ⅎoʅʅoʍ ɐup ʇɐʅʞ ʍıʇɥ dǝodʅǝ ou Wɐsʇopou, Wıssʞǝʎ ɐup oʇɥǝɹ sǝɹʌǝɹs ʇɥɐʇ sdǝɐʞ ∀ɔʇıʌıʇʎԀnq.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.federation.title": {
+    "defaultMessage": "‮Ↄouuǝɔʇ qǝʎoup ʇɥıs sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.language.body": {
+    "defaultMessage": "‮∩sǝ ʇɥǝ ɐdd ıu Ǝuƃʅısɥ oɹ ſɐdɐuǝsǝ, ɐup ʇɐƃ ǝɐɔɥ dosʇ ʍıʇɥ ıʇs ʅɐuƃnɐƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.language.title": {
+    "defaultMessage": "‮Iu ʎonɹ ʅɐuƃnɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.title": {
+    "defaultMessage": "‮Mɥɐʇ ʎon ɔɐu po ʍıʇɥ ɯʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.hero.eyebrow": {
+    "defaultMessage": "‮Mǝʅɔoɯǝ ʇo ɯʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "landing.posts.empty": {
     "defaultMessage": "‮No dosʇs ʎǝʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."

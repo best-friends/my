@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button as RACButton, type ButtonProps as RACButtonProps, composeRenderProps } from "react-aria-components";
+import { Button as RACButton, type ButtonProps as RACButtonProps, composeRenderProps, Link as RACLink, type LinkProps as RACLinkProps } from "react-aria-components";
 import { tv, type VariantProps } from "tailwind-variants";
 
 const button = tv({
@@ -28,6 +28,8 @@ const button = tv({
     size: {
       sm: "min-h-8 px-3 text-sm [&>svg]:size-4",
       md: "min-h-10 px-4 text-base [&>svg]:size-5",
+      /** The calls to action of a hero. */
+      lg: "min-h-12 px-6 text-base [&>svg]:size-5",
       /** Among `ToggleButton`s in a row of actions (a post's): as tall as they are, with its icon as large. */
       toolbar: "min-h-8 px-2 text-sm [&>svg]:size-5",
       /** Beside a button of the same height, with only an icon in it: the height of `md` with narrow sides. */
@@ -48,4 +50,14 @@ export type ButtonProps = RACButtonProps & VariantProps<typeof button>;
  */
 export function Button({ variant, size, className, ...props }: ButtonProps) {
   return <RACButton {...props} className={composeRenderProps(className, (className) => button({ variant, size, className }))} />;
+}
+
+export type ButtonLinkProps = RACLinkProps & VariantProps<typeof button>;
+
+/**
+ * A link (`<a href>`) that looks like a `Button`, for a call to action that leaves the app or opens another page (the
+ * registration page). Activated as a link: Enter, not Space.
+ */
+export function ButtonLink({ variant, size, className, ...props }: ButtonLinkProps) {
+  return <RACLink {...props} className={composeRenderProps(className, (className) => button({ variant, size, className }))} />;
 }

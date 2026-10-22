@@ -8519,6 +8519,38 @@
     "defaultMessage": "[Ȧƀǿǿŭŭŧ ŧħīş şḗḗřṽḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "landing.features.emoji.body": {
+    "defaultMessage": "[Řḗḗȧȧƈŧ ŧǿǿ ƥǿǿşŧş ẇīŧħ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī, īƞƈŀŭŭḓīƞɠ ŧħǿǿşḗḗ ƒřǿǿḿ ǿǿŧħḗḗř şḗḗřṽḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.emoji.title": {
+    "defaultMessage": "[Şȧȧẏ īŧ ẇīŧħ ḗḗḿǿǿĵī]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.federation.body": {
+    "defaultMessage": "[Ƒǿǿŀŀǿǿẇ ȧȧƞḓ ŧȧȧŀķ ẇīŧħ ƥḗḗǿǿƥŀḗḗ ǿǿƞ Ḿȧȧşŧǿǿḓǿǿƞ, Ḿīşşķḗḗẏ ȧȧƞḓ ǿǿŧħḗḗř şḗḗřṽḗḗřş ŧħȧȧŧ şƥḗḗȧȧķ ȦƈŧīṽīŧẏƤŭŭƀ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.federation.title": {
+    "defaultMessage": "[Ƈǿǿƞƞḗḗƈŧ ƀḗḗẏǿǿƞḓ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.language.body": {
+    "defaultMessage": "[Ŭşḗḗ ŧħḗḗ ȧȧƥƥ īƞ Ḗƞɠŀīşħ ǿǿř Ĵȧȧƥȧȧƞḗḗşḗḗ, ȧȧƞḓ ŧȧȧɠ ḗḗȧȧƈħ ƥǿǿşŧ ẇīŧħ īŧş ŀȧȧƞɠŭŭȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.language.title": {
+    "defaultMessage": "[Īƞ ẏǿǿŭŭř ŀȧȧƞɠŭŭȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.features.title": {
+    "defaultMessage": "[Ẇħȧȧŧ ẏǿǿŭŭ ƈȧȧƞ ḓǿǿ ẇīŧħ ḿẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.hero.eyebrow": {
+    "defaultMessage": "[Ẇḗḗŀƈǿǿḿḗḗ ŧǿǿ ḿẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "landing.posts.empty": {
     "defaultMessage": "[Ƞǿǿ ƥǿǿşŧş ẏḗḗŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
