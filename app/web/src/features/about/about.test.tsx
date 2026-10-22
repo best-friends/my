@@ -49,8 +49,8 @@ describe("the information page", () => {
 
     const documents = screen.getByRole("region", { name: "Terms and policies" });
     expect(within(documents).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      "http://localhost:3000/about/terms",
-      "http://localhost:3000/about/privacy",
+      "/about/terms",
+      "/about/privacy",
     ]);
   });
 

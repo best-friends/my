@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The links to the server's terms of service and privacy policy. Their pages are the server's own (rendered by
-// the server, readable without signing in and without JavaScript) and outside the app, so a link opens them in a
-// new tab (ExternalLink, web-client.md Y12).
-import { Box, Cluster, ExternalLink, Heading, Stack } from "@my/ui";
+// The links to the server's terms of service and privacy policy. Their pages are routes of the app (information
+// pages, readable without signing in), so a link opens them in the same tab (web-client.md Y12).
+import { Box, Cluster, Heading, Stack } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { useDocumentLinks } from "../hooks/useDocumentLinks";
-
+import { DocumentLink } from "./DocumentLink";
 
 type DocumentLinksProps = {
   /** The id of a heading that names the links; without it they are named "Terms and policies". */
@@ -29,9 +28,7 @@ export function DocumentLinks({ labelledBy, placement = "inline" }: DocumentLink
       <Cluster as="ul" gap="4" rowGap="1" textSize="sm">
         {links.map((link) => (
           <li key={link.href}>
-            <ExternalLink href={link.href} variant="standalone">
-              {link.label}
-            </ExternalLink>
+            <DocumentLink href={link.href}>{link.label}</DocumentLink>
           </li>
         ))}
       </Cluster>

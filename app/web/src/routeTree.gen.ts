@@ -24,8 +24,11 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
+import { Route as AboutCommerceRouteImport } from './routes/about_.commerce'
 import { Route as AboutCostsRouteImport } from './routes/about_.costs'
+import { Route as AboutPrivacyRouteImport } from './routes/about_.privacy'
 import { Route as AboutSupportersRouteImport } from './routes/about_.supporters'
+import { Route as AboutTermsRouteImport } from './routes/about_.terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
@@ -153,14 +156,29 @@ const AtChar123acctChar125FollowingRoute =
     path: '/@{$acct}/following',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AboutCommerceRoute = AboutCommerceRouteImport.update({
+  id: '/about_/commerce',
+  path: '/about/commerce',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutCostsRoute = AboutCostsRouteImport.update({
   id: '/about_/costs',
   path: '/about/costs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutPrivacyRoute = AboutPrivacyRouteImport.update({
+  id: '/about_/privacy',
+  path: '/about/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutSupportersRoute = AboutSupportersRouteImport.update({
   id: '/about_/supporters',
   path: '/about/supporters',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutTermsRoute = AboutTermsRouteImport.update({
+  id: '/about_/terms',
+  path: '/about/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -429,8 +447,11 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/about/commerce': typeof AboutCommerceRoute
   '/about/costs': typeof AboutCostsRoute
+  '/about/privacy': typeof AboutPrivacyRoute
   '/about/supporters': typeof AboutSupportersRoute
+  '/about/terms': typeof AboutTermsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -496,8 +517,11 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/about/commerce': typeof AboutCommerceRoute
   '/about/costs': typeof AboutCostsRoute
+  '/about/privacy': typeof AboutPrivacyRoute
   '/about/supporters': typeof AboutSupportersRoute
+  '/about/terms': typeof AboutTermsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -565,8 +589,11 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
+  '/about_/commerce': typeof AboutCommerceRoute
   '/about_/costs': typeof AboutCostsRoute
+  '/about_/privacy': typeof AboutPrivacyRoute
   '/about_/supporters': typeof AboutSupportersRoute
+  '/about_/terms': typeof AboutTermsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -635,8 +662,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/about/commerce'
     | '/about/costs'
+    | '/about/privacy'
     | '/about/supporters'
+    | '/about/terms'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -702,8 +732,11 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/about/commerce'
     | '/about/costs'
+    | '/about/privacy'
     | '/about/supporters'
+    | '/about/terms'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -770,8 +803,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
+    | '/about_/commerce'
     | '/about_/costs'
+    | '/about_/privacy'
     | '/about_/supporters'
+    | '/about_/terms'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -839,8 +875,11 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRouteWithChildren
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
+  AboutCommerceRoute: typeof AboutCommerceRoute
   AboutCostsRoute: typeof AboutCostsRoute
+  AboutPrivacyRoute: typeof AboutPrivacyRoute
   AboutSupportersRoute: typeof AboutSupportersRoute
+  AboutTermsRoute: typeof AboutTermsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
@@ -983,6 +1022,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtChar123acctChar125FollowingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about_/commerce': {
+      id: '/about_/commerce'
+      path: '/about/commerce'
+      fullPath: '/about/commerce'
+      preLoaderRoute: typeof AboutCommerceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about_/costs': {
       id: '/about_/costs'
       path: '/about/costs'
@@ -990,11 +1036,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutCostsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about_/privacy': {
+      id: '/about_/privacy'
+      path: '/about/privacy'
+      fullPath: '/about/privacy'
+      preLoaderRoute: typeof AboutPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about_/supporters': {
       id: '/about_/supporters'
       path: '/about/supporters'
       fullPath: '/about/supporters'
       preLoaderRoute: typeof AboutSupportersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about_/terms': {
+      id: '/about_/terms'
+      path: '/about/terms'
+      fullPath: '/about/terms'
+      preLoaderRoute: typeof AboutTermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -1401,8 +1461,11 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRouteWithChildren,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
+  AboutCommerceRoute: AboutCommerceRoute,
   AboutCostsRoute: AboutCostsRoute,
+  AboutPrivacyRoute: AboutPrivacyRoute,
   AboutSupportersRoute: AboutSupportersRoute,
+  AboutTermsRoute: AboutTermsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,

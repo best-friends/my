@@ -28,6 +28,30 @@ test.describe("the registration page on the server", () => {
   });
 });
 
+test.describe("the pages of the documents on the server", () => {
+  test.use({ baseURL: serverURL });
+
+  test("the terms of service are an information page with a table of contents, without axe violations or scrolling sideways", async ({ page, makeAxeBuilder }) => {
+    await page.goto("/about/terms");
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(main.getByRole("heading", { level: 2, name: "Accounts" })).toBeVisible();
+    await expect(main.getByText("No spam")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: /./ }).getByRole("link", { name: "Accounts" }).first()).toBeAttached();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("the privacy policy is one too, and the commerce disclosures, which the server does not have, are a not-found page", async ({ page }) => {
+    await page.goto("/about/privacy");
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+    const missing = await page.goto("/about/commerce");
+    expect(missing?.status()).toBeLessThan(500);
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveCount(0);
+  });
+});
+
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
@@ -147,7 +171,8 @@ test.describe("the terms and policies screen", () => {
     await expect(privacy.locator('[role="status"] p')).toBeVisible();
     expect(saves).toEqual(["privacy_policy # What we keep\n\nYour email address."]);
     // The page of the new policy is linked once it is saved.
-    await expect(privacy.getByRole("link")).toHaveAttribute("href", /\/auth\/privacy$/);
+    await expect(privacy.getByRole("link")).toHaveAttribute("href", "/about/privacy");
+    expect(await privacy.getByRole("link").getAttribute("target")).toBeNull();
     await expectNoAxeViolations(makeAxeBuilder);
   });
 
@@ -157,7 +182,7 @@ test.describe("the terms and policies screen", () => {
     await page.goto("/login");
     const links = page.getByRole("main").getByRole("navigation");
     await expect(links.getByRole("link")).toHaveCount(1);
-    await expect(links.getByRole("link")).toHaveAttribute("href", /\/auth\/terms$/);
+    await expect(links.getByRole("link")).toHaveAttribute("href", "/about/terms");
     await expectNoHorizontalScroll(page);
   });
 });
