@@ -94,7 +94,8 @@ test.describe("the landing page", () => {
   test.beforeEach(async ({ page, baseURL }) => {
     await serveInstance(page, new URL(baseURL ?? "").origin);
     await page.goto("/");
-    await expect(page.getByRole("main").getByRole("feed")).toBeVisible();
+    // The two most recent posts are in the hero.
+    await expect(page.getByRole("main").getByRole("article")).toHaveCount(2);
   });
 
   test("welcomes the visitor at the root address with the server, its recent posts, its rules and documents, in the order of the information page", async ({ page }) => {
@@ -106,19 +107,29 @@ test.describe("the landing page", () => {
       - main:
         - heading [level=1]
         - paragraph: A small server for gardeners and everyone who likes to grow things.
-        - button
         - link
+        - button
         - paragraph
+        - article
+        - article
+        - region:
+          - heading [level=2]
+          - list:
+            - listitem:
+              - heading [level=3]
+              - paragraph
+            - listitem:
+              - heading [level=3]
+              - paragraph
+            - listitem:
+              - heading [level=3]
+              - paragraph
         - region:
           - heading [level=2]
           - paragraph: We grow vegetables, herbs and flowers.
           - paragraph: Everyone is welcome, whatever the size of their garden.
         - region:
           - heading [level=2]
-          - paragraph
-          - feed:
-            - article
-            - article
           - paragraph:
             - link
         - region:

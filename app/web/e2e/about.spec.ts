@@ -131,7 +131,7 @@ test("the information page of a server that lists the servers it moderates to no
   await serveInstance(page, new URL(baseURL ?? "").origin, { status: 404 });
   await page.goto("/about");
   const main = page.getByRole("main");
-  await expect(main.getByRole("navigation")).toBeVisible();
+  await expect(main.getByRole("region").getByRole("navigation")).toBeVisible();
   // The description, the rules, the documents, the statement to crawlers, and the source code.
   await expect(main.getByRole("region")).toHaveCount(5);
   await expect(main.locator("li", { hasText: "spam.example" })).toHaveCount(0);
