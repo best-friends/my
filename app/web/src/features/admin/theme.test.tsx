@@ -40,7 +40,7 @@ describe("the server's theme", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Theme" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "color-accent, light theme" })).toHaveValue("#1447e6");
     expect(screen.getByRole("textbox", { name: "color-surface, light theme" })).toHaveValue("");
-    expect(screen.getByRole("textbox", { name: "color-surface, light theme" })).toHaveAccessibleDescription(/Default: #f9fafb/);
+    expect(screen.getByRole("textbox", { name: "color-surface, light theme" })).toHaveAccessibleDescription(/Default: #fcf9f6/);
     expect(screen.getByRole("textbox", { name: "radius-md" })).toHaveValue("2px");
     expect(screen.getByRole("textbox", { name: "Custom CSS" })).toHaveValue(".brand { color: red }");
     expect(within(screen.getByRole("region", { name: "Contrast" })).getByText(/Every text and control color has enough contrast/)).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe("the server's theme", () => {
     expect(saved).toEqual({
       tokens: [
         // The dark theme keeps its default.
-        { token: "color-fg-muted", light: "#333333", dark: "#99a1af" },
+        { token: "color-fg-muted", light: "#333333", dark: "#b7a7a5" },
         { token: "spacing", value: "0.3rem" },
       ],
       custom_css: "",
