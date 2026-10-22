@@ -9,6 +9,10 @@ Arguments: an issue number (optional). Without one, pick the next issue as descr
 
 Follow `docs/agents/workflow.md` exactly. In particular:
 
+- Run the steps through agentkit: `scripts/agentkit.sh issue claim <n>`, then `scripts/agentkit.sh ctx <n>` as the
+  starting context (read more with `show` / `find` / `refs` / `trace`, by section), `scripts/agentkit.sh check`,
+  `scripts/agentkit.sh pr open`, and `scripts/agentkit.sh pr wait <pr>` in the background.
+
 - Only work on issues labeled `agent:ready`; stop and report if the issue is `status:needs-decision` or depends on a Proposed ADR.
 - Never push to `main` and never merge.
 - `make check` must pass before committing.
