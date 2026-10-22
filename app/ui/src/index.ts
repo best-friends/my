@@ -161,3 +161,8 @@ export {
   type ProfileHeaderProps,
 } from "./ProfileHeader";
 export { AccountItem, type AccountItemProps } from "./AccountItem";
+export { DetailSection, type DetailSectionProps } from "./DetailSection";
+export { BannerImage, type BannerImageProps } from "./BannerImage";
+export { IconLabel, type IconLabelProps } from "./IconLabel";
+export { Callout, type CalloutProps } from "./Callout";
+export { CodeList, type CodeListProps } from "./CodeList";
