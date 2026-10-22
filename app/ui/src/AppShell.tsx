@@ -21,7 +21,7 @@ const appShell = tv({
     // the button (3rem) above it; from md the button in the corner; from xl nothing. Each gap is 1rem (0.5rem on short
     // screens). The app's stylesheet clears focused elements of the same (scroll-padding-block-end).
     main: [
-      "mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4 px-4 pt-6 md:px-8 md:pb-6",
+      "mx-auto flex w-full min-w-0 flex-col gap-4 px-4 pt-6 md:px-8 md:pb-6",
       "pb-[calc(5rem+env(safe-area-inset-bottom))] short:pb-[calc(4rem+env(safe-area-inset-bottom))]",
       "data-compose-fab:pb-[calc(9rem+env(safe-area-inset-bottom))] data-compose-fab:short:pb-[calc(7rem+env(safe-area-inset-bottom))]",
       "data-compose-fab:md:pb-[calc(5.5rem+env(safe-area-inset-bottom))] data-compose-fab:xl:pb-6",
@@ -36,9 +36,11 @@ const appShell = tv({
     // `side`: the navigation is the tab bar, then the rail beside the page. `top`: the signed-out top bar above it.
     navigationPlacement: { side: { base: "md:grid md:grid-cols-[auto_minmax(0,1fr)]" }, top: {} },
     withAside: { true: {} },
+    // The column's width: `narrow` for reading, `wide` for a page with something beside its text (the signed-out landing).
+    width: { narrow: { main: "max-w-2xl" }, wide: { main: "max-w-5xl" } },
   },
   compoundVariants: [{ navigationPlacement: "side", withAside: true, class: { base: "xl:grid-cols-[auto_minmax(0,1fr)_24rem]" } }],
-  defaultVariants: { navigationPlacement: "side" },
+  defaultVariants: { navigationPlacement: "side", width: "narrow" },
 });
 
 export type AppShellProps = {
@@ -46,6 +48,8 @@ export type AppShellProps = {
   navigation: ReactNode;
   /** `side` (default) for the tab bar and the rail; `top` when the navigation is the signed-out top bar (`AppNav` `placement="top"`), above the page. */
   navigationPlacement?: "side" | "top";
+  /** The width of the page's column: `narrow` (default) for reading, `wide` for a page that lays things side by side. */
+  width?: "narrow" | "wide";
   /** The page, in the `main` landmark. */
   children: ReactNode;
   /** The skip link's text ("Skip to main content"), the first focusable element of the page. */
@@ -72,8 +76,8 @@ export type AppShellProps = {
  * The app's frame: the skip link, the navigation, `main` and the third column or the floating slot. Render the
  * connection bar (`OfflineBanner`) before it, since it pads for the top safe-area inset itself.
  */
-export function AppShell({ navigation, children, skipLinkLabel, mainId = "main", mainRef, aside, floating, floatingVisible = false, navigationPlacement = "side" }: AppShellProps) {
-  const slots = appShell({ navigationPlacement, withAside: aside !== undefined });
+export function AppShell({ navigation, children, skipLinkLabel, mainId = "main", mainRef, aside, floating, floatingVisible = false, navigationPlacement = "side", width = "narrow" }: AppShellProps) {
+  const slots = appShell({ navigationPlacement, width, withAside: aside !== undefined });
   return (
     <div className={slots.base()}>
       {/* The first focusable element of the page; visible only while focused. */}
