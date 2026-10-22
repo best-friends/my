@@ -12,7 +12,7 @@ import { PageHeading } from "./-layout/PageHeading";
  * permissions decide the links.
  */
 export const Route = createFileRoute("/admin/")({
-  staticData: { title: "client:admin.menu.title", hideHeading: true },
+  staticData: { title: "client:admin.menu.title" },
   beforeLoad: requireSignIn,
   loader: async ({ context: { queryClient, api } }) => {
     await queryClient.query({ ...viewerQueryOptions(api), staleTime: Infinity });

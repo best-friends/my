@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The lists of links to the staff's screens, the same for both areas of ADR-0058 (moderation and server
-// administration): each screen shows only to a viewer whose roles have its permission. A list is a section of
-// the settings page (a viewer with none of its screens sees no section at all), and the page of its area that
-// the navigation's entry opens. A screen with things awaiting the moderators (FR-712) shows the count as a badge
+// administration): each screen shows only to a viewer whose roles have its permission. A list is the page of its
+// area that the navigation's entry opens. A screen with things awaiting the moderators (FR-712) shows the count as a badge
 // whose words are in the link's name, so the count is read with the screen and shown by its digits, not by
 // color alone.
-import { Badge, EmptyState, Heading, Hint, Link, Stack } from "@my/ui";
+import { Badge, EmptyState, Hint, Link, Stack } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { Permission } from "../api/staff";
@@ -50,23 +49,6 @@ function StaffPageList({ shown, idPrefix, badgeOf }: { shown: readonly StaffPage
           </Stack>
         );
       })}
-    </Stack>
-  );
-}
-
-type StaffMenuSectionProps = { title: string; pages: readonly StaffPage[]; badgeOf?: StaffPageBadge };
-
-/** A section of the settings page with the links to the screens of one area; nothing for a viewer without any. */
-export function StaffMenuSection({ title, pages, badgeOf = noBadge }: StaffMenuSectionProps) {
-  const headingId = useId();
-  const shown = useShownStaffPages(pages);
-  if (shown.length === 0) return null;
-  return (
-    <Stack as="section" aria-labelledby={headingId} gap="3">
-      <Heading id={headingId} level={2}>
-        {title}
-      </Heading>
-      <StaffPageList shown={shown} idPrefix={headingId} badgeOf={badgeOf} />
     </Stack>
   );
 }

@@ -856,6 +856,7 @@
         "web/src/features/**/*.tsx"
       ],
       "excludeFiles": [
+        "ui/src/AdminShell.tsx",
         "ui/src/AppShell.tsx",
         "ui/src/AppNavigation.tsx",
         "ui/src/Toast.tsx"

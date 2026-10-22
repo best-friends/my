@@ -317,14 +317,14 @@ describe("the supporters screen without the permission", () => {
     server.use(signedInHandler, operatorHandler(["manage_finance"]));
     await renderApp({ path: "/admin" });
 
-    expect(await screen.findByRole("link", { name: /Costs/u })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Supporters/u })).not.toBeInTheDocument();
+    expect(await within(await screen.findByRole("main")).findByRole("link", { name: /Costs/u })).toBeInTheDocument();
+    expect(within(screen.getByRole("main")).queryByRole("link", { name: /Supporters/u })).not.toBeInTheDocument();
   });
 
   test("the administration menu links to the screen for manage_supporters", async () => {
     server.use(signedInHandler, operatorHandler(["manage_supporters"]));
     await renderApp({ path: "/admin" });
 
-    expect(await screen.findByRole("link", { name: /Supporters/u })).toHaveAttribute("href", "/admin/supporters");
+    expect(await within(await screen.findByRole("main")).findByRole("link", { name: /Supporters/u })).toHaveAttribute("href", "/admin/supporters");
   });
 });

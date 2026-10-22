@@ -4107,6 +4107,26 @@
     "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ŭŭşḗḗ ŧħīş şƈřḗḗḗḗƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.mode.back": {
+    "defaultMessage": "[Ɓȧȧƈķ ŧǿǿ ŧħḗḗ ȧȧƥƥ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.menu": {
+    "defaultMessage": "[Ȧḓḿīƞ ḿḗḗƞŭŭ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.overview": {
+    "defaultMessage": "[Ǿṽḗḗřṽīḗḗẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.summary": {
+    "defaultMessage": "[Ŧħḗḗ ḿǿǿḓḗḗřȧȧŧīǿǿƞ ȧȧƞḓ şḗḗřṽḗḗř ȧȧḓḿīƞīşŧřȧȧŧīǿǿƞ şƈřḗḗḗḗƞş, ȧȧƥȧȧřŧ ƒřǿǿḿ ŧħḗḗ ȧȧƥƥ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.title": {
+    "defaultMessage": "[Ȧḓḿīƞ ȧȧƞḓ ḿǿǿḓḗḗřȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.moderation.none.description": {
     "defaultMessage": "[Ẏǿǿŭŭř řǿǿŀḗḗş ɠřȧȧƞŧ ƞǿǿƞḗḗ ǿǿƒ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ŧħȧȧŧ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧīǿǿƞ şƈřḗḗḗḗƞş ƞḗḗḗḗḓ. Ȧƞ ȧȧḓḿīƞīşŧřȧȧŧǿǿř ƈȧȧƞ ɠřȧȧƞŧ ŧħḗḗḿ.]",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -77,7 +77,7 @@ describe("the list of registrations", () => {
     await renderApp({ path: "/moderation/registrations" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Registrations" })).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual(["@bob", "@carol", "A removed account"]);
+    expect(within(screen.getByRole("main")).getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual(["@bob", "@carol", "A removed account"]);
     const [first, second, third] = within(screen.getByRole("main")).getAllByRole("listitem");
     if (first === undefined || second === undefined || third === undefined) throw new Error("a registration is missing");
 

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The layout around every page (ADR-0026). Mobile first (web-client.md D1): one column with the
 // navigation as a bottom tab bar; from md a side rail and the page; from xl a third column about the
-// server. Its look is @my/ui's AppShell; this file decides what goes in it.
+// server; the admin and moderation screens have a frame of their own (AdminLayout). Its look is @my/ui's AppShell; this file decides what goes in it.
 import { AppShell } from "@my/ui";
-import { Outlet, useMatches } from "@tanstack/react-router";
+import { Outlet, useLocation, useMatches } from "@tanstack/react-router";
 import { useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { ComposeEntry, ComposeProvider } from "../../features/compose";
 import { useViewer } from "../../features/session";
 import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
+import { AdminLayout, isStaffMode } from "./AdminLayout";
 import { ConnectionBanner } from "./ConnectionBanner";
 import { Navigation, useSignedOut } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
@@ -42,6 +43,18 @@ export function AppLayout() {
   const signedOut = useSignedOut();
   const signedIn = useViewer().status === "signed-in";
   const showButton = !medium && pageWantsButton && signedIn;
+  // The admin and moderation screens are a mode of their own, with a frame and a menu of their own (ADR-0058).
+  const staffMode = isStaffMode(useLocation({ select: (location) => location.pathname }));
+  if (staffMode) {
+    return (
+      <ComposeProvider>
+        <ConnectionBanner />
+        <AdminLayout skipLinkLabel={t("client:shell.skip_to_main")} mainId={mainId} mainRef={mainRef}>
+          <Outlet />
+        </AdminLayout>
+      </ComposeProvider>
+    );
+  }
   return (
     <ComposeProvider>
       {/* The one bar for being offline or rate-limited (web-client.md G17), in the page from the start so that the

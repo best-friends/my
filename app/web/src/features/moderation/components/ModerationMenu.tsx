@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The links to the moderation screens (ADR-0058): a section of the settings page, and the moderation page that
-// the navigation's Moderation entry opens. The screens with things awaiting the moderators (open reports,
+// The links to the moderation screens (ADR-0058): the moderation page that the navigation's Moderation entry
+// opens, and the badges of the admin mode's menu. The screens with things awaiting the moderators (open reports,
 // registrations awaiting approval, appeals awaiting a decision; FR-712) show the count as a badge.
 import { useT } from "../../../lib/i18n";
 import type { AdminCount } from "../api/counts";
 import { useModerationCounts } from "../hooks/useModerationCounts";
 import { moderationPages } from "./moderationPages";
-import { type StaffPageBadge, StaffMenuSection, StaffPages } from "./StaffPages";
+import { type StaffPageBadge, StaffPages } from "./StaffPages";
 
 /** The count that a screen's link shows, by the screen's address, and the words of its badge. */
 const pageCounts: Readonly<
@@ -18,7 +18,7 @@ const pageCounts: Readonly<
 };
 
 /** The badges of the moderation screens: what awaits the moderators on each. */
-function useModerationBadges(): StaffPageBadge {
+export function useModerationBadges(): StaffPageBadge {
   const t = useT();
   const counts = useModerationCounts();
   return (page) => {
@@ -27,13 +27,6 @@ function useModerationBadges(): StaffPageBadge {
     const count = counts[counted.count] ?? 0;
     return { count, label: t(counted.label, { count }) };
   };
-}
-
-/** The settings page's section of links to the moderation screens; nothing for a viewer without any. */
-export function ModerationMenu() {
-  const t = useT();
-  const badgeOf = useModerationBadges();
-  return <StaffMenuSection title={t("client:admin.moderation.title")} pages={moderationPages} badgeOf={badgeOf} />;
 }
 
 /** The moderation page's links to the moderation screens, or why there are none for the viewer's roles. */

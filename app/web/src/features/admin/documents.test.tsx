@@ -149,6 +149,6 @@ describe("the terms and policies screen", () => {
   test("the admin page links to it for manage_settings", async () => {
     await renderApp({ path: "/admin" });
 
-    expect(await screen.findByRole("link", { name: "Terms and policies" })).toHaveAttribute("href", "/admin/documents");
+    expect(await within(await screen.findByRole("main")).findByRole("link", { name: "Terms and policies" })).toHaveAttribute("href", "/admin/documents");
   });
 });

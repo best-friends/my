@@ -3035,6 +3035,26 @@
     "defaultMessage": "管理",
     "description": "Heading of the links to the server administration screens (settings, documents, failed jobs) on the settings page and title of their page, shown only to users with a server administration permission."
   },
+  "admin.mode.back": {
+    "defaultMessage": "アプリに戻る",
+    "description": "Link at the foot of the admin and moderation menu that leaves the mode and returns to the app."
+  },
+  "admin.mode.menu": {
+    "defaultMessage": "管理メニュー",
+    "description": "Name of the button below the md width that opens the admin and moderation menu in a sheet, and the sheet's title."
+  },
+  "admin.mode.overview": {
+    "defaultMessage": "概要",
+    "description": "Item at the head of a group of the admin and moderation menu that opens the group's page with the links to its screens."
+  },
+  "admin.mode.summary": {
+    "defaultMessage": "モデレーションとサーバー管理の画面です。アプリとは別の画面で開きます。",
+    "description": "Description of the settings page's entry into the admin and moderation mode."
+  },
+  "admin.mode.title": {
+    "defaultMessage": "管理とモデレーション",
+    "description": "Name of the admin and moderation mode: the settings page's entry, the menu's landmark and the top bar's title below the md width."
+  },
   "admin.moderation.none.description": {
     "defaultMessage": "あなたのロールには、モデレーションの画面に要る権限がありません。管理者が付与できます。",
     "description": "Description on the moderation page of a user whose roles grant none of the moderation screens' permissions."
