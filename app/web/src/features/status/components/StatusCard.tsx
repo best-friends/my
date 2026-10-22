@@ -1,5 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLink, Link, LinkCard, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
+import {
+  Avatar,
+  ContentWarning,
+  EmojiText,
+  Hint,
+  LinkCard,
+  MediaGrid,
+  PostCard,
+  PostCardAuthorLink,
+  PostCardAvatarLink,
+  PostCardBoostContext,
+  PostCardNameLink,
+  PostCardOrigin,
+  PostCardTimeLink,
+  PostContent,
+  Stack,
+  Text,
+} from "@my/ui";
 import type { Ref } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useIntl } from "react-intl";
@@ -35,17 +52,6 @@ export type StatusCardProps = {
   pinned?: boolean;
 };
 
-/** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
-const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
-
-/**
- * A link to the post on its time: muted like the other details of the header (G6) and underlined only on
- * hover and focus, so that a feed is no column of underlines. It is no running text, so no underline is
- * needed to tell it from the words around it. It is at least 24 px high (D4).
- */
-const timeLink =
-  "inline-flex min-h-6 items-center text-fg-muted no-underline data-hovered:text-fg-muted data-hovered:underline data-focus-visible:underline";
-
 /**
  * One status: the hook's view of it placed into the slots of PostCard, with the action bar. Its names link
  * to the profiles and its time to the post's page (FR-113).
@@ -60,7 +66,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
     view.card === null ? undefined : (
       // The card is drawn from what another site declared: should it fail to render, only the card is lost
       // (web-client.md E1).
-      <ErrorBoundary fallback={<p className="text-sm text-fg-muted">{t("client:timeline.card.failed")}</p>}>
+      <ErrorBoundary fallback={<Hint>{t("client:timeline.card.failed")}</Hint>}>
         <LinkCard
           href={view.card.href}
           title={view.card.title}
@@ -99,26 +105,24 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
       lang={view.lang}
       emojis={view.emojis}
       onLinkClick={view.onLinkClick}
-      {...(variant === "focused" && { className: "text-lg" })}
+      {...(variant === "focused" && { size: "lg" as const })}
     />
   );
   // The mark of an edited post leads to its revisions (FR-109); it stays out of the header's one row (G7).
   const edited =
     view.historyPath === null ? null : (
-      <Link href={view.historyPath} className={timeLink}>
-        {t("client:status.edited")}
-      </Link>
+      <PostCardTimeLink href={view.historyPath}>{t("client:status.edited")}</PostCardTimeLink>
     );
   const time =
     variant === "focused" ? (
       // The relative time as everywhere else (G8); the full date is in the details.
       <time dateTime={view.time.dateTime}>{view.time.relative}</time>
     ) : (
-      <Link href={view.path} className={timeLink}>
+      <PostCardTimeLink href={view.path}>
         <time dateTime={view.time.dateTime} title={view.time.absolute}>
           {view.time.relative}
         </time>
-      </Link>
+      </PostCardTimeLink>
     );
 
   return (
@@ -131,10 +135,8 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         details: (
           <>
             <time dateTime={view.time.dateTime}>{view.time.absolute}</time>
-            {view.counts.boosts > 0 && <span className="tabular-nums">{t("client:status.focused.boosts", { count: view.counts.boosts })}</span>}
-            {view.counts.favourites > 0 && (
-              <span className="tabular-nums">{t("client:status.focused.favourites", { count: view.counts.favourites })}</span>
-            )}
+            {view.counts.boosts > 0 && <Text numeric>{t("client:status.focused.boosts", { count: view.counts.boosts })}</Text>}
+            {view.counts.favourites > 0 && <Text numeric>{t("client:status.focused.favourites", { count: view.counts.favourites })}</Text>}
             {edited}
           </>
         ),
@@ -146,42 +148,27 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
       })}
       {...(!pinned && view.boostedBy !== null && {
         context: (
-          <>
-            <BoostIcon />
-            <span>
-              {/* The booster's name is the user's text, isolated from the sentence around it (Y10). */}
-              {intl.formatMessage(
-                { id: "client:timeline.boosted_by" },
-                {
-                  name: (
-                    <Link key="name" href={view.boostedBy.href} className={nameLink}>
-                      <bdi>
-                        <EmojiText text={view.boostedBy.name} emojis={view.boostedBy.emojis} />
-                      </bdi>
-                    </Link>
-                  ),
-                },
-              )}
-            </span>
-          </>
+          <PostCardBoostContext>
+            {/* The booster's name is the user's text, isolated from the sentence around it (Y10). */}
+            {intl.formatMessage(
+              { id: "client:timeline.boosted_by" },
+              {
+                name: (
+                  <PostCardNameLink key="name" href={view.boostedBy.href}>
+                    <EmojiText text={view.boostedBy.name} emojis={view.boostedBy.emojis} />
+                  </PostCardNameLink>
+                ),
+              },
+            )}
+          </PostCardBoostContext>
         ),
       })}
       avatar={
-        // The same profile as the name, for the pointer: out of the tab order and hidden from screen
-        // readers, which reach it by the name (one tab stop per profile). React Aria's Link does not take
-        // `aria-hidden`, so an element around it hides it.
-        <div aria-hidden="true">
-          <Link href={view.author.href} excludeFromTabOrder className="block rounded-full">
-            <Avatar sources={view.author.avatar} name={view.author.name} decorative />
-          </Link>
-        </div>
+        <PostCardAvatarLink href={view.author.href}>
+          <Avatar sources={view.author.avatar} name={view.author.name} decorative />
+        </PostCardAvatarLink>
       }
-      author={
-        // A block, so that the name and the handle inside are cut to the room of the header's row.
-        <Link href={view.author.href} className={`${nameLink} block min-w-0`}>
-          <PostCardAuthor name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />
-        </Link>
-      }
+      author={<PostCardAuthorLink href={view.author.href} name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />}
       time={time}
       content={
         view.contentWarning === null ? (
@@ -201,11 +188,11 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
             extras.length === 1 ? (
               extras[0]
             ) : (
-              <div className="flex min-w-0 flex-col gap-3">
+              <Stack gap="3" shrink>
                 {poll}
                 {media}
                 {quote}
-              </div>
+              </Stack>
             ),
         })}
       {...(withActions && (status.boost ?? status).reactions.length > 0 && { reactions: <StatusReactions status={status} /> })}
@@ -216,16 +203,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
             {view.original !== null && (
               // The post's page on its own server, shown also while nobody is signed in. The host is what it
               // shows; the name says where it leads, and contains the host (WCAG 2.5.3, label in name).
-              <ExternalLink
-                href={view.original.href}
-                variant="standalone"
-                aria-label={t("client:status.original", { host: view.original.host })}
-                className="ms-auto min-w-0 text-sm font-normal text-fg-muted data-hovered:text-fg"
-              >
-                <span dir="ltr" className="min-w-0 truncate">
-                  {view.original.host}
-                </span>
-              </ExternalLink>
+              <PostCardOrigin href={view.original.href} host={view.original.host} label={t("client:status.original", { host: view.original.host })} />
             )}
           </>
         ),

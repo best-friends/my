@@ -161,3 +161,15 @@ export {
   type ProfileHeaderProps,
 } from "./ProfileHeader";
 export { AccountItem, type AccountItemProps } from "./AccountItem";
+  PostCardAuthorLink,
+  PostCardAvatarLink,
+  PostCardBoostContext,
+  PostCardNameLink,
+  PostCardOrigin,
+  PostCardTimeLink,
+  type PostCardAuthorLinkProps,
+  type PostCardAvatarLinkProps,
+  type PostCardNameLinkProps,
+  type PostCardOriginProps,
+  type PostCardTimeLinkProps,
+} from "./PostCardParts";
