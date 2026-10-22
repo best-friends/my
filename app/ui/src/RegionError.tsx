@@ -7,14 +7,17 @@
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { Button } from "./Button";
+import { WarningIcon } from "./Icons";
 import type { HeadingLevel } from "./EmptyState";
 
 const regionError = tv({
   slots: {
-    base: "flex flex-col items-start gap-2 rounded-md border border-s-4 border-border border-s-danger bg-surface-raised px-4 py-3",
-    heading: "text-base font-semibold text-fg",
-    reason: "text-sm wrap-anywhere text-fg-muted",
-    action: "mt-1",
+    base: "flex items-start gap-3 rounded-lg bg-danger-bg px-4 py-3 text-fg",
+    icon: "mt-px shrink-0 text-danger [&>svg]:size-5.5",
+    body: "flex min-w-0 flex-col items-start gap-1.5",
+    heading: "text-base font-extrabold text-fg",
+    reason: "text-sm wrap-anywhere text-fg",
+    action: "mt-1 *:bg-surface-raised",
   },
 });
 
@@ -60,15 +63,20 @@ export function RegionError({
   const Heading = headingLevel === undefined ? "p" : (`h${String(headingLevel)}` as `h${HeadingLevel}`);
   return (
     <div {...props} role={alert ? "alert" : undefined} className={slots.base({ className })}>
-      <Heading className={slots.heading()}>{heading}</Heading>
-      {reason !== undefined && <p className={slots.reason()}>{reason}</p>}
-      {onRetry !== undefined && (
-        <div className={slots.action()}>
-          <Button size="sm" onPress={onRetry} isPending={isRetrying}>
-            {retryLabel}
-          </Button>
-        </div>
-      )}
+      <span className={slots.icon()}>
+        <WarningIcon filled />
+      </span>
+      <div className={slots.body()}>
+        <Heading className={slots.heading()}>{heading}</Heading>
+        {reason !== undefined && <p className={slots.reason()}>{reason}</p>}
+        {onRetry !== undefined && (
+          <div className={slots.action()}>
+            <Button size="sm" onPress={onRetry} isPending={isRetrying}>
+              {retryLabel}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

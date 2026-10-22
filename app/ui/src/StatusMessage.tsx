@@ -7,17 +7,21 @@
 // to a toast (web-client.md E2).
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { tv } from "tailwind-variants";
+import { AboutIcon, CheckIcon } from "./Icons";
 
 const statusMessage = tv({
   slots: {
     region: "",
     // A domain or a handle in the message is one long word; it wraps rather than scroll the page.
-    box: "rounded-md border border-s-4 border-border bg-surface-raised px-4 py-3 text-base wrap-anywhere text-fg",
+    box: "flex items-start gap-3 rounded-md px-4 py-3 text-base text-fg",
+    // The tone shows by this icon as well as by the box's color (WCAG 1.4.1).
+    icon: "mt-0.5 shrink-0 [&>svg]:size-5",
+    text: "min-w-0 wrap-anywhere",
   },
   variants: {
     tone: {
-      neutral: { box: "border-s-border-strong" },
-      success: { box: "border-s-success" },
+      neutral: { box: "bg-surface-sunken", icon: "text-fg-muted" },
+      success: { box: "bg-success-bg", icon: "text-success" },
     },
   },
   defaultVariants: { tone: "success" },
@@ -35,7 +39,12 @@ export function StatusMessage({ children, tone, className, ...props }: StatusMes
   const styles = statusMessage({ tone });
   return (
     <div {...props} role="status" className={styles.region({ className })}>
-      {children !== undefined && children !== null && <p className={styles.box()}>{children}</p>}
+      {children !== undefined && children !== null && (
+        <p className={styles.box()}>
+          <span className={styles.icon()}>{tone === "neutral" ? <AboutIcon /> : <CheckIcon />}</span>
+          <span className={styles.text()}>{children}</span>
+        </p>
+      )}
     </div>
   );
 }
