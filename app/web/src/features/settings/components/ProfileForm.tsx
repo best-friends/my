@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, Button, Checkbox, ConfirmDialog, FileTrigger, TextArea, TextField } from "@my/ui";
+import { Avatar, Button, Checkbox, ConfirmDialog, FileTrigger, ProfileHeaderImage, TextArea, TextField } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { EmojiPickerButton } from "../../emoji";
@@ -34,9 +34,7 @@ export function ProfileForm() {
           titleKey="client:settings.profile.header"
           control={form.header}
           preview={
-            form.header.url === undefined ? null : (
-              <img src={form.header.url} alt="" className="aspect-3/1 w-full rounded-md bg-surface-sunken object-cover" />
-            )
+            form.header.url === undefined ? null : <ProfileHeaderImage sources={{ still: [{ url: form.header.url }] }} size="preview" />
           }
         />
         <div className="flex flex-col gap-1">
