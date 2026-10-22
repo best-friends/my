@@ -113,6 +113,9 @@ func (r *RemoteActors) ObserveInstance(ctx context.Context, domain string) error
 // error wrapping errNoNodeInfo; network errors and server errors are returned as they are, so
 // that the job tries again.
 func (r *RemoteActors) getJSON(ctx context.Context, u string, v any) error {
+	if err := r.identifies(ctx); err != nil {
+		return fmt.Errorf("%w: %w", errNoNodeInfo, err)
+	}
 	resp, err := r.d.HTTP.Do(ctx, &kernel.HTTPRequest{
 		Method: http.MethodGet, URL: u, Header: http.Header{"Accept": {"application/json"}}, Purpose: kernel.HTTPPurposeJSON,
 	})

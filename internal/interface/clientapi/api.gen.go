@@ -1710,6 +1710,7 @@ const (
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
 	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
+	InstanceSettingKeyFederationMode                   InstanceSettingKey = "federation_mode"
 	InstanceSettingKeyFinanceViewerIncome              InstanceSettingKey = "finance_viewer_income"
 	InstanceSettingKeyFinanceViewerItemMemos           InstanceSettingKey = "finance_viewer_item_memos"
 	InstanceSettingKeyFinanceViewerItemNames           InstanceSettingKey = "finance_viewer_item_names"
@@ -1755,6 +1756,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyDomainActionsVisibility:
 		return true
 	case InstanceSettingKeyFederatedTimelineEnabled:
+		return true
+	case InstanceSettingKeyFederationMode:
 		return true
 	case InstanceSettingKeyFinanceViewerIncome:
 		return true

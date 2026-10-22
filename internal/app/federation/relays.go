@@ -328,7 +328,7 @@ func (r *Relays) resolve(ctx context.Context, p federation.RelayProtocol, u fede
 	if p == federation.RelayMastodon {
 		return p, u, nil
 	}
-	got, err := r.d.Fetcher.Fetch(ctx, string(u))
+	got, err := fetchActorWith(ctx, r.d.Fetcher, string(u))
 	var actor *federation.Actor
 	if err == nil && got.Document != nil {
 		actor = got.Document.Actor

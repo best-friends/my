@@ -88,6 +88,8 @@ const (
 	// SettingIncomeVisibility decides how much of the instance's income the public API and the
 	// about page show (FR-917, ADR-0073 §7), apart from SettingFinanceVisibility.
 	SettingIncomeVisibility SettingKey = "income_visibility"
+	// SettingFederationMode is the direction the instance federates in (FR-413, ADR-0076).
+	SettingFederationMode SettingKey = "federation_mode"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -99,6 +101,18 @@ const (
 	RegistrationApproval RegistrationMode = "approval" // sign-ups wait for a moderator's approval
 	RegistrationInvite   RegistrationMode = "invite"   // sign-up needs an invite
 	RegistrationClosed   RegistrationMode = "closed"   // nobody may sign up
+)
+
+// FederationMode is the value of SettingFederationMode (FR-413, ADR-0076). Its values are those
+// of the federation module's mode (federation.Mode), which decides what each one lets through.
+type FederationMode string
+
+// Federation modes.
+const (
+	FederationOff      FederationMode = "off"      // federates in neither direction
+	FederationInbound  FederationMode = "inbound"  // follows and reads remote accounts, sends nothing out
+	FederationOutbound FederationMode = "outbound" // delivers to remote followers, takes nothing in
+	FederationBoth     FederationMode = "both"     // federates in both directions
 )
 
 // RemoteMediaPolicy is the value of SettingRemoteMediaPolicy (FR-409, ADR-0005): which remote
@@ -406,6 +420,11 @@ var definitions = []Definition{
 		Key: SettingIncomeVisibility, Kind: KindEnum, Default: string(IncomePrivate),
 		Choices: []string{string(IncomePrivate), string(IncomeTotals), string(IncomePlans)},
 		Doc:     "How much of the instance's income GET /instance/income_totals and the about page show: private (nothing), totals (the net income of each currency by period), or plans (also the number of members of each supporter plan now); the balance against the costs is shown only while finance_visibility is not private as well, and individual payments, subscribers, the amounts of each plan, and the fees are never shown (FR-917, ADR-0073 §7).",
+	},
+	{
+		Key: SettingFederationMode, Kind: KindEnum, Default: string(FederationBoth),
+		Choices: []string{string(FederationOff), string(FederationInbound), string(FederationOutbound), string(FederationBoth)},
+		Doc:     "The direction the instance federates in: off (neither), inbound (follows and reads remote accounts but sends none of the local posts, profiles, and reactions out), outbound (takes remote followers and delivers the local posts to them but takes none of the remote posts and reactions in), or both; narrowing it keeps the follows, the posts taken in, and the delivery records (FR-413, ADR-0076).",
 	},
 }
 
@@ -716,6 +735,12 @@ func (s Settings) RemoteMediaCacheTTL() time.Duration {
 
 // AuthorizedFetch returns the value of SettingAuthorizedFetch.
 func (s Settings) AuthorizedFetch() bool { return s.boolValue(SettingAuthorizedFetch) }
+
+// FederationMode returns the value of SettingFederationMode.
+func (s Settings) FederationMode() FederationMode {
+	v, _ := s.Value(SettingFederationMode)
+	return FederationMode(v)
+}
 
 // DomainActionsVisibility returns the value of SettingDomainActionsVisibility.
 func (s Settings) DomainActionsVisibility() Audience {

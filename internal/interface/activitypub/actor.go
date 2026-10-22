@@ -63,6 +63,11 @@ func keyDocumentOf(doc federation.ActorDocument) keyDocument {
 // A local actor that moderation suspends (suspend, ban) is served, not hidden, until it is
 // deleted: its document is emptied and marked suspended, with its key, so that other servers
 // show the suspension and can verify the actor's Delete (federation.md §11, ADR-0036).
+//
+// The federation mode decides the rest (ADR-0076): Register serves the actors only when it
+// identifies (404 when it is off), and when it does not publish (inbound) a user's document is
+// the minimal one for everyone, as authorized fetch serves it to an unsigned request, so that
+// remote servers verify the signatures of its Follows without seeing its profile.
 func (h *Handler) actor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Vary", "Accept")
 	a, suspended, err := h.lookupActor(r, r.PathValue("id"))
@@ -84,6 +89,14 @@ func (h *Handler) actor(w http.ResponseWriter, r *http.Request) {
 	}
 	if a.Account.ActorType == account.ActorApplication {
 		h.writeJSON(w, r, typeActivityJSON, doc)
+		return
+	}
+	mode, ok := h.mode(w, r)
+	if !ok {
+		return
+	}
+	if !federation.Allows(mode, federation.FlowPublish) {
+		h.writeJSON(w, r, typeActivityJSON, keyDocumentOf(doc))
 		return
 	}
 	acc, ok := h.authorize(w, r, false)
@@ -142,8 +155,7 @@ func (h *Handler) lookupUsername(r *http.Request, username string) (appaccount.A
 // any other request gets the HTML of the web client. Single-segment paths without "@" are
 // the web client's.
 func (h *Handler) profilePage(w http.ResponseWriter, r *http.Request) {
-	username, ok := cutAt(r.PathValue("name"))
-	if !ok {
+	if _, ok := cutAt(r.PathValue("name")); !ok {
 		h.page(w, r)
 		return
 	}
@@ -152,6 +164,13 @@ func (h *Handler) profilePage(w http.ResponseWriter, r *http.Request) {
 		h.html(w, r)
 		return
 	}
+	h.gate(federation.FlowIdentify, h.profileRedirect)(w, r)
+}
+
+// profileRedirect redirects an ActivityPub request for the profile page /@{username} to the
+// actor id.
+func (h *Handler) profileRedirect(w http.ResponseWriter, r *http.Request) {
+	username, _ := cutAt(r.PathValue("name"))
 	if account.ValidateUsername(username) != nil {
 		h.notFound(w, r)
 		return

@@ -61,6 +61,9 @@ type FetcherDeps struct {
 	Key func(ctx context.Context) (SigningKey, error)
 	// Host is this instance's host, whose URIs are never fetched (federation.md §1.2).
 	Host string
+	// Modes reads the federation mode (ADR-0076): Fetch takes content in (ingest) and FetchActor
+	// fetches actors and their keys (identify). nil federates both ways.
+	Modes ModeSettings
 }
 
 // Fetcher fetches remote ActivityPub documents (federation.md §6.1): a GET signed with the
@@ -81,13 +84,32 @@ type Fetched struct {
 	Raw []byte
 }
 
-// Fetch fetches the document with the IRI uri (its fragment is ignored). It fails with an error
-// wrapping ErrFetchGone, ErrFetchNotFound, ErrFetchFailed, ErrFetchUnavailable, or
-// ErrFetchRefused; other errors come from the stores.
+// Fetch fetches the document with the IRI uri (its fragment is ignored) to take it in: a post, a
+// thread, a collection. It fails with an error wrapping ErrFetchGone, ErrFetchNotFound,
+// ErrFetchFailed, ErrFetchUnavailable, or ErrFetchRefused; other errors come from the stores. A
+// fetch that the federation mode does not make (ingest, ADR-0076) fails with ErrFetchRefused and
+// ErrFederationRestricted.
 func (f *Fetcher) Fetch(ctx context.Context, uri string) (*Fetched, error) {
+	return f.fetch(ctx, uri, federation.FlowIngest)
+}
+
+// FetchActor is Fetch of an actor or of its key, which verifying signatures and addressing
+// deliveries need: the federation mode makes it unless it is off (identify, ADR-0076).
+func (f *Fetcher) FetchActor(ctx context.Context, uri string) (*Fetched, error) {
+	return f.fetch(ctx, uri, federation.FlowIdentify)
+}
+
+// fetch is Fetch of a document of flow.
+func (f *Fetcher) fetch(ctx context.Context, uri string, flow federation.Flow) (*Fetched, error) {
 	target, err := fetchTarget(uri)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrFetchNotFound, err)
+	}
+	switch ok, err := modeAllows(ctx, f.d.Modes, flow); {
+	case err != nil:
+		return nil, err
+	case !ok:
+		return nil, fmt.Errorf("%w: %w: %s (%s)", ErrFetchRefused, ErrFederationRestricted, target, flow)
 	}
 	if err := f.check(ctx, target); err != nil {
 		return nil, err

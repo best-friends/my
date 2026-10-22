@@ -46,6 +46,17 @@ type InboxActivity struct {
 	// Relay is the accepted relay that brought the activity in, nil for one that no relay
 	// brought (ADR-0061).
 	Relay *RelayMembership
+	// Mode is the federation mode when the activity is processed (ADR-0076), which the handlers
+	// of the activities that span several flows ask about theirs; "" is federation.DefaultMode.
+	Mode federation.Mode
+}
+
+// mode returns the federation mode the activity is processed in.
+func (a *InboxActivity) mode() federation.Mode {
+	if a.Mode == "" {
+		return federation.DefaultMode
+	}
+	return a.Mode
 }
 
 // InboxHandler processes one kind of received activity (federation.md §3.4). It writes in one
@@ -81,6 +92,26 @@ func (r *RemoteActors) Fetch(ctx context.Context, uri string) (*Fetched, error) 
 	return r.d.Fetcher.Fetch(ctx, uri)
 }
 
+// FetchActor implements ActorFetcher with the Fetcher of r.
+func (r *RemoteActors) FetchActor(ctx context.Context, uri string) (*Fetched, error) {
+	return r.d.Fetcher.FetchActor(ctx, uri)
+}
+
+// ActorFetcher fetches an actor from its origin, which the federation mode allows unless it is
+// off (identify, ADR-0076); *Fetcher and *RemoteActors implement it.
+type ActorFetcher interface {
+	FetchActor(ctx context.Context, uri string) (*Fetched, error)
+}
+
+// fetchActorWith fetches the actor at uri with f: as an actor when f is an ActorFetcher, as any
+// other document otherwise.
+func fetchActorWith(ctx context.Context, f DocumentFetcher, uri string) (*Fetched, error) {
+	if af, ok := f.(ActorFetcher); ok {
+		return af.FetchActor(ctx, uri)
+	}
+	return f.Fetch(ctx, uri)
+}
+
 // InboxProcessorDeps are the ports of InboxProcessor.
 type InboxProcessorDeps struct {
 	UnitOfWork uow.UnitOfWork
@@ -93,6 +124,10 @@ type InboxProcessorDeps struct {
 	Accounts AccountPolicy
 	// Relays admits the activities that relays bring in; nil processes them as any other.
 	Relays RelayGate
+	// Modes reads the federation mode (ADR-0076); nil federates both ways.
+	Modes ModeSettings
+	// Host is this server's serving domain, which tells the local objects of the activities.
+	Host   string
 	Clock  kernel.Clock
 	Logger *slog.Logger
 }
@@ -109,7 +144,8 @@ const (
 	// InboxTombstoned is a Delete or Undo of an unknown target, recorded as a tombstone.
 	InboxTombstoned InboxOutcome = "tombstoned"
 	// InboxDropped is an activity that is not processed: a restricted actor, a tombstoned
-	// object, an activity that could not be confirmed at its origin, or one its handler dropped.
+	// object, an activity that could not be confirmed at its origin, one whose flow the
+	// federation mode stops (ADR-0076), or one its handler dropped.
 	InboxDropped InboxOutcome = "dropped"
 )
 
@@ -284,6 +320,14 @@ func (p *InboxProcessor) ProcessRelayed(ctx context.Context, activityURI federat
 		return "", fmt.Errorf("%w: %s is not an activity of %s", ErrUnprocessable, activityURI, received.ActorURI)
 	}
 	in := &InboxActivity{Received: received, Activity: act, Document: document}
+
+	// The federation mode at the time of processing, before anything is fetched (ADR-0076).
+	if in.Mode, err = currentMode(ctx, p.d.Modes); err != nil {
+		return "", err
+	}
+	if !receives(in.Mode, act, p.d.Host) {
+		return p.dropped(ctx, in, fmt.Errorf("%w: %w: %s in mode %s", ErrDropActivity, ErrFederationRestricted, act.RawType, in.Mode))
+	}
 
 	// What a relay brought in passes its gate before it costs a fetch.
 	if relayID != "" && p.d.Relays != nil {

@@ -60,6 +60,8 @@ type FanOutDeps struct {
 	// Relays reads the inboxes of the accepted relays, the last recipients of the Create of a
 	// public status (ADR-0061); nil sends to no relay.
 	Relays RelayInboxes
+	// Modes reads the federation mode when each batch runs (ADR-0076); nil federates both ways.
+	Modes ModeSettings
 	// Host is the serving domain of the activity and object URIs (ADR-0018).
 	Host string
 	// AccountDomain is the domain of local handles in mentions; empty means Host.
@@ -86,6 +88,12 @@ type FanOutDeps struct {
 //     (federation.Deliverable).
 //  5. In one transaction, it inserts the deliveries with ON CONFLICT DO NOTHING, enqueues a
 //     JobDeliver per new row, and enqueues the job of the next batch.
+//
+// Each batch first asks the federation mode at the time it runs (ADR-0076, federation.Sends): an
+// activity that the mode does not send is skipped, records nothing more, and is never sent again,
+// even when the mode is widened later. A retraction in a mode that does not publish goes only to
+// the inboxes of the original delivery and to the followers at the time, never to every known
+// shared inbox.
 //
 // Running a batch again inserts no delivery twice and enqueues no JobDeliver twice: the
 // deliveries are unique per (activity, inbox), and only new rows get a job.
@@ -131,7 +139,7 @@ func (f *FanOut) handle(ctx context.Context, j queue.Job) queue.Result {
 	switch {
 	case err == nil:
 		return queue.Done()
-	case errors.Is(err, errGone):
+	case errors.Is(err, errGone), errors.Is(err, ErrFederationRestricted):
 		f.d.Logger.InfoContext(ctx, "outbound activity not fanned out", slog.String("outbound_activity_id", p.OutboundActivityID), slog.Any("reason", err))
 		return queue.Done()
 	case errors.Is(err, ErrNotFound), errors.Is(err, federation.ErrInvalidOutbound):
@@ -156,6 +164,13 @@ func (f *FanOut) Run(ctx context.Context, p fanOutPayload) error {
 	if err != nil {
 		return err
 	}
+	mode, err := currentMode(ctx, f.d.Modes)
+	if err != nil {
+		return err
+	}
+	if !federation.Sends(mode, act, subj.suspended) {
+		return fmt.Errorf("%w: %s %s skipped in mode %s", ErrFederationRestricted, act.Type, act.ID, mode)
+	}
 	phases := subj.phases()
 	idx := slices.Index(phases, phase(p.Phase))
 	if p.Phase == "" {
@@ -171,9 +186,14 @@ func (f *FanOut) Run(ctx context.Context, p fanOutPayload) error {
 			return err
 		}
 	}
-	targets, next, err := f.batch(ctx, act, subj, phases[idx], p.After)
-	if err != nil {
-		return err
+	// A phase that the mode does not let add recipients stays in the list, so that the batches
+	// of one activity agree on its phases whatever the mode was when each ran; it finds no one.
+	var targets []target
+	var next string
+	if !phases[idx].adds() || federation.AddsRecipients(mode, act, subj.suspended) {
+		if targets, next, err = f.batch(ctx, act, subj, phases[idx], p.After); err != nil {
+			return err
+		}
 	}
 	targets, err = f.deliverable(ctx, act.Type, targets)
 	if err != nil {
@@ -266,6 +286,10 @@ const (
 	phaseVoters phase = "voters"
 )
 
+// adds reports whether the phase reaches recipients that the object never went to before:
+// every known shared inbox, and the relays.
+func (ph phase) adds() bool { return ph == phaseSharedInboxes || ph == phaseRelays }
+
 // subject is what the fan-out of one activity needs to know about its object.
 type subject struct {
 	act federation.OutboundActivity
@@ -327,7 +351,7 @@ type subject struct {
 //     then goes to the quoted author's followers too (ADR-0069 §3).
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
-	case federation.OutboundRelay:
+	case federation.OutboundRelay, federation.OutboundRefusal:
 		return []phase{phaseRelay}
 	case federation.OutboundQuote:
 		if s.act.Type == federation.ActivityDelete {
@@ -377,7 +401,7 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 	if act.ObjectKind == federation.OutboundReport {
 		return f.reportSubject(ctx, s)
 	}
-	if act.ObjectKind == federation.OutboundRelay {
+	if act.ObjectKind == federation.OutboundRelay || act.ObjectKind == federation.OutboundRefusal {
 		return relaySubject(s, p)
 	}
 	if act.ObjectKind == federation.OutboundQuote {

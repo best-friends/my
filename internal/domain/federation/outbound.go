@@ -38,13 +38,17 @@ const (
 	// QuoteRequest, and the Delete of a revoked QuoteAuthorization. Its document is stored when
 	// it is recorded, and it goes to one inbox (the payload's).
 	OutboundQuote OutboundObjectKind = "quote"
+	// OutboundRefusal is the Reject of a remote Follow of a local actor that the federation mode
+	// refuses (inbound, ADR-0076), recorded without a follow. Its object is the remote actor; its
+	// document is stored when it is recorded, and it goes to one inbox (the payload's).
+	OutboundRefusal OutboundObjectKind = "refusal"
 )
 
 // Valid reports whether k is one of the outbound object kinds.
 func (k OutboundObjectKind) Valid() bool {
 	switch k {
 	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport, OutboundPollVote, OutboundRelay,
-		OutboundQuote:
+		OutboundQuote, OutboundRefusal:
 		return true
 	}
 	return false

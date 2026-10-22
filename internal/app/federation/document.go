@@ -274,7 +274,7 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		return accountDocument(f.d.Host, act, s.actor, images, s.suspended)
 	}
 	if act.ObjectKind == federation.OutboundFavourite || act.ObjectKind == federation.OutboundPollVote ||
-		act.ObjectKind == federation.OutboundRelay || act.ObjectKind == federation.OutboundQuote ||
+		act.ObjectKind == federation.OutboundRelay || act.ObjectKind == federation.OutboundQuote || act.ObjectKind == federation.OutboundRefusal ||
 		(act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete) {
 		return nil, nil
 	}

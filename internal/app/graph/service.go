@@ -439,6 +439,14 @@ func (s *Service) Following(ctx context.Context, accountID string, p Page) ([]gr
 	return s.d.Repository.ListFollowing(ctx, accountID, graph.StateActive, p.Before, p.limit())
 }
 
+// FollowsAnyone reports whether accountID actively follows an account. The follows of a remote
+// account that this server knows are of local accounts, so for a remote account it tells a
+// follower of the instance's users.
+func (s *Service) FollowsAnyone(ctx context.Context, accountID string) (bool, error) {
+	edges, err := s.d.Repository.ListFollowing(ctx, accountID, graph.StateActive, "", 1)
+	return len(edges) > 0, err
+}
+
 // FollowRequests returns the pending follow requests to accountID, newest first.
 func (s *Service) FollowRequests(ctx context.Context, accountID string, p Page) ([]graph.Edge, error) {
 	return s.d.Repository.ListFollowers(ctx, accountID, graph.StatePending, p.Before, p.limit())

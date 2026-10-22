@@ -36,3 +36,4 @@ enum:
   - finance_viewer_income
   - supporter_list_visibility
   - income_visibility
+  - federation_mode

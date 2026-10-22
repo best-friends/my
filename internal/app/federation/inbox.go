@@ -118,7 +118,9 @@ type InboxDeps struct {
 	Accounts   InboxAccounts
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
 	Domains DomainPolicy
-	Health  InstanceReacher
+	// Modes reads the federation mode (ADR-0076); nil federates both ways.
+	Modes  ModeSettings
+	Health InstanceReacher
 	// Relays tells the activities that an accepted relay signed (ADR-0061); nil knows none.
 	Relays RelaySigners
 	// RateLimiter applies IPLimit and DomainLimit; nil applies none.
@@ -185,6 +187,8 @@ const (
 	ReasonRateLimited     = "rate limited"
 	ReasonDomainSuspended = "domain suspended"
 	ReasonInvalidActivity = "invalid activity"
+	// ReasonFederationOff is a request that the federation mode off refuses (ADR-0076).
+	ReasonFederationOff = "federation off"
 )
 
 // Reason names why the request was refused, from a fixed vocabulary: the SignatureError
@@ -194,6 +198,9 @@ func (e *InboxRejection) Reason() string {
 	var se *SignatureError
 	if errors.As(e.Err, &se) {
 		return se.Reason()
+	}
+	if errors.Is(e.Err, ErrFederationRestricted) {
+		return ReasonFederationOff
 	}
 	switch e.Status {
 	case http.StatusTooManyRequests:
@@ -263,7 +270,16 @@ func (i *Inbox) receive(ctx context.Context, in InboxRequest, typ *string) (Rece
 	if keyHost == "" {
 		return Received{Rejection: rejection(i.d.Signatures.unauthorized(r, fmt.Errorf("keyId %q has no valid host", sig.KeyID)))}, nil
 	}
-	// 5. Domain blocks of the signing server.
+	// 5. The federation mode, which refuses everything when it is off (ADR-0076), and the domain
+	// blocks of the signing server. Every activity that comes in belongs to a flow that off stops,
+	// and the other modes take every request in and sort the activities asynchronously.
+	mode, err := currentMode(ctx, i.d.Modes)
+	if err != nil {
+		return Received{}, err
+	}
+	if !allowsAny(mode, federation.Flows()...) {
+		return Received{Rejection: &InboxRejection{Status: http.StatusForbidden, Err: fmt.Errorf("%w: mode %s", ErrFederationRestricted, mode)}}, nil
+	}
 	suspended, err := i.d.Domains.FederationSuspended(ctx, keyHost)
 	if err != nil {
 		return Received{}, err

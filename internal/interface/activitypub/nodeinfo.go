@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/best-friends/my/internal/domain/federation"
 )
 
 // nodeInfoSchema names NodeInfo 2.1, as the link relation and the profile of the document.
@@ -52,8 +54,10 @@ type nodeThumbnail struct {
 // metadata returns NodeInfo's metadata: nodeName and, from m, the keys that Mastodon, Misskey,
 // and Pleroma read (nodeDescription; maintainer as Misskey; staffAccounts as Pleroma, the actor
 // ids) with the thumbnail.
-func metadata(name, sourceURL string, m NodeMetadata) map[string]any {
-	out := map[string]any{"nodeName": name}
+func metadata(name, sourceURL string, m NodeMetadata, mode federation.Mode) map[string]any {
+	// federationMode tells other servers and their users the direction this server federates
+	// in (ADR-0076).
+	out := map[string]any{"nodeName": name, "federationMode": mode}
 	if sourceURL != "" {
 		// Where users get the source (AGPL-3.0 section 13, ADR-0011), also when it is a mailto: address, which
 		// software.repository cannot hold.
@@ -119,6 +123,10 @@ type nodeInfoUsers struct {
 // counts the local posts as Mastodon does (content.Service.LocalPostCount); active-user counts
 // are omitted because logins are not counted.
 func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
+	mode, ok := h.mode(w, r)
+	if !ok {
+		return
+	}
 	users, err := h.o.Accounts.CountLocalUsers(r.Context())
 	if err != nil {
 		h.o.Logger.ErrorContext(r.Context(), "nodeinfo: count users failed", slog.Any("error", err))
@@ -165,6 +173,6 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 		Services:          nodeInfoServices{Inbound: []string{}, Outbound: []string{}},
 		OpenRegistrations: open,
 		Usage:             nodeInfoUsage{Users: nodeInfoUsers{Total: users}, LocalPosts: posts},
-		Metadata:          metadata(name, h.o.SourceURL, meta),
+		Metadata:          metadata(name, h.o.SourceURL, meta, mode),
 	})
 }
