@@ -41,6 +41,7 @@
 | `remote_media_policy` | `none` / `avatars` / `all` | `none` | リモートのメディアの複製を持つか（FR-409、ADR-0005）。`none` はメディアプロキシが毎回中継し、`avatars` はアバター・ヘッダー・カスタム絵文字、`all` はすべてを `remote_media_cache_ttl` の間 Blob にキャッシュする。キャッシュの合計の上限は設定 `remote_media_cache_max_bytes`（[federation.md §9](../architecture/federation.md#9-リモートメディア)） |
 | `remote_media_cache_ttl` | 整数 60〜31536000（秒） | `86400` | 取得したリモートのメディアを持ってよい期間。メディアプロキシのレスポンスの `Cache-Control: max-age` で、CDN とブラウザがこの間キャッシュする（[federation.md §9](../architecture/federation.md#9-リモートメディア)） |
 | `authorized_fetch` | `true` / `false` | `false` | Authorized Fetch（secure mode、FR-408）。`true` にすると、検証できる HTTP 署名の無い ActivityPub の GET に、オブジェクトとコレクションは `401` で、利用者の Actor は鍵の取得のための最小の文書で答える（[federation.md §10](../architecture/federation.md#10-コレクションとオブジェクトの-get)）。インスタンス Actor は署名なしでも文書全体を返すので、署名の検証のための鍵の取得はどのサーバーからもできる |
+| `federation_mode` | `off` / `inbound` / `outbound` / `both` | `both` | 連合の向き（FR-413、[federation.md §14](../architecture/federation.md#14-連合の向き)）。`off` は連合しない。`inbound` は外のアカウントをフォローして読むが、ローカルの投稿・プロフィール・反応を外へ出さず、外からのフォローは断る（`Reject`）。`outbound` は外からのフォローを受けてローカルの投稿を届けるが、外の投稿・反応を取り込まない。`both` は送受信する。変更はすぐに効き、`manage_settings` の権限で変えられる |
 | `domain_actions_visibility` | `none` / `users` / `all` | `none` | 処分したドメインの一覧（`GET /api/v1/instance/domain_actions`）を誰に見せるか: 誰にも / ログインした利用者に / 誰にでも（FR-718、[ドメイン単位の処分と通報の対応](moderation.md#処分したドメインの公開)） |
 | `domain_actions_rationale_visibility` | `none` / `users` / `all` | `none` | その一覧の公開コメントを誰に見せるか。一覧を見られない相手には見せない（FR-718） |
 | `appeal_window` | 整数 20〜365（日） | `180` | 処分から何日のあいだ、本人が異議を申し立てられるか（FR-707、ADR-0038、[異議申し立て](moderation.md#異議申し立て)）。変えると、すでに出た処分の期限も変わる |
@@ -145,6 +146,26 @@ my instance set thumbnail_alt "海辺の町の写真"
   CLI からの変更は変更者なし（履歴の `BY` が `cli`）として残ります。
 - 同じ値を設定し直しても版は増えます。
 - 終了コード: 0 は成功、1 は値の拒否や DB のエラー（何も変更しない）、2 は引数の誤り。
+
+### 連合の向きを変えるとき
+
+- 狭めても、フォロー関係・取り込んだ投稿・配送の記録は残り、`Undo` / `Reject` は送りません。流れが止まるだけで、`both` などに戻すとそのまま再開します。
+- 狭めている間に作った投稿・反応は、戻しても遡って配送しません。
+- 外の側では、`inbound` の間はローカルの利用者のフォロワーに何も届かず、`outbound` / `off` の間はローカルの利用者のフォローが更新されません。
+- `off` の間に行った削除（投稿・アカウント）は外に伝わりません。`inbound` / `outbound` では、それまでに外へ出したものの撤回（`Delete` など）は元の配送先とその時点のフォロワーに送ります。
+- 変更は `instance_setting_revisions` と監査ログ（`target_kind = setting`）に残ります。
+
+関係も切りたいときは、CLI `my admin federation sever` を使います。
+
+```sh
+my admin federation sever -direction in     # 外のアカウントによる、ローカルの利用者のフォローを終わらせる
+my admin federation sever -direction out    # ローカルの利用者による、外のアカウントのフォローを終わらせる
+my admin federation sever -direction both
+```
+
+- ローカルのアカウントと外のアカウントのあいだの承認待ちと有効なフォローを、モデレーションによる終了（`follow_terminations`、`reason = moderation`）として終わらせます。モードの変更は自動では呼びません。
+- 外へ `Reject`（`in`）・`Undo`（`out`）を送るのは、そのときのモードが送るときだけです。送らないモード（`off` など）では、ローカルの側だけで終わり、外の側には伝わりません。
+- 何度実行しても安全です。終わった数を標準出力に示します。
 
 ## 管理画面とクライアント API
 
