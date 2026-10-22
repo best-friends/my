@@ -5,12 +5,13 @@
 import type { ReactNode } from "react";
 import { FieldError as RACFieldError, Label as RACLabel, Text, type ValidationResult } from "react-aria-components";
 import { tv } from "tailwind-variants";
+import { WarningIcon } from "./Icons";
 
 const field = tv({
   slots: {
-    label: "text-sm font-medium text-fg",
+    label: "text-sm font-bold text-fg",
     description: "text-sm text-fg-muted",
-    error: "text-sm text-danger",
+    error: "flex items-start gap-1 text-sm font-semibold text-danger [&>svg]:mt-1 [&>svg]:size-4 [&>svg]:shrink-0",
   },
 });
 
@@ -18,7 +19,7 @@ const field = tv({
 export const fieldControl = tv({
   base: [
     "w-full min-w-0 rounded-md border border-border-strong bg-surface-sunken px-3 py-2 text-base text-fg",
-    "placeholder:text-fg-muted data-focused:focus-ring data-invalid:border-danger data-disabled:cursor-not-allowed data-disabled:opacity-50",
+    "placeholder:text-fg-muted data-focused:focus-ring data-invalid:border-danger data-invalid:ring-1 data-invalid:ring-danger data-disabled:cursor-not-allowed data-disabled:opacity-50",
     "pointer-coarse:min-h-11 motion-safe:transition-colors",
   ],
 });
@@ -58,5 +59,15 @@ export function FieldDescription({ children, className }: PartProps<ReactNode>) 
 }
 
 export function FieldError({ children, className }: PartProps<FieldErrorMessage>) {
-  return <RACFieldError className={field().error({ className })}>{children}</RACFieldError>;
+  // The warning icon keeps an error from resting on colour alone.
+  return (
+    <RACFieldError className={field().error({ className })}>
+      {(validation) => (
+        <>
+          <WarningIcon filled />
+          <span>{typeof children === "function" ? children(validation) : children}</span>
+        </>
+      )}
+    </RACFieldError>
+  );
 }

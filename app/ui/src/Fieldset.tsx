@@ -5,8 +5,8 @@ import { tv } from "tailwind-variants";
 
 const fieldset = tv({
   slots: {
-    root: "flex min-w-0 flex-col gap-3 rounded-md border border-border p-3",
-    legend: "px-1 text-sm font-medium text-fg",
+    root: "flex min-w-0 flex-col gap-3 rounded-lg border border-border p-3",
+    legend: "px-1 text-sm font-bold text-fg",
   },
 });
 
