@@ -215,6 +215,18 @@ export const themeTokens: readonly ThemeToken[] = [
     "alpha": true
   },
   {
+    "name": "color-pressed",
+    "kind": "color",
+    "light": "#2e2e2e",
+    "dark": "#ff6b6b"
+  },
+  {
+    "name": "color-pressed-fg",
+    "kind": "color",
+    "light": "#ffffff",
+    "dark": "#2e2e2e"
+  },
+  {
     "name": "font-sans",
     "kind": "font-family",
     "value": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Hiragino Sans\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic UI\", Meiryo, \"PingFang SC\", \"Microsoft YaHei UI\", \"Malgun Gothic\", \"Geeza Pro\", \"Segoe UI Arabic\", Tahoma, \"Noto Sans\", \"Noto Sans CJK JP\", \"Noto Sans JP\", \"Noto Sans Arabic\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Noto Color Emoji\""

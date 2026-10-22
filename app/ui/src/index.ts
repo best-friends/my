@@ -26,6 +26,7 @@ export { Switch, type SwitchProps } from "./Switch";
 export { TextArea, type TextAreaProps } from "./TextArea";
 export { TextField, type TextFieldProps } from "./TextField";
 export { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
+export { Segmented, SegmentedItem, type SegmentedItemProps, type SegmentedProps } from "./Segmented";
 
 // Overlays, tabs and announcements.
 export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog";

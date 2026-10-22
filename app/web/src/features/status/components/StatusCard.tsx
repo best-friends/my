@@ -165,7 +165,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
       })}
       avatar={
         <PostCardAvatarLink href={view.author.href}>
-          <Avatar sources={view.author.avatar} name={view.author.name} decorative />
+          <Avatar sources={view.author.avatar} name={view.author.name} seed={view.author.id} decorative />
         </PostCardAvatarLink>
       }
       author={<PostCardAuthorLink href={view.author.href} name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />}

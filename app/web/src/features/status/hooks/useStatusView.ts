@@ -20,7 +20,7 @@ export type StatusView = {
    * profile page, and avatar URL (undefined when the account has none, and the avatar shows its fallback),
    * with the custom emoji of the name.
    */
-  author: { name: string; emojis: readonly CustomEmojiImage[]; handle: string; href: string; avatar: ImageSources | undefined };
+  author: { id: string; name: string; emojis: readonly CustomEmojiImage[]; handle: string; href: string; avatar: ImageSources | undefined };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: TimeView;
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
@@ -152,6 +152,7 @@ export function useStatusView(status: Status): StatusView {
         ? null
         : { name: status.account.display_name || status.account.username, emojis: status.account.emojis, href: profilePath(status.account.acct) },
     author: {
+      id: post.account.id,
       name: post.account.display_name || post.account.username,
       emojis: post.account.emojis,
       handle: handleOf(post.account.acct),

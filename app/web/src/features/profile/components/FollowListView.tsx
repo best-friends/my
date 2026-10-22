@@ -44,7 +44,7 @@ export function FollowListView({ acct, list, renderHeading }: FollowListViewProp
           {items.map((item) => (
             <Box as="li" key={item.id}>
               {/* A right-to-left name lines up with the other rows; only its text runs right to left (web-client.md G9). */}
-              <AccountItem name={item.name} handle={item.handle} href={item.href} layout="padded" />
+              <AccountItem name={item.name} avatarSeed={item.id} handle={item.handle} href={item.href} layout="padded" />
             </Box>
           ))}
         </Stack>

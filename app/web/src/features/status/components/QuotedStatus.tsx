@@ -39,7 +39,7 @@ function QuotedPost({ status, notice }: { status: Status; notice: string | null 
   return (
     <QuoteCard
       label={t("client:status.quote.label")}
-      avatar={<Avatar sources={view.author.avatar} name={view.author.name} size="xs" decorative />}
+      avatar={<Avatar sources={view.author.avatar} name={view.author.name} seed={view.author.id} size="xs" decorative />}
       author={
         <PostCardAuthorLink href={view.author.href} name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />
       }

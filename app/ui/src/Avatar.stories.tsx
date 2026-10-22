@@ -114,3 +114,22 @@ export const Sizes: Story = {
     await imagesLoaded(canvasElement);
   },
 };
+
+/** Without an image the initial sits on one of five pastel tints, picked from the seed: the same seed is always the same color. */
+export const Tints: Story = {
+  render: () => (
+    <ul className="flex flex-wrap items-center gap-3">
+      {["1", "2", "3", "4", "5", "6", "7", "8"].map((seed) => (
+        <li key={seed}>
+          <Avatar name="Alice Example" seed={seed} decorative={false} />
+        </li>
+      ))}
+    </ul>
+  ),
+  play: async ({ canvas }) => {
+    const avatars = canvas.getAllByRole("img", { name: "Alice Example" });
+    const tintOf = (el: HTMLElement) => [...el.classList].find((c) => c.startsWith("bg-avatar-"));
+    await expect(new Set(avatars.map(tintOf)).size).toBeGreaterThan(1);
+    await expect(tintOf(avatars[0] as HTMLElement)).toBeDefined();
+  },
+};

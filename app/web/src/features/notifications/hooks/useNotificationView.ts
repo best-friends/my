@@ -15,7 +15,7 @@ import { isTauriApp } from "../../../lib/platform";
 
 /** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
 /** An account a row names: its display name with the custom emoji of its profile, its profile page, and its avatar. */
-export type NotificationActor = { name: string; emojis: readonly CustomEmojiImage[]; href: string; avatar: ImageSources | undefined };
+export type NotificationActor = { id: string; name: string; emojis: readonly CustomEmojiImage[]; href: string; avatar: ImageSources | undefined };
 
 /** A link from a row to the page where the user follows up what it tells. */
 type NotificationLink = { href: string; label: ClientMessageKey };
@@ -181,7 +181,7 @@ const groupSentences: Readonly<Partial<Record<NotificationType, ClientMessageKey
 };
 
 function actorOf(account: NotificationAccount): NotificationActor {
-  return { name: account.display_name || account.username, emojis: account.emojis, href: profilePath(account.acct), avatar: imageSources(account.avatar) };
+  return { id: account.id, name: account.display_name || account.username, emojis: account.emojis, href: profilePath(account.acct), avatar: imageSources(account.avatar) };
 }
 
 function postOf(status: NotificationStatus): NonNullable<NotificationView["post"]> {

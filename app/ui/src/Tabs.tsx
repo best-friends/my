@@ -40,7 +40,7 @@ const tabs = tv({
       "data-overflow-end:ltr:mask-r-from-[calc(100%-2rem)] data-overflow-end:rtl:mask-l-from-[calc(100%-2rem)]",
     ],
     tab: [
-      "flex shrink-0 cursor-default items-center border-b-2 border-transparent px-4 py-2 text-sm font-medium",
+      "flex shrink-0 cursor-default items-center border-b-3 border-transparent px-4 py-2 text-sm font-bold",
       "text-fg-muted outline-none select-none pointer-coarse:min-h-11",
       "data-hovered:text-fg data-selected:border-accent data-selected:text-accent data-disabled:opacity-60",
       // The list scrolls sideways on narrow screens and would clip an outer ring, so the tab's ring is inset.

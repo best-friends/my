@@ -51,6 +51,8 @@ export type AccountItemProps = {
   avatar?: ImageSources | undefined;
   /** The avatar image URL, for an account that has no renditions. */
   avatarSrc?: string | undefined;
+  /** What picks the tint of the avatar's letter, such as the account's ID (see `Avatar`). */
+  avatarSeed?: string | undefined;
   /** Makes the account a link to this address, named "name handle". Without it the item is plain text. */
   href?: string | undefined;
   /** `row` fills the width, `padded` is a whole-row target with a hover background, `inline` is as wide as its text. */
@@ -76,6 +78,7 @@ export function AccountItem({
   handle,
   avatar,
   avatarSrc,
+  avatarSeed,
   href,
   layout,
   details,
@@ -89,7 +92,7 @@ export function AccountItem({
   const slots = accountItem({ layout, link: isLink, trailing: hasTrailing ? trailingPlacement : "none" });
   const content = (
     <>
-      <Avatar sources={avatar} src={avatarSrc} name={name} decorative className={slots.avatar({ className: showDetails ? "row-span-3" : "row-span-2" })} />
+      <Avatar sources={avatar} src={avatarSrc} name={name} seed={avatarSeed} decorative className={slots.avatar({ className: showDetails ? "row-span-3" : "row-span-2" })} />
       <span dir="auto" className={slots.name()}>
         {nameContent ?? name}
       </span>
