@@ -30,6 +30,11 @@ export type About = {
    * undefined while the instance has not loaded.
    */
   sourceUrl: string | undefined;
+  /**
+   * The server's page of the commerce disclosures of its supporter plans (ADR-0072 §13, `/about/commerce`);
+   * undefined when the instance publishes none or has not loaded.
+   */
+  commerceDisclosureUrl: string | undefined;
 };
 
 /** Splits a plain-text description into paragraphs at blank lines, without empty ones. */
@@ -58,6 +63,7 @@ export function useAbout(): About {
     crawlers: instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage },
     finance: instance?.finance_visibility,
     sourceUrl: instance?.source_url,
+    commerceDisclosureUrl: instance?.commerce_disclosure_url,
   };
 }
 

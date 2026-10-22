@@ -99,6 +99,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/instance/supporter_plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the supporter plans
+         * @description The supporter plans that take subscriptions, by rank, with their monthly and yearly
+         *     prices (ADR-0072 §18). A 404 while the supporter program is disabled
+         *     (`Instance.supporters_enabled`).
+         */
+        get: operations["listSupporterPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/verify_credentials": {
         parameters: {
             query?: never;
@@ -4280,6 +4302,155 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/supporter_program": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the supporter program
+         * @description Whether the supporter program is enabled, and what it needs. Needs the `manage_supporters` permission.
+         */
+        get: operations["getSupporterProgram"];
+        /**
+         * Enable or disable the supporter program
+         * @description Enables or disables the supporter program (ADR-0072 §2). Enabling it without a payment
+         *     provider in the deployment's configuration or without email is a 409
+         *     `/api/v1/problems/supporters-unavailable`; disabling it while subscriptions go on is a
+         *     409 `/api/v1/problems/live-subscriptions` (retire the plans first). Asking for the state
+         *     it is in changes nothing. Recorded in the audit log. Needs the `manage_supporters`
+         *     permission.
+         */
+        put: operations["setSupporterProgram"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/supporter_plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the supporter plans
+         * @description Every supporter plan, retired ones too, by rank. Needs the `manage_supporters` permission.
+         */
+        get: operations["listAdminSupporterPlans"];
+        put?: never;
+        /**
+         * Create a supporter plan
+         * @description Creates a supporter plan on a role, which then only the plan's subscriptions grant
+         *     (ADR-0072 §3, §5). The prices are made at the payment provider after the answer; the
+         *     plan takes subscriptions once `prices_ready`. A plan that breaks a rule is a 422
+         *     `/api/v1/problems/invalid-supporter-plan`, an unknown role a 404, and a server without a
+         *     payment provider a 409 `/api/v1/problems/supporters-unavailable`. Recorded in the audit
+         *     log. Needs the `manage_supporters` permission.
+         */
+        post: operations["createSupporterPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/supporter_plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a supporter plan
+         * @description Changes a supporter plan's terms and its role's permissions and position (ADR-0072 §3,
+         *     §5, §9). New prices apply to new subscriptions and changes of plan only. A change that
+         *     breaks a rule is a 422 `/api/v1/problems/invalid-supporter-plan`, a retired plan a 409
+         *     `/api/v1/problems/supporter-plan-retired`, and an unknown plan a 404. Recorded in the
+         *     audit log. Needs the `manage_supporters` permission.
+         */
+        patch: operations["updateSupporterPlan"];
+        trace?: never;
+    };
+    "/admin/supporter_plans/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire a supporter plan
+         * @description Retires a supporter plan for good (ADR-0072 §9): it takes no subscriptions any more, and
+         *     every subscription of it ends at the end of its period (a pending one at once). A
+         *     retired plan is a 409 `/api/v1/problems/supporter-plan-retired`, and an unknown one a
+         *     404. Recorded in the audit log. Needs the `manage_supporters` permission.
+         */
+        post: operations["retireSupporterPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/supporter_subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the subscriptions
+         * @description The subscriptions to the supporter plans, newest first, narrowed to a plan and a state.
+         *     Needs the `manage_supporters` permission.
+         */
+        get: operations["listSupporterSubscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/supporter_subscriptions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a subscription at once
+         * @description Ends a subscription at once, without a refund (ADR-0072 §10): the role goes now, and the
+         *     payment provider stops billing. A refund is the operator's to make at the provider. A
+         *     subscription that has ended is a 409 `/api/v1/problems/subscription-ended`, and an
+         *     unknown one a 404. Recorded in the audit log. Needs the `manage_supporters` permission.
+         */
+        post: operations["cancelSupporterSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4734,10 +4905,15 @@ export interface components {
          *     the ID is the source (`aws`, `gcp`) and the label the provider's name. On a `cost_item`:
          *     `cost_item_created`, `cost_item_relabeled` (its name, provider, category, or memo),
          *     `cost_item_price_revised`, `cost_item_end_changed`, and `cost_item_canceled`; the label is
-         *     the item's name.
+         *     the item's name. On the `supporter_program`: `supporter_program_enabled`,
+         *     `supporter_program_disabled`; the label is the payment provider's name. On a
+         *     `supporter_plan`: `supporter_plan_created`, `supporter_plan_revised`, and
+         *     `supporter_plan_retired`; the label is the plan's name. On a `supporter_subscription`:
+         *     `supporter_subscription_canceled`, an administrator's cancellation without a refund; the
+         *     label is the plan's name and the subscriber's handle.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued" | "billing_import_queued" | "cost_item_created" | "cost_item_relabeled" | "cost_item_price_revised" | "cost_item_end_changed" | "cost_item_canceled";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued" | "billing_import_queued" | "cost_item_created" | "cost_item_relabeled" | "cost_item_price_revised" | "cost_item_end_changed" | "cost_item_canceled" | "supporter_program_enabled" | "supporter_program_disabled" | "supporter_plan_created" | "supporter_plan_revised" | "supporter_plan_retired" | "supporter_subscription_canceled";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4794,7 +4970,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay" | "billing_source" | "cost_item";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay" | "billing_source" | "cost_item" | "supporter_program" | "supporter_plan" | "supporter_subscription";
         /** @description The time a remote server was marked unavailable or available again, and why. */
         AdminAvailabilityEvent: {
             id: components["schemas"]["Id"];
@@ -5422,6 +5598,144 @@ export interface components {
          * @enum {string}
          */
         AdminSignupBlockState: "active" | "expired" | "lifted";
+        /**
+         * @description A supporter plan as the administrators see it (ADR-0072 §3). The yearly price is the
+         *     monthly one × 12, discounted by `annual_discount_percent`, rounded down. A plan takes
+         *     subscriptions while it is public, not retired, and `prices_ready` (the provider has the
+         *     prices of its current terms).
+         */
+        AdminSupporterPlan: {
+            id: components["schemas"]["Id"];
+            name: string;
+            description: string;
+            /** @description A higher rank is a higher plan, which includes everything of the lower ones. */
+            rank: number;
+            visibility: components["schemas"]["SupporterPlanVisibility"];
+            monthly_price: components["schemas"]["Money"];
+            yearly_price: components["schemas"]["Money"];
+            annual_discount_percent: number;
+            /** @description How many custom emoji the members may create when the role lets them. */
+            emoji_limit: number;
+            role: components["schemas"]["AdminSupporterPlanRole"];
+            prices_ready: boolean;
+            retired: boolean;
+            /** Format: date-time */
+            retired_at?: string;
+            /** @description The subscriptions that hold the role (active, canceling, or past due). */
+            members: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            revised_at: string;
+        };
+        /**
+         * @description A new supporter plan on a role that nobody holds, whose permissions are member
+         *     permissions and whose position is below every staff role. The currency never changes.
+         */
+        AdminSupporterPlanCreateRequest: {
+            /** @description The key of the role. */
+            role: string;
+            /** @description 1 to 50 characters on one line. */
+            name: string;
+            /** @description Up to 1,000 characters of plain text. */
+            description?: string;
+            monthly_price: components["schemas"]["Money"];
+            /** @description 0 to 90. */
+            annual_discount_percent: number;
+            /** @description 0 to 10,000. */
+            emoji_limit: number;
+            /** @description 0 to 1,000,000, unique among the plans that are not retired. */
+            rank: number;
+            visibility: components["schemas"]["SupporterPlanVisibility"];
+        };
+        /** @description Every supporter plan, retired ones too, by rank. */
+        AdminSupporterPlanList: {
+            items: components["schemas"]["AdminSupporterPlan"][];
+        };
+        /** @description The role of a supporter plan, which only its subscriptions grant. */
+        AdminSupporterPlanRole: {
+            id: components["schemas"]["Id"];
+            key: string;
+            position: number;
+            permissions: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description A change of a supporter plan; an omitted property keeps its value. A new monthly price,
+         *     in the plan's currency, or discount makes new prices for the new subscriptions and the
+         *     changes of plan; the subscriptions on the old ones keep them. `role_position` and
+         *     `role_permissions` change the plan's role, kept to member permissions below every staff
+         *     role.
+         */
+        AdminSupporterPlanUpdateRequest: {
+            name?: string;
+            description?: string;
+            monthly_price?: components["schemas"]["Money"];
+            annual_discount_percent?: number;
+            emoji_limit?: number;
+            rank?: number;
+            visibility?: components["schemas"]["SupporterPlanVisibility"];
+            role_position?: number;
+            role_permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description The supporter program (ADR-0072 §2). It is disabled by default; enabling it needs a
+         *     payment provider in the deployment's configuration (`configured_provider`) and a server
+         *     that sends email (`sends_email`). `warnings` lists what an administrator should look at.
+         */
+        AdminSupporterProgram: {
+            enabled: boolean;
+            /** @description The payment provider the program was enabled with; omitted while disabled. */
+            provider?: string;
+            /** @description The payment provider of the deployment's configuration; omitted for none. */
+            configured_provider?: string;
+            sends_email: boolean;
+            /** @description Whether the instance publishes its commerce disclosures (`/about/commerce`). */
+            commerce_disclosure: boolean;
+            /** @description The subscriptions that go on, which keep the program from being disabled. */
+            live_subscriptions: number;
+            /** @description Whether the program can be enabled now. */
+            can_enable: boolean;
+            /**
+             * Format: date-time
+             * @description When the program was last enabled or disabled; omitted for never.
+             */
+            changed_at?: string;
+            warnings: components["schemas"]["SupporterProgramWarning"][];
+        };
+        /** @description Enables or disables the supporter program. */
+        AdminSupporterProgramRequest: {
+            enabled: boolean;
+        };
+        /** @description A subscription as the administrators see it, without the history of its payments. */
+        AdminSupporterSubscription: {
+            id: components["schemas"]["Id"];
+            state: components["schemas"]["SupporterSubscriptionState"];
+            plan_id: components["schemas"]["Id"];
+            plan_name: string;
+            interval: components["schemas"]["SupporterInterval"];
+            price: components["schemas"]["Money"];
+            /**
+             * Format: date-time
+             * @description The end of the current period; omitted for `pending` and `abandoned`.
+             */
+            period_ends_at?: string;
+            /**
+             * Format: date-time
+             * @description When a `past_due` subscription loses its role.
+             */
+            grace_ends_at?: string;
+            scheduled_plan_id?: components["schemas"]["Id"];
+            scheduled_interval?: components["schemas"]["SupporterInterval"];
+            account_id?: components["schemas"]["Id"];
+            /** @description The subscriber's username; omitted with `account_id` for an erased account. */
+            username?: string;
+            /** Format: date-time */
+            started_at: string;
+        };
+        /** @description A page of subscriptions, newest first. */
+        AdminSupporterSubscriptionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminSupporterSubscription"][];
+        };
         /** @description The instance theme as its administrators edit it. */
         AdminTheme: {
             /** @description The ID of the current theme revision; omitted when no theme was ever saved. */
@@ -6519,6 +6833,17 @@ export interface components {
              *     when the instance has none.
              */
             privacy_policy_url?: string;
+            /**
+             * Format: uri
+             * @description The public page of the commerce disclosures of the supporter plans (`/about/commerce`),
+             *     which needs no sign-in; omitted when the instance has none.
+             */
+            commerce_disclosure_url?: string;
+            /**
+             * @description Whether the supporter program is enabled: its plans (`GET /instance/supporter_plans`)
+             *     and the subscriptions show only then.
+             */
+            supporters_enabled: boolean;
             theme?: components["schemas"]["InstanceTheme"];
             contact?: components["schemas"]["InstanceContact"];
             thumbnail?: components["schemas"]["InstanceThumbnail"];
@@ -6620,11 +6945,12 @@ export interface components {
         InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "account" | "email" | "uri";
         /**
          * @description The key of an instance text: the name (one line), the short and full descriptions,
-         *     the terms of service and the privacy policy (Markdown), and the alternative texts of the
-         *     preview image and the thumbnail.
+         *     the terms of service and the privacy policy (Markdown), the alternative texts of the
+         *     preview image and the thumbnail, and the commerce disclosures of the supporter plans
+         *     (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
          * @enum {string}
          */
-        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt";
+        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt" | "commerce_disclosure";
         /**
          * @description The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
          *     stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
@@ -7172,11 +7498,12 @@ export interface components {
          *     server's announcements to every local user. `manage_finance`: the instance's costs and
          *     the state of the billing imports (only the built-in admin role by default). `view_finance`:
          *     reading the totals of the instance's costs on `GET /finance/cost_totals`, a member
-         *     permission outside the staff's areas (ADR-0070). The others guard no client API operation
+         *     permission outside the staff's areas (ADR-0070). `manage_supporters`: the supporter program, its plans, and their
+         *     subscriptions (only the built-in admin role by default). The others guard no client API operation
          *     yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements" | "manage_finance" | "view_finance";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements" | "manage_finance" | "view_finance" | "manage_supporters";
         /**
          * @description A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
          *     `:shortcode:` into the text.
@@ -7378,6 +7705,20 @@ export interface components {
          *       reason in `theme_errors` (`PUT /admin/theme`).
          *     - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
          *       allowed. Unmute one first.
+         *     - `/api/v1/problems/role-managed-by-plan` (409): the role is the role of a supporter plan:
+         *       only its subscriptions grant and revoke it, and its permissions and position change from
+         *       the plan (`PATCH /admin/supporter_plans/{id}`). Its badge changes as any role's.
+         *     - `/api/v1/problems/breaks-supporter-roles` (409): the change would put a staff role (one
+         *       with a moderation or server permission) at or below the role of a supporter plan.
+         *     - `/api/v1/problems/supporters-unavailable` (409): the supporter program needs a payment
+         *       provider in the deployment's configuration and a server that sends email.
+         *     - `/api/v1/problems/live-subscriptions` (409): subscriptions to the supporter plans go on;
+         *       retire the plans and wait for the subscriptions to end before disabling the program.
+         *     - `/api/v1/problems/invalid-supporter-plan` (422): a supporter plan breaks a rule;
+         *       `reason` says which.
+         *     - `/api/v1/problems/supporter-plan-retired` (409): the supporter plan is retired and does
+         *       not change any more.
+         *     - `/api/v1/problems/subscription-ended` (409): the subscription has ended already.
          */
         Problem: {
             /**
@@ -7936,6 +8277,74 @@ export interface components {
         /** @description The plain text; the server links mentions, hashtags, and URLs. */
         StatusText: string;
         /**
+         * @description How often a subscription renews.
+         * @enum {string}
+         */
+        SupporterInterval: "month" | "year";
+        /**
+         * @description A supporter plan that takes subscriptions. The name and the description are written by
+         *     the administrators in any language; render them with `dir="auto"`.
+         */
+        SupporterPlan: {
+            id: components["schemas"]["Id"];
+            name: string;
+            description: string;
+            /** @description A higher rank is a higher plan, which includes everything of the lower ones. */
+            rank: number;
+            monthly_price: components["schemas"]["Money"];
+            yearly_price: components["schemas"]["Money"];
+        };
+        /** @description The supporter plans that take subscriptions, by rank. */
+        SupporterPlanList: {
+            items: components["schemas"]["SupporterPlan"][];
+        };
+        /**
+         * @description The problem of a supporter plan that breaks a rule (422,
+         *     `/api/v1/problems/invalid-supporter-plan`); `reason` says which.
+         */
+        SupporterPlanProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["SupporterPlanProblemReason"];
+        };
+        /**
+         * @description Why a supporter plan is refused. `name`, `description`, `monthly_price`, `currency`,
+         *     `annual_discount_percent`, `emoji_limit`, `rank`, `visibility`: the value breaks its rule
+         *     (a price below the provider's minimum, of its yearly price too, or a currency the
+         *     provider does not take, included). `role_builtin`: `admin` and `moderator` cannot be a
+         *     plan's role. `role_taken`: another plan has the role. `role_held`: users hold the role.
+         *     `role_permissions`: the role has a permission that is not a member permission.
+         *     `role_position`: the role is not below every staff role, or its position is outside 0 to
+         *     999. `order_rank`: another plan has the rank. `order_position`, `order_permissions`,
+         *     `order_emoji_limit`: a higher plan's role must be above the lower plan's, have all its
+         *     permissions, and let its members create at least as many custom emoji.
+         * @enum {string}
+         */
+        SupporterPlanProblemReason: "name" | "description" | "monthly_price" | "currency" | "annual_discount_percent" | "emoji_limit" | "rank" | "visibility" | "role_builtin" | "role_taken" | "role_held" | "role_permissions" | "role_position" | "order_rank" | "order_position" | "order_permissions" | "order_emoji_limit";
+        /**
+         * @description Whether a supporter plan takes new subscriptions. `public`: offered. `hidden`: not offered;
+         *     its subscriptions go on.
+         * @enum {string}
+         */
+        SupporterPlanVisibility: "public" | "hidden";
+        /**
+         * @description What an administrator should look at in the supporter program. `no_provider`: no payment
+         *     provider is configured. `no_email`: the server sends no email, so nobody can verify an
+         *     address to subscribe. `provider_mismatch`: the configured provider is not the one the
+         *     program was enabled with; new subscriptions and changes are refused until it is disabled
+         *     and enabled again (the subscribers subscribe again). `no_commerce_disclosure`: the
+         *     instance publishes no commerce disclosures (the `commerce_disclosure` instance text).
+         * @enum {string}
+         */
+        SupporterProgramWarning: "no_provider" | "no_email" | "provider_mismatch" | "no_commerce_disclosure";
+        /**
+         * @description The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:
+         *     paid. `canceling`: canceled at the end of the period. `past_due`: a payment failed less
+         *     than 7 days ago. `lapsed`: a payment failed more than 7 days ago, or the subscription is
+         *     paused. `expired`: ended. `revoked`: a full refund or a chargeback. `abandoned`: ended
+         *     before its first payment. The role is held while `active`, `canceling`, or `past_due`.
+         * @enum {string}
+         */
+        SupporterSubscriptionState: "pending" | "active" | "canceling" | "past_due" | "lapsed" | "expired" | "revoked" | "abandoned";
+        /**
          * @description One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
          *     `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
          *     of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
@@ -8380,6 +8789,26 @@ export interface components {
                 "application/json": components["schemas"]["AdminSignupBlock"];
             };
         };
+        /** @description The supporter plan. */
+        AdminSupporterPlan: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminSupporterPlan"];
+            };
+        };
+        /** @description The supporter program. */
+        AdminSupporterProgram: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminSupporterProgram"];
+            };
+        };
         /** @description The current theme. */
         AdminTheme: {
             headers: {
@@ -8509,6 +8938,18 @@ export interface components {
                 "application/json": components["schemas"]["StatusPage"];
             };
         };
+        /** @description The supporter plan breaks a rule; nothing was changed. */
+        SupporterPlanProblem: {
+            headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["SupporterPlanProblem"];
+            };
+        };
         /** @description The webhook breaks a rule; nothing was changed. */
         WebhookProblem: {
             headers: {
@@ -8571,6 +9012,10 @@ export interface components {
         SignupBlockId: components["schemas"]["Id"];
         /** @description The ID of the status. */
         StatusId: components["schemas"]["Id"];
+        /** @description The ID of the supporter plan. */
+        SupporterPlanId: components["schemas"]["Id"];
+        /** @description The ID of the subscription. */
+        SupporterSubscriptionId: components["schemas"]["Id"];
         /** @description The ID of the webhook. */
         WebhookId: components["schemas"]["Id"];
     };
@@ -8684,6 +9129,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CostTotals"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listSupporterPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plans. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupporterPlanList"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -13154,6 +13621,172 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The refetch is queued. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getSupporterProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminSupporterProgram"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    setSupporterProgram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSupporterProgramRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminSupporterProgram"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAdminSupporterPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plans. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSupporterPlanList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createSupporterPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSupporterPlanCreateRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminSupporterPlan"];
+            422: components["responses"]["SupporterPlanProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateSupporterPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the supporter plan. */
+                id: components["parameters"]["SupporterPlanId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminSupporterPlanUpdateRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminSupporterPlan"];
+            422: components["responses"]["SupporterPlanProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    retireSupporterPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the supporter plan. */
+                id: components["parameters"]["SupporterPlanId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plan is retired. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listSupporterSubscriptions: {
+        parameters: {
+            query?: {
+                /** @description Only the subscriptions of this plan. */
+                plan_id?: components["schemas"]["Id"];
+                /** @description Only the subscriptions in this state. */
+                state?: components["schemas"]["SupporterSubscriptionState"];
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of subscriptions. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSupporterSubscriptionPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    cancelSupporterSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the subscription. */
+                id: components["parameters"]["SupporterSubscriptionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription has ended. */
             204: {
                 headers: {
                     [name: string]: unknown;

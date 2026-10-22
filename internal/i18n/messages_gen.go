@@ -249,6 +249,20 @@ func (l *Localizer) ServerAuthDocumentTitle(instance string, page string) string
 	return l.format("server:auth.document_title", map[string]any{"instance": instance, "page": page})
 }
 
+// ServerAuthDocumentCommerceMissing formats "server:auth.document.commerce_missing". Error page (HTTP 404) at the page of the commerce disclosures of the supporter plans (ADR-0072 §13) when the administrators have not written them.
+//
+//	en: This server has not published commerce disclosures.
+func (l *Localizer) ServerAuthDocumentCommerceMissing() string {
+	return l.format("server:auth.document.commerce_missing", nil)
+}
+
+// ServerAuthDocumentCommerceTitle formats "server:auth.document.commerce_title". Title and heading of the public page of the disclosures that the law asks of the seller of the supporter plans (in Japan, 特定商取引法に基づく表記), and the text of links to it.
+//
+//	en: Commerce disclosures
+func (l *Localizer) ServerAuthDocumentCommerceTitle() string {
+	return l.format("server:auth.document.commerce_title", nil)
+}
+
 // ServerAuthDocumentFooterLabel formats "server:auth.document.footer_label". Accessible name of the navigation in the footer of the server-rendered pages that links to the terms of service and the privacy policy.
 //
 //	en: Terms and policies
@@ -1390,6 +1404,13 @@ func (l *Localizer) ServerErrorsRequestTooLarge() string {
 	return l.format("server:errors.request_too_large", nil)
 }
 
+// ServerErrorsRoleBreaksSupporterRoles formats "server:errors.role.breaks_supporter_roles". API error title for HTTP 409 when a change would put a role with a moderation or server permission at or below the role of a supporter plan (ADR-0072 §5).
+//
+//	en: Staff roles must stay above the roles of the supporter plans.
+func (l *Localizer) ServerErrorsRoleBreaksSupporterRoles() string {
+	return l.format("server:errors.role.breaks_supporter_roles", nil)
+}
+
 // ServerErrorsRoleInvalid formats "server:errors.role.invalid". API error title for HTTP 422 when a change to a role (creating, changing, or deleting it) breaks a rule; the detail says which.
 //
 //	en: The role cannot be saved.
@@ -1402,6 +1423,20 @@ func (l *Localizer) ServerErrorsRoleInvalid() string {
 //	en: {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} badge_label {The badge name must be 1 to 32 characters on one line.} badge_color {Choose one of the badge colors.} other {The change breaks a rule.}}
 func (l *Localizer) ServerErrorsRoleInvalidDetail(reason string) string {
 	return l.format("server:errors.role.invalid_detail", map[string]any{"reason": reason})
+}
+
+// ServerErrorsRoleManagedByPlan formats "server:errors.role.managed_by_plan". API error title for HTTP 409 when a change to a role is refused because a supporter plan manages it (ADR-0072 §5).
+//
+//	en: The role belongs to a supporter plan.
+func (l *Localizer) ServerErrorsRoleManagedByPlan() string {
+	return l.format("server:errors.role.managed_by_plan", nil)
+}
+
+// ServerErrorsRoleManagedByPlanDetail formats "server:errors.role.managed_by_plan_detail". API error detail for HTTP 409 when a role of a supporter plan is granted, revoked, changed, or deleted by hand.
+//
+//	en: Only the plan's subscriptions grant and revoke it, and its permissions and position change from the plan.
+func (l *Localizer) ServerErrorsRoleManagedByPlanDetail() string {
+	return l.format("server:errors.role.managed_by_plan_detail", nil)
 }
 
 // ServerErrorsSelfRelationship formats "server:errors.self_relationship". Detail of the HTTP 422 API error when the user tries to follow, block, or mute their own account.
@@ -1626,6 +1661,62 @@ func (l *Localizer) ServerErrorsStreamingTooMany() string {
 //	en: Real-time updates are unavailable right now. Try again later.
 func (l *Localizer) ServerErrorsStreamingUnavailable() string {
 	return l.format("server:errors.streaming.unavailable", nil)
+}
+
+// ServerErrorsSupportersLiveSubscriptions formats "server:errors.supporters.live_subscriptions". API error title for HTTP 409 when an administrator disables the supporter program while subscriptions go on (ADR-0072 §2).
+//
+//	en: Subscriptions to the supporter plans go on.
+func (l *Localizer) ServerErrorsSupportersLiveSubscriptions() string {
+	return l.format("server:errors.supporters.live_subscriptions", nil)
+}
+
+// ServerErrorsSupportersLiveSubscriptionsDetail formats "server:errors.supporters.live_subscriptions_detail". API error detail for HTTP 409 when the supporter program is disabled while subscriptions go on.
+//
+//	en: Retire the plans and wait for their subscriptions to end before disabling the program.
+func (l *Localizer) ServerErrorsSupportersLiveSubscriptionsDetail() string {
+	return l.format("server:errors.supporters.live_subscriptions_detail", nil)
+}
+
+// ServerErrorsSupportersPlanInvalid formats "server:errors.supporters.plan_invalid". API error title for HTTP 422 when a supporter plan breaks a rule; the detail says which (ADR-0072 §3 to §5).
+//
+//	en: The supporter plan cannot be saved.
+func (l *Localizer) ServerErrorsSupportersPlanInvalid() string {
+	return l.format("server:errors.supporters.plan_invalid", nil)
+}
+
+// ServerErrorsSupportersPlanInvalidDetail formats "server:errors.supporters.plan_invalid_detail". API error detail for HTTP 422 when a supporter plan breaks a rule. {reason} is name, description, monthly_price, currency, annual_discount_percent, emoji_limit, rank, visibility, role_builtin, role_taken, role_held, role_permissions, role_position, order_rank, order_position, order_permissions, or order_emoji_limit.
+//
+//	en: {reason, select, name {The name must be 1 to 50 characters on one line.} description {The description must be at most 1,000 characters.} monthly_price {The price must be at least the payment provider's minimum charge, for the yearly price too.} currency {The payment provider does not take this currency.} annual_discount_percent {The yearly discount must be from 0 to 90 percent.} emoji_limit {The emoji limit must be from 0 to 10,000.} rank {The rank must be from 0 to 1,000,000.} visibility {Choose public or hidden.} role_builtin {The built-in roles cannot be a plan's role.} role_taken {Another plan has this role.} role_held {Choose a role that nobody holds.} role_permissions {A plan's role may have only member permissions.} role_position {A plan's role must be below every staff role.} order_rank {Another plan has this rank.} order_position {A higher plan's role must be above the role of the plan below it.} order_permissions {A higher plan's role must have every permission of the plan below it.} order_emoji_limit {A higher plan must let its members create at least as many custom emoji as the plan below it.} other {The plan breaks a rule.}}
+func (l *Localizer) ServerErrorsSupportersPlanInvalidDetail(reason string) string {
+	return l.format("server:errors.supporters.plan_invalid_detail", map[string]any{"reason": reason})
+}
+
+// ServerErrorsSupportersPlanRetired formats "server:errors.supporters.plan_retired". API error title for HTTP 409 when an administrator changes or retires a supporter plan that is retired.
+//
+//	en: The supporter plan is retired.
+func (l *Localizer) ServerErrorsSupportersPlanRetired() string {
+	return l.format("server:errors.supporters.plan_retired", nil)
+}
+
+// ServerErrorsSupportersSubscriptionEnded formats "server:errors.supporters.subscription_ended". API error title for HTTP 409 when an administrator cancels a subscription to a supporter plan that has ended.
+//
+//	en: The subscription has ended.
+func (l *Localizer) ServerErrorsSupportersSubscriptionEnded() string {
+	return l.format("server:errors.supporters.subscription_ended", nil)
+}
+
+// ServerErrorsSupportersUnavailable formats "server:errors.supporters.unavailable". API error title for HTTP 409 when the supporter program cannot be enabled or used: no payment provider is configured, the server sends no email, or the configured provider is not the program's (ADR-0072 §2).
+//
+//	en: The supporter program is not available on this server.
+func (l *Localizer) ServerErrorsSupportersUnavailable() string {
+	return l.format("server:errors.supporters.unavailable", nil)
+}
+
+// ServerErrorsSupportersUnavailableDetail formats "server:errors.supporters.unavailable_detail". API error detail for HTTP 409 when the supporter program is unavailable. {reason} is no_provider, no_email, or provider_mismatch.
+//
+//	en: {reason, select, no_provider {Configure a payment provider in the server's configuration first.} no_email {The server must send email, so that subscribers can verify their address.} provider_mismatch {The configured payment provider is not the one the program was enabled with. Disable the program and enable it again.} other {The supporter program cannot be used now.}}
+func (l *Localizer) ServerErrorsSupportersUnavailableDetail(reason string) string {
+	return l.format("server:errors.supporters.unavailable_detail", map[string]any{"reason": reason})
 }
 
 // ServerErrorsTooLong formats "server:errors.too_long". Detail of an API error (HTTP 422) when a text property of the request body is too long. {name} is the property name, e.g. display_name (not translated); {max} is the limit in characters.

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listSupporterPlans
+  summary: List the supporter plans
+  description: |
+    The supporter plans that take subscriptions, by rank, with their monthly and yearly
+    prices (ADR-0072 §18). A 404 while the supporter program is disabled
+    (`Instance.supporters_enabled`).
+  tags: [instance]
+  security: []
+  responses:
+    "200":
+      description: The plans.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SupporterPlanList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

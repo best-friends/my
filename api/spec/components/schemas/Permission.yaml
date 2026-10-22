@@ -12,7 +12,8 @@ description: |
   server's announcements to every local user. `manage_finance`: the instance's costs and
   the state of the billing imports (only the built-in admin role by default). `view_finance`:
   reading the totals of the instance's costs on `GET /finance/cost_totals`, a member
-  permission outside the staff's areas (ADR-0070). The others guard no client API operation
+  permission outside the staff's areas (ADR-0070). `manage_supporters`: the supporter program, its plans, and their
+  subscriptions (only the built-in admin role by default). The others guard no client API operation
   yet.
 type: string
 enum:
@@ -31,3 +32,4 @@ enum:
   - manage_announcements
   - manage_finance
   - view_finance
+  - manage_supporters

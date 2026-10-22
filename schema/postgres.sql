@@ -124,7 +124,7 @@ CREATE TABLE role_permissions (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
     'manage_login_recovery', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements',
-    'manage_finance', 'view_finance'
+    'manage_finance', 'view_finance', 'manage_supporters'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -151,6 +151,15 @@ CREATE TABLE user_roles (
   role_id text COLLATE "C" NOT NULL,
   grant_id text COLLATE "C" NOT NULL,
   PRIMARY KEY (user_id, role_id)
+);
+
+-- Current value: the roles that another module manages (ADR-0072 §5): the role of a supporter
+-- plan, which only the supporters module grants and revokes, with member permissions only and a
+-- position below every staff role.
+CREATE TABLE managed_roles (
+  role_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  manager text NOT NULL CHECK (manager IN ('supporters')),
+  created_at timestamptz NOT NULL
 );
 
 -- Current value: the badge of a role (ADR-0071): a row means the role has one.
@@ -705,7 +714,8 @@ CREATE TABLE instance_settings (
 CREATE TABLE instance_text_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
-    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt', 'thumbnail_alt'
+    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt', 'thumbnail_alt',
+    'commerce_disclosure'
   )),
   body text NOT NULL,
   revised_by_user_id text COLLATE "C",
@@ -2340,12 +2350,14 @@ CREATE TABLE audit_log_entries (
     'relay_added', 'relay_followed', 'relay_unfollowed', 'relay_removed', 'relay_accepted', 'relay_rejected',
     'status_refetch_queued', 'account_statuses_refetch_queued', 'domain_statuses_refetch_queued',
     'billing_import_queued',
-    'cost_item_created', 'cost_item_relabeled', 'cost_item_price_revised', 'cost_item_end_changed', 'cost_item_canceled'
+    'cost_item_created', 'cost_item_relabeled', 'cost_item_price_revised', 'cost_item_end_changed', 'cost_item_canceled',
+    'supporter_program_enabled', 'supporter_program_disabled', 'supporter_plan_created', 'supporter_plan_revised',
+    'supporter_plan_retired', 'supporter_subscription_canceled'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
     'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay', 'billing_source',
-    'cost_item'
+    'cost_item', 'supporter_program', 'supporter_plan', 'supporter_subscription'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,
@@ -2811,3 +2823,227 @@ CREATE TABLE payment_reconcile_runs (
 );
 CREATE UNIQUE INDEX payment_reconcile_runs_run_key ON payment_reconcile_runs (provider, run_key);
 CREATE INDEX payment_reconcile_runs_provider_occurred_at ON payment_reconcile_runs (provider, occurred_at);
+
+-- ---------------------------------------------------------------------------------------------
+-- supporters: the supporter program, its plans, and their subscriptions (data-model §4.13,
+-- FR-910 to FR-912, ADR-0072 §15). Owned by internal/app/supporters.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event: the supporter program enabled or disabled (ADR-0072 §2); the newest row is the current
+-- state, and no row is disabled. provider is the payment provider that an enabled program uses,
+-- '' for disabled. changed_by_user_id is NULL for the CLI.
+CREATE TABLE supporter_program_changes (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  state text NOT NULL CHECK (state IN ('enabled', 'disabled')),
+  provider text NOT NULL CHECK (provider IN ('', 'stripe')),
+  changed_by_user_id text COLLATE "C",
+  changed_at timestamptz NOT NULL,
+  CHECK ((state = 'enabled') = (provider <> ''))
+);
+
+-- Resource: a plan (ADR-0072 §3). The role and the currency never change; one role is the role of
+-- one plan. Plans are never deleted: retiring one keeps the rows that refer to it.
+CREATE TABLE supporter_plans (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  role_id text COLLATE "C" NOT NULL,
+  currency text NOT NULL CHECK (length(currency) = 3 AND upper(currency) = currency),
+  created_by_user_id text COLLATE "C",
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX supporter_plans_role_id ON supporter_plans (role_id);
+
+-- Event (revision): the terms of a plan; the newest row is current. The yearly price is
+-- floor(monthly_amount_minor * 12 * (100 - annual_discount_percent) / 100). revised_by_user_id is
+-- NULL for the CLI.
+CREATE TABLE supporter_plan_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  plan_id text COLLATE "C" NOT NULL,
+  name text NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
+  description text NOT NULL CHECK (length(description) <= 1000),
+  rank integer NOT NULL CHECK (rank BETWEEN 0 AND 1000000),
+  monthly_amount_minor bigint NOT NULL CHECK (monthly_amount_minor BETWEEN 1 AND 1000000000000),
+  annual_discount_percent integer NOT NULL CHECK (annual_discount_percent BETWEEN 0 AND 90),
+  emoji_limit integer NOT NULL CHECK (emoji_limit BETWEEN 0 AND 10000),
+  visibility text NOT NULL CHECK (visibility IN ('public', 'hidden')),
+  revised_by_user_id text COLLATE "C",
+  revised_at timestamptz NOT NULL
+);
+CREATE INDEX supporter_plan_revisions_plan_id_id ON supporter_plan_revisions (plan_id, id DESC);
+
+-- Event: a plan retired (ADR-0072 §9); it cannot be undone. retired_by_user_id is NULL for the CLI.
+CREATE TABLE supporter_plan_retirements (
+  plan_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  retired_by_user_id text COLLATE "C",
+  retired_at timestamptz NOT NULL
+);
+
+-- Projection: the current revision of each plan that is not retired, with its rank, unique among
+-- them, and its visibility.
+CREATE TABLE supporter_plan_heads (
+  plan_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revision_id text COLLATE "C" NOT NULL,
+  rank integer NOT NULL,
+  visibility text NOT NULL
+);
+CREATE UNIQUE INDEX supporter_plan_heads_rank ON supporter_plan_heads (rank);
+
+-- Resource: a recurring price that the supporters.ensure_prices job made at the provider for a
+-- plan, an interval, and an amount (ADR-0072 §3). A price's amount never changes: a new amount is
+-- a new price.
+CREATE TABLE supporter_plan_prices (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  plan_id text COLLATE "C" NOT NULL,
+  interval text NOT NULL CHECK (interval IN ('month', 'year')),
+  amount_minor bigint NOT NULL CHECK (amount_minor >= 1),
+  currency text NOT NULL CHECK (length(currency) = 3),
+  provider text NOT NULL CHECK (provider IN ('stripe')),
+  provider_price_id text COLLATE "C" NOT NULL CHECK (length(provider_price_id) BETWEEN 1 AND 255),
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX supporter_plan_prices_provider_price ON supporter_plan_prices (provider, provider_price_id);
+CREATE UNIQUE INDEX supporter_plan_prices_plan_interval_amount ON supporter_plan_prices (plan_id, interval, amount_minor, provider);
+
+-- Projection: the price of each plan and interval that new subscriptions and changes of plan use.
+CREATE TABLE supporter_plan_price_heads (
+  plan_id text COLLATE "C" NOT NULL,
+  interval text NOT NULL,
+  price_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (plan_id, interval)
+);
+
+-- Event: a price archived at the provider; the subscriptions on it keep renewing.
+CREATE TABLE supporter_plan_price_archivals (
+  price_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  archived_at timestamptz NOT NULL
+);
+
+-- Resource: the provider's customer of a user. The erasure of the account deletes it.
+CREATE TABLE supporter_customers (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  provider text NOT NULL CHECK (provider IN ('stripe')),
+  provider_customer_id text COLLATE "C" NOT NULL CHECK (length(provider_customer_id) BETWEEN 1 AND 255),
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX supporter_customers_provider_user ON supporter_customers (provider, user_id);
+CREATE UNIQUE INDEX supporter_customers_provider_customer ON supporter_customers (provider, provider_customer_id);
+
+-- Resource: a subscription. id is the text COLLATE "C" that the provider keeps on its checkout and its
+-- subscription; plan_id and price_id are the ones it started with.
+CREATE TABLE supporter_subscriptions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  plan_id text COLLATE "C" NOT NULL,
+  price_id text COLLATE "C" NOT NULL,
+  provider text NOT NULL CHECK (provider IN ('stripe')),
+  created_at timestamptz NOT NULL
+);
+CREATE INDEX supporter_subscriptions_user_id_id ON supporter_subscriptions (user_id, id DESC);
+
+-- Event: a hosted checkout started for a pending subscription, open until expires_at; starting
+-- again while the subscription is pending makes a new one. The reconciliation re-reads the open
+-- ones.
+CREATE TABLE supporter_checkouts (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  subscription_id text COLLATE "C" NOT NULL,
+  provider text NOT NULL CHECK (provider IN ('stripe')),
+  provider_checkout_id text COLLATE "C" NOT NULL CHECK (length(provider_checkout_id) BETWEEN 1 AND 255),
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX supporter_checkouts_provider_checkout ON supporter_checkouts (provider, provider_checkout_id);
+CREATE INDEX supporter_checkouts_subscription_id_id ON supporter_checkouts (subscription_id, id DESC);
+CREATE INDEX supporter_checkouts_provider_expires_at ON supporter_checkouts (provider, expires_at);
+
+-- Event: the provider's subscription of ours, recorded once, from the first snapshot or the
+-- completed checkout that names it.
+CREATE TABLE supporter_subscription_links (
+  subscription_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  provider text NOT NULL CHECK (provider IN ('stripe')),
+  provider_subscription_id text COLLATE "C" NOT NULL CHECK (length(provider_subscription_id) BETWEEN 1 AND 255),
+  linked_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX supporter_subscription_links_provider_subscription ON supporter_subscription_links (provider, provider_subscription_id);
+
+-- Event (revision): the state of a subscription after a change (ADR-0072 §7), recorded only when
+-- the state, the plan, the price, the end of the period, the grace, or the scheduled change
+-- differs from the previous row; the newest row is current. period_ends_at is NULL exactly for
+-- pending and abandoned.
+CREATE TABLE supporter_subscription_transitions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  subscription_id text COLLATE "C" NOT NULL,
+  state text NOT NULL CHECK (state IN ('pending', 'active', 'canceling', 'past_due', 'lapsed', 'expired', 'revoked', 'abandoned')),
+  plan_id text COLLATE "C" NOT NULL,
+  price_id text COLLATE "C" NOT NULL,
+  period_ends_at timestamptz,
+  reason text NOT NULL CHECK (reason IN (
+    'started', 'synced', 'grace_expired', 'reversed', 'plan_retired', 'account_closed', 'account_suspended', 'staff'
+  )),
+  occurred_at timestamptz NOT NULL,
+  CHECK ((state IN ('pending', 'abandoned')) = (period_ends_at IS NULL))
+);
+CREATE INDEX supporter_subscription_transitions_subscription_id_id ON supporter_subscription_transitions (subscription_id, id DESC);
+
+-- Event: the grace period of a past_due transition: 7 days from the first failed payment.
+CREATE TABLE supporter_grace_periods (
+  transition_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  failed_at timestamptz NOT NULL,
+  ends_at timestamptz NOT NULL,
+  CHECK (ends_at > failed_at)
+);
+
+-- Event: the change to a lower plan or to the monthly price that waits for the end of the period
+-- at the time of a transition. No row is no scheduled change.
+CREATE TABLE supporter_scheduled_changes (
+  transition_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  price_id text COLLATE "C" NOT NULL,
+  effective_at timestamptz NOT NULL
+);
+
+-- Event: a refund or a chargeback of a payment of a subscription, from the provider's final
+-- money movements, once per movement. A full refund and a chargeback revoke the subscription.
+CREATE TABLE supporter_subscription_reversals (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  subscription_id text COLLATE "C" NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('full_refund', 'partial_refund', 'chargeback')),
+  provider text NOT NULL CHECK (provider IN ('stripe')),
+  provider_reversal_id text COLLATE "C" NOT NULL CHECK (length(provider_reversal_id) BETWEEN 1 AND 255),
+  occurred_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX supporter_subscription_reversals_provider_reversal ON supporter_subscription_reversals (provider, provider_reversal_id);
+CREATE INDEX supporter_subscription_reversals_subscription_id ON supporter_subscription_reversals (subscription_id);
+
+-- Projection: the current transition of each subscription.
+CREATE TABLE supporter_subscription_heads (
+  subscription_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  transition_id text COLLATE "C" NOT NULL,
+  user_id text COLLATE "C" NOT NULL,
+  plan_id text COLLATE "C" NOT NULL,
+  state text NOT NULL
+);
+CREATE INDEX supporter_subscription_heads_plan_id_state ON supporter_subscription_heads (plan_id, state);
+CREATE INDEX supporter_subscription_heads_user_id ON supporter_subscription_heads (user_id);
+
+-- Projection: the subscription of each user that is not in a final state; a user has at most one.
+CREATE TABLE supporter_live_subscriptions (
+  user_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  subscription_id text COLLATE "C" NOT NULL
+);
+CREATE UNIQUE INDEX supporter_live_subscriptions_subscription_id ON supporter_live_subscriptions (subscription_id);
+
+-- Projection: when the Scheduler re-reads a subscription: a day after a pending one started
+-- (checkout), the end of the period of an active or canceling one (period_end), and the end of
+-- the grace of a past_due one (grace).
+CREATE TABLE supporter_subscription_deadlines (
+  subscription_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  kind text NOT NULL CHECK (kind IN ('checkout', 'period_end', 'grace')),
+  due_at timestamptz NOT NULL
+);
+CREATE INDEX supporter_subscription_deadlines_due_at ON supporter_subscription_deadlines (due_at);
+
+-- Current value: the members who chose to be listed on the supporter list (ADR-0071 §6),
+-- deleted in the transaction that takes their plan's role away and by the erasure of the account.
+CREATE TABLE supporter_listings (
+  user_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  created_at timestamptz NOT NULL
+);

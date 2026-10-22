@@ -267,70 +267,76 @@ func (e AdminAnnouncementState) Valid() bool {
 
 // Defines values for AdminAuditAction.
 const (
-	AdminAuditActionAccountActionIssued          AdminAuditAction = "account_action_issued"
-	AdminAuditActionAccountActionLifted          AdminAuditAction = "account_action_lifted"
-	AdminAuditActionAccountDeletionCancelled     AdminAuditAction = "account_deletion_cancelled"
-	AdminAuditActionAccountStatusesRefetchQueued AdminAuditAction = "account_statuses_refetch_queued"
-	AdminAuditActionAnnouncementCreated          AdminAuditAction = "announcement_created"
-	AdminAuditActionAnnouncementPublished        AdminAuditAction = "announcement_published"
-	AdminAuditActionAnnouncementUpdated          AdminAuditAction = "announcement_updated"
-	AdminAuditActionAnnouncementWithdrawn        AdminAuditAction = "announcement_withdrawn"
-	AdminAuditActionAppealOverturned             AdminAuditAction = "appeal_overturned"
-	AdminAuditActionAppealUpheld                 AdminAuditAction = "appeal_upheld"
-	AdminAuditActionBillingImportQueued          AdminAuditAction = "billing_import_queued"
-	AdminAuditActionCostItemCanceled             AdminAuditAction = "cost_item_canceled"
-	AdminAuditActionCostItemCreated              AdminAuditAction = "cost_item_created"
-	AdminAuditActionCostItemEndChanged           AdminAuditAction = "cost_item_end_changed"
-	AdminAuditActionCostItemPriceRevised         AdminAuditAction = "cost_item_price_revised"
-	AdminAuditActionCostItemRelabeled            AdminAuditAction = "cost_item_relabeled"
-	AdminAuditActionCustomEmojiCopied            AdminAuditAction = "custom_emoji_copied"
-	AdminAuditActionCustomEmojiCreated           AdminAuditAction = "custom_emoji_created"
-	AdminAuditActionCustomEmojiDeleted           AdminAuditAction = "custom_emoji_deleted"
-	AdminAuditActionCustomEmojiDisabled          AdminAuditAction = "custom_emoji_disabled"
-	AdminAuditActionCustomEmojiEnabled           AdminAuditAction = "custom_emoji_enabled"
-	AdminAuditActionCustomEmojiImageReplaced     AdminAuditAction = "custom_emoji_image_replaced"
-	AdminAuditActionCustomEmojiUpdated           AdminAuditAction = "custom_emoji_updated"
-	AdminAuditActionDomainActionIssued           AdminAuditAction = "domain_action_issued"
-	AdminAuditActionDomainActionLifted           AdminAuditAction = "domain_action_lifted"
-	AdminAuditActionDomainStatusesRefetchQueued  AdminAuditAction = "domain_statuses_refetch_queued"
-	AdminAuditActionInviteCreated                AdminAuditAction = "invite_created"
-	AdminAuditActionInviteRevoked                AdminAuditAction = "invite_revoked"
-	AdminAuditActionPasswordResetLinkIssued      AdminAuditAction = "password_reset_link_issued"
-	AdminAuditActionRegistrationApproved         AdminAuditAction = "registration_approved"
-	AdminAuditActionRegistrationRejected         AdminAuditAction = "registration_rejected"
-	AdminAuditActionRelayAccepted                AdminAuditAction = "relay_accepted"
-	AdminAuditActionRelayAdded                   AdminAuditAction = "relay_added"
-	AdminAuditActionRelayFollowed                AdminAuditAction = "relay_followed"
-	AdminAuditActionRelayRejected                AdminAuditAction = "relay_rejected"
-	AdminAuditActionRelayRemoved                 AdminAuditAction = "relay_removed"
-	AdminAuditActionRelayUnfollowed              AdminAuditAction = "relay_unfollowed"
-	AdminAuditActionReportAssigned               AdminAuditAction = "report_assigned"
-	AdminAuditActionReportNoteAdded              AdminAuditAction = "report_note_added"
-	AdminAuditActionReportReopened               AdminAuditAction = "report_reopened"
-	AdminAuditActionReportResolved               AdminAuditAction = "report_resolved"
-	AdminAuditActionReportUnassigned             AdminAuditAction = "report_unassigned"
-	AdminAuditActionRevealedPrivateData          AdminAuditAction = "revealed_private_data"
-	AdminAuditActionRoleCreated                  AdminAuditAction = "role_created"
-	AdminAuditActionRoleDeleted                  AdminAuditAction = "role_deleted"
-	AdminAuditActionRoleGranted                  AdminAuditAction = "role_granted"
-	AdminAuditActionRoleRevoked                  AdminAuditAction = "role_revoked"
-	AdminAuditActionRoleUpdated                  AdminAuditAction = "role_updated"
-	AdminAuditActionRuleAdded                    AdminAuditAction = "rule_added"
-	AdminAuditActionRuleMoved                    AdminAuditAction = "rule_moved"
-	AdminAuditActionRuleRetired                  AdminAuditAction = "rule_retired"
-	AdminAuditActionRuleRevised                  AdminAuditAction = "rule_revised"
-	AdminAuditActionSettingChanged               AdminAuditAction = "setting_changed"
-	AdminAuditActionSignupBlockAdded             AdminAuditAction = "signup_block_added"
-	AdminAuditActionSignupBlockLifted            AdminAuditAction = "signup_block_lifted"
-	AdminAuditActionStatusRefetchQueued          AdminAuditAction = "status_refetch_queued"
-	AdminAuditActionTextChanged                  AdminAuditAction = "text_changed"
-	AdminAuditActionTwoFactorDisabled            AdminAuditAction = "two_factor_disabled"
-	AdminAuditActionWebhookCreated               AdminAuditAction = "webhook_created"
-	AdminAuditActionWebhookDeleted               AdminAuditAction = "webhook_deleted"
-	AdminAuditActionWebhookDisabled              AdminAuditAction = "webhook_disabled"
-	AdminAuditActionWebhookEnabled               AdminAuditAction = "webhook_enabled"
-	AdminAuditActionWebhookSecretRotated         AdminAuditAction = "webhook_secret_rotated"
-	AdminAuditActionWebhookUpdated               AdminAuditAction = "webhook_updated"
+	AdminAuditActionAccountActionIssued           AdminAuditAction = "account_action_issued"
+	AdminAuditActionAccountActionLifted           AdminAuditAction = "account_action_lifted"
+	AdminAuditActionAccountDeletionCancelled      AdminAuditAction = "account_deletion_cancelled"
+	AdminAuditActionAccountStatusesRefetchQueued  AdminAuditAction = "account_statuses_refetch_queued"
+	AdminAuditActionAnnouncementCreated           AdminAuditAction = "announcement_created"
+	AdminAuditActionAnnouncementPublished         AdminAuditAction = "announcement_published"
+	AdminAuditActionAnnouncementUpdated           AdminAuditAction = "announcement_updated"
+	AdminAuditActionAnnouncementWithdrawn         AdminAuditAction = "announcement_withdrawn"
+	AdminAuditActionAppealOverturned              AdminAuditAction = "appeal_overturned"
+	AdminAuditActionAppealUpheld                  AdminAuditAction = "appeal_upheld"
+	AdminAuditActionBillingImportQueued           AdminAuditAction = "billing_import_queued"
+	AdminAuditActionCostItemCanceled              AdminAuditAction = "cost_item_canceled"
+	AdminAuditActionCostItemCreated               AdminAuditAction = "cost_item_created"
+	AdminAuditActionCostItemEndChanged            AdminAuditAction = "cost_item_end_changed"
+	AdminAuditActionCostItemPriceRevised          AdminAuditAction = "cost_item_price_revised"
+	AdminAuditActionCostItemRelabeled             AdminAuditAction = "cost_item_relabeled"
+	AdminAuditActionCustomEmojiCopied             AdminAuditAction = "custom_emoji_copied"
+	AdminAuditActionCustomEmojiCreated            AdminAuditAction = "custom_emoji_created"
+	AdminAuditActionCustomEmojiDeleted            AdminAuditAction = "custom_emoji_deleted"
+	AdminAuditActionCustomEmojiDisabled           AdminAuditAction = "custom_emoji_disabled"
+	AdminAuditActionCustomEmojiEnabled            AdminAuditAction = "custom_emoji_enabled"
+	AdminAuditActionCustomEmojiImageReplaced      AdminAuditAction = "custom_emoji_image_replaced"
+	AdminAuditActionCustomEmojiUpdated            AdminAuditAction = "custom_emoji_updated"
+	AdminAuditActionDomainActionIssued            AdminAuditAction = "domain_action_issued"
+	AdminAuditActionDomainActionLifted            AdminAuditAction = "domain_action_lifted"
+	AdminAuditActionDomainStatusesRefetchQueued   AdminAuditAction = "domain_statuses_refetch_queued"
+	AdminAuditActionInviteCreated                 AdminAuditAction = "invite_created"
+	AdminAuditActionInviteRevoked                 AdminAuditAction = "invite_revoked"
+	AdminAuditActionPasswordResetLinkIssued       AdminAuditAction = "password_reset_link_issued"
+	AdminAuditActionRegistrationApproved          AdminAuditAction = "registration_approved"
+	AdminAuditActionRegistrationRejected          AdminAuditAction = "registration_rejected"
+	AdminAuditActionRelayAccepted                 AdminAuditAction = "relay_accepted"
+	AdminAuditActionRelayAdded                    AdminAuditAction = "relay_added"
+	AdminAuditActionRelayFollowed                 AdminAuditAction = "relay_followed"
+	AdminAuditActionRelayRejected                 AdminAuditAction = "relay_rejected"
+	AdminAuditActionRelayRemoved                  AdminAuditAction = "relay_removed"
+	AdminAuditActionRelayUnfollowed               AdminAuditAction = "relay_unfollowed"
+	AdminAuditActionReportAssigned                AdminAuditAction = "report_assigned"
+	AdminAuditActionReportNoteAdded               AdminAuditAction = "report_note_added"
+	AdminAuditActionReportReopened                AdminAuditAction = "report_reopened"
+	AdminAuditActionReportResolved                AdminAuditAction = "report_resolved"
+	AdminAuditActionReportUnassigned              AdminAuditAction = "report_unassigned"
+	AdminAuditActionRevealedPrivateData           AdminAuditAction = "revealed_private_data"
+	AdminAuditActionRoleCreated                   AdminAuditAction = "role_created"
+	AdminAuditActionRoleDeleted                   AdminAuditAction = "role_deleted"
+	AdminAuditActionRoleGranted                   AdminAuditAction = "role_granted"
+	AdminAuditActionRoleRevoked                   AdminAuditAction = "role_revoked"
+	AdminAuditActionRoleUpdated                   AdminAuditAction = "role_updated"
+	AdminAuditActionRuleAdded                     AdminAuditAction = "rule_added"
+	AdminAuditActionRuleMoved                     AdminAuditAction = "rule_moved"
+	AdminAuditActionRuleRetired                   AdminAuditAction = "rule_retired"
+	AdminAuditActionRuleRevised                   AdminAuditAction = "rule_revised"
+	AdminAuditActionSettingChanged                AdminAuditAction = "setting_changed"
+	AdminAuditActionSignupBlockAdded              AdminAuditAction = "signup_block_added"
+	AdminAuditActionSignupBlockLifted             AdminAuditAction = "signup_block_lifted"
+	AdminAuditActionStatusRefetchQueued           AdminAuditAction = "status_refetch_queued"
+	AdminAuditActionSupporterPlanCreated          AdminAuditAction = "supporter_plan_created"
+	AdminAuditActionSupporterPlanRetired          AdminAuditAction = "supporter_plan_retired"
+	AdminAuditActionSupporterPlanRevised          AdminAuditAction = "supporter_plan_revised"
+	AdminAuditActionSupporterProgramDisabled      AdminAuditAction = "supporter_program_disabled"
+	AdminAuditActionSupporterProgramEnabled       AdminAuditAction = "supporter_program_enabled"
+	AdminAuditActionSupporterSubscriptionCanceled AdminAuditAction = "supporter_subscription_canceled"
+	AdminAuditActionTextChanged                   AdminAuditAction = "text_changed"
+	AdminAuditActionTwoFactorDisabled             AdminAuditAction = "two_factor_disabled"
+	AdminAuditActionWebhookCreated                AdminAuditAction = "webhook_created"
+	AdminAuditActionWebhookDeleted                AdminAuditAction = "webhook_deleted"
+	AdminAuditActionWebhookDisabled               AdminAuditAction = "webhook_disabled"
+	AdminAuditActionWebhookEnabled                AdminAuditAction = "webhook_enabled"
+	AdminAuditActionWebhookSecretRotated          AdminAuditAction = "webhook_secret_rotated"
+	AdminAuditActionWebhookUpdated                AdminAuditAction = "webhook_updated"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditAction enum.
@@ -448,6 +454,18 @@ func (e AdminAuditAction) Valid() bool {
 		return true
 	case AdminAuditActionStatusRefetchQueued:
 		return true
+	case AdminAuditActionSupporterPlanCreated:
+		return true
+	case AdminAuditActionSupporterPlanRetired:
+		return true
+	case AdminAuditActionSupporterPlanRevised:
+		return true
+	case AdminAuditActionSupporterProgramDisabled:
+		return true
+	case AdminAuditActionSupporterProgramEnabled:
+		return true
+	case AdminAuditActionSupporterSubscriptionCanceled:
+		return true
 	case AdminAuditActionTextChanged:
 		return true
 	case AdminAuditActionTwoFactorDisabled:
@@ -495,23 +513,26 @@ func (e AdminAuditActorKind) Valid() bool {
 
 // Defines values for AdminAuditTargetKind.
 const (
-	AdminAuditTargetKindAccount       AdminAuditTargetKind = "account"
-	AdminAuditTargetKindAnnouncement  AdminAuditTargetKind = "announcement"
-	AdminAuditTargetKindAppeal        AdminAuditTargetKind = "appeal"
-	AdminAuditTargetKindBillingSource AdminAuditTargetKind = "billing_source"
-	AdminAuditTargetKindCostItem      AdminAuditTargetKind = "cost_item"
-	AdminAuditTargetKindCustomEmoji   AdminAuditTargetKind = "custom_emoji"
-	AdminAuditTargetKindDomain        AdminAuditTargetKind = "domain"
-	AdminAuditTargetKindInvite        AdminAuditTargetKind = "invite"
-	AdminAuditTargetKindRelay         AdminAuditTargetKind = "relay"
-	AdminAuditTargetKindReport        AdminAuditTargetKind = "report"
-	AdminAuditTargetKindRole          AdminAuditTargetKind = "role"
-	AdminAuditTargetKindRule          AdminAuditTargetKind = "rule"
-	AdminAuditTargetKindSetting       AdminAuditTargetKind = "setting"
-	AdminAuditTargetKindSignupBlock   AdminAuditTargetKind = "signup_block"
-	AdminAuditTargetKindStatus        AdminAuditTargetKind = "status"
-	AdminAuditTargetKindUser          AdminAuditTargetKind = "user"
-	AdminAuditTargetKindWebhook       AdminAuditTargetKind = "webhook"
+	AdminAuditTargetKindAccount               AdminAuditTargetKind = "account"
+	AdminAuditTargetKindAnnouncement          AdminAuditTargetKind = "announcement"
+	AdminAuditTargetKindAppeal                AdminAuditTargetKind = "appeal"
+	AdminAuditTargetKindBillingSource         AdminAuditTargetKind = "billing_source"
+	AdminAuditTargetKindCostItem              AdminAuditTargetKind = "cost_item"
+	AdminAuditTargetKindCustomEmoji           AdminAuditTargetKind = "custom_emoji"
+	AdminAuditTargetKindDomain                AdminAuditTargetKind = "domain"
+	AdminAuditTargetKindInvite                AdminAuditTargetKind = "invite"
+	AdminAuditTargetKindRelay                 AdminAuditTargetKind = "relay"
+	AdminAuditTargetKindReport                AdminAuditTargetKind = "report"
+	AdminAuditTargetKindRole                  AdminAuditTargetKind = "role"
+	AdminAuditTargetKindRule                  AdminAuditTargetKind = "rule"
+	AdminAuditTargetKindSetting               AdminAuditTargetKind = "setting"
+	AdminAuditTargetKindSignupBlock           AdminAuditTargetKind = "signup_block"
+	AdminAuditTargetKindStatus                AdminAuditTargetKind = "status"
+	AdminAuditTargetKindSupporterPlan         AdminAuditTargetKind = "supporter_plan"
+	AdminAuditTargetKindSupporterProgram      AdminAuditTargetKind = "supporter_program"
+	AdminAuditTargetKindSupporterSubscription AdminAuditTargetKind = "supporter_subscription"
+	AdminAuditTargetKindUser                  AdminAuditTargetKind = "user"
+	AdminAuditTargetKindWebhook               AdminAuditTargetKind = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditTargetKind enum.
@@ -546,6 +567,12 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindSignupBlock:
 		return true
 	case AdminAuditTargetKindStatus:
+		return true
+	case AdminAuditTargetKindSupporterPlan:
+		return true
+	case AdminAuditTargetKindSupporterProgram:
+		return true
+	case AdminAuditTargetKindSupporterSubscription:
 		return true
 	case AdminAuditTargetKindUser:
 		return true
@@ -1653,18 +1680,21 @@ func (e InstanceSettingKind) Valid() bool {
 
 // Defines values for InstanceTextKey.
 const (
-	InstanceTextKeyDescription      InstanceTextKey = "description"
-	InstanceTextKeyName             InstanceTextKey = "name"
-	InstanceTextKeyPreviewImageAlt  InstanceTextKey = "preview_image_alt"
-	InstanceTextKeyPrivacyPolicy    InstanceTextKey = "privacy_policy"
-	InstanceTextKeyShortDescription InstanceTextKey = "short_description"
-	InstanceTextKeyTerms            InstanceTextKey = "terms"
-	InstanceTextKeyThumbnailAlt     InstanceTextKey = "thumbnail_alt"
+	InstanceTextKeyCommerceDisclosure InstanceTextKey = "commerce_disclosure"
+	InstanceTextKeyDescription        InstanceTextKey = "description"
+	InstanceTextKeyName               InstanceTextKey = "name"
+	InstanceTextKeyPreviewImageAlt    InstanceTextKey = "preview_image_alt"
+	InstanceTextKeyPrivacyPolicy      InstanceTextKey = "privacy_policy"
+	InstanceTextKeyShortDescription   InstanceTextKey = "short_description"
+	InstanceTextKeyTerms              InstanceTextKey = "terms"
+	InstanceTextKeyThumbnailAlt       InstanceTextKey = "thumbnail_alt"
 )
 
 // Valid indicates whether the value is a known member of the InstanceTextKey enum.
 func (e InstanceTextKey) Valid() bool {
 	switch e {
+	case InstanceTextKeyCommerceDisclosure:
+		return true
 	case InstanceTextKeyDescription:
 		return true
 	case InstanceTextKeyName:
@@ -1854,6 +1884,7 @@ const (
 	PermissionManageRoles         Permission = "manage_roles"
 	PermissionManageRules         Permission = "manage_rules"
 	PermissionManageSettings      Permission = "manage_settings"
+	PermissionManageSupporters    Permission = "manage_supporters"
 	PermissionManageWebhooks      Permission = "manage_webhooks"
 	PermissionViewAudit           Permission = "view_audit"
 	PermissionViewFinance         Permission = "view_finance"
@@ -1885,6 +1916,8 @@ func (e Permission) Valid() bool {
 	case PermissionManageRules:
 		return true
 	case PermissionManageSettings:
+		return true
+	case PermissionManageSupporters:
 		return true
 	case PermissionManageWebhooks:
 		return true
@@ -2182,6 +2215,165 @@ func (e SignupBlockImportSkippedReason) Valid() bool {
 	case SignupBlockImportSkippedReasonDuplicate:
 		return true
 	case SignupBlockImportSkippedReasonInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SupporterInterval.
+const (
+	SupporterIntervalMonth SupporterInterval = "month"
+	SupporterIntervalYear  SupporterInterval = "year"
+)
+
+// Valid indicates whether the value is a known member of the SupporterInterval enum.
+func (e SupporterInterval) Valid() bool {
+	switch e {
+	case SupporterIntervalMonth:
+		return true
+	case SupporterIntervalYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SupporterPlanProblemReason.
+const (
+	SupporterPlanProblemReasonAnnualDiscountPercent SupporterPlanProblemReason = "annual_discount_percent"
+	SupporterPlanProblemReasonCurrency              SupporterPlanProblemReason = "currency"
+	SupporterPlanProblemReasonDescription           SupporterPlanProblemReason = "description"
+	SupporterPlanProblemReasonEmojiLimit            SupporterPlanProblemReason = "emoji_limit"
+	SupporterPlanProblemReasonMonthlyPrice          SupporterPlanProblemReason = "monthly_price"
+	SupporterPlanProblemReasonName                  SupporterPlanProblemReason = "name"
+	SupporterPlanProblemReasonOrderEmojiLimit       SupporterPlanProblemReason = "order_emoji_limit"
+	SupporterPlanProblemReasonOrderPermissions      SupporterPlanProblemReason = "order_permissions"
+	SupporterPlanProblemReasonOrderPosition         SupporterPlanProblemReason = "order_position"
+	SupporterPlanProblemReasonOrderRank             SupporterPlanProblemReason = "order_rank"
+	SupporterPlanProblemReasonRank                  SupporterPlanProblemReason = "rank"
+	SupporterPlanProblemReasonRoleBuiltin           SupporterPlanProblemReason = "role_builtin"
+	SupporterPlanProblemReasonRoleHeld              SupporterPlanProblemReason = "role_held"
+	SupporterPlanProblemReasonRolePermissions       SupporterPlanProblemReason = "role_permissions"
+	SupporterPlanProblemReasonRolePosition          SupporterPlanProblemReason = "role_position"
+	SupporterPlanProblemReasonRoleTaken             SupporterPlanProblemReason = "role_taken"
+	SupporterPlanProblemReasonVisibility            SupporterPlanProblemReason = "visibility"
+)
+
+// Valid indicates whether the value is a known member of the SupporterPlanProblemReason enum.
+func (e SupporterPlanProblemReason) Valid() bool {
+	switch e {
+	case SupporterPlanProblemReasonAnnualDiscountPercent:
+		return true
+	case SupporterPlanProblemReasonCurrency:
+		return true
+	case SupporterPlanProblemReasonDescription:
+		return true
+	case SupporterPlanProblemReasonEmojiLimit:
+		return true
+	case SupporterPlanProblemReasonMonthlyPrice:
+		return true
+	case SupporterPlanProblemReasonName:
+		return true
+	case SupporterPlanProblemReasonOrderEmojiLimit:
+		return true
+	case SupporterPlanProblemReasonOrderPermissions:
+		return true
+	case SupporterPlanProblemReasonOrderPosition:
+		return true
+	case SupporterPlanProblemReasonOrderRank:
+		return true
+	case SupporterPlanProblemReasonRank:
+		return true
+	case SupporterPlanProblemReasonRoleBuiltin:
+		return true
+	case SupporterPlanProblemReasonRoleHeld:
+		return true
+	case SupporterPlanProblemReasonRolePermissions:
+		return true
+	case SupporterPlanProblemReasonRolePosition:
+		return true
+	case SupporterPlanProblemReasonRoleTaken:
+		return true
+	case SupporterPlanProblemReasonVisibility:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SupporterPlanVisibility.
+const (
+	SupporterPlanVisibilityHidden SupporterPlanVisibility = "hidden"
+	SupporterPlanVisibilityPublic SupporterPlanVisibility = "public"
+)
+
+// Valid indicates whether the value is a known member of the SupporterPlanVisibility enum.
+func (e SupporterPlanVisibility) Valid() bool {
+	switch e {
+	case SupporterPlanVisibilityHidden:
+		return true
+	case SupporterPlanVisibilityPublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SupporterProgramWarning.
+const (
+	SupporterProgramWarningNoCommerceDisclosure SupporterProgramWarning = "no_commerce_disclosure"
+	SupporterProgramWarningNoEmail              SupporterProgramWarning = "no_email"
+	SupporterProgramWarningNoProvider           SupporterProgramWarning = "no_provider"
+	SupporterProgramWarningProviderMismatch     SupporterProgramWarning = "provider_mismatch"
+)
+
+// Valid indicates whether the value is a known member of the SupporterProgramWarning enum.
+func (e SupporterProgramWarning) Valid() bool {
+	switch e {
+	case SupporterProgramWarningNoCommerceDisclosure:
+		return true
+	case SupporterProgramWarningNoEmail:
+		return true
+	case SupporterProgramWarningNoProvider:
+		return true
+	case SupporterProgramWarningProviderMismatch:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SupporterSubscriptionState.
+const (
+	SupporterSubscriptionStateAbandoned SupporterSubscriptionState = "abandoned"
+	SupporterSubscriptionStateActive    SupporterSubscriptionState = "active"
+	SupporterSubscriptionStateCanceling SupporterSubscriptionState = "canceling"
+	SupporterSubscriptionStateExpired   SupporterSubscriptionState = "expired"
+	SupporterSubscriptionStateLapsed    SupporterSubscriptionState = "lapsed"
+	SupporterSubscriptionStatePastDue   SupporterSubscriptionState = "past_due"
+	SupporterSubscriptionStatePending   SupporterSubscriptionState = "pending"
+	SupporterSubscriptionStateRevoked   SupporterSubscriptionState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the SupporterSubscriptionState enum.
+func (e SupporterSubscriptionState) Valid() bool {
+	switch e {
+	case SupporterSubscriptionStateAbandoned:
+		return true
+	case SupporterSubscriptionStateActive:
+		return true
+	case SupporterSubscriptionStateCanceling:
+		return true
+	case SupporterSubscriptionStateExpired:
+		return true
+	case SupporterSubscriptionStateLapsed:
+		return true
+	case SupporterSubscriptionStatePastDue:
+		return true
+	case SupporterSubscriptionStatePending:
+		return true
+	case SupporterSubscriptionStateRevoked:
 		return true
 	default:
 		return false
@@ -2953,7 +3145,12 @@ type AdminAppealPage struct {
 // the ID is the source (`aws`, `gcp`) and the label the provider's name. On a `cost_item`:
 // `cost_item_created`, `cost_item_relabeled` (its name, provider, category, or memo),
 // `cost_item_price_revised`, `cost_item_end_changed`, and `cost_item_canceled`; the label is
-// the item's name.
+// the item's name. On the `supporter_program`: `supporter_program_enabled`,
+// `supporter_program_disabled`; the label is the payment provider's name. On a
+// `supporter_plan`: `supporter_plan_created`, `supporter_plan_revised`, and
+// `supporter_plan_retired`; the label is the plan's name. On a `supporter_subscription`:
+// `supporter_subscription_canceled`, an administrator's cancellation without a refund; the
+// label is the plan's name and the subscriber's handle.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -3001,7 +3198,12 @@ type AdminAuditEntry struct {
 	// the ID is the source (`aws`, `gcp`) and the label the provider's name. On a `cost_item`:
 	// `cost_item_created`, `cost_item_relabeled` (its name, provider, category, or memo),
 	// `cost_item_price_revised`, `cost_item_end_changed`, and `cost_item_canceled`; the label is
-	// the item's name.
+	// the item's name. On the `supporter_program`: `supporter_program_enabled`,
+	// `supporter_program_disabled`; the label is the payment provider's name. On a
+	// `supporter_plan`: `supporter_plan_created`, `supporter_plan_revised`, and
+	// `supporter_plan_retired`; the label is the plan's name. On a `supporter_subscription`:
+	// `supporter_subscription_canceled`, an administrator's cancellation without a refund; the
+	// label is the plan's name and the subscriber's handle.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -3248,8 +3450,9 @@ type AdminInstanceText struct {
 	Body string `json:"body"`
 
 	// Key The key of an instance text: the name (one line), the short and full descriptions,
-	// the terms of service and the privacy policy (Markdown), and the alternative texts of the
-	// preview image and the thumbnail.
+	// the terms of service and the privacy policy (Markdown), the alternative texts of the
+	// preview image and the thumbnail, and the commerce disclosures of the supporter plans
+	// (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
 	Key InstanceTextKey `json:"key"`
 
 	// RevisedAt When the revision was recorded.
@@ -3867,6 +4070,209 @@ type AdminSignupBlockSeverity string
 // AdminSignupBlockState `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
 // lifted it.
 type AdminSignupBlockState string
+
+// AdminSupporterPlan A supporter plan as the administrators see it (ADR-0072 §3). The yearly price is the
+// monthly one × 12, discounted by `annual_discount_percent`, rounded down. A plan takes
+// subscriptions while it is public, not retired, and `prices_ready` (the provider has the
+// prices of its current terms).
+type AdminSupporterPlan struct {
+	AnnualDiscountPercent int       `json:"annual_discount_percent"`
+	CreatedAt             time.Time `json:"created_at"`
+	Description           string    `json:"description"`
+
+	// EmojiLimit How many custom emoji the members may create when the role lets them.
+	EmojiLimit int `json:"emoji_limit"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Members The subscriptions that hold the role (active, canceling, or past due).
+	Members int `json:"members"`
+
+	// MonthlyPrice An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	MonthlyPrice Money  `json:"monthly_price"`
+	Name         string `json:"name"`
+	PricesReady  bool   `json:"prices_ready"`
+
+	// Rank A higher rank is a higher plan, which includes everything of the lower ones.
+	Rank      int        `json:"rank"`
+	Retired   bool       `json:"retired"`
+	RetiredAt *time.Time `json:"retired_at,omitempty"`
+	RevisedAt time.Time  `json:"revised_at"`
+
+	// Role The role of a supporter plan, which only its subscriptions grant.
+	Role AdminSupporterPlanRole `json:"role"`
+
+	// Visibility Whether a supporter plan takes new subscriptions. `public`: offered. `hidden`: not offered;
+	// its subscriptions go on.
+	Visibility SupporterPlanVisibility `json:"visibility"`
+
+	// YearlyPrice An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	YearlyPrice Money `json:"yearly_price"`
+}
+
+// AdminSupporterPlanCreateRequest A new supporter plan on a role that nobody holds, whose permissions are member
+// permissions and whose position is below every staff role. The currency never changes.
+type AdminSupporterPlanCreateRequest struct {
+	// AnnualDiscountPercent 0 to 90.
+	AnnualDiscountPercent int `json:"annual_discount_percent"`
+
+	// Description Up to 1,000 characters of plain text.
+	Description *string `json:"description,omitempty"`
+
+	// EmojiLimit 0 to 10,000.
+	EmojiLimit int `json:"emoji_limit"`
+
+	// MonthlyPrice An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	MonthlyPrice Money `json:"monthly_price"`
+
+	// Name 1 to 50 characters on one line.
+	Name string `json:"name"`
+
+	// Rank 0 to 1,000,000, unique among the plans that are not retired.
+	Rank int `json:"rank"`
+
+	// Role The key of the role.
+	Role string `json:"role"`
+
+	// Visibility Whether a supporter plan takes new subscriptions. `public`: offered. `hidden`: not offered;
+	// its subscriptions go on.
+	Visibility SupporterPlanVisibility `json:"visibility"`
+}
+
+// AdminSupporterPlanList Every supporter plan, retired ones too, by rank.
+type AdminSupporterPlanList struct {
+	Items []AdminSupporterPlan `json:"items"`
+}
+
+// AdminSupporterPlanRole The role of a supporter plan, which only its subscriptions grant.
+type AdminSupporterPlanRole struct {
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id          Id           `json:"id"`
+	Key         string       `json:"key"`
+	Permissions []Permission `json:"permissions"`
+	Position    int          `json:"position"`
+}
+
+// AdminSupporterPlanUpdateRequest A change of a supporter plan; an omitted property keeps its value. A new monthly price,
+// in the plan's currency, or discount makes new prices for the new subscriptions and the
+// changes of plan; the subscriptions on the old ones keep them. `role_position` and
+// `role_permissions` change the plan's role, kept to member permissions below every staff
+// role.
+type AdminSupporterPlanUpdateRequest struct {
+	AnnualDiscountPercent *int    `json:"annual_discount_percent,omitempty"`
+	Description           *string `json:"description,omitempty"`
+	EmojiLimit            *int    `json:"emoji_limit,omitempty"`
+
+	// MonthlyPrice An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	MonthlyPrice    *Money        `json:"monthly_price,omitempty"`
+	Name            *string       `json:"name,omitempty"`
+	Rank            *int          `json:"rank,omitempty"`
+	RolePermissions *[]Permission `json:"role_permissions,omitempty"`
+	RolePosition    *int          `json:"role_position,omitempty"`
+
+	// Visibility Whether a supporter plan takes new subscriptions. `public`: offered. `hidden`: not offered;
+	// its subscriptions go on.
+	Visibility *SupporterPlanVisibility `json:"visibility,omitempty"`
+}
+
+// AdminSupporterProgram The supporter program (ADR-0072 §2). It is disabled by default; enabling it needs a
+// payment provider in the deployment's configuration (`configured_provider`) and a server
+// that sends email (`sends_email`). `warnings` lists what an administrator should look at.
+type AdminSupporterProgram struct {
+	// CanEnable Whether the program can be enabled now.
+	CanEnable bool `json:"can_enable"`
+
+	// ChangedAt When the program was last enabled or disabled; omitted for never.
+	ChangedAt *time.Time `json:"changed_at,omitempty"`
+
+	// CommerceDisclosure Whether the instance publishes its commerce disclosures (`/about/commerce`).
+	CommerceDisclosure bool `json:"commerce_disclosure"`
+
+	// ConfiguredProvider The payment provider of the deployment's configuration; omitted for none.
+	ConfiguredProvider *string `json:"configured_provider,omitempty"`
+	Enabled            bool    `json:"enabled"`
+
+	// LiveSubscriptions The subscriptions that go on, which keep the program from being disabled.
+	LiveSubscriptions int `json:"live_subscriptions"`
+
+	// Provider The payment provider the program was enabled with; omitted while disabled.
+	Provider   *string                   `json:"provider,omitempty"`
+	SendsEmail bool                      `json:"sends_email"`
+	Warnings   []SupporterProgramWarning `json:"warnings"`
+}
+
+// AdminSupporterProgramRequest Enables or disables the supporter program.
+type AdminSupporterProgramRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+// AdminSupporterSubscription A subscription as the administrators see it, without the history of its payments.
+type AdminSupporterSubscription struct {
+	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	AccountId *Id `json:"account_id,omitempty"`
+
+	// GraceEndsAt When a `past_due` subscription loses its role.
+	GraceEndsAt *time.Time `json:"grace_ends_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Interval How often a subscription renews.
+	Interval SupporterInterval `json:"interval"`
+
+	// PeriodEndsAt The end of the current period; omitted for `pending` and `abandoned`.
+	PeriodEndsAt *time.Time `json:"period_ends_at,omitempty"`
+
+	// PlanId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	PlanId   Id     `json:"plan_id"`
+	PlanName string `json:"plan_name"`
+
+	// Price An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Price Money `json:"price"`
+
+	// ScheduledInterval How often a subscription renews.
+	ScheduledInterval *SupporterInterval `json:"scheduled_interval,omitempty"`
+
+	// ScheduledPlanId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	ScheduledPlanId *Id       `json:"scheduled_plan_id,omitempty"`
+	StartedAt       time.Time `json:"started_at"`
+
+	// State The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:
+	// paid. `canceling`: canceled at the end of the period. `past_due`: a payment failed less
+	// than 7 days ago. `lapsed`: a payment failed more than 7 days ago, or the subscription is
+	// paused. `expired`: ended. `revoked`: a full refund or a chargeback. `abandoned`: ended
+	// before its first payment. The role is held while `active`, `canceling`, or `past_due`.
+	State SupporterSubscriptionState `json:"state"`
+
+	// Username The subscriber's username; omitted with `account_id` for an erased account.
+	Username *string `json:"username,omitempty"`
+}
+
+// AdminSupporterSubscriptionPage A page of subscriptions, newest first.
+type AdminSupporterSubscriptionPage struct {
+	Items []AdminSupporterSubscription `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
 
 // AdminTheme The instance theme as its administrators edit it.
 type AdminTheme struct {
@@ -5283,6 +5689,10 @@ type Instance struct {
 	// instance allows (`ai_opt_out`), never the reverse.
 	AiUsage AIUsage `json:"ai_usage"`
 
+	// CommerceDisclosureUrl The public page of the commerce disclosures of the supporter plans (`/about/commerce`),
+	// which needs no sign-in; omitted when the instance has none.
+	CommerceDisclosureUrl *string `json:"commerce_disclosure_url,omitempty"`
+
 	// Contact How people reach the instance's operators (the instance settings `contact_account` and
 	// `contact_email`). Omitted when the instance has neither.
 	Contact *InstanceContact `json:"contact,omitempty"`
@@ -5337,6 +5747,10 @@ type Instance struct {
 
 	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13), as an https URL to read it at or a mailto URI to request it by email.
 	SourceUrl string `json:"source_url"`
+
+	// SupportersEnabled Whether the supporter program is enabled: its plans (`GET /instance/supporter_plans`)
+	// and the subscriptions show only then.
+	SupportersEnabled bool `json:"supporters_enabled"`
 
 	// TermsUrl The public page of the instance's terms of service, which needs no sign-in; omitted
 	// when the instance has none, so that clients do not link to it.
@@ -5459,8 +5873,9 @@ type InstanceSettingKey string
 type InstanceSettingKind string
 
 // InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
-// the terms of service and the privacy policy (Markdown), and the alternative texts of the
-// preview image and the thumbnail.
+// the terms of service and the privacy policy (Markdown), the alternative texts of the
+// preview image and the thumbnail, and the commerce disclosures of the supporter plans
+// (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
 type InstanceTextKey string
 
 // InstanceTheme The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
@@ -6098,7 +6513,8 @@ type PasswordStatus struct {
 // server's announcements to every local user. `manage_finance`: the instance's costs and
 // the state of the billing imports (only the built-in admin role by default). `view_finance`:
 // reading the totals of the instance's costs on `GET /finance/cost_totals`, a member
-// permission outside the staff's areas (ADR-0070). The others guard no client API operation
+// permission outside the staff's areas (ADR-0070). `manage_supporters`: the supporter program, its plans, and their
+// subscriptions (only the built-in admin role by default). The others guard no client API operation
 // yet.
 type Permission string
 
@@ -6319,6 +6735,20 @@ type PreviewDomainBlockImportRequest struct {
 //     reason in `theme_errors` (`PUT /admin/theme`).
 //   - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
 //     allowed. Unmute one first.
+//   - `/api/v1/problems/role-managed-by-plan` (409): the role is the role of a supporter plan:
+//     only its subscriptions grant and revoke it, and its permissions and position change from
+//     the plan (`PATCH /admin/supporter_plans/{id}`). Its badge changes as any role's.
+//   - `/api/v1/problems/breaks-supporter-roles` (409): the change would put a staff role (one
+//     with a moderation or server permission) at or below the role of a supporter plan.
+//   - `/api/v1/problems/supporters-unavailable` (409): the supporter program needs a payment
+//     provider in the deployment's configuration and a server that sends email.
+//   - `/api/v1/problems/live-subscriptions` (409): subscriptions to the supporter plans go on;
+//     retire the plans and wait for the subscriptions to end before disabling the program.
+//   - `/api/v1/problems/invalid-supporter-plan` (422): a supporter plan breaks a rule;
+//     `reason` says which.
+//   - `/api/v1/problems/supporter-plan-retired` (409): the supporter plan is retired and does
+//     not change any more.
+//   - `/api/v1/problems/subscription-ended` (409): the subscription has ended already.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -7077,6 +7507,100 @@ type StatusTag struct {
 // StatusText The plain text; the server links mentions, hashtags, and URLs.
 type StatusText = string
 
+// SupporterInterval How often a subscription renews.
+type SupporterInterval string
+
+// SupporterPlan A supporter plan that takes subscriptions. The name and the description are written by
+// the administrators in any language; render them with `dir="auto"`.
+type SupporterPlan struct {
+	Description string `json:"description"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// MonthlyPrice An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	MonthlyPrice Money  `json:"monthly_price"`
+	Name         string `json:"name"`
+
+	// Rank A higher rank is a higher plan, which includes everything of the lower ones.
+	Rank int `json:"rank"`
+
+	// YearlyPrice An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	YearlyPrice Money `json:"yearly_price"`
+}
+
+// SupporterPlanList The supporter plans that take subscriptions, by rank.
+type SupporterPlanList struct {
+	Items []SupporterPlan `json:"items"`
+}
+
+// SupporterPlanProblem The problem of a supporter plan that breaks a rule (422,
+// `/api/v1/problems/invalid-supporter-plan`); `reason` says which.
+type SupporterPlanProblem struct {
+	// Detail An explanation of this occurrence, localized from `Accept-Language`.
+	Detail *string `json:"detail,omitempty"`
+
+	// Reason Why a supporter plan is refused. `name`, `description`, `monthly_price`, `currency`,
+	// `annual_discount_percent`, `emoji_limit`, `rank`, `visibility`: the value breaks its rule
+	// (a price below the provider's minimum, of its yearly price too, or a currency the
+	// provider does not take, included). `role_builtin`: `admin` and `moderator` cannot be a
+	// plan's role. `role_taken`: another plan has the role. `role_held`: users hold the role.
+	// `role_permissions`: the role has a permission that is not a member permission.
+	// `role_position`: the role is not below every staff role, or its position is outside 0 to
+	// 999. `order_rank`: another plan has the rank. `order_position`, `order_permissions`,
+	// `order_emoji_limit`: a higher plan's role must be above the lower plan's, have all its
+	// permissions, and let its members create at least as many custom emoji.
+	Reason *SupporterPlanProblemReason `json:"reason,omitempty"`
+
+	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
+	RequestId *string `json:"request_id,omitempty"`
+
+	// Status The HTTP status code.
+	Status int `json:"status"`
+
+	// Title A short summary of the problem type, localized from `Accept-Language`.
+	Title string `json:"title"`
+
+	// Type A URI that identifies the problem type, stable for clients to branch on.
+	// It is `about:blank` when the problem means no more than its HTTP status.
+	Type string `json:"type"`
+}
+
+// SupporterPlanProblemReason Why a supporter plan is refused. `name`, `description`, `monthly_price`, `currency`,
+// `annual_discount_percent`, `emoji_limit`, `rank`, `visibility`: the value breaks its rule
+// (a price below the provider's minimum, of its yearly price too, or a currency the
+// provider does not take, included). `role_builtin`: `admin` and `moderator` cannot be a
+// plan's role. `role_taken`: another plan has the role. `role_held`: users hold the role.
+// `role_permissions`: the role has a permission that is not a member permission.
+// `role_position`: the role is not below every staff role, or its position is outside 0 to
+// 999. `order_rank`: another plan has the rank. `order_position`, `order_permissions`,
+// `order_emoji_limit`: a higher plan's role must be above the lower plan's, have all its
+// permissions, and let its members create at least as many custom emoji.
+type SupporterPlanProblemReason string
+
+// SupporterPlanVisibility Whether a supporter plan takes new subscriptions. `public`: offered. `hidden`: not offered;
+// its subscriptions go on.
+type SupporterPlanVisibility string
+
+// SupporterProgramWarning What an administrator should look at in the supporter program. `no_provider`: no payment
+// provider is configured. `no_email`: the server sends no email, so nobody can verify an
+// address to subscribe. `provider_mismatch`: the configured provider is not the one the
+// program was enabled with; new subscriptions and changes are refused until it is disabled
+// and enabled again (the subscribers subscribe again). `no_commerce_disclosure`: the
+// instance publishes no commerce disclosures (the `commerce_disclosure` instance text).
+type SupporterProgramWarning string
+
+// SupporterSubscriptionState The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:
+// paid. `canceling`: canceled at the end of the period. `past_due`: a payment failed less
+// than 7 days ago. `lapsed`: a payment failed more than 7 days ago, or the subscription is
+// paused. `expired`: ended. `revoked`: a full refund or a chargeback. `abandoned`: ended
+// before its first payment. The role is held while `active`, `canceling`, or `past_due`.
+type SupporterSubscriptionState string
+
 // ThemeError One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
 // `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
 // of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
@@ -7551,6 +8075,16 @@ type SignupBlockId = Id
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type StatusId = Id
 
+// SupporterPlanId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type SupporterPlanId = Id
+
+// SupporterSubscriptionId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type SupporterSubscriptionId = Id
+
 // WebhookId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -7847,6 +8381,21 @@ type ListSignupBlocksParams struct {
 
 	// Active Keep only the blocks in effect now, neither lifted nor expired.
 	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListSupporterSubscriptionsParams defines parameters for ListSupporterSubscriptions.
+type ListSupporterSubscriptionsParams struct {
+	// PlanId Only the subscriptions of this plan.
+	PlanId *Id `form:"plan_id,omitempty" json:"plan_id,omitempty"`
+
+	// State Only the subscriptions in this state.
+	State *SupporterSubscriptionState `form:"state,omitempty" json:"state,omitempty"`
 
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -8158,6 +8707,15 @@ type CreateSignupBlockJSONRequestBody = CreateSignupBlockRequest
 
 // ImportSignupBlocksJSONRequestBody defines body for ImportSignupBlocks for application/json ContentType.
 type ImportSignupBlocksJSONRequestBody = ImportSignupBlocksRequest
+
+// CreateSupporterPlanJSONRequestBody defines body for CreateSupporterPlan for application/json ContentType.
+type CreateSupporterPlanJSONRequestBody = AdminSupporterPlanCreateRequest
+
+// UpdateSupporterPlanJSONRequestBody defines body for UpdateSupporterPlan for application/json ContentType.
+type UpdateSupporterPlanJSONRequestBody = AdminSupporterPlanUpdateRequest
+
+// SetSupporterProgramJSONRequestBody defines body for SetSupporterProgram for application/json ContentType.
+type SetSupporterProgramJSONRequestBody = AdminSupporterProgramRequest
 
 // SetAdminThemeJSONRequestBody defines body for SetAdminTheme for application/json ContentType.
 type SetAdminThemeJSONRequestBody = SetThemeRequest
@@ -8581,6 +9139,30 @@ type ServerInterface interface {
 	// RefetchStatus Refetch a remote post from its origin
 	// (POST /admin/statuses/{id}/refetch)
 	RefetchStatus(w http.ResponseWriter, r *http.Request, id Id)
+	// ListAdminSupporterPlans List the supporter plans
+	// (GET /admin/supporter_plans)
+	ListAdminSupporterPlans(w http.ResponseWriter, r *http.Request)
+	// CreateSupporterPlan Create a supporter plan
+	// (POST /admin/supporter_plans)
+	CreateSupporterPlan(w http.ResponseWriter, r *http.Request)
+	// UpdateSupporterPlan Change a supporter plan
+	// (PATCH /admin/supporter_plans/{id})
+	UpdateSupporterPlan(w http.ResponseWriter, r *http.Request, id SupporterPlanId)
+	// RetireSupporterPlan Retire a supporter plan
+	// (POST /admin/supporter_plans/{id}/retire)
+	RetireSupporterPlan(w http.ResponseWriter, r *http.Request, id SupporterPlanId)
+	// GetSupporterProgram Get the supporter program
+	// (GET /admin/supporter_program)
+	GetSupporterProgram(w http.ResponseWriter, r *http.Request)
+	// SetSupporterProgram Enable or disable the supporter program
+	// (PUT /admin/supporter_program)
+	SetSupporterProgram(w http.ResponseWriter, r *http.Request)
+	// ListSupporterSubscriptions List the subscriptions
+	// (GET /admin/supporter_subscriptions)
+	ListSupporterSubscriptions(w http.ResponseWriter, r *http.Request, params ListSupporterSubscriptionsParams)
+	// CancelSupporterSubscription Cancel a subscription at once
+	// (POST /admin/supporter_subscriptions/{id}/cancel)
+	CancelSupporterSubscription(w http.ResponseWriter, r *http.Request, id SupporterSubscriptionId)
 	// GetAdminTheme Read the instance theme
 	// (GET /admin/theme)
 	GetAdminTheme(w http.ResponseWriter, r *http.Request)
@@ -8686,6 +9268,9 @@ type ServerInterface interface {
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(w http.ResponseWriter, r *http.Request, params ListInstanceDomainActionsParams)
+	// ListSupporterPlans List the supporter plans
+	// (GET /instance/supporter_plans)
+	ListSupporterPlans(w http.ResponseWriter, r *http.Request)
 	// UploadMedia Upload a media file
 	// (POST /media)
 	UploadMedia(w http.ResponseWriter, r *http.Request)
@@ -12385,6 +12970,212 @@ func (siw *ServerInterfaceWrapper) RefetchStatus(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListAdminSupporterPlans operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminSupporterPlans(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminSupporterPlans(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSupporterPlan operation middleware
+func (siw *ServerInterfaceWrapper) CreateSupporterPlan(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSupporterPlan(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSupporterPlan operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSupporterPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SupporterPlanId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSupporterPlan(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetireSupporterPlan operation middleware
+func (siw *ServerInterfaceWrapper) RetireSupporterPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SupporterPlanId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetireSupporterPlan(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSupporterProgram operation middleware
+func (siw *ServerInterfaceWrapper) GetSupporterProgram(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSupporterProgram(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetSupporterProgram operation middleware
+func (siw *ServerInterfaceWrapper) SetSupporterProgram(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetSupporterProgram(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSupporterSubscriptions operation middleware
+func (siw *ServerInterfaceWrapper) ListSupporterSubscriptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSupporterSubscriptionsParams
+
+	// ------------- Optional query parameter "plan_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "plan_id", r.URL.Query(), &params.PlanId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "plan_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSupporterSubscriptions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelSupporterSubscription operation middleware
+func (siw *ServerInterfaceWrapper) CancelSupporterSubscription(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id SupporterSubscriptionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelSupporterSubscription(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetAdminTheme operation middleware
 func (siw *ServerInterfaceWrapper) GetAdminTheme(w http.ResponseWriter, r *http.Request) {
 
@@ -13360,6 +14151,20 @@ func (siw *ServerInterfaceWrapper) ListInstanceDomainActions(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListInstanceDomainActions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSupporterPlans operation middleware
+func (siw *ServerInterfaceWrapper) ListSupporterPlans(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSupporterPlans(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -15013,6 +15818,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/custom_emojis", wrapper.ListCustomEmojis)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/domain_actions", wrapper.ListInstanceDomainActions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/cost_totals", wrapper.GetInstanceCostTotals)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/supporter_plans", wrapper.ListSupporterPlans)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
@@ -15216,6 +16022,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/statuses/{id}/refetch", wrapper.RefetchStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/refetch_statuses", wrapper.RefetchAccountStatuses)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/instances/{domain}/refetch_statuses", wrapper.RefetchInstanceStatuses)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/supporter_program", wrapper.GetSupporterProgram)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/supporter_program", wrapper.SetSupporterProgram)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/supporter_plans", wrapper.ListAdminSupporterPlans)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/supporter_plans", wrapper.CreateSupporterPlan)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/supporter_plans/{id}", wrapper.UpdateSupporterPlan)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/supporter_plans/{id}/retire", wrapper.RetireSupporterPlan)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/supporter_subscriptions", wrapper.ListSupporterSubscriptions)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/supporter_subscriptions/{id}/cancel", wrapper.CancelSupporterSubscription)
 
 	return m
 }
@@ -15382,6 +16196,24 @@ type AdminSignupBlockJSONResponse struct {
 	Headers AdminSignupBlockResponseHeaders
 }
 
+type AdminSupporterPlanResponseHeaders struct {
+	CacheControl *string
+}
+type AdminSupporterPlanJSONResponse struct {
+	Body AdminSupporterPlan
+
+	Headers AdminSupporterPlanResponseHeaders
+}
+
+type AdminSupporterProgramResponseHeaders struct {
+	CacheControl *string
+}
+type AdminSupporterProgramJSONResponse struct {
+	Body AdminSupporterProgram
+
+	Headers AdminSupporterProgramResponseHeaders
+}
+
 type AdminThemeResponseHeaders struct {
 	CacheControl *string
 }
@@ -15485,6 +16317,16 @@ type StatusPageJSONResponse struct {
 	Body StatusPage
 
 	Headers StatusPageResponseHeaders
+}
+
+type SupporterPlanProblemResponseHeaders struct {
+	CacheControl    *string
+	ContentLanguage *string
+}
+type SupporterPlanProblemApplicationProblemPlusJSONResponse struct {
+	Body SupporterPlanProblem
+
+	Headers SupporterPlanProblemResponseHeaders
 }
 
 type WebhookProblemResponseHeaders struct {
@@ -22244,6 +23086,489 @@ func (response RefetchStatusdefaultApplicationProblemPlusJSONResponse) VisitRefe
 	return err
 }
 
+type ListAdminSupporterPlansRequestObject struct {
+}
+
+type ListAdminSupporterPlansResponseObject interface {
+	VisitListAdminSupporterPlansResponse(w http.ResponseWriter) error
+}
+
+type ListAdminSupporterPlans200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminSupporterPlans200JSONResponse struct {
+	Body    AdminSupporterPlanList
+	Headers ListAdminSupporterPlans200ResponseHeaders
+}
+
+func (response ListAdminSupporterPlans200JSONResponse) VisitListAdminSupporterPlansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminSupporterPlansdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminSupporterPlansdefaultApplicationProblemPlusJSONResponse) VisitListAdminSupporterPlansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSupporterPlanRequestObject struct {
+	Body *CreateSupporterPlanJSONRequestBody
+}
+
+type CreateSupporterPlanResponseObject interface {
+	VisitCreateSupporterPlanResponse(w http.ResponseWriter) error
+}
+
+type CreateSupporterPlan200JSONResponse struct{ AdminSupporterPlanJSONResponse }
+
+func (response CreateSupporterPlan200JSONResponse) VisitCreateSupporterPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSupporterPlan422ApplicationProblemPlusJSONResponse struct {
+	SupporterPlanProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateSupporterPlan422ApplicationProblemPlusJSONResponse) VisitCreateSupporterPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSupporterPlandefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateSupporterPlandefaultApplicationProblemPlusJSONResponse) VisitCreateSupporterPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupporterPlanRequestObject struct {
+	Id   SupporterPlanId `json:"id"`
+	Body *UpdateSupporterPlanJSONRequestBody
+}
+
+type UpdateSupporterPlanResponseObject interface {
+	VisitUpdateSupporterPlanResponse(w http.ResponseWriter) error
+}
+
+type UpdateSupporterPlan200JSONResponse struct{ AdminSupporterPlanJSONResponse }
+
+func (response UpdateSupporterPlan200JSONResponse) VisitUpdateSupporterPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupporterPlan422ApplicationProblemPlusJSONResponse struct {
+	SupporterPlanProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateSupporterPlan422ApplicationProblemPlusJSONResponse) VisitUpdateSupporterPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupporterPlandefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateSupporterPlandefaultApplicationProblemPlusJSONResponse) VisitUpdateSupporterPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireSupporterPlanRequestObject struct {
+	Id SupporterPlanId `json:"id"`
+}
+
+type RetireSupporterPlanResponseObject interface {
+	VisitRetireSupporterPlanResponse(w http.ResponseWriter) error
+}
+
+type RetireSupporterPlan204Response struct {
+}
+
+func (response RetireSupporterPlan204Response) VisitRetireSupporterPlanResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RetireSupporterPlandefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RetireSupporterPlandefaultApplicationProblemPlusJSONResponse) VisitRetireSupporterPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupporterProgramRequestObject struct {
+}
+
+type GetSupporterProgramResponseObject interface {
+	VisitGetSupporterProgramResponse(w http.ResponseWriter) error
+}
+
+type GetSupporterProgram200JSONResponse struct {
+	AdminSupporterProgramJSONResponse
+}
+
+func (response GetSupporterProgram200JSONResponse) VisitGetSupporterProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupporterProgramdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetSupporterProgramdefaultApplicationProblemPlusJSONResponse) VisitGetSupporterProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetSupporterProgramRequestObject struct {
+	Body *SetSupporterProgramJSONRequestBody
+}
+
+type SetSupporterProgramResponseObject interface {
+	VisitSetSupporterProgramResponse(w http.ResponseWriter) error
+}
+
+type SetSupporterProgram200JSONResponse struct {
+	AdminSupporterProgramJSONResponse
+}
+
+func (response SetSupporterProgram200JSONResponse) VisitSetSupporterProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetSupporterProgramdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SetSupporterProgramdefaultApplicationProblemPlusJSONResponse) VisitSetSupporterProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSupporterSubscriptionsRequestObject struct {
+	Params ListSupporterSubscriptionsParams
+}
+
+type ListSupporterSubscriptionsResponseObject interface {
+	VisitListSupporterSubscriptionsResponse(w http.ResponseWriter) error
+}
+
+type ListSupporterSubscriptions200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListSupporterSubscriptions200JSONResponse struct {
+	Body    AdminSupporterSubscriptionPage
+	Headers ListSupporterSubscriptions200ResponseHeaders
+}
+
+func (response ListSupporterSubscriptions200JSONResponse) VisitListSupporterSubscriptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSupporterSubscriptionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListSupporterSubscriptionsdefaultApplicationProblemPlusJSONResponse) VisitListSupporterSubscriptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSupporterSubscriptionRequestObject struct {
+	Id SupporterSubscriptionId `json:"id"`
+}
+
+type CancelSupporterSubscriptionResponseObject interface {
+	VisitCancelSupporterSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type CancelSupporterSubscription204Response struct {
+}
+
+func (response CancelSupporterSubscription204Response) VisitCancelSupporterSubscriptionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type CancelSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CancelSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitCancelSupporterSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetAdminThemeRequestObject struct {
 }
 
@@ -24362,6 +25687,67 @@ type ListInstanceDomainActionsdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListInstanceDomainActionsdefaultApplicationProblemPlusJSONResponse) VisitListInstanceDomainActionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSupporterPlansRequestObject struct {
+}
+
+type ListSupporterPlansResponseObject interface {
+	VisitListSupporterPlansResponse(w http.ResponseWriter) error
+}
+
+type ListSupporterPlans200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListSupporterPlans200JSONResponse struct {
+	Body    SupporterPlanList
+	Headers ListSupporterPlans200ResponseHeaders
+}
+
+func (response ListSupporterPlans200JSONResponse) VisitListSupporterPlansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSupporterPlansdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListSupporterPlansdefaultApplicationProblemPlusJSONResponse) VisitListSupporterPlansResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -28059,6 +29445,30 @@ type StrictServerInterface interface {
 	// RefetchStatus Refetch a remote post from its origin
 	// (POST /admin/statuses/{id}/refetch)
 	RefetchStatus(ctx context.Context, request RefetchStatusRequestObject) (RefetchStatusResponseObject, error)
+	// ListAdminSupporterPlans List the supporter plans
+	// (GET /admin/supporter_plans)
+	ListAdminSupporterPlans(ctx context.Context, request ListAdminSupporterPlansRequestObject) (ListAdminSupporterPlansResponseObject, error)
+	// CreateSupporterPlan Create a supporter plan
+	// (POST /admin/supporter_plans)
+	CreateSupporterPlan(ctx context.Context, request CreateSupporterPlanRequestObject) (CreateSupporterPlanResponseObject, error)
+	// UpdateSupporterPlan Change a supporter plan
+	// (PATCH /admin/supporter_plans/{id})
+	UpdateSupporterPlan(ctx context.Context, request UpdateSupporterPlanRequestObject) (UpdateSupporterPlanResponseObject, error)
+	// RetireSupporterPlan Retire a supporter plan
+	// (POST /admin/supporter_plans/{id}/retire)
+	RetireSupporterPlan(ctx context.Context, request RetireSupporterPlanRequestObject) (RetireSupporterPlanResponseObject, error)
+	// GetSupporterProgram Get the supporter program
+	// (GET /admin/supporter_program)
+	GetSupporterProgram(ctx context.Context, request GetSupporterProgramRequestObject) (GetSupporterProgramResponseObject, error)
+	// SetSupporterProgram Enable or disable the supporter program
+	// (PUT /admin/supporter_program)
+	SetSupporterProgram(ctx context.Context, request SetSupporterProgramRequestObject) (SetSupporterProgramResponseObject, error)
+	// ListSupporterSubscriptions List the subscriptions
+	// (GET /admin/supporter_subscriptions)
+	ListSupporterSubscriptions(ctx context.Context, request ListSupporterSubscriptionsRequestObject) (ListSupporterSubscriptionsResponseObject, error)
+	// CancelSupporterSubscription Cancel a subscription at once
+	// (POST /admin/supporter_subscriptions/{id}/cancel)
+	CancelSupporterSubscription(ctx context.Context, request CancelSupporterSubscriptionRequestObject) (CancelSupporterSubscriptionResponseObject, error)
 	// GetAdminTheme Read the instance theme
 	// (GET /admin/theme)
 	GetAdminTheme(ctx context.Context, request GetAdminThemeRequestObject) (GetAdminThemeResponseObject, error)
@@ -28164,6 +29574,9 @@ type StrictServerInterface interface {
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(ctx context.Context, request ListInstanceDomainActionsRequestObject) (ListInstanceDomainActionsResponseObject, error)
+	// ListSupporterPlans List the supporter plans
+	// (GET /instance/supporter_plans)
+	ListSupporterPlans(ctx context.Context, request ListSupporterPlansRequestObject) (ListSupporterPlansResponseObject, error)
 	// UploadMedia Upload a media file
 	// (POST /media)
 	UploadMedia(ctx context.Context, request UploadMediaRequestObject) (UploadMediaResponseObject, error)
@@ -31608,6 +33021,227 @@ func (sh *strictHandler) RefetchStatus(w http.ResponseWriter, r *http.Request, i
 	}
 }
 
+// ListAdminSupporterPlans operation middleware
+func (sh *strictHandler) ListAdminSupporterPlans(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminSupporterPlansRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminSupporterPlans(ctx, request.(ListAdminSupporterPlansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminSupporterPlans")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminSupporterPlansResponseObject); ok {
+		if err := validResponse.VisitListAdminSupporterPlansResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSupporterPlan operation middleware
+func (sh *strictHandler) CreateSupporterPlan(w http.ResponseWriter, r *http.Request) {
+	var request CreateSupporterPlanRequestObject
+
+	var body CreateSupporterPlanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSupporterPlan(ctx, request.(CreateSupporterPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSupporterPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSupporterPlanResponseObject); ok {
+		if err := validResponse.VisitCreateSupporterPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSupporterPlan operation middleware
+func (sh *strictHandler) UpdateSupporterPlan(w http.ResponseWriter, r *http.Request, id SupporterPlanId) {
+	var request UpdateSupporterPlanRequestObject
+
+	request.Id = id
+
+	var body UpdateSupporterPlanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSupporterPlan(ctx, request.(UpdateSupporterPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSupporterPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSupporterPlanResponseObject); ok {
+		if err := validResponse.VisitUpdateSupporterPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetireSupporterPlan operation middleware
+func (sh *strictHandler) RetireSupporterPlan(w http.ResponseWriter, r *http.Request, id SupporterPlanId) {
+	var request RetireSupporterPlanRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetireSupporterPlan(ctx, request.(RetireSupporterPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetireSupporterPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetireSupporterPlanResponseObject); ok {
+		if err := validResponse.VisitRetireSupporterPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSupporterProgram operation middleware
+func (sh *strictHandler) GetSupporterProgram(w http.ResponseWriter, r *http.Request) {
+	var request GetSupporterProgramRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSupporterProgram(ctx, request.(GetSupporterProgramRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSupporterProgram")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSupporterProgramResponseObject); ok {
+		if err := validResponse.VisitGetSupporterProgramResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetSupporterProgram operation middleware
+func (sh *strictHandler) SetSupporterProgram(w http.ResponseWriter, r *http.Request) {
+	var request SetSupporterProgramRequestObject
+
+	var body SetSupporterProgramJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetSupporterProgram(ctx, request.(SetSupporterProgramRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetSupporterProgram")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetSupporterProgramResponseObject); ok {
+		if err := validResponse.VisitSetSupporterProgramResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSupporterSubscriptions operation middleware
+func (sh *strictHandler) ListSupporterSubscriptions(w http.ResponseWriter, r *http.Request, params ListSupporterSubscriptionsParams) {
+	var request ListSupporterSubscriptionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSupporterSubscriptions(ctx, request.(ListSupporterSubscriptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSupporterSubscriptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSupporterSubscriptionsResponseObject); ok {
+		if err := validResponse.VisitListSupporterSubscriptionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelSupporterSubscription operation middleware
+func (sh *strictHandler) CancelSupporterSubscription(w http.ResponseWriter, r *http.Request, id SupporterSubscriptionId) {
+	var request CancelSupporterSubscriptionRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelSupporterSubscription(ctx, request.(CancelSupporterSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelSupporterSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelSupporterSubscriptionResponseObject); ok {
+		if err := validResponse.VisitCancelSupporterSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetAdminTheme operation middleware
 func (sh *strictHandler) GetAdminTheme(w http.ResponseWriter, r *http.Request) {
 	var request GetAdminThemeRequestObject
@@ -32529,6 +34163,30 @@ func (sh *strictHandler) ListInstanceDomainActions(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListInstanceDomainActionsResponseObject); ok {
 		if err := validResponse.VisitListInstanceDomainActionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSupporterPlans operation middleware
+func (sh *strictHandler) ListSupporterPlans(w http.ResponseWriter, r *http.Request) {
+	var request ListSupporterPlansRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSupporterPlans(ctx, request.(ListSupporterPlansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSupporterPlans")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSupporterPlansResponseObject); ok {
+		if err := validResponse.VisitListSupporterPlansResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

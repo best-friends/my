@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Why a supporter plan is refused. `name`, `description`, `monthly_price`, `currency`,
+  `annual_discount_percent`, `emoji_limit`, `rank`, `visibility`: the value breaks its rule
+  (a price below the provider's minimum, of its yearly price too, or a currency the
+  provider does not take, included). `role_builtin`: `admin` and `moderator` cannot be a
+  plan's role. `role_taken`: another plan has the role. `role_held`: users hold the role.
+  `role_permissions`: the role has a permission that is not a member permission.
+  `role_position`: the role is not below every staff role, or its position is outside 0 to
+  999. `order_rank`: another plan has the rank. `order_position`, `order_permissions`,
+  `order_emoji_limit`: a higher plan's role must be above the lower plan's, have all its
+  permissions, and let its members create at least as many custom emoji.
+type: string
+enum: [name, description, monthly_price, currency, annual_discount_percent, emoji_limit, rank, visibility, role_builtin, role_taken, role_held, role_permissions, role_position, order_rank, order_position, order_permissions, order_emoji_limit]

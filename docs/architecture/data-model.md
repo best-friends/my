@@ -193,7 +193,7 @@ flowchart LR
 
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
-| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `password_credential_removals`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `role_badges`, `user_role_badge_displays`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
+| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `password_credential_removals`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `role_badges`, `user_role_badge_displays`, `managed_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts`, `status_quotes`, `status_quote_events`, `quote_authorizations`, `quote_authorization_revocations` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `status_quote_states`, `status_quote_policies`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
@@ -204,7 +204,7 @@ flowchart LR
 | `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_retirements`, `announcements`, `announcement_revisions`, `announcement_state_changes` | `instance_settings`, `instance_texts`, `instance_rule_heads`, `announcement_heads`, `announcement_reads` |
 | `webhook` | `webhook_endpoints`, `webhook_endpoint_revisions`, `webhook_endpoint_revision_events`, `webhook_secrets`, `webhook_endpoint_state_changes`, `webhook_messages`, `webhook_deliveries`, `webhook_delivery_attempts` | `webhook_endpoint_heads`, `webhook_endpoint_failures` |
 | `finance` | `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations`, `billing_import_runs`, `imported_cost_revisions` | `cost_item_heads`, `imported_cost_heads` |
-| `supporters` | `payment_webhook_receipts`, `payment_reconcile_runs` | — |
+| `supporters` | `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_program_changes`, `supporter_plans`, `supporter_plan_revisions`, `supporter_plan_retirements`, `supporter_plan_prices`, `supporter_plan_price_archivals`, `supporter_customers`, `supporter_subscriptions`, `supporter_checkouts`, `supporter_subscription_links`, `supporter_subscription_transitions`, `supporter_grace_periods`, `supporter_scheduled_changes`, `supporter_subscription_reversals` | `supporter_plan_heads`, `supporter_plan_price_heads`, `supporter_subscription_heads`, `supporter_live_subscriptions`, `supporter_subscription_deadlines`, `supporter_listings` |
 | 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `job_attempts`, `kv_entries` |
 
 ### 4.1 identity
@@ -311,12 +311,13 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `roles` | リソース | `id`, `key`（`string(64)`）, `position`（`int`）, `created_at` | 一意 `(key)` |
-| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_login_recovery, manage_custom_emojis, manage_webhooks, manage_announcements, manage_finance, view_finance)`） | PK `(role_id, permission)` |
+| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_login_recovery, manage_custom_emojis, manage_webhooks, manage_announcements, manage_finance, view_finance, manage_supporters)`） | PK `(role_id, permission)` |
 | `user_role_grants` | イベント | `id`, `user_id`, `role_id`, `granted_by_user_id`（NULL 可 = CLI による付与。最初の管理者など）, `granted_at` | |
 | `user_role_revocations` | イベント | `grant_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による剥奪）, `revoked_at` | |
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |
 | `role_badges` | 現在値 | `role_id`（PK）, `label`（`string(32)`）, `color`（`enum(neutral, red, orange, yellow, green, teal, blue, purple, pink)`）, `updated_at` | 行がある = バッジがある |
 | `user_role_badge_displays` | 現在値 | `user_id`, `role_id`, `created_at` | PK `(user_id, role_id)`。行がある = プロフィールに出す |
+| `managed_roles` | 現在値 | `role_id`（PK）, `manager`（`enum(supporters)`）, `created_at` | 行がある = 課金のプランが管理するロール（[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §5） |
 
 - 付与は `user_role_grants` に 1 行足して `user_roles` に加え、剥奪は `user_role_revocations` に 1 行足して `user_roles` から除きます。どちらも同じトランザクションで監査ログ（`role_granted`・`role_revoked`）を書きます。
   持っているロールの付与と持っていないロールの剥奪は何もしません。
@@ -335,6 +336,12 @@ flowchart LR
   プランの変更でロールが入れ替わるときは、`identity.Service.ReplaceRole` が古いロールの剥奪と新しいロールの付与を 1 つのトランザクションで行い、古いロールの選択を新しいロールに移します。新しいロールにバッジが無ければ選択は消えます。
 - プロフィールのバッジは `user_role_badge_displays`・`user_roles`・`role_badges`・`roles` の結合 1 回で、ロールの `position` の高い順に読みます。読むのはアカウント自身の取得だけで、タイムラインや一覧のアカウントでは読みません。
   バッジは ActivityPub・NodeInfo・WebFinger に載せず、リモートのバッジも取り込みません。アカウントの消去（§8）は本人の選択の行を消します。
+- 課金のプランのロール（[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §5、FR-912）は `managed_roles` の行で表します。プランの作成が、持っている人のいない、権限がすべて区分 `member` の、
+  どのスタッフのロール（組み込みのロールか、区分 `moderation`・`server` の権限を 1 つでも持つロール）よりも `position` の低いロールを、同じトランザクションで `managed_roles` に入れます（`identity.Service.ManageRole`）。
+  管理されたロールの付与・剥奪・入れ替えは `supporters` だけが、加入の遷移のトランザクションで行い（`GrantManagedRole`・`RevokeManagedRole`・`ReplaceManagedRole`。監査ログの操作者は `system`）、権限と位置はプランのフォームから変えます（`UpdateManagedRole`）。
+  FR-720 の手での付与・剥奪と、権限・位置の直接の変更とロールの削除は `ErrRoleManagedByPlan`（409）で断り、バッジはふつうに変えられます。
+  管理されていないロールの変更は、スタッフのロールを管理されたロールのいちばん高い `position` 以下に置くとき `ErrBreaksManagedRoles`（409）で断ります。
+  廃止したプランのロールは、持つ人がいなくなったときに `managed_roles` から外れます（`UnmanageRole`）。
 
 #### セッション・OAuth
 
@@ -612,7 +619,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite, relay, billing_source, cost_item)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
+| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite, relay, billing_source, cost_item, supporter_program, supporter_plan, supporter_subscription)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
 
 - 各モジュールの管理のユースケースが元のイベントと同じトランザクションで発行するドメインイベント（`moderation.audit_recorded`）を、`moderation` の同期の購読者が書きます。理由とメモの本文は写さず、`source_event_id` で元のイベントから引きます。
   記録の ID はトランザクションの前に作り、再試行しても同じ行を書きます。何も変えなかった操作（解除済みの処分の解除など）は記録しません。
@@ -645,6 +652,9 @@ flowchart LR
   | `domain_statuses_refetch_queued` | `domain` | ドメイン | ドメイン | なし（元の記録を持たない操作） |
   | `billing_import_queued` | `billing_source` | 取り込み元（`aws`・`gcp`） | 事業者の名前（`AWS`） | なし（元の記録を持たない操作） |
   | `cost_item_created`, `cost_item_relabeled`, `cost_item_price_revised`, `cost_item_end_changed`, `cost_item_canceled` | `cost_item` | `cost_items.id` | 項目の名前（変更は変更後の名前） | `cost_items.id` / `cost_item_label_revisions.id` / `cost_item_price_revisions.id` / `cost_item_end_changes.id` / `cost_item_cancellations.id` |
+  | `supporter_program_enabled`, `supporter_program_disabled` | `supporter_program` | `supporter_program_changes.id` | 決済の事業者の名前（`stripe`） | `supporter_program_changes.id` |
+  | `supporter_plan_created`, `supporter_plan_revised`, `supporter_plan_retired` | `supporter_plan` | `supporter_plans.id` | プランの名前（変更は変更後の名前） | `supporter_plan_revisions.id` / `supporter_plan_retirements.plan_id` |
+  | `supporter_subscription_canceled` | `supporter_subscription` | `supporter_subscriptions.id` | プランの名前と利用者のハンドル（`Supporter @alice`） | `supporter_subscriptions.id` |
 
   サーバーが 410 Gone や失敗の継続で宛先を無効にした `webhook_disabled` は `actor_kind = system` です（ADR-0060）。リレーが送った `Accept` / `Reject` の `relay_accepted` / `relay_rejected` は `actor_kind = remote` です（ADR-0061）。
 
@@ -1382,6 +1392,40 @@ flowchart LR
   見回しのカーソルは最後のページを読むと `''` に戻ります。カーソルは試行ごとの行に残し、上書きする現在値の列を持ちません。事業者の失敗は `failed` として記録し、次の照合は前の `succeeded` か `partial` の行から始めます。
 - `payment_webhook_receipts` は 45 日を過ぎた行を毎日の定期ジョブ `supporters.payment_receipt_purge` が消します。
 
+#### サポーターの課金・プラン・加入
+
+課金の有効化・プラン・事業者の価格・顧客・加入・加入の状態・猶予・掲載の選択（[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §15）。投影はすべて同期で、`my projection` の `supporters` が記録から作り直します。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `supporter_program_changes` | イベント | `id`, `state`（`enum(enabled, disabled)`）, `provider`（`enum('', stripe)`。有効にしたときの事業者）, `changed_by_user_id`（NULL 可 = CLI）, `changed_at` | 最新の行が今の状態。行がなければ無効。`CHECK (state = 'enabled') = (provider <> '')` |
+| `supporter_plans` | リソース | `id`, `role_id`, `currency`（`string(3)`）, `created_by_user_id`（NULL 可）, `created_at` | 一意 `(role_id)` |
+| `supporter_plan_revisions` | イベント（版） | `id`, `plan_id`, `name`（`string(50)`）, `description`（`string(1000)`）, `rank`（`int`、0〜1,000,000）, `monthly_amount_minor`（`bigint`、1 以上）, `annual_discount_percent`（`int`、0〜90）, `emoji_limit`（`int`、0〜10,000）, `visibility`（`enum(public, hidden)`）, `revised_by_user_id`（NULL 可）, `revised_at` | インデックス `(plan_id, id DESC)` |
+| `supporter_plan_retirements` | イベント | `plan_id`（PK）, `retired_by_user_id`（NULL 可）, `retired_at` | |
+| `supporter_plan_heads` | 投影 | `plan_id`（PK）, `revision_id`, `rank`, `visibility` | 廃止していないプランだけ。一意 `(rank)` |
+| `supporter_plan_prices` | リソース | `id`, `plan_id`, `interval`（`enum(month, year)`）, `amount_minor`, `currency`, `provider`, `provider_price_id`, `created_at` | 一意 `(provider, provider_price_id)`, `(plan_id, interval, amount_minor, provider)` |
+| `supporter_plan_price_heads` | 投影 | `plan_id`, `interval`, `price_id` | PK `(plan_id, interval)`。新しい加入と変更に使う価格。アーカイブされていない最新の価格 |
+| `supporter_plan_price_archivals` | イベント | `price_id`（PK）, `archived_at` | |
+| `supporter_customers` | リソース | `id`, `user_id`, `provider`, `provider_customer_id`, `created_at` | 一意 `(provider, user_id)`, `(provider, provider_customer_id)` |
+| `supporter_subscriptions` | リソース | `id`（事業者に載せるこちらの ID）, `user_id`, `plan_id`, `price_id`（開始のとき）, `provider`, `created_at` | インデックス `(user_id, id DESC)` |
+| `supporter_checkouts` | イベント | `id`, `subscription_id`, `provider`, `provider_checkout_id`, `expires_at`, `created_at` | 一意 `(provider, provider_checkout_id)`。インデックス `(subscription_id, id DESC)`, `(provider, expires_at)` |
+| `supporter_subscription_links` | イベント | `subscription_id`（PK）, `provider`, `provider_subscription_id`, `linked_at` | 一意 `(provider, provider_subscription_id)` |
+| `supporter_subscription_transitions` | イベント（版） | `id`, `subscription_id`, `state`（`enum(pending, active, canceling, past_due, lapsed, expired, revoked, abandoned)`）, `plan_id`, `price_id`, `period_ends_at`（`pending`・`abandoned` だけ NULL）, `reason`（`enum(started, synced, grace_expired, reversed, plan_retired, account_closed, account_suspended, staff)`）, `occurred_at` | インデックス `(subscription_id, id DESC)` |
+| `supporter_grace_periods` | イベント | `transition_id`（PK。`past_due` の遷移）, `failed_at`, `ends_at`（`failed_at` + 7 日） | |
+| `supporter_scheduled_changes` | イベント | `transition_id`（PK）, `price_id`, `effective_at` | 行がなければ予約なし |
+| `supporter_subscription_reversals` | イベント | `id`, `subscription_id`, `kind`（`enum(full_refund, partial_refund, chargeback)`）, `provider`, `provider_reversal_id`, `occurred_at` | 一意 `(provider, provider_reversal_id)` |
+| `supporter_subscription_heads` | 投影 | `subscription_id`（PK）, `transition_id`, `user_id`, `plan_id`, `state` | インデックス `(plan_id, state)`, `(user_id)` |
+| `supporter_live_subscriptions` | 投影 | `user_id`（PK）, `subscription_id` | 終端でない加入だけ。利用者ごとに 1 つ |
+| `supporter_subscription_deadlines` | 投影 | `subscription_id`（PK）, `kind`（`enum(checkout, period_end, grace)`）, `due_at` | インデックス `(due_at)` |
+| `supporter_listings` | 現在値 | `user_id`（PK）, `created_at` | 参加者の一覧に出る選択（ADR-0071 §6） |
+
+- 状態は、webhook・決済画面からの戻り・Scheduler の期限・定期の照合のどれも、事業者からサブスクリプションを取り直して `supporters.Derive` で導きます（`Syncer`、ジョブ `supporters.sync`）。
+  導いた状態か、プラン・価格・期間の終わり・猶予・予約された変更が直前の遷移と違うときだけ遷移の行を足し、同じトランザクションで投影と期限、プランのロールの付与・剥奪・入れ替え（`identity` の管理されたロールの操作）を書きます。ロールが外れる遷移は `supporter_listings` の行も消します。
+- 期限は、`pending` が開始から 24 時間（`checkout`）、`active`・`canceling` が期間の終わり（`period_end`）、`past_due` が猶予の終わり（`grace`）です。5 分ごとのジョブ `supporters.deadlines` が期限の来た行に `supporters.sync` を積みます。
+- 事業者への命令（すぐ解約・期間の終わりの解約）は、遷移のトランザクションで積むジョブ `supporters.command` がコミットの後に送り、取り直したスナップショットを当てます。全額の返金とチャージバック、アカウントの削除（BAN の予約を含む）、管理者による解約は、こちらの状態を先に終端にしてから事業者をすぐ解約します。凍結は期間の終わりの解約を予約します。
+- プランの作成と、条件の版を足す変更は、同じトランザクションでジョブ `supporters.ensure_prices`（冪等キー `ensure_prices:<版の ID>`）を積みます。ジョブは事業者に月と年の価格を作らせ（`EnsurePlan`）、`supporter_plan_prices` と今の価格、アーカイブを記録します。既存の加入はもとの価格のまま続きます。
+- 決済画面の行（`supporter_checkouts`）は ADR-0072 §15 の表にない追加で、`pending` の加入の取り直しと定期の照合（`Syncer.OpenCheckouts`）が読みます。
+
 ## 5. 状態とポリシー
 
 ### 5.1 アカウントの状態の軸
@@ -1571,7 +1615,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
 | 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `reactions` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）・投稿の自動削除の設定、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・リアクション・ブックマーク・ピン留めを含む）、本人のお気に入り・リアクション・ブックマーク・ピン留め・ブースト（件数から引く）・投票への回答、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート・ドメインのミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions`・`notification_domain_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、お知らせの既読（`announcement_reads`）、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
+| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）・投稿の自動削除の設定、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・リアクション・ブックマーク・ピン留めを含む）、本人のお気に入り・リアクション・ブックマーク・ピン留め・ブースト（件数から引く）・投票への回答、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート・ドメインのミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions`・`notification_domain_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、お知らせの既読（`announcement_reads`）、本人のアップロード（`media_files` と子テーブル・Blob）、参加者の一覧の掲載の選択（`supporter_listings`）と決済の事業者の顧客（`supporter_customers`） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア、課金の加入・遷移・決済画面・返金とチャージバックの記録（会計と事業者との照合のため。ADR-0072 §10） |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 | モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
 | 投稿の自動削除（FR-118） | `status_deletions`（`origin = auto_delete`） | 投稿の削除と同じ | 投稿の削除と同じ |
@@ -1614,11 +1658,12 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `webhook_endpoint_heads` / `webhook_endpoint_failures` | `webhook_endpoint_revisions`・`webhook_endpoint_state_changes`・`webhook_secrets`、`webhook_delivery_attempts` | 同期 |
 | `relay_states` | `relay_events` | 同期 |
 | `cost_item_heads` | `cost_items`, `cost_item_label_revisions`, `cost_item_end_changes`, `cost_item_cancellations` | 同期 |
+| `supporter_plan_heads` / `supporter_plan_price_heads` / `supporter_subscription_heads` / `supporter_live_subscriptions` / `supporter_subscription_deadlines` | `supporter_plan_revisions`・`supporter_plan_retirements`、`supporter_plan_prices`・`supporter_plan_price_archivals`、`supporter_subscriptions`・`supporter_subscription_transitions`・`supporter_grace_periods` | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 
 - CLI: `my projection list` は投影と所有モジュールと表を示します。投影の名前は所有モジュールの再構築関数の単位です
   （`instance`、`account`、`identity`、`moderation`、`graph`、`content`、`status_sensitivity_overrides`、`boost_edges`、`feeds`、`feed_restrictions`、
-  `notification_exclusions`、`notification_deleted_statuses`、`relay_states`、`webhook`、`finance`）。
+  `notification_exclusions`、`notification_deleted_statuses`、`relay_states`、`webhook`、`finance`、`supporters`）。
   `<name>` には投影の名前か、その表の名前を渡します。省略するとすべての投影です。
   - `my projection verify [<name>]` は、1 つのトランザクションの中で現在の表を読み、所有モジュールの再構築関数を実行し、結果の表を読んでロールバックします。
     差分の行（現在の表にあって作り直した結果にない行、その逆）を表示し、差分があれば 1 で終了します。何も変えません。
@@ -1713,7 +1758,8 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-902 期間の集計 | S | `cost_item_heads` と §4.12 の項目・改定（読み取りのときに計算し、投影を持たない） |
 | FR-903 費用の公開範囲 | S | `instance_settings`（`finance_visibility`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-904 利用料金の自動取り込み | S | §4.12 の `billing_import_runs`, `imported_cost_revisions`, `imported_cost_heads`, `audit_log_entries`（手動の取り込み） |
-| FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`（加入の表は ADR-0072 §15） |
+| FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_*` の表 |
+| FR-912 課金のロールの安全柵 | S | `managed_roles`, `role_permissions`, `roles` |
 | FR-913 ロールのバッジ | S | `role_badges`, `user_role_badge_displays`, `user_roles` |
 | FR-916 会計の閲覧の権限 | S | `role_permissions`（`view_finance`）, `instance_settings`（`finance_viewer_item_names`, `finance_viewer_item_memos`, `finance_viewer_income`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |

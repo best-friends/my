@@ -47,6 +47,7 @@ type repositories struct {
 	hooks        webhook.Repository
 	finance      finance.Repository
 	payments     supporters.PaymentRepository
+	supporters   supporters.Repository
 	retention    retentionRepositories
 	projections  projection.Store
 }

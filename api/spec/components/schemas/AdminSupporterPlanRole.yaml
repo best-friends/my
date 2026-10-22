@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The role of a supporter plan, which only its subscriptions grant.
+type: object
+required: [id, key, position, permissions]
+properties:
+  id:
+    $ref: ./Id.yaml
+  key:
+    type: string
+  position:
+    type: integer
+  permissions:
+    type: array
+    items:
+      $ref: ./Permission.yaml

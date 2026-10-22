@@ -74,6 +74,12 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   cost_item_price_revised: "client:admin.audit_log.action.cost_item_price_revised",
   cost_item_end_changed: "client:admin.audit_log.action.cost_item_end_changed",
   cost_item_canceled: "client:admin.audit_log.action.cost_item_canceled",
+  supporter_program_enabled: "client:admin.audit_log.action.supporter_program_enabled",
+  supporter_program_disabled: "client:admin.audit_log.action.supporter_program_disabled",
+  supporter_plan_created: "client:admin.audit_log.action.supporter_plan_created",
+  supporter_plan_revised: "client:admin.audit_log.action.supporter_plan_revised",
+  supporter_plan_retired: "client:admin.audit_log.action.supporter_plan_retired",
+  supporter_subscription_canceled: "client:admin.audit_log.action.supporter_subscription_canceled",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -94,6 +100,9 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   relay: "client:admin.audit_log.target_kind.relay",
   billing_source: "client:admin.audit_log.target_kind.billing_source",
   cost_item: "client:admin.audit_log.target_kind.cost_item",
+  supporter_program: "client:admin.audit_log.target_kind.supporter_program",
+  supporter_plan: "client:admin.audit_log.target_kind.supporter_plan",
+  supporter_subscription: "client:admin.audit_log.target_kind.supporter_subscription",
 };
 
 /** Who performed an operation without a user's account to show. */
@@ -145,6 +154,11 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "cost_item":
       // The costs screen lists the items that are not canceled and the state of every billing source.
       return "/admin/finance";
+    case "supporter_program":
+    case "supporter_plan":
+    case "supporter_subscription":
+      // The supporters screen shows the program, every plan (retired ones too) and the subscriptions.
+      return "/admin/supporters";
     default:
       return undefined;
   }

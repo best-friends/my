@@ -60,6 +60,7 @@ const permissionLabels: Readonly<Record<Permission, ClientMessageKey>> = {
   manage_announcements: "client:admin.roles.permission.manage_announcements",
   manage_finance: "client:admin.roles.permission.manage_finance",
   view_finance: "client:admin.roles.permission.view_finance",
+  manage_supporters: "client:admin.roles.permission.manage_supporters",
 };
 
 /** The name of each badge color. */

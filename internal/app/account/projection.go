@@ -61,6 +61,12 @@ func (e LifecycleEventRecorded) DeletesLocalAccount() bool {
 	return e.Event.Kind == account.LifecycleDeleted
 }
 
+// ClosesLocalAccount reports whether the event deletes a local account or schedules its
+// deletion (a ban), which ends its subscription to a supporter plan (ADR-0072 §10).
+func (e LifecycleEventRecorded) ClosesLocalAccount() bool {
+	return e.Event.Kind == account.LifecycleDeleted || e.Event.Kind == account.LifecycleDeletionScheduled
+}
+
 // RegisterProjectors registers the account module's synchronous projectors (data-model §9):
 // account_handles from local accounts and the handle checks of remote actors,
 // account_profile_heads from profile revisions, account_lifecycle_states from lifecycle events,

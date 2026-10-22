@@ -55,6 +55,9 @@ func (a *App) setUpErasure(ids identity.Repository, accounts account.Repository,
 			a.Exports,
 			// The user's CSV imports (FR-008).
 			a.Imports,
+			// The user's listing on the supporter list and the payment provider's customers; the
+			// subscriptions stay for the accounting (ADR-0072 §10).
+			a.Supporters,
 			identity.NewEraser(a.UnitOfWork, identities),
 		},
 	}).RegisterJobs(a.Handlers, a.Scheduler)

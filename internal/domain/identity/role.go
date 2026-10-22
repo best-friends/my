@@ -39,6 +39,10 @@ const (
 	// the instance settings finance_viewer_* show, without recording or changing anything
 	// (ADR-0070 §5). It is a member permission (ADR-0070 §1).
 	PermViewFinance Permission = "view_finance"
+	// PermManageSupporters: enable and disable the supporter program, create, change, and retire
+	// its plans, and see and cancel the subscriptions (ADR-0072 §2). It is server administration
+	// (ADR-0058 §4).
+	PermManageSupporters Permission = "manage_supporters"
 )
 
 // AllPermissions lists every permission.
@@ -47,14 +51,15 @@ func AllPermissions() []Permission {
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
 		PermManageLoginRecovery, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
-		PermManageFinance, PermViewFinance,
+		PermManageFinance, PermViewFinance, PermManageSupporters,
 	}
 }
 
 // PermissionCategory is the area that a permission belongs to (ADR-0058 §4, ADR-0070 §1):
 // moderation decides on people, posts and remote servers case by case; server administration
 // changes the server itself as a whole; a member permission lets its holder make and change
-// their own things or only read, never change the rows of others or the whole server.
+// their own things or only read, never change the rows of others or the whole server. Only
+// member permissions may be on a role that a supporter plan manages (ADR-0072 §5).
 type PermissionCategory string
 
 // Permission categories.

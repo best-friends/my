@@ -15,6 +15,7 @@ import (
 	"github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/projection"
+	"github.com/best-friends/my/internal/app/supporters"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/app/webhook"
@@ -36,6 +37,7 @@ type projectionRepositories struct {
 	webhooks      webhook.Repository
 	relays        federation.RelayRepository
 	finance       finance.Repository
+	supporters    supporters.Repository
 }
 
 // setUpProjections builds the service of `my projection` and registers the projection.verify
@@ -160,6 +162,16 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 				Tables: []string{"cost_item_heads", "imported_cost_heads"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return finance.RebuildProjections(ctx, u, r.finance)
+				},
+			},
+			{
+				Name: "supporters", Module: "supporters",
+				Tables: []string{
+					"supporter_plan_heads", "supporter_plan_price_heads", "supporter_subscription_heads",
+					"supporter_live_subscriptions", "supporter_subscription_deadlines",
+				},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return supporters.RebuildProjections(ctx, u, r.supporters)
 				},
 			},
 		},

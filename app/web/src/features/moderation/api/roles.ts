@@ -80,5 +80,5 @@ export function isRoleOutranked(error: unknown): boolean {
 
 /** Whether the server refused to revoke the admin role from its only holder (409). */
 export function isLastAdmin(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 409;
+  return error instanceof ApiError && error.status === 409 && error.type === "about:blank";
 }

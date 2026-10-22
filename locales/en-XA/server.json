@@ -135,6 +135,14 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ẇȧȧş řḗḗƒŭŭşḗḗḓ ƀḗḗƈȧȧŭŭşḗḗ īŧ ƈȧȧḿḗḗ ƒřǿǿḿ ȧȧƞǿǿŧħḗḗř şīŧḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.document.commerce_missing": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ħȧȧş ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ ƈǿǿḿḿḗḗřƈḗḗ ḓīşƈŀǿǿşŭŭřḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.document.commerce_title": {
+    "defaultMessage": "[Ƈǿǿḿḿḗḗřƈḗḗ ḓīşƈŀǿǿşŭŭřḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.document.footer_label": {
     "defaultMessage": "[Ŧḗḗřḿş ȧȧƞḓ ƥǿǿŀīƈīḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -791,12 +799,24 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.role.breaks_supporter_roles": {
+    "defaultMessage": "[Şŧȧȧƒƒ řǿǿŀḗḗş ḿŭŭşŧ şŧȧȧẏ ȧȧƀǿǿṽḗḗ ŧħḗḗ řǿǿŀḗḗş ǿǿƒ ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.role.invalid": {
     "defaultMessage": "[Ŧħḗḗ řǿǿŀḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.role.invalid_detail": {
     "defaultMessage": "[{reason,select,badge_color{Ƈħǿǿǿǿşḗḗ ǿǿƞḗḗ ǿǿƒ ŧħḗḗ ƀȧȧḓɠḗḗ ƈǿǿŀǿǿřş.} badge_label{Ŧħḗḗ ƀȧȧḓɠḗḗ ƞȧȧḿḗḗ ḿŭŭşŧ ƀḗḗ 1 ŧǿǿ 32 ƈħȧȧřȧȧƈŧḗḗřş ǿǿƞ ǿǿƞḗḗ ŀīƞḗḗ.} builtin{Ŧħḗḗ ȧȧḓḿīƞ řǿǿŀḗḗ ƈȧȧƞƞǿǿŧ ƈħȧȧƞɠḗḗ, ȧȧƞḓ ŧħḗḗ ƀŭŭīŀŧ-īƞ řǿǿŀḗḗş ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ.} held{Řḗḗṽǿǿķḗḗ ŧħḗḗ řǿǿŀḗḗ ƒřǿǿḿ ḗḗṽḗḗřẏǿǿƞḗḗ ẇħǿǿ ħǿǿŀḓş īŧ ƒīřşŧ.} key{Ŧħḗḗ ķḗḗẏ ḿŭŭşŧ ƀḗḗ 1 ŧǿǿ 64 ŀǿǿẇḗḗřƈȧȧşḗḗ ŀḗḗŧŧḗḗřş, ḓīɠīŧş, ŭŭƞḓḗḗřşƈǿǿřḗḗş, ǿǿř ħẏƥħḗḗƞş.} key_taken{Ȧƞǿǿŧħḗḗř řǿǿŀḗḗ ħȧȧş ŧħīş ķḗḗẏ.} missing_permission{Ẏǿǿŭŭ ƈȧȧƞ ɠīṽḗḗ ǿǿř ŧȧȧķḗḗ ǿǿƞŀẏ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ẏǿǿŭŭ ħǿǿŀḓ.} other{Ŧħḗḗ ƈħȧȧƞɠḗḗ ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} permissions{Ƈħǿǿǿǿşḗḗ ḗḗȧȧƈħ ƥḗḗřḿīşşīǿǿƞ ȧȧŧ ḿǿǿşŧ ǿǿƞƈḗḗ.} position{Ŧħḗḗ ƥǿǿşīŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 999.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.managed_by_plan": {
+    "defaultMessage": "[Ŧħḗḗ řǿǿŀḗḗ ƀḗḗŀǿǿƞɠş ŧǿǿ ȧȧ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.managed_by_plan_detail": {
+    "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ƥŀȧȧƞ'ş şŭŭƀşƈřīƥŧīǿǿƞş ɠřȧȧƞŧ ȧȧƞḓ řḗḗṽǿǿķḗḗ īŧ, ȧȧƞḓ īŧş ƥḗḗřḿīşşīǿǿƞş ȧȧƞḓ ƥǿǿşīŧīǿǿƞ ƈħȧȧƞɠḗḗ ƒřǿǿḿ ŧħḗḗ ƥŀȧȧƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.self_relationship": {
@@ -925,6 +945,38 @@
   },
   "errors.streaming.unavailable": {
     "defaultMessage": "[Řḗḗȧȧŀ-ŧīḿḗḗ ŭŭƥḓȧȧŧḗḗş ȧȧřḗḗ ŭŭƞȧȧṽȧȧīŀȧȧƀŀḗḗ řīɠħŧ ƞǿǿẇ. Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.live_subscriptions": {
+    "defaultMessage": "[Şŭŭƀşƈřīƥŧīǿǿƞş ŧǿǿ ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞş ɠǿǿ ǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.live_subscriptions_detail": {
+    "defaultMessage": "[Řḗḗŧīřḗḗ ŧħḗḗ ƥŀȧȧƞş ȧȧƞḓ ẇȧȧīŧ ƒǿǿř ŧħḗḗīř şŭŭƀşƈřīƥŧīǿǿƞş ŧǿǿ ḗḗƞḓ ƀḗḗƒǿǿřḗḗ ḓīşȧȧƀŀīƞɠ ŧħḗḗ ƥřǿǿɠřȧȧḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_invalid": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_invalid_detail": {
+    "defaultMessage": "[{reason,select,annual_discount_percent{Ŧħḗḗ ẏḗḗȧȧřŀẏ ḓīşƈǿǿŭŭƞŧ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 90 ƥḗḗřƈḗḗƞŧ.} currency{Ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř ḓǿǿḗḗş ƞǿǿŧ ŧȧȧķḗḗ ŧħīş ƈŭŭřřḗḗƞƈẏ.} description{Ŧħḗḗ ḓḗḗşƈřīƥŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ 1,000 ƈħȧȧřȧȧƈŧḗḗřş.} emoji_limit{Ŧħḗḗ ḗḗḿǿǿĵī ŀīḿīŧ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 10,000.} monthly_price{Ŧħḗḗ ƥřīƈḗḗ ḿŭŭşŧ ƀḗḗ ȧȧŧ ŀḗḗȧȧşŧ ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř'ş ḿīƞīḿŭŭḿ ƈħȧȧřɠḗḗ, ƒǿǿř ŧħḗḗ ẏḗḗȧȧřŀẏ ƥřīƈḗḗ ŧǿǿǿǿ.} name{Ŧħḗḗ ƞȧȧḿḗḗ ḿŭŭşŧ ƀḗḗ 1 ŧǿǿ 50 ƈħȧȧřȧȧƈŧḗḗřş ǿǿƞ ǿǿƞḗḗ ŀīƞḗḗ.} order_emoji_limit{Ȧ ħīɠħḗḗř ƥŀȧȧƞ ḿŭŭşŧ ŀḗḗŧ īŧş ḿḗḗḿƀḗḗřş ƈřḗḗȧȧŧḗḗ ȧȧŧ ŀḗḗȧȧşŧ ȧȧş ḿȧȧƞẏ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ȧȧş ŧħḗḗ ƥŀȧȧƞ ƀḗḗŀǿǿẇ īŧ.} order_permissions{Ȧ ħīɠħḗḗř ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿŭŭşŧ ħȧȧṽḗḗ ḗḗṽḗḗřẏ ƥḗḗřḿīşşīǿǿƞ ǿǿƒ ŧħḗḗ ƥŀȧȧƞ ƀḗḗŀǿǿẇ īŧ.} order_position{Ȧ ħīɠħḗḗř ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿŭŭşŧ ƀḗḗ ȧȧƀǿǿṽḗḗ ŧħḗḗ řǿǿŀḗḗ ǿǿƒ ŧħḗḗ ƥŀȧȧƞ ƀḗḗŀǿǿẇ īŧ.} order_rank{Ȧƞǿǿŧħḗḗř ƥŀȧȧƞ ħȧȧş ŧħīş řȧȧƞķ.} other{Ŧħḗḗ ƥŀȧȧƞ ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} rank{Ŧħḗḗ řȧȧƞķ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 1,000,000.} role_builtin{Ŧħḗḗ ƀŭŭīŀŧ-īƞ řǿǿŀḗḗş ƈȧȧƞƞǿǿŧ ƀḗḗ ȧȧ ƥŀȧȧƞ'ş řǿǿŀḗḗ.} role_held{Ƈħǿǿǿǿşḗḗ ȧȧ řǿǿŀḗḗ ŧħȧȧŧ ƞǿǿƀǿǿḓẏ ħǿǿŀḓş.} role_permissions{Ȧ ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿȧȧẏ ħȧȧṽḗḗ ǿǿƞŀẏ ḿḗḗḿƀḗḗř ƥḗḗřḿīşşīǿǿƞş.} role_position{Ȧ ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿŭŭşŧ ƀḗḗ ƀḗḗŀǿǿẇ ḗḗṽḗḗřẏ şŧȧȧƒƒ řǿǿŀḗḗ.} role_taken{Ȧƞǿǿŧħḗḗř ƥŀȧȧƞ ħȧȧş ŧħīş řǿǿŀḗḗ.} visibility{Ƈħǿǿǿǿşḗḗ ƥŭŭƀŀīƈ ǿǿř ħīḓḓḗḗƞ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_retired": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞ īş řḗḗŧīřḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.subscription_ended": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƀşƈřīƥŧīǿǿƞ ħȧȧş ḗḗƞḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.unavailable": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥřǿǿɠřȧȧḿ īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ ǿǿƞ ŧħīş şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.unavailable_detail": {
+    "defaultMessage": "[{reason,select,no_email{Ŧħḗḗ şḗḗřṽḗḗř ḿŭŭşŧ şḗḗƞḓ ḗḗḿȧȧīŀ, şǿǿ ŧħȧȧŧ şŭŭƀşƈřīƀḗḗřş ƈȧȧƞ ṽḗḗřīƒẏ ŧħḗḗīř ȧȧḓḓřḗḗşş.} no_provider{Ƈǿǿƞƒīɠŭŭřḗḗ ȧȧ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř īƞ ŧħḗḗ şḗḗřṽḗḗř'ş ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ƒīřşŧ.} other{Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥřǿǿɠřȧȧḿ ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭşḗḗḓ ƞǿǿẇ.} provider_mismatch{Ŧħḗḗ ƈǿǿƞƒīɠŭŭřḗḗḓ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř īş ƞǿǿŧ ŧħḗḗ ǿǿƞḗḗ ŧħḗḗ ƥřǿǿɠřȧȧḿ ẇȧȧş ḗḗƞȧȧƀŀḗḗḓ ẇīŧħ. Ḓīşȧȧƀŀḗḗ ŧħḗḗ ƥřǿǿɠřȧȧḿ ȧȧƞḓ ḗḗƞȧȧƀŀḗḗ īŧ ȧȧɠȧȧīƞ.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.too_long": {

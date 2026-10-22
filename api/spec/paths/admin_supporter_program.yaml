@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getSupporterProgram
+  summary: Get the supporter program
+  description: Whether the supporter program is enabled, and what it needs. Needs the `manage_supporters` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      $ref: ../components/responses/AdminSupporterProgram.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+put:
+  operationId: setSupporterProgram
+  summary: Enable or disable the supporter program
+  description: |
+    Enables or disables the supporter program (ADR-0072 §2). Enabling it without a payment
+    provider in the deployment's configuration or without email is a 409
+    `/api/v1/problems/supporters-unavailable`; disabling it while subscriptions go on is a
+    409 `/api/v1/problems/live-subscriptions` (retire the plans first). Asking for the state
+    it is in changes nothing. Recorded in the audit log. Needs the `manage_supporters`
+    permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/AdminSupporterProgramRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminSupporterProgram.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

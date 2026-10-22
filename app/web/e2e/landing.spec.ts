@@ -65,6 +65,7 @@ async function serveInstance(page: Page, origin: string, overrides: Partial<Inst
     search_indexing: "deny",
     ai_usage: "deny",
     finance_visibility: "private",
+    supporters_enabled: false,
     rules: [
       { id: "0192f0c4-7a8e-7000-8000-0000000000e1", text: "Be kind", hint: "No insults, no harassment." },
       { id: "0192f0c4-7a8e-7000-8000-0000000000e2", text: "Mark sensitive media" },

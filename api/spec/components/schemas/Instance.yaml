@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 description: Public information about the instance.
 type: object
-required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules, search_indexing, ai_usage, finance_visibility]
+required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules, search_indexing, ai_usage, finance_visibility, supporters_enabled]
 properties:
   domain:
     description: The domain that serves the instance.
@@ -57,6 +57,17 @@ properties:
       when the instance has none.
     type: string
     format: uri
+  commerce_disclosure_url:
+    description: |
+      The public page of the commerce disclosures of the supporter plans (`/about/commerce`),
+      which needs no sign-in; omitted when the instance has none.
+    type: string
+    format: uri
+  supporters_enabled:
+    description: |
+      Whether the supporter program is enabled: its plans (`GET /instance/supporter_plans`)
+      and the subscriptions show only then.
+    type: boolean
   theme:
     $ref: ./InstanceTheme.yaml
   contact:

@@ -13,7 +13,7 @@ type Schemas = components["schemas"];
 export type InstanceText = Schemas["AdminInstanceText"];
 
 /** The instance texts that are documents, written in Markdown. */
-export type DocumentKey = Extract<Schemas["InstanceTextKey"], "terms" | "privacy_policy">;
+export type DocumentKey = Extract<Schemas["InstanceTextKey"], "terms" | "privacy_policy" | "commerce_disclosure">;
 
 /** The most characters of a document (internal/domain/instance, text.go). */
 export const documentTextLimit = 100_000;
@@ -23,7 +23,7 @@ export function instanceTextsQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/admin/instance_texts");
 }
 
-/** The instance, whose `terms_url` and `privacy_policy_url` lead to the documents' public pages. */
+/** The instance, whose `terms_url`, `privacy_policy_url` and `commerce_disclosure_url` lead to the documents' public pages. */
 export function instanceQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/instance");
 }

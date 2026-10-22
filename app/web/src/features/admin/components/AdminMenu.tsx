@@ -29,6 +29,12 @@ const adminPages: readonly StaffPage[] = [
   { href: "/admin/webhooks", permission: "manage_webhooks", label: "client:admin.webhooks.title", description: "client:admin.webhooks.summary" },
   { href: "/admin/relays", permission: "manage_settings", label: "client:admin.relays.title", description: "client:admin.relays.summary" },
   { href: "/admin/finance", permission: "manage_finance", label: "client:admin.finance.title", description: "client:admin.finance.summary" },
+  {
+    href: "/admin/supporters",
+    permission: "manage_supporters",
+    label: "client:admin.supporters.title",
+    description: "client:admin.supporters.summary",
+  },
   { href: "/admin/roles", permission: "manage_roles", label: "client:admin.roles.title", description: "client:admin.roles.summary" },
   { href: "/admin/jobs", permission: "manage_jobs", label: "client:admin.jobs.title", description: "client:admin.jobs.summary" },
 ];

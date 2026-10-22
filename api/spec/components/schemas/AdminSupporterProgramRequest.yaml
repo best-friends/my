@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: Enables or disables the supporter program.
+type: object
+required: [enabled]
+properties:
+  enabled:
+    type: boolean

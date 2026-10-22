@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listSupporterSubscriptions
+  summary: List the subscriptions
+  description: |
+    The subscriptions to the supporter plans, newest first, narrowed to a plan and a state.
+    Needs the `manage_supporters` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: plan_id
+      in: query
+      description: Only the subscriptions of this plan.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+    - name: state
+      in: query
+      description: Only the subscriptions in this state.
+      schema:
+        $ref: ../components/schemas/SupporterSubscriptionState.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of subscriptions.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminSupporterSubscriptionPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the server administration feature (web-client.md §7): the job queue, the settings, the rules, the
-// server's texts, the custom emoji, the webhooks, the announcements, the relays, the cost items and their totals, and the billing imports, none by default. The default viewer has no permissions, so the screens' tests start with
+// server's texts, the custom emoji, the webhooks, the announcements, the relays, the cost items and their totals, the billing imports, and the supporter program with its plans and subscriptions, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";
@@ -9,6 +9,59 @@ import { apiBase, withViewer } from "../../../test/msw/http";
 /** An instance text as the server answers it, saved at 2026-10-17T00:00:00Z. */
 export function instanceTextFixture(key: Schemas["InstanceTextKey"], body: string): Schemas["AdminInstanceText"] {
   return { key, body, revised_at: "2026-10-17T00:00:00Z" };
+}
+
+/** The supporter program as the admin API answers it: disabled, on a server that could enable it, with `overrides`. */
+export function supporterProgramFixture(overrides: Partial<Schemas["AdminSupporterProgram"]> = {}): Schemas["AdminSupporterProgram"] {
+  return {
+    enabled: false,
+    configured_provider: "stripe",
+    sends_email: true,
+    commerce_disclosure: true,
+    live_subscriptions: 0,
+    can_enable: true,
+    warnings: [],
+    ...overrides,
+  };
+}
+
+/** A supporter plan as the admin API answers it, created at 2026-10-20T00:00:00Z with its prices ready, with `overrides`. */
+export function supporterPlanFixture(id: string, overrides: Partial<Schemas["AdminSupporterPlan"]> = {}): Schemas["AdminSupporterPlan"] {
+  return {
+    id,
+    name: "Supporter",
+    description: "Thanks for the help",
+    rank: 1,
+    visibility: "public",
+    monthly_price: { amount: "500", currency: "JPY" },
+    yearly_price: { amount: "5400", currency: "JPY" },
+    annual_discount_percent: 10,
+    emoji_limit: 5,
+    role: { id: `role-${id}`, key: "supporter", position: 10, permissions: [] },
+    prices_ready: true,
+    retired: false,
+    members: 0,
+    created_at: "2026-10-20T00:00:00Z",
+    revised_at: "2026-10-20T00:00:00Z",
+    ...overrides,
+  };
+}
+
+/** A subscription as the admin API answers it: an active monthly one of @bob, started at 2026-10-20T00:00:00Z, with `overrides`. */
+export function supporterSubscriptionFixture(id: string, overrides: Partial<Schemas["AdminSupporterSubscription"]> = {}): Schemas["AdminSupporterSubscription"] {
+  return {
+    id,
+    state: "active",
+    plan_id: "0199f0e0-0000-7000-8000-0000000000c1",
+    plan_name: "Supporter",
+    interval: "month",
+    price: { amount: "500", currency: "JPY" },
+    period_ends_at: "2026-11-20T00:00:00Z",
+    account_id: "0192f0c4-7a8e-7000-8000-000000000002",
+    username: "bob",
+    started_at: "2026-10-20T00:00:00Z",
+    ...overrides,
+  };
 }
 
 /** A local custom emoji as the admin API answers it, registered at 2026-10-20T00:00:00Z, with `overrides`. */
@@ -381,4 +434,32 @@ export const handlers = [
   http.get(`${apiBase}/admin/cost_totals`, ({ request }) => withViewer(request, () => HttpResponse.json(emptyTotals(new URL(request.url))))),
   http.get(`${apiBase}/admin/billing_imports`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["BillingImportList"]))),
   http.post(`${apiBase}/admin/billing_imports/:source/runs`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  // operationIds getSupporterProgram, setSupporterProgram, listAdminSupporterPlans, createSupporterPlan,
+  // updateSupporterPlan, retireSupporterPlan, listSupporterSubscriptions, cancelSupporterSubscription: a disabled program
+  // without plans or subscriptions; a change is answered as sent.
+  http.get(`${apiBase}/admin/supporter_program`, ({ request }) => withViewer(request, () => HttpResponse.json(supporterProgramFixture()))),
+  http.put(`${apiBase}/admin/supporter_program`, async ({ request }) => {
+    const { enabled } = (await request.clone().json()) as Schemas["AdminSupporterProgramRequest"];
+    return withViewer(request, () => HttpResponse.json(supporterProgramFixture({ enabled, ...(enabled ? { provider: "stripe" } : {}) })));
+  }),
+  http.get(`${apiBase}/admin/supporter_plans`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminSupporterPlanList"]))),
+  http.post(`${apiBase}/admin/supporter_plans`, async ({ request }) => {
+    const { role, description, ...body } = (await request.clone().json()) as Schemas["AdminSupporterPlanCreateRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json(
+        supporterPlanFixture("0199f0e0-0000-7000-8000-0000000000c9", {
+          ...body,
+          description: description ?? "",
+          prices_ready: false,
+          role: { id: "role-new", key: role, position: 10, permissions: [] },
+        }),
+      ),
+    );
+  }),
+  http.patch(`${apiBase}/admin/supporter_plans/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(supporterPlanFixture(String(params["id"]))))),
+  http.post(`${apiBase}/admin/supporter_plans/:id/retire`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.get(`${apiBase}/admin/supporter_subscriptions`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminSupporterSubscriptionPage"])),
+  ),
+  http.post(`${apiBase}/admin/supporter_subscriptions/:id/cancel`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
 ];

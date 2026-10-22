@@ -28,7 +28,7 @@ type InstanceTexts interface {
 }
 
 // documentURLs sets the links of out to the public pages of the documents that the instance has
-// published (Options.TermsPath, Options.PrivacyPolicyPath).
+// published (Options.TermsPath, Options.PrivacyPolicyPath, Options.CommerceDisclosurePath).
 func (s *Server) documentURLs(ctx context.Context, out *Instance) error {
 	for _, d := range []struct {
 		key  instance.TextKey
@@ -37,6 +37,7 @@ func (s *Server) documentURLs(ctx context.Context, out *Instance) error {
 	}{
 		{instance.TextTerms, s.o.TermsPath, func(u string) { out.TermsUrl = &u }},
 		{instance.TextPrivacyPolicy, s.o.PrivacyPolicyPath, func(u string) { out.PrivacyPolicyUrl = &u }},
+		{instance.TextCommerceDisclosure, s.o.CommerceDisclosurePath, func(u string) { out.CommerceDisclosureUrl = &u }},
 	} {
 		if d.path == "" {
 			continue

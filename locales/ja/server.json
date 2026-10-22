@@ -147,6 +147,14 @@
     "defaultMessage": "プライバシーポリシー",
     "description": "Title and heading of the public page of the instance's privacy policy, and the text of links to it."
   },
+  "auth.document.commerce_missing": {
+    "defaultMessage": "このサーバーは特定商取引法に基づく表記などを公開していません。",
+    "description": "Error page (HTTP 404) at the page of the commerce disclosures of the supporter plans (ADR-0072 §13) when the administrators have not written them."
+  },
+  "auth.document.commerce_title": {
+    "defaultMessage": "特定商取引法に基づく表記",
+    "description": "Title and heading of the public page of the disclosures that the law asks of the seller of the supporter plans (in Japan, 特定商取引法に基づく表記), and the text of links to it."
+  },
   "auth.document.terms_missing": {
     "defaultMessage": "このサーバーは利用規約を公開していません。",
     "description": "Error page (HTTP 404) at the terms of service page when the administrators have not written terms of service."
@@ -766,6 +774,50 @@
   "errors.role.invalid_detail": {
     "defaultMessage": "{reason, select, key {キーは 1〜64 文字の英小文字・数字・アンダースコア・ハイフンにしてください。} key_taken {このキーのロールがすでにあります。} position {位置は 0〜999 にしてください。} permissions {同じ権限は 1 回だけ選んでください。} builtin {admin のロールは変えられず、組み込みのロールは削除できません。} held {先に、このロールを持つ全員から剥奪してください。} missing_permission {付けたり外したりできるのは、自分が持つ権限だけです。} badge_label {バッジの名前は 1〜32 文字の 1 行にしてください。} badge_color {バッジの色は決まった色から選んでください。} other {変更が規則に反しています。}}",
     "description": "API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, missing_permission, badge_label, or badge_color."
+  },
+  "errors.role.managed_by_plan": {
+    "defaultMessage": "このロールは課金のプランのロールです。",
+    "description": "API error title for HTTP 409 when a change to a role is refused because a supporter plan manages it (ADR-0072 §5)."
+  },
+  "errors.role.managed_by_plan_detail": {
+    "defaultMessage": "付け外しはプランの加入だけが行い、権限と位置はプランの画面から変えます。",
+    "description": "API error detail for HTTP 409 when a role of a supporter plan is granted, revoked, changed, or deleted by hand."
+  },
+  "errors.role.breaks_supporter_roles": {
+    "defaultMessage": "スタッフのロールは課金のプランのロールより上に置きます。",
+    "description": "API error title for HTTP 409 when a change would put a role with a moderation or server permission at or below the role of a supporter plan (ADR-0072 §5)."
+  },
+  "errors.supporters.unavailable": {
+    "defaultMessage": "このサーバーでは課金の機能を使えません。",
+    "description": "API error title for HTTP 409 when the supporter program cannot be enabled or used: no payment provider is configured, the server sends no email, or the configured provider is not the program's (ADR-0072 §2)."
+  },
+  "errors.supporters.unavailable_detail": {
+    "defaultMessage": "{reason, select, no_provider {先にサーバーの設定で決済の事業者を設定してください。} no_email {加入者がメールアドレスを確認できるよう、サーバーがメールを送る必要があります。} provider_mismatch {設定されている決済の事業者が、課金を有効にしたときの事業者と違います。いったん無効にしてから有効にし直してください。} other {いまは課金の機能を使えません。}}",
+    "description": "API error detail for HTTP 409 when the supporter program is unavailable. {reason} is no_provider, no_email, or provider_mismatch."
+  },
+  "errors.supporters.live_subscriptions": {
+    "defaultMessage": "課金のプランの加入が続いています。",
+    "description": "API error title for HTTP 409 when an administrator disables the supporter program while subscriptions go on (ADR-0072 §2)."
+  },
+  "errors.supporters.live_subscriptions_detail": {
+    "defaultMessage": "プランを廃止し、加入が終わってから無効にしてください。",
+    "description": "API error detail for HTTP 409 when the supporter program is disabled while subscriptions go on."
+  },
+  "errors.supporters.plan_invalid": {
+    "defaultMessage": "プランを保存できません。",
+    "description": "API error title for HTTP 422 when a supporter plan breaks a rule; the detail says which (ADR-0072 §3 to §5)."
+  },
+  "errors.supporters.plan_invalid_detail": {
+    "defaultMessage": "{reason, select, name {名前は 1 行で 1〜50 文字にしてください。} description {説明は 1000 文字以内にしてください。} monthly_price {金額は、年払いの金額も含めて、決済の事業者の最低の請求額以上にしてください。} currency {決済の事業者はこの通貨を扱いません。} annual_discount_percent {年払いの割引率は 0〜90% にしてください。} emoji_limit {絵文字の作成数の上限は 0〜10000 にしてください。} rank {順位は 0〜1000000 にしてください。} visibility {公開か非公開を選んでください。} role_builtin {組み込みのロールはプランのロールにできません。} role_taken {ほかのプランがこのロールを使っています。} role_held {誰も持っていないロールを選んでください。} role_permissions {プランのロールは利用者の権限だけを持てます。} role_position {プランのロールはスタッフのどのロールよりも下に置きます。} order_rank {ほかのプランがこの順位を使っています。} order_position {上位のプランのロールは、下位のプランのロールより上に置きます。} order_permissions {上位のプランのロールは、下位のプランのロールの権限をすべて持ちます。} order_emoji_limit {上位のプランの絵文字の作成数の上限は、下位のプラン以上にします。} other {プランが規則に合いません。}}",
+    "description": "API error detail for HTTP 422 when a supporter plan breaks a rule. {reason} is name, description, monthly_price, currency, annual_discount_percent, emoji_limit, rank, visibility, role_builtin, role_taken, role_held, role_permissions, role_position, order_rank, order_position, order_permissions, or order_emoji_limit."
+  },
+  "errors.supporters.plan_retired": {
+    "defaultMessage": "このプランは廃止されています。",
+    "description": "API error title for HTTP 409 when an administrator changes or retires a supporter plan that is retired."
+  },
+  "errors.supporters.subscription_ended": {
+    "defaultMessage": "この加入は終わっています。",
+    "description": "API error title for HTTP 409 when an administrator cancels a subscription to a supporter plan that has ended."
   },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",

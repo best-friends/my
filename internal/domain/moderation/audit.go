@@ -75,13 +75,22 @@ const (
 	// AuditTargetCostItem is a cost item of the instance (ADR-0067 §7); its label is the item's
 	// name.
 	AuditTargetCostItem AuditTargetKind = "cost_item"
+	// AuditTargetSupporterProgram is the supporter program (ADR-0072 §16); its ID is the program
+	// change and its label the payment provider's name.
+	AuditTargetSupporterProgram AuditTargetKind = "supporter_program"
+	// AuditTargetSupporterPlan is a supporter plan; its label is the plan's name.
+	AuditTargetSupporterPlan AuditTargetKind = "supporter_plan"
+	// AuditTargetSupporterSubscription is a subscription to a supporter plan; its label is the
+	// plan's name and the subscriber's handle.
+	AuditTargetSupporterSubscription AuditTargetKind = "supporter_subscription"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
 	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite, AuditTargetRelay,
-	AuditTargetBillingSource, AuditTargetCostItem,
+	AuditTargetBillingSource, AuditTargetCostItem, AuditTargetSupporterProgram, AuditTargetSupporterPlan,
+	AuditTargetSupporterSubscription,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -241,6 +250,19 @@ const (
 	AuditCostItemPriceRevised AuditAction = "cost_item_price_revised"
 	AuditCostItemEndChanged   AuditAction = "cost_item_end_changed"
 	AuditCostItemCanceled     AuditAction = "cost_item_canceled"
+	// AuditSupporterProgramEnabled, AuditSupporterProgramDisabled: an administrator enabled or
+	// disabled the supporter program (supporter_program_changes, ADR-0072 §2).
+	AuditSupporterProgramEnabled  AuditAction = "supporter_program_enabled"
+	AuditSupporterProgramDisabled AuditAction = "supporter_program_disabled"
+	// AuditSupporterPlanCreated, AuditSupporterPlanRevised, AuditSupporterPlanRetired: an
+	// administrator created a supporter plan, changed its terms, or retired it (supporter_plans,
+	// supporter_plan_revisions, supporter_plan_retirements).
+	AuditSupporterPlanCreated AuditAction = "supporter_plan_created"
+	AuditSupporterPlanRevised AuditAction = "supporter_plan_revised"
+	AuditSupporterPlanRetired AuditAction = "supporter_plan_retired"
+	// AuditSupporterSubscriptionCanceled: an administrator canceled a subscription at once,
+	// without a refund (supporter_subscription_transitions, ADR-0072 §10).
+	AuditSupporterSubscriptionCanceled AuditAction = "supporter_subscription_canceled"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -312,6 +334,12 @@ var auditActions = []struct {
 	{AuditCostItemPriceRevised, AuditTargetCostItem},
 	{AuditCostItemEndChanged, AuditTargetCostItem},
 	{AuditCostItemCanceled, AuditTargetCostItem},
+	{AuditSupporterProgramEnabled, AuditTargetSupporterProgram},
+	{AuditSupporterProgramDisabled, AuditTargetSupporterProgram},
+	{AuditSupporterPlanCreated, AuditTargetSupporterPlan},
+	{AuditSupporterPlanRevised, AuditTargetSupporterPlan},
+	{AuditSupporterPlanRetired, AuditTargetSupporterPlan},
+	{AuditSupporterSubscriptionCanceled, AuditTargetSupporterSubscription},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

@@ -17,12 +17,18 @@ import (
 // write in Markdown (instance texts terms and privacy_policy), once, in any language: every
 // locale shows the same text. Their public pages need no session and no JavaScript; the
 // registration page asks applicants to agree to them, and every page links to them in its
-// footer. A document that the instance has not published is a 404, and no page links to it.
+// footer. The commerce disclosures of the supporter plans (instance text commerce_disclosure,
+// ADR-0072 §13) are a document page too, which the web client links to instead. A document that
+// the instance has not published is a 404, and no page links to it.
 
 // Paths of the document pages.
 const (
 	PathTerms         = "/auth/terms"
 	PathPrivacyPolicy = "/auth/privacy"
+	// PathCommerceDisclosure is the page of the commerce disclosures of the supporter plans
+	// (ADR-0072 §13), which the web client's /about and the subscription screens link to, and
+	// which the operators give the payment provider; the server never vouches for them.
+	PathCommerceDisclosure = "/about/commerce"
 )
 
 // cacheDocument lets shared caches keep a document page briefly; it carries no cookie and
@@ -38,16 +44,22 @@ type Documents interface {
 	HasDocument(ctx context.Context, key instance.TextKey) (bool, error)
 }
 
-// documentPages are the document pages: the text key, the path, the title, and the message of
-// the 404 when the instance has not published it.
+// documentPages are the document pages: the text key, the path, the title, the message of the
+// 404 when the instance has not published it, and whether the footer and the registration page
+// link to it (the commerce disclosures are not terms that applicants agree to).
 var documentPages = []struct {
 	key     instance.TextKey
 	path    string
 	title   func(*i18n.Localizer) string
 	missing func(*i18n.Localizer) string
+	linked  bool
 }{
-	{instance.TextTerms, PathTerms, (*i18n.Localizer).ServerAuthDocumentTermsTitle, (*i18n.Localizer).ServerAuthDocumentTermsMissing},
-	{instance.TextPrivacyPolicy, PathPrivacyPolicy, (*i18n.Localizer).ServerAuthDocumentPrivacyTitle, (*i18n.Localizer).ServerAuthDocumentPrivacyMissing},
+	{instance.TextTerms, PathTerms, (*i18n.Localizer).ServerAuthDocumentTermsTitle, (*i18n.Localizer).ServerAuthDocumentTermsMissing, true},
+	{instance.TextPrivacyPolicy, PathPrivacyPolicy, (*i18n.Localizer).ServerAuthDocumentPrivacyTitle, (*i18n.Localizer).ServerAuthDocumentPrivacyMissing, true},
+	{
+		instance.TextCommerceDisclosure, PathCommerceDisclosure, (*i18n.Localizer).ServerAuthDocumentCommerceTitle,
+		(*i18n.Localizer).ServerAuthDocumentCommerceMissing, false,
+	},
 }
 
 // documentView is a document on its page.
@@ -100,6 +112,9 @@ func (h *Handler) documentLinks(r *http.Request, l *i18n.Localizer) []documentLi
 	}
 	var out []documentLink
 	for _, d := range documentPages {
+		if !d.linked {
+			continue
+		}
 		ok, err := h.o.Documents.HasDocument(r.Context(), d.key)
 		if err != nil {
 			h.o.Logger.WarnContext(r.Context(), "read an instance document", slog.String("key", string(d.key)), slog.Any("error", err))

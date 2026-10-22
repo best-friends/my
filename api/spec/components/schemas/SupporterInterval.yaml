@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: How often a subscription renews.
+type: string
+enum: [month, year]
