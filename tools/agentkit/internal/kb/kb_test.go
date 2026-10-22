@@ -1,0 +1,134 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package kb
+
+import (
+	"bytes"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/best-friends/my/tools/agentkit/internal/repo"
+	"github.com/best-friends/my/tools/agentkit/internal/store"
+)
+
+// fixture builds a small repository with a document, an operation, a handler, a service, an adapter, a
+// query, and a table, and opens its knowledge graph.
+func fixture(t *testing.T) *KB {
+	t.Helper()
+	root := t.TempDir()
+	files := map[string]string{
+		"docs/architecture/data-model.md":           "# データモデル\n\n## 4. テーブル\n\n### 4.4 content\n\n`custom_emoji_requests` は申請を記録する。\n\n- 申請は承認されるまで出ない。\n- 投票は別の話。\n\n## 5. 状態\n\n別の節。\n",
+		"docs/adr/0070-split.md":                    "# ADR-0070: 分割\n\n- Status: Accepted\n\n## Decision Drivers\n\n速さ。\n\n## Decision（決定）\n\n申請を別のリソースにする。\n",
+		"api/spec/openapi.yaml":                     "paths:\n  /custom_emoji_requests:\n    $ref: ./paths/custom_emoji_requests.yaml\n",
+		"api/spec/paths/custom_emoji_requests.yaml": "post:\n  operationId: createCustomEmojiRequest\n  summary: Request a custom emoji\n",
+		"internal/interface/clientapi/requests.go":  "package clientapi\n\n// CreateCustomEmojiRequest serves POST /custom_emoji_requests.\nfunc (s *Server) CreateCustomEmojiRequest() error {\n\treturn s.emoji.SubmitRequest()\n}\n",
+		"internal/app/content/requests.go":          "package content\n\n// SubmitRequest files a request.\nfunc (s *Service) SubmitRequest() error {\n\ts.now = s.clock.Now()\n\treturn s.repo.InsertCustomEmojiRequest()\n}\n",
+		"internal/adapter/db/sqlite/requests.go":    "package sqlite\n\nfunc (r *Repo) InsertCustomEmojiRequest() error {\n\treturn r.q.InsertCustomEmojiRequest()\n}\n",
+		"internal/adapter/system/clock.go":          "package system\n\nfunc (Clock) Now() int { return 0 }\n",
+		"queries/sqlite/requests.sql":               "-- name: InsertCustomEmojiRequest :exec\nINSERT INTO custom_emoji_requests (id) VALUES (?);\n",
+		"schema/sqlite.sql":                         "CREATE TABLE custom_emoji_requests (\n  id TEXT PRIMARY KEY\n);\n",
+	}
+	for p, c := range files {
+		full := filepath.Join(root, p)
+		if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(c), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.email=t@example.com", "-c", "user.name=t", "commit", "-qm", "init"}} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = root
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+	}
+	r, err := repo.Open(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := store.Open(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	return &KB{S: s}
+}
+
+func TestResolveAndShow(t *testing.T) {
+	k := fixture(t)
+	cases := map[string]string{
+		"ADR-0070#decision":           "申請を別のリソースにする",
+		"data-model§4.4":              "申請は承認されるまで出ない",
+		"table:custom_emoji_requests": "CREATE TABLE custom_emoji_requests",
+		"custom_emoji_requests":       "CREATE TABLE custom_emoji_requests",
+		"op:createCustomEmojiRequest": "operationId: createCustomEmojiRequest",
+		"SubmitRequest":               "func (s *Service) SubmitRequest",
+		"schema/sqlite.sql:2-2":       "id TEXT PRIMARY KEY",
+	}
+	for ref, want := range cases {
+		var b bytes.Buffer
+		if err := k.Show(&b, ref, 12000); err != nil {
+			t.Errorf("Show(%q): %v", ref, err)
+			continue
+		}
+		if !strings.Contains(b.String(), want) {
+			t.Errorf("Show(%q) = %q, want it to contain %q", ref, b.String(), want)
+		}
+	}
+	var b bytes.Buffer
+	if err := k.Show(&b, "data-model§4.4", 5); err != nil || !strings.Contains(b.String(), "too big to print") {
+		t.Errorf("a section over the limit should print its outline: %q %v", b.String(), err)
+	}
+}
+
+func TestFindAndFocus(t *testing.T) {
+	k := fixture(t)
+	var b bytes.Buffer
+	if err := k.Find(&b, "申請 承認", nil, "", 5); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(b.String(), "data-model.md") {
+		t.Errorf("Find = %q", b.String())
+	}
+	ns, err := k.Resolve("data-model§4.4")
+	if err != nil || len(ns) != 1 {
+		t.Fatalf("Resolve: %v %v", ns, err)
+	}
+	ex, kept := k.Focus(ns[0], []string{"承認"}, 1000)
+	if kept != 1 || !strings.Contains(ex, "承認されるまで") || strings.Contains(ex, "投票は別の話") {
+		t.Errorf("Focus = %q (kept %d)", ex, kept)
+	}
+}
+
+func TestTrace(t *testing.T) {
+	k := fixture(t)
+	var b bytes.Buffer
+	if err := k.Trace(&b, "op:createCustomEmojiRequest", 6); err != nil {
+		t.Fatal(err)
+	}
+	out := b.String()
+	for _, want := range []string{"POST /custom_emoji_requests", "Server.CreateCustomEmojiRequest", "Service.SubmitRequest", "Repo.InsertCustomEmojiRequest", "query:InsertCustomEmojiRequest", "table:custom_emoji_requests"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("trace lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "Clock.Now") {
+		t.Errorf("trace follows the generic Now:\n%s", out)
+	}
+}
+
+func TestRefs(t *testing.T) {
+	k := fixture(t)
+	var b bytes.Buffer
+	if err := k.Refs(&b, "custom_emoji_requests", 20); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(b.String(), "query:InsertCustomEmojiRequest") || !strings.Contains(b.String(), "data-model.md") {
+		t.Errorf("Refs = %s", b.String())
+	}
+}
