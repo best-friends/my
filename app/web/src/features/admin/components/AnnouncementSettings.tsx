@@ -5,21 +5,7 @@
 // is sent, or until it is withdrawn, and is published at once or kept as a draft. Editing opens a dialog with the
 // text; withdrawing cannot be undone, so it asks first (an alert dialog). What a change did stays on the page in a
 // StatusMessage above the list; a failure stays there too (role="alert", web-client.md E2).
-import {
-  Button,
-  Checkbox,
-  ConfirmDialog,
-  DescriptionItem,
-  DescriptionList,
-  Dialog,
-  DialogTrigger,
-  DurationSelect,
-  EmptyState,
-  PostContent,
-  serverSanitizedHtml,
-  StatusMessage,
-  TextArea,
-} from "@my/ui";
+import { Box, Button, Checkbox, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, DurationSelect, EmptyState, Heading, Hint, InlineError, PostContent, serverSanitizedHtml, Stack, StatusMessage, TextArea } from "@my/ui";
 import { useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusHeadingAfterMove } from "../../../lib/useFocusAfterRemoval";
@@ -44,15 +30,15 @@ export function AnnouncementSettings() {
   const t = useT();
   return (
     <RequirePermission permission="manage_announcements">
-      <div className="flex flex-col gap-8">
-        <p className="text-fg-muted">{t("client:admin.announcements.description")}</p>
+      <Stack gap="8">
+        <Hint size="inherit">{t("client:admin.announcements.description")}</Hint>
         <DetailSection title={t("client:admin.announcements.new.title")}>
           <NewAnnouncementForm />
         </DetailSection>
         <DetailSection title={t("client:admin.announcements.list.title")}>
           <AnnouncementList />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -69,7 +55,7 @@ function NewAnnouncementForm() {
   const form = useNewAnnouncementForm();
   const formatRemaining = useFormatRemaining();
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
+    <Stack as="form" gap="6" onSubmit={form.submit}>
       <TextArea
         label={t("client:admin.announcements.text")}
         description={t("client:admin.announcements.text.description")}
@@ -93,9 +79,9 @@ function NewAnnouncementForm() {
         {t("client:admin.announcements.publish_now")}
       </Checkbox>
       {form.failure !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.announcements.create_failed", { reason: form.failure })}
-        </p>
+        </InlineError>
       )}
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -103,7 +89,7 @@ function NewAnnouncementForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -119,25 +105,25 @@ function AnnouncementList() {
     setStatus(done);
   });
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.announcements.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       {announcements.length === 0 ? (
         <EmptyState headingLevel={3} heading={t("client:admin.announcements.empty")} description={t("client:admin.announcements.empty.description")} />
       ) : (
-        <ul ref={listRef} className="flex flex-col divide-y divide-border">
+        <Stack as="ul" divided ref={listRef}>
           {announcements.map((announcement) => (
-            <li key={announcement.id} data-row-id={announcement.id} className="@container py-3">
+            <Box as="li" container paddingY="3" key={announcement.id} data-row-id={announcement.id}>
               <AnnouncementRow announcement={announcement} actions={actions} />
-            </li>
+            </Box>
           ))}
-        </ul>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -147,12 +133,12 @@ function AnnouncementRow({ announcement, actions }: AnnouncementRowProps) {
   const t = useT();
   const name = announcementName(announcement.text);
   return (
-    <div className="flex flex-col gap-3">
-      <h3 tabIndex={-1} className="font-semibold wrap-anywhere outline-none">
+    <Stack gap="3">
+      <Heading level={3} wrap="anywhere" focusable>
         {/* Written by an administrator in any language: U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE. */}
         {t("client:admin.announcements.heading", { announcement: `⁨${name}⁩`, state: t(stateLabels[announcement.state]) })}
-      </h3>
-      <PostContent html={serverSanitizedHtml(announcement.content)} className="rounded-md border border-border p-3" />
+      </Heading>
+      <PostContent html={serverSanitizedHtml(announcement.content)} framed />
       <DescriptionList>
         <DescriptionItem term={t("client:admin.announcements.state")}>{t(stateLabels[announcement.state])}</DescriptionItem>
         {announcement.published_at !== undefined && (
@@ -170,13 +156,13 @@ function AnnouncementRow({ announcement, actions }: AnnouncementRowProps) {
         </DescriptionItem>
       </DescriptionList>
       {announcement.state !== "withdrawn" && (
-        <div className="flex flex-wrap gap-2">
+        <Cluster gap="2">
           {announcement.state === "draft" && <PublishAnnouncement announcement={announcement} name={name} actions={actions} />}
           <EditAnnouncement announcement={announcement} name={name} actions={actions} />
           <WithdrawAnnouncement announcement={announcement} name={name} actions={actions} />
-        </div>
+        </Cluster>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -227,7 +213,7 @@ function EditAnnouncementForm({ announcement, actions, close }: { announcement: 
   const [failed, setFailed] = useState(false);
   const textError = submitted ? actions.textError(text) : undefined;
   return (
-    <form
+    <Stack as="form" gap="4"
       onSubmit={(event) => {
         event.preventDefault();
         setSubmitted(true);
@@ -239,9 +225,7 @@ function EditAnnouncementForm({ announcement, actions, close }: { announcement: 
           if (saved) close();
           else setFailed(true);
         });
-      }}
-      className="flex flex-col gap-4"
-    >
+      }}>
       <TextArea
         label={t("client:admin.announcements.text")}
         description={t("client:admin.announcements.text.description")}
@@ -254,17 +238,17 @@ function EditAnnouncementForm({ announcement, actions, close }: { announcement: 
         {...(textError === undefined ? {} : { isInvalid: true, errorMessage: textError })}
       />
       {failed && actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.announcements.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <Cluster gap="2" justify="end">
         <Button onPress={close}>{t("client:admin.announcements.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:admin.announcements.save")}
         </Button>
-      </div>
-    </form>
+      </Cluster>
+    </Stack>
   );
 }
 

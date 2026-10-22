@@ -270,7 +270,7 @@ string through props or children.
 | --- | --- | --- |
 | `Button` | `Button` | `variant`: `primary` / `secondary` (default) / `ghost` / `danger`; `size`: `sm` / `md` (default); `isPending` |
 | `Link` | `Link` | `variant`: `inline` (default, underlined in running text) / `standalone` |
-| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder` |
+| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder`; `grow` takes the room left in a row |
 | `TextArea` | `TextField` + `TextArea` | as `TextField`, plus `rows` and the character count below |
 | `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
 | `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
@@ -354,12 +354,12 @@ arbitrary value. A look that no prop gives is a new prop or component in the kit
 | Component | Renders | Its own props |
 | --- | --- | --- |
 | `Stack` | `flex flex-col` | `gap`; `align` (`stretch` default / `start` / `center` / `end` / `baseline`); `justify` (`start` / `center` / `end` / `between`); `divided` (`divide-y divide-border`: rows of a list, no gap, G3); `marker` (`disc` / `decimal` with `ps-6`, `discInside`); `rowAt` (`sm` / `md`: a row with centered items from that container width) |
-| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line |
+| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line; `inline` (`inline-flex`, in the line of the text around it) |
 | `Grid` | `grid grid-cols-1`, then `columns` (`2` default / `3`) from the container width `at` (`sm` default / `md`) | `columns`; `at`; `gap` (both axes); `rowGap` |
 | `Box` | A block with no layout of its own | Only the box props below |
 | `SectionHeader` | The heading (children) and `actions` (in a `flex flex-wrap gap-2` row): stacked with `items-start gap-2`, on one line with `justify-between` from `@md` | `actions` (nothing, `null` or `false` leaves the heading alone) |
 | `DialogActions` | `flex flex-wrap justify-end gap-2`: the buttons at the end of a dialog, cancel first | — |
-| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
+| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium` / `medium` `font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
 | `Text` | A `span` (or `as`: `p`, `div`, `li`, `dt`, `dd`, `code`, `time`, `strong`, `small`, `label`, `legend`) | `size` (`xs` / `sm` / `base` / `lg`), `tone` (`fg` / `muted` / `danger` / `warning` / `success` / `accent`), `weight` (`normal` / `medium` / `semibold`), each inherited when unset; `wrap` (`anywhere` / `truncate` / `pretty`); `whitespace` (`preWrap` / `preLine`); `numeric` (`tabular-nums`); `mono`; `block`; `align` (`start` / `center` / `matchParent`); `lineClamp` (`2` / `3`); `selectAll`; `shrink` |
 | `Hint` | Secondary text (G6), a `p` (or `as` `span` / `div`): `text-sm text-fg-muted` | `size="inherit"` drops `text-sm`; the other props of `Text` but `tone` |
 | `InlineError` | An error in place, a `p` (or `as` `span` / `div`): `text-sm text-danger` | `size="inherit"` drops `text-sm`; `alert` (`role="alert"`, only for the result of the user's own action, G16); the other props of `Text` but `tone` |
@@ -490,3 +490,13 @@ keep focus); it runs before axe and the screenshots, in every project. The overl
 behaviour in `make check`. Overlays portal into the story frame, which has layout
 containment, so a modal covers the frame and appears in its screenshots.
 The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).
+
+### Screen-specific pieces
+
+| Component | Renders |
+| --- | --- |
+| `EmojiTile` | A custom emoji (`emoji`) on a 3rem tile, hidden from assistive technology, beside the heading that names it |
+| `CodeBlock` | `pre` > `code` on a sunken surface, wrapping anywhere (a payload, a log) |
+| `PreviewImage` | A 16:9 `img` preview of a file the user chose |
+| `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
+| `PostContent` `framed` | A border and padding around a post body shown as a preview |

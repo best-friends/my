@@ -160,3 +160,7 @@ export {
   type ProfileHeaderImageProps,
   type ProfileHeaderProps,
 } from "./ProfileHeader";
+export { EmojiTile, type EmojiTileProps } from "./EmojiTile";
+export { CodeBlock, type CodeBlockProps } from "./CodeBlock";
+export { PreviewImage, type PreviewImageProps } from "./PreviewImage";
+export { ThemePreview, type ThemePreviewProps } from "./ThemePreview";

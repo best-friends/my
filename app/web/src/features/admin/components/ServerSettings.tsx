@@ -8,7 +8,7 @@
 // form from being sent while a field is invalid (React Aria's native validation: the error is under its field and
 // linked to it, and focus moves to the first invalid field). What a save did stays on the page in a StatusMessage
 // next to its button; a failure stays above the button (web-client.md E2).
-import { Button, Checkbox, FileTrigger, Radio, RadioGroup, Select, SelectItem, StatusMessage, TextArea, TextField } from "@my/ui";
+import { Button, Checkbox, Cluster, FileTrigger, Heading, Hint, InlineError, PreviewImage, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, TextArea, TextField } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { DetailSection, RequirePermission } from "../../moderation";
@@ -22,12 +22,12 @@ import { useServerSettings } from "../hooks/useServerSettings";
 export function ServerSettings() {
   return (
     <RequirePermission permission="manage_settings">
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <NameForm />
         <DescriptionsForm />
         <ContactForm />
         <PoliciesForm />
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -37,8 +37,8 @@ function NameForm() {
   const form = useServerSettings();
   return (
     <DetailSection title={t("client:admin.settings.name.title")}>
-      <p className="text-fg-muted">{t("client:admin.settings.name.description", { domain: form.domain })}</p>
-      <form onSubmit={form.submit} className="flex flex-col gap-4">
+      <Hint size="inherit">{t("client:admin.settings.name.description", { domain: form.domain })}</Hint>
+      <Stack as="form" gap="4" onSubmit={form.submit}>
         <TextField
           label={t("client:admin.settings.name.field")}
           value={form.field.value}
@@ -47,9 +47,9 @@ function NameForm() {
           {...(form.field.error === undefined ? {} : { isInvalid: true, errorMessage: form.field.error })}
         />
         {form.saveError !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError size="inherit" alert>
             {t("client:admin.settings.name.save_failed", { reason: form.saveError })}
-          </p>
+          </InlineError>
         )}
         <div>
           <Button type="submit" variant="primary" isPending={form.isSaving}>
@@ -57,7 +57,7 @@ function NameForm() {
           </Button>
         </div>
         <StatusMessage>{form.status}</StatusMessage>
-      </form>
+      </Stack>
     </DetailSection>
   );
 }
@@ -85,14 +85,14 @@ function DescriptionsForm() {
   const form = useServerDescriptions();
   return (
     <DetailSection title={t("client:admin.settings.descriptions.title")}>
-      <p className="text-fg-muted">{t("client:admin.settings.descriptions.description")}</p>
-      <form onSubmit={form.submit} className="flex flex-col gap-6">
+      <Hint size="inherit">{t("client:admin.settings.descriptions.description")}</Hint>
+      <Stack as="form" gap="6" onSubmit={form.submit}>
         <DescriptionInput field={form.short} label={t("client:admin.settings.descriptions.short")} />
         <DescriptionInput field={form.full} label={t("client:admin.settings.descriptions.full")} />
         {form.saveError !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError size="inherit" alert>
             {t("client:admin.settings.descriptions.save_failed", { reason: form.saveError })}
-          </p>
+          </InlineError>
         )}
         <div>
           <Button type="submit" variant="primary" isPending={form.isSaving}>
@@ -100,7 +100,7 @@ function DescriptionsForm() {
           </Button>
         </div>
         <StatusMessage>{form.status}</StatusMessage>
-      </form>
+      </Stack>
     </DetailSection>
   );
 }
@@ -112,8 +112,8 @@ function ContactForm() {
   const uploadErrorId = useId();
   return (
     <DetailSection title={t("client:admin.settings.contact.title")}>
-      <p className="text-fg-muted">{t("client:admin.settings.contact.description")}</p>
-      <form onSubmit={form.submit} className="flex flex-col gap-6">
+      <Hint size="inherit">{t("client:admin.settings.contact.description")}</Hint>
+      <Stack as="form" gap="6" onSubmit={form.submit}>
         <TextField
           label={t("client:admin.settings.contact.account")}
           description={t("client:admin.settings.contact.account.description")}
@@ -130,16 +130,16 @@ function ContactForm() {
           autoComplete="off"
           errorMessage={t("client:admin.settings.contact.email.invalid")}
         />
-        <section aria-labelledby={thumbnailHeadingId} aria-busy={form.thumbnail.isUploading} className="flex flex-col gap-3">
-          <h3 id={thumbnailHeadingId} className="font-medium">
+        <Stack as="section" gap="3" aria-labelledby={thumbnailHeadingId} aria-busy={form.thumbnail.isUploading}>
+          <Heading level={3} size="medium" id={thumbnailHeadingId}>
             {t("client:admin.settings.contact.thumbnail")}
-          </h3>
-          <p className="text-sm text-fg-muted">{t("client:admin.settings.contact.thumbnail.description")}</p>
+          </Heading>
+          <Hint>{t("client:admin.settings.contact.thumbnail.description")}</Hint>
           {form.thumbnail.url !== undefined && (
             // A preview of the image chosen in the form; the alt text below describes it.
-            <img src={form.thumbnail.url} alt="" className="aspect-video w-full max-w-md rounded-md bg-surface-sunken object-cover" />
+            <PreviewImage src={form.thumbnail.url} alt="" />
           )}
-          <div className="flex flex-wrap gap-2">
+          <Cluster gap="2">
             <FileTrigger
               acceptedFileTypes={acceptedImageTypes}
               onSelect={(files) => {
@@ -160,11 +160,11 @@ function ContactForm() {
                 {t("client:admin.settings.contact.thumbnail.remove")}
               </Button>
             )}
-          </div>
+          </Cluster>
           {form.thumbnail.error !== undefined && (
-            <p id={uploadErrorId} role="alert" className="text-sm text-danger">
+            <InlineError alert id={uploadErrorId}>
               {form.thumbnail.error}
-            </p>
+            </InlineError>
           )}
           <TextArea
             label={t("client:admin.settings.contact.thumbnail.alt")}
@@ -177,11 +177,11 @@ function ContactForm() {
             }
             errorMessage={t("client:admin.settings.name.too_long", { max: String(thumbnailAltLimit) })}
           />
-        </section>
+        </Stack>
         {form.saveError !== undefined && (
-          <p role="alert" className="text-danger">
+          <InlineError size="inherit" alert>
             {t("client:admin.settings.contact.save_failed", { reason: form.saveError })}
-          </p>
+          </InlineError>
         )}
         <div>
           <Button type="submit" variant="primary" isPending={form.isSaving}>
@@ -189,7 +189,7 @@ function ContactForm() {
           </Button>
         </div>
         <StatusMessage>{form.status}</StatusMessage>
-      </form>
+      </Stack>
     </DetailSection>
   );
 }
@@ -287,7 +287,7 @@ function PoliciesForm() {
   const t = useT();
   const form = useServerPolicies();
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-8">
+    <Stack as="form" gap="8" onSubmit={form.submit}>
       <DetailSection title={t("client:admin.settings.registration.title")}>
         <PolicyRadios form={form} setting="registration_mode" label={t("client:admin.settings.registration.mode")} description={t("client:admin.settings.registration.description")} />
       </DetailSection>
@@ -361,14 +361,14 @@ function PoliciesForm() {
         />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.domain_actions.title")}>
-        <p className="text-fg-muted">{t("client:admin.settings.domain_actions.description")}</p>
+        <Hint size="inherit">{t("client:admin.settings.domain_actions.description")}</Hint>
         <PolicyRadios form={form} setting="domain_actions_visibility" label={t("client:admin.settings.domain_actions.list")} />
         <PolicyRadios form={form} setting="domain_actions_rationale_visibility" label={t("client:admin.settings.domain_actions.comments")} />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.finance.title")}>
-        <p className="text-fg-muted">{t("client:admin.settings.finance.description")}</p>
+        <Hint size="inherit">{t("client:admin.settings.finance.description")}</Hint>
         <PolicyRadios form={form} setting="finance_visibility" label={t("client:admin.settings.finance.visibility")} />
-        <p className="text-fg-muted">{t("client:admin.settings.finance.viewer.description")}</p>
+        <Hint size="inherit">{t("client:admin.settings.finance.viewer.description")}</Hint>
         <PolicyCheckbox
           form={form}
           setting="finance_viewer_item_names"
@@ -384,15 +384,15 @@ function PoliciesForm() {
         <PolicyRadios form={form} setting="finance_viewer_income" label={t("client:admin.settings.finance.viewer.income")} />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.income.title")}>
-        <p className="text-fg-muted">{t("client:admin.settings.income.description")}</p>
+        <Hint size="inherit">{t("client:admin.settings.income.description")}</Hint>
         <PolicyRadios form={form} setting="income_visibility" label={t("client:admin.settings.income.visibility")} />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.supporter_list.title")}>
-        <p className="text-fg-muted">{t("client:admin.settings.supporter_list.description")}</p>
+        <Hint size="inherit">{t("client:admin.settings.supporter_list.description")}</Hint>
         <PolicyRadios form={form} setting="supporter_list_visibility" label={t("client:admin.settings.supporter_list.visibility")} />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.crawlers.title")}>
-        <p className="text-fg-muted">{t("client:admin.settings.crawlers.description")}</p>
+        <Hint size="inherit">{t("client:admin.settings.crawlers.description")}</Hint>
         <PolicyRadios form={form} setting="search_indexing" label={t("client:admin.settings.crawlers.search")} />
         <PolicyCheckbox
           form={form}
@@ -411,18 +411,18 @@ function PoliciesForm() {
         />
       </DetailSection>
       {form.saveError !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.settings.policies.save_failed", { reason: form.saveError })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-col gap-3">
+      <Stack gap="3">
         <div>
           <Button type="submit" variant="primary" isPending={form.isSaving}>
             {t("client:admin.settings.policies.save")}
           </Button>
         </div>
         <StatusMessage>{form.status}</StatusMessage>
-      </div>
-    </form>
+      </Stack>
+    </Stack>
   );
 }

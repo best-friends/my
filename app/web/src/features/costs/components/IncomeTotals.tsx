@@ -4,7 +4,7 @@
 // each currency, the gross and the fees on the costs screen only, and the balance against the costs where the answer
 // carries it; the members of each supporter plan now where they are shown; and the rules that date and place the
 // payments. Nothing here names a payment or a subscriber. Plan names are the operators' words, shown with dir="auto".
-import { RegionError, Spinner } from "@my/ui";
+import { Cluster, Heading, Hint, RegionError, Spinner, Stack, Table, TableBody, TableCell, TableColumnHeader, TableHead, TableRow, TableRowHeader, Text } from "@my/ui";
 import { useId } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -56,63 +56,43 @@ export function IncomeTotalsView({ totals, detailed = false, headingLevel = 3 }:
   const periodName = usePeriodName();
   const formatTotals = useFormatTotals();
   const formatBalance = useFormatBalance();
-  const captionId = useId();
   const { granularity, basis } = totals;
   const newestFirst = totals.periods.toReversed();
   // The answer carries the balance only where it is shown: on the public page, while the costs are public too.
   const balance = totals.periods.some((period) => period.balance !== undefined);
   return (
-    <div className="flex flex-col gap-4">
-      <table aria-labelledby={captionId} className="w-full text-start">
-        <caption id={captionId} className="sr-only">
-          {t("client:income.totals.caption", { granularity: t(granularityLabels[granularity]), basis: t(basisLabels[basis]) })}
-        </caption>
-        <thead>
-          <tr className="border-b border-border">
-            <th scope="col" className="py-2 pe-3 text-start font-semibold">
-              {t("client:costs.totals.period")}
-            </th>
-            {detailed && (
-              <>
-                <th scope="col" className="py-2 pe-3 text-start font-semibold">
-                  {t("client:income.totals.gross")}
-                </th>
-                <th scope="col" className="py-2 pe-3 text-start font-semibold">
-                  {t("client:income.totals.fee")}
-                </th>
-              </>
-            )}
-            <th scope="col" className="py-2 pe-3 text-start font-semibold">
-              {t("client:income.totals.net")}
-            </th>
-            {balance && (
-              <th scope="col" className="py-2 text-start font-semibold">
-                {t("client:income.totals.balance")}
-              </th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
+    <Stack gap="4">
+      <Table caption={t("client:income.totals.caption", { granularity: t(granularityLabels[granularity]), basis: t(basisLabels[basis]) })}>
+        <TableHead>
+          <TableColumnHeader>{t("client:costs.totals.period")}</TableColumnHeader>
+          {detailed && (
+            <>
+              <TableColumnHeader>{t("client:income.totals.gross")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:income.totals.fee")}</TableColumnHeader>
+            </>
+          )}
+          <TableColumnHeader>{t("client:income.totals.net")}</TableColumnHeader>
+          {balance && <TableColumnHeader>{t("client:income.totals.balance")}</TableColumnHeader>}
+        </TableHead>
+        <TableBody>
           {newestFirst.map((period) => (
-            <tr key={period.label} className="border-b border-border align-top">
-              <th scope="row" className="py-2 pe-3 text-start font-normal">
-                {periodName(granularity, period)}
-              </th>
+            <TableRow key={period.label}>
+              <TableRowHeader>{periodName(granularity, period)}</TableRowHeader>
               {detailed && (
                 <>
-                  <td className="py-2 pe-3 tabular-nums wrap-anywhere">{formatTotals(period.gross ?? [])}</td>
-                  <td className="py-2 pe-3 tabular-nums wrap-anywhere">{formatTotals(period.fee ?? [])}</td>
+                  <TableCell numeric wrap="anywhere">{formatTotals(period.gross ?? [])}</TableCell>
+                  <TableCell numeric wrap="anywhere">{formatTotals(period.fee ?? [])}</TableCell>
                 </>
               )}
-              <td className="py-2 pe-3 tabular-nums wrap-anywhere">{formatTotals(period.net)}</td>
-              {balance && <td className="py-2 tabular-nums wrap-anywhere">{formatBalance(period.balance ?? [])}</td>}
-            </tr>
+              <TableCell numeric wrap="anywhere">{formatTotals(period.net)}</TableCell>
+              {balance && <TableCell numeric wrap="anywhere">{formatBalance(period.balance ?? [])}</TableCell>}
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
       {totals.plans !== undefined && <PlanMembers plans={totals.plans} headingLevel={headingLevel} />}
       <IncomeRules totals={totals} balance={balance} headingLevel={headingLevel} />
-    </div>
+    </Stack>
   );
 }
 
@@ -120,29 +100,28 @@ export function IncomeTotalsView({ totals, detailed = false, headingLevel = 3 }:
 function PlanMembers({ plans, headingLevel }: { plans: readonly IncomePlanCount[]; headingLevel: 3 | 4 }) {
   const t = useT();
   const headingId = useId();
-  const Heading = headingLevel === 3 ? "h3" : "h4";
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <Heading id={headingId} className="font-semibold">
+    <Stack as="section" gap="2" aria-labelledby={headingId}>
+      <Heading level={headingLevel} id={headingId}>
         {t("client:income.plans.title")}
       </Heading>
-      <p className="text-fg-muted">{t("client:income.plans.description")}</p>
+      <Hint size="inherit">{t("client:income.plans.description")}</Hint>
       {plans.length === 0 ? (
-        <p className="text-fg-muted">{t("client:income.plans.empty")}</p>
+        <Hint size="inherit">{t("client:income.plans.empty")}</Hint>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <Stack as="ul" gap="1">
           {plans.map((plan) => (
-            <li key={plan.plan_id} className="flex flex-wrap gap-x-2">
+            <Cluster as="li" gap="2" rowGap="0" key={plan.plan_id}>
               {/* The administrator's words, in a language the app does not know (web-client.md Y10). */}
-              <span dir="auto" lang="" className="wrap-anywhere">
+              <Text wrap="anywhere" dir="auto" lang="">
                 {plan.name}
-              </span>
-              <span className="tabular-nums">{t("client:income.plans.members", { count: plan.members })}</span>
-            </li>
+              </Text>
+              <Text numeric>{t("client:income.plans.members", { count: plan.members })}</Text>
+            </Cluster>
           ))}
-        </ul>
+        </Stack>
       )}
-    </section>
+    </Stack>
   );
 }
 
@@ -151,13 +130,12 @@ function IncomeRules({ totals, balance, headingLevel }: { totals: ShownIncomeTot
   const t = useT();
   const intl = useIntl();
   const headingId = useId();
-  const Heading = headingLevel === 3 ? "h3" : "h4";
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2 text-fg-muted">
-      <Heading id={headingId} className="font-semibold text-fg">
+    <Stack as="section" gap="2" tone="muted" aria-labelledby={headingId}>
+      <Heading level={headingLevel} id={headingId} tone="fg">
         {t("client:income.rules.title")}
       </Heading>
-      <ul className="flex list-disc flex-col gap-1 ps-6">
+      <Stack as="ul" gap="1" marker="disc">
         <li>{t("client:income.rules.net")}</li>
         {totals.rules.providers.map((provider) => (
           <li key={provider.provider}>{t("client:income.rules.provider", { provider: provider.provider, timeZone: provider.time_zone })}</li>
@@ -168,8 +146,8 @@ function IncomeRules({ totals, balance, headingLevel }: { totals: ShownIncomeTot
             : t("client:income.rules.cash")}
         </li>
         {balance && <li>{t("client:income.rules.balance")}</li>}
-      </ul>
-    </section>
+      </Stack>
+    </Stack>
   );
 }
 
