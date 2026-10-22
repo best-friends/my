@@ -687,7 +687,7 @@ CREATE TABLE instance_setting_revisions (
     'retention_moderation_actions', 'retention_audit_log',
     'search_indexing', 'ai_usage', 'indexable_default', 'security_contact', 'require_media_description', 'link_cards_enabled',
     'finance_visibility', 'finance_viewer_item_names', 'finance_viewer_item_memos', 'finance_viewer_income',
-    'supporter_list_visibility'
+    'supporter_list_visibility', 'income_visibility'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
@@ -2835,6 +2835,38 @@ CREATE TABLE imported_cost_heads (
   revision_id TEXT NOT NULL,
   PRIMARY KEY (source, billing_month, service, charge_type)
 ) STRICT;
+
+-- Event: a money movement on the payment provider's account (ADR-0073 §2, §8): a payment, a
+-- refund, a chargeback, its reversal, or a fee that belongs to no payment, recorded once per
+-- (provider, provider_id) when its amounts are final, with its gross, fee, and net in the minor
+-- unit of its currency. occurred_on is occurred_at as a date in the provider's reporting time
+-- zone; covers_* is the billing period of a payment. parent_movement_id is the payment of a
+-- refund, a chargeback, or a reversal. subscription_id refers to the subscription without a
+-- foreign key (NULL for a fee); no row holds a user.
+CREATE TABLE income_movements (
+  id TEXT NOT NULL PRIMARY KEY,
+  provider TEXT NOT NULL CHECK (provider IN ('stripe')),
+  provider_id TEXT NOT NULL CHECK (length(provider_id) BETWEEN 1 AND 255),
+  kind TEXT NOT NULL CHECK (kind IN ('payment', 'refund', 'chargeback', 'chargeback_reversal', 'fee')),
+  parent_movement_id TEXT,
+  subscription_id TEXT,
+  occurred_at INTEGER NOT NULL,
+  occurred_on TEXT NOT NULL CHECK (date(occurred_on) IS occurred_on),
+  covers_starts_on TEXT CHECK (date(covers_starts_on) IS covers_starts_on),
+  covers_ends_on TEXT CHECK (date(covers_ends_on) IS covers_ends_on),
+  gross_minor INTEGER NOT NULL,
+  fee_minor INTEGER NOT NULL,
+  net_minor INTEGER NOT NULL,
+  currency TEXT NOT NULL CHECK (currency GLOB '[A-Z][A-Z][A-Z]'),
+  recorded_at INTEGER NOT NULL,
+  CHECK (net_minor = gross_minor - fee_minor),
+  CHECK ((covers_starts_on IS NULL) = (covers_ends_on IS NULL)),
+  CHECK (covers_starts_on IS NULL OR (kind = 'payment' AND covers_starts_on <= covers_ends_on)),
+  CHECK (parent_movement_id IS NULL OR kind IN ('refund', 'chargeback', 'chargeback_reversal'))
+) STRICT;
+CREATE UNIQUE INDEX income_movements_provider_id ON income_movements (provider, provider_id);
+CREATE INDEX income_movements_occurred_on ON income_movements (occurred_on);
+CREATE INDEX income_movements_subscription_occurred_at ON income_movements (subscription_id, occurred_at);
 
 -- Event: a webhook delivery of the payment provider (ADR-0074 §3, §4), recorded once per
 -- (provider, event_id) in the transaction that queues its supporters.payment_event job. Only the

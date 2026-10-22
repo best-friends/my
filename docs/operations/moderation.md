@@ -22,7 +22,7 @@ Web クライアントは、スタッフの画面を 2 つに分けます（[ADR
   モデレーターに任せるときは、その権限を持つロールを作って与えます（[ロールの付与と剥奪](admin-cli.md#ロールの付与と剥奪)）。
 - 管理 API の経路は区分によらず `/api/v1/admin/...` のままで、スコープも `admin:read` / `admin:write` の 1 組です。区分は API リファレンスのタグ（`admin-moderation`・`admin-server`）で分かれます。
 - 権限には 3 つめの区分「利用者の機能」（`view_finance`）があり、スタッフの画面の外にあります（[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）。これだけを持つ人には「モデレーション」も「管理」も出ず、`view_finance` を持つ人のナビゲーションには設定の後に「会計」（`/finance`）が出ます。
-  API は利用者の名前空間（`GET /api/v1/finance/cost_totals`、スコープ `read:finance`）で、`admin:*` のスコープを要しません。見せる範囲は[インスタンス設定](instance-settings.md)の `finance_viewer_*` で決めます。
+  API は利用者の名前空間（`GET /api/v1/finance/cost_totals`・`GET /api/v1/finance/income_totals`、スコープ `read:finance`）で、`admin:*` のスコープを要しません。見せる範囲は[インスタンス設定](instance-settings.md)の `finance_viewer_*` で決めます。
 
 ## アカウントへの処分
 

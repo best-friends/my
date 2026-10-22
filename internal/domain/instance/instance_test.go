@@ -183,6 +183,30 @@ func TestDomainActionsVisibilitySettings(t *testing.T) {
 	}
 }
 
+// The income is private until the setting publishes it, apart from the costs (ADR-0073 §7).
+func TestIncomeVisibility(t *testing.T) {
+	var zero instance.Settings
+	if got := zero.IncomeVisibility(); got != instance.IncomePrivate {
+		t.Errorf("zero Settings IncomeVisibility() = %q, want private", got)
+	}
+	for _, v := range []instance.IncomeVisibility{instance.IncomeTotals, instance.IncomePlans} {
+		s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingIncomeVisibility, RevisionID: "r1", Value: string(v)}})
+		if got := s.IncomeVisibility(); got != v {
+			t.Errorf("IncomeVisibility() = %q, want %q", got, v)
+		}
+		if got := s.FinanceVisibility(); got != instance.FinancePrivate {
+			t.Errorf("FinanceVisibility() with income_visibility = %s is %q, want private", v, got)
+		}
+	}
+	def, err := instance.Lookup(instance.SettingIncomeVisibility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := def.Parse("breakdown"); !errors.Is(err, instance.ErrInvalidValue) {
+		t.Errorf("Parse(breakdown) = %v, want ErrInvalidValue", err)
+	}
+}
+
 // The finance viewers read neither the names nor the memos of the cost items, and the income as
 // totals, until the settings say otherwise (ADR-0070 §5).
 func TestFinanceViewerSettings(t *testing.T) {

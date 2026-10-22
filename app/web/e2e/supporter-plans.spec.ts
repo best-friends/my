@@ -99,6 +99,7 @@ async function serveApi(page: Page, { own, signedIn }: { own: Schemas["OwnSuppor
         search_indexing: "deny",
         ai_usage: "deny",
         finance_visibility: "private",
+        income_visibility: "private",
         supporters_enabled: true,
         supporter_list_visibility: "public",
         rules: [],

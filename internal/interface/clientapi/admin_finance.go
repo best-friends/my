@@ -358,10 +358,10 @@ type costTotalsQuery struct {
 	breakdown, untilToday, items bool
 }
 
-// readCostTotals validates q and reads its totals and the basis they use, or returns the
-// problem of an invalid query.
-func (s *Server) readCostTotals(ctx context.Context, q costTotalsQuery) ([]finance.PeriodTotal, CostBasis, *problem, error) {
-	reject := func(p problem) ([]finance.PeriodTotal, CostBasis, *problem, error) { return nil, "", &p, nil }
+// parseTotalsQuery validates the query of the cost and the income totals, or returns the
+// problem of an invalid one; the basis is amortized unless the query names one.
+func (s *Server) parseTotalsQuery(ctx context.Context, q costTotalsQuery) (appfinance.TotalsQuery, CostBasis, *problem) {
+	reject := func(p problem) (appfinance.TotalsQuery, CostBasis, *problem) { return appfinance.TotalsQuery{}, "", &p }
 	if !q.granularity.Valid() {
 		return reject(s.invalidParameterResponse(ctx, "granularity"))
 	}
@@ -380,13 +380,24 @@ func (s *Server) readCostTotals(ctx context.Context, q costTotalsQuery) ([]finan
 	if err != nil {
 		return reject(s.invalidParameterResponse(ctx, "to"))
 	}
-	totals, err := s.o.Costs.Totals(ctx, appfinance.TotalsQuery{
+	return appfinance.TotalsQuery{
 		Granularity: finance.Granularity(q.granularity), From: from, To: to, Basis: finance.Basis(basis), UntilToday: q.untilToday,
 		Items: q.items,
-	})
+	}, basis, nil
+}
+
+// readCostTotals validates q and reads its totals and the basis they use, or returns the
+// problem of an invalid query.
+func (s *Server) readCostTotals(ctx context.Context, q costTotalsQuery) ([]finance.PeriodTotal, CostBasis, *problem, error) {
+	query, basis, p := s.parseTotalsQuery(ctx, q)
+	if p != nil {
+		return nil, "", p, nil
+	}
+	totals, err := s.o.Costs.Totals(ctx, query)
 	switch {
 	case errors.Is(err, finance.ErrInvalidPeriod), errors.Is(err, finance.ErrTooManyPeriods):
-		return reject(s.unprocessable(ctx, "to"))
+		p := s.unprocessable(ctx, "to")
+		return nil, "", &p, nil
 	case err != nil:
 		return nil, "", nil, fmt.Errorf("clientapi: total the costs: %w", err)
 	}

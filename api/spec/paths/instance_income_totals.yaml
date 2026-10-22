@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getInstanceIncomeTotals
+  summary: Total the instance's public income by period
+  description: |
+    The net income that the instance setting `income_visibility` publishes (FR-917,
+    ADR-0073 §7, §9). It takes the query of `GET /admin/cost_totals`: `private` makes it a
+    404; `totals` gives the net of each currency by period; `plans` adds `plans`, the number
+    of members of each supporter plan now. Each period carries `balance`, the net less the
+    costs, only while `finance_visibility` is not `private` either, since the balance would
+    otherwise tell the hidden side. No level returns individual payments, the subscribers,
+    the amounts of each plan, or the gross and the fees. The periods stop at the one that
+    holds today (UTC): a `to` after today reads as today, and a `from` after today gives no
+    period. More than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422
+    naming `to`.
+  tags: [instance]
+  security: []
+  parameters:
+    - name: granularity
+      in: query
+      required: true
+      schema:
+        $ref: ../components/schemas/CostGranularity.yaml
+    - name: from
+      in: query
+      required: true
+      description: A date in the first period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: to
+      in: query
+      required: true
+      description: A date in the last period; a date after today reads as today.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: basis
+      in: query
+      required: false
+      description: How the totals place a payment; `amortized` by default.
+      schema:
+        $ref: ../components/schemas/CostBasis.yaml
+  responses:
+    "200":
+      description: The public income totals.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/IncomeTotals.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

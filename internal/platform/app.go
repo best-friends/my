@@ -752,7 +752,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The billing imports (ADR-0068).
 		BillingImports: a.Finance,
 		// The instance's costs (ADR-0067).
-		Costs: a.Finance,
+		Costs: a.Finance, Income: a.Finance,
 		// The supporter program (ADR-0072) and the page of its commerce disclosures (§13).
 		Supporters: a.Supporters, OwnSupporters: a.Supporters, CommerceDisclosurePath: authpages.PathCommerceDisclosure,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,

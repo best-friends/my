@@ -103,3 +103,49 @@ FROM imported_cost_heads h JOIN imported_cost_revisions r ON r.id = h.revision_i
 WHERE (CAST(sqlc.arg(source) AS TEXT) = '' OR h.source = sqlc.arg(source))
   AND (CAST(sqlc.arg(months) AS TEXT) = '[]' OR h.billing_month IN (SELECT value FROM json_each(CAST(sqlc.arg(months) AS TEXT))))
 ORDER BY h.source, h.billing_month, h.service, h.charge_type;
+
+-- The income records (ADR-0073 section 8). income_movements is written once per (provider,
+-- provider_id); the totals read it on every request.
+
+-- InsertIncomeMovement writes nothing when the movement is already recorded.
+-- name: InsertIncomeMovement :execrows
+INSERT INTO income_movements (
+  id, provider, provider_id, kind, parent_movement_id, subscription_id, occurred_at, occurred_on, covers_starts_on,
+  covers_ends_on, gross_minor, fee_minor, net_minor, currency, recorded_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (provider, provider_id) DO NOTHING;
+
+-- name: FindIncomeMovementID :one
+SELECT id FROM income_movements WHERE provider = ? AND provider_id = ?;
+
+-- KnownIncomeMovements returns the provider IDs among ids (a JSON array) that are recorded.
+-- name: KnownIncomeMovements :many
+SELECT provider_id FROM income_movements
+WHERE provider = sqlc.arg(provider) AND provider_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
+
+-- ListIncomeMovementsInWindow returns the movements whose place in the totals can meet the
+-- dates from starts_on to ends_on: those on the dates, the payments whose period meets them,
+-- and the movements on or before ends_on of a payment whose period ends on or after starts_on,
+-- with the period of their payment.
+-- name: ListIncomeMovementsInWindow :many
+SELECT m.kind, m.occurred_on, m.covers_starts_on, m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency,
+  p.covers_starts_on AS parent_covers_starts_on, p.covers_ends_on AS parent_covers_ends_on
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE (m.occurred_on >= sqlc.arg(starts_on) AND m.occurred_on <= sqlc.arg(ends_on))
+  OR (m.covers_starts_on <= sqlc.arg(ends_on) AND m.covers_ends_on >= sqlc.arg(starts_on))
+  OR (m.occurred_on <= sqlc.arg(ends_on) AND p.covers_ends_on >= sqlc.arg(starts_on))
+ORDER BY m.occurred_on, m.id;
+
+-- ListIncomeMovements returns up to lim movements on the dates from starts_on to ends_on, of
+-- kind unless it is empty, newest first, before the movement before unless it is empty.
+-- name: ListIncomeMovements :many
+SELECT m.id, m.provider, m.provider_id, m.kind, m.subscription_id, m.occurred_at, m.occurred_on, m.covers_starts_on,
+  m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency, m.recorded_at, p.provider_id AS parent_provider_id
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE m.occurred_on >= sqlc.arg(starts_on) AND m.occurred_on <= sqlc.arg(ends_on)
+  AND (CAST(sqlc.arg(kind) AS TEXT) = '' OR m.kind = sqlc.arg(kind))
+  AND (CAST(sqlc.arg(before) AS TEXT) = ''
+    OR m.occurred_at < (SELECT b.occurred_at FROM income_movements b WHERE b.id = sqlc.arg(before))
+    OR (m.occurred_at = (SELECT b.occurred_at FROM income_movements b WHERE b.id = sqlc.arg(before)) AND m.id < sqlc.arg(before)))
+ORDER BY m.occurred_at DESC, m.id DESC
+LIMIT sqlc.arg(lim);

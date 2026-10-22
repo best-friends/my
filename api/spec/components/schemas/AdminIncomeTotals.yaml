@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The income totals as the administrators see them over the periods from the one that holds
+  `from` to the one that holds `to`, oldest first, with the number of members of each
+  supporter plan now (ADR-0073 §6).
+type: object
+required: [granularity, basis, periods, plans, rules]
+properties:
+  granularity:
+    $ref: ./CostGranularity.yaml
+  basis:
+    $ref: ./CostBasis.yaml
+  periods:
+    type: array
+    items:
+      $ref: ./AdminIncomePeriodTotal.yaml
+  plans:
+    type: array
+    items:
+      $ref: ./IncomePlanCount.yaml
+  rules:
+    $ref: ./IncomeTotalsRules.yaml

@@ -58,7 +58,8 @@
 | `finance_visibility` | `private` / `totals` / `breakdown` | `private` | 運営の費用（`/admin/finance` で記録したもの）をどこまで公開するか（FR-903、[ADR-0067](../adr/0067-finance-cost-records.md) §8）。`private` は公開しない（`GET /api/v1/instance/cost_totals` は 404）、`totals` は期間ごとの通貨ごとの合計だけ、`breakdown` は合計と事業者・区分ごとの内訳を、情報ページ（`/about` と `/about/costs`）と API で誰にでも見せる。`breakdown` ではどの事業者（クラウドなど）で動いているかが知られる。どの段階でも項目の名前・メモ・個々の支払いは公開しない。公開するのは今日（UTC）を含む期間まで |
 | `finance_viewer_item_names` | `true` / `false` | `false` | 権限 `view_finance` を持つ利用者が会計の画面（`/finance`、`GET /api/v1/finance/cost_totals`）で、費用の項目の名前と、取り込んだ費用のサービス名を見るか（[ADR-0070](../adr/0070-permission-split-emoji-finance.md) §5）。合計と事業者・区分ごとの内訳はこの設定によらずいつも見せる |
 | `finance_viewer_item_memos` | `true` / `false` | `false` | 権限 `view_finance` を持つ利用者が会計の画面で費用の項目のメモを見るか（ADR-0070 §5）。名前かメモのどちらかが `true` なら、期間ごとに項目の行（事業者・区分・その期間の額に、有効なら名前・メモ）を出す。`manage_finance` を持つ人は設定によらずすべてを見る |
-| `finance_viewer_income` | `totals` / `plans` | `totals` | 権限 `view_finance` を持つ利用者に、収入を合計だけ（`totals`）か、加えてプランごとの加入者の数まで（`plans`）見せるか（ADR-0070 §5）。プランごとの金額と誰が払ったかはどの値でも見せない。収入の表示はまだなく、この値は会計の画面と `/admin/finance` に出るだけ |
+| `finance_viewer_income` | `totals` / `plans` | `totals` | 権限 `view_finance` を持つ利用者に、収入を合計だけ（`totals`）か、加えてプランごとの加入者の数まで（`plans`）見せるか（ADR-0070 §5）。プランごとの金額と誰が払ったかはどの値でも見せない。`income_visibility` が `plans` なら、この値によらず公開されている人数を見せる。収入は `GET /api/v1/finance/income_totals` で読む（Web の会計の画面には収入の表示がまだない） |
+| `income_visibility` | `private` / `totals` / `plans` | `private` | サポーターの収入（決済の事業者の手数料を引いた額、FR-917、[ADR-0073](../adr/0073-income-records-and-publication.md) §7）をどこまで公開するか。`finance_visibility` とは別に選ぶ。`private` は公開しない（`GET /api/v1/instance/income_totals` は 404）、`totals` は期間ごとの通貨ごとの収入の合計だけ、`plans` は加えていまのプランごとの加入者の数を誰にでも見せる。加入者の少ないプランでは、人数から誰が加入しているかが推測されうる。収入と費用の差（収支）は、この値と `finance_visibility` がどちらも `private` でないときだけ出す（片方だけの公開では、収支から隠した側が分かるため）。どの値でも、個々の支払い・加入者・プランごとの金額・総額と手数料は公開しない。公開するのは今日（UTC）を含む期間まで |
 | `supporter_list_visibility` | `off` / `public` / `signed_in` | `off` | サポーターの一覧（`GET /api/v1/instance/supporters` と `/about/supporters`、[ADR-0071](../adr/0071-role-badges-and-supporter-list.md) §4）を誰に見せるか。`off` は誰にも見せない（API は 404、`/about` からのリンクも出ない）、`public` は誰にでも、`signed_in` はこのサーバーにサインインした人だけに見せる（サインインしていなければ API は 401）。一覧に出るのは、加入中の人のうち自分で掲載を選んだ人のアカウントとプランだけで、金額・月払いか年払いか・日付・人数はどの値でも出さない。一覧のページと API の応答は、`search_indexing` に関わらずいつも `noindex, noarchive` |
 
 - 値は保存前に正規形にします（`TRUE` → `true`、`0750` → `750`、`ja_jp` → `ja-JP`、メディア ID は小文字）。不正な値は何も書き込まずに拒否します。
@@ -167,7 +168,7 @@ CLI で変えられる設定値は、Web クライアントの管理画面とク
 
   連絡先とサムネイル（`contact_account`・`contact_email`・`thumbnail` と文章 `thumbnail_alt`）は、名前と説明の下の「連絡先とサムネイル」の区画で変えます。画像は選んだときにアップロードされ、保存したときにサムネイルになります。
 
-  `max_status_length`・`preview_image`・`appeal_window`・保持期間（`retention_*`）は、画面には出ず、CLI とクライアント API で変えます。
+  `max_status_length`・`preview_image`・`appeal_window`・保持期間（`retention_*`）・`income_visibility` は、画面には出ず、CLI とクライアント API で変えます。
 - **クライアント API**: `GET /api/v1/admin/settings` がすべての設定値を、現在値・既定値・設定済みか・型と受け付ける値（選択肢・範囲）とともに返します。
   `PATCH /api/v1/admin/settings` は `{"values": {"<キー>": "<値>", ...}}` の設定値をまとめて変えます。値はすべて文字列で、CLI と同じく正規形にして保存します。
   1 つでも知らないキーか不正な値があれば、そのキーを挙げた 422 で、何も変えません。変えたキーは同じトランザクションで版と監査ログに残ります。

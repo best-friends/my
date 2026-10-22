@@ -68,14 +68,6 @@ type Accounts interface {
 	FindByIDTx(ctx context.Context, tx uow.Tx, id string) (account.Actor, error)
 }
 
-// IncomeRecorder takes the provider's final money movements to the finance module's income
-// records (ADR-0073 §1, finance.RecordIncome). It is the seam of #923: until the finance module
-// implements it, nil records nothing and KnownMoney knows only the refunds and chargebacks.
-type IncomeRecorder interface {
-	RecordIncome(ctx context.Context, provider string, ms []MoneyMovement) error
-	KnownIncome(ctx context.Context, provider string, ids []string) (map[string]bool, error)
-}
-
 // Deps are the ports of Service.
 type Deps struct {
 	UnitOfWork uow.UnitOfWork
@@ -92,7 +84,7 @@ type Deps struct {
 	// CommerceDisclosure reports whether the instance publishes its commerce disclosures
 	// (ADR-0072 §13); nil reports none.
 	CommerceDisclosure func(ctx context.Context) (bool, error)
-	// Income records the money movements; nil records none (see IncomeRecorder).
+	// Income records the money movements in the finance module; nil records none.
 	Income IncomeRecorder
 	Outbox queue.Outbox
 	Clock  kernel.Clock

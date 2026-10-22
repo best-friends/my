@@ -39,6 +39,22 @@ func (q *Queries) DeleteCostItemHead(ctx context.Context, costItemID string) err
 	return err
 }
 
+const findIncomeMovementID = `-- name: FindIncomeMovementID :one
+SELECT id FROM income_movements WHERE provider = $1 AND provider_id = $2
+`
+
+type FindIncomeMovementIDParams struct {
+	Provider   string
+	ProviderID string
+}
+
+func (q *Queries) FindIncomeMovementID(ctx context.Context, arg FindIncomeMovementIDParams) (string, error) {
+	row := q.db.QueryRow(ctx, findIncomeMovementID, arg.Provider, arg.ProviderID)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getCostItemCurrentForUpdate = `-- name: GetCostItemCurrentForUpdate :one
 SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on, l.name
 FROM cost_item_heads h JOIN cost_items i ON i.id = h.cost_item_id
@@ -286,6 +302,91 @@ func (q *Queries) InsertImportedCostRevision(ctx context.Context, arg InsertImpo
 	return result.RowsAffected(), nil
 }
 
+const insertIncomeMovement = `-- name: InsertIncomeMovement :execrows
+
+INSERT INTO income_movements (
+  id, provider, provider_id, kind, parent_movement_id, subscription_id, occurred_at, occurred_on, covers_starts_on,
+  covers_ends_on, gross_minor, fee_minor, net_minor, currency, recorded_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+ON CONFLICT (provider, provider_id) DO NOTHING
+`
+
+type InsertIncomeMovementParams struct {
+	ID               string
+	Provider         string
+	ProviderID       string
+	Kind             string
+	ParentMovementID *string
+	SubscriptionID   *string
+	OccurredAt       time.Time
+	OccurredOn       pgtype.Date
+	CoversStartsOn   pgtype.Date
+	CoversEndsOn     pgtype.Date
+	GrossMinor       int64
+	FeeMinor         int64
+	NetMinor         int64
+	Currency         string
+	RecordedAt       time.Time
+}
+
+// The income records (ADR-0073 section 8). income_movements is written once per (provider,
+// provider_id); the totals read it on every request.
+// InsertIncomeMovement writes nothing when the movement is already recorded.
+func (q *Queries) InsertIncomeMovement(ctx context.Context, arg InsertIncomeMovementParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertIncomeMovement,
+		arg.ID,
+		arg.Provider,
+		arg.ProviderID,
+		arg.Kind,
+		arg.ParentMovementID,
+		arg.SubscriptionID,
+		arg.OccurredAt,
+		arg.OccurredOn,
+		arg.CoversStartsOn,
+		arg.CoversEndsOn,
+		arg.GrossMinor,
+		arg.FeeMinor,
+		arg.NetMinor,
+		arg.Currency,
+		arg.RecordedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const knownIncomeMovements = `-- name: KnownIncomeMovements :many
+SELECT provider_id FROM income_movements
+WHERE provider = $1 AND provider_id = ANY($2::text[])
+`
+
+type KnownIncomeMovementsParams struct {
+	Provider string
+	Ids      []string
+}
+
+// KnownIncomeMovements returns the provider IDs among ids that are recorded.
+func (q *Queries) KnownIncomeMovements(ctx context.Context, arg KnownIncomeMovementsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, knownIncomeMovements, arg.Provider, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var provider_id string
+		if err := rows.Scan(&provider_id); err != nil {
+			return nil, err
+		}
+		items = append(items, provider_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lastBillingImportRun = `-- name: LastBillingImportRun :one
 SELECT id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at FROM billing_import_runs
 WHERE source = $1 AND ($2::boolean OR outcome = 'succeeded')
@@ -469,6 +570,151 @@ func (q *Queries) ListImportedCostHeads(ctx context.Context, arg ListImportedCos
 			&i.RunID,
 			&i.RunKey,
 			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncomeMovements = `-- name: ListIncomeMovements :many
+SELECT m.id, m.provider, m.provider_id, m.kind, m.subscription_id, m.occurred_at, m.occurred_on, m.covers_starts_on,
+  m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency, m.recorded_at, p.provider_id AS parent_provider_id
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE m.occurred_on >= $1::date AND m.occurred_on <= $2::date
+  AND ($3::text = '' OR m.kind = $3::text)
+  AND ($4::text = ''
+    OR (m.occurred_at, m.id) < (SELECT b.occurred_at, b.id FROM income_movements b WHERE b.id = $4::text))
+ORDER BY m.occurred_at DESC, m.id DESC
+LIMIT $5
+`
+
+type ListIncomeMovementsParams struct {
+	StartsOn pgtype.Date
+	EndsOn   pgtype.Date
+	Kind     string
+	Before   string
+	Lim      int32
+}
+
+type ListIncomeMovementsRow struct {
+	ID               string
+	Provider         string
+	ProviderID       string
+	Kind             string
+	SubscriptionID   *string
+	OccurredAt       time.Time
+	OccurredOn       pgtype.Date
+	CoversStartsOn   pgtype.Date
+	CoversEndsOn     pgtype.Date
+	GrossMinor       int64
+	FeeMinor         int64
+	NetMinor         int64
+	Currency         string
+	RecordedAt       time.Time
+	ParentProviderID *string
+}
+
+// ListIncomeMovements returns up to lim movements on the dates from starts_on to ends_on, of
+// kind unless it is empty, newest first, before the movement before unless it is empty.
+func (q *Queries) ListIncomeMovements(ctx context.Context, arg ListIncomeMovementsParams) ([]ListIncomeMovementsRow, error) {
+	rows, err := q.db.Query(ctx, listIncomeMovements,
+		arg.StartsOn,
+		arg.EndsOn,
+		arg.Kind,
+		arg.Before,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListIncomeMovementsRow{}
+	for rows.Next() {
+		var i ListIncomeMovementsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Provider,
+			&i.ProviderID,
+			&i.Kind,
+			&i.SubscriptionID,
+			&i.OccurredAt,
+			&i.OccurredOn,
+			&i.CoversStartsOn,
+			&i.CoversEndsOn,
+			&i.GrossMinor,
+			&i.FeeMinor,
+			&i.NetMinor,
+			&i.Currency,
+			&i.RecordedAt,
+			&i.ParentProviderID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncomeMovementsInWindow = `-- name: ListIncomeMovementsInWindow :many
+SELECT m.kind, m.occurred_on, m.covers_starts_on, m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency,
+  p.covers_starts_on AS parent_covers_starts_on, p.covers_ends_on AS parent_covers_ends_on
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE (m.occurred_on >= $1::date AND m.occurred_on <= $2::date)
+  OR (m.covers_starts_on <= $2::date AND m.covers_ends_on >= $1::date)
+  OR (m.occurred_on <= $2::date AND p.covers_ends_on >= $1::date)
+ORDER BY m.occurred_on, m.id
+`
+
+type ListIncomeMovementsInWindowParams struct {
+	StartsOn pgtype.Date
+	EndsOn   pgtype.Date
+}
+
+type ListIncomeMovementsInWindowRow struct {
+	Kind                 string
+	OccurredOn           pgtype.Date
+	CoversStartsOn       pgtype.Date
+	CoversEndsOn         pgtype.Date
+	GrossMinor           int64
+	FeeMinor             int64
+	NetMinor             int64
+	Currency             string
+	ParentCoversStartsOn pgtype.Date
+	ParentCoversEndsOn   pgtype.Date
+}
+
+// ListIncomeMovementsInWindow returns the movements whose place in the totals can meet the
+// dates from starts_on to ends_on: those on the dates, the payments whose period meets them,
+// and the movements on or before ends_on of a payment whose period ends on or after starts_on,
+// with the period of their payment.
+func (q *Queries) ListIncomeMovementsInWindow(ctx context.Context, arg ListIncomeMovementsInWindowParams) ([]ListIncomeMovementsInWindowRow, error) {
+	rows, err := q.db.Query(ctx, listIncomeMovementsInWindow, arg.StartsOn, arg.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListIncomeMovementsInWindowRow{}
+	for rows.Next() {
+		var i ListIncomeMovementsInWindowRow
+		if err := rows.Scan(
+			&i.Kind,
+			&i.OccurredOn,
+			&i.CoversStartsOn,
+			&i.CoversEndsOn,
+			&i.GrossMinor,
+			&i.FeeMinor,
+			&i.NetMinor,
+			&i.Currency,
+			&i.ParentCoversStartsOn,
+			&i.ParentCoversEndsOn,
 		); err != nil {
 			return nil, err
 		}

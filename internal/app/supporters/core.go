@@ -314,7 +314,7 @@ func (s *Service) RecordMoney(ctx context.Context, provider string, ms []MoneyMo
 		}
 	}
 	if s.d.Income != nil {
-		return s.d.Income.RecordIncome(ctx, provider, ms)
+		return s.recordIncome(ctx, provider, ms)
 	}
 	return nil
 }

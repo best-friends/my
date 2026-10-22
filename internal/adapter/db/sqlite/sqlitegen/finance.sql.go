@@ -37,6 +37,22 @@ func (q *Queries) DeleteCostItemHead(ctx context.Context, costItemID string) err
 	return err
 }
 
+const findIncomeMovementID = `-- name: FindIncomeMovementID :one
+SELECT id FROM income_movements WHERE provider = ? AND provider_id = ?
+`
+
+type FindIncomeMovementIDParams struct {
+	Provider   string
+	ProviderID string
+}
+
+func (q *Queries) FindIncomeMovementID(ctx context.Context, arg FindIncomeMovementIDParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, findIncomeMovementID, arg.Provider, arg.ProviderID)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getCostItemCurrent = `-- name: GetCostItemCurrent :one
 SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on, l.name
 FROM cost_item_heads h JOIN cost_items i ON i.id = h.cost_item_id
@@ -284,6 +300,94 @@ func (q *Queries) InsertImportedCostRevision(ctx context.Context, arg InsertImpo
 	return result.RowsAffected()
 }
 
+const insertIncomeMovement = `-- name: InsertIncomeMovement :execrows
+
+INSERT INTO income_movements (
+  id, provider, provider_id, kind, parent_movement_id, subscription_id, occurred_at, occurred_on, covers_starts_on,
+  covers_ends_on, gross_minor, fee_minor, net_minor, currency, recorded_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (provider, provider_id) DO NOTHING
+`
+
+type InsertIncomeMovementParams struct {
+	ID               string
+	Provider         string
+	ProviderID       string
+	Kind             string
+	ParentMovementID sql.NullString
+	SubscriptionID   sql.NullString
+	OccurredAt       int64
+	OccurredOn       string
+	CoversStartsOn   sql.NullString
+	CoversEndsOn     sql.NullString
+	GrossMinor       int64
+	FeeMinor         int64
+	NetMinor         int64
+	Currency         string
+	RecordedAt       int64
+}
+
+// The income records (ADR-0073 section 8). income_movements is written once per (provider,
+// provider_id); the totals read it on every request.
+// InsertIncomeMovement writes nothing when the movement is already recorded.
+func (q *Queries) InsertIncomeMovement(ctx context.Context, arg InsertIncomeMovementParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, insertIncomeMovement,
+		arg.ID,
+		arg.Provider,
+		arg.ProviderID,
+		arg.Kind,
+		arg.ParentMovementID,
+		arg.SubscriptionID,
+		arg.OccurredAt,
+		arg.OccurredOn,
+		arg.CoversStartsOn,
+		arg.CoversEndsOn,
+		arg.GrossMinor,
+		arg.FeeMinor,
+		arg.NetMinor,
+		arg.Currency,
+		arg.RecordedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const knownIncomeMovements = `-- name: KnownIncomeMovements :many
+SELECT provider_id FROM income_movements
+WHERE provider = ?1 AND provider_id IN (SELECT value FROM json_each(CAST(?2 AS TEXT)))
+`
+
+type KnownIncomeMovementsParams struct {
+	Provider string
+	Ids      string
+}
+
+// KnownIncomeMovements returns the provider IDs among ids (a JSON array) that are recorded.
+func (q *Queries) KnownIncomeMovements(ctx context.Context, arg KnownIncomeMovementsParams) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, knownIncomeMovements, arg.Provider, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var provider_id string
+		if err := rows.Scan(&provider_id); err != nil {
+			return nil, err
+		}
+		items = append(items, provider_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lastBillingImportRun = `-- name: LastBillingImportRun :one
 SELECT id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at FROM billing_import_runs
 WHERE source = ?1 AND (CAST(?2 AS INTEGER) = 1 OR outcome = 'succeeded')
@@ -473,6 +577,158 @@ func (q *Queries) ListImportedCostHeads(ctx context.Context, arg ListImportedCos
 			&i.RunID,
 			&i.RunKey,
 			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncomeMovements = `-- name: ListIncomeMovements :many
+SELECT m.id, m.provider, m.provider_id, m.kind, m.subscription_id, m.occurred_at, m.occurred_on, m.covers_starts_on,
+  m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency, m.recorded_at, p.provider_id AS parent_provider_id
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE m.occurred_on >= ?1 AND m.occurred_on <= ?2
+  AND (CAST(?3 AS TEXT) = '' OR m.kind = ?3)
+  AND (CAST(?4 AS TEXT) = ''
+    OR m.occurred_at < (SELECT b.occurred_at FROM income_movements b WHERE b.id = ?4)
+    OR (m.occurred_at = (SELECT b.occurred_at FROM income_movements b WHERE b.id = ?4) AND m.id < ?4))
+ORDER BY m.occurred_at DESC, m.id DESC
+LIMIT ?5
+`
+
+type ListIncomeMovementsParams struct {
+	StartsOn string
+	EndsOn   string
+	Kind     string
+	Before   string
+	Lim      int64
+}
+
+type ListIncomeMovementsRow struct {
+	ID               string
+	Provider         string
+	ProviderID       string
+	Kind             string
+	SubscriptionID   sql.NullString
+	OccurredAt       int64
+	OccurredOn       string
+	CoversStartsOn   sql.NullString
+	CoversEndsOn     sql.NullString
+	GrossMinor       int64
+	FeeMinor         int64
+	NetMinor         int64
+	Currency         string
+	RecordedAt       int64
+	ParentProviderID sql.NullString
+}
+
+// ListIncomeMovements returns up to lim movements on the dates from starts_on to ends_on, of
+// kind unless it is empty, newest first, before the movement before unless it is empty.
+func (q *Queries) ListIncomeMovements(ctx context.Context, arg ListIncomeMovementsParams) ([]ListIncomeMovementsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listIncomeMovements,
+		arg.StartsOn,
+		arg.EndsOn,
+		arg.Kind,
+		arg.Before,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListIncomeMovementsRow{}
+	for rows.Next() {
+		var i ListIncomeMovementsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Provider,
+			&i.ProviderID,
+			&i.Kind,
+			&i.SubscriptionID,
+			&i.OccurredAt,
+			&i.OccurredOn,
+			&i.CoversStartsOn,
+			&i.CoversEndsOn,
+			&i.GrossMinor,
+			&i.FeeMinor,
+			&i.NetMinor,
+			&i.Currency,
+			&i.RecordedAt,
+			&i.ParentProviderID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncomeMovementsInWindow = `-- name: ListIncomeMovementsInWindow :many
+SELECT m.kind, m.occurred_on, m.covers_starts_on, m.covers_ends_on, m.gross_minor, m.fee_minor, m.net_minor, m.currency,
+  p.covers_starts_on AS parent_covers_starts_on, p.covers_ends_on AS parent_covers_ends_on
+FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
+WHERE (m.occurred_on >= ?1 AND m.occurred_on <= ?2)
+  OR (m.covers_starts_on <= ?2 AND m.covers_ends_on >= ?1)
+  OR (m.occurred_on <= ?2 AND p.covers_ends_on >= ?1)
+ORDER BY m.occurred_on, m.id
+`
+
+type ListIncomeMovementsInWindowParams struct {
+	StartsOn string
+	EndsOn   string
+}
+
+type ListIncomeMovementsInWindowRow struct {
+	Kind                 string
+	OccurredOn           string
+	CoversStartsOn       sql.NullString
+	CoversEndsOn         sql.NullString
+	GrossMinor           int64
+	FeeMinor             int64
+	NetMinor             int64
+	Currency             string
+	ParentCoversStartsOn sql.NullString
+	ParentCoversEndsOn   sql.NullString
+}
+
+// ListIncomeMovementsInWindow returns the movements whose place in the totals can meet the
+// dates from starts_on to ends_on: those on the dates, the payments whose period meets them,
+// and the movements on or before ends_on of a payment whose period ends on or after starts_on,
+// with the period of their payment.
+func (q *Queries) ListIncomeMovementsInWindow(ctx context.Context, arg ListIncomeMovementsInWindowParams) ([]ListIncomeMovementsInWindowRow, error) {
+	rows, err := q.db.QueryContext(ctx, listIncomeMovementsInWindow, arg.StartsOn, arg.EndsOn)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListIncomeMovementsInWindowRow{}
+	for rows.Next() {
+		var i ListIncomeMovementsInWindowRow
+		if err := rows.Scan(
+			&i.Kind,
+			&i.OccurredOn,
+			&i.CoversStartsOn,
+			&i.CoversEndsOn,
+			&i.GrossMinor,
+			&i.FeeMinor,
+			&i.NetMinor,
+			&i.Currency,
+			&i.ParentCoversStartsOn,
+			&i.ParentCoversEndsOn,
 		); err != nil {
 			return nil, err
 		}
