@@ -157,7 +157,8 @@ for (const path of pages) {
       await operatorServer(page);
       await page.goto(path);
       await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
-      await expect(page.getByRole("main").getByRole("heading", { level: 2 }).first()).toBeVisible();
+      // A list shows a table, a page of sections its headings.
+      await expect(page.getByRole("main").getByRole("heading", { level: 2 }).or(page.getByRole("main").getByRole("table")).first()).toBeVisible();
     });
 
     test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -176,48 +177,18 @@ test.describe("remote servers", () => {
     await page.goto("/moderation/instances");
     const main = page.getByRole("main");
 
-    await expect(main).toMatchAriaSnapshot(`
-      - heading [level=1]
-      - link
-      - tablist:
-        - tab [selected]
-        - tab
-        - tab
-      - tabpanel:
-        - list:
-          - listitem:
-            - heading "${longDomain}" [level=2]:
-              - link "${longDomain}"
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-          - listitem:
-            - heading "flaky.example" [level=2]:
-              - link "flaky.example"
-            - term
-            - definition
-            - term
-            - definition
-            - term
-            - definition
-            - term
-            - definition:
-              - time
-    `);
+    const servers = main.getByRole("table");
+    await expect(servers.getByRole("rowheader")).toHaveText([longDomain, "flaky.example"]);
+    await expect(servers.getByRole("row").nth(1).getByRole("link", { name: longDomain })).toBeVisible();
+    await expect(servers.getByRole("row").nth(2).getByRole("link", { name: "flaky.example" })).toBeVisible();
+    await expect(servers.locator("time")).toHaveCount(2);
 
     await main.getByRole("link", { name: longDomain }).click();
     await expect(main.getByRole("heading", { level: 1, name: longDomain })).toBeFocused();
     const resume = main.getByRole("button", { name: message("admin.instance.mark_available"), exact: true });
     await resume.click();
     await expect(resume).toBeHidden();
-    await expect(main.getByRole("region", { name: message("admin.instance.history.title"), exact: true }).getByRole("listitem")).toHaveCount(2);
+    await expect(main.getByRole("table", { name: message("admin.instance.history.title"), exact: true }).getByRole("rowheader")).toHaveCount(2);
     expect(actions).toEqual([`POST /admin/instances/${longDomain}/mark_available`]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);

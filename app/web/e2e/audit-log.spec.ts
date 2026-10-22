@@ -162,9 +162,9 @@ async function operatorServer(page: Page, { domains = false }: { domains?: boole
   return requests;
 }
 
-/** The rows of the list of operations: the items with a heading. */
+/** The rows of the table of operations, without its header row. */
 function rows(page: Page) {
-  return page.getByRole("main").getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3 }) });
+  return page.getByRole("main").getByRole("table").getByRole("row").filter({ has: page.getByRole("rowheader") });
 }
 
 test.describe("page /moderation/audit-log", () => {
@@ -184,38 +184,27 @@ test.describe("page /moderation/audit-log", () => {
 });
 
 test.describe("audit log", () => {
-  test("lists operations, filters them by a row's actor and by kind in the URL, and loads more", async ({ page, makeAxeBuilder }) => {
+  test("lists operations, filters them by a row's actor and by kind in the URL, and pages through them", async ({ page, makeAxeBuilder }) => {
     const requests = await operatorServer(page);
     await page.goto("/moderation/audit-log");
     await expect(rows(page)).toHaveCount(2);
 
-    await expect(rows(page).first()).toMatchAriaSnapshot(`
-      - listitem:
-        - heading [level=3]
-        - term
-        - definition: /${moderator.display_name}.*@${moderator.acct}/
-        - term
-        - definition:
-          - link "${targetHandle}"
-        - term
-        - definition:
-          - time
-        - list:
-          - listitem:
-            - link /${moderator.display_name}/
-          - listitem:
-            - link /${targetHandle.replaceAll(".", "\\.")}/
-    `);
+    // The row: the operation, who did it, on what, when, and the links that keep one actor or one target.
+    const first = rows(page).first();
+    await expect(first.getByRole("rowheader")).not.toBeEmpty();
+    await expect(first).toContainText(new RegExp(`${moderator.display_name}.*@${moderator.acct}`));
+    await expect(first.locator("time")).toHaveCount(1);
+    await expect(first.getByRole("listitem")).toHaveCount(2);
     await expect(rows(page).first().getByRole("link", { name: targetHandle, exact: true })).toHaveAttribute("href", "/moderation/accounts/0192f0c4-7a8e-7000-8000-000000000031");
 
-    // Load more: the pages stay in the URL, and a reload shows them again.
-    await page.getByRole("main").getByRole("button").last().click();
-    await expect(rows(page)).toHaveCount(3);
+    // Next page: the pages loaded stay in the URL, and a reload loads them again, on the first.
+    await page.getByRole("navigation", { name: message("admin.list.pages") }).getByRole("button", { name: message("admin.list.next") }).click();
+    await expect(rows(page)).toHaveCount(1);
     await expect(page).toHaveURL(/[?&]pages=2/);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
     await page.reload();
-    await expect(rows(page)).toHaveCount(3);
+    await expect(rows(page)).toHaveCount(2);
 
     // The row's link to its actor's operations, by keyboard: the row stays, and focus with it.
     const actorLink = rows(page).first().getByRole("link", { name: new RegExp(moderator.display_name) });
@@ -227,7 +216,7 @@ test.describe("audit log", () => {
     await expect(rows(page).first().getByRole("listitem").first().getByRole("link")).toBeFocused();
 
     // The kind of operation, with the select-only combobox and the keyboard.
-    const filters = page.getByRole("main").getByRole("region").first();
+    const filters = page.getByRole("main").getByRole("group", { name: message("admin.audit_log.filter.title") });
     await filters.getByRole("button").first().focus();
     await page.keyboard.press("Enter");
     const listbox = page.getByRole("listbox");
@@ -267,7 +256,7 @@ test.describe("audit log", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/moderation\/audit-log$/);
     await expect(rows(page)).toHaveCount(2);
-    expect(await rows(page).first().getByRole("heading", { level: 3 }).textContent()).toBe(message("admin.audit_log.action.domain_action_lifted"));
+    expect(await rows(page).first().getByRole("rowheader").textContent()).toBe(message("admin.audit_log.action.domain_action_lifted"));
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

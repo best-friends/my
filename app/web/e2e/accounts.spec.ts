@@ -332,7 +332,7 @@ test.describe("accounts", () => {
     expect(requests).toContain(`POST /admin/accounts/${local.id}/actions ban block_email`);
 
     await page.goto("/moderation/signup-blocks");
-    await expect(page.getByRole("main").getByRole("tabpanel").getByRole("heading", { level: 3, name: emailHash })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("table").getByRole("rowheader", { name: emailHash })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

@@ -3,8 +3,8 @@
 // or all, newest first. The form follows the browser's constraint validation (React Aria's native validation);
 // a suspension asks first in an alert dialog (ConfirmDialog, NFR-MOD-7), the other kinds take effect at once.
 // What an action or a lift did stays on the page in a StatusMessage (role="status") next to what caused it.
-// The tabs follow the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs), kept in the URL by
-// the route (web-client.md S3); only the selected panel is mounted. Last, the list in Mastodon's CSV (DomainBlockCsv).
+// The list is in the admin mode's table form: a toolbar with the filter (kept in the URL by the route, web-client.md
+// S3), one page of the table at a time, previous / next. Last, the list in Mastodon's CSV (DomainBlockCsv).
 import {
   Box,
   Button,
@@ -18,18 +18,21 @@ import {
   Heading,
   InlineError,
   Link,
+  ListToolbar,
   Radio,
   RadioGroup,
   ReasonField,
-  SectionHeader,
+  Select,
+  SelectItem,
   Stack,
   StatusMessage,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
+  TableCell,
+  TableColumnHeader,
+  TableRow,
+  TableRowHeader,
   Text,
   TextField,
+  VisuallyHidden,
 } from "@my/ui";
 import { useRef, useState } from "react";
 import { useIntl } from "react-intl";
@@ -53,7 +56,7 @@ import {
   useLiftDomainAction,
 } from "../hooks/useDomainActions";
 import { DomainBlockCsv } from "./DomainBlockCsv";
-import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
+import { DateTime, DetailSection, DomainName, RecordTable, RequirePermission } from "./parts";
 
 const kindDescriptions: Readonly<Record<DomainActionKind, ClientMessageKey>> = {
   limit: "client:admin.domain_actions.kind.limit.description",
@@ -102,9 +105,7 @@ export function DomainActions(props: DomainActionsProps) {
           {/* Another domain from the URL starts another form (web-client.md R10). */}
           <NewDomainActionForm key={props.domain ?? ""} initialDomain={props.domain ?? ""} />
         </DetailSection>
-        <DetailSection title={t("client:admin.domain_actions.list.title")}>
-          <DomainActionTabs {...props} />
-        </DetailSection>
+        <DomainActionTabs {...props} />
         <DetailSection title={t("client:admin.domain_actions.csv.title")}>
           <DomainBlockCsv />
         </DetailSection>
@@ -230,6 +231,7 @@ function DomainActionTabs({ filter, domain, onFilterChange, everyDomainHref }: D
   const [status, setStatus] = useState<string | undefined>(undefined);
   return (
     <Stack gap="3">
+      <Heading level={2}>{t("client:admin.domain_actions.list.title")}</Heading>
       {domain !== undefined && (
         <Cluster as="p" align="baseline" gap="2" rowGap="0">
           <Text wrap="anywhere">{t("client:admin.domain_actions.list.of_domain", { domain: domainInText(t, domain) })}</Text>
@@ -238,33 +240,32 @@ function DomainActionTabs({ filter, domain, onFilterChange, everyDomainHref }: D
           </Link>
         </Cluster>
       )}
-      <StatusMessage>{status}</StatusMessage>
-      <Tabs
-        selectedKey={filter}
-        onSelectionChange={(key) => {
-          if (isFilter(key)) onFilterChange(key);
-        }}
-      >
-        <TabList aria-label={t("client:admin.domain_actions.filter.label")}>
+      <ListToolbar label={t("client:admin.list.filters")}>
+        <Select
+          variant="toolbar"
+          aria-label={t("client:admin.domain_actions.filter.label")}
+          value={filter}
+          onChange={(key) => {
+            if (isFilter(key)) onFilterChange(key);
+          }}
+        >
           {domainActionFilters.map((item) => (
-            <Tab key={item} id={item}>
+            <SelectItem key={item} id={item}>
               {t(filterLabels[item])}
-            </Tab>
+            </SelectItem>
           ))}
-        </TabList>
-        {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
-        {domainActionFilters.map((item) => (
-          <TabPanel key={item} id={item}>
-            <DomainActionList
-              filter={filter}
-              domain={domain}
-              onLifted={(action) => {
-                setStatus(t("client:admin.domain_actions.lifted", { kind: t(domainActionKindLabels[action.kind]), domain: domainInText(t, action.domain) }));
-              }}
-            />
-          </TabPanel>
-        ))}
-      </Tabs>
+        </Select>
+      </ListToolbar>
+      <StatusMessage>{status}</StatusMessage>
+      {/* Another filter is another list: it starts at its first page. */}
+      <DomainActionList
+        key={filter}
+        filter={filter}
+        domain={domain}
+        onLifted={(action) => {
+          setStatus(t("client:admin.domain_actions.lifted", { kind: t(domainActionKindLabels[action.kind]), domain: domainInText(t, action.domain) }));
+        }}
+      />
     </Stack>
   );
 }
@@ -273,7 +274,7 @@ type DomainActionListProps = { filter: DomainActionFilter; domain: string | unde
 
 function DomainActionList({ filter, domain, onLifted }: DomainActionListProps) {
   const t = useT();
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const list = useDomainActions({ filter, domain });
   const removed = useFocusAfterRemoval(
     listRef,
@@ -293,9 +294,29 @@ function DomainActionList({ filter, domain, onLifted }: DomainActionListProps) {
       <EmptyState headingLevel={3} heading={t("client:admin.domain_actions.empty.all")} />
     );
   return (
-    <RecordList list={list} getId={(action) => action.id} listRef={listRef} empty={empty}>
-      {(action) => <DomainActionRow action={action} lift={lift} />}
-    </RecordList>
+    <Box ref={listRef}>
+      <RecordTable
+        list={list}
+        caption={t(filterLabels[filter])}
+        getId={(action) => action.id}
+        empty={empty}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.domain_actions.column.domain")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.domain_actions.kind")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.domain_actions.state")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.domain_actions.issued_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.domain_actions.expires_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.domain_actions.column.details")}</TableColumnHeader>
+            <TableColumnHeader>
+              <VisuallyHidden>{t("client:admin.list.column.actions")}</VisuallyHidden>
+            </TableColumnHeader>
+          </>
+        }
+      >
+        {(action) => <DomainActionRow action={action} lift={lift} />}
+      </RecordTable>
+    </Box>
   );
 }
 
@@ -304,53 +325,29 @@ function DomainActionRow({ action, lift }: { action: DomainAction; lift: LiftDom
   const intl = useIntl();
   const kind = t(domainActionKindLabels[action.kind]);
   return (
-    <Stack gap="3">
-      <SectionHeader
-        actions={
-          action.state === "active" && (
-          <Button
-            size="sm"
-            isPending={lift.pendingIds.includes(action.id)}
-            aria-label={t("client:admin.domain_actions.lift_action", {
-              kind,
-              domain: domainInText(t, action.domain),
-              date: intl.formatDate(action.issued_at, { dateStyle: "medium", timeStyle: "short" }),
-            })}
-            onPress={() => {
-              lift.lift(action);
-            }}
-          >
-            {t("client:admin.domain_actions.lift")}
-          </Button>
-          )
-        }
-      >
-        <Heading level={3} wrap="anywhere" focusable>
-          <DomainName domain={action.domain} />
-        </Heading>
-      </SectionHeader>
-      <DescriptionList columns={3}>
-        <DescriptionItem term={t("client:admin.domain_actions.kind")}>{kind}</DescriptionItem>
-        <DescriptionItem term={t("client:admin.domain_actions.state")}>
-          <Text {...(action.state === "active" ? { weight: "semibold" as const } : {})}>{t(stateLabels[action.state])}</Text>
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.domain_actions.issued_at")}>
-          <DateTime value={action.issued_at} />
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.domain_actions.expires_at")}>
-          {action.expires_at === undefined ? t("client:admin.domain_actions.duration.indefinite") : <DateTime value={action.expires_at} />}
-        </DescriptionItem>
-        {action.lifted_at !== undefined && (
-          <DescriptionItem term={t("client:admin.domain_actions.lifted_at")}>
-            <DateTime value={action.lifted_at} />
-          </DescriptionItem>
-        )}
-        <DescriptionItem term={t("client:admin.domain_actions.obfuscate.term")}>
-          {action.obfuscate ? t("client:admin.domain_actions.obfuscate.yes") : t("client:admin.domain_actions.obfuscate.no")}
-        </DescriptionItem>
-      </DescriptionList>
-      {(action.public_comment !== undefined || action.private_note !== undefined) && (
+    <TableRow data-row-id={action.id}>
+      {/* Focusable from script: it takes focus when the lift button goes away (useFocusHeadingAfterLift). */}
+      <TableRowHeader tabIndex={-1} wrap="anywhere">
+        <DomainName domain={action.domain} />
+      </TableRowHeader>
+      <TableCell>{kind}</TableCell>
+      <TableCell>
+        <Text {...(action.state === "active" ? { weight: "semibold" as const } : {})}>{t(stateLabels[action.state])}</Text>
+      </TableCell>
+      <TableCell>
+        <DateTime value={action.issued_at} />
+      </TableCell>
+      <TableCell>{action.expires_at === undefined ? t("client:admin.domain_actions.duration.indefinite") : <DateTime value={action.expires_at} />}</TableCell>
+      <TableCell wrap="anywhere">
         <DescriptionList>
+          {action.lifted_at !== undefined && (
+            <DescriptionItem term={t("client:admin.domain_actions.lifted_at")}>
+              <DateTime value={action.lifted_at} />
+            </DescriptionItem>
+          )}
+          <DescriptionItem term={t("client:admin.domain_actions.obfuscate.term")}>
+            {action.obfuscate ? t("client:admin.domain_actions.obfuscate.yes") : t("client:admin.domain_actions.obfuscate.no")}
+          </DescriptionItem>
           {action.public_comment !== undefined && (
             <DescriptionItem term={t("client:admin.domain_actions.public_comment")}>
               {/* Written by a moderator, in any language. */}
@@ -367,7 +364,25 @@ function DomainActionRow({ action, lift }: { action: DomainAction; lift: LiftDom
             </DescriptionItem>
           )}
         </DescriptionList>
-      )}
-    </Stack>
+      </TableCell>
+      <TableCell>
+        {action.state === "active" && (
+          <Button
+            size="sm"
+            isPending={lift.pendingIds.includes(action.id)}
+            aria-label={t("client:admin.domain_actions.lift_action", {
+              kind,
+              domain: domainInText(t, action.domain),
+              date: intl.formatDate(action.issued_at, { dateStyle: "medium", timeStyle: "short" }),
+            })}
+            onPress={() => {
+              lift.lift(action);
+            }}
+          >
+            {t("client:admin.domain_actions.lift")}
+          </Button>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }

@@ -97,10 +97,14 @@ const auditLogHandler = http.get(`${apiBase}/admin/audit_log`, ({ request }) => 
   return HttpResponse.json(start + 2 < matching.length && last !== undefined ? { items, next_cursor: last.id } : { items });
 });
 
-/** The rows of the list of operations: the items with a heading (each row has a list of links too). */
+/** The rows of the table of operations, without its header row. */
 function rows() {
-  const items = within(screen.getByRole("region", { name: "Operations" })).queryAllByRole("listitem");
-  return items.filter((item) => within(item).queryByRole("heading", { level: 3 }) !== null);
+  return within(screen.getByRole("table")).queryAllByRole("row").slice(1);
+}
+
+/** The pagination under the table. */
+function pagination() {
+  return screen.getByRole("navigation", { name: "Pages" });
 }
 
 /** A name inside a sentence, as the screen isolates it (U+2068 … U+2069). */
@@ -108,9 +112,9 @@ function isolated(name: string): string {
   return `\u2068${name}\u2069`;
 }
 
-function row(heading: string) {
-  const found = rows().find((item) => within(item).queryByRole("heading", { level: 3, name: heading }) !== null);
-  if (found === undefined) throw new Error(`no row ${heading}`);
+function row(operation: string) {
+  const found = rows().find((item) => within(item).queryByRole("rowheader", { name: operation }) !== null);
+  if (found === undefined) throw new Error(`no row ${operation}`);
   return found;
 }
 
@@ -121,8 +125,8 @@ describe("the audit log", () => {
     const { user } = await renderApp({ path: "/moderation/audit-log" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Audit log" })).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { level: 3, name: "Account action taken" })).toBeInTheDocument();
-    expect(rows().map((item) => within(item).getByRole("heading", { level: 3 }).textContent)).toEqual(["Account action taken", "Domain action taken"]);
+    expect(await screen.findByRole("rowheader", { name: "Account action taken" })).toBeInTheDocument();
+    expect(rows().map((item) => within(item).getByRole("rowheader").textContent)).toEqual(["Account action taken", "Domain action taken"]);
 
     const first = within(row("Account action taken"));
     expect(first.getByText("Mona")).toBeInTheDocument();
@@ -131,8 +135,9 @@ describe("the audit log", () => {
     expect(first.getByRole("link", { name: "@carol@remote.example" })).toHaveAttribute("href", "/moderation/accounts/0192f0c4-7a8e-7000-8000-000000000003");
     expect(within(row("Domain action taken")).getByRole("link", { name: "spam.example" })).toHaveAttribute("href", "/moderation/domain-actions?filter=all&domain=spam.example");
 
-    await user.click(screen.getByRole("button", { name: "Show more" }));
-    expect(await screen.findByRole("heading", { level: 3, name: "Setting changed" })).toBeInTheDocument();
+    expect(within(pagination()).getByRole("button", { name: "Previous" })).toBeDisabled();
+    await user.click(within(pagination()).getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("rowheader", { name: "Setting changed" })).toBeInTheDocument();
     // A setting has no screen: its label only. The command line and a deleted account have no account to show.
     const setting = within(row("Setting changed"));
     expect(setting.getByText("registration_mode")).not.toHaveAttribute("href");
@@ -144,7 +149,9 @@ describe("the audit log", () => {
     // An erased report has no screen to link to: its label only.
     expect(resolved.getByText("@dave")).not.toHaveAttribute("href");
     expect(resolved.queryByRole("link", { name: "@dave" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+    expect(within(pagination()).getByRole("button", { name: "Next" })).toBeDisabled();
+    await user.click(within(pagination()).getByRole("button", { name: "Previous" }));
+    expect(await screen.findByRole("rowheader", { name: "Account action taken" })).toBeInTheDocument();
     expect(requests).toEqual(["/admin/audit_log?limit=40", `/admin/audit_log?limit=40&cursor=${domainLimit.id}`]);
   });
 
@@ -152,8 +159,8 @@ describe("the audit log", () => {
     server.use(operatorHandler(["view_audit"]), auditLogHandler);
     const { user, router } = await renderApp({ path: "/moderation/audit-log" });
 
-    await user.click(await screen.findByRole("button", { name: "Show more" }));
-    expect(await screen.findByRole("heading", { level: 3, name: "Setting changed" })).toBeInTheDocument();
+    await user.click(within(await screen.findByRole("navigation", { name: "Pages" })).getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("rowheader", { name: "Setting changed" })).toBeInTheDocument();
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ pages: 2 });
     });
@@ -164,10 +171,14 @@ describe("the audit log", () => {
   test("opens with the pages of the URL", async () => {
     server.use(operatorHandler(["view_audit"]), auditLogHandler);
     const requests = recordAuditRequests();
-    await renderApp({ path: "/moderation/audit-log?pages=2" });
+    const { user } = await renderApp({ path: "/moderation/audit-log?pages=2" });
 
-    expect(await screen.findByRole("heading", { level: 3, name: "Report resolved" })).toBeInTheDocument();
-    expect(rows()).toHaveLength(4);
+    // Both pages are loaded; the table shows one at a time.
+    expect(await screen.findByRole("rowheader", { name: "Account action taken" })).toBeInTheDocument();
+    expect(rows()).toHaveLength(2);
+    await user.click(within(pagination()).getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("rowheader", { name: "Report resolved" })).toBeInTheDocument();
+    expect(rows()).toHaveLength(2);
     expect(requests).toEqual(["/admin/audit_log?limit=40", `/admin/audit_log?limit=40&cursor=${domainLimit.id}`]);
   });
 
@@ -191,13 +202,15 @@ describe("the audit log", () => {
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ action: "domain_action_issued", target_kind: "setting" });
     });
-    expect(await screen.findByRole("heading", { level: 3, name: "No operations match the filters" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "No operations match the filters" })).toBeInTheDocument();
 
-    await user.click(within(screen.getByRole("region", { name: "Operations" })).getByRole("link", { name: "Clear filters" }));
+    const [clear] = screen.getAllByRole("link", { name: "Clear filters" });
+    if (clear === undefined) throw new Error("no clear link");
+    await user.click(clear);
     await waitFor(() => {
       expect(router.state.location.search).toEqual({});
     });
-    expect(await screen.findByRole("heading", { level: 3, name: "Account action taken" })).toBeInTheDocument();
+    expect(await screen.findByRole("rowheader", { name: "Account action taken" })).toBeInTheDocument();
     expect(requests).toEqual([
       "/admin/audit_log?limit=40",
       "/admin/audit_log?limit=40&action=domain_action_issued",
@@ -220,7 +233,7 @@ describe("the audit log", () => {
     await waitFor(() => {
       expect(within(row("Account action taken")).getByRole("link", { name: "Show operations by all people" })).toHaveFocus();
     });
-    const filters = screen.getByRole("region", { name: "Filters" });
+    const filters = screen.getByRole("group", { name: "Filters" });
     expect(within(filters).getByText("Mona")).toBeInTheDocument();
 
     await user.click(within(row("Domain action taken")).getByRole("link", { name: `Show only operations on ${isolated("spam.example")}` }));
@@ -254,7 +267,7 @@ describe("the audit log", () => {
     const requests = recordAuditRequests();
     await renderApp({ path: "/moderation/audit-log?target=spam.example&action=unknown&pages=1000" });
 
-    expect(await screen.findByRole("heading", { level: 3, name: "Account action taken" })).toBeInTheDocument();
+    expect(await screen.findByRole("rowheader", { name: "Account action taken" })).toBeInTheDocument();
     expect(requests).toEqual(["/admin/audit_log?limit=40"]);
   });
 
@@ -270,15 +283,15 @@ describe("the audit log", () => {
     );
     const { user, router } = await renderApp({ path: "/moderation/audit-log" });
 
-    await user.click(await screen.findByRole("button", { name: "Show more" }));
+    await user.click(within(await screen.findByRole("navigation", { name: "Pages" })).getByRole("button", { name: "Next" }));
     expect(await screen.findByText("Could not load more operations")).toBeInTheDocument();
     expect(screen.getByText("The database is unavailable.")).toBeInTheDocument();
     expect(rows()).toHaveLength(1);
     expect(router.state.location.search).toEqual({});
 
     fail = false;
-    await user.click(screen.getByRole("button", { name: "Show more" }));
-    expect(await screen.findByRole("heading", { level: 3, name: "Domain action taken" })).toBeInTheDocument();
+    await user.click(within(pagination()).getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("rowheader", { name: "Domain action taken" })).toBeInTheDocument();
     expect(screen.queryByText("Could not load more operations")).not.toBeInTheDocument();
   });
 
@@ -286,7 +299,7 @@ describe("the audit log", () => {
     server.use(operatorHandler(["view_audit"]));
     await renderApp({ path: "/moderation/audit-log" });
 
-    expect(await screen.findByRole("heading", { level: 3, name: "No operations yet" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "No operations yet" })).toBeInTheDocument();
   });
 
   test("says why a user without view_audit cannot use it, and asks the server for nothing", async () => {

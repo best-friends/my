@@ -22,7 +22,7 @@ import {
   signupBlocksQueryOptions,
 } from "../api/signupBlocks";
 import { domainInText } from "./useDomainActions";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type PagedPages, toPagedList } from "./pagedList";
 
 export const signupBlockKindLabels: Readonly<Record<SignupBlockKind, ClientMessageKey>> = {
   email_domain: "client:admin.signup_blocks.kind.email_domain",
@@ -45,7 +45,7 @@ export function signupBlockValueInText(t: Translate, block: Pick<SignupBlock, "k
 }
 
 /** The sign-up blocks under `filter`, newest first. */
-export function useSignupBlocks(filter: SignupBlockFilter): PagedList<SignupBlock> {
+export function useSignupBlocks(filter: SignupBlockFilter): PagedPages<SignupBlock> {
   const api = useApi();
   return toPagedList(useSuspenseInfiniteQuery(signupBlocksQueryOptions(api, filter)));
 }

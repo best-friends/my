@@ -12222,5 +12222,45 @@
   "supporters.list.more_failed": {
     "defaultMessage": "続きを読み込めませんでした",
     "description": "Heading when more of the list could not load."
+  },
+  "admin.list.column.actions": {
+    "defaultMessage": "アクション",
+    "description": "Header of the column of an admin table that holds the buttons of a row; visually hidden."
+  },
+  "admin.registrations.column.applicant": {
+    "defaultMessage": "申請者",
+    "description": "Header of the column of the registrations table that names the applicant."
+  },
+  "admin.invites.column.invite": {
+    "defaultMessage": "招待コード",
+    "description": "Header of the column of the invites table that holds the invite's code."
+  },
+  "admin.domain_actions.column.domain": {
+    "defaultMessage": "ドメイン",
+    "description": "Header of the column of the domain actions table that names the domain."
+  },
+  "admin.domain_actions.column.details": {
+    "defaultMessage": "詳細",
+    "description": "Header of the column of the domain actions table that holds the notes and other facts of an action."
+  },
+  "admin.signup_blocks.column.value": {
+    "defaultMessage": "ブロック対象",
+    "description": "Header of the column of the sign-up blocks table that holds what the block matches."
+  },
+  "admin.signup_blocks.column.details": {
+    "defaultMessage": "詳細",
+    "description": "Header of the column of the sign-up blocks table that holds the source, comment and other facts of a block."
+  },
+  "admin.instances.column.server": {
+    "defaultMessage": "サーバー",
+    "description": "Header of the column of the remote servers table that names the server and links to it."
+  },
+  "admin.instance.column.event": {
+    "defaultMessage": "出来事",
+    "description": "Header of the column of a remote server's availability history that names what happened."
+  },
+  "admin.instance.column.occurred_at": {
+    "defaultMessage": "日時",
+    "description": "Header of the column of a remote server's availability history that holds when it happened."
   }
 }

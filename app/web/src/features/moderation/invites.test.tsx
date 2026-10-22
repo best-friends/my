@@ -54,14 +54,14 @@ describe("the invites", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Invites" })).toBeInTheDocument();
     expect(screen.queryByText(/does not take sign-ups with an invite/)).not.toBeInTheDocument();
-    const list = screen.getByRole("region", { name: "Invites" });
-    const [exhausted, unlimited] = within(list).getAllByRole("listitem");
+    expect(screen.getByRole("heading", { level: 2, name: "Invites" })).toBeInTheDocument();
+    const [exhausted, unlimited] = within(screen.getByRole("table", { name: "Invites" })).getAllByRole("row").slice(1);
     if (exhausted === undefined || unlimited === undefined) throw new Error("expected two invites");
-    expect(within(exhausted).getByRole("heading", { level: 3, name: "ABCDEFGHJKLMNPQR" })).toBeInTheDocument();
+    expect(within(exhausted).getByRole("rowheader", { name: "ABCDEFGHJKLMNPQR" })).toBeInTheDocument();
     expect(within(exhausted).getByText("Used up")).toBeInTheDocument();
     expect(within(exhausted).getByText("1 of 1")).toBeInTheDocument();
     expect(within(exhausted).queryByRole("button")).not.toBeInTheDocument();
-    expect(within(unlimited).getByRole("heading", { level: 3, name: "ZZZZYYYYXXXXWWWW" })).toBeInTheDocument();
+    expect(within(unlimited).getByRole("rowheader", { name: "ZZZZYYYYXXXXWWWW" })).toBeInTheDocument();
     expect(within(unlimited).getByText("3 (no limit)")).toBeInTheDocument();
     expect(within(unlimited).getByText("Never")).toBeInTheDocument();
   });
@@ -76,7 +76,7 @@ describe("the invites", () => {
     expect(await within(form).findByText("Created the invite NEWCODE234567ABC.")).toBeInTheDocument();
     expect(within(form).getByText("https://my.example/auth/sign_up?invite=NEWCODE234567ABC")).toHaveAttribute("dir", "ltr");
     expect(invites.created).toEqual([{ max_uses: 1, expires_in: 7 * 86_400 }]);
-    expect(within(screen.getByRole("region", { name: "Invites" })).getByRole("heading", { level: 3, name: "NEWCODE234567ABC" })).toBeInTheDocument();
+    expect(await screen.findByRole("rowheader", { name: "NEWCODE234567ABC" })).toBeInTheDocument();
   });
 
   test("creates an invite without a limit that never expires", async () => {
@@ -93,17 +93,17 @@ describe("the invites", () => {
     expect(invites.created).toEqual([{}]);
   });
 
-  test("revokes an invite, and focus moves to its heading", async () => {
+  test("revokes an invite, and focus moves to its row header", async () => {
     const invites = invitesServer([inviteFixture()]);
     const { user } = await renderApp({ path: "/moderation/invites" });
     await user.click(await screen.findByRole("button", { name: /^Revoke the invite ABCDEFGHJKLMNPQR/ }));
 
     expect(await screen.findByText("Revoked the invite ABCDEFGHJKLMNPQR. Nobody can sign up with it anymore.")).toBeInTheDocument();
-    const heading = screen.getByRole("heading", { level: 3, name: "ABCDEFGHJKLMNPQR" });
+    const heading = screen.getByRole("rowheader", { name: "ABCDEFGHJKLMNPQR" });
     await waitFor(() => {
       expect(heading).toHaveFocus();
     });
-    expect(within(screen.getByRole("region", { name: "Invites" })).getByText("Revoked")).toBeInTheDocument();
+    expect(within(screen.getByRole("table", { name: "Invites" })).getByText("Revoked")).toBeInTheDocument();
     expect(invites.revoked).toEqual([inviteFixture().id]);
   });
 

@@ -2,9 +2,9 @@
 // The sign-up blocks screen below its heading (FR-719): the form of a new block, the import of a list of them
 // (SignupBlockImport), then the blocks, in effect or all, newest first. The form follows the browser's constraint validation (React Aria's native validation); a
 // block takes effect at once and is lifted as easily, so neither asks first. What adding or lifting did stays on
-// the page in a StatusMessage (role="status") next to what caused it. The tabs follow the WAI-ARIA APG tabs
-// pattern with automatic activation (React Aria Tabs), kept in the URL by the route (web-client.md S3); only the
-// selected panel is mounted.
+// the page in a StatusMessage (role="status") next to what caused it. The list is in the admin mode's
+// table form: a toolbar with the filter (kept in the URL by the route, web-client.md S3), one page of the table
+// at a time, previous / next.
 import {
   Box,
   Button,
@@ -14,18 +14,21 @@ import {
   EmptyState,
   Heading,
   InlineError,
+  ListToolbar,
   Radio,
   RadioGroup,
   ReasonField,
-  SectionHeader,
+  Select,
+  SelectItem,
   Stack,
   StatusMessage,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
+  TableCell,
+  TableColumnHeader,
+  TableRow,
+  TableRowHeader,
   Text,
   TextField,
+  VisuallyHidden,
 } from "@my/ui";
 import { useRef, useState } from "react";
 import { useIntl } from "react-intl";
@@ -51,7 +54,7 @@ import {
   useSignupBlockForm,
   useSignupBlocks,
 } from "../hooks/useSignupBlocks";
-import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
+import { DateTime, DetailSection, DomainName, RecordTable, RequirePermission } from "./parts";
 import { SignupBlockImportForm } from "./SignupBlockImport";
 import { day, signupBlockDurations, signupBlockKindDescriptions, signupBlockSeverityDescriptions } from "./signupBlockFields";
 
@@ -107,9 +110,7 @@ export function SignupBlocks(props: SignupBlocksProps) {
         <DetailSection title={t("client:admin.signup_blocks.import.title")}>
           <SignupBlockImportForm />
         </DetailSection>
-        <DetailSection title={t("client:admin.signup_blocks.list.title")}>
-          <SignupBlockTabs {...props} />
-        </DetailSection>
+        <SignupBlockTabs {...props} />
       </Stack>
     </RequirePermission>
   );
@@ -210,39 +211,39 @@ function SignupBlockTabs({ filter, onFilterChange }: SignupBlocksProps) {
   const [status, setStatus] = useState<string | undefined>(undefined);
   return (
     <Stack gap="3">
-      <StatusMessage>{status}</StatusMessage>
-      <Tabs
-        selectedKey={filter}
-        onSelectionChange={(key) => {
-          if (isFilter(key)) onFilterChange(key);
-        }}
-      >
-        <TabList aria-label={t("client:admin.signup_blocks.filter.label")}>
+      <Heading level={2}>{t("client:admin.signup_blocks.list.title")}</Heading>
+      <ListToolbar label={t("client:admin.list.filters")}>
+        <Select
+          variant="toolbar"
+          aria-label={t("client:admin.signup_blocks.filter.label")}
+          value={filter}
+          onChange={(key) => {
+            if (isFilter(key)) onFilterChange(key);
+          }}
+        >
           {signupBlockFilters.map((item) => (
-            <Tab key={item} id={item}>
+            <SelectItem key={item} id={item}>
               {t(filterLabels[item])}
-            </Tab>
+            </SelectItem>
           ))}
-        </TabList>
-        {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
-        {signupBlockFilters.map((item) => (
-          <TabPanel key={item} id={item}>
-            <SignupBlockList
-              filter={filter}
-              onLifted={(block) => {
-                setStatus(t("client:admin.signup_blocks.lifted", { kind: t(signupBlockKindLabels[block.kind]), value: signupBlockValueInText(t, block) }));
-              }}
-            />
-          </TabPanel>
-        ))}
-      </Tabs>
+        </Select>
+      </ListToolbar>
+      <StatusMessage>{status}</StatusMessage>
+      {/* Another filter is another list: it starts at its first page. */}
+      <SignupBlockList
+        key={filter}
+        filter={filter}
+        onLifted={(block) => {
+          setStatus(t("client:admin.signup_blocks.lifted", { kind: t(signupBlockKindLabels[block.kind]), value: signupBlockValueInText(t, block) }));
+        }}
+      />
     </Stack>
   );
 }
 
 function SignupBlockList({ filter, onLifted }: { filter: SignupBlockFilter; onLifted: (block: SignupBlock) => void }) {
   const t = useT();
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const list = useSignupBlocks(filter);
   const removed = useFocusAfterRemoval(
     listRef,
@@ -262,9 +263,30 @@ function SignupBlockList({ filter, onLifted }: { filter: SignupBlockFilter; onLi
       <EmptyState headingLevel={3} heading={t("client:admin.signup_blocks.empty.all")} />
     );
   return (
-    <RecordList list={list} getId={(block) => block.id} listRef={listRef} empty={empty}>
-      {(block) => <SignupBlockRow block={block} lift={lift} />}
-    </RecordList>
+    <Box ref={listRef}>
+      <RecordTable
+        list={list}
+        caption={t(filterLabels[filter])}
+        getId={(block) => block.id}
+        empty={empty}
+        head={
+          <>
+            <TableColumnHeader>{t("client:admin.signup_blocks.column.value")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.signup_blocks.kind")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.signup_blocks.severity")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.signup_blocks.state")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.signup_blocks.created_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.signup_blocks.expires_at")}</TableColumnHeader>
+            <TableColumnHeader>{t("client:admin.signup_blocks.column.details")}</TableColumnHeader>
+            <TableColumnHeader>
+              <VisuallyHidden>{t("client:admin.list.column.actions")}</VisuallyHidden>
+            </TableColumnHeader>
+          </>
+        }
+      >
+        {(block) => <SignupBlockRow block={block} lift={lift} />}
+      </RecordTable>
+    </Box>
   );
 }
 
@@ -279,10 +301,42 @@ function SignupBlockRow({ block, lift }: { block: SignupBlock; lift: LiftSignupB
   const intl = useIntl();
   const kind = t(signupBlockKindLabels[block.kind]);
   return (
-    <Stack gap="3">
-      <SectionHeader
-        actions={
-          block.state === "active" && (
+    <TableRow data-row-id={block.id}>
+      {/* Focusable from script: it takes focus when the lift button goes away (useFocusHeadingAfterLift). */}
+      <TableRowHeader tabIndex={-1} wrap="anywhere">
+        <SignupBlockValue block={block} />
+      </TableRowHeader>
+      <TableCell>{kind}</TableCell>
+      <TableCell>{t(signupBlockSeverityLabels[block.severity])}</TableCell>
+      <TableCell>
+        <Text {...(block.state === "active" ? { weight: "semibold" as const } : {})}>{t(stateLabels[block.state])}</Text>
+      </TableCell>
+      <TableCell>
+        <DateTime value={block.created_at} />
+      </TableCell>
+      <TableCell>{block.expires_at === undefined ? t("client:admin.signup_blocks.duration.indefinite") : <DateTime value={block.expires_at} />}</TableCell>
+      <TableCell wrap="anywhere">
+        <DescriptionList>
+          {block.lifted_at !== undefined && (
+            <DescriptionItem term={t("client:admin.signup_blocks.lifted_at")}>
+              <DateTime value={block.lifted_at} />
+            </DescriptionItem>
+          )}
+          <DescriptionItem term={t("client:admin.signup_blocks.source")}>
+            {block.moderation_action_id === undefined ? t("client:admin.signup_blocks.source.manual") : t("client:admin.signup_blocks.source.ban")}
+          </DescriptionItem>
+          {block.comment !== undefined && (
+            <DescriptionItem term={t("client:admin.signup_blocks.comment")}>
+              {/* Written by a moderator, in any language. */}
+              <Text dir="auto" whitespace="preWrap">
+                {block.comment}
+              </Text>
+            </DescriptionItem>
+          )}
+        </DescriptionList>
+      </TableCell>
+      <TableCell>
+        {block.state === "active" && (
           <Button
             size="sm"
             isPending={lift.pendingIds.includes(block.id)}
@@ -297,44 +351,8 @@ function SignupBlockRow({ block, lift }: { block: SignupBlock; lift: LiftSignupB
           >
             {t("client:admin.signup_blocks.lift")}
           </Button>
-          )
-        }
-      >
-        <Heading level={3} wrap="anywhere" focusable>
-          <SignupBlockValue block={block} />
-        </Heading>
-      </SectionHeader>
-      <DescriptionList columns={3}>
-        <DescriptionItem term={t("client:admin.signup_blocks.kind")}>{kind}</DescriptionItem>
-        <DescriptionItem term={t("client:admin.signup_blocks.severity")}>{t(signupBlockSeverityLabels[block.severity])}</DescriptionItem>
-        <DescriptionItem term={t("client:admin.signup_blocks.state")}>
-          <Text {...(block.state === "active" ? { weight: "semibold" as const } : {})}>{t(stateLabels[block.state])}</Text>
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.signup_blocks.created_at")}>
-          <DateTime value={block.created_at} />
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.signup_blocks.expires_at")}>
-          {block.expires_at === undefined ? t("client:admin.signup_blocks.duration.indefinite") : <DateTime value={block.expires_at} />}
-        </DescriptionItem>
-        {block.lifted_at !== undefined && (
-          <DescriptionItem term={t("client:admin.signup_blocks.lifted_at")}>
-            <DateTime value={block.lifted_at} />
-          </DescriptionItem>
         )}
-        <DescriptionItem term={t("client:admin.signup_blocks.source")}>
-          {block.moderation_action_id === undefined ? t("client:admin.signup_blocks.source.manual") : t("client:admin.signup_blocks.source.ban")}
-        </DescriptionItem>
-      </DescriptionList>
-      {block.comment !== undefined && (
-        <DescriptionList>
-          <DescriptionItem term={t("client:admin.signup_blocks.comment")}>
-            {/* Written by a moderator, in any language. */}
-            <Text dir="auto" whitespace="preWrap">
-              {block.comment}
-            </Text>
-          </DescriptionItem>
-        </DescriptionList>
-      )}
-    </Stack>
+      </TableCell>
+    </TableRow>
   );
 }

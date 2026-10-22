@@ -372,7 +372,7 @@ describe("an account's admin page", () => {
     // The list is read once before the ban, and kept fresh for a while (staleTime).
     const { user, router } = await renderApp({ path: "/moderation/signup-blocks" });
     expect(await screen.findByRole("heading", { level: 1, name: "Sign-up blocks" })).toBeInTheDocument();
-    expect(await within(screen.getByRole("tabpanel")).findByRole("heading", { level: 3 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 3, name: "No sign-up blocks in effect" })).toBeInTheDocument();
     await router.navigate({ to: "/moderation/accounts/$id", params: { id: bobDetail.id } });
 
     const action = await screen.findByRole("region", { name: "Take action" });
@@ -391,7 +391,7 @@ describe("an account's admin page", () => {
     expect(api.created).toEqual([{ kind: "ban", reason_category: "other", notify_target: true, block_email: true }]);
 
     await router.navigate({ to: "/moderation/signup-blocks" });
-    expect(await within(await screen.findByRole("tabpanel")).findByRole("heading", { level: 3, name: emailHash })).toBeInTheDocument();
+    expect(await within(await screen.findByRole("table")).findByRole("rowheader", { name: emailHash })).toBeInTheDocument();
   });
 
   test("a ban of a local account without an email address offers no block of it", async () => {

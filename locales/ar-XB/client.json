@@ -2695,6 +2695,14 @@
     "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.domain_actions.column.details": {
+    "defaultMessage": "‮ᗡǝʇɐıʅs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.column.domain": {
+    "defaultMessage": "‮ᗡoɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.domain_actions.confirm_suspend.cancel": {
     "defaultMessage": "‮Ↄɐuɔǝʅ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3615,6 +3623,14 @@
     "defaultMessage": "‮Ԑɐɔʞ ʇo ɹǝɯoʇǝ sǝɹʌǝɹs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.instance.column.event": {
+    "defaultMessage": "‮Ǝʌǝuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.instance.column.occurred_at": {
+    "defaultMessage": "‮Mɥǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.instance.event.marked_available": {
     "defaultMessage": "‮ᗡǝʅıʌǝɹıǝs ɹǝsnɯǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3719,6 +3735,10 @@
     "defaultMessage": "‮Ԁɐnsǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.instances.column.server": {
+    "defaultMessage": "‮Sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.instances.empty": {
     "defaultMessage": "‮No sǝɹʌǝɹs ʍıʇɥ ɟɐıʅǝp pǝʅıʌǝɹıǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3749,6 +3769,10 @@
   },
   "admin.instances.title": {
     "defaultMessage": "‮ᴚǝɯoʇǝ sǝɹʌǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.invites.column.invite": {
+    "defaultMessage": "‮Iuʌıʇǝ ɔopǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.invites.copied": {
@@ -4087,6 +4111,10 @@
     "defaultMessage": "‮Moɹʞǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.list.column.actions": {
+    "defaultMessage": "‮∀ɔʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.list.filters": {
     "defaultMessage": "‮Ⅎıʅʇǝɹs‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4233,6 +4261,10 @@
   },
   "admin.registrations.characters_over": {
     "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.registrations.column.applicant": {
+    "defaultMessage": "‮∀ddʅıɔɐuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.registrations.confirm_approve.description": {
@@ -6065,6 +6097,14 @@
   },
   "admin.signup_blocks.characters_over": {
     "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.column.details": {
+    "defaultMessage": "‮ᗡǝʇɐıʅs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.signup_blocks.column.value": {
+    "defaultMessage": "‮Ԑʅoɔʞǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.signup_blocks.comment": {

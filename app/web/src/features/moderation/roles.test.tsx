@@ -131,9 +131,8 @@ describe("an account's roles", () => {
       }),
     );
     const { user, router } = await renderApp({ path: "/moderation/audit-log" });
-    const operations = await screen.findByRole("region", { name: "Operations" });
-    expect(await within(operations).findByRole("heading", { level: 3 })).toBeInTheDocument();
-    expect(within(operations).queryAllByRole("listitem")).toHaveLength(0);
+    expect(await screen.findByRole("heading", { level: 2, name: "No operations yet" })).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
     await router.navigate({ to: "/moderation/accounts/$id", params: { id: otherAccountFixture.id } });
     const roles = await screen.findByRole("region", { name: "Roles" });
     await user.click(await within(roles).findByRole("button", { name: `Grant ${ltr("moderator")}` }));
@@ -148,8 +147,8 @@ describe("an account's roles", () => {
     expect(changes).toEqual(["PUT moderator"]);
 
     await router.navigate({ to: "/moderation/audit-log" });
-    const after = await screen.findByRole("region", { name: "Operations" });
-    expect(within(after).getAllByRole("listitem").length).toBeGreaterThan(0);
+    const after = await screen.findByRole("table");
+    expect(within(after).getAllByRole("rowheader").length).toBeGreaterThan(0);
   });
 
   test("revokes a role after its confirmation; cancel changes nothing and returns focus to the button", async () => {

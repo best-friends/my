@@ -8,7 +8,6 @@ import type { Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
-import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler);
@@ -43,27 +42,27 @@ describe("remote servers", () => {
     const { user, router } = await renderApp({ path: "/moderation/instances" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Remote servers" })).toBeInTheDocument();
-    const [row] = within(screen.getByRole("tabpanel")).getAllByRole("listitem");
+    const [row] = within(await screen.findByRole("table")).getAllByRole("row").slice(1);
     if (row === undefined) throw new Error("no server is listed");
     const details = within(row);
-    expect(details.getByRole("heading", { level: 2, name: "down.example" })).toBeInTheDocument();
+    expect(details.getByRole("rowheader", { name: "down.example" })).toBeInTheDocument();
     expect(details.getByRole("link", { name: "down.example" })).toHaveAttribute("href", "/moderation/instances/down.example");
     expect(details.getByText("Paused")).toBeInTheDocument();
     expect(details.getByText("7 days")).toBeInTheDocument();
     expect(details.getByText("Oct 10, 2026")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Show more" }));
-    expect(await screen.findByRole("heading", { level: 2, name: "flaky.example" })).toBeInTheDocument();
+    await user.click(within(screen.getByRole("navigation", { name: "Pages" })).getByRole("button", { name: "Next" }));
+    expect(await screen.findByRole("rowheader", { name: "flaky.example" })).toBeInTheDocument();
     expect(screen.getByText("2 days")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "Paused" }));
+    await user.click(screen.getByRole("button", { name: /Server state/ }));
+    await user.click(await screen.findByRole("option", { name: "Paused" }));
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ state: "unavailable" });
     });
-    expect(screen.getByRole("tab", { name: "Paused" })).toHaveAttribute("aria-selected", "true");
-    expectSelectedTabControlsPanel("Paused");
-    expect(await screen.findByRole("heading", { level: 2, name: "down.example" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: "flaky.example" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("rowheader", { name: "down.example" })).toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "flaky.example" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Server state/ })).toHaveTextContent("Paused");
     expect(requests).toEqual(["GET /admin/instances?limit=40", "GET /admin/instances?limit=40&cursor=next", "GET /admin/instances?limit=40&state=unavailable"]);
   });
 
@@ -97,8 +96,9 @@ describe("remote servers", () => {
     expect(screen.getByText("Paused")).toBeInTheDocument();
     // The reason of the newest event, and in the history.
     expect(screen.getAllByText("Deliveries failed on 7 different days.")).toHaveLength(2);
-    const history = screen.getByRole("region", { name: "History" });
-    expect(within(history).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual(["Deliveries paused", "Deliveries resumed"]);
+    expect(screen.getByRole("heading", { level: 2, name: "History" })).toBeInTheDocument();
+    const history = screen.getByRole("table", { name: "History" });
+    expect(within(history).getAllByRole("rowheader").map((header) => header.textContent)).toEqual(["Deliveries paused", "Deliveries resumed"]);
     expect(within(history).getByText("The daily check reached the server.")).toBeInTheDocument();
 
     const resume = screen.getByRole("button", { name: "Resume deliveries" });
@@ -140,8 +140,8 @@ describe("remote servers", () => {
     expect(await screen.findByText("Deliveries to down.example resume.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Back to remote servers" }));
-    expect(await screen.findByRole("heading", { level: 2, name: "flaky.example" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 2, name: "down.example" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("rowheader", { name: "flaky.example" })).toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "down.example" })).not.toBeInTheDocument();
     expect(requests.filter((request) => request.startsWith("GET /admin/instances?"))).toEqual(["GET /admin/instances?limit=40", "GET /admin/instances?limit=40"]);
   });
 

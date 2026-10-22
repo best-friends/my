@@ -100,7 +100,7 @@ test.describe("page /moderation/registrations", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
     await page.goto("/moderation/registrations");
-    await expect(page.getByRole("main").getByRole("heading", { level: 2 }).first()).toBeVisible();
+    await expect(page.getByRole("main").getByRole("table")).toBeVisible();
   });
 
   test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -117,30 +117,20 @@ test.describe("registrations", () => {
     const decisions = await moderatorServer(page);
     await page.goto("/moderation/registrations");
     const main = page.getByRole("main");
-    const list = main.getByRole("list");
-    await expect(list.getByRole("heading", { level: 2 })).toHaveCount(2);
+    const list = main.getByRole("table");
+    await expect(list.getByRole("rowheader")).toHaveCount(2);
 
-    await expect(list.getByRole("listitem").first()).toMatchAriaSnapshot(`
-      - listitem:
-        - heading "@bob" [level=2]
-        - button /@bob/
-        - button /@bob/
-        - term
-        - definition:
-          - time
-        - term
-        - definition: bob.with.a.long.address@birds.example
-        - term
-        - definition
-        - term
-        - definition
-        - term
-        - definition: ${longReason}
-    `);
+    // The first row: the applicant, the facts of the sign-up, the reason, and a button for each decision.
+    const bob = list.getByRole("row").nth(1);
+    await expect(bob.getByRole("rowheader")).toContainText("@bob");
+    await expect(bob).toContainText("bob.with.a.long.address@birds.example");
+    await expect(bob).toContainText(longReason);
+    await expect(bob.locator("time")).toHaveCount(1);
+    await expect(bob.getByRole("button", { name: /@bob/ })).toHaveCount(2);
     await expect(list.getByText(arabicReason)).toHaveAttribute("dir", "auto");
 
     // Approve bob: the dialog opens on the note, and nothing is sent before confirming.
-    await list.getByRole("listitem").first().getByRole("button").first().click();
+    await list.getByRole("row").nth(1).getByRole("button").first().click();
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toBeVisible();
     const note = dialog.getByRole("textbox");
@@ -163,15 +153,15 @@ test.describe("registrations", () => {
     await note.fill("Known from the birding club.");
     await dialog.getByRole("button").last().click();
     await expect(dialog).toBeHidden();
-    await expect(list.getByRole("heading", { level: 2 })).toHaveCount(1);
+    await expect(list.getByRole("rowheader")).toHaveCount(1);
     await expect(main.getByRole("status").filter({ hasText: "@bob" })).toBeVisible();
     // Focus moves from the gone row to the next registration's first button.
-    await expect(list.getByRole("listitem").first().getByRole("button").first()).toBeFocused();
+    await expect(list.getByRole("row").nth(1).getByRole("button").first()).toBeFocused();
     expect(decisions).toEqual(["approve 0192f0c4-7a8e-7000-8000-0000000000b1 Known from the birding club."]);
 
     // Reject carol by keyboard: Tab to her reject button, Enter, then confirm without a note.
     await page.keyboard.press("Tab");
-    await expect(list.getByRole("listitem").first().getByRole("button").last()).toBeFocused();
+    await expect(list.getByRole("row").nth(1).getByRole("button").last()).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button").last().click();

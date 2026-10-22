@@ -7,7 +7,7 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type ClientMessageKey } from "../../../lib/i18n";
 import { type AuditAction, type AuditActorKind, type AuditEntry, type AuditLogFilter, auditLogQueryOptions, type AuditTargetKind } from "../api/staff";
-import type { PagedList } from "./pagedList";
+import type { PagedPages } from "./pagedList";
 
 export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> = {
   account_action_issued: "client:admin.audit_log.action.account_action_issued",
@@ -185,7 +185,7 @@ function customEmojiHref(label: string): string | undefined {
   return `/admin/custom-emojis?${search.toString()}`;
 }
 
-export type AuditLog = PagedList<AuditEntry> & {
+export type AuditLog = PagedPages<AuditEntry> & {
   /** Why the last page failed to load, localized; the list keeps what it has and "show more" tries again. */
   loadMoreError: string | undefined;
   /** The account of the actor of the filter, from the loaded entries; undefined when none shows it. */
@@ -206,6 +206,7 @@ export function useAuditLog(filter: AuditLogFilter, onPagesLoaded: (pages: numbe
   const targetEntry = filter.target === undefined ? undefined : items.find((entry) => entry.target_kind === filter.targetKind && entry.target_id === filter.target);
   return {
     items,
+    pages: query.data.pages.map((page) => page.items).filter((entries) => entries.length > 0),
     hasMore: query.hasNextPage,
     isLoadingMore: query.isFetchingNextPage,
     loadMore: () => {

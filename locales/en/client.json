@@ -12222,5 +12222,45 @@
   "supporters.list.more_failed": {
     "defaultMessage": "Could not load more supporters",
     "description": "Heading when more of the list could not load."
+  },
+  "admin.list.column.actions": {
+    "defaultMessage": "Actions",
+    "description": "Header of the column of an admin table that holds the buttons of a row; visually hidden."
+  },
+  "admin.registrations.column.applicant": {
+    "defaultMessage": "Applicant",
+    "description": "Header of the column of the registrations table that names the applicant."
+  },
+  "admin.invites.column.invite": {
+    "defaultMessage": "Invite code",
+    "description": "Header of the column of the invites table that holds the invite's code."
+  },
+  "admin.domain_actions.column.domain": {
+    "defaultMessage": "Domain",
+    "description": "Header of the column of the domain actions table that names the domain."
+  },
+  "admin.domain_actions.column.details": {
+    "defaultMessage": "Details",
+    "description": "Header of the column of the domain actions table that holds the notes and other facts of an action."
+  },
+  "admin.signup_blocks.column.value": {
+    "defaultMessage": "Blocked",
+    "description": "Header of the column of the sign-up blocks table that holds what the block matches."
+  },
+  "admin.signup_blocks.column.details": {
+    "defaultMessage": "Details",
+    "description": "Header of the column of the sign-up blocks table that holds the source, comment and other facts of a block."
+  },
+  "admin.instances.column.server": {
+    "defaultMessage": "Server",
+    "description": "Header of the column of the remote servers table that names the server and links to it."
+  },
+  "admin.instance.column.event": {
+    "defaultMessage": "Event",
+    "description": "Header of the column of a remote server's availability history that names what happened."
+  },
+  "admin.instance.column.occurred_at": {
+    "defaultMessage": "When",
+    "description": "Header of the column of a remote server's availability history that holds when it happened."
   }
 }

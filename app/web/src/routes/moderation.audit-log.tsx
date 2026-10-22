@@ -5,7 +5,7 @@ import { auditActions, AuditLog, type AuditLogFilter, auditLogMaxPages, auditLog
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
-import { SettingsHeading } from "./-layout/SettingsHeading";
+import { PageHeading } from "./-layout/PageHeading";
 
 /**
  * The filter of the audit log and how many pages of it are loaded (web-client.md S3). `actor`: an account's ID;
@@ -58,7 +58,7 @@ function AuditLogPage() {
   const navigate = Route.useNavigate();
   return (
     <>
-      <SettingsHeading>{t("client:admin.audit_log.title")}</SettingsHeading>
+      <PageHeading>{t("client:admin.audit_log.title")}</PageHeading>
       <AuditLog
         filter={filter}
         onFilterChange={(next) => {

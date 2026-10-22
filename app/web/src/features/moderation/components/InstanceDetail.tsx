@@ -2,12 +2,12 @@
 // A remote server's page below its heading (federation.md §7.3): its health, why it is in its state, when
 // deliveries last resumed, the button that resumes them, the way to its moderation actions (FR-702), the refetch
 // of its accounts' posts (FR-407), and the history of its availability, newest first.
-import { Button, DescriptionItem, DescriptionList, EmptyState, Heading, Hint, Link, Stack } from "@my/ui";
+import { Button, Card, DescriptionItem, DescriptionList, EmptyState, Heading, Hint, Link, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { AvailabilityEvent } from "../api/staff";
 import { useInstance } from "../hooks/useInstances";
-import { Day, DateTime, DetailSection, InstanceStateLabel, RecordList, RequirePermission } from "./parts";
+import { Day, DateTime, DetailSection, InstanceStateLabel, RecordTable, RequirePermission } from "./parts";
 import { RefetchStatusesSection } from "./RefetchStatuses";
 
 const eventLabels: Readonly<Record<AvailabilityEvent["kind"], ClientMessageKey>> = {
@@ -45,7 +45,8 @@ function InstanceView({ domain }: InstanceDetailProps) {
   const resumed = events.items.find((event) => event.kind === "marked_available");
   return (
     <Stack gap="6">
-      <Stack gap="4">
+      <Card>
+        <Stack gap="4">
         <DescriptionList columns={3}>
           <DescriptionItem term={t("client:admin.instance.state")}>
             <InstanceStateLabel state={health.state} />
@@ -66,7 +67,8 @@ function InstanceView({ domain }: InstanceDetailProps) {
             <Hint id={descriptionId}>{t("client:admin.instance.mark_available.description")}</Hint>
           </Stack>
         )}
-      </Stack>
+        </Stack>
+      </Card>
       <DetailSection title={t("client:admin.instance.moderation.title")}>
         <Stack align="start" gap="1">
           <Link href={`/moderation/domain-actions?domain=${encodeURIComponent(domain)}`} variant="standalone" aria-describedby={moderationId}>
@@ -76,19 +78,32 @@ function InstanceView({ domain }: InstanceDetailProps) {
         </Stack>
       </DetailSection>
       <RefetchStatusesSection target={{ kind: "domain", domain }} />
-      <DetailSection title={t("client:admin.instance.history.title")}>
-        <RecordList list={events} getId={(event) => event.id} empty={<EmptyState headingLevel={3} heading={t("client:admin.instance.history.empty")} />}>
+      <Stack gap="3">
+        <Heading level={2}>{t("client:admin.instance.history.title")}</Heading>
+        <RecordTable
+          list={events}
+          caption={t("client:admin.instance.history.title")}
+          getId={(event) => event.id}
+          empty={<EmptyState headingLevel={3} heading={t("client:admin.instance.history.empty")} />}
+          head={
+            <>
+              <TableColumnHeader>{t("client:admin.instance.column.event")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.instance.column.occurred_at")}</TableColumnHeader>
+              <TableColumnHeader>{t("client:admin.instance.reason")}</TableColumnHeader>
+            </>
+          }
+        >
           {(event) => (
-            <Stack>
-              <Heading level={3}>{t(eventLabels[event.kind])}</Heading>
-              <Hint as="span">
+            <TableRow data-row-id={event.id}>
+              <TableRowHeader>{t(eventLabels[event.kind])}</TableRowHeader>
+              <TableCell>
                 <DateTime value={event.occurred_at} />
-              </Hint>
-              <span>{t(reasonLabels[event.reason])}</span>
-            </Stack>
+              </TableCell>
+              <TableCell>{t(reasonLabels[event.reason])}</TableCell>
+            </TableRow>
           )}
-        </RecordList>
-      </DetailSection>
+        </RecordTable>
+      </Stack>
     </Stack>
   );
 }
