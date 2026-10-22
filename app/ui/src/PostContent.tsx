@@ -82,10 +82,12 @@ export function sanitizedHtmlText(html: SanitizedHtml): string {
 const postContent = tv({
   // Long URLs and words wrap anywhere, so no post scrolls sideways at 320 px (web-client.md D3).
   base: [
-    "text-base wrap-anywhere text-fg",
-    "[&_a]:text-accent [&_a]:underline [&_a:hover]:text-accent-hover",
-    "[&_blockquote]:border-s-4 [&_blockquote]:border-border [&_blockquote]:ps-3 [&_blockquote]:text-fg-muted",
-    "[&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:font-mono",
+    "text-base leading-[1.85] wrap-anywhere text-fg",
+    "[&_a]:text-accent [&_a]:underline [&_a]:underline-offset-[3px] [&_a:hover]:text-accent-hover",
+    "[&_blockquote]:rounded-md [&_blockquote]:bg-surface-sunken [&_blockquote]:px-3 [&_blockquote]:py-2 [&_blockquote]:text-fg-muted",
+    "[&_code]:rounded-sm [&_code]:bg-surface-sunken [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em]",
+    "[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-surface-sunken [&_pre]:p-3 [&_pre]:font-mono",
+    "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
     "[&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6",
     "[&>*+*]:mt-2",
   ],
