@@ -88,7 +88,10 @@ function Shapes() {
             ["rounded-sm shadow-sm", "flex size-24 items-end rounded-sm bg-surface-raised p-2 shadow-sm"],
             ["rounded-md shadow-md", "flex size-24 items-end rounded-md bg-surface-raised p-2 shadow-md"],
             ["rounded-lg shadow-lg", "flex size-24 items-end rounded-lg bg-surface-raised p-2 shadow-lg"],
+            ["rounded-xl shadow-card", "flex size-24 items-end rounded-xl bg-surface-raised p-2 shadow-card"],
             ["rounded-xl shadow-lg", "flex size-24 items-end rounded-xl bg-surface-raised p-2 shadow-lg"],
+            ["rounded-2xl shadow-lg", "flex size-24 items-end rounded-2xl bg-surface-raised p-2 shadow-lg"],
+            ["rounded-avatar", "flex size-24 items-end rounded-avatar bg-soft p-2"],
           ] as const
         ).map(([name, classes]) => (
           <li key={name} className={classes}>

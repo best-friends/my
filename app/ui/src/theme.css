@@ -23,36 +23,55 @@
  */
 
 @theme {
-  /* --- Primitive palette (sRGB-safe OKLCH) -------------------------------------------------- */
-  --palette-white: oklch(100% 0 0);
-  --palette-black: oklch(0% 0 0);
+  /* --- Primitive palette: the my brand (Playful Human), sRGB hex ------------------------------ */
+  --palette-white: #ffffff;
+  --palette-black: #000000;
 
-  --palette-gray-50: oklch(98.5% 0.002 247.839);
-  --palette-gray-100: oklch(96.7% 0.003 264.542);
-  --palette-gray-200: oklch(92.8% 0.006 264.531);
-  --palette-gray-300: oklch(87.2% 0.01 258.338);
-  --palette-gray-400: oklch(70.7% 0.022 261.325);
-  --palette-gray-500: oklch(55.1% 0.027 264.364);
-  --palette-gray-600: oklch(44.6% 0.03 256.802);
-  --palette-gray-700: oklch(37.3% 0.034 259.733);
-  --palette-gray-800: oklch(27.8% 0.033 256.848);
-  --palette-gray-850: oklch(24.2% 0.034 260);
-  --palette-gray-900: oklch(21% 0.034 264.665);
-  --palette-gray-950: oklch(16% 0.03 262);
+  /* Warm neutrals (Light · Cream) */
+  --palette-cream-25: #fcf9f6;   /* page */
+  --palette-cream-50: #fff6ee;   /* brand Cream: wells */
+  --palette-cream-100: #fff0e8;  /* soft: selection tint */
+  --palette-cream-200: #f0e8e3;  /* hairlines */
+  --palette-taupe-500: #928a86;  /* control outlines */
+  --palette-taupe-600: #746e6c;  /* secondary text */
+  --palette-charcoal-900: #2e2e2e; /* brand Charcoal: ink */
 
-  --palette-blue-300: oklch(80.9% 0.098 251.813);
-  --palette-blue-400: oklch(70.7% 0.155 254.624);
-  --palette-blue-600: oklch(54.6% 0.245 262.881);
-  --palette-blue-700: oklch(48.8% 0.243 264.376);
+  /* Cocoa neutrals (Dark · Cocoa) */
+  --palette-cocoa-50: #f5ebea;
+  --palette-cocoa-300: #b7a7a5;
+  --palette-cocoa-500: #7d7374;
+  --palette-cocoa-700: #493b3d;
+  --palette-cocoa-750: #513639;
+  --palette-cocoa-800: #352f30;  /* toast / tooltip pill, both themes */
+  --palette-cocoa-850: #302829;
+  --palette-cocoa-900: #241f20;
+  --palette-cocoa-950: #1c1819;
 
-  --palette-red-400: oklch(70.4% 0.187 22.216);
-  --palette-red-700: oklch(50.5% 0.206 27.518);
+  /* Coral (brand primary) */
+  --palette-coral-300: #ffa8a8;
+  --palette-coral-350: #ff8585;
+  --palette-coral-400: #ff8080;
+  --palette-coral-500: #ff6b6b;  /* brand Coral */
+  --palette-coral-700: #b64d4d;
+  --palette-coral-800: #9b3c3c;
 
-  --palette-green-400: oklch(79.2% 0.209 151.711);
-  --palette-green-700: oklch(52.7% 0.145 150.069);
+  /* Mango (brand accent) */
+  --palette-mango-400: #ffb347;  /* brand Mango */
+  --palette-mango-700: #b88133;
 
-  --palette-amber-400: oklch(82.8% 0.17 84.429);
-  --palette-amber-800: oklch(47.3% 0.133 46.201);
+  /* Status */
+  --palette-berry-300: #ff8fb1;
+  --palette-berry-700: #a3214a;
+  --palette-berry-50: #fdebf0;
+  --palette-berry-900: #4a2433;
+  --palette-mint-300: #86d0a5;
+  --palette-mint-700: #397557;
+  --palette-mint-50: #e8f6e9;
+  --palette-mint-900: #325342;
+  --palette-amber-300: #f7c47a;
+  --palette-amber-800: #8a5a1f;
+  --palette-amber-50: #fff3de;
+  --palette-amber-900: #665232;
 
   /* Badge colors (ADR-0071): a pale and a deep step for the light theme, a dark and a light step
      for the dark theme, at the same lightness for every hue so that each pair keeps its contrast. */
@@ -97,43 +116,62 @@
      scripts/check-tokens.ts fails on it. */
   --color-*: initial;
 
-  /* Backgrounds. surface is the page; raised sits above it (cards, menus, dialogs); sunken sits
-     below it (inputs, wells). */
-  --color-surface: light-dark(var(--palette-gray-50), var(--palette-gray-950));
-  --color-surface-raised: light-dark(var(--palette-white), var(--palette-gray-900));
-  --color-surface-sunken: light-dark(var(--palette-gray-100), var(--palette-black));
+  /* Backgrounds. surface is the page; raised sits above it (cards, posts, menus, dialogs); sunken sits
+     below it (inputs, wells, hover fills, media cells). */
+  --color-surface: light-dark(var(--palette-cream-25), var(--palette-cocoa-900));
+  --color-surface-raised: light-dark(var(--palette-white), var(--palette-cocoa-850));
+  --color-surface-sunken: light-dark(var(--palette-cream-50), var(--palette-cocoa-950));
+  /* The selection tint: the current nav item, secondary buttons, the reader's own reaction. */
+  --color-soft: light-dark(var(--palette-cream-100), var(--palette-cocoa-750));
 
   /* Text and icons on any surface. */
-  --color-fg: light-dark(var(--palette-gray-900), var(--palette-gray-50));
-  --color-fg-muted: light-dark(var(--palette-gray-600), var(--palette-gray-400));
+  --color-fg: light-dark(var(--palette-charcoal-900), var(--palette-cocoa-50));
+  --color-fg-muted: light-dark(var(--palette-taupe-600), var(--palette-cocoa-300));
 
-  /* The brand / primary action color: links and primary buttons. accent-fg is text on accent. */
-  --color-accent: light-dark(var(--palette-blue-600), var(--palette-blue-400));
-  --color-accent-hover: light-dark(var(--palette-blue-700), var(--palette-blue-300));
-  --color-accent-fg: light-dark(var(--palette-white), var(--palette-gray-950));
+  /* accent: coral as text and thin marks (links, selected tabs and toggles, checkboxes, switches). */
+  --color-accent: light-dark(var(--palette-coral-700), var(--palette-coral-350));
+  --color-accent-hover: light-dark(var(--palette-coral-800), var(--palette-coral-300));
+  --color-accent-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  /* accent-fill: the bright brand coral as a fill (primary buttons, count badges, NewItemsButton),
+     always with the charcoal accent-fill-fg; never white on coral. */
+  --color-accent-fill: var(--palette-coral-500);
+  --color-accent-fill-hover: var(--palette-coral-400);
+  --color-accent-fill-fg: var(--palette-charcoal-900);
 
-  /* Status colors: as text on surfaces, or as a solid background with the matching -fg text. */
-  --color-danger: light-dark(var(--palette-red-700), var(--palette-red-400));
-  --color-danger-fg: light-dark(var(--palette-white), var(--palette-gray-950));
-  --color-success: light-dark(var(--palette-green-700), var(--palette-green-400));
-  --color-success-fg: light-dark(var(--palette-white), var(--palette-gray-950));
-  --color-warning: light-dark(var(--palette-amber-800), var(--palette-amber-400));
-  --color-warning-fg: light-dark(var(--palette-white), var(--palette-gray-950));
+  /* Status colors: as text on surfaces, as a solid fill with the matching -fg, or as a tinted -bg box. */
+  --color-danger: light-dark(var(--palette-berry-700), var(--palette-berry-300));
+  --color-danger-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  --color-danger-bg: light-dark(var(--palette-berry-50), var(--palette-berry-900));
+  --color-success: light-dark(var(--palette-mint-700), var(--palette-mint-300));
+  --color-success-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  --color-success-bg: light-dark(var(--palette-mint-50), var(--palette-mint-900));
+  --color-warning: light-dark(var(--palette-amber-800), var(--palette-amber-300));
+  --color-warning-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  --color-warning-bg: light-dark(var(--palette-amber-50), var(--palette-amber-900));
 
   /* border separates regions and is decorative; border-strong outlines controls (WCAG 1.4.11). */
-  --color-border: light-dark(var(--palette-gray-200), var(--palette-gray-800));
-  --color-border-strong: var(--palette-gray-500);
+  --color-border: light-dark(var(--palette-cream-200), var(--palette-cocoa-700));
+  --color-border-strong: light-dark(var(--palette-taupe-500), var(--palette-cocoa-500));
 
-  /* The focus ring (see the focus-ring utility below). */
-  --color-focus: light-dark(var(--palette-blue-600), var(--palette-blue-400));
+  /* The focus ring. */
+  --color-focus: light-dark(var(--palette-mango-700), var(--palette-mango-400));
 
-  /* The scrim behind modal dialogs and sheets. */
-  --color-overlay: light-dark(oklch(0% 0 0 / 0.4), oklch(0% 0 0 / 0.6));
+  /* The dark pill of Toast and Tooltip, the same in both themes. */
+  --color-toast: var(--palette-cocoa-800);
+  --color-toast-fg: var(--palette-white);
+  --color-toast-action: var(--palette-coral-350);
+  --color-toast-success: var(--palette-mint-300);
+  --color-toast-danger: var(--palette-berry-300);
+  --color-toast-muted: var(--palette-cocoa-300);
+
+  /* Scrims: behind modal dialogs and sheets, and under MediaViewer's alt text. */
+  --color-overlay: light-dark(#211c1c9e, #0d0a0bb3);
+  --color-alt-overlay: #000000cc;
 
   /* Role badges (ADR-0071): badge-<color> is the background and badge-<color>-fg the text on it.
      The color only decorates; the badge's name carries its meaning. Server themes cannot override them. */
-  --color-badge-neutral: light-dark(var(--palette-gray-100), var(--palette-gray-800));
-  --color-badge-neutral-fg: light-dark(var(--palette-gray-800), var(--palette-gray-200));
+  --color-badge-neutral: light-dark(var(--palette-cream-200), var(--palette-cocoa-700));
+  --color-badge-neutral-fg: light-dark(var(--palette-charcoal-900), var(--palette-cocoa-50));
   --color-badge-red: light-dark(var(--palette-badge-red-100), var(--palette-badge-red-900));
   --color-badge-red-fg: light-dark(var(--palette-badge-red-800), var(--palette-badge-red-200));
   --color-badge-orange: light-dark(var(--palette-badge-orange-100), var(--palette-badge-orange-900));
@@ -164,7 +202,8 @@
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", "Osaka-Mono", "Noto Sans Mono CJK JP",
     monospace;
-  --font-serif: initial;
+  /* Brand moments only: display headlines, page titles, EmptyState headings, avatar initials. */
+  --font-serif: Georgia, "Noto Serif JP", serif;
 
   /* Line heights are taller than Tailwind's defaults because CJK and Arabic need the room. */
   --text-xs: 0.75rem;
@@ -193,17 +232,24 @@
   --spacing: 0.25rem;
 
   --radius-*: initial;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /* Round and soft: checkboxes 6px, toggles / list items / fields 10px, menus / media 16px, cards / dialogs /
+     toasts 19px, sheets and the tile of an empty state 24px. Buttons, badges and search fields stay rounded-full.
+     --radius-avatar is a share of the avatar's side, not a length, so a server theme cannot override it. */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.1875rem;
+  --radius-2xl: 1.5rem;
+  --radius-avatar: 21%;
 
   /* Tailwind copies a --shadow-* value into its utilities instead of referring to the variable, so
      the values live in --elevation-* (no utilities of their own), which a server theme overrides. */
-  --elevation-sm: 0 1px 2px 0 oklch(0% 0 0 / 0.08);
-  --elevation-md: 0 2px 6px -1px oklch(0% 0 0 / 0.12), 0 1px 3px -1px oklch(0% 0 0 / 0.08);
-  --elevation-lg: 0 12px 24px -6px oklch(0% 0 0 / 0.18), 0 4px 8px -4px oklch(0% 0 0 / 0.1);
+  --elevation-card: 0 7px 28px 0 #502e260b; /* cards and posts */
+  --elevation-sm: 0 1px 2px 0 #502e2614;
+  --elevation-md: 0 7px 28px 0 #502e2614;
+  --elevation-lg: 0 16px 40px 0 #502e2624;
   --shadow-*: initial;
+  --shadow-card: var(--elevation-card);
   --shadow-sm: var(--elevation-sm);
   --shadow-md: var(--elevation-md);
   --shadow-lg: var(--elevation-lg);
@@ -243,7 +289,7 @@
 /* A visible focus indicator. Use it as `focus-visible:focus-ring` (or `data-focus-visible:focus-ring`
    on React Aria Components); an outline survives forced-colors mode, unlike a box-shadow. */
 @utility focus-ring {
-  outline: 2px solid var(--color-focus);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -277,7 +323,7 @@
 
   /* A fallback ring for focusable elements that do not style their own. */
   :focus-visible {
-    outline: 2px solid var(--color-focus);
+    outline: 3px solid var(--color-focus);
     outline-offset: 2px;
   }
 }

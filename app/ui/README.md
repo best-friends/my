@@ -39,7 +39,8 @@ The kit re-exports two React Aria providers that an app renders once at its root
 
 Colors have two layers in [src/theme.css](src/theme.css):
 
-- `--palette-*` is the primitive palette in OKLCH, inside the sRGB gamut so that a contrast ratio is the same on every screen.
+- `--palette-*` is the primitive palette of the my brand (cream, taupe, charcoal, cocoa, coral, mango, berry, mint, amber; the role badges
+  keep OKLCH steps), inside the sRGB gamut so that a contrast ratio is the same on every screen.
   It is not a Tailwind namespace, so it has no utilities; only the semantic tokens refer to it.
 - `--color-*` is the semantic layer. Each token is `light-dark(<light>, <dark>)` of palette colors.
 
@@ -47,17 +48,24 @@ Colors have two layers in [src/theme.css](src/theme.css):
 | --- | --- |
 | `surface` | Page background |
 | `surface-raised` | Cards, menus, popovers, dialogs |
-| `surface-sunken` | Inputs, wells |
+| `surface-sunken` | Inputs, wells, hover fills, media cells |
+| `soft` | The selection tint: the current navigation item, secondary buttons, the reader's own reaction |
 | `fg` | Body text and icons |
 | `fg-muted` | Secondary text: metadata, placeholders, hints |
-| `accent` / `accent-hover` | Links, primary actions, selected state |
+| `accent` / `accent-hover` | Coral as text and thin marks: links, selected tabs and toggles, checkboxes, switches |
 | `accent-fg` | Text and icons on `accent` / `accent-hover` |
+| `accent-fill` / `accent-fill-hover` | The bright brand coral as a fill: primary buttons, count badges, `NewItemsButton` |
+| `accent-fill-fg` | Text and icons on `accent-fill` / `accent-fill-hover`: charcoal, never white on coral |
 | `danger` / `success` / `warning` | Status text on a surface, or a solid status background |
 | `danger-fg` / `success-fg` / `warning-fg` | Text on the matching solid status background |
+| `danger-bg` / `success-bg` / `warning-bg` | The tinted box of a status message (`Callout`, `StatusMessage`), with `fg` or the matching status text on it |
+| `toast` / `toast-fg` | The dark pill of `Toast` and `Tooltip`, the same in both themes, and its text |
+| `toast-action` / `toast-success` / `toast-danger` / `toast-muted` | An action, a success mark, an error mark and secondary text on `toast` |
 | `border` | Decorative separators between regions that are already distinct |
 | `border-strong` | Boundaries of controls (inputs, checkboxes) that must be seen (WCAG 1.4.11) |
 | `focus` | The focus ring |
 | `overlay` | The translucent scrim behind modal dialogs and sheets |
+| `alt-overlay` | The translucent scrim under the alt text over a picture (`MediaViewer`); decorative, its contrast depends on the picture |
 | `badge-<color>` / `badge-<color>-fg` | The background and the text of a role badge (`RoleBadge`, ADR-0071), for each of `neutral`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`, `pink` (`badgeColors`) |
 
 ### Contrast pairs
@@ -67,7 +75,9 @@ verifies each against WCAG 2.2 AA in both themes: 4.5:1 for text, 3:1 for contro
 
 - On each of `surface`, `surface-raised`, `surface-sunken`:
   `fg`, `fg-muted`, `accent`, `accent-hover`, `danger`, `success`, `warning` (text) and `border-strong`, `focus` (UI).
-- `accent-fg` on `accent` and `accent-hover`; `danger-fg` on `danger`; `success-fg` on `success`; `warning-fg` on `warning` (text).
+- `accent-fg` on `accent` and `accent-hover`; `accent-fill-fg` on `accent-fill` and `accent-fill-hover`; `danger-fg` on `danger`; `success-fg` on `success`; `warning-fg` on `warning` (text).
+- `fg`, `fg-muted`, `accent` on `soft`; `fg` and the status text on `danger-bg` / `success-bg` / `warning-bg`; `toast-fg`, `toast-action`
+  (text) and `toast-muted`, `toast-success`, `toast-danger` (UI) on `toast`.
 - `badge-<color>-fg` on `badge-<color>` for every badge color (text). A server theme cannot override the badge tokens, so their
   pairs hold under every theme; the color only decorates, and the badge's label carries its meaning (WCAG 1.4.1).
 - `border` and `overlay` are decorative and have no minimum.
@@ -103,7 +113,9 @@ changes the choice and the attribute together; both use the localStorage key `my
 
 - `font-sans` is OS fonts only: the platform UI font, then Japanese, Chinese and Korean system fonts (Hiragino, Yu Gothic UI, Meiryo,
   PingFang, Microsoft YaHei UI, Malgun Gothic), Arabic system fonts (Geeza Pro, Segoe UI Arabic, Tahoma), the Noto families
-  of Linux and Android, and emoji. `font-mono` follows the same order. There is no serif family.
+  of Linux and Android, and emoji. `font-mono` follows the same order.
+- `font-serif` is `Georgia, "Noto Serif JP", serif`, for brand moments only: display headlines, page titles, `EmptyState` headings and avatar
+  initials. Body text and controls stay `font-sans`.
 - Sizes are `text-xs` (0.75rem), `text-sm` (0.875rem), `text-base` (1rem), `text-lg` (1.125rem), `text-xl` (1.25rem), `text-2xl` (1.5rem)
   and `text-3xl` (1.875rem). Line heights are taller than Tailwind's defaults (1.7 for `text-base`) for CJK and Arabic, and `body`
   uses the `text-base` line height.
@@ -152,15 +164,29 @@ The utility is not named `text-*` because `tailwind-merge` would read that as a 
   | Sections of a page | `gap-6` (`gap-8` from `@3xl`) |
   | Around an `EmptyState` or a page-level spinner | `py-10` |
 
-- Radius: `rounded-sm` (0.25rem), `rounded-md` (0.5rem), `rounded-lg` (0.75rem), `rounded-xl` (1rem), and `rounded-full`.
-- Shadow: `shadow-sm`, `shadow-md`, `shadow-lg`. In the dark theme raised surfaces are told apart by `surface-raised`, not by shadow.
+- Radius: `rounded-sm`, `rounded-md`, `rounded-lg`, `rounded-xl`, `rounded-2xl`, `rounded-avatar` and `rounded-full`. The brand design's radii
+  are drawn on these steps, never as arbitrary values:
+
+  | Token | Value | Used for (design radius) |
+  | --- | --- | --- |
+  | `rounded-sm` | 0.375rem (6px) | Checkboxes, small marks |
+  | `rounded-md` | 0.625rem (10px) | Toggles, list items, text fields (the design's 11px), quotes (12px) |
+  | `rounded-lg` | 1rem (16px) | Menus, popovers, media |
+  | `rounded-xl` | 1.1875rem (19px) | Cards, posts, dialogs, toasts (the design's 18px) |
+  | `rounded-2xl` | 1.5rem (24px) | Sheets, the tile of an `EmptyState` |
+  | `rounded-avatar` | 21% | Avatars: a share of the side, so a server theme cannot override it (`radius-avatar` is in `fixedTokens`) |
+  | `rounded-full` | pill | Buttons, badges, search fields |
+
+- Shadow: `shadow-card` (cards and posts), `shadow-sm`, `shadow-md`, `shadow-lg`, warm-tinted. In the dark theme raised surfaces are told apart
+  by `surface-raised`, not by shadow: a server theme's shadow is one value for both themes (no `light-dark()`), so the black-based dark
+  shadows of the design are not used.
   Tailwind copies a `--shadow-*` value into its utilities, so the values live in `--elevation-sm|md|lg`, which the `--shadow-*` tokens refer to
-  and a server theme overrides.
+  and a server theme overrides (`--elevation-card`, `--elevation-sm|md|lg`).
 - Radius, shadow, duration, and easing utilities take tokens only: no arbitrary values (`rounded-[3px]`, `shadow-[…]`, `duration-[…]`).
 
 ## Focus
 
-`focus-ring` is a 2px `focus` outline with a 2px offset. Apply it as `focus-visible:focus-ring`, or `data-focus-visible:focus-ring`
+`focus-ring` is a 3px `focus` outline with a 2px offset. Apply it as `focus-visible:focus-ring`, or `data-focus-visible:focus-ring`
 on React Aria Components. It is an outline, so it stays visible in forced-colors mode. Every `:focus-visible` element also gets the
 same ring from the base layer when it sets none of its own.
 
@@ -238,11 +264,11 @@ every theme against them. A token that matches no rule (and is not in `fixedToke
 | Tokens | Kind | Override |
 | --- | --- | --- |
 | `color-*` (but `color-badge-*`) | color | `#rrggbb` per theme (`#rrggbbaa` for `color-overlay`); every contrast pair must keep AA in both themes |
-| `font-sans`, `font-mono` | font family | Family names, quoted or plain, comma-separated (at most 30) |
+| `font-sans`, `font-mono`, `font-serif` | font family | Family names, quoted or plain, comma-separated (at most 30) |
 | `text-*` | length | `0` or rem / px, 0.625rem to 3rem |
 | `text-*--line-height` | number | 1 to 2.5 |
 | `spacing` | length | 0.125rem to 0.5rem (half to twice the default step) |
-| `radius-*` | length | 0 to 2rem |
+| `radius-*` (but `radius-avatar`) | length | 0 to 2rem |
 | `elevation-*` | shadow | `none` or up to 4 `[inset] <x> <y> [<blur> [<spread>]] <#color>` layers, lengths within 4rem |
 | `transition-duration-*`, `default-transition-duration` | duration | ms / s, 0 to 1000ms |
 | `ease-*`, `default-transition-timing-function` | easing | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, or `cubic-bezier()` with x in 0..1 |
