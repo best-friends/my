@@ -15,13 +15,20 @@ function serveInstance(overrides: Partial<Instance>) {
   server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, ...overrides })));
 }
 
+/** Three recent posts: the hero shows two, the section below lists the third. */
+const threePosts = [
+  timelineStatusFixture,
+  { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000p2" },
+  { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000p3" },
+];
+
 describe("the landing page", () => {
   test("welcomes people who are not signed in with the server's description, rules, recent posts and documents", async () => {
     const limits: (string | null)[] = [];
     server.use(
       http.get(`${apiBase}/timelines/local`, ({ request }) => {
         limits.push(new URL(request.url).searchParams.get("limit"));
-        return HttpResponse.json(statusPage([timelineStatusFixture]));
+        return HttpResponse.json(statusPage(threePosts));
       }),
     );
     serveInstance({
@@ -48,6 +55,7 @@ describe("the landing page", () => {
 
     const posts = screen.getByRole("region", { name: "Recent posts" });
     const feed = await within(posts).findByRole("feed", { name: "Recent posts" });
+    // The hero shows the first two posts; the section lists the rest.
     const article = within(feed).getByRole("article");
     // A sample to read: no actions on the posts before signing in.
     expect(within(article).queryByRole("button", { name: /Boost|Favourite|Reply/u })).not.toBeInTheDocument();
@@ -142,11 +150,19 @@ describe("the landing page", () => {
     expect(screen.queryByRole("region", { name: "Rules" })).not.toBeInTheDocument();
   });
 
+  test("leaves the section to its heading and link when the hero shows every recent post", async () => {
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([timelineStatusFixture]))));
+    await renderApp({ path: "/" });
+    const posts = await screen.findByRole("region", { name: "Recent posts" });
+    expect(within(posts).queryByRole("feed")).not.toBeInTheDocument();
+    expect(within(posts).getByRole("link", { name: "See the local timeline" })).toBeInTheDocument();
+  });
+
   test("shows the failure of the recent posts in their section and tries again", async () => {
     let fail = true;
     server.use(
       http.get(`${apiBase}/timelines/local`, () =>
-        fail ? problem(500, "about:blank", "Internal Server Error") : HttpResponse.json(statusPage([timelineStatusFixture])),
+        fail ? problem(500, "about:blank", "Internal Server Error") : HttpResponse.json(statusPage(threePosts)),
       ),
     );
     const { user } = await renderApp({ path: "/" });

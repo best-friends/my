@@ -115,6 +115,9 @@ const registrationNotes = {
  * The hero: creating an account is its one primary action while the server takes new accounts, with signing in beside
  * it; on a closed server (or before the instance has said) signing in is the primary one, and a note tells the mode.
  */
+/** How many of the recent posts the hero shows; the section below lists the rest. */
+const heroPostCount = 2;
+
 function LandingHero({ heading, landing }: { heading: ReactNode; landing: LandingData }) {
   const t = useT();
   const noteId = useId();
@@ -143,7 +146,7 @@ function LandingHero({ heading, landing }: { heading: ReactNode; landing: Landin
       {...(note !== undefined && { note: <Hint id={noteId}>{t(note)}</Hint> })}
       {...(mode === "closed" && { note: <Hint>{t("client:landing.registrations.closed")}</Hint> })}
       {...(landing.recentPosts.status === "ready" && landing.recentPosts.posts.length > 0 && {
-        aside: landing.recentPosts.posts.slice(0, 2).map((post) => <StatusCard key={post.id} status={post} withActions={false} />),
+        aside: landing.recentPosts.posts.slice(0, heroPostCount).map((post) => <StatusCard key={post.id} status={post} withActions={false} />),
       })}
       {...(landing.thumbnail !== undefined && { media: <ServerThumbnail thumbnail={landing.thumbnail} /> })}
     >
@@ -245,6 +248,8 @@ function RecentPostsBody({ posts, headingId }: { posts: Exclude<RecentPosts, { s
       );
     case "ready":
       if (posts.posts.length === 0) return <EmptyState headingLevel={3} heading={t("client:landing.posts.empty")} />;
+      // The hero shows the first posts; with nothing after them the section is its heading and the link.
+      if (posts.posts.length <= heroPostCount) return null;
       return (
         <Stack>
           {/* The feed role has no keyboard convention, so its keys are told before it (Feed's documentation). */}
@@ -253,7 +258,7 @@ function RecentPostsBody({ posts, headingId }: { posts: Exclude<RecentPosts, { s
           </VisuallyHidden>
           <Feed<RecentPost>
             aria-labelledby={headingId}
-            items={posts.posts}
+            items={posts.posts.slice(heroPostCount)}
             getKey={(post) => post.id}
             // A sample to read: acting on a post takes signing in first.
             renderItem={(post) => <StatusCard status={post} withActions={false} />}
