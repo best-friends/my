@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
-import { type CostBasis, type CostGranularity, deviceToday, FinanceCosts, financeCostTotalsQueryOptions } from "../features/costs";
+import { type CostBasis, type CostGranularity, deviceToday, FinanceCosts, financeCostTotalsQueryOptions, financeIncomeTotalsQueryOptions } from "../features/costs";
 import { viewerQueryOptions } from "../features/session";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
@@ -18,8 +18,8 @@ const searchSchema = z.object({
 });
 
 /**
- * The instance's finances for the holders of view_finance (ADR-0070 §5): the totals of its costs by week, month or
- * year, with as much of the items as the instance shows. It is a page of the user's side, not of the staff's screens,
+ * The instance's finances for the holders of view_finance (ADR-0070 §5, ADR-0073 §6): the totals of its costs and of
+ * its income by week, month or year, with as much of the items and of the plans as the instance shows. It is a page of the user's side, not of the staff's screens,
  * so a viewer who is not staff needs no admin scope. The totals end with today's period on the viewer's device.
  */
 export const Route = createFileRoute("/finance")({
@@ -33,10 +33,13 @@ export const Route = createFileRoute("/finance")({
   beforeLoad: requireSignIn,
   loader: async ({ context: { queryClient, api }, deps: { granularity, basis, today } }) => {
     // The viewer's permissions decide whether the page reads anything; a viewer without them is told why, and the
-    // totals' own failure shows in the page (useFinanceCosts). Cached data is shown at once (web-client.md S7).
+    // totals' own failures show in the page (useFinanceCosts). Cached data is shown at once (web-client.md S7).
     const viewer = await queryClient.query(viewerQueryOptions(api));
     if (!viewer.permissions.includes("view_finance") && !viewer.permissions.includes("manage_finance")) return;
-    await queryClient.query({ ...financeCostTotalsQueryOptions(api, granularity, basis, today), staleTime: Infinity }).catch(() => undefined);
+    await Promise.all([
+      queryClient.query({ ...financeCostTotalsQueryOptions(api, granularity, basis, today), staleTime: Infinity }).catch(() => undefined),
+      queryClient.query({ ...financeIncomeTotalsQueryOptions(api, granularity, basis, today), staleTime: Infinity }).catch(() => undefined),
+    ]);
   },
   component: FinancePage,
   errorComponent: FinanceError,

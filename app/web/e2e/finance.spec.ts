@@ -83,6 +83,58 @@ function totals(url: URL): Schemas["CostTotals"] {
   };
 }
 
+/** The income of the periods of a query, as the administrators see it: the last one with a yearly payment. */
+function incomeTotals(url: URL): Schemas["AdminIncomeTotals"] {
+  const cost = totals(url);
+  return {
+    granularity: cost.granularity,
+    basis: cost.basis,
+    periods: cost.periods.map((period, index) => ({
+      label: period.label,
+      starts_on: period.starts_on,
+      ends_on: period.ends_on,
+      gross: index === cost.periods.length - 1 ? [{ amount: "12000", currency: "JPY" }] : [],
+      fee: index === cost.periods.length - 1 ? [{ amount: "432", currency: "JPY" }] : [],
+      net: index === cost.periods.length - 1 ? [{ amount: "11568", currency: "JPY" }] : [],
+      balance: index === cost.periods.length - 1 ? [{ amount: "11428", currency: "JPY" }] : [],
+    })),
+    plans: [{ plan_id: "0192f0c4-7a8e-7000-8000-0000000000c1", name: "A plan with a rather long name that has to wrap on the narrowest screens", members: 1 }],
+    rules: { week_start: "monday", providers: [{ provider: "stripe", time_zone: "Asia/Tokyo" }], amortize_after_days: 31 },
+  };
+}
+
+/** A yearly payment of a supporter plan and a provider fee, as GET /admin/income_movements lists them. */
+const movements: Schemas["IncomeMovement"][] = [
+  {
+    id: "0192f0c4-7a8e-7000-8000-0000000000d1",
+    provider: "stripe",
+    provider_id: "txn_1PaymentWithARatherLongIdentifierThatDoesNotWrap",
+    kind: "payment",
+    subscription_id: "0192f0c4-7a8e-7000-8000-0000000000d2",
+    account_id: "0192f0c4-7a8e-7000-8000-0000000000d3",
+    occurred_at: "2026-10-10T03:00:00Z",
+    occurred_on: "2026-10-10",
+    covers_starts_on: "2026-10-10",
+    covers_ends_on: "2027-10-09",
+    gross: { amount: "12000", currency: "JPY" },
+    fee: { amount: "432", currency: "JPY" },
+    net: { amount: "11568", currency: "JPY" },
+    recorded_at: "2026-10-10T03:01:00Z",
+  },
+  {
+    id: "0192f0c4-7a8e-7000-8000-0000000000d4",
+    provider: "stripe",
+    provider_id: "txn_fee",
+    kind: "fee",
+    occurred_at: "2026-10-11T00:00:00Z",
+    occurred_on: "2026-10-11",
+    gross: { amount: "0", currency: "JPY" },
+    fee: { amount: "84", currency: "JPY" },
+    net: { amount: "-84", currency: "JPY" },
+    recorded_at: "2026-10-11T00:01:00Z",
+  },
+];
+
 const awsImport: Schemas["BillingImport"] = {
   source: "aws",
   provider: "AWS",
@@ -142,6 +194,8 @@ async function serveApi(page: Page) {
     }
     if (key === "GET /admin/cost_items") return json(route, { items });
     if (key === "GET /admin/billing_imports") return json(route, { items: [awsImport] });
+    if (key === "GET /admin/income_totals") return json(route, incomeTotals(url));
+    if (key === "GET /admin/income_movements") return json(route, { items: movements });
     if (key === "POST /admin/cost_items") {
       const { price, memo, ends_on, ...body } = request.postDataJSON() as Schemas["CostItemCreateRequest"];
       sent.push(`create ${body.schedule} ${price.amount} ${price.currency}`);
@@ -172,7 +226,8 @@ test.describe("costs", () => {
     await page.goto("/admin/finance");
     const main = page.getByRole("main");
     const totalsRegion = main.getByRole("region", { name: message("admin.finance.totals.title"), exact: true });
-    await expect(totalsRegion.getByRole("table")).toBeVisible();
+    // The costs' table, then the income's.
+    await expect(totalsRegion.getByRole("table")).toHaveCount(2);
     const basis = totalsRegion.getByRole("radiogroup", { name: message("costs.basis"), exact: true });
     await expect(basis.getByRole("radio", { name: message("costs.basis.amortized"), exact: true })).toBeChecked();
     await expect(totalsRegion.getByText(message("costs.totals.estimated"), { exact: true })).toBeVisible();
@@ -185,7 +240,7 @@ test.describe("costs", () => {
     await totalsRegion.getByRole("tab", { name: message("costs.granularity.month"), exact: true }).focus();
     await page.keyboard.press(test.info().project.use.locale === "ar-XB" ? "ArrowRight" : "ArrowLeft");
     await expect(totalsRegion.getByRole("tab", { name: message("costs.granularity.week"), exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(totalsRegion.getByRole("row", { name: /2026-W43/u })).toBeVisible();
+    await expect(totalsRegion.getByRole("table").first().getByRole("row", { name: /2026-W43/u })).toBeVisible();
     // React Aria hides the native radio under its drawing; the label is what the user presses.
     await basis.getByText(message("costs.basis.cash"), { exact: true }).click();
     await expect(basis.getByRole("radio", { name: message("costs.basis.cash"), exact: true })).toBeChecked();
@@ -225,4 +280,20 @@ test.describe("costs", () => {
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });
+});
+
+test("the income on the costs screen, with its money movements", async ({ page, makeAxeBuilder }) => {
+  await serveApi(page);
+  await page.goto("/admin/finance");
+  const main = page.getByRole("main");
+  const totalsRegion = main.getByRole("region", { name: message("admin.finance.totals.title"), exact: true });
+  const income = totalsRegion.getByRole("region", { name: message("income.title"), exact: true });
+  // The period, the gross, the fees, the income after fees and the balance.
+  await expect(income.getByRole("table").getByRole("columnheader")).toHaveCount(5);
+  await expect(income.getByText("A plan with a rather long name that has to wrap on the narrowest screens")).toHaveAttribute("dir", "auto");
+  const movementsRegion = main.getByRole("region", { name: message("admin.finance.movements.title"), exact: true });
+  await expect(movementsRegion.getByRole("listitem")).toHaveCount(2);
+  await expect(movementsRegion.getByText("txn_1PaymentWithARatherLongIdentifierThatDoesNotWrap")).toHaveAttribute("dir", "ltr");
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
 });

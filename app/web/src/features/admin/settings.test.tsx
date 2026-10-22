@@ -258,6 +258,22 @@ describe("the server's policies", () => {
     expect(breakdown).toBeChecked();
   });
 
+  test("publishes the income apart from the costs, saying that the members of a small plan may be guessed", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const income = await screen.findByRole("region", { name: "Income" });
+    const choice = within(income).getByRole("radiogroup", { name: "What to publish" });
+    expect(within(choice).getByRole("radio", { name: "Nothing" })).toBeChecked();
+    const plans = within(choice).getByRole("radio", { name: "Totals and members of each plan" });
+    expect(plans).toHaveAccessibleDescription(/On a plan with few members, people may guess who they are\./u);
+
+    await user.click(plans);
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { income_visibility: "plans" } }]);
+  });
+
   test("publishes the supporter list to everyone or to signed-in users, to nobody by default", async () => {
     const settings = settingsServer();
     const { user } = await renderApp({ path: "/admin/settings" });

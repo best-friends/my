@@ -2,7 +2,7 @@
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { instanceQueryOptions } from "../features/about";
-import { type CostBasis, type CostGranularity, deviceToday, PublicCosts, publicCostTotalsQueryOptions } from "../features/costs";
+import { type CostBasis, type CostGranularity, deviceToday, PublicCosts, publicCostTotalsQueryOptions, publicIncomeTotalsQueryOptions } from "../features/costs";
 import { useT } from "../lib/i18n";
 import { useInstanceName } from "../lib/instanceName";
 import { PageHeading } from "./-layout/PageHeading";
@@ -18,8 +18,8 @@ const searchSchema = z.object({
 });
 
 /**
- * The instance's running costs as its setting finance_visibility publishes them (FR-903, ADR-0067 §8), for everyone,
- * signed in or not. The `_` keeps the page out of the layout of `/about`. The totals end with today's period on the
+ * The instance's running costs and income as its settings finance_visibility and income_visibility publish them
+ * (FR-903, FR-917, ADR-0067 §8, ADR-0073 §7), for everyone, signed in or not. The `_` keeps the page out of the layout of `/about`. The totals end with today's period on the
  * viewer's device.
  */
 export const Route = createFileRoute("/about_/costs")({
@@ -30,11 +30,12 @@ export const Route = createFileRoute("/about_/costs")({
     today: deviceToday(),
   }),
   loader: async ({ context: { queryClient, api }, deps: { granularity, basis, today } }) => {
-    // Neither failure fails the page: the shell reads the instance too, and the totals show their own failure, or the
+    // No failure fails the page: the shell reads the instance too, and the totals show their own failure, or the
     // setting that publishes nothing (404), in the page. Cached data is shown at once (web-client.md S7).
     await Promise.all([
       queryClient.query({ ...instanceQueryOptions(api), staleTime: Infinity }).catch(() => undefined),
       queryClient.query({ ...publicCostTotalsQueryOptions(api, granularity, basis, today), staleTime: Infinity }).catch(() => undefined),
+      queryClient.query({ ...publicIncomeTotalsQueryOptions(api, granularity, basis, today), staleTime: Infinity }).catch(() => undefined),
     ]);
   },
   component: CostsPage,

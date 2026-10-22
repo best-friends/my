@@ -25,7 +25,7 @@ export function useFormatTotals(): (totals: readonly Money[]) => string {
 }
 
 /** The name of a period in the viewer's locale: the month and year, the year, or the dates of an ISO week with its number. */
-export function usePeriodName(): (granularity: CostGranularity, period: CostPeriodTotal) => string {
+export function usePeriodName(): (granularity: CostGranularity, period: Pick<CostPeriodTotal, "label" | "starts_on" | "ends_on">) => string {
   const intl = useIntl();
   const t = useT();
   return (granularity, period) => {

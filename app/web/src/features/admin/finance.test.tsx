@@ -2,7 +2,8 @@
 // The costs screen through the whole app (web-client.md T4, ADR-0067, ADR-0068): an administrator with
 // manage_finance sees the totals by month amortized by default and switches to weeks, years and cash, with the rules
 // next to them; records a cost paid every few months; edits, revises, ends and cancels one; and imports a provider's
-// charges now. A viewer without the permission sees why; with MSW playing the API.
+// charges now; reads the income with its gross, fees and balance under the same tabs, the members of each plan, and the
+// money movements with their subscribers. A viewer without the permission sees why; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
@@ -177,7 +178,8 @@ describe("the costs screen", () => {
     expect(router.state.location.search).toEqual({ granularity: "week", basis: "cash" });
 
     await user.click(within(region).getByRole("tab", { name: "Years" }));
-    expect(await within(region).findByRole("row", { name: /^2026/u })).toHaveTextContent("¥1,650");
+    const years = await within(region).findByRole("table", { name: "Totals by Years, On the payment date" });
+    expect(within(years).getByRole("row", { name: /^2026/u })).toHaveTextContent("¥1,650");
     expect(totals.queries.at(-1)).toMatchObject({ granularity: "year", basis: "cash", from: expect.stringMatching(/-01-01$/u) as string });
   });
 
@@ -419,6 +421,109 @@ describe("what the costs screen says of their publication", () => {
   });
 });
 
+describe("the income on the costs screen", () => {
+  beforeEach(() => {
+    server.use(signedInHandler);
+  });
+
+  const movement: Schemas["IncomeMovement"] = {
+    id: "0199f0e0-0000-7000-8000-00000000bb01",
+    provider: "stripe",
+    provider_id: "txn_1",
+    kind: "payment",
+    subscription_id: "0199f0e0-0000-7000-8000-00000000cc01",
+    account_id: "0199f0e0-0000-7000-8000-00000000dd01",
+    occurred_at: "2026-10-10T03:00:00Z",
+    occurred_on: "2026-10-10",
+    covers_starts_on: "2026-10-10",
+    covers_ends_on: "2027-10-09",
+    gross: { amount: "12000", currency: "JPY" },
+    fee: { amount: "432", currency: "JPY" },
+    net: { amount: "11568", currency: "JPY" },
+    recorded_at: "2026-10-10T03:01:00Z",
+  };
+
+  function serveIncome() {
+    const queries: Record<string, string>[] = [];
+    server.use(
+      http.get(`${apiBase}/admin/income_totals`, ({ request }) => {
+        const query = Object.fromEntries(new URL(request.url).searchParams);
+        queries.push(query);
+        return HttpResponse.json({
+          granularity: query["granularity"] as Schemas["CostGranularity"],
+          basis: query["basis"] as Schemas["CostBasis"],
+          periods: [
+            {
+              label: "2026-10",
+              starts_on: "2026-10-01",
+              ends_on: "2026-10-31",
+              gross: [{ amount: "12000", currency: "JPY" }],
+              fee: [{ amount: "432", currency: "JPY" }],
+              net: [{ amount: "11568", currency: "JPY" }],
+              balance: [{ amount: "11428", currency: "JPY" }],
+            },
+          ],
+          plans: [{ plan_id: "0199f0e0-0000-7000-8000-00000000aa01", name: "Coffee", members: 1 }],
+          rules: { week_start: "monday", providers: [{ provider: "stripe", time_zone: "Asia/Tokyo" }], amortize_after_days: 31 },
+        } satisfies Schemas["AdminIncomeTotals"]);
+      }),
+      http.get(`${apiBase}/admin/income_movements`, () =>
+        HttpResponse.json({
+          items: [movement, { id: "0199f0e0-0000-7000-8000-00000000bb02", provider: "stripe", provider_id: "txn_fee", kind: "fee", occurred_at: "2026-10-11T00:00:00Z", occurred_on: "2026-10-11", gross: { amount: "0", currency: "JPY" }, fee: { amount: "84", currency: "JPY" }, net: { amount: "-84", currency: "JPY" }, recorded_at: "2026-10-11T00:01:00Z" }],
+        } satisfies Schemas["IncomeMovementPage"]),
+      ),
+    );
+    return { queries };
+  }
+
+  test("shows the gross, the fees, the net and the balance by period with the members of each plan, under the tabs of the costs", async () => {
+    server.use(operatorHandler(["manage_finance"]));
+    totalsServer();
+    itemsServer([]);
+    const income = serveIncome();
+    const { user } = await renderApp({ path: "/admin/finance" });
+
+    const region = await screen.findByRole("region", { name: "Totals" });
+    const section = within(region).getByRole("region", { name: "Income" });
+    const table = within(section).getByRole("table", { name: "Income by Months, Spread over the period paid for" });
+    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual(["Period", "Gross", "Fees", "Income after fees", "Balance"]);
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("October 2026¥12,000¥432¥11,568+¥11,428");
+    expect(within(section).getByRole("heading", { level: 4, name: "Members of each plan" })).toBeInTheDocument();
+    expect(within(section).getByRole("region", { name: "Members of each plan" })).toHaveTextContent("Coffee1 member");
+    const rules = within(section).getByRole("region", { name: "How the income is counted" });
+    expect(rules).toHaveTextContent("stripe dates its payments in the Asia/Tokyo time zone.");
+    expect(rules).toHaveTextContent("A payment for more than 31 days");
+    expect(income.queries[0]).toEqual({ granularity: "month", basis: "amortized", from: expect.stringMatching(/-01$/u) as string, to: deviceToday() });
+
+    await user.click(within(region).getByRole("radio", { name: /On the payment date/u }));
+    expect(await within(section).findByRole("table", { name: "Income by Months, On the payment date" })).toBeInTheDocument();
+    expect(income.queries.at(-1)).toMatchObject({ granularity: "month", basis: "cash" });
+  });
+
+  test("lists the money movements with their subscribers, linked for a viewer who may open the accounts", async () => {
+    server.use(operatorHandler(["manage_finance", "manage_accounts"]));
+    serveIncome();
+    await renderApp({ path: "/admin/finance" });
+
+    const region = await screen.findByRole("region", { name: "Payments and refunds" });
+    const rows = within(region).getAllByRole("listitem");
+    expect(within(rows[0] as HTMLElement).getByRole("heading", { level: 3 })).toHaveTextContent("Payment¥11,568");
+    expect(rows[0]).toHaveTextContent("Gross¥12,000");
+    expect(rows[0]).toHaveTextContent("Fees¥432");
+    expect(within(rows[0] as HTMLElement).getByRole("link", { name: "Open the account" })).toHaveAttribute("href", `/moderation/accounts/${String(movement.account_id)}`);
+    expect(within(rows[0] as HTMLElement).getByText("txn_1")).toHaveAttribute("dir", "ltr");
+    expect(rows[1]).toHaveTextContent("Provider fee-¥84");
+    expect(rows[1]).toHaveTextContent("SubscriberNone");
+  });
+
+  test("shows what the server publishes of the income", async () => {
+    server.use(operatorHandler(["manage_finance"]), http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, income_visibility: "plans" })));
+    await renderApp({ path: "/admin/finance" });
+
+    expect(await screen.findByText("The about page publishes the totals of the income and the members of each plan.")).toBeInTheDocument();
+  });
+});
+
 describe("the costs screen without the permission", () => {
   test("says why it shows nothing", async () => {
     server.use(signedInHandler, operatorHandler(["manage_settings"]));
@@ -427,5 +532,6 @@ describe("the costs screen without the permission", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Costs" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Totals" })).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Record a cost" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Payments and refunds" })).not.toBeInTheDocument();
   });
 });

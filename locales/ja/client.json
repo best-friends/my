@@ -99,9 +99,17 @@
     "defaultMessage": "{visibility, select, breakdown {このサーバーは、運営にかかる費用を週・月・年ごとに、事業者と区分の内訳とともに公開しています。項目の名前・メモ・個々の支払いは公開しません。} other {このサーバーは、運営にかかる費用の合計を週・月・年ごとに公開しています。内訳・項目の名前・個々の支払いは公開しません。}}",
     "description": "What the server publishes of its running costs, by the server setting finance_visibility (totals or breakdown)."
   },
+  "about.income.description": {
+    "defaultMessage": "{visibility, select, plans {このサーバーは、サポーターからの収入を決済の事業者の手数料と返金を引いて週・月・年ごとに公開し、いまのプランごとの加入者の数も公開しています。誰がいくら払ったかは公開しません。} other {このサーバーは、サポーターからの収入の合計を決済の事業者の手数料と返金を引いて週・月・年ごとに公開しています。誰がいくら払ったかは公開しません。}}",
+    "description": "What the server publishes of its income from the supporter plans, by the server setting income_visibility (totals or plans)."
+  },
+  "about.income.balance": {
+    "defaultMessage": "収入から費用を引いた収支も公開しています。",
+    "description": "Note on the server's information page that the balance (income less costs) is published, shown when both the costs and the income are published."
+  },
   "about.costs.link": {
-    "defaultMessage": "運営の費用を見る",
-    "description": "Link from the server's information page to the page of the server's running costs."
+    "defaultMessage": "{shown, select, both {運営の費用と収入を見る} income {収入を見る} other {運営の費用を見る}}",
+    "description": "Link from the server's information page to the page of the server's running costs and income, by what the server publishes: both, the income only, or the costs only."
   },
   "about.commerce.title": {
     "defaultMessage": "特定商取引法に基づく表記",
@@ -4434,6 +4442,42 @@
   "admin.settings.finance.viewer.income.plans.description": {
     "defaultMessage": "加えて、プランごとの加入者の数を見せます。プランごとの金額と、誰が加入しているかは見せません。",
     "description": "Description of showing the number of members of each plan too."
+  },
+  "admin.settings.income.title": {
+    "defaultMessage": "収入",
+    "description": "Heading of the section of the publication of the income in the server settings."
+  },
+  "admin.settings.income.description": {
+    "defaultMessage": "サポーターのプランからの収入を、決済の事業者の手数料と返金を引いて、情報ページと API で公開できます。誰がいくら払ったか・プランごとの金額・手数料は、どの段階でも公開しません。費用と収入をどちらも公開するときは、収支も公開します。",
+    "description": "Explanation of the publication of the income in the server settings."
+  },
+  "admin.settings.income.visibility": {
+    "defaultMessage": "公開する範囲",
+    "description": "Label of the radio buttons of how much of the income the server publishes."
+  },
+  "admin.settings.income.private": {
+    "defaultMessage": "公開しない",
+    "description": "Choice of not publishing the income."
+  },
+  "admin.settings.income.private.description": {
+    "defaultMessage": "会計を管理する人と閲覧できる人だけが見られます。",
+    "description": "Description of not publishing the income."
+  },
+  "admin.settings.income.totals": {
+    "defaultMessage": "合計だけ",
+    "description": "Choice of publishing the totals of the income only."
+  },
+  "admin.settings.income.totals.description": {
+    "defaultMessage": "誰でも、週・月・年ごとの通貨ごとの収入を見られます。",
+    "description": "Description of publishing the totals of the income only."
+  },
+  "admin.settings.income.plans": {
+    "defaultMessage": "合計とプランごとの加入者の数",
+    "description": "Choice of publishing the totals of the income and the number of members of each plan."
+  },
+  "admin.settings.income.plans.description": {
+    "defaultMessage": "いまのプランごとの加入者の数も見られます。金額は出しません。加入者の少ないプランでは、誰が加入しているかを推測されるかもしれません。",
+    "description": "Description of publishing the number of members of each plan too, which may let people guess the members of a small plan."
   },
   "admin.settings.supporter_list.title": {
     "defaultMessage": "サポーターの一覧",
@@ -9891,6 +9935,10 @@
     "defaultMessage": "{visibility, select, totals {情報ページはこの費用の合計を、内訳なしで公開しています。} breakdown {情報ページはこの費用の合計と、事業者・区分ごとの内訳を公開しています。} other {この費用は公開していません。}}",
     "description": "What the server publishes of the costs on its information page, on the costs screen, by the server setting finance_visibility (private, totals, or breakdown)."
   },
+  "admin.finance.income_visibility": {
+    "defaultMessage": "{visibility, select, totals {情報ページは収入の合計を公開しています。} plans {情報ページは収入の合計とプランごとの加入者の数を公開しています。} other {収入は公開していません。}}",
+    "description": "What the server publishes of the income on its information page, on the costs screen, by the server setting income_visibility (private, totals, or plans)."
+  },
   "admin.finance.visibility.change": {
     "defaultMessage": "サーバーの設定で変える",
     "description": "Link from the costs screen to the server settings, where the publication of the costs is chosen; shown to the viewers who may change the server settings."
@@ -9902,6 +9950,74 @@
   "admin.finance.totals.title": {
     "defaultMessage": "集計",
     "description": "Heading of the section with the totals by period on the costs screen."
+  },
+  "admin.finance.movements.title": {
+    "defaultMessage": "支払いと返金",
+    "description": "Heading of the section of the payment provider's money movements of the income on the costs screen."
+  },
+  "admin.finance.movements.description": {
+    "defaultMessage": "決済の事業者が記録したお金の動きを新しい順に示します。会計を管理する人だけが見られ、公開しません。",
+    "description": "Explanation of the list of the money movements of the income on the costs screen."
+  },
+  "admin.finance.movements.empty": {
+    "defaultMessage": "支払いはまだありません",
+    "description": "Heading of the empty list of the money movements of the income."
+  },
+  "admin.finance.movements.empty.description": {
+    "defaultMessage": "サポーターのプランの支払いは、決済の事業者が記録するとここに出ます。",
+    "description": "Explanation of the empty list of the money movements of the income."
+  },
+  "admin.finance.movements.kind.payment": {
+    "defaultMessage": "支払い",
+    "description": "Kind of a money movement of the income: a payment of a subscription."
+  },
+  "admin.finance.movements.kind.refund": {
+    "defaultMessage": "返金",
+    "description": "Kind of a money movement of the income: a refund of a payment."
+  },
+  "admin.finance.movements.kind.chargeback": {
+    "defaultMessage": "チャージバック",
+    "description": "Kind of a money movement of the income: a chargeback (dispute) of a payment."
+  },
+  "admin.finance.movements.kind.chargeback_reversal": {
+    "defaultMessage": "チャージバックの取り消し",
+    "description": "Kind of a money movement of the income: a chargeback given back."
+  },
+  "admin.finance.movements.kind.fee": {
+    "defaultMessage": "事業者の手数料",
+    "description": "Kind of a money movement of the income: a fee of the payment provider that belongs to no payment."
+  },
+  "admin.finance.movements.occurred_at": {
+    "defaultMessage": "記録の日時",
+    "description": "Term of the time the payment provider booked a money movement."
+  },
+  "admin.finance.movements.occurred_on": {
+    "defaultMessage": "数える日付",
+    "description": "Term of the date on which a money movement counts in the totals: the booking time as a date in the provider's reporting time zone."
+  },
+  "admin.finance.movements.covers": {
+    "defaultMessage": "支払いの対象の期間",
+    "description": "Term of the billing period that a payment pays for."
+  },
+  "admin.finance.movements.parent": {
+    "defaultMessage": "元の支払い",
+    "description": "Term of the payment provider's ID of the payment that a refund, a chargeback, or a reversal belongs to."
+  },
+  "admin.finance.movements.subscriber": {
+    "defaultMessage": "加入者",
+    "description": "Term of the subscriber's account of a money movement."
+  },
+  "admin.finance.movements.no_subscriber": {
+    "defaultMessage": "なし",
+    "description": "What the subscriber term says of a money movement with no known subscriber, such as a provider fee."
+  },
+  "admin.finance.movements.open_account": {
+    "defaultMessage": "アカウントを開く",
+    "description": "Link from a money movement to the moderation page of its subscriber's account."
+  },
+  "admin.finance.movements.provider_id": {
+    "defaultMessage": "{provider} での ID",
+    "description": "Term of the payment provider's ID of a money movement. {provider} is the provider, such as stripe."
   },
   "costs.basis": {
     "defaultMessage": "計上のしかた",
@@ -10020,16 +10136,20 @@
     "description": "Heading and document title of the public page of the server's running costs. {instance} is the name of this server."
   },
   "costs.public.description": {
-    "defaultMessage": "このサーバーの運営にかかる費用を、運営者の記録から集計したものです。通貨の違う金額は別々に合計し、換算しません。",
-    "description": "Introduction of the public page of the server's running costs."
+    "defaultMessage": "このサーバーの運営にかかる費用とサポーターからの収入のうち、公開しているものを運営者の記録から集計しています。通貨の違う金額は別々に合計し、換算しません。誰がいくら払ったかは出しません。",
+    "description": "Introduction of the public page of the server's running costs and income."
   },
   "costs.public.totals_only": {
     "defaultMessage": "このサーバーは合計だけを公開し、何にかかったかの内訳は公開していません。",
     "description": "Note on the public page of the running costs when the server publishes the totals without their breakdown."
   },
   "costs.public.hidden": {
-    "defaultMessage": "このサーバーは運営の費用を公開していません。",
-    "description": "What the public page of the running costs says when the server publishes nothing."
+    "defaultMessage": "このサーバーは運営の費用も収入も公開していません。",
+    "description": "What the public page of the running costs says when the server publishes neither its costs nor its income."
+  },
+  "costs.public.costs": {
+    "defaultMessage": "費用",
+    "description": "Heading of the section of the costs on the public page of the running costs."
   },
   "costs.public.about": {
     "defaultMessage": "このサーバーについて",
@@ -10052,7 +10172,7 @@
     "description": "Heading and document title of the finances page, where the holders of the view_finance permission read the server's costs."
   },
   "finance.description": {
-    "defaultMessage": "このサーバーの運営にかかる費用を運営者の記録から集計し、事業者・区分ごとの内訳とともに示します。通貨の違う金額は別々に合計し、換算しません。誰がいくら払ったかは出しません。",
+    "defaultMessage": "このサーバーの運営にかかる費用を運営者の記録から集計し、事業者・区分ごとの内訳とともに示します。サポーターからの収入と収支も示します。通貨の違う金額は別々に合計し、換算しません。誰がいくら払ったかは出しません。",
     "description": "Introduction of the finances page."
   },
   "finance.items_shown": {
@@ -10074,6 +10194,86 @@
   "finance.retry": {
     "defaultMessage": "もう一度試す",
     "description": "Button that tries again to load the totals of the finances page after a failure."
+  },
+  "income.title": {
+    "defaultMessage": "収入",
+    "description": "Heading of the section of the income from the supporter plans on the finances page, the public page of the running costs, and the costs screen."
+  },
+  "income.public.no_balance": {
+    "defaultMessage": "このサーバーは費用を公開していないため、収支は公開していません。",
+    "description": "Note in the income section of the public page of the running costs when the server publishes its income but not its costs, so the balance is not published."
+  },
+  "income.loading": {
+    "defaultMessage": "収入を読み込んでいます",
+    "description": "Accessible name of the progress indicator while the income totals load."
+  },
+  "income.failed": {
+    "defaultMessage": "収入を読み込めませんでした",
+    "description": "Heading shown in place of the income totals when they could not be loaded."
+  },
+  "income.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that tries again to load the income totals after a failure."
+  },
+  "income.totals.caption": {
+    "defaultMessage": "{granularity}ごとの収入（{basis}）",
+    "description": "Accessible caption of the table of the income totals: the chosen period kind and the way payments are counted."
+  },
+  "income.totals.gross": {
+    "defaultMessage": "総額",
+    "description": "Column header and term of what the supporters paid before the payment provider's fees, on the costs screen only."
+  },
+  "income.totals.fee": {
+    "defaultMessage": "手数料",
+    "description": "Column header and term of the payment provider's fees, on the costs screen only."
+  },
+  "income.totals.net": {
+    "defaultMessage": "手数料を引いた収入",
+    "description": "Column header and term of the income after the payment provider's fees and the refunds."
+  },
+  "income.totals.balance": {
+    "defaultMessage": "収支",
+    "description": "Column header of the balance: the income less the costs of the same period and currency."
+  },
+  "income.plans.title": {
+    "defaultMessage": "プランごとの加入者",
+    "description": "Heading of the number of members of each supporter plan now, next to the income totals."
+  },
+  "income.plans.description": {
+    "defaultMessage": "いまの加入者の数で、期間ごとの数ではありません。プランごとの金額は出しません。",
+    "description": "Explanation of the number of members of each supporter plan next to the income totals."
+  },
+  "income.plans.empty": {
+    "defaultMessage": "加入者のいるプランはありません。",
+    "description": "What the list of the members of each plan says when no plan has members."
+  },
+  "income.plans.members": {
+    "defaultMessage": "{count, plural, other {# 人}}",
+    "description": "The number of members of a supporter plan now."
+  },
+  "income.rules.title": {
+    "defaultMessage": "収入の数え方",
+    "description": "Heading of the rules that date and place the payments in the income totals."
+  },
+  "income.rules.net": {
+    "defaultMessage": "収入は、サポーターが払った額から決済の事業者の手数料を引いたものです。返金とチャージバックは、それが起きた期間で差し引きます。",
+    "description": "Rule of the income totals: what the income is."
+  },
+  "income.rules.provider": {
+    "defaultMessage": "{provider} の支払いは {timeZone} のタイムゾーンの日付で数えます。",
+    "description": "Rule of the income totals: the time zone in which a payment provider (such as stripe) dates its money movements (UTC, Asia/Tokyo)."
+  },
+  "income.rules.amortized": {
+    "defaultMessage": "{days} 日より長い期間の支払い（年払いなど）は、支払った期間の日数に日割りで載せます。その返金は、返金の日までの分を返金の日にまとめて差し引き、それより後の日の分を打ち消します。ほかの支払いはその日付に載せます。",
+    "description": "Rule of the spread income totals. {days} is the number of days a payment must cover to be spread, such as 31."
+  },
+  "income.rules.cash": {
+    "defaultMessage": "支払い・返金・手数料は、それぞれの日付に載せます。",
+    "description": "Rule of the income totals on the payment date."
+  },
+  "income.rules.balance": {
+    "defaultMessage": "収支は、通貨ごとに、同じ数え方の収入から費用を引いたものです。通貨は換算しません。",
+    "description": "Rule of the income totals: what the balance is."
   },
   "admin.finance.new.title": {
     "defaultMessage": "費用を登録する",

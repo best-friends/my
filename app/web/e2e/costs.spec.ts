@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The public running costs (FR-903, ADR-0067 §8) in every width × locale project: the section of the information page
-// and the page at /about/costs as the instance setting finance_visibility publishes them, against `vite preview`, whose
+// The public running costs and income (FR-903, FR-917, ADR-0067 §8, ADR-0073 §7) in every width × locale project: the
+// section of the information page and the page at /about/costs as the instance settings finance_visibility and
+// income_visibility publish them, against `vite preview`, whose
 // client API the spec plays with page.route (no session). Names change with the locale, so elements are found by role,
 // structure and addresses, and the providers, which are the operators' words, are in English in every project.
 import type { Page } from "@playwright/test";
@@ -9,6 +10,7 @@ import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from ".
 
 type Instance = components["schemas"]["Instance"];
 type CostTotals = components["schemas"]["CostTotals"];
+type IncomeTotals = components["schemas"]["IncomeTotals"];
 
 /** The totals of the periods of a query: the last one with costs in two currencies and, with `breakdown`, their breakdown. */
 function totals(url: URL, breakdown: boolean): CostTotals {
@@ -43,8 +45,39 @@ function totals(url: URL, breakdown: boolean): CostTotals {
   };
 }
 
-/** Plays the instance with `visibility` and its public totals for a visitor without a session. */
-async function serveCosts(page: Page, visibility: Instance["finance_visibility"]): Promise<void> {
+/**
+ * The income totals of the periods of a query: the last one with income, with the balance while the costs are public,
+ * and the members of a plan whose name has to wrap with `plans`.
+ */
+function incomeTotals(url: URL, balance: boolean, plans: boolean): IncomeTotals {
+  const to = url.searchParams.get("to") ?? "2026-10-22";
+  const month = to.slice(0, 7);
+  return {
+    granularity: (url.searchParams.get("granularity") ?? "month") as IncomeTotals["granularity"],
+    basis: (url.searchParams.get("basis") ?? "amortized") as IncomeTotals["basis"],
+    periods: [
+      {
+        label: month,
+        starts_on: `${month}-01`,
+        ends_on: to,
+        net: [{ amount: "4800", currency: "JPY" }],
+        ...(balance
+          ? {
+              balance: [
+                { amount: "3150", currency: "JPY" },
+                { amount: "-1234.56", currency: "USD" },
+              ],
+            }
+          : {}),
+      },
+    ],
+    ...(plans ? { plans: [{ plan_id: "0199f0e0-0000-7000-8000-00000000aa01", name: "A plan with a rather long name that has to wrap on the narrowest screens", members: 3 }] } : {}),
+    rules: { week_start: "monday", providers: [{ provider: "stripe", time_zone: "Asia/Tokyo" }], amortize_after_days: 31 },
+  };
+}
+
+/** Plays the instance with `visibility` and `income`, and its public totals, for a visitor without a session. */
+async function serveCosts(page: Page, visibility: Instance["finance_visibility"], income: Instance["income_visibility"] = "private"): Promise<void> {
   const instance: Instance = {
     domain: "my.example",
     name: "my example",
@@ -57,7 +90,7 @@ async function serveCosts(page: Page, visibility: Instance["finance_visibility"]
     search_indexing: "deny",
     ai_usage: "deny",
     finance_visibility: visibility,
-    income_visibility: "private",
+    income_visibility: income,
     supporters_enabled: false,
     supporter_list_visibility: "off",
     rules: [],
@@ -70,6 +103,11 @@ async function serveCosts(page: Page, visibility: Instance["finance_visibility"]
     visibility === "private"
       ? route.fulfill({ status: 404, contentType: "application/problem+json", json: { type: "about:blank", title: "Not Found", status: 404 } })
       : route.fulfill({ json: totals(new URL(route.request().url()), visibility === "breakdown") }),
+  );
+  await page.route("**/api/v1/instance/income_totals*", (route) =>
+    income === "private"
+      ? route.fulfill({ status: 404, contentType: "application/problem+json", json: { type: "about:blank", title: "Not Found", status: 404 } })
+      : route.fulfill({ json: incomeTotals(new URL(route.request().url()), visibility !== "private", income === "plans") }),
   );
 }
 
@@ -86,7 +124,8 @@ test.describe("the costs page of a server that publishes the breakdown", () => {
     await expect(main.getByRole("tab")).toHaveCount(3);
     await expect(main.getByRole("table").getByRole("row")).toHaveCount(3);
     await expect(main.locator('[dir="auto"]', { hasText: "Cloud" })).toBeVisible();
-    await expect(main.getByRole("region")).toHaveCount(2);
+    // The costs, their breakdown and their rules; no income.
+    await expect(main.getByRole("region")).toHaveCount(3);
   });
 
   test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -103,8 +142,8 @@ test("the costs page of a server that publishes the totals only", async ({ page,
   await page.goto("/about/costs");
   const main = page.getByRole("main");
   await expect(main.getByRole("table")).toBeVisible();
-  // Only the rules: no breakdown.
-  await expect(main.getByRole("region")).toHaveCount(1);
+  // The costs and their rules: no breakdown.
+  await expect(main.getByRole("region")).toHaveCount(2);
   await expect(main.getByText("Cloud")).toHaveCount(0);
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);
@@ -122,6 +161,52 @@ test("the costs page of a server that publishes nothing", async ({ page, makeAxe
 
 test("the information page of a server that publishes its costs links to them", async ({ page, makeAxeBuilder }) => {
   await serveCosts(page, "totals");
+  await page.goto("/about");
+  const main = page.getByRole("main");
+  await expect(main.locator('a[href="/about/costs"]')).toBeVisible();
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+});
+
+test.describe("the costs page of a server that publishes its costs and its income with the plans", () => {
+  test.beforeEach(async ({ page }) => {
+    await serveCosts(page, "totals", "plans");
+    await page.goto("/about/costs");
+    await expect(page.getByRole("main").getByRole("table")).toHaveCount(2);
+  });
+
+  test("shows the income with the balance and the members of each plan, under the same tabs", async ({ page }) => {
+    const main = page.getByRole("main");
+    await expect(main.getByRole("tab")).toHaveCount(3);
+    // The income table: the period, the income after fees and the balance.
+    await expect(main.getByRole("table").nth(1).getByRole("columnheader")).toHaveCount(3);
+    await expect(main.locator('[dir="auto"]', { hasText: "A plan with a rather long name" })).toBeVisible();
+    // The costs, their rules, the income, the members of each plan and the income's rules.
+    await expect(main.getByRole("region")).toHaveCount(5);
+  });
+
+  test("has no axe violations", async ({ makeAxeBuilder }) => {
+    await expectNoAxeViolations(makeAxeBuilder);
+  });
+
+  test("does not scroll horizontally", async ({ page }) => {
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+test("the costs page of a server that publishes its income only", async ({ page, makeAxeBuilder }) => {
+  await serveCosts(page, "private", "totals");
+  await page.goto("/about/costs");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("table")).toHaveCount(1);
+  // The income without the balance: the period and the income after fees.
+  await expect(main.getByRole("table").getByRole("columnheader")).toHaveCount(2);
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+});
+
+test("the information page of a server that publishes its income only links to it", async ({ page, makeAxeBuilder }) => {
+  await serveCosts(page, "private", "totals");
   await page.goto("/about");
   const main = page.getByRole("main");
   await expect(main.locator('a[href="/about/costs"]')).toBeVisible();

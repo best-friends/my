@@ -5,8 +5,11 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { useT } from "../../../lib/i18n";
 import { shellQueryReader } from "../../../lib/query";
 import { instanceQueryOptions } from "../../about";
+import { DetailSection } from "../../moderation";
+import { usePublicIncome } from "../hooks/useIncome";
 import { usePublicCosts } from "../hooks/usePublicCosts";
 import { CostTotalsPanel, type CostTotalsPanelProps, CostTotalsView } from "./CostTotals";
+import { IncomeState } from "./IncomeTotals";
 
 export type PublicCostsProps = Omit<CostTotalsPanelProps, "children"> & {
   /** Today's date on the viewer's device, which ends the shown periods (ADR-0067 §5). */
@@ -14,10 +17,12 @@ export type PublicCostsProps = Omit<CostTotalsPanelProps, "children"> & {
 };
 
 /**
- * The body of the public costs page (`/about/costs`, FR-903, ADR-0067 §8), under its heading: what the instance
- * publishes of its running costs, by week, month or year, amortized or in cash, with the breakdown of the current
- * period by provider and category when the instance publishes it. The names and memos of the items and the individual
- * payments are never published. When the instance publishes nothing, the page says so.
+ * The body of the public costs page (`/about/costs`, FR-903, FR-917, ADR-0067 §8, ADR-0073 §7), under its heading:
+ * what the instance publishes of its running costs and of its income, by week, month or year, amortized or in cash.
+ * The costs come with the breakdown of the current period by provider and category when the instance publishes it;
+ * the income with the members of each plan when the instance publishes them, and with the balance only while the
+ * costs are public too. The names and memos of the items, the individual payments and the subscribers are never
+ * published. When the instance publishes neither, the page says so.
  */
 export function PublicCosts({ today, ...panel }: PublicCostsProps) {
   const t = useT();
@@ -25,7 +30,8 @@ export function PublicCosts({ today, ...panel }: PublicCostsProps) {
   const { data: instance } = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader });
   const breakdown = instance?.finance_visibility === "breakdown";
   const costs = usePublicCosts(panel.granularity, panel.basis, today, breakdown);
-  if (costs.status === "hidden") {
+  const income = usePublicIncome(panel.granularity, panel.basis, today);
+  if (costs.status === "hidden" && income.status === "hidden") {
     return (
       <EmptyState
         headingLevel={2}
@@ -41,23 +47,36 @@ export function PublicCosts({ today, ...panel }: PublicCostsProps) {
   return (
     <div className="flex flex-col gap-6">
       <p>{t("client:costs.public.description")}</p>
-      {instance?.finance_visibility === "totals" && <p className="text-fg-muted">{t("client:costs.public.totals_only")}</p>}
       <CostTotalsPanel {...panel}>
-        {costs.status === "loading" && (
-          <div aria-busy="true">
-            <Spinner label={t("client:costs.public.loading")} />
-          </div>
-        )}
-        {costs.status === "error" && (
-          <RegionError
-            heading={t("client:costs.public.failed")}
-            reason={costs.reason}
-            retryLabel={t("client:costs.public.retry")}
-            onRetry={costs.retry}
-            isRetrying={costs.isRetrying}
-          />
-        )}
-        {costs.status === "ready" && <CostTotalsView totals={costs.totals} breakdown={costs.breakdown} />}
+        <div className="flex flex-col gap-8">
+          {costs.status !== "hidden" && (
+            <DetailSection title={t("client:costs.public.costs")}>
+              {instance?.finance_visibility === "totals" && <p className="text-fg-muted">{t("client:costs.public.totals_only")}</p>}
+              {costs.status === "loading" && (
+                <div aria-busy="true">
+                  <Spinner label={t("client:costs.public.loading")} />
+                </div>
+              )}
+              {costs.status === "error" && (
+                <RegionError
+                  heading={t("client:costs.public.failed")}
+                  reason={costs.reason}
+                  retryLabel={t("client:costs.public.retry")}
+                  onRetry={costs.retry}
+                  isRetrying={costs.isRetrying}
+                />
+              )}
+              {costs.status === "ready" && <CostTotalsView totals={costs.totals} breakdown={costs.breakdown} />}
+            </DetailSection>
+          )}
+          {income.status !== "hidden" && (
+            <DetailSection title={t("client:income.title")}>
+              {/* The balance would tell the costs that the instance keeps to itself (ADR-0073 §7). */}
+              {costs.status === "hidden" && <p className="text-fg-muted">{t("client:income.public.no_balance")}</p>}
+              <IncomeState income={income} />
+            </DetailSection>
+          )}
+        </div>
       </CostTotalsPanel>
     </div>
   );

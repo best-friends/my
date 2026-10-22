@@ -190,6 +190,7 @@ const settingDefaults: readonly Omit<Schemas["AdminSetting"], "value" | "stored"
   { key: "finance_viewer_item_names", kind: "bool", default: "false" },
   { key: "finance_viewer_item_memos", kind: "bool", default: "false" },
   { key: "finance_viewer_income", kind: "enum", default: "totals", choices: ["totals", "plans"] },
+  { key: "income_visibility", kind: "enum", default: "private", choices: ["private", "totals", "plans"] },
   { key: "supporter_list_visibility", kind: "enum", default: "off", choices: ["off", "public", "signed_in"] },
 ];
 
@@ -242,6 +243,20 @@ function emptyTotals(url: URL): Schemas["CostTotals"] {
     basis,
     periods: [{ label: to.slice(0, 7), starts_on: `${to.slice(0, 7)}-01`, ends_on: to, totals: [], breakdown: [], estimated: false }],
     rules: { week_start: "monday", sources: [] },
+  };
+}
+
+/** The income totals that the default handler answers: the periods of the query, each without income, and no plan. */
+function emptyIncomeTotals(url: URL): Schemas["AdminIncomeTotals"] {
+  const granularity = (url.searchParams.get("granularity") ?? "month") as Schemas["CostGranularity"];
+  const basis = (url.searchParams.get("basis") ?? "amortized") as Schemas["CostBasis"];
+  const to = url.searchParams.get("to") ?? "2026-10-22";
+  return {
+    granularity,
+    basis,
+    periods: [{ label: to.slice(0, 7), starts_on: `${to.slice(0, 7)}-01`, ends_on: to, gross: [], fee: [], net: [], balance: [] }],
+    plans: [],
+    rules: { week_start: "monday", providers: [], amortize_after_days: 31 },
   };
 }
 
@@ -464,6 +479,8 @@ export const handlers = [
   http.post(`${apiBase}/admin/cost_items/:id/cancel`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   http.get(`${apiBase}/admin/cost_totals`, ({ request }) => withViewer(request, () => HttpResponse.json(emptyTotals(new URL(request.url))))),
   http.get(`${apiBase}/admin/billing_imports`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["BillingImportList"]))),
+  http.get(`${apiBase}/admin/income_totals`, ({ request }) => withViewer(request, () => HttpResponse.json(emptyIncomeTotals(new URL(request.url))))),
+  http.get(`${apiBase}/admin/income_movements`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["IncomeMovementPage"]))),
   http.post(`${apiBase}/admin/billing_imports/:source/runs`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds getSupporterProgram, setSupporterProgram, listAdminSupporterPlans, createSupporterPlan,
   // updateSupporterPlan, retireSupporterPlan, listSupporterSubscriptions, cancelSupporterSubscription: a disabled program
