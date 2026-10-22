@@ -76,9 +76,9 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | A1 | 依存の向きは `routes → features → (@my/ui, lib)` だけにする | `boundaries/dependencies`（要素は `shell`（`web/src` 直下）・`route`・`feature`・`lib`・`ui`、テストだけが import できる `test`（`web/src/test`）と `feature-test`（`web/src/features/*/test`））、`boundaries/no-unknown-files` |
 | A2 | `@my/ui` は React・React Aria Components・Tailwind のユーティリティと、ドメインを持たない振る舞いのライブラリ（許可リストは ADR-0031）にだけ依存する。API・Query・Router・機能・i18n のカタログを import しない（文言は props / children で受け取る） | `boundaries/dependencies`（`ui` が import できるのは `ui` 自身と React・React Aria・`@tanstack/react-virtual`・`tailwind-variants`・`tailwind-merge`、`Icons.tsx` だけは `react-icons` だけ）、パッケージの依存関係（Bun の isolated linker） |
 | A3 | 機能は、ほかの機能を `index.ts` 経由でだけ使う | `boundaries/dependencies`（ほかの `feature` は `index.ts` だけ） |
-| A4 | 機能のロジックは `features/<x>/hooks` のカスタムフックに置く。フックは JSX を返さない。機能の部品はフックの戻り値を `@my/ui` に渡すだけにする | レビュー |
+| A4 | 機能のロジックは `features/<x>/hooks` のカスタムフックに置く。フックは JSX を返さない。機能の部品はフックの戻り値を `@my/ui` に渡すだけにする。`app/web/src`（外枠・`routes`・`features`・`lib`・テストを含む）は Tailwind のクラスを書かない: JSX の `className`（`@my/ui` の部品に渡すものを含む）と、`tailwind-variants`・`tailwind-merge`・`clsx` などクラスを組み立てる手段の import を使わない。見た目とレイアウト（3 列の外枠を含む）は `@my/ui` の部品（`Stack`・`Cluster`・`Grid`・`Box`・`Text`・`Heading` など）と、その見た目の変種を表す props で書く。props にない見た目は `@my/ui` に props か部品を足す。例外は、`@my/ui` の部品で表せないブラウザやプラットフォーム固有の調整だけで、その行に理由を書いた無効化コメントを付ける | `restrict/classes`（`className` の属性とプロパティ、クラスを組み立てるライブラリの import。`web/src` の全ファイルに掛かり、テストも除かない）、レビュー |
 | A5 | 操作できる要素は `@my/ui`（React Aria Components を包んだ部品）から使う。`onClick` を付けた `div` / `span` を書かない | `restrict/syntax`（`div` / `span` の `onClick`・`onKeyDown`・`onPointerDown` など） |
-| A6 | `@my/ui` の部品は表示に専念し、状態はできるだけ外から渡す（`value` / `onChange`） | レビュー |
+| A6 | `@my/ui` の部品は表示に専念し、状態はできるだけ外から渡す（`value` / `onChange`）。見た目の違いは型付きの props で受け取る。レイアウトの部品（`Stack`・`Cluster`・`Grid`・`Box` など）は `className` と `style` を受け取らない。React Aria Components を包んだ部品が `className` を受け取るのは、その props の型を引き継ぐためで、使えるのは `@my/ui` の中だけである（A4） | レビュー、型検査（レイアウトの部品）、`restrict/classes`（`web/src` から渡さない） |
 | A7 | props は型を明示する（`React.FC` を使わない）。ネイティブ要素の props は `ComponentPropsWithRef<'button'>` で拡張する。多態的な `as` props を使わない | `typescript/no-restricted-types`（`FC` / `FunctionComponent`）、レビュー |
 | A8 | `dangerouslySetInnerHTML` は、サーバーでサニタイズ済みの投稿本文を表示する 1 つの監査済み部品（`PostContent`）でだけ使う。`PostContent` は本文を `SanitizedHtml` 型で受け取る。この型は `serverSanitizedHtml()` でだけ作り、API の応答でサーバーがサニタイズ済みと定める項目を読む場所でだけ呼ぶ。サニタイズ済みの HTML から文字だけを取り出すときは `@my/ui` の `sanitizedHtmlText` を使う。HTML を解析・挿入する Trusted Types の sink（`DOMParser`・`innerHTML` / `outerHTML` への代入・`insertAdjacentHTML`・`createContextualFragment`・`srcdoc`・`document.write`・`<script>` の生成・`eval` / `new Function`）は `PostContent.tsx` の外では使わない | `@eslint-react/dom-no-dangerously-set-innerhtml` と `restrict/html`（`app/ui/src/PostContent.tsx` とテストだけ許可）、型検査（ただの `string` は `SanitizedHtml` にならない）、レビュー |
 | A9 | 利用者に見える文字列はすべて `react-intl` を通す。JSX に文字列リテラルを書かない | `formatjs/no-literal-string-in-jsx`（子要素と `aria-*`・`label`・`placeholder`・`title`・`alt`。テストとストーリーは除く） |
@@ -121,7 +121,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | D6 | アニメーションは `motion-safe:` の下に置く | `make web-tokens`、`better-tailwindcss/no-restricted-classes`（`animate-*`）、レビュー |
 | D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` / `mask-l-` / `mask-r-` を使わない（方向のあるアイコンの反転と、論理方向の版がない `mask-l-` / `mask-r-`（端のフェード）だけ、`rtl:` / `ltr:` の下で許可） | `better-tailwindcss/no-restricted-classes` |
 | D8 | 色は `@my/ui/theme.css` の意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレット（`--palette-*`）や任意の色を部品に書かない（`--color-*: initial` で Tailwind の既定の色を消す）。トークンの一覧・コントラストの組・ライト / ダークの切り替えは [app/ui/README.md](../../app/ui/README.md) にある | Tailwind の設定、`make web-tokens`、`better-tailwindcss/no-unknown-classes` |
-| D9 | 部品の見た目の違いは `tailwind-variants` の 1 部品 1 レシピで定義する。クラス名を動的に組み立てない。`className` は `tailwind-merge` で root / スロットにだけ合成する | `better-tailwindcss/no-concatenated-classes`、`better-tailwindcss/no-conflicting-classes`、レビュー |
+| D9 | 部品の見た目の違いは `tailwind-variants` の 1 部品 1 レシピで定義する。クラス名を動的に組み立てない。`className` は `tailwind-merge` で root / スロットにだけ合成し、`web/src` からは渡さない（A4） | `better-tailwindcss/no-concatenated-classes`、`better-tailwindcss/no-conflicting-classes`、レビュー |
 | D10 | CSP を壊さない。`setAttribute('style')` や `cssText` を使わない（React の `style={}` は可） | `restrict/syntax` |
 
 ## 7. テスト
@@ -132,7 +132,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | T2 | 操作は `user-event` で再現する。`screen` を使い、`waitFor` + `getBy` ではなく `findBy` を使う | `testing-library/prefer-user-event`、`testing-library/prefer-screen-queries`、`testing-library/prefer-find-by` |
 | T3 | ネットワークは MSW だけでモックする。`fetch` や API のモジュールをモックしない | テストの `restrict/test`（`api` を含むモジュールと `openapi-fetch` の `vi.mock` / `vi.doMock`、`fetch` の `vi.spyOn` / `vi.stubGlobal` / 代入）、レビュー |
 | T4 | 既定は統合テスト（本物の QueryClient とルーター + MSW）にする。純粋なロジックは単体テスト、主要な流れは 4 ロケールの E2E にする | レビュー |
-| T5 | `@my/ui` の部品は必ずストーリーを持つ。ストーリーはアクセシビリティ・見た目・RTL のテストの入力になる | レビュー、`knip`（使われないファイル・export・依存） |
+| T5 | `@my/ui` の部品は必ずストーリーを持つ。ストーリーはアクセシビリティ・見た目・RTL のテストの入力になる。`web/src` に見た目を書かないので（A4）、画面が使う見た目はすべてここで確かめられる | レビュー、`knip`（使われないファイル・export・依存） |
 | T6 | 部品のテストは jsdom かブラウザモードで動かす。React Compiler（`app/web` の `react-compiler.ts`、`app/ui` の `@vitejs/plugin-react` の `compiler` オプション）はクライアント向けの変換にだけ効くので、Vitest の `node` 環境では本番と違うコードをテストすることになる | Vitest の設定 |
 | T7 | 非同期の結果は Testing Library の `findBy` / `waitFor` で待つ。`vi.waitFor` は使わない。待ち時間の上限はテストごとに変えず、setup の `asyncUtilTimeout` と Vitest の `testTimeout` にまとめる（待ちは実時間なので、負荷の高い機械では既定の 1 秒・5 秒を超える）。React の描画の外で動くフォーカス（React Aria のフォーカスの復帰は `requestAnimationFrame`、ルート変更の見出しへのフォーカスはルーターの `onRendered`）は `waitFor` の中で `toHaveFocus()` を検証する。遷移の後は遷移先にしかないもの（タブなら名前で選んだ `tabpanel` とその中身）を待つ。読み込みの間は前のページが残り、`defaultPendingMs` を超えると pending component に置き換わるので、どのページにもある要素や「ないこと」の確認は遷移の前の画面でも通ってしまう | テストの `restrict/test`（`vi.waitFor`）、Vitest の設定、レビュー |
 
@@ -1064,6 +1064,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
 ## 16. 見た目・状態・文言
 
 画面ごとに表現がばらつかないように、間隔・文字・アイコン・状態の表示・文言を 1 つの型にそろえる。
+`app/web/src` はこの章の値をクラスで書かず、`@my/ui` の部品の props（`gap`・`padding`・`tone` など）で選ぶ（A4）。
 トークンと `@my/ui` の部品の側の決まり（値の一覧、部品の props）は [app/ui/README.md](../../app/ui/README.md) にあり、ここは画面を組み立てる側の規約である。
 主な出典は WCAG 2.2、WAI-ARIA APG、[GOV.UK Design System](https://design-system.service.gov.uk/)（エラーと空の状態の書き方）、[Material Design 3 の Typography](https://m3.material.io/styles/typography/applying-type)（文字の役割の考え方）。
 

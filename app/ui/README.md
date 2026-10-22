@@ -4,6 +4,13 @@ The shared UI kit of the web client and the Tauri app ([ADR-0026](../../docs/adr
 It ships TypeScript source and one stylesheet, `@my/ui/theme.css`, which holds the design tokens.
 The rules for writing components are in [web-client.md](../../docs/architecture/web-client.md).
 
+`app/web/src` writes no Tailwind ([web-client.md A4](../../docs/architecture/web-client.md)): no JSX `className`, also none passed to a component
+of this kit, and no import of `tailwind-variants`, `tailwind-merge` or `clsx`. Oxlint's `restrict/classes` (app/.oxlintrc.json, proved by
+`app/oxlint/restrictions.test.js`) fails `make web-check` on both, in every file of `web/src` and its tests. A look or a layout the web needs is a prop
+of a component here, or a new prop or component; the one exception, a browser- or platform-specific adjustment that no component can express, disables
+the rule on its line with the reason. The layout components take no `className` or `style` at all. Components built on React Aria Components keep
+the `className` of its props, merged into their root, for use inside this package only.
+
 ## Using the tokens
 
 An app's Tailwind entry imports the theme right after Tailwind and scans the kit's source:
@@ -376,9 +383,9 @@ arbitrary value. A look that no prop gives is a new prop or component in the kit
 | `shrink`, `grow` | `min-w-0`, `flex-1` |
 | `self` | `start` / `center` / `end`: `self-*` |
 | `padding`, `paddingX`, `paddingY` | `p-*`, `px-*`, `py-*` in a spacing step (a row of a list or a card is `paddingX="4" paddingY="3"`) |
-| `paddingTop`, `paddingBottom`, `marginStart` | `pt-*`, `pb-*`, `ms-*` in a spacing step |
+| `paddingTop`, `paddingBottom`, `marginTop`, `marginStart` | `pt-*`, `pb-*`, `mt-*`, `ms-*` in a spacing step |
 | `fullRow` | `basis-full`: takes a whole line of a wrapping `Cluster` |
-| `border` | `md` `rounded-md border border-border`; `lg` `rounded-lg border border-border`; `y` `border-y border-border`; `bottom` `border-b border-border`; `start` `border-s-2 border-border ps-3` |
+| `border` | `md` `rounded-md border border-border`; `lg` `rounded-lg border border-border`; `y` `border-y border-border`; `top` `border-t border-border`; `bottom` `border-b border-border`; `start` `border-s-2 border-border ps-3` |
 | `background` | `surface` `bg-surface` (a row that stands on the page background); `sunken` `bg-surface-sunken` (a well inside a raised surface, such as the quote of the post a form replies to) |
 | `pushEnd` | `ms-auto`: moves the element to the inline end of its row, also when the row wraps |
 | `tone` | `fg` / `muted` / `danger` / `warning`: the text color inside |
@@ -497,8 +504,9 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 
 The frame around every page ([web-client.md §9](../../docs/architecture/web-client.md#9-アプリの外枠)). The app decides what goes in each slot
 (the items, their permissions and counts, the strings); the look is here. `AppShell` and `AppNavigation` are the kit's only components that
-answer to the viewport (`md:`, `lg:`, `xl:` and the `short:` variant of [theme.css](src/theme.css)), because they lay out the screen itself
-(D2); the lint exempts those two files from the rule against viewport breakpoints.
+answer to the viewport (`md:`, `lg:`, `xl:` and the `short:` variant of [theme.css](src/theme.css)), because they lay out the screen itself;
+so does the region of `ToastProvider` (`clearsTabBar`), which stands above the tab bar they draw (D2). The lint exempts those three files from the rule
+against viewport breakpoints.
 
 | Component | What it draws | Its props |
 | --- | --- | --- |

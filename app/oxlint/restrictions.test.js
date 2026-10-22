@@ -64,6 +64,12 @@ describe("where the restrictions apply", () => {
     assert.deepEqual(ruleValue("better-tailwindcss/no-restricted-classes", files.shell), ruleValue("better-tailwindcss/no-restricted-classes", files.route));
     assert.notDeepEqual(ruleValue("better-tailwindcss/no-restricted-classes", files.component), ruleValue("better-tailwindcss/no-restricted-classes", files.route));
   });
+  it("keeps className and the class-composing libraries out of every file of web/src, tests included, and leaves them to @my/ui (A4)", () => {
+    for (const file of [files.route, files.featureComponent, files.featureHook, files.featureTest, files.featureComponentTest, files.lib, files.testSetup]) {
+      assert.ok(ruleOptions("restrict/classes", file).length > 0);
+    }
+    for (const file of [files.component, files.shell, files.story]) assert.equal(ruleValue("restrict/classes", file), undefined);
+  });
   it("allows the API client and fetch in features/<x>/api and lib/ (S1)", () => {
     for (const file of [files.featureApi, files.lib]) {
       assert.equal(ruleValue("no-restricted-globals", file), "off");
@@ -119,6 +125,26 @@ ruleTester.run("restrict/syntax (every file)", restrict.rules.syntax, {
     { ...fails("<a href={url} target='_blank' rel='noopener'>Source</a>"), options: syntax },
     { ...fails("<Link href='https://remote.example/'>Remote</Link>"), options: syntax },
     { ...fails("<a href='HTTP://remote.example/'>Remote</a>"), options: syntax },
+  ],
+});
+
+const classBans = ruleOptions("restrict/classes", files.featureComponent);
+ruleTester.run("restrict/classes (A4)", restrict.rules.classes, {
+  valid: [
+    { code: "<Stack gap='3'><Text tone='muted'>x</Text></Stack>", options: classBans },
+    { code: "<label htmlFor='a' />", options: classBans },
+    { code: "const c = { classification: 1 };", options: classBans },
+    { code: "import { Stack } from '@my/ui';", options: classBans },
+    { code: "import clsxLike from 'not-clsx';", options: classBans },
+  ],
+  invalid: [
+    { ...fails("<div className='flex' />"), options: classBans },
+    { ...fails("<Button className={x}>Go</Button>"), options: classBans },
+    { ...fails("<Stack {...{ className: 'p-4' }} />"), options: classBans },
+    { ...fails("import { tv } from 'tailwind-variants';"), options: classBans },
+    { ...fails("import { twMerge } from 'tailwind-merge';"), options: classBans },
+    { ...fails("import clsx from 'clsx';"), options: classBans },
+    { ...fails("import clsx from 'clsx/lite';"), options: classBans },
   ],
 });
 
