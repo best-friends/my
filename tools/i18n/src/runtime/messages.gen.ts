@@ -5374,6 +5374,10 @@ export interface MessageArgs {
   "client:settings.time_zone.option": { name: string; offset: string };
   /** Use this device's time zone */
   "client:settings.time_zone.use_device": {};
+  /** New posts appear at the top of your home timeline by themselves, and the post you are reading stays where it is. While you have focus or selected text in the timeline, they wait behind the "new posts" button instead. */
+  "client:settings.timeline_auto_insert.description": {};
+  /** Show new posts automatically */
+  "client:settings.timeline_auto_insert.label": {};
   /** Timelines show posts in the languages you check. Check none to see every language. */
   "client:settings.timeline_languages.description": {};
   /** Languages of your timelines */

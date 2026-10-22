@@ -3,7 +3,7 @@
 // layout's event stream, MSW as the server's GET /streaming, and the "N new posts" button.
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Status } from "./api/timelines";
 import { apiBase, oauthPaths, problem, resumableSession, tokenResponse } from "../../test/msw/http";
 import { eventStreamResponse, streamingServer, type TestEventStream } from "../../test/msw/streaming";
@@ -233,5 +233,205 @@ describe("the event stream", () => {
     // The aborted stream does not come back.
     await new Promise((resolve) => setTimeout(resolve, 1_500));
     expect(streams.connections()).toBe(1);
+  });
+});
+
+/** Stands in for the browser's IntersectionObserver, which jsdom lacks: tests say whether the feed's top is in view. */
+class FakeIntersectionObserver {
+  static observers = new Set<FakeIntersectionObserver>();
+  readonly targets = new Set<Element>();
+  private readonly callback: IntersectionObserverCallback;
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+    FakeIntersectionObserver.observers.add(this);
+  }
+  observe(target: Element) {
+    this.targets.add(target);
+  }
+  unobserve(target: Element) {
+    this.targets.delete(target);
+  }
+  disconnect() {
+    FakeIntersectionObserver.observers.delete(this);
+  }
+  takeRecords() {
+    return [];
+  }
+  /** Reports whether the marker at the feed's top (the one `aria-hidden` target) is in view. */
+  static setTopInView(isIntersecting: boolean) {
+    for (const observer of FakeIntersectionObserver.observers) {
+      for (const target of observer.targets) {
+        if (target.getAttribute("aria-hidden") === "true") observer.callback([{ target, isIntersecting } as IntersectionObserverEntry], observer as unknown as IntersectionObserver);
+      }
+    }
+  }
+}
+
+describe("new posts inserted on their own (ADR-0077)", () => {
+  async function openHomeAutoInserting(autoInsert = true) {
+    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+    vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+    const streams = streamingServer();
+    server.use(resumableSession(), streams.handler);
+    server.use(http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, timeline_auto_insert: autoInsert })));
+    const view = await openHome();
+    await waitFor(() => {
+      expect(streams.connections()).toBe(1);
+    });
+    return { ...view, streams };
+  }
+
+  afterEach(() => {
+    FakeIntersectionObserver.observers.clear();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  test("insert at the top at once, without a button, a focus move or an announcement", async () => {
+    const { streams, feed } = await openHomeAutoInserting();
+
+    streams.current().send("update", newStatus(1));
+
+    await waitFor(() => {
+      expect(within(feed).getAllByRole("article")).toHaveLength(2);
+    });
+    expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleDescription("New post 1");
+    expect(screen.queryByRole("button", { name: /new post/ })).not.toBeInTheDocument();
+    expect(document.body).toHaveFocus();
+    expect(within(feed).getAllByRole("article").map((article) => article.getAttribute("aria-posinset"))).toEqual(["1", "2"]);
+  });
+
+  test("keep waiting behind the button when the setting is off", async () => {
+    const { streams, feed } = await openHomeAutoInserting(false);
+
+    streams.current().send("update", newStatus(1));
+
+    expect(await screen.findByRole("button", { name: "1 new post" })).toBeInTheDocument();
+    expect(within(feed).getAllByRole("article")).toHaveLength(1);
+  });
+
+  test("insert away from the top and count what came in since leaving it; pressing the button goes to the top", async () => {
+    const { streams, feed, user } = await openHomeAutoInserting();
+    act(() => {
+      FakeIntersectionObserver.setTopInView(false);
+    });
+
+    streams.current().send("update", newStatus(1));
+    streams.current().send("update", newStatus(2));
+
+    const button = await screen.findByRole("button", { name: "2 new posts" });
+    expect(within(feed).getAllByRole("article")).toHaveLength(3);
+
+    await user.click(button);
+    expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toHaveFocus();
+  });
+
+  test("reset the count when the reader is back at the top", async () => {
+    const { streams } = await openHomeAutoInserting();
+    act(() => {
+      FakeIntersectionObserver.setTopInView(false);
+    });
+    streams.current().send("update", newStatus(1));
+    await screen.findByRole("button", { name: "1 new post" });
+
+    act(() => {
+      FakeIntersectionObserver.setTopInView(true);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /new post/ })).not.toBeInTheDocument();
+    });
+  });
+
+  test("wait while focus is in the feed, and insert when it leaves", async () => {
+    const { streams, feed, user } = await openHomeAutoInserting();
+    within(feed).getAllByRole("article")[0]?.focus();
+
+    streams.current().send("update", newStatus(1));
+    await screen.findByRole("button", { name: "1 new post" });
+    expect(within(feed).getAllByRole("article")).toHaveLength(1);
+    // The reader's place is not moved: the focused post is still the first one.
+    expect(within(feed).getAllByRole("article")[0]).toHaveFocus();
+
+    await user.tab({ shift: true });
+    await waitFor(() => {
+      expect(within(feed).getAllByRole("article")).toHaveLength(2);
+    });
+    expect(screen.queryByRole("button", { name: /new post/ })).not.toBeInTheDocument();
+  });
+
+  test("wait while text in the feed is selected, and insert when the selection ends", async () => {
+    const { streams, feed } = await openHomeAutoInserting();
+    const text = within(feed).getByText("Hello from the local timeline!");
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    act(() => {
+      document.getSelection()?.removeAllRanges();
+      document.getSelection()?.addRange(range);
+      document.dispatchEvent(new Event("selectionchange"));
+    });
+
+    streams.current().send("update", newStatus(1));
+    await screen.findByRole("button", { name: "1 new post" });
+    expect(within(feed).getAllByRole("article")).toHaveLength(1);
+
+    act(() => {
+      document.getSelection()?.removeAllRanges();
+      document.dispatchEvent(new Event("selectionchange"));
+    });
+    await waitFor(() => {
+      expect(within(feed).getAllByRole("article")).toHaveLength(2);
+    });
+  });
+
+  test("load the first page again at the top when what was missed may not join the loaded posts", async () => {
+    let page = statusPage([timelineStatusFixture]);
+    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+    const streams = streamingServer();
+    server.use(resumableSession(), streams.handler);
+    server.use(
+      http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, timeline_auto_insert: true })),
+      http.get(`${apiBase}/timelines/home`, () => HttpResponse.json(page)),
+    );
+    const { feed } = await openHome();
+    await waitFor(() => {
+      expect(streams.connections()).toBe(1);
+    });
+
+    page = statusPage([newStatus(3), newStatus(2)], "older");
+    streams.current().close();
+
+    await waitFor(() => {
+      expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleDescription("New post 3");
+    }, { timeout: 4_000 });
+    expect(screen.queryByRole("button", { name: /new post/ })).not.toBeInTheDocument();
+  });
+
+  test("offer the reload on the button instead when the reader is away from the top", async () => {
+    let page = statusPage([timelineStatusFixture]);
+    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+    vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+    const streams = streamingServer();
+    server.use(resumableSession(), streams.handler);
+    server.use(
+      http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, timeline_auto_insert: true })),
+      http.get(`${apiBase}/timelines/home`, () => HttpResponse.json(page)),
+    );
+    const { feed, user } = await openHome();
+    await waitFor(() => {
+      expect(streams.connections()).toBe(1);
+    });
+    act(() => {
+      FakeIntersectionObserver.setTopInView(false);
+    });
+
+    page = statusPage([newStatus(3), newStatus(2)], "older");
+    streams.current().close();
+    await user.click(await screen.findByRole("button", { name: "2 new posts" }, reconnectTimeout));
+
+    await waitFor(() => {
+      expect(within(feed).getAllByRole("article")[0]).toHaveAccessibleDescription("New post 3");
+    });
   });
 });

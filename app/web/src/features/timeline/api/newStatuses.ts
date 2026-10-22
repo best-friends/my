@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The home timeline's new entries that wait for the reader (web-client.md Y7, S10): the streaming API
 // delivers them, and while a page shows the home timeline they stay in a Query cache entry of their own
-// until the reader presses "N new posts", which inserts them at the top. While no page shows it, nobody
+// until they are inserted at the top: by the reader pressing "N new posts" or, when the reader chose automatic
+// insertion (ADR-0077), by useHomeNewPosts as soon as nothing keeps them (the reader is not in the feed). While no page shows it, nobody
 // is reading it: the stream inserts them into its cached pages at once, so that the timeline shows them
 // from the moment it opens again (a timeline loaded less than `staleTime` ago that no write marked
 // stale is not fetched again on opening).

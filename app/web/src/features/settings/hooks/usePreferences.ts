@@ -15,6 +15,7 @@ type PreferenceKey =
   | "default_post_language"
   | "require_media_description"
   | "timeline_languages"
+  | "timeline_auto_insert"
   | "email_moderator_notifications";
 
 /** One preference as a control shows it: it is saved as soon as it changes. */
@@ -35,6 +36,7 @@ export type PreferencesControls = {
   defaultPostLanguage: PreferenceControl<string>;
   requireMediaDescription: PreferenceControl<boolean>;
   timelineLanguages: PreferenceControl<string[]>;
+  timelineAutoInsert: PreferenceControl<boolean>;
   emailModeratorNotifications: PreferenceControl<boolean>;
 };
 
@@ -54,6 +56,7 @@ export function usePreferences(): PreferencesControls {
     defaultPostLanguage: usePreferenceControl("default_post_language", data.default_post_language),
     requireMediaDescription: usePreferenceControl("require_media_description", data.require_media_description),
     timelineLanguages: usePreferenceControl("timeline_languages", data.timeline_languages),
+    timelineAutoInsert: usePreferenceControl("timeline_auto_insert", data.timeline_auto_insert),
     emailModeratorNotifications: usePreferenceControl("email_moderator_notifications", data.email_moderator_notifications),
   };
 }

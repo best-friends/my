@@ -10743,6 +10743,14 @@
     "defaultMessage": "[Ŭşḗḗ ŧħīş ḓḗḗṽīƈḗḗ'ş ŧīḿḗḗ ẑǿǿƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.timeline_auto_insert.description": {
+    "defaultMessage": "[Ƞḗḗẇ ƥǿǿşŧş ȧȧƥƥḗḗȧȧř ȧȧŧ ŧħḗḗ ŧǿǿƥ ǿǿƒ ẏǿǿŭŭř ħǿǿḿḗḗ ŧīḿḗḗŀīƞḗḗ ƀẏ ŧħḗḗḿşḗḗŀṽḗḗş, ȧȧƞḓ ŧħḗḗ ƥǿǿşŧ ẏǿǿŭŭ ȧȧřḗḗ řḗḗȧȧḓīƞɠ şŧȧȧẏş ẇħḗḗřḗḗ īŧ īş. Ẇħīŀḗḗ ẏǿǿŭŭ ħȧȧṽḗḗ ƒǿǿƈŭŭş ǿǿř şḗḗŀḗḗƈŧḗḗḓ ŧḗḗẋŧ īƞ ŧħḗḗ ŧīḿḗḗŀīƞḗḗ, ŧħḗḗẏ ẇȧȧīŧ ƀḗḗħīƞḓ ŧħḗḗ \"ƞḗḗẇ ƥǿǿşŧş\" ƀŭŭŧŧǿǿƞ īƞşŧḗḗȧȧḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.timeline_auto_insert.label": {
+    "defaultMessage": "[Şħǿǿẇ ƞḗḗẇ ƥǿǿşŧş ȧȧŭŭŧǿǿḿȧȧŧīƈȧȧŀŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.timeline_languages.description": {
     "defaultMessage": "[Ŧīḿḗḗŀīƞḗḗş şħǿǿẇ ƥǿǿşŧş īƞ ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗş ẏǿǿŭŭ ƈħḗḗƈķ. Ƈħḗḗƈķ ƞǿǿƞḗḗ ŧǿǿ şḗḗḗḗ ḗḗṽḗḗřẏ ŀȧȧƞɠŭŭȧȧɠḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -8147,6 +8147,14 @@
     "defaultMessage": "この端末のタイムゾーンにする",
     "description": "Button under the time zone select that changes the setting to the time zone of the device in use; shown only when they differ."
   },
+  "settings.timeline_auto_insert.description": {
+    "defaultMessage": "ホームタイムラインの先頭に新しい投稿が自動で入ります。読んでいる投稿は動きません。タイムラインの中にフォーカスがある間や文字を選択している間は、「新しい投稿」ボタンの後ろで待ちます。",
+    "description": "Help text of the switch that inserts new posts into the home timeline on their own."
+  },
+  "settings.timeline_auto_insert.label": {
+    "defaultMessage": "新しい投稿を自動で表示する",
+    "description": "Label of the switch that makes the home timeline insert new posts on their own instead of waiting behind a button."
+  },
   "settings.timeline_languages.description": {
     "defaultMessage": "チェックした言語の投稿だけをタイムラインに表示します。何もチェックしなければすべての言語を表示します。",
     "description": "Help text of the timeline languages."

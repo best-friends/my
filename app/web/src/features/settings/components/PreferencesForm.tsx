@@ -52,6 +52,7 @@ export function PreferencesForm() {
     defaultPostLanguage,
     requireMediaDescription,
     timelineLanguages,
+    timelineAutoInsert,
     emailModeratorNotifications,
   } = usePreferences();
   return (
@@ -107,6 +108,15 @@ export function PreferencesForm() {
         {t("client:settings.require_media_description.label")}
       </Switch>
       <TimelineLanguages control={timelineLanguages} />
+      <Switch
+        isSelected={timelineAutoInsert.value}
+        onChange={timelineAutoInsert.onChange}
+        description={t("client:settings.timeline_auto_insert.description")}
+        isInvalid={timelineAutoInsert.error !== undefined}
+        errorMessage={timelineAutoInsert.error}
+      >
+        {t("client:settings.timeline_auto_insert.label")}
+      </Switch>
       <PushNotifications />
       <ModeratorNotifications control={emailModeratorNotifications} />
     </Stack>
