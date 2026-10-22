@@ -29,6 +29,7 @@ func (r *IdentityRepository) InsertPreferences(ctx context.Context, tx uow.Tx, p
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     p.RequireMediaDescription,
 		EmailModeratorNotifications: p.EmailModeratorNotifications,
+		TimelineAutoInsert:          p.TimelineAutoInsert,
 		UpdatedAt:                   p.UpdatedAt,
 	})
 	if err != nil {
@@ -51,6 +52,7 @@ func (r *IdentityRepository) UpdatePreferences(ctx context.Context, tx uow.Tx, p
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     p.RequireMediaDescription,
 		EmailModeratorNotifications: p.EmailModeratorNotifications,
+		TimelineAutoInsert:          p.TimelineAutoInsert,
 		UpdatedAt:                   p.UpdatedAt,
 	})
 	if err != nil {
@@ -141,6 +143,7 @@ func userPreferencesFrom(ctx context.Context, q *postgresgen.Queries, row postgr
 		DefaultPostLanguage:         row.DefaultPostLanguage,
 		RequireMediaDescription:     row.RequireMediaDescription,
 		EmailModeratorNotifications: row.EmailModeratorNotifications,
+		TimelineAutoInsert:          row.TimelineAutoInsert,
 		UpdatedAt:                   utc(row.UpdatedAt),
 	}, nil
 }

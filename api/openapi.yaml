@@ -13634,6 +13634,7 @@ components:
         - default_post_language
         - require_media_description
         - email_moderator_notifications
+        - timeline_auto_insert
         - timeline_languages
       properties:
         locale:
@@ -13664,6 +13665,11 @@ components:
             Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`,
             `admin_webhook_disabled`, `admin_custom_emoji_request`) also come by email, to the
             primary address. Off for a new user.
+          type: boolean
+        timeline_auto_insert:
+          description: |
+            Whether the web client inserts new timeline posts without asking, instead of offering them
+            behind a "show new posts" button (ADR-0077). Off for a new user; the same on every device.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, sorted; empty shows every language.
@@ -15299,6 +15305,9 @@ components:
           type: boolean
         email_moderator_notifications:
           description: Whether the moderator notifications also come by email.
+          type: boolean
+        timeline_auto_insert:
+          description: Whether the web client inserts new timeline posts without asking.
           type: boolean
         timeline_languages:
           description: The languages that timelines show, at most 64; empty shows every language.

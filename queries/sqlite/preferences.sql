@@ -3,18 +3,18 @@
 -- name: InsertUserPreferences :exec
 INSERT INTO user_preferences (
   user_id, locale, default_visibility, default_quote_policy, default_post_language, require_media_description,
-  email_moderator_notifications, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+  email_moderator_notifications, timeline_auto_insert, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: UpdateUserPreferences :execrows
 UPDATE user_preferences SET
   locale = ?, default_visibility = ?, default_quote_policy = ?, default_post_language = ?,
-  require_media_description = ?, email_moderator_notifications = ?, updated_at = ?
+  require_media_description = ?, email_moderator_notifications = ?, timeline_auto_insert = ?, updated_at = ?
 WHERE user_id = ?;
 
 -- name: GetUserPreferences :one
 SELECT user_id, locale, default_visibility, default_quote_policy, default_post_language, require_media_description,
-  email_moderator_notifications, updated_at
+  email_moderator_notifications, timeline_auto_insert, updated_at
 FROM user_preferences WHERE user_id = ?;
 
 -- name: DeleteUserTimelineLanguages :exec

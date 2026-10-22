@@ -29,7 +29,7 @@ func newPreferences(p appidentity.UserPreferences) Preferences {
 		Locale: p.Locale, TimeZone: p.TimeZone, TimeZoneChosen: p.TimeZoneChosen, DefaultVisibility: Visibility(p.DefaultVisibility),
 		DefaultQuotePolicy:  QuotePolicy(p.DefaultQuotePolicy),
 		DefaultPostLanguage: p.DefaultPostLanguage, RequireMediaDescription: p.RequireMediaDescription,
-		EmailModeratorNotifications: p.EmailModeratorNotifications, TimelineLanguages: langs,
+		EmailModeratorNotifications: p.EmailModeratorNotifications, TimelineAutoInsert: p.TimelineAutoInsert, TimelineLanguages: langs,
 	}
 }
 
@@ -59,6 +59,7 @@ func (s *Server) UpdatePreferences(ctx context.Context, req UpdatePreferencesReq
 			Locale: b.Locale, TimeZone: b.TimeZone, DefaultPostLanguage: b.DefaultPostLanguage,
 			RequireMediaDescription: b.RequireMediaDescription, TimelineLanguages: b.TimelineLanguages,
 			EmailModeratorNotifications: b.EmailModeratorNotifications,
+			TimelineAutoInsert:          b.TimelineAutoInsert,
 		}
 		if b.DefaultVisibility != nil {
 			vis := identity.Visibility(*b.DefaultVisibility)

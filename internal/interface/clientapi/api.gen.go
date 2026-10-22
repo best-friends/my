@@ -7672,6 +7672,10 @@ type Preferences struct {
 	// `time_zone`. Clients may then set it to the device's time zone.
 	TimeZoneChosen bool `json:"time_zone_chosen"`
 
+	// TimelineAutoInsert Whether the web client inserts new timeline posts without asking, instead of offering them
+	// behind a "show new posts" button (ADR-0077). Off for a new user; the same on every device.
+	TimelineAutoInsert bool `json:"timeline_auto_insert"`
+
 	// TimelineLanguages The languages that timelines show, sorted; empty shows every language.
 	TimelineLanguages []string `json:"timeline_languages"`
 }
@@ -8987,6 +8991,9 @@ type UpdatePreferencesRequest struct {
 
 	// TimeZone The time zone, an IANA name.
 	TimeZone *string `json:"time_zone,omitempty"`
+
+	// TimelineAutoInsert Whether the web client inserts new timeline posts without asking.
+	TimelineAutoInsert *bool `json:"timeline_auto_insert,omitempty"`
 
 	// TimelineLanguages The languages that timelines show, at most 64; empty shows every language.
 	TimelineLanguages *[]string `json:"timeline_languages,omitempty"`

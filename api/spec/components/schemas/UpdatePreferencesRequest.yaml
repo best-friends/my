@@ -21,6 +21,9 @@ properties:
   email_moderator_notifications:
     description: Whether the moderator notifications also come by email.
     type: boolean
+  timeline_auto_insert:
+    description: Whether the web client inserts new timeline posts without asking.
+    type: boolean
   timeline_languages:
     description: The languages that timelines show, at most 64; empty shows every language.
     type: array
