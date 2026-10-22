@@ -214,7 +214,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 
 ## 8. サーバーが描画する画面
 
-ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・パスワードリセット（リンクの要求 `/auth/forgot_password` と、リンクが開く新しいパスワードの設定 `/auth/reset_password`）・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログイン・登録・パスワードリセットのリンクの要求の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。ログインの画面は、Web クライアントのビルドが作るスクリプト（`src/server-pages/passkey-sign-in.ts`、CSP は `script-src 'self'`）を読み、パスキーに対応したブラウザでだけ「パスキーでログイン」のボタンを出す（FR-004）。ボタンのフォームは JavaScript がないと隠れたままで、メールアドレスとパスワードのフォームはスクリプトなしで動く。
+ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・パスワードリセット（リンクの要求 `/auth/forgot_password` と、リンクが開く新しいパスワードの設定 `/auth/reset_password`）・アカウントの状態・OAuth の認可同意の画面は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログイン・登録・パスワードリセットのリンクの要求の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。ログインの画面は、Web クライアントのビルドが作るスクリプト（`src/server-pages/passkey-sign-in.ts`、CSP は `script-src 'self'`）を読み、パスキーに対応したブラウザでだけ「パスキーでログイン」のボタンを出す（FR-004）。ボタンのフォームは JavaScript がないと隠れたままで、メールアドレスとパスワードのフォームはスクリプトなしで動く。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -225,10 +225,9 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - ダークモードは `prefers-color-scheme` に従う（トークンの `light-dark()` と `<meta name="color-scheme" content="light dark">`）。フォーカスのリングは `theme.css` の `:focus-visible`、
   タップ領域は `pointer-coarse:` で 44 px 以上、方向は論理プロパティ（`px-`・`ps-`・`pe-`）で書く（D4・D7・Y4）。
 - フォームは `<label for>`、`autocomplete`（`username`・`current-password`・`new-password`・`one-time-code`）、ヒントとエラーの `aria-describedby`、エラーの `aria-invalid` を持ち、ブラウザの制約検証（`required`・`minlength`）を使う。
-- 利用規約とプライバシーポリシーは、ランディングページ（§9）と違い、SPA のルートにしない。登録のフォームが同意を求める文書で、JavaScript なしで読めなければならず、
-  クライアント API には文書の本文がない（`GET /instance` が返すのは公開ページの URL の `terms_url` / `privacy_policy_url` だけ）ため。アドレスは `/auth/terms`・`/auth/privacy` のまま、SPA のどの画面からも新しいタブで開く（Y12）。
-- 利用規約とプライバシーポリシー（#489）: 管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズし（`internal/adapter/markdown`）、`.document` の区画に、`lang=""`（言語不明。文書はどのロケールでも同じ 1 つの値で、書かれた言語を記録しない）と `dir="auto"` で出す。見出しはページの `h1` の下の `h2` から始まり、幅の広い表は区画の中で横にスクロールして、ページは横にスクロールしない（D3）。
-  サーバーが公開している文書は、すべての画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からリンクする。公開していない文書はリンクせず、そのページは 404 にする。
+- 利用規約・プライバシーポリシー・特定商取引法に基づく表記（#489）の本文は、サーバーが描画せず、SPA のルート `/about/terms`・`/about/privacy`・`/about/commerce` が描く。
+  本文はクライアント API の匿名の `GET /instance/documents/{kind}` が返す（管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズしたもの、`internal/adapter/markdown`）。`GET /instance` の `terms_url` / `privacy_policy_url` / `commerce_disclosure_url` はこの 3 つのパスを指す。
+  文書の画面は JavaScript を前提にする（SPA のほかの画面と同じ）。サーバーが公開している文書は、すべてのサーバー描画の画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からこの SPA のパスへリンクする。公開していない文書はリンクしない。
 - サーバーが描画するページのリンクは、ページの間では同じタブで開く（フッターの文書のリンクも）。入力の途中で読むリンク、つまり登録のフォームの同意の文の文書と、ボットの確認の説明の後のサービスのプライバシーポリシーと利用規約（ほかのサイト）は、
   入力を失わないように `target="_blank" rel="noopener noreferrer"` で新しいタブで開き、末尾に `.visually-hidden` の「（新しいタブで開きます）」（`server:auth.link.new_tab`）を置く（Y12）。
 
@@ -334,7 +333,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   そのため平文 HTTP のローカルの構成（`apiOrigin` が `http://localhost:8080`）でも、TLS のない `https://` に移らずに該当の画面が開く。修飾キー付きで新しいタブやウィンドウで開くことはブラウザに任せる。
   サーバーはどのリンクにも `target="_blank"` を書くので、`PostContent` は描画の後にリンクごとに開き方を決める（Y12）。上の 3 種類の自インスタンスの画面へのリンク（`ExternalLinkContext` の `isAppLink`、`App.tsx` の `ExternalLinks` が `contentLinkPath` で判定）は `target` を外して同じタブで開き、
   ほかのリンクは新しいタブで開いて、サーバーの `rel`（`nofollow noopener noreferrer`）に `noopener noreferrer` を保ち、「（新しいタブで開きます）」を末尾に足す。
-  アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、利用規約とプライバシーポリシーの公開ページ）は `ExternalLink` で新しいタブで開く（Y12）。
+  アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先）は `ExternalLink` で新しいタブで開く（Y12）。
   それ以外のサーバー自身のパス（`/auth`・`/oauth`・`/api` などの予約パス、`lib/paths.ts` の `isServerPath`。登録の画面など）へのリンクはアプリのルートではないので、外枠の `navigate`（`App.tsx`）がルーターに渡さず、`leaveApp` でページごと開く。
 - **レイアウト**（`routes/-layout/AppLayout.tsx`。見た目は `@my/ui` の `AppShell`・`AppNavigation`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` から投稿フォームとサーバーについての 3 列目を出す。
   `xl` 未満では、投稿フォームはタブバーの上（`md` からは画面の隅）に浮かぶボタンから開くシートになる（§12）。どちらにするかは外枠が `matchMedia` で決め（`useMediaQuery`）、ページに置くフォームは常に 1 つにする。
@@ -1033,7 +1032,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   `e2e/finance.spec.ts` は、費用の画面の集計（按分の既定、キーボードでの週のタブ、現金主義と URL）、年ごとの費用の登録、確認のダイアログを経た取り消し、取り込みの状態、収入の表とお金の動き（加入者のユーザー名、キーボードでの種類の絞り込みと URL）までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/webhooks.spec.ts` は、webhook の設定と一度だけの秘密の表示、一覧、無効化と有効化、確認のダイアログを経た削除までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/roles.spec.ts` は、ロールの区画の ARIA スナップショット（閲覧者より上のロールの理由）・axe・横スクロールと、キーボードで付与の確認のダイアログを経て、区画の見出しにフォーカスが移るまでを検査する。
-  `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターから文書の公開ページを開き、Markdown の見出し・箇条書き・表の ARIA スナップショット・両方のテーマの axe・横スクロールを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
+  `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターが文書の SPA のパス（`/about/terms`・`/about/privacy`）へリンクすることを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
   `e2e/appeals.spec.ts` は、異議申し立ての一覧の axe・横スクロール・ARIA スナップショットと、キーボードで申し立てを開き、撤回の確認のダイアログを経て処分が解除と出て、審査の見出しにフォーカスが移るまでを検査する。
   `features/moderation/staffEntry.test.tsx` は、ナビゲーションの「モデレーション」と「管理」の出し分け（モデレーターに「管理」が出ないこと、両方を持つ閲覧者での順番）・レールとメニューのボタンとシートの件数の名前・各区分の画面と `aria-current`・使える画面のない区分の画面・ストリームの通知での件数の読み直しを検査し、
   `e2e/admin-entry.spec.ts` は、各幅で「モデレーション」（`md` 未満はメニューのボタンとシート）の件数の名前と数字、モデレーターに「管理」がないこと、モデレーションの画面の ARIA スナップショット、サーバーからの通知の行とそのリンク（ARIA スナップショット）・axe・横スクロールを検査する。

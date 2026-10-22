@@ -95,6 +95,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/imports":                                                 {Operation: "listDataImports", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/instance":                                                {Operation: "getInstance", Anonymous: true},
 	"GET /api/v1/instance/cost_totals":                                    {Operation: "getInstanceCostTotals", Anonymous: true},
+	"GET /api/v1/instance/documents/{kind}":                               {Operation: "getInstanceDocument", Anonymous: true},
 	"GET /api/v1/instance/domain_actions":                                 {Operation: "listInstanceDomainActions", Anonymous: true},
 	"GET /api/v1/instance/income_totals":                                  {Operation: "getInstanceIncomeTotals", Anonymous: true},
 	"GET /api/v1/instance/supporter_plans":                                {Operation: "listSupporterPlans", Anonymous: true},

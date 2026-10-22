@@ -11,8 +11,8 @@ import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { newTabName, visibleText } from "../../test/links";
 
-const termsUrl = "http://localhost:3000/auth/terms";
-const privacyUrl = "http://localhost:3000/auth/privacy";
+const termsUrl = "http://localhost:3000/about/terms";
+const privacyUrl = "http://localhost:3000/about/privacy";
 
 function publish(documents: { terms_url?: string; privacy_policy_url?: string }) {
   server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, ...documents })));

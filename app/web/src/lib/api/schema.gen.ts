@@ -164,6 +164,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/instance/documents/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a document of the instance
+         * @description The body of the terms of service (`terms`), the privacy policy (`privacy_policy`) or the
+         *     commerce disclosures of the supporter plans (`commerce_disclosure`) that the instance
+         *     has published, as sanitized HTML with the time of its last revision. A 404 when the
+         *     instance has not published the document (`Instance.terms_url`,
+         *     `Instance.privacy_policy_url` and `Instance.commerce_disclosure_url` are omitted then),
+         *     and for an unknown kind. The web client shows it at `/about/terms`, `/about/privacy`
+         *     and `/about/commerce`.
+         */
+        get: operations["getInstanceDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/instance/domain_actions": {
         parameters: {
             query?: never;
@@ -3739,7 +3765,8 @@ export interface paths {
          *     the administrator writes it once, in any language, and readers of every locale see the
          *     same value. An empty `body` clears the text. The revision and the change are kept
          *     (`instance_text_revisions`, the audit log's `text_changed`). The terms of service and the privacy policy are Markdown, which the server renders and
-         *     sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
+         *     sanitizes for the web client's pages of them (`GET /instance/documents/{kind}`, linked from
+         *     `Instance.terms_url`, `Instance.privacy_policy_url` and `Instance.commerce_disclosure_url`);
          *     the other texts are plain text. The display name (`name`) names the instance to people
          *     in place of its domain: the web client's navigation and tab title, the server-rendered
          *     pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;
@@ -7677,20 +7704,23 @@ export interface components {
             rules: components["schemas"]["InstanceRule"][];
             /**
              * Format: uri
-             * @description The public page of the instance's terms of service, which needs no sign-in; omitted
-             *     when the instance has none, so that clients do not link to it.
+             * @description The web client's page of the instance's terms of service (`/about/terms`), which needs no
+             *     sign-in and shows `GET /instance/documents/terms`; omitted when the instance has none,
+             *     so that clients do not link to it.
              */
             terms_url?: string;
             /**
              * Format: uri
-             * @description The public page of the instance's privacy policy, which needs no sign-in; omitted
-             *     when the instance has none.
+             * @description The web client's page of the instance's privacy policy (`/about/privacy`), which needs no
+             *     sign-in and shows `GET /instance/documents/privacy_policy`; omitted when the instance has
+             *     none.
              */
             privacy_policy_url?: string;
             /**
              * Format: uri
-             * @description The public page of the commerce disclosures of the supporter plans (`/about/commerce`),
-             *     which needs no sign-in; omitted when the instance has none.
+             * @description The web client's page of the commerce disclosures of the supporter plans (`/about/commerce`,
+             *     the URL that the operators give the payment provider), which needs no sign-in and shows
+             *     `GET /instance/documents/commerce_disclosure`; omitted when the instance has none.
              */
             commerce_disclosure_url?: string;
             /**
@@ -7807,6 +7837,32 @@ export interface components {
             hint?: string;
         };
         /**
+         * @description A document that the instance has published, rendered for reading. The administrators write
+         *     it once, in any language, so every locale gets the same text.
+         */
+        InstanceDocument: {
+            kind: components["schemas"]["InstanceDocumentKind"];
+            /**
+             * @description The document as HTML, which the server renders from the administrators' Markdown and
+             *     sanitizes (headings from `h2`, paragraphs, lists, quotes, code, rules, tables, and links
+             *     to `http`, `https` and `mailto`; no raw HTML, scripts or images). Clients put it in the
+             *     page as it is. The language of the text is unknown: mark it `lang=""`.
+             */
+            html: string;
+            /**
+             * Format: date-time
+             * @description When the current revision of the document was recorded.
+             */
+            revised_at: string;
+        };
+        /**
+         * @description The kind of an instance document: the terms of service, the privacy policy, and the
+         *     commerce disclosures of the supporter plans. Each is the instance text of the same name
+         *     (`terms`, `privacy_policy`, `commerce_disclosure`).
+         * @enum {string}
+         */
+        InstanceDocumentKind: "terms" | "privacy_policy" | "commerce_disclosure";
+        /**
          * @description The key of an instance setting (docs/operations/instance-settings.md). New keys may be
          *     added; clients show the ones they know.
          * @enum {string}
@@ -7826,7 +7882,7 @@ export interface components {
          * @description The key of an instance text: the name (one line), the short and full descriptions,
          *     the terms of service and the privacy policy (Markdown), the alternative texts of the
          *     preview image and the thumbnail, and the commerce disclosures of the supporter plans
-         *     (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
+         *     (Markdown, shown at `/about/commerce`; the server does not vouch for what they say).
          * @enum {string}
          */
         InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt" | "commerce_disclosure";
@@ -10208,6 +10264,8 @@ export interface components {
          *     that is not UTF-8 without U+0000, is a 422.
          */
         IdempotencyKey: string;
+        /** @description The kind of the document. */
+        InstanceDocumentKind: components["schemas"]["InstanceDocumentKind"];
         /** @description The domain of the remote server, such as `mastodon.example`. */
         InstanceDomain: string;
         /** @description The key of the text. */
@@ -10426,6 +10484,31 @@ export interface operations {
         responses: {
             200: components["responses"]["CustomEmojiRequest"];
             409: components["responses"]["CustomEmojiRequestProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getInstanceDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The kind of the document. */
+                kind: components["parameters"]["InstanceDocumentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The document. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstanceDocument"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

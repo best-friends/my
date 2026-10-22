@@ -20,6 +20,14 @@ const (
 	pathAbout   = "/about"
 )
 
+// Paths of the web client's pages of the instance's documents, which GET /instance links to.
+// They are plain SPA routes: the generic shell serves them.
+const (
+	PathAboutTerms              = "/about/terms"
+	PathAboutPrivacyPolicy      = "/about/privacy"
+	PathAboutCommerceDisclosure = "/about/commerce"
+)
+
 // serveInstancePage serves the shell of the page about the instance at path, pathLanding or
 // pathAbout.
 func (h *Handler) serveInstancePage(w http.ResponseWriter, r *http.Request, path string) {

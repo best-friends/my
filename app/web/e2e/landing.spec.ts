@@ -73,8 +73,8 @@ async function serveInstance(page: Page, origin: string, overrides: Partial<Inst
       { id: "0192f0c4-7a8e-7000-8000-0000000000e1", text: "Be kind", hint: "No insults, no harassment." },
       { id: "0192f0c4-7a8e-7000-8000-0000000000e2", text: "Mark sensitive media" },
     ],
-    terms_url: `${origin}/auth/terms`,
-    privacy_policy_url: `${origin}/auth/privacy`,
+    terms_url: `${origin}/about/terms`,
+    privacy_policy_url: `${origin}/about/privacy`,
     ...overrides,
   };
   await page.route("**/api/v1/instance", (route) => route.fulfill({ json: instance }));

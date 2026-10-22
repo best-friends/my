@@ -108,6 +108,8 @@ paths:
     $ref: ./paths/custom_emoji_requests.yaml
   /custom_emoji_requests/{id}/withdraw:
     $ref: ./paths/custom_emoji_requests_{id}_withdraw.yaml
+  /instance/documents/{kind}:
+    $ref: ./paths/instance_documents_{kind}.yaml
   /instance/domain_actions:
     $ref: ./paths/instance_domain_actions.yaml
   /instance/cost_totals:
@@ -567,6 +569,8 @@ components:
       $ref: ./components/parameters/DomainActionId.yaml
     IdempotencyKey:
       $ref: ./components/parameters/IdempotencyKey.yaml
+    InstanceDocumentKind:
+      $ref: ./components/parameters/InstanceDocumentKind.yaml
     InstanceDomain:
       $ref: ./components/parameters/InstanceDomain.yaml
     InstanceTextKey:
@@ -1095,6 +1099,10 @@ components:
       $ref: ./components/schemas/InstanceRule.yaml
     InstanceRuleInput:
       $ref: ./components/schemas/InstanceRuleInput.yaml
+    InstanceDocument:
+      $ref: ./components/schemas/InstanceDocument.yaml
+    InstanceDocumentKind:
+      $ref: ./components/schemas/InstanceDocumentKind.yaml
     InstanceSettingKey:
       $ref: ./components/schemas/InstanceSettingKey.yaml
     InstanceSettingKind:

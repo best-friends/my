@@ -51,7 +51,7 @@ function section(name: string): HTMLElement {
 describe("the terms and policies screen", () => {
   test("shows each document, when it was saved, and its page", async () => {
     textsServer([terms]);
-    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, terms_url: "http://localhost:3000/auth/terms" })));
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, terms_url: "http://localhost:3000/about/terms" })));
     await renderApp({ path: "/admin/documents" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Terms and policies" })).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe("the terms and policies screen", () => {
 
     // The public page is the server's own, outside the app: it opens in a new tab.
     const page = await termsSection.findByRole("link", { name: newTabName("Open the terms of service page") });
-    expect(page).toHaveAttribute("href", "http://localhost:3000/auth/terms");
+    expect(page).toHaveAttribute("href", "http://localhost:3000/about/terms");
     expect(page).toHaveAttribute("target", "_blank");
   });
 

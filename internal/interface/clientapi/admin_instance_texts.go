@@ -16,7 +16,7 @@ import (
 )
 
 // The instance texts (FR-705): the admin operations that read and write them (manage_settings),
-// one value each, shown as it is in every locale, and the links of GET /instance to the public pages of the documents among
+// one value each, shown as it is in every locale, and the links of GET /instance to the web client's pages of the documents among
 // them (the terms of service and the privacy policy, #489).
 
 // InstanceTexts runs the use cases of the instance texts. *appinstance.Service implements it.
@@ -27,8 +27,8 @@ type InstanceTexts interface {
 	SetText(ctx context.Context, in appinstance.SetTextInput) (instance.TextRevision, error)
 }
 
-// documentURLs sets the links of out to the public pages of the documents that the instance has
-// published (Options.TermsPath, Options.PrivacyPolicyPath, Options.CommerceDisclosurePath).
+// documentURLs sets the links of out to the web client's pages of the documents that the instance has
+// published, which the web client draws (Options.TermsPath, Options.PrivacyPolicyPath, Options.CommerceDisclosurePath).
 func (s *Server) documentURLs(ctx context.Context, out *Instance) error {
 	for _, d := range []struct {
 		key  instance.TextKey

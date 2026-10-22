@@ -90,8 +90,8 @@
 ### 利用規約とプライバシーポリシー
 
 - `terms`・`privacy_policy`・`commerce_disclosure` は Markdown で書きます（CommonMark と、GitHub Flavored Markdown の表・取り消し線・URL の自動リンク）。段落の中の改行はそのまま改行になり、`#` の見出しはページの題の下の段（`h2`）から始まります。
-- サーバーが公開ページ `/auth/terms`・`/auth/privacy`・`/about/commerce` で HTML にしてサニタイズします。生の HTML・画像・`http` / `https` / `mailto` 以外のリンクは出ません。ページはサインインも JavaScript も要りません。
-- 書いた文書は、登録の画面（作成のボタンの前の同意の文とリンク）、サーバーが描画するすべての画面のフッター、Web クライアント（3 列目・メニュー・設定・サインインの画面）からリンクされます。書かれていない文書はリンクされず、ページは 404 です。
+- サーバーが HTML にしてサニタイズし（匿名の `GET /api/v1/instance/documents/{kind}`）、Web クライアントのページ `/about/terms`・`/about/privacy`・`/about/commerce` が表示します。生の HTML・画像・`http` / `https` / `mailto` 以外のリンクは出ません。ページはサインインが要りません（Web クライアントなので JavaScript は要ります）。`/about/commerce` は決済の事業者に渡す URL です。
+- 書いた文書は、登録の画面（作成のボタンの前の同意の文とリンク）、サーバーが描画するすべての画面のフッター、Web クライアント（3 列目・メニュー・設定・サインインの画面）からリンクされます。書かれていない文書はリンクされず、本文の API は 404 です。
 
 ### 名前とドメイン
 

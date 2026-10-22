@@ -151,36 +151,16 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ẇȧȧş řḗḗƒŭŭşḗḗḓ ƀḗḗƈȧȧŭŭşḗḗ īŧ ƈȧȧḿḗḗ ƒřǿǿḿ ȧȧƞǿǿŧħḗḗř şīŧḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "auth.document.commerce_missing": {
-    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ħȧȧş ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ ƈǿǿḿḿḗḗřƈḗḗ ḓīşƈŀǿǿşŭŭřḗḗş.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "auth.document.commerce_title": {
-    "defaultMessage": "[Ƈǿǿḿḿḗḗřƈḗḗ ḓīşƈŀǿǿşŭŭřḗḗş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "auth.document.footer_label": {
     "defaultMessage": "[Ŧḗḗřḿş ȧȧƞḓ ƥǿǿŀīƈīḗḗş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "auth.document.privacy_missing": {
-    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ħȧȧş ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ ȧȧ ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.document.privacy_title": {
     "defaultMessage": "[Ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "auth.document.terms_missing": {
-    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ħȧȧş ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "auth.document.terms_title": {
     "defaultMessage": "[Ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "auth.document.updated": {
-    "defaultMessage": "[Ŀȧȧşŧ ŭŭƥḓȧȧŧḗḗḓ: {date}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.document_title": {
