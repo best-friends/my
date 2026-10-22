@@ -142,6 +142,9 @@ function LandingHero({ heading, landing }: { heading: ReactNode; landing: Landin
       }
       {...(note !== undefined && { note: <Hint id={noteId}>{t(note)}</Hint> })}
       {...(mode === "closed" && { note: <Hint>{t("client:landing.registrations.closed")}</Hint> })}
+      {...(landing.recentPosts.status === "ready" && landing.recentPosts.posts.length > 0 && {
+        aside: landing.recentPosts.posts.slice(0, 2).map((post) => <StatusCard key={post.id} status={post} withActions={false} />),
+      })}
       {...(landing.thumbnail !== undefined && { media: <ServerThumbnail thumbnail={landing.thumbnail} /> })}
     >
       {landing.summary !== "" && (

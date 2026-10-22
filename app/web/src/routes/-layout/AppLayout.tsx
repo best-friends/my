@@ -38,6 +38,7 @@ export function AppLayout() {
   // Only pages with a feed float the new-post button (timelines and profiles: their routes' static data), below md
   // (ADR-0039); from md the rail has the button.
   const pageWantsButton = useMatches({ select: (matches) => matches.some((match) => match.staticData.composeButton === true) });
+  const wideMain = useMatches({ select: (matches) => matches.some((match) => match.staticData.wideMain === true) });
   const signedOut = useSignedOut();
   const signedIn = useViewer().status === "signed-in";
   const showButton = !medium && pageWantsButton && signedIn;
@@ -50,6 +51,7 @@ export function AppLayout() {
         navigation={<Navigation />}
         navigationPlacement={signedOut ? "top" : "side"}
         skipLinkLabel={t("client:shell.skip_to_main")}
+        width={wideMain ? "wide" : "narrow"}
         mainId={mainId}
         mainRef={mainRef}
         floatingVisible={showButton}

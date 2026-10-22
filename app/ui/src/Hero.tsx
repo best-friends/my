@@ -8,6 +8,8 @@ import { Text } from "./Text";
 const hero = tv({
   slots: {
     base: "@container flex flex-col gap-6 rounded-2xl bg-linear-to-b from-surface-sunken to-surface-raised p-6 @md:p-10",
+    columns: "grid gap-6 @3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @3xl:items-center",
+    aside: "flex min-w-0 flex-col gap-3",
     body: "flex flex-col items-start gap-4",
     lead: "max-w-[60ch] text-lg text-fg",
     actions: "flex flex-wrap items-center gap-3",
@@ -29,23 +31,28 @@ export type HeroProps = {
   note?: ReactNode;
   /** An image that stands for the server (`PreviewImage`), under the panel's text. */
   media?: ReactNode;
+  /** Content beside the text from the panel's @3xl width and under it below (two real posts); the media goes under both. */
+  aside?: ReactNode;
 };
 
 /** A cream-to-raised panel with the page's heading and the ways in. Lay it at the top of the page, once. */
-export function Hero({ eyebrow, heading, children, actions, note, media }: HeroProps) {
+export function Hero({ eyebrow, heading, children, actions, note, media, aside }: HeroProps) {
   const slots = hero();
   return (
     <section className={slots.base()}>
-      <div className={slots.body()}>
-        {eyebrow !== undefined && (
-          <Text as="p" eyebrow>
-            {eyebrow}
-          </Text>
-        )}
-        {heading}
-        {children !== undefined && <div className={slots.lead()}>{children}</div>}
-        {actions !== undefined && <div className={slots.actions()}>{actions}</div>}
-        {note !== undefined && <div className={slots.notes()}>{note}</div>}
+      <div className={slots.columns()}>
+        <div className={slots.body()}>
+          {eyebrow !== undefined && (
+            <Text as="p" eyebrow>
+              {eyebrow}
+            </Text>
+          )}
+          {heading}
+          {children !== undefined && <div className={slots.lead()}>{children}</div>}
+          {actions !== undefined && <div className={slots.actions()}>{actions}</div>}
+          {note !== undefined && <div className={slots.notes()}>{note}</div>}
+        </div>
+        {aside !== undefined && <div className={slots.aside()}>{aside}</div>}
       </div>
       {media !== undefined && <div className={slots.media()}>{media}</div>}
     </section>

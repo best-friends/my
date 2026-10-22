@@ -28,6 +28,18 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+/** Two posts beside the text from the panel's @3xl width, under it below. */
+export const WithAside: Story = {
+  args: {
+    aside: (
+      <>
+        <Text as="p">A first post from the server.</Text>
+        <Text as="p">A second post from the server.</Text>
+      </>
+    ),
+  },
+};
+
 /** Registration needs approval: a note says so under the ways in. */
 export const WithNote: Story = { args: { note: <Hint>Moderators review each new account before it can be used.</Hint> } };
 
