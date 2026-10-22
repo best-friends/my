@@ -4,7 +4,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
-import { AppNav, AppNavAccount, AppNavBrand, AppNavItem, AppNavMenu, AppNavMenuLink, AppNavMenuList, AppNavMenuSection, type AppNavBadge } from "./AppNavigation";
+import { AppNav, AppNavAccount, AppNavAction, AppNavBrand, AppNavItem, AppNavMenu, AppNavMenuLink, AppNavMenuList, AppNavMenuSection, type AppNavBadge } from "./AppNavigation";
 import { AppShell, AsidePanel } from "./AppShell";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
@@ -90,6 +90,7 @@ function SampleNav({ labels: l = labels, serverName = "my example", accountName 
     <AppNav
       label="Main"
       header={<Brand name={serverName} />}
+      action={<AppNavAction label="Write a post" icon={<PlusIcon />} onPress={() => undefined} />}
       footer={
         <AppNavAccount
           href="#profile"
@@ -232,7 +233,7 @@ export const PhoneMenuOpen: Story = {
   },
 };
 
-/** Tablets (md): the rail of icons with short labels, every item, and the floating button in the corner. */
+/** Tablets (md): the rail of icons with short labels, every item and its icon-only new-post button. */
 export const Tablet: Story = {
   globals: atViewport("tablet"),
   args: { floating: floatingButton, floatingVisible: true },
@@ -240,6 +241,7 @@ export const Tablet: Story = {
     const nav = canvas.getByRole("navigation", { name: "Main" });
     await expect(within(nav).getByRole("link", { name: "Moderation, 12 pending" })).toBeVisible();
     await expect(within(nav).queryByRole("button", { name: /^Menu/ })).toBeNull();
+    await expect(within(nav).getByRole("button", { name: "Write a post" })).toBeVisible();
   },
 };
 

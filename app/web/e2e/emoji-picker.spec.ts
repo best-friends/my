@@ -84,13 +84,11 @@ async function serveApi(page: Page): Promise<void> {
   });
 }
 
-/** Opens the form (the sheet, or the side panel from Tailwind's xl) and returns it. */
+/** Opens the form from the navigation's button and returns it. */
 async function openForm(page: Page, hasTouch: boolean) {
-  if ((page.viewportSize()?.width ?? 0) < 1280) {
-    const open = page.getByRole("button", { name: message("compose.open") });
-    if (hasTouch) await open.tap();
-    else await open.click();
-  }
+  const open = page.getByRole("button", { name: message("compose.open") });
+  if (hasTouch) await open.tap();
+  else await open.click();
   const form = page.getByRole("form", { name: message("compose.title") });
   await expect(form.getByRole("textbox", { name: message("compose.text.label") })).toBeVisible();
   return form;

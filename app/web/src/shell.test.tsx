@@ -62,7 +62,7 @@ describe("the display locale", () => {
     expect(screen.getByRole("navigation", { name: "メイン" })).toBeInTheDocument();
     // The new-post button mounts once the viewer has loaded; its form reads the same preferences, but does not
     // ask again for what the rate limit refused, so the bar stays as it is instead of going and coming back.
-    expect(await screen.findByRole("button", { name: "投稿を書く" })).toBeInTheDocument();
+    expect(await screen.findAllByRole("button", { name: "投稿を書く" })).not.toHaveLength(0);
     const bar = await screen.findByText(/^サーバーへのリクエストが多すぎます。/);
     expect(preferences.count).toBe(1);
     expect(bar).toBeInTheDocument();

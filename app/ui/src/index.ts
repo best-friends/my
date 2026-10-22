@@ -195,6 +195,8 @@ export { AppShell, AsidePanel, type AppShellProps, type AsidePanelProps } from "
 export {
   AppNav,
   AppNavAccount,
+  AppNavAction,
+  type AppNavActionProps,
   AppNavBrand,
   type AppNavBrandProps,
   AppNavItem,

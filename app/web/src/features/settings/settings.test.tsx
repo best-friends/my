@@ -128,7 +128,7 @@ describe("preferences", () => {
     expect(screen.getByRole("button", { name: /Default language of your posts/ })).toHaveTextContent("Japanese");
     // The settings page has no new-post button; the home timeline has one.
     await user.click(screen.getByRole("link", { name: "Home" }));
-    await user.click(await screen.findByRole("button", { name: "Write a post" }));
+    await user.click((await screen.findAllByRole("button", { name: "Write a post" }))[0] as HTMLElement);
     const sheet = await screen.findByRole("dialog", { name: "New post" });
     expect(within(sheet).getByRole("button", { name: "Japanese Language" })).toBeInTheDocument();
   });

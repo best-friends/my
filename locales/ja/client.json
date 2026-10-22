@@ -5941,7 +5941,7 @@
   },
   "compose.open": {
     "defaultMessage": "投稿を書く",
-    "description": "Floating button on phones and tablets that opens the form for a new post."
+    "description": "The coral button in the phones' tab bar and the button in the side rail that open the form for a new post. In the compact rail (tablets) only its icon shows and this is its accessible name; keep it short."
   },
   "compose.outbox.discard": {
     "defaultMessage": "破棄する",

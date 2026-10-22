@@ -31,7 +31,7 @@ describe("the picker of the post form", () => {
   test("is not offered while the server has no custom emoji", async () => {
     server.use(signedInHandler);
     const { user } = await renderApp();
-    await user.click(await screen.findByRole("button", { name: "Write a post" }));
+    await user.click((await screen.findAllByRole("button", { name: "Write a post" }))[0] as HTMLElement);
     const sheet = await screen.findByRole("dialog", { name: "New post" });
 
     expect(await within(sheet).findByRole("textbox", { name: "Your post" })).toBeInTheDocument();
@@ -44,7 +44,7 @@ describe("the picker of the post form", () => {
       customEmojisHandler([pickerEmojiFixture("wave", { aliases: ["hello"] }), pickerEmojiFixture("blobcat", { category: "Blobs" })]),
     );
     const { user } = await renderApp();
-    await user.click(await screen.findByRole("button", { name: "Write a post" }));
+    await user.click((await screen.findAllByRole("button", { name: "Write a post" }))[0] as HTMLElement);
     const sheet = await screen.findByRole("dialog", { name: "New post" });
     const text = await within(sheet).findByRole("textbox", { name: "Your post" });
     await user.type(text, "Hi");

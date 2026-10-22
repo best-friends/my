@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The new-post form in every width × locale project (ADR-0027): a sheet below 1280 px, a side panel from
-// there (xl). `vite preview` has no API, so the spec answers the client API and the token refresh itself
+// The new-post form in every width × locale project (ADR-0027): always a sheet (a dialog), opened by the floating
+// button below md or the rail's button from md. `vite preview` has no API, so the spec answers the client API and the token refresh itself
 // (Playwright's request routing), as a signed-in session. The client calls the runtime config's apiOrigin,
 // the origin of the page (fixtures.ts); the answers carry CORS headers all the same, as a separate API
 // origin needs them (ADR-0016). Names come from the
@@ -158,21 +158,12 @@ async function serveApi(page: Page): Promise<Posted[]> {
   return posted;
 }
 
-/** Whether the project's viewport shows the form as a side panel (Tailwind's xl). */
-function isWide(page: Page): boolean {
-  return (page.viewportSize()?.width ?? 0) >= 1280;
-}
-
-/** Opens the form (the sheet, or the panel that is always there) and returns the form. */
+/** Opens the form from the navigation's button (the tab bar's or the rail's) and returns the form. */
 async function openForm(page: Page, hasTouch: boolean) {
-  if (!isWide(page)) {
-    const open = page.getByRole("button", { name: message("compose.open") });
-    if (hasTouch) await open.tap();
-    else await open.click();
-    await expect(page.getByRole("dialog", { name: message("compose.title") })).toBeVisible();
-  } else {
-    await expect(page.getByRole("region", { name: message("compose.title") })).toBeVisible();
-  }
+  const open = page.getByRole("button", { name: message("compose.open") });
+  if (hasTouch) await open.tap();
+  else await open.click();
+  await expect(page.getByRole("dialog", { name: message("compose.title") })).toBeVisible();
   const form = page.getByRole("form", { name: message("compose.title") });
   await expect(form.getByRole("textbox", { name: message("compose.text.label") })).toBeVisible();
   return form;
@@ -229,7 +220,6 @@ test.describe("the new-post form", () => {
     const heights = await Promise.all(tools.map(async (tool) => (await boxOf(tool)).height));
     expect(new Set(heights).size).toBe(1);
 
-    if (isWide(page)) return;
     await page.setViewportSize({ width: 320, height: 568 });
     await expect(form.getByRole("button", { name: message("compose.submit") })).toBeInViewport({ ratio: 1 });
     await expectNoHorizontalScroll(page);
@@ -343,7 +333,7 @@ async function boxOf(locator: ReturnType<Page["getByRole"]>): Promise<Box> {
 }
 
 test.describe("the floating new-post button (web-client.md G4)", () => {
-  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 1280, "from xl the form is a side panel");
+  test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, "from md the rail has the button and nothing floats");
 
   test.beforeEach(async ({ page }) => {
     await serveApi(page);
@@ -435,4 +425,19 @@ test.describe("the floating new-post button (web-client.md G4)", () => {
       await expect(page.getByRole("button", { name: message("compose.open") })).toHaveCount(0);
     });
   }
+});
+
+test.describe("the rail's new-post button", () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) < 768, "below md the page floats the button");
+
+  test("is on every page of the app and opens the form in a dialog", async ({ page }) => {
+    await serveApi(page);
+    await serveHomeTimeline(page);
+    for (const path of ["/home", "/notifications", "/settings"]) {
+      await page.goto(path);
+      await expect(page.getByRole("navigation", { name: message("shell.nav.label") }).getByRole("button", { name: message("compose.open") })).toBeVisible();
+    }
+    await page.getByRole("button", { name: message("compose.open") }).click();
+    await expect(page.getByRole("dialog", { name: message("compose.title") })).toBeVisible();
+  });
 });

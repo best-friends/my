@@ -45,6 +45,7 @@ import {
   AdminIcon,
   AppNav,
   AppNavAccount,
+  AppNavAction,
   AppNavBrand,
   type AppNavBadge,
   AppNavItem,
@@ -56,12 +57,14 @@ import {
   FinanceIcon,
   Link,
   ModerationIcon,
+  PlusIcon,
   SignInIcon,
   SignUpIcon,
   Text,
 } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
+import { useOpenCompose } from "../../features/compose";
 import { useAdminEntry } from "../../features/admin";
 import { useFinanceEntry } from "../../features/costs";
 import { DocumentLinks } from "../../features/documents";
@@ -212,6 +215,7 @@ export function Navigation() {
   const viewer = useViewer();
   const ownAcct = viewer.status === "signed-in" ? viewer.account.acct : null;
   const timelines = useTimelineAvailability();
+  const openCompose = useOpenCompose();
   // The user's shown items in their order, the first ones in the tab bar, then the staff's areas.
   const userItems = useNavigationEntries()
     .filter((entry) => entry.shown)
@@ -253,6 +257,7 @@ export function Navigation() {
       }
       // Signed out, the navigation is a light bar along the top (AppLayout puts it above the page).
       placement={signedOut ? "top" : "side"}
+      action={openCompose === null ? undefined : <AppNavAction label={t("client:compose.open")} icon={<PlusIcon />} onPress={openCompose} />}
       footer={<ViewerLink />}
     >
       {shown.map((item) => {
@@ -267,7 +272,7 @@ export function Navigation() {
             shows={item.shows}
             {...(item.id === "sign-up" && { prominent: true })}
             {...(badge !== undefined && { badge })}
-          />
+            />
         );
       })}
       {status !== "unknown" && <NavigationMenu items={shown.filter((item) => item.shows === "rail")} current={current} badgeOf={badgeOf} />}

@@ -26,6 +26,8 @@ const appNav = tv({
     ],
     header: "mx-2 hidden px-3 pt-4 pb-2 lg:block",
     list: "flex",
+    // The rail's main action (from md); below md the page floats its own button (`AppShell` `floating`).
+    action: "hidden p-2 md:block",
   },
   variants: {
     // `side`: the tab bar below md, the rail from md and the sidebar from lg. `top`: the signed-out top bar.
@@ -54,6 +56,8 @@ export type AppNavProps = {
   header?: ReactNode;
   /** The items: `AppNavItem`s and, last, an `AppNavMenu`. */
   children: ReactNode;
+  /** After the list from md, before the account: the rail's one main action (`AppNavAction`). */
+  action?: ReactNode;
   /** Under the list in the sidebar (lg) only: the signed-in account (`AppNavAccount`). */
   footer?: ReactNode;
   /** `side` (default): tab bar, rail and sidebar. `top`: a light bar along the top for signed-out pages (`AppShell` `navigationPlacement="top"`). */
@@ -66,13 +70,14 @@ const PlacementContext = createContext<"side" | "top">("side");
  * The `nav` landmark and its list. The header and the footer are outside the list, so the list's links stay the same
  * and in the same order at every width.
  */
-export function AppNav({ label, header, children, footer, placement = "side" }: AppNavProps) {
+export function AppNav({ label, header, children, action, footer, placement = "side" }: AppNavProps) {
   const slots = appNav({ placement });
   return (
     <PlacementContext value={placement}>
       <nav aria-label={label} className={slots.base()}>
         {header !== undefined && <div className={slots.header()}>{header}</div>}
         <ul className={slots.list({ className: placement === "top" ? "ms-auto" : undefined })}>{children}</ul>
+        {action !== undefined && <div className={slots.action()}>{action}</div>}
         {footer}
       </nav>
     </PlacementContext>
@@ -265,6 +270,32 @@ export type AppNavMenuSectionProps = {
 /** A block of the menu sheet under its items (the theme switch, the server's name and documents), indented as they are. */
 export function AppNavMenuSection({ separator, children }: AppNavMenuSectionProps) {
   return <div className={appNavMenuSection({ separator })}>{children}</div>;
+}
+
+const appNavAction = tv({
+  // Icon only in the compact rail (md), icon and label from lg; the width of the rail's items.
+  base: "w-full min-h-12 lg:gap-3 [&>svg]:size-6",
+  variants: { text: { true: "hidden lg:inline" } },
+});
+
+export type AppNavActionProps = {
+  /** The action's words ("Write a post"): the button's accessible name at every width, shown from lg. */
+  label: string;
+  /** The button's icon (`PlusIcon`). */
+  icon: ReactNode;
+  onPress: () => void;
+};
+
+/** The rail's one main action, a `primary` button after the items: icon alone in the compact rail, with its label from lg. */
+export function AppNavAction({ label, icon, onPress }: AppNavActionProps) {
+  return (
+    <Button variant="primary" aria-label={label} onPress={onPress} className={appNavAction()}>
+      {icon}
+      <span aria-hidden="true" className={appNavAction({ text: true })}>
+        {label}
+      </span>
+    </Button>
+  );
 }
 
 const appNavAccount = tv({
