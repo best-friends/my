@@ -56,9 +56,12 @@ function AppealTabs({ filter, onFilterChange }: AppealQueueProps) {
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter}>
-        <AppealList filter={filter} />
-      </TabPanel>
+      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+      {appealFilters.map((item) => (
+        <TabPanel key={item} id={item}>
+          <AppealList filter={filter} />
+        </TabPanel>
+      ))}
     </Tabs>
   );
 }

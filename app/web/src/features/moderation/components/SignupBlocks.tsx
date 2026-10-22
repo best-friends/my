@@ -224,14 +224,17 @@ function SignupBlockTabs({ filter, onFilterChange }: SignupBlocksProps) {
             </Tab>
           ))}
         </TabList>
-        <TabPanel id={filter}>
-          <SignupBlockList
-            filter={filter}
-            onLifted={(block) => {
-              setStatus(t("client:admin.signup_blocks.lifted", { kind: t(signupBlockKindLabels[block.kind]), value: signupBlockValueInText(t, block) }));
-            }}
-          />
-        </TabPanel>
+        {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+        {signupBlockFilters.map((item) => (
+          <TabPanel key={item} id={item}>
+            <SignupBlockList
+              filter={filter}
+              onLifted={(block) => {
+                setStatus(t("client:admin.signup_blocks.lifted", { kind: t(signupBlockKindLabels[block.kind]), value: signupBlockValueInText(t, block) }));
+              }}
+            />
+          </TabPanel>
+        ))}
       </Tabs>
     </Stack>
   );

@@ -76,13 +76,16 @@ function Dashboard({ filter, onFilterChange }: JobDashboardProps) {
               </Tab>
             ))}
           </TabList>
-          <TabPanel id={filter}>
-            {filter !== "dead" && !queue.pending_listing ? (
-              <EmptyState headingLevel={3} heading={t("client:admin.jobs.unlisted")} description={t("client:admin.jobs.unlisted.description")} />
-            ) : (
-              <Jobs filter={filter} />
-            )}
-          </TabPanel>
+          {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+          {jobFilters.map((item) => (
+            <TabPanel key={item} id={item}>
+              {filter !== "dead" && !queue.pending_listing ? (
+                <EmptyState headingLevel={3} heading={t("client:admin.jobs.unlisted")} description={t("client:admin.jobs.unlisted.description")} />
+              ) : (
+                <Jobs filter={filter} />
+              )}
+            </TabPanel>
+          ))}
         </Tabs>
       </DetailSection>
     </Stack>

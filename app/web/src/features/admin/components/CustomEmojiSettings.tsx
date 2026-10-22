@@ -226,10 +226,13 @@ function CustomEmojiTabs({ filter, onFilterChange }: EmojiListProps) {
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter.origin} gap="4" offset="3">
-        <SearchForm key={`${filter.origin}:${filter.shortcode ?? ""}:${filter.domain ?? ""}`} filter={filter} onFilterChange={onFilterChange} />
-        <CustomEmojiList filter={filter} />
-      </TabPanel>
+      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+      {customEmojiOrigins.map((item) => (
+        <TabPanel key={item} id={item} gap="4" offset="3">
+          <SearchForm key={`${filter.origin}:${filter.shortcode ?? ""}:${filter.domain ?? ""}`} filter={filter} onFilterChange={onFilterChange} />
+          <CustomEmojiList filter={filter} />
+        </TabPanel>
+      ))}
     </Tabs>
   );
 }

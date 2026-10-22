@@ -55,9 +55,12 @@ function InstanceTabs({ filter, onFilterChange }: InstanceListProps) {
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter}>
-        <Instances filter={filter} />
-      </TabPanel>
+      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+      {instanceFilters.map((item) => (
+        <TabPanel key={item} id={item}>
+          <Instances filter={filter} />
+        </TabPanel>
+      ))}
     </Tabs>
   );
 }

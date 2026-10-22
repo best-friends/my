@@ -50,9 +50,12 @@ function ReportTabs({ filter, onFilterChange }: ReportQueueProps) {
           </Tab>
         ))}
       </TabList>
-      <TabPanel id={filter}>
-        <ReportList filter={filter} />
-      </TabPanel>
+      {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+      {reportFilters.map((item) => (
+        <TabPanel key={item} id={item}>
+          <ReportList filter={filter} />
+        </TabPanel>
+      ))}
     </Tabs>
   );
 }
