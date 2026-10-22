@@ -2,7 +2,7 @@
 // The account search (FR-305): a search landmark (WAI-ARIA APG, landmark regions) with one labelled text
 // field and its submit button. Enter in the field or the button sends it; the found account's profile
 // opens, and a failure is the field's error message, linked to it and announced.
-import { Button, Link, TextField } from "@my/ui";
+import { Button, Cluster, Link, Stack, TextField } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { maxSearchLength } from "../api/lookup";
 import { type AccountSearchOptions, useAccountSearch } from "../hooks/useAccountSearch";
@@ -16,8 +16,8 @@ export function AccountSearch({ headingId, ...options }: AccountSearchProps) {
   const t = useT();
   const search = useAccountSearch(options);
   return (
-    <div className="flex flex-col gap-3">
-      <form role="search" aria-labelledby={headingId} onSubmit={search.submit} autoCapitalize="none" className="flex flex-col gap-3">
+    <Stack gap="3">
+      <Stack as="form" gap="3" role="search" aria-labelledby={headingId} onSubmit={search.submit} autoCapitalize="none">
         <TextField
           type="search"
           label={t("client:search.label")}
@@ -34,15 +34,15 @@ export function AccountSearch({ headingId, ...options }: AccountSearchProps) {
           // Only a failed search sets isInvalid: React Aria ignores the native constraint once isInvalid is given at all.
           {...(search.error === null ? {} : { isInvalid: true })}
           errorMessage={search.error ?? t("client:search.required")}
-          className="min-w-0"
+          shrink
         />
-        <div className="flex justify-end">
+        <Cluster justify="end">
           {/* A pending button keeps its focus and tells screen readers it is busy (React Aria Button, isPending). */}
           <Button type="submit" variant="primary" isPending={search.isPending}>
             {t("client:search.submit")}
           </Button>
-        </div>
-      </form>
+        </Cluster>
+      </Stack>
       {search.signedOut && (
         <p>
           <Link href={`/login?${new URLSearchParams({ return_to: "/search" }).toString()}`} variant="standalone">
@@ -50,6 +50,6 @@ export function AccountSearch({ headingId, ...options }: AccountSearchProps) {
           </Link>
         </p>
       )}
-    </div>
+    </Stack>
   );
 }

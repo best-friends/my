@@ -4,9 +4,10 @@ import { expect } from "storybook/test";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { ContentWarning } from "./ContentWarning";
-import { BoostIcon } from "./Icons";
 import { MediaGrid } from "./MediaGrid";
-import { PostCard, PostCardAuthor } from "./PostCard";
+import { PostCard } from "./PostCard";
+import { PostCardAuthorLink, PostCardAvatarLink, PostCardBoostContext, PostCardNameLink, PostCardOrigin, PostCardTimeLink } from "./PostCardParts";
+import { Text } from "./Text";
 import { PostContent, serverSanitizedHtml } from "./PostContent";
 
 function picture(fill: string): string {
@@ -15,10 +16,16 @@ function picture(fill: string): string {
 }
 
 function Author({ name, handle }: { name: string; handle: string }) {
+  return <PostCardAuthorLink href="#profile" name={name} handle={handle} />;
+}
+
+function Time() {
   return (
-    <a href="#profile" className="block min-w-0 text-fg hover:underline">
-      <PostCardAuthor name={name} handle={handle} />
-    </a>
+    <PostCardTimeLink href="#post">
+      <time dateTime="2026-10-16T09:00:00Z" title="Friday, October 16, 2026 at 9:00 AM">
+        2h
+      </time>
+    </PostCardTimeLink>
   );
 }
 
@@ -61,13 +68,13 @@ const meta = {
   title: "Timeline/PostCard",
   component: PostCard,
   args: {
-    avatar: <Avatar name="Alice" decorative />,
-    author: <Author name="Alice" handle="@alice" />,
-    time: (
-      <a href="#post" className="hover:underline">
-        <time dateTime="2026-10-16T09:00:00Z">2h</time>
-      </a>
+    avatar: (
+      <PostCardAvatarLink href="#profile">
+        <Avatar name="Alice" decorative />
+      </PostCardAvatarLink>
     ),
+    author: <Author name="Alice" handle="@alice" />,
+    time: <Time />,
     content: <PostContent html={serverSanitizedHtml("<p>Hello from the local timeline! Containers decide this layout, not the viewport.</p>")} lang="en" />,
     actions: <Actions />,
   },
@@ -142,10 +149,9 @@ export const WithContentWarning: Story = {
 export const Boosted: Story = {
   args: {
     context: (
-      <>
-        <BoostIcon />
-        <span dir="auto">Bob boosted</span>
-      </>
+      <PostCardBoostContext>
+        <PostCardNameLink href="#bob">Bob</PostCardNameLink> boosted
+      </PostCardBoostContext>
     ),
   },
   play: async ({ canvas }) => {
@@ -208,12 +214,12 @@ export const Highlighted: Story = {
     label: "Selected post",
     highlighted: true,
     time: <time dateTime="2026-10-16T09:00:00Z">2h</time>,
-    content: <PostContent html={serverSanitizedHtml("<p>The post this page is about, in larger text.</p>")} lang="en" className="text-lg" />,
+    content: <PostContent html={serverSanitizedHtml("<p>The post this page is about, in larger text.</p>")} lang="en" size="lg" />,
     details: (
       <>
         <time dateTime="2026-10-16T09:00:00Z">Friday, October 16, 2026 at 9:00 AM</time>
-        <span className="tabular-nums">3 boosts</span>
-        <span className="tabular-nums">12 favourites</span>
+        <Text numeric>3 boosts</Text>
+        <Text numeric>12 favourites</Text>
       </>
     ),
   },
@@ -235,7 +241,7 @@ export const Thread: Story = {
         {...args}
         avatar={<Avatar name="Bob" decorative />}
         author={<Author name="Bob" handle="@bob" />}
-        content={<PostContent html={serverSanitizedHtml("<p>A reply, and the post this page is about.</p>")} lang="en" className="text-lg" />}
+        content={<PostContent html={serverSanitizedHtml("<p>A reply, and the post this page is about.</p>")} lang="en" size="lg" />}
         label="Selected post"
         highlighted
         lineAbove
@@ -248,6 +254,34 @@ export const Thread: Story = {
     await expect(canvas.getAllByRole("article")).toHaveLength(3);
     await expect(canvas.getByRole("article", { name: /^Selected post\s+Bob/ })).toBeInTheDocument();
   },
+};
+
+/** A pinned post of a profile: the line above says so, and starts the article's name. */
+export const Pinned: Story = {
+  args: { context: <span>Pinned</span> },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("article", { name: /^Pinned\s+Alice\s+@alice\s+2h$/ })).toBeInTheDocument();
+  },
+};
+
+/** A post of another server: its page on that server is a link at the end of the actions row. */
+export const WithOrigin: Story = {
+  args: {
+    actions: (
+      <>
+        <Actions />
+        <PostCardOrigin href="https://social.example/@alice/1" host="social.example" label="Open the post on social.example" />
+      </>
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole("link", { name: "Open the post on social.example" })).toHaveAttribute("href", "https://social.example/@alice/1");
+  },
+};
+
+/** The mark of an edited post leads to its revisions, in the details line. */
+export const Edited: Story = {
+  args: { details: <PostCardTimeLink href="#history">Edited</PostCardTimeLink> },
 };
 
 export const WithoutAvatarOrActions: Story = {

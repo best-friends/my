@@ -8,12 +8,18 @@ import {
   Button,
   Checkbox,
   Dialog,
+  DialogActions,
+  Heading,
+  Hint,
+  InlineError,
   PostContent,
   Radio,
   RadioGroup,
   RegionError,
   serverSanitizedHtml,
   Spinner,
+  Stack,
+  Text,
   TextArea,
 } from "@my/ui";
 import { type ReactNode, useEffect, useId, useRef } from "react";
@@ -82,41 +88,43 @@ function ReportSteps({ account, status, close }: ReportStepsProps) {
 
   if (form.step === "sent") {
     return (
-      <div className="flex flex-col gap-4">
+      <Stack gap="4">
         {heading}
         <p>{t("client:report.sent.body")}</p>
         {form.report?.forwarded === true && form.remoteDomain !== null && (
-          <p className="wrap-anywhere">{t("client:report.sent.forwarded", { domain: isolatedDomain(form.remoteDomain) })}</p>
+          <Text as="p" wrap="anywhere">
+            {t("client:report.sent.forwarded", { domain: isolatedDomain(form.remoteDomain) })}
+          </Text>
         )}
-        <div className="flex justify-end">
+        <DialogActions>
           <Button variant="primary" onPress={close}>
             {t("client:report.done")}
           </Button>
-        </div>
-      </div>
+        </DialogActions>
+      </Stack>
     );
   }
 
   const isLast = form.position.current === form.position.total;
   return (
-    <form onSubmit={form.next} aria-labelledby={headingId} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <p className="text-sm text-fg-muted">{t("client:report.step", { current: form.position.current, total: form.position.total })}</p>
+    <Stack as="form" onSubmit={form.next} aria-labelledby={headingId} gap="4">
+      <Stack gap="1">
+        <Hint>{t("client:report.step", { current: form.position.current, total: form.position.total })}</Hint>
         {heading}
-      </div>
+      </Stack>
       <StepFields form={form} headingId={headingId} />
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {t("client:report.failed", { reason: form.error })}
-        </p>
+        </InlineError>
       )}
-      <div className="flex flex-wrap justify-end gap-2">
+      <DialogActions>
         {form.position.current > 1 && <Button onPress={form.back}>{t("client:report.back")}</Button>}
         <Button type="submit" variant="primary" isPending={form.isPending}>
           {isLast ? t("client:report.submit") : t("client:report.next")}
         </Button>
-      </div>
-    </form>
+      </DialogActions>
+    </Stack>
   );
 }
 
@@ -131,9 +139,9 @@ function StepHeading({ id, children }: { id: string; children: ReactNode }) {
   }, []);
   // The dialog's title is an h2, so the steps are one level below it.
   return (
-    <h3 ref={ref} id={id} tabIndex={-1} className="text-base font-semibold text-pretty">
+    <Heading level={3} ref={ref} id={id} wrap="pretty" focusable>
       {children}
-    </h3>
+    </Heading>
   );
 }
 
@@ -184,15 +192,8 @@ function RulesStep({ form, headingId }: { form: ReportForm; headingId: string })
   if (form.rules.status !== "ready") return null;
   const chosen = new Set(form.draft.ruleIds);
   return (
-    <div
-      role="group"
-      aria-labelledby={headingId}
-      aria-describedby={form.isRuleMissing ? `${descriptionId} ${errorId}` : descriptionId}
-      className="flex flex-col gap-3"
-    >
-      <p id={descriptionId} className="text-sm text-fg-muted">
-        {t("client:report.rules.description")}
-      </p>
+    <Stack role="group" aria-labelledby={headingId} aria-describedby={form.isRuleMissing ? `${descriptionId} ${errorId}` : descriptionId} gap="3">
+      <Hint id={descriptionId}>{t("client:report.rules.description")}</Hint>
       {form.rules.value.map((rule) => (
         <Checkbox
           key={rule.id}
@@ -208,11 +209,11 @@ function RulesStep({ form, headingId }: { form: ReportForm; headingId: string })
         </Checkbox>
       ))}
       {form.isRuleMissing && (
-        <p id={errorId} role="alert" className="text-sm text-danger">
+        <InlineError id={errorId} alert>
           {t("client:report.rules.required")}
-        </p>
+        </InlineError>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -221,10 +222,8 @@ function PostsStep({ form, headingId }: { form: ReportForm; headingId: string })
   const descriptionId = useId();
   const { posts } = form;
   return (
-    <div role="group" aria-labelledby={headingId} aria-describedby={descriptionId} aria-busy={posts.status === "loading"} className="flex flex-col gap-3">
-      <p id={descriptionId} className="text-sm text-fg-muted">
-        {t("client:report.posts.description")}
-      </p>
+    <Stack role="group" aria-labelledby={headingId} aria-describedby={descriptionId} aria-busy={posts.status === "loading"} gap="3">
+      <Hint id={descriptionId}>{t("client:report.posts.description")}</Hint>
       {posts.status === "loading" && <Spinner label={t("client:report.posts.loading")} />}
       {posts.status === "error" && (
         <RegionError
@@ -240,13 +239,13 @@ function PostsStep({ form, headingId }: { form: ReportForm; headingId: string })
         (posts.value.length === 0 ? (
           <p>{t("client:report.posts.empty")}</p>
         ) : (
-          <ul className="divide-y divide-border">
+          <Stack as="ul" divided>
             {posts.value.map((post) => (
               <PostChoice key={post.id} post={post} form={form} />
             ))}
-          </ul>
+          </Stack>
         ))}
-    </div>
+    </Stack>
   );
 }
 
@@ -256,7 +255,7 @@ function PostChoice({ post, form }: { post: Status; form: ReportForm }) {
   const previewId = useId();
   const isSelected = form.draft.statusIds.includes(post.id);
   return (
-    <li className="flex flex-col gap-1 py-3">
+    <Stack as="li" gap="1" paddingY="3">
       <Checkbox
         isSelected={isSelected}
         isDisabled={!isSelected && form.draft.statusIds.length >= maxReportItems}
@@ -268,19 +267,19 @@ function PostChoice({ post, form }: { post: Status; form: ReportForm }) {
         {t("client:report.posts.item", { date: intl.formatDate(post.created_at, { dateStyle: "medium", timeStyle: "short" }) })}
       </Checkbox>
       {/* The post describes its checkbox; it is inert, so its links are no stops on the way through the list. */}
-      <div id={previewId} inert className="ms-8 flex flex-col gap-1 text-sm">
+      <Stack id={previewId} inert marginStart="8" gap="1" textSize="sm">
         {post.spoiler_text === "" ? (
-          <PostContent html={serverSanitizedHtml(post.content)} lang={post.language} className="line-clamp-3" />
+          <PostContent html={serverSanitizedHtml(post.content)} lang={post.language} lineClamp={3} />
         ) : (
-          <p dir="auto" lang={post.language} className="wrap-anywhere">
+          <Text as="p" dir="auto" lang={post.language} wrap="anywhere">
             {t("client:report.posts.content_warning", { text: post.spoiler_text })}
-          </p>
+          </Text>
         )}
         {post.media_attachments.length > 0 && (
-          <p className="text-fg-muted">{t("client:report.posts.media", { count: post.media_attachments.length })}</p>
+          <Hint size="inherit">{t("client:report.posts.media", { count: post.media_attachments.length })}</Hint>
         )}
-      </div>
-    </li>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -310,7 +309,7 @@ function CommentStep({ form }: { form: ReportForm }) {
           }}
           description={t("client:report.forward.description", { domain: isolatedDomain(form.remoteDomain) })}
         >
-          <span className="wrap-anywhere">{t("client:report.forward", { domain: isolatedDomain(form.remoteDomain) })}</span>
+          <Text wrap="anywhere">{t("client:report.forward", { domain: isolatedDomain(form.remoteDomain) })}</Text>
         </Checkbox>
       )}
     </>

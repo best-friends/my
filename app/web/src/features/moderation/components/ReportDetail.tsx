@@ -5,19 +5,8 @@
 // moderation action on the target that resolves it, resolving it without one, or reopening it. What a change
 // did stays on the page in a StatusMessage (role="status") next to what caused it; failures are toasts, and a
 // failed note stays under its field (web-client.md E2).
-import {
-  Avatar,
-  Button,
-  DescriptionItem,
-  DescriptionList,
-  EmptyState,
-  Link,
-  ReasonField,
-  RegionError,
-  Spinner,
-  StatusMessage,
-} from "@my/ui";
-import { type ReactNode, type RefObject, useId, useRef, useState } from "react";
+import { AccountItem, Box, Button, Cluster, DescriptionItem, DescriptionList, DetailSection, EmptyState, Heading, Hint, Link, ReasonField, RegionError, Spinner, Stack, StatusMessage, Text } from "@my/ui";
+import { useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { StatusCard } from "../../status";
@@ -26,6 +15,7 @@ import { useHasPermission } from "../hooks/usePermissions";
 import { useRefetch } from "../hooks/useRefetch";
 import {
   accountActionKindLabels,
+  accountName,
   accountActionStateLabels,
   handleOf,
   isRemote,
@@ -73,23 +63,24 @@ function ReportPage({ id }: { id: string }) {
   });
   const target = report.target_account;
   return (
-    <div className="flex flex-col gap-8">
-      <Section title={t("client:admin.report.summary.title")}>
+    <Stack gap="8">
+      <DetailSection title={t("client:admin.report.summary.title")}>
         <ReportSummary report={report} />
-      </Section>
-      <Section title={t("client:admin.report.posts.title")}>
+      </DetailSection>
+      <DetailSection title={t("client:admin.report.posts.title")}>
         <ReportedPosts posts={posts} />
-      </Section>
-      <Section title={t("client:admin.report.target.title")}>
+      </DetailSection>
+      <DetailSection title={t("client:admin.report.target.title")}>
         {target === undefined ? (
           <p>{t("client:admin.report.target.deleted")}</p>
         ) : (
-          <div className="flex flex-col gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <Avatar sources={imageSources(target.avatar)} name={target.display_name === "" ? target.username : target.display_name} decorative />
-              <AccountLabel account={target} />
-            </div>
-            <ul className="flex flex-wrap gap-x-4 gap-y-1">
+          <Stack gap="3">
+            <AccountItem
+              name={accountName(target)}
+              handle={target.display_name === "" ? undefined : handleOf(target)}
+              avatar={imageSources(target.avatar)}
+            />
+            <Cluster as="ul" gap="4" rowGap="1">
               <li>
                 <Link href={`/@${target.acct}`} variant="standalone">
                   {t("client:admin.report.target.profile")}
@@ -109,24 +100,24 @@ function ReportPage({ id }: { id: string }) {
                   </Link>
                 </li>
               )}
-            </ul>
-          </div>
+            </Cluster>
+          </Stack>
         )}
         <DescriptionList columns={2}>
           <DescriptionItem term={t("client:admin.report.target.reports")}>
-            <span className="tabular-nums">{t("client:admin.report.target.reports.count", { count: report.target_history.reports_count })}</span>
+            <Text numeric>{t("client:admin.report.target.reports.count", { count: report.target_history.reports_count })}</Text>
           </DescriptionItem>
           <DescriptionItem term={t("client:admin.report.target.actions")}>
-            <span className="tabular-nums">{t("client:admin.report.target.actions.count", { count: report.target_history.actions_count })}</span>
+            <Text numeric>{t("client:admin.report.target.actions.count", { count: report.target_history.actions_count })}</Text>
           </DescriptionItem>
         </DescriptionList>
-      </Section>
+      </DetailSection>
       {canAct && target !== undefined && (
-        <Section title={t("client:admin.report.history.title")}>
+        <DetailSection title={t("client:admin.report.history.title")}>
           <TargetActions accountId={target.id} reportId={report.id} />
-        </Section>
+        </DetailSection>
       )}
-      <Section title={t("client:admin.report.assignee.title")}>
+      <DetailSection title={t("client:admin.report.assignee.title")}>
         <Assignee
           report={report}
           pending={changes.pending !== undefined}
@@ -136,14 +127,14 @@ function ReportPage({ id }: { id: string }) {
           isUnassigning={changes.pending?.operation === "unassign"}
         />
         <StatusMessage>{message?.region === "assignee" ? message.text : undefined}</StatusMessage>
-      </Section>
-      <Section title={t("client:admin.report.notes.title")}>
+      </DetailSection>
+      <DetailSection title={t("client:admin.report.notes.title")}>
         <Notes report={report} />
-      </Section>
-      <Section title={t("client:admin.report.resolution.title")} headingRef={resolutionHeadingRef}>
+      </DetailSection>
+      <DetailSection title={t("client:admin.report.resolution.title")} headingRef={resolutionHeadingRef}>
         <StatusMessage>{message?.region === "resolution" ? message.text : undefined}</StatusMessage>
         {report.state === "resolved" ? (
-          <div className="flex flex-col items-start gap-3">
+          <Stack align="start" gap="3">
             <DescriptionList columns={2}>
               <DescriptionItem term={t("client:admin.report.outcome")}>
                 {report.outcome === undefined ? t("client:admin.reports.filter.resolved") : t(reportOutcomeLabels[report.outcome])}
@@ -152,15 +143,15 @@ function ReportPage({ id }: { id: string }) {
                 <DateTime value={report.state_changed_at} />
               </DescriptionItem>
             </DescriptionList>
-            <p className="text-sm text-fg-muted">{t("client:admin.report.reopen.description")}</p>
+            <Hint>{t("client:admin.report.reopen.description")}</Hint>
             <Button onPress={changes.reopen} isPending={changes.pending?.operation === "reopen"}>
               {t("client:admin.report.reopen")}
             </Button>
-          </div>
+          </Stack>
         ) : (
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-3">
-              <h3 className="font-semibold">{t("client:admin.report.action.title")}</h3>
+          <Stack gap="8">
+            <Stack gap="3">
+              <Heading level={3}>{t("client:admin.report.action.title")}</Heading>
               {target === undefined ? (
                 <p>{t("client:admin.report.action.deleted")}</p>
               ) : canAct ? (
@@ -182,11 +173,11 @@ function ReportPage({ id }: { id: string }) {
               ) : (
                 <p>{t("client:admin.report.action.missing_permission")}</p>
               )}
-            </div>
-            <div className="flex flex-col items-start gap-3">
-              <h3 className="font-semibold">{t("client:admin.report.resolve.title")}</h3>
-              <p className="text-sm text-fg-muted">{t("client:admin.report.resolve.description")}</p>
-              <div className="flex flex-wrap gap-2">
+            </Stack>
+            <Stack align="start" gap="3">
+              <Heading level={3}>{t("client:admin.report.resolve.title")}</Heading>
+              <Hint>{t("client:admin.report.resolve.description")}</Hint>
+              <Cluster gap="2">
                 <Button
                   onPress={() => {
                     changes.resolve("dismissed");
@@ -203,25 +194,12 @@ function ReportPage({ id }: { id: string }) {
                 >
                   {t("client:admin.report.resolve.actioned")}
                 </Button>
-              </div>
-            </div>
-          </div>
+              </Cluster>
+            </Stack>
+          </Stack>
         )}
-      </Section>
-    </div>
-  );
-}
-
-/** A titled region of the page: an `h2` that names a `<section>`, which takes focus when the region changes under it. */
-function Section({ title, headingRef, children }: { title: ReactNode; headingRef?: RefObject<HTMLHeadingElement | null>; children: ReactNode }) {
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 ref={headingRef} id={headingId} tabIndex={-1} className="text-lg font-semibold outline-none">
-        {title}
-      </h2>
-      {children}
-    </section>
+      </DetailSection>
+    </Stack>
   );
 }
 
@@ -234,10 +212,10 @@ function ReportSummary({ report }: { report: ReportDetail }) {
   const t = useT();
   const rules = useCitedRules(report.rule_ids);
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.report.state")}>
-          <span className="font-semibold">{t(stateLabels[report.state])}</span>
+          <Text weight="semibold">{t(stateLabels[report.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.report.category")}>{t(reportCategoryLabels[report.category])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.report.filed_at")}>
@@ -259,19 +237,19 @@ function ReportSummary({ report }: { report: ReportDetail }) {
             {rules === null ? (
               <Spinner size="sm" label={t("client:admin.report.rules.loading")} />
             ) : (
-              <ul className="flex list-inside list-disc flex-col gap-1">
+              <Stack as="ul" marker="discInside" gap="1">
                 {rules.map((rule) =>
                   rule.text === null ? (
-                    <li key={rule.id} className="text-fg-muted">
+                    <Box as="li" key={rule.id} tone="muted">
                       {t("client:admin.report.rules.retired")}
-                    </li>
+                    </Box>
                   ) : (
                     <li key={rule.id} lang="" dir="auto">
                       {rule.text}
                     </li>
                   ),
                 )}
-              </ul>
+              </Stack>
             )}
           </DescriptionItem>
         </DescriptionList>
@@ -279,16 +257,16 @@ function ReportSummary({ report }: { report: ReportDetail }) {
       <DescriptionList>
         <DescriptionItem term={t("client:admin.report.comment")}>
           {report.comment === "" ? (
-            <span className="text-fg-muted">{t("client:admin.report.comment.none")}</span>
+            <Text tone="muted">{t("client:admin.report.comment.none")}</Text>
           ) : (
             // Written by the reporter, in any language (Y10).
-            <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+            <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
               {report.comment}
-            </span>
+            </Text>
           )}
         </DescriptionItem>
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }
 
@@ -300,21 +278,23 @@ function ReportedPosts({ posts }: { posts: readonly ReportedStatus[] }) {
   const refetch = useRefetch();
   if (posts.length === 0) return <p>{t("client:admin.report.posts.none")}</p>;
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       {canRefetch && <StatusMessage tone="success">{refetch.status}</StatusMessage>}
-      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+      <Stack as="ul" divided border="lg">
         {posts.map((post) => (
           <li key={post.id}>
             {post.status === "found" ? (
               <>
                 {post.deletedAt !== undefined && (
-                  <p className="px-4 pt-3 text-sm font-semibold text-fg-muted">
-                    {t("client:admin.report.posts.deleted", { date: intl.formatDate(post.deletedAt, { dateStyle: "medium", timeStyle: "short" }) })}
-                  </p>
+                  <Box paddingX="4" paddingTop="3">
+                    <Hint weight="semibold">
+                      {t("client:admin.report.posts.deleted", { date: intl.formatDate(post.deletedAt, { dateStyle: "medium", timeStyle: "short" }) })}
+                    </Hint>
+                  </Box>
                 )}
                 <StatusCard status={post.value} withActions={false} />
                 {canRefetch && post.deletedAt === undefined && isRemote(post.value.account) && (
-                  <div className="px-4 pb-3">
+                  <Box paddingX="4" paddingBottom="3">
                     <Button
                       isPending={refetch.isPending({ kind: "status", id: post.value.id })}
                       onPress={() => {
@@ -325,16 +305,18 @@ function ReportedPosts({ posts }: { posts: readonly ReportedStatus[] }) {
                         date: intl.formatDate(post.value.created_at, { dateStyle: "medium", timeStyle: "short" }),
                       })}
                     </Button>
-                  </div>
+                  </Box>
                 )}
               </>
             ) : (
-              <p className="px-4 py-3 text-fg-muted">{t("client:admin.report.posts.missing")}</p>
+              <Box paddingX="4" paddingY="3">
+                <Hint size="inherit">{t("client:admin.report.posts.missing")}</Hint>
+              </Box>
             )}
           </li>
         ))}
-      </ul>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -358,8 +340,8 @@ function TargetActions({ accountId, reportId }: { accountId: string; reportId: s
 function TargetActionRow({ action, fromThisReport }: { action: AccountAction; fromThisReport: boolean }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2">
-      <h3 className="font-semibold">{t(accountActionKindLabels[action.kind])}</h3>
+    <Stack gap="2">
+      <Heading level={3}>{t(accountActionKindLabels[action.kind])}</Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.account_actions.state")}>{t(accountActionStateLabels[action.state])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.account_actions.issued_at")}>
@@ -385,13 +367,13 @@ function TargetActionRow({ action, fromThisReport }: { action: AccountAction; fr
         <DescriptionList>
           <DescriptionItem term={t("client:admin.account_actions.public_reason")}>
             {/* Written by a moderator, in any language. */}
-            <span dir="auto" className="block text-start wrap-anywhere whitespace-pre-wrap">
+            <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
               {action.public_reason}
-            </span>
+            </Text>
           </DescriptionItem>
         </DescriptionList>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -408,7 +390,7 @@ function Assignee({ report, pending, onAssign, onUnassign, isAssigning, isUnassi
   const t = useT();
   const assignee = report.assignee_account_id;
   return (
-    <div className="flex flex-col items-start gap-3">
+    <Stack align="start" gap="3">
       <DescriptionList>
         <DescriptionItem term={t("client:admin.report.assignee")}>
           {assignee === undefined ? t("client:admin.report.assignee.none") : <AssigneeName id={assignee} />}
@@ -418,7 +400,7 @@ function Assignee({ report, pending, onAssign, onUnassign, isAssigning, isUnassi
         The buttons keep their places as the assignee changes, so that focus stays on the one pressed: taking it
         from nobody or from another moderator, and leaving it to nobody.
       */}
-      <div className="flex flex-wrap gap-2">
+      <Cluster gap="2">
         <Button onPress={onAssign} isPending={isAssigning} isDisabled={pending && !isAssigning}>
           {assignee === undefined ? t("client:admin.report.assign") : t("client:admin.report.assign.take_over")}
         </Button>
@@ -427,8 +409,8 @@ function Assignee({ report, pending, onAssign, onUnassign, isAssigning, isUnassi
             {t("client:admin.report.unassign")}
           </Button>
         )}
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 
@@ -436,26 +418,26 @@ function Notes({ report }: { report: ReportDetail }) {
   const t = useT();
   const form = useReportNoteForm(report.id);
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       {report.notes.length === 0 ? (
-        <p className="text-fg-muted">{t("client:admin.report.notes.empty")}</p>
+        <Hint size="inherit">{t("client:admin.report.notes.empty")}</Hint>
       ) : (
-        <ul className="flex flex-col divide-y divide-border">
+        <Stack as="ul" divided>
           {report.notes.map((note) => (
-            <li key={note.id} className="flex flex-col gap-1 py-3">
-              <span className="flex flex-wrap items-baseline gap-x-3 text-sm text-fg-muted">
+            <Stack as="li" key={note.id} gap="1" paddingY="3">
+              <Cluster as="span" align="baseline" gap="3" rowGap="0" tone="muted" textSize="sm">
                 <span>{note.author_account_id === undefined ? t("client:admin.report.notes.cli") : <AssigneeName id={note.author_account_id} />}</span>
                 <DateTime value={note.created_at} />
-              </span>
+              </Cluster>
               {/* Written by a moderator, in any language. */}
-              <p dir="auto" className="text-start wrap-anywhere whitespace-pre-wrap">
+              <Text as="p" dir="auto" align="start" wrap="anywhere" whitespace="preWrap">
                 {note.body}
-              </p>
-            </li>
+              </Text>
+            </Stack>
           ))}
-        </ul>
+        </Stack>
       )}
-      <form onSubmit={form.submit} className="flex flex-col gap-3">
+      <Stack as="form" onSubmit={form.submit} gap="3">
         <ReasonField
           label={t("client:admin.report.notes.new")}
           description={t("client:admin.report.notes.new.description")}
@@ -471,13 +453,13 @@ function Notes({ report }: { report: ReportDetail }) {
             form.error ?? (validation.validationDetails.valueMissing ? t("client:admin.report.notes.blank") : t("client:admin.report.notes.too_long", { max: reportNoteLimit }))
           }
         />
-        <div>
+        <Box>
           <Button type="submit" isPending={form.isPending}>
             {t("client:admin.report.notes.submit")}
           </Button>
-        </div>
+        </Box>
         <StatusMessage>{form.status}</StatusMessage>
-      </form>
-    </div>
+      </Stack>
+    </Stack>
   );
 }

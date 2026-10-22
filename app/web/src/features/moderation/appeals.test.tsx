@@ -9,6 +9,7 @@ import type { Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 import { appealFixture, decidedAppeal } from "./test/handlers";
 
 beforeEach(() => {
@@ -90,6 +91,7 @@ describe("the list of appeals", () => {
     expect(screen.queryByRole("link", { name: "Appeal of Suspend" })).not.toBeInTheDocument();
     expect(screen.getByText("Upheld")).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ state: "decided" });
+    expectSelectedTabControlsPanel("Reviewed");
   });
 
   test("the reviewed tab reads on past pages of pending appeals only", async () => {

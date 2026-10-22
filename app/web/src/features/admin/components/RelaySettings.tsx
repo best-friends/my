@@ -5,7 +5,7 @@
 // a domain action suspends its server. A relay is left while pending or joined, joined again once left or
 // rejected, and then deleted after an alert dialog. What a change did stays above the list in a StatusMessage
 // (role="status"), and a failure stays there too (role="alert").
-import { Button, Checkbox, ConfirmDialog, DescriptionItem, DescriptionList, DialogTrigger, EmptyState, Select, SelectItem, StatusMessage, TextField } from "@my/ui";
+import { Button, Checkbox, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DialogTrigger, EmptyState, Heading, Hint, InlineError, Select, SelectItem, Stack, StatusMessage, Text, TextField } from "@my/ui";
 import { useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
@@ -34,14 +34,14 @@ export function RelaySettings() {
   const t = useT();
   return (
     <RequirePermission permission="manage_settings">
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <DetailSection title={t("client:admin.relays.new.title")}>
           <NewRelayForm />
         </DetailSection>
         <DetailSection title={t("client:admin.relays.list.title")}>
           <RelayList />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -54,8 +54,8 @@ function NewRelayForm() {
     ...relayProtocols.map((protocol) => ({ id: protocol, name: t(protocolLabels[protocol]) })),
   ];
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
-      <p className="text-fg-muted">{t("client:admin.relays.new.description")}</p>
+    <Stack as="form" gap="6" onSubmit={form.submit}>
+      <Hint size="inherit">{t("client:admin.relays.new.description")}</Hint>
       <TextField
         type="url"
         label={t("client:admin.relays.url")}
@@ -96,9 +96,9 @@ function NewRelayForm() {
         {t("client:admin.relays.receive")}
       </Checkbox>
       {form.error?.field === "form" && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.relays.create_failed", { reason: form.error.message })}
-        </p>
+        </InlineError>
       )}
       <div>
         <Button type="submit" variant="primary" isPending={form.isPending}>
@@ -106,7 +106,7 @@ function NewRelayForm() {
         </Button>
       </div>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -121,12 +121,12 @@ function RelayList() {
   const actions = useRelayActions(removed);
   const list = { items: relays, hasMore: false, isLoadingMore: false, loadMore: () => undefined };
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{actions.status}</StatusMessage>
       {actions.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError size="inherit" alert>
           {t("client:admin.relays.change_failed", { reason: actions.error })}
-        </p>
+        </InlineError>
       )}
       <RecordList
         list={list}
@@ -136,7 +136,7 @@ function RelayList() {
       >
         {(relay) => <RelayRow relay={relay} actions={actions} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -151,22 +151,22 @@ function RelayFacts({ relay }: { relay: Relay }) {
         <DateTime value={relay.state_changed_at} />
       </DescriptionItem>
       <DescriptionItem term={t("client:admin.relays.url")}>
-        <span dir="ltr" className="font-mono wrap-anywhere">
+        <Text wrap="anywhere" mono dir="ltr">
           {relay.url}
-        </span>
+        </Text>
       </DescriptionItem>
       {relay.inbox_url !== relay.url && (
         <DescriptionItem term={t("client:admin.relays.inbox")}>
-          <span dir="ltr" className="font-mono wrap-anywhere">
+          <Text wrap="anywhere" mono dir="ltr">
             {relay.inbox_url}
-          </span>
+          </Text>
         </DescriptionItem>
       )}
       {relay.actor_uri !== undefined && (
         <DescriptionItem term={t("client:admin.relays.actor")}>
-          <span dir="ltr" className="font-mono wrap-anywhere">
+          <Text wrap="anywhere" mono dir="ltr">
             {relay.actor_uri}
-          </span>
+          </Text>
         </DescriptionItem>
       )}
       <DescriptionItem term={t("client:admin.relays.receive.term")}>
@@ -174,7 +174,7 @@ function RelayFacts({ relay }: { relay: Relay }) {
       </DescriptionItem>
       <DescriptionItem term={t("client:admin.relays.taken")}>{t("client:admin.relays.activities", { count: relay.taken_last_day })}</DescriptionItem>
       <DescriptionItem term={t("client:admin.relays.dropped")}>
-        <span className={relay.dropped_last_day > 0 ? "text-warning" : undefined}>{t("client:admin.relays.activities", { count: relay.dropped_last_day })}</span>
+        <Text {...(relay.dropped_last_day > 0 && { tone: "warning" as const })}>{t("client:admin.relays.activities", { count: relay.dropped_last_day })}</Text>
       </DescriptionItem>
     </DescriptionList>
   );
@@ -186,13 +186,13 @@ function RelayRow({ relay, actions }: { relay: Relay; actions: RelayActions }) {
   const isPending = actions.pendingId === relay.id;
   const joined = isJoined(relay);
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="min-w-0 font-semibold wrap-anywhere">
+    <Stack gap="3">
+      <Heading level={3} wrap="anywhere" shrink>
         <span dir="ltr">{relayHeading(relay)}</span>
-      </h3>
-      {relay.domain_suspended && <p className="text-warning">{t("client:admin.relays.domain_suspended")}</p>}
+      </Heading>
+      {relay.domain_suspended && <Text as="p" tone="warning">{t("client:admin.relays.domain_suspended")}</Text>}
       <RelayFacts relay={relay} />
-      <div className="flex flex-wrap items-center gap-2">
+      <Cluster gap="2" align="center">
         {/* One button that leaves or joins again, so that focus stays on it when the state changes. */}
         <Button
           size="sm"
@@ -205,8 +205,8 @@ function RelayRow({ relay, actions }: { relay: Relay; actions: RelayActions }) {
           {t(joined ? "client:admin.relays.unfollow" : "client:admin.relays.follow")}
         </Button>
         {!joined && <DeleteRelay relay={relay} actions={actions} isPending={isPending} />}
-      </div>
-    </div>
+      </Cluster>
+    </Stack>
   );
 }
 

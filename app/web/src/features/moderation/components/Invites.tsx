@@ -3,7 +3,7 @@
 // first. An invite lets people sign up only while the registration mode is `invite` (a server setting, /admin/settings),
 // which the screen says when it is not. A new invite's code and link stay under the form in a StatusMessage; each
 // usable invite can be copied as its sign-up link or revoked, which takes effect at once and asks nothing first.
-import { Button, DescriptionItem, DescriptionList, DurationSelect, EmptyState, Select, SelectItem, StatusMessage } from "@my/ui";
+import { Box, Button, DescriptionItem, DescriptionList, DurationSelect, EmptyState, Heading, InlineError, SectionHeader, Select, SelectItem, Stack, StatusMessage, Text } from "@my/ui";
 import { useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -26,7 +26,7 @@ export function Invites() {
   const t = useT();
   return (
     <RequirePermission permission="manage_invites">
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <ModeNotice />
         <DetailSection title={t("client:admin.invites.new.title")}>
           <NewInviteForm />
@@ -34,7 +34,7 @@ export function Invites() {
         <DetailSection title={t("client:admin.invites.list.title")}>
           <InviteList />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -43,7 +43,11 @@ export function Invites() {
 function ModeNotice() {
   const t = useT();
   if (useInvitesWork()) return null;
-  return <p className="rounded-md border border-border p-3">{t("client:admin.invites.mode_notice")}</p>;
+  return (
+    <Box as="p" border="md" padding="3">
+      {t("client:admin.invites.mode_notice")}
+    </Box>
+  );
 }
 
 function NewInviteForm() {
@@ -55,7 +59,7 @@ function NewInviteForm() {
     return t("client:admin.invites.duration.minutes", { count: seconds / 60 });
   };
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
+    <Stack as="form" onSubmit={form.submit} gap="6">
       <Select
         label={t("client:admin.invites.max_uses")}
         description={t("client:admin.invites.max_uses.description")}
@@ -83,25 +87,25 @@ function NewInviteForm() {
         }}
       />
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {t("client:admin.invites.create_failed", { reason: form.error })}
-        </p>
+        </InlineError>
       )}
-      <div>
+      <Box>
         <Button type="submit" variant="primary" isPending={form.isPending}>
           {t("client:admin.invites.create")}
         </Button>
-      </div>
+      </Box>
       <StatusMessage>{form.status}</StatusMessage>
       {form.created !== undefined && (
-        <p className="flex flex-col gap-1">
+        <Stack as="p" gap="1">
           <span>{t("client:admin.invites.link")}</span>
-          <span dir="ltr" className="font-mono wrap-anywhere select-all">
+          <Text dir="ltr" mono wrap="anywhere" selectAll>
             {form.created.url}
-          </span>
-        </p>
+          </Text>
+        </Stack>
       )}
-    </form>
+    </Stack>
   );
 }
 
@@ -117,7 +121,7 @@ function InviteList() {
     setStatus(t("client:admin.invites.revoked", { code: invite.code }));
   });
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{status}</StatusMessage>
       <RecordList
         list={list}
@@ -127,7 +131,7 @@ function InviteList() {
       >
         {(invite) => <InviteRow invite={invite} revoke={revoke} />}
       </RecordList>
-    </div>
+    </Stack>
   );
 }
 
@@ -137,13 +141,11 @@ function InviteRow({ invite, revoke }: { invite: Invite; revoke: RevokeInvite })
   const copy = useCopyInviteLink();
   const created = intl.formatDate(invite.created_at, { dateStyle: "medium", timeStyle: "short" });
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        <h3 tabIndex={-1} dir="ltr" className="font-mono font-semibold wrap-anywhere outline-none">
-          {invite.code}
-        </h3>
-        {invite.state === "usable" && (
-          <div className="flex flex-wrap gap-2">
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          invite.state === "usable" && (
+            <>
             <Button
               size="sm"
               aria-label={t("client:admin.invites.copy_invite", { code: invite.code })}
@@ -164,12 +166,17 @@ function InviteRow({ invite, revoke }: { invite: Invite; revoke: RevokeInvite })
             >
               {t("client:admin.invites.revoke")}
             </Button>
-          </div>
-        )}
-      </div>
+            </>
+          )
+        }
+      >
+        <Heading level={3} dir="ltr" mono wrap="anywhere" focusable>
+          {invite.code}
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.invites.state")}>
-          <span className={invite.state === "usable" ? "font-semibold" : undefined}>{t(stateLabels[invite.state])}</span>
+          <Text {...(invite.state === "usable" ? { weight: "semibold" as const } : {})}>{t(stateLabels[invite.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.invites.used")}>
           {invite.max_uses === undefined
@@ -183,6 +190,6 @@ function InviteRow({ invite, revoke }: { invite: Invite; revoke: RevokeInvite })
           <DateTime value={invite.created_at} />
         </DescriptionItem>
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }

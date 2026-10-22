@@ -10,6 +10,7 @@ import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/m
 import { nodeUploadFile } from "../../test/multipart";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 import { adminCustomEmojiFixture } from "./test/handlers";
 
 const uploadedId = "0199f0e0-0000-7000-8000-00000000e0a1";
@@ -145,6 +146,14 @@ describe("the custom emoji screen", () => {
     });
     expect(deleted).toBe("e1");
     expect(screen.getByRole("heading", { level: 3, name: ":blobfox:" })).toBeInTheDocument();
+  });
+
+  test("keeps the origin tab wired to its panel after switching", async () => {
+    server.use(http.get(`${apiBase}/admin/custom_emojis`, () => HttpResponse.json({ items: [] })));
+    const { user } = await renderApp({ path: "/admin/custom-emojis" });
+    await user.click(await screen.findByRole("tab", { name: "Other servers" }));
+
+    expectSelectedTabControlsPanel("Other servers");
   });
 
   test("disables an emoji of another server", async () => {

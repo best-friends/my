@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, ContentWarning, EmojiText, Link, MediaGrid, PostCardAuthor, PostContent, QuoteCard } from "@my/ui";
+import { Avatar, ContentWarning, EmojiText, MediaGrid, PostCardAuthorLink, PostCardTimeLink, PostContent, QuoteCard } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import type { Status, StatusQuote } from "../api/status";
 import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
 import { useQuoteView } from "../hooks/useQuoteView";
 import { useStatusView } from "../hooks/useStatusView";
-
-/** A link to a profile on a name: in the color of the text, underlined on hover, as on the post's own card. */
-const nameLink = "text-fg no-underline data-hovered:text-fg data-hovered:underline";
-
-/** The link to the quoted post on its time: muted like the details of a header, underlined only on hover and focus. */
-const timeLink = "text-fg-muted no-underline data-hovered:text-fg-muted data-hovered:underline data-focus-visible:underline";
 
 /**
  * The post that a post quotes (FR-114, ADR-0069 §5), inside the quoting post: the quoted author, the time as the
@@ -47,16 +41,14 @@ function QuotedPost({ status, notice }: { status: Status; notice: string | null 
       label={t("client:status.quote.label")}
       avatar={<Avatar sources={view.author.avatar} name={view.author.name} size="xs" decorative />}
       author={
-        <Link href={view.author.href} className={`${nameLink} block min-w-0`}>
-          <PostCardAuthor name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />
-        </Link>
+        <PostCardAuthorLink href={view.author.href} name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />
       }
       time={
-        <Link href={view.path} className={timeLink}>
+        <PostCardTimeLink href={view.path} dense>
           <time dateTime={view.time.dateTime} title={view.time.absolute}>
             {view.time.relative}
           </time>
-        </Link>
+        </PostCardTimeLink>
       }
       {...(notice !== null && { notice, revealLabel: t("client:status.quote.reveal") })}
     >

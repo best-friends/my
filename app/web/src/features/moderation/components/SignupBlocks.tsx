@@ -6,19 +6,25 @@
 // pattern with automatic activation (React Aria Tabs), kept in the URL by the route (web-client.md S3); only the
 // selected panel is mounted.
 import {
+  Box,
   Button,
   DescriptionItem,
   DescriptionList,
   DurationSelect,
   EmptyState,
+  Heading,
+  InlineError,
   Radio,
   RadioGroup,
   ReasonField,
+  SectionHeader,
+  Stack,
   StatusMessage,
   Tab,
   TabList,
   TabPanel,
   Tabs,
+  Text,
   TextField,
 } from "@my/ui";
 import { useRef, useState } from "react";
@@ -94,7 +100,7 @@ export function SignupBlocks(props: SignupBlocksProps) {
   const t = useT();
   return (
     <RequirePermission permission="manage_accounts">
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <DetailSection title={t("client:admin.signup_blocks.new.title")}>
           <NewSignupBlockForm />
         </DetailSection>
@@ -104,7 +110,7 @@ export function SignupBlocks(props: SignupBlocksProps) {
         <DetailSection title={t("client:admin.signup_blocks.list.title")}>
           <SignupBlockTabs {...props} />
         </DetailSection>
-      </div>
+      </Stack>
     </RequirePermission>
   );
 }
@@ -115,7 +121,7 @@ function NewSignupBlockForm() {
   const { draft } = form;
   const valueField = valueFields[draft.kind];
   return (
-    <form onSubmit={form.submit} className="flex flex-col gap-6">
+    <Stack as="form" onSubmit={form.submit} gap="6">
       <RadioGroup
         label={t("client:admin.signup_blocks.kind")}
         value={draft.kind}
@@ -185,17 +191,17 @@ function NewSignupBlockForm() {
         errorMessage={t("client:admin.signup_blocks.too_long", { max: signupBlockCommentLimit })}
       />
       {form.error !== undefined && (
-        <p role="alert" className="text-danger">
+        <InlineError alert size="inherit">
           {t("client:admin.signup_blocks.add_failed", { reason: form.error })}
-        </p>
+        </InlineError>
       )}
-      <div>
+      <Box>
         <Button type="submit" variant="primary" isPending={form.isPending}>
           {t("client:admin.signup_blocks.submit")}
         </Button>
-      </div>
+      </Box>
       <StatusMessage>{form.status}</StatusMessage>
-    </form>
+    </Stack>
   );
 }
 
@@ -203,7 +209,7 @@ function SignupBlockTabs({ filter, onFilterChange }: SignupBlocksProps) {
   const t = useT();
   const [status, setStatus] = useState<string | undefined>(undefined);
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <StatusMessage>{status}</StatusMessage>
       <Tabs
         selectedKey={filter}
@@ -218,16 +224,19 @@ function SignupBlockTabs({ filter, onFilterChange }: SignupBlocksProps) {
             </Tab>
           ))}
         </TabList>
-        <TabPanel id={filter}>
-          <SignupBlockList
-            filter={filter}
-            onLifted={(block) => {
-              setStatus(t("client:admin.signup_blocks.lifted", { kind: t(signupBlockKindLabels[block.kind]), value: signupBlockValueInText(t, block) }));
-            }}
-          />
-        </TabPanel>
+        {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+        {signupBlockFilters.map((item) => (
+          <TabPanel key={item} id={item}>
+            <SignupBlockList
+              filter={filter}
+              onLifted={(block) => {
+                setStatus(t("client:admin.signup_blocks.lifted", { kind: t(signupBlockKindLabels[block.kind]), value: signupBlockValueInText(t, block) }));
+              }}
+            />
+          </TabPanel>
+        ))}
       </Tabs>
-    </div>
+    </Stack>
   );
 }
 
@@ -270,12 +279,10 @@ function SignupBlockRow({ block, lift }: { block: SignupBlock; lift: LiftSignupB
   const intl = useIntl();
   const kind = t(signupBlockKindLabels[block.kind]);
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
-        <h3 tabIndex={-1} className="font-semibold wrap-anywhere outline-none">
-          <SignupBlockValue block={block} />
-        </h3>
-        {block.state === "active" && (
+    <Stack gap="3">
+      <SectionHeader
+        actions={
+          block.state === "active" && (
           <Button
             size="sm"
             isPending={lift.pendingIds.includes(block.id)}
@@ -290,13 +297,18 @@ function SignupBlockRow({ block, lift }: { block: SignupBlock; lift: LiftSignupB
           >
             {t("client:admin.signup_blocks.lift")}
           </Button>
-        )}
-      </div>
+          )
+        }
+      >
+        <Heading level={3} wrap="anywhere" focusable>
+          <SignupBlockValue block={block} />
+        </Heading>
+      </SectionHeader>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.signup_blocks.kind")}>{kind}</DescriptionItem>
         <DescriptionItem term={t("client:admin.signup_blocks.severity")}>{t(signupBlockSeverityLabels[block.severity])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.signup_blocks.state")}>
-          <span className={block.state === "active" ? "font-semibold" : undefined}>{t(stateLabels[block.state])}</span>
+          <Text {...(block.state === "active" ? { weight: "semibold" as const } : {})}>{t(stateLabels[block.state])}</Text>
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.signup_blocks.created_at")}>
           <DateTime value={block.created_at} />
@@ -317,12 +329,12 @@ function SignupBlockRow({ block, lift }: { block: SignupBlock; lift: LiftSignupB
         <DescriptionList>
           <DescriptionItem term={t("client:admin.signup_blocks.comment")}>
             {/* Written by a moderator, in any language. */}
-            <span dir="auto" className="whitespace-pre-wrap">
+            <Text dir="auto" whitespace="preWrap">
               {block.comment}
-            </span>
+            </Text>
           </DescriptionItem>
         </DescriptionList>
       )}
-    </div>
+    </Stack>
   );
 }

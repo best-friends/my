@@ -3,7 +3,7 @@
 // modal dialog (WAI-ARIA APG, dialog pattern) holding the compose form's fields for what an edit may change:
 // the content warning, the text with its counter and the custom emoji picker, the images' descriptions, the
 // sensitivity of the media, and the language. The visibility and the reply target stay as they were.
-import { Button, Checkbox, Dialog, LanguageIcon, Select, SelectItem, Spinner, TextArea, TextField, ToggleButton, Tooltip, TooltipTrigger, WarningIcon } from "@my/ui";
+import { Button, Checkbox, Cluster, Dialog, Hint, InlineError, LanguageIcon, Select, SelectItem, Spinner, Stack, TextArea, TextField, ToggleButton, Tooltip, TooltipTrigger, WarningIcon } from "@my/ui";
 import { type SubmitEvent, useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { AttachmentList, useFormatRemaining } from "../../compose";
@@ -38,12 +38,12 @@ function EditStatusContent({ status, close }: EditStatusContentProps) {
       return <Spinner label={t("client:status.edit.loading")} />;
     case "error":
       return (
-        <div className="flex flex-col items-start gap-2">
+        <Stack align="start" gap="2">
           <p>{t("client:status.edit.load_failed", { reason: source.message })}</p>
           <Button size="sm" onPress={source.retry}>
             {t("client:status.edit.retry")}
           </Button>
-        </div>
+        </Stack>
       );
     case "ready":
       return (
@@ -79,7 +79,7 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
     form.save(close);
   };
   return (
-    <form aria-label={t("client:status.edit.title")} onSubmit={onSubmit} className="flex flex-col gap-3 @container">
+    <Stack as="form" aria-label={t("client:status.edit.title")} onSubmit={onSubmit} gap="3" container>
       {form.hasWarning && (
         <TextField
           label={t("client:compose.warning.label")}
@@ -124,15 +124,15 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
           {t("client:status.edit.remove_quote")}
         </Checkbox>
       )}
-      <p className="text-sm text-fg-muted">{t("client:status.edit.fixed")}</p>
+      <Hint>{t("client:status.edit.fixed")}</Hint>
       {form.error !== null && (
-        <p id={errorId} role="alert" className="text-danger">
+        <InlineError id={errorId} size="inherit" alert>
           {form.error}
-        </p>
+        </InlineError>
       )}
       {/* The same row as the compose form's tools: the content warning and the language, then the buttons. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-1">
+      <Cluster align="center" gap="2">
+        <Cluster align="center" gap="1" shrink>
           <TooltipTrigger>
             <ToggleButton
               aria-label={warningLabel}
@@ -168,8 +168,8 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
               </SelectItem>
             )}
           </Select>
-        </div>
-        <div className="ms-auto flex flex-wrap gap-2">
+        </Cluster>
+        <Cluster gap="2" pushEnd>
           <Button onPress={close}>{t("client:status.edit.cancel")}</Button>
           <Button
             type="submit"
@@ -180,8 +180,8 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
           >
             {t("client:status.edit.save")}
           </Button>
-        </div>
-      </div>
-    </form>
+        </Cluster>
+      </Cluster>
+    </Stack>
   );
 }

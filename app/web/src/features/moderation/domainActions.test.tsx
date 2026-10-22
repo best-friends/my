@@ -10,6 +10,7 @@ import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/m
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { domainActionFixture, newDomainAction } from "./test/handlers";
+import { expectSelectedTabControlsPanel } from "../../test/tabs";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_domains"]));
@@ -98,6 +99,7 @@ describe("the list of domain actions", () => {
       expect(router.state.location.search).toEqual({ filter: "all" });
     });
     const all = within(await screen.findByRole("tabpanel", { name: "All" }));
+    expectSelectedTabControlsPanel("All");
     expect(await all.findByText("Lifted")).toBeInTheDocument();
     expect(all.getAllByRole("listitem")).toHaveLength(3);
     // A lifted action has no lift button.

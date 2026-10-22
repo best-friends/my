@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { Stack } from "@my/ui";
 import { createFileRoute } from "@tanstack/react-router";
 import { BadgeSettings, ProfileForm, badgeChoicesQueryOptions, credentialsQueryOptions } from "../features/settings";
 import { SupporterListingSettings, supporterListingQueryOptions } from "../features/supporters";
@@ -15,10 +16,21 @@ export const Route = createFileRoute("/settings/profile")({
   beforeLoad: requireSignIn,
   loader: ({ context }) =>
     Promise.all([
-      context.queryClient.query({ ...credentialsQueryOptions(context.api), staleTime: Infinity }),
-      context.queryClient.query({ ...badgeChoicesQueryOptions(context.api), staleTime: Infinity }),
+      context.queryClient.query({
+        ...credentialsQueryOptions(context.api),
+        staleTime: Infinity,
+      }),
+      context.queryClient.query({
+        ...badgeChoicesQueryOptions(context.api),
+        staleTime: Infinity,
+      }),
       // A user who is not a member of a plan gets a 404, which only leaves the section out.
-      context.queryClient.query({ ...supporterListingQueryOptions(context.api), staleTime: Infinity }).catch(() => undefined),
+      context.queryClient
+        .query({
+          ...supporterListingQueryOptions(context.api),
+          staleTime: Infinity,
+        })
+        .catch(() => undefined),
     ]),
   component: ProfilePage,
 });
@@ -28,11 +40,11 @@ function ProfilePage() {
   return (
     <>
       <SettingsHeading>{t("client:settings.profile.title")}</SettingsHeading>
-      <div className="flex flex-col gap-8">
+      <Stack gap="8">
         <ProfileForm />
         <BadgeSettings />
         <SupporterListingSettings />
-      </div>
+      </Stack>
     </>
   );
 }

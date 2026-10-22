@@ -5,7 +5,7 @@
 // button that opens the appeal in an alert dialog (ConfirmDialog: an action is appealed once, and the appeal
 // cannot be changed); one appealed already shows the appeal's state instead, and one whose window closed
 // says so. Dates are in the user's locale and time zone (react-intl's, from the preferences).
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, ReasonField, Spinner, StatusMessage } from "@my/ui";
+import { Box, Button, ConfirmDialog, DescriptionItem, DescriptionList, DetailSection, EmptyState, Heading, Hint, ReasonField, Spinner, Stack, StatusMessage, Text } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, type Translate, useT } from "../../../lib/i18n";
@@ -53,33 +53,20 @@ export function AccountStatus() {
   const past = usePastActions();
   const form = useAppealForm();
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="8">
       <StatusMessage tone="success">{form.status}</StatusMessage>
-      <Section title={t("client:account_status.active.title")}>
+      <DetailSection title={t("client:account_status.active.title")}>
         <ActionListView
           list={active}
           form={form}
           empty={<EmptyState headingLevel={3} heading={t("client:account_status.active.empty")} description={t("client:account_status.active.empty.description")} />}
         />
-      </Section>
-      <Section title={t("client:account_status.past.title")}>
+      </DetailSection>
+      <DetailSection title={t("client:account_status.past.title")}>
         <ActionListView list={past} form={form} empty={<EmptyState headingLevel={3} heading={t("client:account_status.past.empty")} />} />
-      </Section>
+      </DetailSection>
       <AppealDialog form={form} />
-    </div>
-  );
-}
-
-/** A titled region of the page below its `h1`: an `h2` that names a `<section>`. */
-function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
-        {title}
-      </h2>
-      {children}
-    </section>
+    </Stack>
   );
 }
 
@@ -89,35 +76,35 @@ function ActionListView({ list, form, empty }: { list: ActionList; form: AppealF
   // The past actions are the whole list without those in effect, so a page can have none of them.
   if (list.items.length === 0 && !list.hasMore) return empty;
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       {list.items.length > 0 && (
-        <ul className="flex flex-col divide-y divide-border">
+        <Stack as="ul" divided>
           {list.items.map((action) => (
-            <li key={action.id} className="@container py-3">
+            <Box as="li" key={action.id} container paddingY="3">
               <ActionRow action={action} form={form} />
-            </li>
+            </Box>
           ))}
-        </ul>
+        </Stack>
       )}
       {list.hasMore && (
-        <div>
+        <Box>
           <Button onPress={list.loadMore} isPending={list.isLoadingMore}>
             {t("client:account_status.more")}
           </Button>
-        </div>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }
 
 function ActionRow({ action, form }: { action: ModerationAction; form: AppealForm }) {
   const t = useT();
   return (
-    <article aria-labelledby={`action-${action.id}`} className="flex flex-col gap-3">
+    <Stack as="article" aria-labelledby={`action-${action.id}`} gap="3">
       {/* The kind in the user's language, as the server names it. */}
-      <h3 id={`action-${action.id}`} className="font-semibold wrap-anywhere">
+      <Heading level={3} id={`action-${action.id}`} wrap="anywhere">
         {action.kind_label}
-      </h3>
+      </Heading>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:account_status.state")}>{t(stateLabels[action.state])}</DescriptionItem>
         <DescriptionItem term={t("client:account_status.reason_category")}>{action.reason_category_label}</DescriptionItem>
@@ -144,15 +131,15 @@ function ActionRow({ action, form }: { action: ModerationAction; form: AppealFor
             t("client:account_status.public_reason.none")
           ) : (
             // Written by a moderator, in any language and direction (web-client.md Y10).
-            <span dir="auto" className="whitespace-pre-wrap wrap-anywhere">
+            <Text dir="auto" whitespace="preWrap" wrap="anywhere">
               {action.public_reason}
-            </span>
+            </Text>
           )}
         </DescriptionItem>
       </DescriptionList>
       {action.status_ids.length > 0 && <ActionPosts statusIds={action.status_ids} />}
       <AppealPart action={action} form={form} />
-    </article>
+    </Stack>
   );
 }
 
@@ -162,26 +149,28 @@ function ActionPosts({ statusIds }: { statusIds: readonly string[] }) {
   const headingId = useId();
   const posts = useActionStatuses(statusIds);
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h4 id={headingId} className="font-semibold">
+    <Stack as="section" aria-labelledby={headingId} gap="2">
+      <Heading level={4} id={headingId}>
         {t("client:account_status.posts.title")}
-      </h4>
-      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+      </Heading>
+      <Stack as="ul" divided border="lg">
         {posts.map((post) => (
           <li key={post.id}>
             {post.status === "found" ? (
               <StatusCard status={post.value} withActions={false} />
             ) : post.status === "loading" ? (
-              <div className="px-4 py-3">
+              <Box paddingX="4" paddingY="3">
                 <Spinner size="sm" label={t("client:account_status.posts.loading")} />
-              </div>
+              </Box>
             ) : (
-              <p className="px-4 py-3 text-fg-muted">{t("client:account_status.posts.missing")}</p>
+              <Box paddingX="4" paddingY="3">
+                <Hint size="inherit">{t("client:account_status.posts.missing")}</Hint>
+              </Box>
             )}
           </li>
         ))}
-      </ul>
-    </section>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -196,7 +185,7 @@ function AppealPart({ action, form }: { action: ModerationAction; form: AppealFo
   } else if (action.appealable) {
     const deadline = action.appeal_deadline === undefined ? undefined : intl.formatDate(action.appeal_deadline, dateTimeFormat);
     body = (
-      <div className="flex flex-col items-start gap-2">
+      <Stack align="start" gap="2">
         {deadline !== undefined && <p>{t("client:account_status.appeal.until", { date: deadline })}</p>}
         <Button
           size="sm"
@@ -207,7 +196,7 @@ function AppealPart({ action, form }: { action: ModerationAction; form: AppealFo
         >
           {t("client:account_status.appeal.open")}
         </Button>
-      </div>
+      </Stack>
     );
   } else {
     body = (
@@ -219,20 +208,20 @@ function AppealPart({ action, form }: { action: ModerationAction; form: AppealFo
     );
   }
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+    <Stack as="section" aria-labelledby={headingId} gap="2">
       {/* Focus moves here once an appeal is sent, as the button that opened it is gone. */}
-      <h4 id={headingId} tabIndex={-1} className="font-semibold">
+      <Heading level={4} id={headingId} focusable>
         {t("client:account_status.appeal.title")}
-      </h4>
+      </Heading>
       {body}
-    </section>
+    </Stack>
   );
 }
 
 function AppealFacts({ appeal }: { appeal: ModerationAppeal }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-3">
+    <Stack gap="3">
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:account_status.appeal.state")}>{t(appealStateLabels[appeal.state])}</DescriptionItem>
         <DescriptionItem term={t("client:account_status.appeal.submitted_at")}>
@@ -247,19 +236,19 @@ function AppealFacts({ appeal }: { appeal: ModerationAppeal }) {
       <DescriptionList>
         <DescriptionItem term={t("client:account_status.appeal.text")}>
           {/* The user's own text (web-client.md Y10). */}
-          <span dir="auto" className="whitespace-pre-wrap wrap-anywhere">
+          <Text dir="auto" whitespace="preWrap" wrap="anywhere">
             {appeal.text}
-          </span>
+          </Text>
         </DescriptionItem>
         {appeal.decision_reason !== undefined && (
           <DescriptionItem term={t("client:account_status.appeal.decision_reason")}>
-            <span dir="auto" className="whitespace-pre-wrap wrap-anywhere">
+            <Text dir="auto" whitespace="preWrap" wrap="anywhere">
               {appeal.decision_reason}
-            </span>
+            </Text>
           </DescriptionItem>
         )}
       </DescriptionList>
-    </div>
+    </Stack>
   );
 }
 

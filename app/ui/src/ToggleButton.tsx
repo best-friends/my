@@ -16,6 +16,8 @@ const toggleButton = tv({
       success: "data-selected:text-success data-selected:data-hovered:text-success",
       warning: "data-selected:text-warning data-selected:data-hovered:text-warning",
     },
+    /** A rule around the button, which turns to the accent color while selected (a reaction chip). */
+    outlined: { true: "border border-border data-selected:border-accent" },
   },
   defaultVariants: { tone: "accent" },
 });
@@ -29,6 +31,6 @@ export type ToggleButtonProps = RACToggleButtonProps & VariantProps<typeof toggl
  * and a count, and describe it with the count (`aria-describedby`) if the count matters. Control it with
  * `isSelected` / `onChange`.
  */
-export function ToggleButton({ tone, className, ...props }: ToggleButtonProps) {
-  return <RACToggleButton {...props} className={composeRenderProps(className, (className) => toggleButton({ tone, className }))} />;
+export function ToggleButton({ tone, outlined, className, ...props }: ToggleButtonProps) {
+  return <RACToggleButton {...props} className={composeRenderProps(className, (className) => toggleButton({ tone, outlined, className }))} />;
 }
