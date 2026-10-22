@@ -160,3 +160,4 @@ export {
   type ProfileHeaderImageProps,
   type ProfileHeaderProps,
 } from "./ProfileHeader";
+export { AccountItem, type AccountItemProps } from "./AccountItem";

@@ -4,7 +4,7 @@
 // TextFields, checked by the browser's constraint validation before the search runs. The route keeps the search
 // in the address (web-client.md S3). A local account can be searched by its email address, its email domain or
 // an IP address it used, one of them at a time; the results never show them (the account's page does, when asked).
-import { Avatar, Button, DescriptionItem, DescriptionList, EmptyState, Link, RegionError, Select, SelectItem, Spinner, TextField } from "@my/ui";
+import { AccountItem, Button, DescriptionItem, DescriptionList, EmptyState, RegionError, Select, SelectItem, Spinner, TextField } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import {
@@ -28,9 +28,8 @@ import {
   useAccountSearchForm,
   useAccountSearchResults,
 } from "../hooks/useAdminAccounts";
-import { accountName } from "../hooks/useReports";
+import { accountName, handleOf } from "../hooks/useReports";
 import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
-import { AccountLabel } from "./reportParts";
 import { imageSources } from "../../../lib/images";
 
 export type AccountSearchProps = {
@@ -233,14 +232,14 @@ function AccountRow({ account }: { account: AdminAccount }) {
   const intl = useIntl();
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex min-w-0 items-center gap-3">
-        <Avatar sources={imageSources(account.account.avatar)} name={accountName(account.account)} decorative />
-        <h3 className="min-w-0 font-semibold">
-          <Link href={`/moderation/accounts/${encodeURIComponent(account.id)}`} variant="standalone">
-            <AccountLabel account={account.account} />
-          </Link>
-        </h3>
-      </div>
+      <h3 className="min-w-0 font-semibold">
+        <AccountItem
+          name={accountName(account.account)}
+          handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
+          avatar={imageSources(account.account.avatar)}
+          href={`/moderation/accounts/${encodeURIComponent(account.id)}`}
+        />
+      </h3>
       <DescriptionList columns={3}>
         <DescriptionItem term={t("client:admin.accounts.state")}>
           <span className="font-semibold">{t(adminAccountStateLabels[account.state])}</span>

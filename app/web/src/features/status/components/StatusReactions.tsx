@@ -2,7 +2,7 @@
 // The emoji reactions under a post (FR-116, ADR-0052 §5): one toggle per emoji with its count, which the viewer
 // presses to react with that emoji or to take the reaction back, and a button that lists the accounts that reacted.
 // A custom emoji of another server is shown with its count but is no button: nobody here can react with it.
-import { Avatar, Button, CustomEmoji, Dialog, EmojiText, Link, ToggleButton } from "@my/ui";
+import { AccountItem, Button, CustomEmoji, Dialog, EmojiText, ToggleButton } from "@my/ui";
 import { useId, useState } from "react";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
@@ -112,26 +112,15 @@ function ReactorsDialog({ statusId, isOpen, onOpenChange }: ReactorsDialogProps)
           ) : (
             <ul className="flex flex-col divide-y divide-border">
               {state.items.map((item) => (
-                <li key={item.key} className="flex min-w-0 items-center gap-3 py-2">
-                  <Link
+                <li key={item.key} className="py-2">
+                  <AccountItem
+                    name={item.name}
+                    nameContent={<EmojiText text={item.name} emojis={item.emojis} />}
+                    handle={item.handle}
+                    avatar={item.avatar}
                     href={item.href}
-                    variant="standalone"
-                    className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 text-fg data-hovered:text-fg"
-                  >
-                    <>
-                      <Avatar sources={item.avatar} name={item.name} decorative className="row-span-2" />
-                      <span dir="auto" className="font-semibold wrap-anywhere">
-                        <EmojiText text={item.name} emojis={item.emojis} />
-                      </span>
-                      {/* The space keeps the name and the handle apart in the link's name. */}{" "}
-                      <span dir="ltr" className="text-sm font-normal wrap-anywhere text-fg-muted">
-                        {item.handle}
-                      </span>
-                    </>
-                  </Link>
-                  <span className="shrink-0">
-                    <Emoji emoji={item.emoji} text={item.emojiText} />
-                  </span>
+                    trailing={<Emoji emoji={item.emoji} text={item.emojiText} />}
+                  />
                 </li>
               ))}
             </ul>
