@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link } from "@my/ui";
+import { ServerNameLink as ServerNameLinkView } from "@my/ui";
 import { useLocation } from "@tanstack/react-router";
-import { useId } from "react";
 import { useT } from "../../lib/i18n";
 import { useInstanceName } from "../../lib/instanceName";
+
+export type ServerNameLinkProps = {
+  /** `lg` where the name heads a column (the sidebar, the third column); `base` in the menu's sheet. */
+  size?: "base" | "lg";
+};
 
 /**
  * The server's name as a link to the root address: the landing page for people who are not signed in, the home
@@ -11,20 +15,9 @@ import { useInstanceName } from "../../lib/instanceName";
  * described as the server's top page; on the landing page itself it has aria-current="page". The name is the
  * administrator's text, in any language (web-client.md Y10), so the paragraph around it takes its direction.
  */
-export function ServerNameLink({ className }: { className?: string }) {
+export function ServerNameLink({ size }: ServerNameLinkProps) {
   const t = useT();
   const instanceName = useInstanceName();
-  const descriptionId = useId();
   const atRoot = useLocation({ select: (location) => location.pathname === "/" });
-  return (
-    <p dir="auto" className={className}>
-      <Link href="/" aria-current={atRoot ? "page" : undefined} aria-describedby={descriptionId} variant="standalone" className="max-w-full font-semibold text-fg wrap-anywhere">
-        {instanceName}
-      </Link>
-      {/* A description of a hidden element is still read (accname), and the element stays out of the tree. */}
-      <span id={descriptionId} hidden>
-        {t("client:shell.nav.landing")}
-      </span>
-    </p>
-  );
+  return <ServerNameLinkView name={instanceName} description={t("client:shell.nav.landing")} current={atRoot} {...(size !== undefined && { size })} />;
 }

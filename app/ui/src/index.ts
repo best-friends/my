@@ -176,3 +176,46 @@ export {
 } from "./PostCardParts";
 export { NotificationLinks, NotificationOthers, NotificationSentence, type NotificationOthersProps, type NotificationSentenceProps } from "./NotificationRow";
 export { PostExcerpt, PostExcerptText, QuoteBlock, type PostExcerptProps, type PostExcerptTextProps, type QuoteBlockProps } from "./Quote";
+
+// The app shell (web-client.md §9): the frame, the navigation, the page heading and the routes' states.
+export { AppShell, AsidePanel, type AppShellProps, type AsidePanelProps } from "./AppShell";
+export {
+  AppNav,
+  AppNavAccount,
+  AppNavItem,
+  AppNavMenu,
+  AppNavMenuLink,
+  AppNavMenuList,
+  AppNavMenuSection,
+  type AppNavAccountProps,
+  type AppNavBadge,
+  type AppNavItemProps,
+  type AppNavMenuLinkProps,
+  type AppNavMenuListProps,
+  type AppNavMenuProps,
+  type AppNavMenuSectionProps,
+  type AppNavProps,
+} from "./AppNavigation";
+export { BackLinkHeading, PageHeading, type BackLinkHeadingProps, type PageHeadingProps } from "./PageHeading";
+export { RouteLoading, StandalonePage, type RouteLoadingProps, type StandalonePageProps } from "./RouteStates";
+export { ServerNameLink, type ServerNameLinkProps } from "./ServerNameLink";
+
+// The display of a poll (FR-112).
+export {
+  Poll,
+  PollChoices,
+  PollHint,
+  PollResults,
+  PollSummary,
+  type PollChoicesProps,
+  type PollHintProps,
+  type PollOptionProps,
+  type PollProps,
+  type PollResultsProps,
+  type PollSummaryProps,
+} from "./Poll";
+export { EmojiTile, type EmojiTileProps } from "./EmojiTile";
+export { CodeBlock, type CodeBlockProps } from "./CodeBlock";
+export { PreviewImage, type PreviewImageProps } from "./PreviewImage";
+export { ThemePreview, type ThemePreviewProps } from "./ThemePreview";
+export { ReactionChip, ReactionEmoji, ReactionRow, type ReactionChipProps, type ReactionEmojiProps, type ReactionRowProps } from "./ReactionChip";

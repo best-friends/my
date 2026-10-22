@@ -11,6 +11,7 @@ const heading = tv({
       section: "text-lg font-semibold",
       subsection: "font-semibold",
       label: "text-sm font-medium",
+      medium: "font-medium",
     },
     tone: { fg: "text-fg", muted: "text-fg-muted" },
     wrap: { anywhere: "wrap-anywhere", truncate: "truncate", pretty: "text-pretty" },
@@ -28,7 +29,7 @@ export type HeadingProps = Omit<ComponentPropsWithRef<"h2">, "className" | "styl
    * inside a region or a row), `label` (`text-sm font-medium`, a small group title). By default level 1 is `page`, level 2
    * `section`, and the others `subsection`.
    */
-  size?: "page" | "section" | "subsection" | "label";
+  size?: "page" | "section" | "subsection" | "label" | "medium";
   /** The color token; inherited when unset. `fg` restores the body color inside a muted region. */
   tone?: "fg" | "muted";
   /** `anywhere` for a heading that is a name, a domain or a code; `truncate` for one line; `pretty` to balance a short title. */

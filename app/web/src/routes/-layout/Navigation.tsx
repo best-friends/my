@@ -43,21 +43,24 @@
 import {
   AboutIcon,
   AdminIcon,
+  AppNav,
+  AppNavAccount,
+  type AppNavBadge,
+  AppNavItem,
+  AppNavMenu,
+  AppNavMenuLink,
+  AppNavMenuList,
+  AppNavMenuSection,
   Avatar,
-  Badge,
-  Button,
-  DialogTrigger,
   FinanceIcon,
   Link,
-  MenuIcon,
   ModerationIcon,
-  PostCardAuthor,
-  Sheet,
   SignInIcon,
   SignUpIcon,
+  Text,
 } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useId, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useAdminEntry } from "../../features/admin";
 import { useFinanceEntry } from "../../features/costs";
 import { DocumentLinks } from "../../features/documents";
@@ -167,35 +170,6 @@ function signInHrefOf(location: { pathname: string; href: string }): string {
   return `/login?${new URLSearchParams({ return_to: location.href }).toString()}`;
 }
 
-/**
- * The list item's classes for where the item shows (the tab bar is below md, the rail from md). In the tab bar
- * each item is as wide as its label and the room left is shared out evenly (flex: 1 1 auto), so that a long label
- * ("Notifications") takes the room that short ones ("Menu") leave and fits a 320 px screen on one line.
- */
-const shownAt: Record<NavigationItem["shows"], string> = {
-  always: "min-w-0 flex-auto md:flex-none",
-  "tab-bar": "min-w-0 flex-auto md:hidden",
-  rail: "hidden min-w-0 md:block",
-};
-
-/**
- * The look of an item of the tab bar and the rail, a link or the menu button. The label is never cut: where the
- * labels together are wider than the bar (a long translation), they wrap, inside a word if they must, so that
- * every label is read whole (ADR-0039). The icon is size-6 (web-client.md G11).
- */
-const itemClass =
-  "group flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-none px-0.5 text-xs font-normal text-fg-muted data-hovered:bg-surface-sunken pointer-coarse:min-h-16 short:min-h-12 aria-[current=page]:font-semibold aria-[current=page]:text-accent md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base [&_svg]:size-6 [&_svg]:shrink-0";
-
-/** The pill around the icon, filled for the current item. */
-const pillClass =
-  "relative rounded-full px-2 py-0.5 group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-fg md:px-4 lg:px-1";
-
-/** A count on the corner of an item's icon. */
-const badgeClass = "absolute -top-1.5 -inset-e-1 ring-2 ring-surface-raised md:ring-surface";
-
-/** The label under the icon (beside it from lg). */
-const labelClass = "max-w-full text-center leading-tight text-balance wrap-anywhere lg:text-start";
-
 /** Whether `pathname` is `path` or a page below it. */
 function isUnder(pathname: string, path: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`);
@@ -212,8 +186,8 @@ function inSection(pathname: string, section: Section, ownAcct: string | null): 
   return [profilePath(ownAcct), followListPath(ownAcct, "followers"), followListPath(ownAcct, "following")].includes(pathname);
 }
 
-/** The badge of an item and the name of its link while it shows one, or null for an item without a count now. */
-type ItemBadge = { count: number; badgeLabel: string; name: string } | null;
+/** The badge of an item and the name of its link while it shows one, or undefined for an item without a count now. */
+type ItemBadge = AppNavBadge | undefined;
 
 export function Navigation() {
   const t = useT();
@@ -252,51 +226,38 @@ export function Navigation() {
   const shown = items.filter((item) => (item.timeline === undefined || timelines[item.timeline]) && staffAvailable(item));
   const badgeOf = (section: Section | undefined): ItemBadge => {
     if (section === "/notifications" && unread > 0) {
-      return { count: unread, badgeLabel: t("client:notifications.unread_count", { count: unread }), name: t("client:shell.nav.notifications_unread", { count: unread }) };
+      return { count: unread, label: t("client:notifications.unread_count", { count: unread }), name: t("client:shell.nav.notifications_unread", { count: unread }) };
     }
     if (section === "/moderation" && moderationEntry.available && moderationEntry.pending > 0) {
       const count = moderationEntry.pending;
-      return { count, badgeLabel: t("client:admin.pending_count", { count }), name: t("client:shell.nav.moderation_pending", { count }) };
+      return { count, label: t("client:admin.pending_count", { count }), name: t("client:shell.nav.moderation_pending", { count }) };
     }
-    return null;
+    return undefined;
   };
-  const current = (section: Section | undefined) => (section !== undefined && inSection(pathname, section, ownAcct) ? "page" : undefined);
+  const current = (section: Section | undefined) => section !== undefined && inSection(pathname, section, ownAcct);
   return (
-    <nav
-      aria-label={t("client:shell.nav.label")}
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface-raised px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:flex md:h-svh md:flex-col md:overflow-y-auto md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0 lg:w-60"
+    <AppNav
+      label={t("client:shell.nav.label")}
+      // The server's name, a link to the root address (web-client.md G9).
+      header={<ServerNameLink size="lg" />}
+      footer={<ViewerLink />}
     >
-      {/* The server's name, a link to the root address (web-client.md G9). */}
-      <ServerNameLink className="mx-2 hidden px-3 pt-4 pb-2 text-lg align-match-parent lg:block" />
-      <ul className="flex md:flex-col md:gap-1 md:p-2">
-        {shown.map((item) => {
-          const badge = badgeOf(item.section);
-          return (
-            <li key={item.id} className={shownAt[item.shows]}>
-              <Link
-                href={item.href}
-                {...(badge !== null && { "aria-label": badge.name })}
-                aria-current={current(item.section)}
-                variant="navigation"
-                className={itemClass}
-              >
-                <span className={pillClass}>
-                  {item.icon}
-                  {badge !== null && <Badge count={badge.count} label={badge.badgeLabel} className={badgeClass} />}
-                </span>
-                <span className={labelClass}>{t(item.label)}</span>
-              </Link>
-            </li>
-          );
-        })}
-        {status !== "unknown" && (
-          <li className={shownAt["tab-bar"]}>
-            <NavigationMenu items={shown.filter((item) => item.shows === "rail")} current={current} badgeOf={badgeOf} />
-          </li>
-        )}
-      </ul>
-      <ViewerLink />
-    </nav>
+      {shown.map((item) => {
+        const badge = badgeOf(item.section);
+        return (
+          <AppNavItem
+            key={item.id}
+            href={item.href}
+            icon={item.icon}
+            label={t(item.label)}
+            current={current(item.section)}
+            shows={item.shows}
+            {...(badge !== undefined && { badge })}
+          />
+        );
+      })}
+      {status !== "unknown" && <NavigationMenu items={shown.filter((item) => item.shows === "rail")} current={current} badgeOf={badgeOf} />}
+    </AppNav>
   );
 }
 
@@ -308,35 +269,25 @@ export function Navigation() {
 function ViewerLink() {
   const t = useT();
   const viewer = useViewer();
-  const descriptionId = useId();
   if (viewer.status !== "signed-in") return null;
   const { account } = viewer;
   const name = account.display_name || account.username;
   return (
-    <>
-      <Link
-        href={profilePath(account.acct)}
-        aria-describedby={descriptionId}
-        variant="navigation"
-        className="mx-2 mt-auto mb-2 hidden min-h-12 min-w-0 gap-3 rounded-lg px-3 py-2 font-normal text-fg data-hovered:bg-surface-sunken lg:flex"
-      >
-        <Avatar sources={imageSources(account.avatar)} name={name} size="sm" decorative />
-        {/* The display name and the handle a line each (the sidebar is no container), as a post's author shows them. */}
-        <PostCardAuthor name={name} handle={handleOf(account.acct)} />
-      </Link>
-      {/* A description of a hidden element is still read (accname), and the element stays out of the tree. */}
-      <span id={descriptionId} hidden>
-        {t("client:shell.nav.viewer")}
-      </span>
-    </>
+    <AppNavAccount
+      href={profilePath(account.acct)}
+      avatar={<Avatar sources={imageSources(account.avatar)} name={name} size="sm" decorative />}
+      name={name}
+      handle={handleOf(account.acct)}
+      description={t("client:shell.nav.viewer")}
+    />
   );
 }
 
 type NavigationMenuProps = {
   /** The items of the sheet that the viewer may use. */
   items: readonly NavigationItem[];
-  /** The `aria-current` of a section's link. */
-  current: (section: Section | undefined) => "page" | undefined;
+  /** Whether a section's link is the current page. */
+  current: (section: Section | undefined) => boolean;
   /** The badge of a section's link, the same as in the rail. */
   badgeOf: (section: Section | undefined) => ItemBadge;
 };
@@ -367,49 +318,48 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
     [router],
   );
   return (
-    <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-      <Button variant="ghost" className={itemClass} {...(pending > 0 && { "aria-label": t("client:shell.nav.menu_pending", { count: pending }) })}>
-        <span className={pillClass}>
-          <MenuIcon />
-          {pending > 0 && <Badge count={pending} label={t("client:admin.pending_count", { count: pending })} className={badgeClass} />}
-        </span>
-        <span className={labelClass}>{t("client:shell.nav.menu")}</span>
-      </Button>
-      <Sheet title={t("client:shell.menu.title")} closeLabel={t("client:shell.menu.close")}>
-        {items.length > 0 && (
-        <ul className="flex flex-col">
+    <AppNavMenu
+      label={t("client:shell.nav.menu")}
+      {...(pending > 0 && {
+        badge: { count: pending, label: t("client:admin.pending_count", { count: pending }), name: t("client:shell.nav.menu_pending", { count: pending }) },
+      })}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      title={t("client:shell.menu.title")}
+      closeLabel={t("client:shell.menu.close")}
+    >
+      {items.length > 0 && (
+        <AppNavMenuList>
           {items.map((item) => {
             const badge = badgeOf(item.section);
             return (
-              <li key={item.id}>
-                <Link
-                  href={item.href}
-                  {...(badge !== null && { "aria-label": badge.name })}
-                  aria-current={current(item.section)}
-                  variant="navigation"
-                  className="flex min-h-12 w-full gap-3 rounded-md px-3 text-base font-normal text-fg data-hovered:bg-surface-sunken aria-[current=page]:font-semibold aria-[current=page]:text-accent"
-                >
-                  {item.icon}
-                  {t(item.label)}
-                  {badge !== null && <Badge count={badge.count} label={badge.badgeLabel} />}
-                </Link>
-              </li>
+              <AppNavMenuLink
+                key={item.id}
+                href={item.href}
+                icon={item.icon}
+                label={t(item.label)}
+                current={current(item.section)}
+                {...(badge !== undefined && { badge })}
+              />
             );
           })}
-        </ul>
-        )}
-        {/* The theme is a setting of this browser, switched here too so that phones reach it in one step. */}
-        <div className="mt-4 border-t border-border px-3 pt-4">
-          <ThemeRadioGroup layout="sheet" />
-        </div>
-        <ServerNameLink className="mt-3 border-t border-border px-3 pt-3" />
-        <p className="px-3 text-sm">
+        </AppNavMenuList>
+      )}
+      {/* The theme is a setting of this browser, switched here too so that phones reach it in one step. */}
+      <AppNavMenuSection separator="4">
+        <ThemeRadioGroup layout="sheet" />
+      </AppNavMenuSection>
+      <AppNavMenuSection separator="3">
+        <ServerNameLink />
+      </AppNavMenuSection>
+      <AppNavMenuSection>
+        <Text as="p" size="sm">
           <Link href={aboutPath} variant="standalone">
             {t("client:shell.about.more")}
           </Link>
-        </p>
-        <DocumentLinks placement="sheet" />
-      </Sheet>
-    </DialogTrigger>
+        </Text>
+      </AppNavMenuSection>
+      <DocumentLinks placement="sheet" />
+    </AppNavMenu>
   );
 }

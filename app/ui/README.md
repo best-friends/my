@@ -270,7 +270,7 @@ string through props or children.
 | --- | --- | --- |
 | `Button` | `Button` | `variant`: `primary` / `secondary` (default) / `ghost` / `danger`; `size`: `sm` / `md` (default); `isPending` |
 | `Link` | `Link` | `variant`: `inline` (default, underlined in running text) / `standalone` |
-| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder` |
+| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder`; `grow` takes the room left in a row |
 | `TextArea` | `TextField` + `TextArea` | as `TextField`, plus `rows` and the character count below |
 | `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
 | `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
@@ -342,6 +342,7 @@ announces only changes made after it is in the page. A failure is not a status; 
 | `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
 | `Tag` | A short word that qualifies the value beside it ("Estimated", `outlined`: `rounded-sm border border-border px-1 text-sm text-fg-muted`) or labels an account (`variant="pill"`, `as="li"` in a `ul`). |
 | `ProfileHeader`, `ProfileHeaderImage`, `ProfileFields` / `ProfileField` | The heading of a profile: header image (or band), overlapping avatar, actions slot, name, handle, badges, tag pills, text, metadata fields, joined line and counts; `ProfileHeaderImage size="preview"` is the 3:1 image of the profile form. |
+| `Poll`, `PollResults`, `PollChoices`, `PollSummary`, `PollHint` | A poll (FR-112): `Poll` is the named section; `PollResults` the list of shares with a decorative bar (`aria-hidden`; the percentage and the "your vote" word carry the meaning); `PollChoices` the radio or checkbox form with the vote button; `PollSummary` the total and deadline line; `PollHint` a note. Titles take `dir="auto"`, `lang` and custom emoji. |
 
 ## Layout and text
 
@@ -354,12 +355,12 @@ arbitrary value. A look that no prop gives is a new prop or component in the kit
 | Component | Renders | Its own props |
 | --- | --- | --- |
 | `Stack` | `flex flex-col` | `gap`; `align` (`stretch` default / `start` / `center` / `end` / `baseline`); `justify` (`start` / `center` / `end` / `between`); `divided` (`divide-y divide-border`: rows of a list, no gap, G3); `marker` (`disc` / `decimal` with `ps-6`, `discInside`); `rowAt` (`sm` / `md`: a row with centered items from that container width) |
-| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line |
+| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line; `inline` (`inline-flex`, in the line of the text around it) |
 | `Grid` | `grid grid-cols-1`, then `columns` (`2` default / `3`) from the container width `at` (`sm` default / `md`) | `columns`; `at`; `gap` (both axes); `rowGap` |
 | `Box` | A block with no layout of its own | Only the box props below |
 | `SectionHeader` | The heading (children) and `actions` (in a `flex flex-wrap gap-2` row): stacked with `items-start gap-2`, on one line with `justify-between` from `@md` | `actions` (nothing, `null` or `false` leaves the heading alone) |
 | `DialogActions` | `flex flex-wrap justify-end gap-2`: the buttons at the end of a dialog, cancel first | — |
-| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
+| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium` / `medium` `font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
 | `Text` | A `span` (or `as`: `p`, `div`, `li`, `dt`, `dd`, `code`, `time`, `strong`, `small`, `label`, `legend`) | `size` (`xs` / `sm` / `base` / `lg`), `tone` (`fg` / `muted` / `danger` / `warning` / `success` / `accent`), `weight` (`normal` / `medium` / `semibold`), each inherited when unset; `wrap` (`anywhere` / `truncate` / `pretty`); `whitespace` (`preWrap` / `preLine`); `numeric` (`tabular-nums`); `mono`; `block`; `align` (`start` / `center` / `matchParent`); `lineClamp` (`2` / `3`); `selectAll`; `shrink` |
 | `Hint` | Secondary text (G6), a `p` (or `as` `span` / `div`): `text-sm text-fg-muted` | `size="inherit"` drops `text-sm`; the other props of `Text` but `tone` |
 | `InlineError` | An error in place, a `p` (or `as` `span` / `div`): `text-sm text-danger` | `size="inherit"` drops `text-sm`; `alert` (`role="alert"`, only for the result of the user's own action, G16); the other props of `Text` but `tone` |
@@ -476,6 +477,28 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 | `<table className="w-full table-fixed border-collapse text-sm">` with `tbody` `divide-y` | `<Table density="compact" aria-labelledby={…}>`, `TableColumnHeader width="narrow"` / `"wide"` for `w-16` / `w-2/5` |
 | `sr-only` | `VisuallyHidden` |
 
+## App shell
+
+The frame around every page ([web-client.md §9](../../docs/architecture/web-client.md#9-アプリの外枠)). The app decides what goes in each slot
+(the items, their permissions and counts, the strings); the look is here. `AppShell` and `AppNavigation` are the kit's only components that
+answer to the viewport (`md:`, `lg:`, `xl:` and the `short:` variant of [theme.css](src/theme.css)), because they lay out the screen itself
+(D2); the lint exempts those two files from the rule against viewport breakpoints.
+
+| Component | What it draws | Its props |
+| --- | --- | --- |
+| `AppShell` | The skip link, the navigation, `main` (padded at its end for the tab bar and the floating button) and the third column (xl) or the floating slot | `navigation`, `children`, `skipLinkLabel`, `mainId`, `mainRef`, `aside` (only where the third column shows), `floating`, `floatingVisible` (sets `data-compose-fab` on `main`, which `with-compose-fab:` and the app's `scroll-padding-block-end` follow) |
+| `AsidePanel` | A section of the third column: an `aside` named by its small muted `h2` | `heading`, `children` |
+| `AppNav` | The `nav` landmark: bottom tab bar, rail from md, sidebar from lg | `label`, `header` and `footer` (sidebar only), the items as children |
+| `AppNavItem` | An item: the icon in a pill (filled when current), the label, the count's `Badge` | `href`, `icon`, `label`, `current`, `badge` (`AppNavBadge`: `count`, `label`, `name`, the link's name while it shows), `shows` (`always` / `tab-bar` / `rail`) |
+| `AppNavMenu` | The tab bar's last item, a button that opens a `Sheet` | `label`, `badge`, `isOpen`, `onOpenChange`, `title`, `closeLabel`, the sheet's content |
+| `AppNavMenuList`, `AppNavMenuLink`, `AppNavMenuSection` | The sheet's list and its rows; a block under them, with a line above (`separator` `"3"` / `"4"`) or without | as `AppNavItem` but `shows`; `separator` |
+| `AppNavAccount` | The sidebar's signed-in account: avatar, display name and handle | `href`, `avatar`, `name`, `handle`, `description` |
+| `ServerNameLink` | The server's name as the link to `/`, in a `dir="auto"` paragraph | `name`, `description`, `current`, `size` (`lg` at the head of a column) |
+| `PageHeading` | The page's `h1`, focusable by script | `id`, `visuallyHidden` (`sr-only`) |
+| `BackLinkHeading` | A heading with the way back under it (a page of the settings) | `backHref`, `backLabel`, the heading as children |
+| `RouteLoading` | A large spinner in the page's column | `label` |
+| `StandalonePage` | A `main` without the shell, centered, prose width (the layout's own error) | `children` |
+
 ## Component tests
 
 Each component has Testing Library tests next to it (`src/<Component>.test.tsx`) that find elements by role and drive them with
@@ -497,7 +520,9 @@ shadow and the focus ring. [src/storybook.css](src/storybook.css) is the Storybo
 
 Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `make ui-test` runs each story in Chromium in
 `en` and `ar-XB`, light and dark (four projects); a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
-1024 px container widths. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
+1024 px container widths. A story of the app shell sets a viewport instead (`globals: atViewport("phone")` with
+`parameters: shellParameters`, [src/storyViewports.ts](src/storyViewports.ts)), since the shell answers to the viewport, and is captured
+once at it; its content stays within the viewport's height. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
 anything in it still animates then; stories render and run their `play` functions (which find elements by role, with
 `storybook/test`) without it. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
 them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
@@ -519,3 +544,20 @@ The test procedure is in [web-client.md §7](../../docs/architecture/web-client.
 | `PostCardOrigin` | `actions` | The link from a post of another server to its own page (`href`, `host`, `label`). |
 
 Counts in `details` are `<Text numeric>`; several parts under a body are a `<Stack gap="3" shrink>`; `PostContent` takes `size="lg"` for the post a page is about.
+
+### Screen-specific pieces
+
+| Component | Renders |
+| --- | --- |
+| `EmojiTile` | A custom emoji (`emoji`) on a 3rem tile, hidden from assistive technology, beside the heading that names it |
+| `CodeBlock` | `pre` > `code` on a sunken surface, wrapping anywhere (a payload, a log) |
+| `PreviewImage` | A 16:9 `img` preview of a file the user chose |
+| `ThemePreview` | A surface, card, text, link, button and error drawn with the theme `tokens` (custom properties); strings are props |
+| `PostContent` `framed` | A border and padding around a post body shown as a preview |
+
+## Reactions
+
+`ReactionRow` is the wrapping `role="group"` of a post's emoji reactions with the button that lists who reacted (`label`, `listLabel`,
+`onOpenList`; the dialog goes in `after`). Its children are `ReactionChip`s: a toggle named by `label` and described by the formatted
+`count`, outlined and accented while `isSelected`; `onChange={null}` shows it only (an emoji nobody here can react with). The emoji is
+`image` (a custom emoji) or `text`; `ReactionEmoji` draws the same emoji for the rows of the list of reactors.

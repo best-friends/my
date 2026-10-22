@@ -17,7 +17,7 @@ import { useViewer } from "../../session";
 import { cacheVoteAnswer, type Poll, refreshAfterRefusedVote, type Status, statusShareUrl, votePoll } from "../api/status";
 
 /** One option of a poll, with its share of the votes. */
-export type PollOptionView = {
+type PollOptionView = {
   /** The option's index in the poll, which a vote names. */
   index: number;
   title: string;
@@ -31,7 +31,7 @@ export type PollOptionView = {
 };
 
 /** The form that votes in a poll. */
-export type PollForm = {
+type PollForm = {
   /** The indexes of the options chosen so far. */
   selected: readonly number[];
   /** Chooses the option at `index` alone (a single-choice poll). */

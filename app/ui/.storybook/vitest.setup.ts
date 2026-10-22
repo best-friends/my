@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Visual snapshots of every story (ADR-0027) not tagged `no-screenshot`. After a story has rendered and passed axe, its frame
-// is captured at each container width; the project fixes the direction and theme (../vitest.config.ts).
+// is captured at each container width; the project fixes the direction and theme (../vitest.config.ts). A story of the
+// app shell sets a viewport instead (src/storyViewports.ts), which @storybook/addon-vitest has applied; it is captured
+// once, at that viewport.
 // Baselines live in src/__screenshots__/ and are generated only in the pinned Playwright image
 // (`make ui-snapshots-update`), because fonts and anti-aliasing differ between machines.
 // The capture runs with prefers-reduced-motion: reduce, and first checks that nothing in the frame
@@ -29,6 +31,13 @@ function describeAnimation(animation: Animation): string {
   return `${name} on ${target?.outerHTML.slice(0, 120) ?? "an unknown element"}`;
 }
 
+/** The named viewport a story sets (the `viewport` global of Storybook), if any. */
+function viewportOf(globals: Record<string, unknown>): string | undefined {
+  const viewport = globals["viewport"];
+  if (typeof viewport !== "object" || viewport === null || !("value" in viewport)) return undefined;
+  return typeof viewport.value === "string" && viewport.value !== "" ? viewport.value : undefined;
+}
+
 afterEach(async (context) => {
   // Only story tests carry a composed story; it stays mounted until the next one renders.
   const { story } = context as typeof context & { story?: { id: string; tags: readonly string[]; globals: Record<string, unknown> } };
@@ -50,6 +59,11 @@ afterEach(async (context) => {
       .filter((animation) => animation.playState === "running")
       .map(describeAnimation);
     expect(running, `story ${story.id} still animates with prefers-reduced-motion: reduce`).toEqual([]);
+    const viewport = viewportOf(story.globals);
+    if (viewport !== undefined) {
+      await expect.element(page.elementLocator(frame)).toMatchScreenshot(`${story.id}-${String(locale)}-${String(theme)}-${viewport}`);
+      return;
+    }
     for (const width of widths) {
       frame.style.inlineSize = `${width}px`;
       // Open popovers and tooltips are positioned against their trigger, and React Aria repositions them on

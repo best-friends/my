@@ -825,11 +825,16 @@
         ]
       }
     },
-    // D2: components use container queries; viewport breakpoints belong to the app shell.
+    // D2: components use container queries; viewport breakpoints belong to the app shell, whose look is in the kit's
+    // AppShell and AppNavigation.
     {
       "files": [
         "ui/src/**/*.tsx",
         "web/src/features/**/*.tsx"
+      ],
+      "excludeFiles": [
+        "ui/src/AppShell.tsx",
+        "ui/src/AppNavigation.tsx"
       ],
       "rules": {
         "better-tailwindcss/no-restricted-classes": [
