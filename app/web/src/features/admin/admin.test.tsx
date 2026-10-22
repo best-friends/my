@@ -27,24 +27,23 @@ function recordAdminRequests() {
   return requests;
 }
 
-describe("the staff's menus on the settings page", () => {
+describe("the staff's entry on the settings page and the mode's menu", () => {
   test("are not there for a user without staff permissions", async () => {
     await renderApp({ path: "/settings" });
 
     expect(await screen.findByRole("navigation", { name: "Settings pages" })).toBeInTheDocument();
     // The account section loads with the viewer; the menus would be shown by then.
     expect(await within(screen.getByRole("main")).findByText("@alice")).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Moderation" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Administration" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Admin and moderation/ })).not.toBeInTheDocument();
   });
 
   test("Administration links to the server administration screens whose permissions the user's roles have", async () => {
     server.use(operatorHandler(["manage_jobs"]));
-    await renderApp({ path: "/settings" });
+    await renderApp({ path: "/admin" });
 
     const menu = await screen.findByRole("region", { name: "Administration" });
-    expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/jobs"]);
-    expect(within(menu).getByRole("link", { name: "Jobs" })).toHaveAccessibleDescription(
+    expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin", "/admin/jobs"]);
+    expect(await within(screen.getByRole("main")).findByRole("link", { name: "Jobs" })).toHaveAccessibleDescription(
       "Background jobs waiting, running, retrying and failed, why they failed, and running failed ones again.",
     );
     expect(screen.queryByRole("region", { name: "Moderation" })).not.toBeInTheDocument();
@@ -52,10 +51,11 @@ describe("the staff's menus on the settings page", () => {
 
   test("a moderator has Moderation alone, with the screens of their permissions", async () => {
     server.use(operatorHandler(["manage_reports", "manage_accounts", "view_audit"]));
-    await renderApp({ path: "/settings" });
+    await renderApp({ path: "/moderation" });
 
     const menu = await screen.findByRole("region", { name: "Moderation" });
     expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/moderation",
       "/moderation/reports",
       "/moderation/appeals",
       "/moderation/accounts",
@@ -63,9 +63,10 @@ describe("the staff's menus on the settings page", () => {
       "/moderation/signup-blocks",
       "/moderation/audit-log",
     ]);
-    expect(within(menu).getByRole("link", { name: "Audit log" })).toHaveAccessibleDescription("Who did what in the administration, and when.");
-    expect(within(menu).getByRole("link", { name: "Registrations" })).toHaveAccessibleDescription("Sign-ups that await approval, and approving or rejecting them.");
-    expect(within(menu).getByRole("link", { name: "Appeals" })).toHaveAccessibleDescription("Review appeals of moderation actions and uphold or overturn them.");
+    const main = within(screen.getByRole("main"));
+    expect(await main.findByRole("link", { name: "Audit log" })).toHaveAccessibleDescription("Who did what in the administration, and when.");
+    expect(main.getByRole("link", { name: "Registrations" })).toHaveAccessibleDescription("Sign-ups that await approval, and approving or rejecting them.");
+    expect(main.getByRole("link", { name: "Appeals" })).toHaveAccessibleDescription("Review appeals of moderation actions and uphold or overturn them.");
     expect(screen.queryByRole("region", { name: "Administration" })).not.toBeInTheDocument();
   });
 
@@ -73,12 +74,13 @@ describe("the staff's menus on the settings page", () => {
     server.use(
       operatorHandler(["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs"]),
     );
-    await renderApp({ path: "/settings" });
+    await renderApp({ path: "/moderation" });
 
     const moderation = await screen.findByRole("region", { name: "Moderation" });
     const admin = screen.getByRole("region", { name: "Administration" });
     expect(moderation.compareDocumentPosition(admin) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(moderation).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/moderation",
       "/moderation/reports",
       "/moderation/appeals",
       "/moderation/accounts",
@@ -90,6 +92,7 @@ describe("the staff's menus on the settings page", () => {
       "/moderation/audit-log",
     ]);
     expect(within(admin).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/admin",
       "/admin/settings",
       "/admin/rules",
       "/admin/theme",

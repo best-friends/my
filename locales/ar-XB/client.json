@@ -4107,6 +4107,26 @@
     "defaultMessage": "‮⅄on ɔɐuuoʇ nsǝ ʇɥıs sɔɹǝǝu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.mode.back": {
+    "defaultMessage": "‮Ԑɐɔʞ ʇo ʇɥǝ ɐdd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.menu": {
+    "defaultMessage": "‮∀pɯıu ɯǝun‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.overview": {
+    "defaultMessage": "‮Oʌǝɹʌıǝʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.summary": {
+    "defaultMessage": "‮⊥ɥǝ ɯopǝɹɐʇıou ɐup sǝɹʌǝɹ ɐpɯıuısʇɹɐʇıou sɔɹǝǝus, ɐdɐɹʇ ɟɹoɯ ʇɥǝ ɐdd.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.mode.title": {
+    "defaultMessage": "‮∀pɯıu ɐup ɯopǝɹɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.moderation.none.description": {
     "defaultMessage": "‮⅄onɹ ɹoʅǝs ƃɹɐuʇ uouǝ oɟ ʇɥǝ dǝɹɯıssıous ʇɥɐʇ ʇɥǝ ɯopǝɹɐʇıou sɔɹǝǝus uǝǝp. ∀u ɐpɯıuısʇɹɐʇoɹ ɔɐu ƃɹɐuʇ ʇɥǝɯ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

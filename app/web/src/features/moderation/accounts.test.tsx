@@ -163,7 +163,7 @@ describe("the account search", () => {
   test("is in the moderation menu of a viewer with manage_accounts", async () => {
     await renderApp({ path: "/moderation" });
 
-    expect(await screen.findByRole("link", { name: "Accounts" })).toHaveAttribute("href", "/moderation/accounts");
+    expect(await within(await screen.findByRole("main")).findByRole("link", { name: "Accounts" })).toHaveAttribute("href", "/moderation/accounts");
   });
 
   test("a viewer without manage_accounts sees why, and nothing is asked of the server", async () => {

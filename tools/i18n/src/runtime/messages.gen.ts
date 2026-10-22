@@ -2056,6 +2056,16 @@ export interface MessageArgs {
   "client:admin.missing_permission.description": { permission: string };
   /** You cannot use this screen */
   "client:admin.missing_permission.heading": {};
+  /** Back to the app */
+  "client:admin.mode.back": {};
+  /** Admin menu */
+  "client:admin.mode.menu": {};
+  /** Overview */
+  "client:admin.mode.overview": {};
+  /** The moderation and server administration screens, apart from the app. */
+  "client:admin.mode.summary": {};
+  /** Admin and moderation */
+  "client:admin.mode.title": {};
   /** Your roles grant none of the permissions that the moderation screens need. An administrator can grant them. */
   "client:admin.moderation.none.description": {};
   /** No moderation screens for your roles */

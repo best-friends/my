@@ -240,7 +240,7 @@ describe("permissions", () => {
   test("the screen is in the moderation menu of a user with manage_accounts", async () => {
     await renderApp({ path: "/moderation" });
 
-    const link = await screen.findByRole("link", { name: "Sign-up blocks" });
+    const link = await within(await screen.findByRole("main")).findByRole("link", { name: "Sign-up blocks" });
     expect(link).toHaveAttribute("href", "/moderation/signup-blocks");
     expect(link).toHaveAccessibleDescription("Email domains, email addresses and IP ranges whose sign-ups are refused or need approval.");
   });

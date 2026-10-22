@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminMenu } from "../features/admin";
 import { DocumentsSection } from "../features/documents";
-import { ModerationMenu } from "../features/moderation";
 import { AccountSection } from "../features/session";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
+import { StaffModeEntry } from "./-layout/StaffModeEntry";
 
 /**
- * The settings: the links to their pages and, for a viewer with staff permissions, to the moderation screens and
- * to the server administration screens (ADR-0058); the
- * signed-in account with signing out; and the links to the server's terms of service and privacy policy.
+ * The settings: the links to their pages and, for a viewer with staff permissions, the one entry into the admin and
+ * moderation mode (ADR-0058); the signed-in account with signing out; and the links to the server's terms of service and privacy policy.
  */
 export const Route = createFileRoute("/settings/")({
   staticData: { title: "client:settings.title", hideHeading: true },
@@ -25,8 +23,7 @@ function SettingsPage() {
   return (
     <>
       <PageHeading>{t("client:settings.title")}</PageHeading>
-      <ModerationMenu />
-      <AdminMenu />
+      <StaffModeEntry />
       <AccountSection />
       <DocumentsSection />
     </>

@@ -319,7 +319,7 @@ describe("the way from a remote server", () => {
     const api = domainActionsServer([limit, domainActionFixture({ id: "0192f0c4-7a8e-7000-8000-0000000000a3", domain: "other.example" })]);
     const { user, router } = await renderApp({ path: "/moderation/instances/spam.example" });
 
-    const link = await screen.findByRole("link", { name: "Domain actions" });
+    const link = await within(await screen.findByRole("main")).findByRole("link", { name: "Domain actions" });
     expect(link).toHaveAccessibleDescription("See the moderation actions on this server's domain, or take a new one.");
     await user.click(link);
 
@@ -338,7 +338,7 @@ describe("the way from a remote server", () => {
 
 describe("permissions", () => {
   test("the screen is in the moderation menu of a user with manage_domains", async () => {
-    await renderApp({ path: "/settings" });
+    await renderApp({ path: "/moderation" });
 
     const menu = await screen.findByRole("region", { name: "Moderation" });
     expect(within(menu).getByRole("link", { name: "Domain actions" })).toHaveAttribute("href", "/moderation/domain-actions");

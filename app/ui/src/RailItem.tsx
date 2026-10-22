@@ -45,7 +45,9 @@ const railItem = tv({
           "min-h-11 w-full gap-2 rounded-lg bg-transparent px-3 text-sm font-bold text-fg data-hovered:bg-surface-sunken",
           "data-current:rounded-lg data-current:bg-soft data-current:text-accent data-current:data-hovered:bg-soft",
         ],
-        pill: "hidden",
+        // There is no icon, so the pill holds the count alone, at the end of the row.
+        pill: "contents",
+        badge: "order-last ms-auto",
         label: "text-start",
       },
       // A text link of the signed-out top bar.
