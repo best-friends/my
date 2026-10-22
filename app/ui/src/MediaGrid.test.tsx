@@ -117,7 +117,7 @@ describe("MediaGrid", () => {
 
     it("shows the description over the picture on demand, and only for a picture that has one", async () => {
       const user = userEvent.setup();
-      render(<MediaGrid items={viewable} noDescriptionLabel="No description" revealLabel="Show sensitive media" viewerLabels={viewerLabels} />);
+      render(<MediaGrid items={viewable} noDescriptionLabel="No description" revealLabel="Show sensitive media" viewerLabels={viewerLabels} audioLabels={audioLabels} />);
       await user.click(screen.getByRole("button", { name: "A cat on a sofa" }));
       const dialog = await screen.findByRole("dialog", { name: "Image 1 of 2" });
       const toggle = within(dialog).getByRole("button", { name: "Description" });
