@@ -6,7 +6,7 @@ import { handleOf } from "../../../lib/handle";
 import { domainToUnicode } from "../../../lib/idn";
 import { imageSources } from "../../../lib/images";
 import { profilePath } from "../../../lib/paths";
-import { DocumentsSection } from "../../documents";
+import { DocumentLink, DocumentsSection } from "../../documents";
 import { AboutSupportersSection } from "../../supporters";
 import type { Instance, PublicDomainAction } from "../api/about";
 import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/useAbout";
@@ -188,17 +188,15 @@ function Costs({ finance, income }: { finance: Instance["finance_visibility"]; i
 }
 
 /**
- * The link to the server's page of the commerce disclosures of its supporter plans (ADR-0072 §13). The page is the
- * server's own, outside the app, so it opens in a new tab (web-client.md Y12). Absent when the instance has none.
+ * The link to the server's page of the commerce disclosures of its supporter plans (ADR-0072 §13). Its page is an information page
+ * of the app, which opens in the same tab. Absent when the instance has none.
  */
 function CommerceDisclosure({ url }: { url: string }) {
   const t = useT();
   return (
     <Section title={t("client:about.commerce.title")}>
       <p>
-        <ExternalLink href={url} variant="standalone">
-          {t("client:about.commerce.link")}
-        </ExternalLink>
+        <DocumentLink href={url}>{t("client:about.commerce.link")}</DocumentLink>
       </p>
     </Section>
   );

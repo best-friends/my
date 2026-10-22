@@ -110,7 +110,7 @@ describe("the page of the supporter plans", () => {
     expect(within(dialog).getByText("¥10,800 a year, the same at every renewal")).toBeInTheDocument();
     expect(within(dialog).getByText("Now, then every year")).toBeInTheDocument();
     expect(within(dialog).getByText(/The benefits stay until the end of the period you paid for/u)).toBeInTheDocument();
-    expect(within(dialog).getByRole("link", { name: /Commerce disclosures/u })).toHaveAttribute("href", "http://localhost:3000/about/commerce");
+    expect(within(dialog).getByRole("link", { name: /Commerce disclosures/u })).toHaveAttribute("href", "/about/commerce");
     expect(leftTo).toEqual([]);
     await user.click(within(dialog).getByRole("button", { name: "Go to payment" }));
 

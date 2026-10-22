@@ -10,7 +10,6 @@ import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/m
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { instanceTextFixture } from "./test/handlers";
-import { newTabName } from "../../test/links";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_settings"]));
@@ -65,10 +64,10 @@ describe("the terms and policies screen", () => {
     expect(privacy.getByText("Not written yet, so the page and its links are hidden")).toBeInTheDocument();
     expect(privacy.queryByRole("link")).not.toBeInTheDocument();
 
-    // The public page is the server's own, outside the app: it opens in a new tab.
-    const page = await termsSection.findByRole("link", { name: newTabName("Open the terms of service page") });
-    expect(page).toHaveAttribute("href", "http://localhost:3000/about/terms");
-    expect(page).toHaveAttribute("target", "_blank");
+    // The public page is an information page of the app: it opens in the same tab.
+    const page = await termsSection.findByRole("link", { name: "Open the terms of service page" });
+    expect(page).toHaveAttribute("href", "/about/terms");
+    expect(page).not.toHaveAttribute("target");
   });
 
   test("saves a text and says that the audit log records it", async () => {

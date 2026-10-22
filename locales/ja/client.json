@@ -117,7 +117,7 @@
   },
   "about.commerce.link": {
     "defaultMessage": "特定商取引法に基づく表記を見る",
-    "description": "Link from the information page to the server's page of the commerce disclosures of its supporter plans, which opens in a new tab."
+    "description": "Link from the information page to the server's page of the commerce disclosures of its supporter plans."
   },
   "about.rules.title": {
     "defaultMessage": "ルール",
@@ -6159,6 +6159,10 @@
     "defaultMessage": "このページの内容",
     "description": "Title and accessible name of the table of contents of an information page (about, costs, supporters): links to the page's sections."
   },
+  "documents.commerce_disclosure": {
+    "defaultMessage": "特定商取引法に基づく表記",
+    "description": "Link to the server's page of the commerce disclosures of its supporter plans, and the heading of that page."
+  },
   "documents.label": {
     "defaultMessage": "規約とポリシー",
     "description": "Accessible name of the links to the server's terms of service and privacy policy (in the third column, the menu, the settings, and the sign-in page), and the heading of their section in the settings."
@@ -6166,6 +6170,10 @@
   "documents.privacy_policy": {
     "defaultMessage": "プライバシーポリシー",
     "description": "Link to the server's public page of its privacy policy."
+  },
+  "documents.revised": {
+    "defaultMessage": "最終改定日：{date}",
+    "description": "When the current revision of a document (terms of service, privacy policy, commerce disclosures) was recorded, above its text; {date} is a formatted date."
   },
   "documents.terms": {
     "defaultMessage": "利用規約",

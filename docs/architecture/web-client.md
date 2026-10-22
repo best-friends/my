@@ -107,7 +107,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | Y9 | 画像の添付には代替テキストの入力欄を必ず出す。リモートの画像で代替テキストがないものには「説明なし」のバッジを付ける | 部品のテスト |
 | Y10 | 利用者が書いた内容（表示名・投稿・プロフィール）と管理者が書いた内容（インスタンスの説明・ルール・規約）は `dir="auto"` で表示し、分かる場合は `lang` を付ける。言語を記録しない管理者の文（どのロケールでも同じ 1 つの値）は `lang=""`（言語不明）にして、画面の言語を引き継がせない | 部品のテスト、ARIA スナップショット |
 | Y11 | モーダルのダイアログはクリック・タップだけで閉じられる（APG の dialog）。`@my/ui` の `Dialog` / `Sheet` は `role="dialog"` なら × ボタン（`closeLabel`）を必ず持ち、`alertdialog` は × ボタンの代わりに「キャンセル」を持つ（`closeLabel={null}`）。背景（スクリム）を押すと閉じる（`isDismissable` の既定は真）。閉じると入力を失うフォームのダイアログ（通報・投稿の編集・管理画面の編集、入力欄を持つ `ConfirmDialog`）だけは `isDismissable={false}` にして、背景を押しても閉じない。閉じても下書きが残る投稿のシートは背景で閉じる | 型（`closeLabel` が必須）、部品のテストとストーリー |
-| Y12 | アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、サーバーが描画する利用規約とプライバシーポリシーのページ、サーバーが描画した HTML（`PostContent`）の中の自インスタンスの画面以外へのリンク）は新しいタブで開く。`@my/ui` の `ExternalLink` が `target="_blank"`、`rel` の `noopener noreferrer`（呼び出し側の `nofollow` などは保つ）、外部へのリンクのアイコン、支援技術に読ませる「（新しいタブで開きます）」（`client:shell.link.new_tab`、`sr-only`。`aria-label` があればその後ろに足す）を付ける。文言と自インスタンスの画面かどうかの判定は、外枠（`App.tsx` の `ExternalLinks`）が `ExternalLinkContext` で 1 度だけ渡す。`Link` や `<a>` に `target` を書かず、`http(s):` の `href` は `ExternalLink` に渡す。`mailto:` はメールのアプリが開くので `Link` のままにする | `restrict/syntax`（`a` / `Link` の `target` と、`http(s):` の文字列の `href`）、部品のテスト（`ExternalLink`・`PostContent`） |
+| Y12 | アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、サーバーが描画した HTML（`PostContent`）の中の自インスタンスの画面以外へのリンク）は新しいタブで開く。`@my/ui` の `ExternalLink` が `target="_blank"`、`rel` の `noopener noreferrer`（呼び出し側の `nofollow` などは保つ）、外部へのリンクのアイコン、支援技術に読ませる「（新しいタブで開きます）」（`client:shell.link.new_tab`、`sr-only`。`aria-label` があればその後ろに足す）を付ける。文言と自インスタンスの画面かどうかの判定は、外枠（`App.tsx` の `ExternalLinks`）が `ExternalLinkContext` で 1 度だけ渡す。`Link` や `<a>` に `target` を書かず、`http(s):` の `href` は `ExternalLink` に渡す。`mailto:` はメールのアプリが開くので `Link` のままにする | `restrict/syntax`（`a` / `Link` の `target` と、`http(s):` の文字列の `href`）、部品のテスト（`ExternalLink`・`PostContent`） |
 
 ## 6. レスポンシブとスタイル
 
@@ -227,6 +227,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - フォームは `<label for>`、`autocomplete`（`username`・`current-password`・`new-password`・`one-time-code`）、ヒントとエラーの `aria-describedby`、エラーの `aria-invalid` を持ち、ブラウザの制約検証（`required`・`minlength`）を使う。
 - 利用規約・プライバシーポリシー・特定商取引法に基づく表記（#489）の本文は、サーバーが描画せず、SPA のルート `/about/terms`・`/about/privacy`・`/about/commerce` が描く。
   本文はクライアント API の匿名の `GET /instance/documents/{kind}` が返す（管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズしたもの、`internal/adapter/markdown`）。`GET /instance` の `terms_url` / `privacy_policy_url` / `commerce_disclosure_url` はこの 3 つのパスを指す。
+  3 つとも `routes/about_.<名前>.tsx` の情報ページ（`InfoLayout`、`routes/-layout/DocumentPage.tsx`）で、サインインしていなくても読める。`h1` は文書の名前、本文は `PostContent`（`lang=""`・`dir="auto"`）で出し、`h2` に `id` がなければクライアントが連番の `id` を足して目次（`h2[id]`）にする。本文の前に最終改定日（`revised_at`）を出す。loader は `GET /instance/documents/{kind}` を Query のキャッシュ経由で読み（S7）、公開していない文書（404）は見つからない画面になる。アプリの中のこの 3 つへのリンクは、`GET /instance` の絶対 URL のパスだけを取り出して同じタブの SPA の移動にする（`features/documents` の `DocumentLink`。Y12 の外へ出るリンクではない）。
   文書の画面は JavaScript を前提にする（SPA のほかの画面と同じ）。サーバーが公開している文書は、すべてのサーバー描画の画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からこの SPA のパスへリンクする。公開していない文書はリンクしない。
 - サーバーが描画するページのリンクは、ページの間では同じタブで開く（フッターの文書のリンクも）。入力の途中で読むリンク、つまり登録のフォームの同意の文の文書と、ボットの確認の説明の後のサービスのプライバシーポリシーと利用規約（ほかのサイト）は、
   入力を失わないように `target="_blank" rel="noopener noreferrer"` で新しいタブで開き、末尾に `.visually-hidden` の「（新しいタブで開きます）」（`server:auth.link.new_tab`）を置く（Y12）。
@@ -440,7 +441,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - **サポーターのプラン**（`/settings/supporter`、`routes/settings.supporter.tsx`、`features/supporters` の `SupporterSubscriptionSettings`、[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §6・§8・§13・§14）: 設定のメニューは、`GET /instance` の `supporters_enabled` が真のときだけ（Tauri のアプリでは出さない）「サポーターのプラン」を出す。
   loader は公開のプラン（`GET /instance/supporter_plans`）と自分の加入（`GET /supporter/subscription`。続いている加入と、加入できない理由 `ineligible_reason`）を待つが、失敗はページの失敗にせず本文に出す。どちらかが 404 なら、課金が無効でプランを提供していないことだけを出す。
   - **加入**: 続いている加入がなければ「プランを選ぶ」の区画に、プランの `RadioGroup`（名前は `dir="auto"`・`lang=""`、説明に月額と年額と管理者の説明）と支払いの間隔（月払い・年払い、選んだプランの額）の `RadioGroup` を出す。加入できない利用者には理由（メールの確認がまだ・このサーバーの利用者でない・凍結か削除の手続き中）を書き、「加入する」を出さない。
-    「加入する」は最終の確認（`ConfirmDialog`、`primary`）を開き、プランの名前・間隔ごとの額と更新しても同じであること・支払いの時期（いますぐ、以降は毎月か毎年）・特典が始まる時期・解約の方法と効果（このページからいつでも、支払った期間の終わりまで特典が続く）を説明リストで、特商法の表記（`commerce_disclosure_url`）があればそのリンク（`ExternalLink`）を出す（§13）。
+    「加入する」は最終の確認（`ConfirmDialog`、`primary`）を開き、プランの名前・間隔ごとの額と更新しても同じであること・支払いの時期（いますぐ、以降は毎月か毎年）・特典が始まる時期・解約の方法と効果（このページからいつでも、支払った期間の終わりまで特典が続く）を説明リストで、特商法の表記（`commerce_disclosure_url`）があればそのリンク（`DocumentLink`、同じタブ）を出す（§13）。
     「支払いへ進む」は `POST /supporter/checkout` を送り、応答の `redirect_url`（決済事業者のホスト型の決済画面）へ外枠の `leaveApp` で同じタブのままページごと移る。カード情報はこのアプリを通らない。断られたら（422 `supporter-ineligible`・`supporter-plan-unavailable`、409 `supporter-subscribed`）、`type` に対応する文言をダイアログに出す（E2）。
   - **戻り**: 決済画面は `?checkout=success`（済んだ）か `?checkout=canceled`（離れた）、顧客ポータルは `?portal=returned` を付けてこのページに戻す。検索条件は Zod で検証し、知らない値は無視する（S3）。`success` と `returned` では、loader が 1 度だけ `POST /supporter/subscription/sync`（事業者からの取り直しを積み、いまの加入を返す）を送って応答をキャッシュに書く。
     `success` で加入がまだ `pending` の間は、事業者の確認を待っていることを `StatusMessage` に出し、`GET /supporter/subscription` を 3 秒ごとに最大 20 回読み直す。確かめられたら礼を、`canceled` では請求されていないことを出す。
@@ -989,7 +990,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     投稿への処分は投稿を選ぶ通報の詳細から行うので、この画面では出さず、その旨をフォームの上に書く。成功したら区画の `StatusMessage` に結果を出し、処分の履歴・アカウント・検索・通報を無効にする。削除済みのアカウントにはフォームを出さない。
 - **規約とポリシー**（`/admin/documents`、FR-705、#489）: 利用規約・プライバシーポリシー・特定商取引法に基づく表記など（`commerce_disclosure`、ADR-0072 §13）の 3 つの区画（`h2` の `section`）。文書はどのロケールでも同じ 1 つの値で、言語を選ぶ欄はない。
   特定商取引法に基づく表記などの区画は、法的な正しさをサーバーが保証せず、運営者が自分の国の法令で確かめることを説明に書く。
-  各区画は、最後に保存した日時、公開ページへのリンク（公開しているときだけ）、本文（Markdown の `TextArea`、100,000 文字）と「保存する」の `form` で、文書ごとに別に保存する。
+  各区画は、最後に保存した日時、公開ページへのリンク（公開しているときだけ。同じタブの `DocumentLink`）、本文（Markdown の `TextArea`、100,000 文字）と「保存する」の `form` で、文書ごとに別に保存する。
   成功したら本文・`GET /instance`（リンク）・監査ログを取り直してから、監査ログに記録したことを区画の `StatusMessage` に出す。失敗はフォームの下（`role="alert"`）に出して入力を残す。保存してある本文を空にして保存すると削除になるので、`ConfirmDialog`（`danger`）で確かめる。
   下書きは文書ごとに持つ。下書きがあるまま別の画面へ移るときは、`features/settings` の `useUnsavedChangesGuard` で確かめる（§9 の未保存の変更）。
 - **投稿の取り直し**（FR-407、[federation.md §6.4](federation.md#64-投稿の取り直し)、`components/RefetchStatuses.tsx`・`hooks/useRefetch.ts`）: 保存したリモートの投稿を相手のサーバーから取り直すよう頼む。
@@ -1033,7 +1034,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   `e2e/finance.spec.ts` は、費用の画面の集計（按分の既定、キーボードでの週のタブ、現金主義と URL）、年ごとの費用の登録、確認のダイアログを経た取り消し、取り込みの状態、収入の表とお金の動き（加入者のユーザー名、キーボードでの種類の絞り込みと URL）までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/webhooks.spec.ts` は、webhook の設定と一度だけの秘密の表示、一覧、無効化と有効化、確認のダイアログを経た削除までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/roles.spec.ts` は、ロールの区画の ARIA スナップショット（閲覧者より上のロールの理由）・axe・横スクロールと、キーボードで付与の確認のダイアログを経て、区画の見出しにフォーカスが移るまでを検査する。
-  `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターが文書の SPA のパス（`/about/terms`・`/about/privacy`）へリンクすることを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
+  `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターが文書の SPA のパス（`/about/terms`・`/about/privacy`）へリンクし、その情報ページが目次つきで描かれる（公開していない文書は見つからない画面）ことを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
   `e2e/appeals.spec.ts` は、異議申し立ての一覧の axe・横スクロール・ARIA スナップショットと、キーボードで申し立てを開き、撤回の確認のダイアログを経て処分が解除と出て、審査の見出しにフォーカスが移るまでを検査する。
   `features/moderation/staffEntry.test.tsx` は、ナビゲーションの「モデレーション」と「管理」の出し分け（モデレーターに「管理」が出ないこと、両方を持つ閲覧者での順番）・レールとメニューのボタンとシートの件数の名前・各区分の画面と `aria-current`・使える画面のない区分の画面・ストリームの通知での件数の読み直しを検査し、
   `e2e/admin-entry.spec.ts` は、各幅で「モデレーション」（`md` 未満はメニューのボタンとシート）の件数の名前と数字、モデレーターに「管理」がないこと、モデレーションの画面の ARIA スナップショット、サーバーからの通知の行とそのリンク（ARIA スナップショット）・axe・横スクロールを検査する。

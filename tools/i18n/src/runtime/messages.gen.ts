@@ -4190,10 +4190,14 @@ export interface MessageArgs {
   "client:custom_emojis.withdraw_request": { emoji: string };
   /** The request for {emoji} is withdrawn. */
   "client:custom_emojis.withdrawn": { emoji: string };
+  /** Commerce disclosures */
+  "client:documents.commerce_disclosure": {};
   /** Terms and policies */
   "client:documents.label": {};
   /** Privacy policy */
   "client:documents.privacy_policy": {};
+  /** Last revised {date} */
+  "client:documents.revised": { date: string };
   /** Terms of service */
   "client:documents.terms": {};
   /** Add emoji */

@@ -8375,12 +8375,20 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƒǿǿř {emoji} īş ẇīŧħḓřȧȧẇƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "documents.commerce_disclosure": {
+    "defaultMessage": "[Ƈǿǿḿḿḗḗřƈḗḗ ḓīşƈŀǿǿşŭŭřḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "documents.label": {
     "defaultMessage": "[Ŧḗḗřḿş ȧȧƞḓ ƥǿǿŀīƈīḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "documents.privacy_policy": {
     "defaultMessage": "[Ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "documents.revised": {
+    "defaultMessage": "[Ŀȧȧşŧ řḗḗṽīşḗḗḓ {date}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "documents.terms": {
