@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { AccountRowSkeleton, VisuallyHidden } from "@my/ui";
+import { AccountRowSkeleton, Stack, VisuallyHidden } from "@my/ui";
 import type { ReactNode } from "react";
 import { useT } from "../../../lib/i18n";
 import type { FollowList } from "../api/accounts";
@@ -26,17 +26,17 @@ export function FollowListSkeleton({ acct, list, renderHeading }: FollowListSkel
   // The handle is the user's text too, isolated from the sentence around it (FSI … PDI, web-client.md Y10).
   const handle = isolate(`@${acct}`);
   return (
-    <div className="flex flex-col gap-4">
+    <Stack gap="4">
       {renderHeading(list === "followers" ? t("client:profile.followers.title", { name: handle }) : t("client:profile.following.title", { name: handle }))}
       <div aria-busy="true">
         <VisuallyHidden>{t("client:profile.list.loading")}</VisuallyHidden>
         {/* The rows are divided as the list's rows are (FollowListView). */}
-        <div className="flex flex-col divide-y divide-border border-y border-border">
+        <Stack divided border="y">
           {placeholders.map((key) => (
             <AccountRowSkeleton key={key} />
           ))}
-        </div>
+        </Stack>
       </div>
-    </div>
+    </Stack>
   );
 }

@@ -12,6 +12,14 @@ const newItemsButton = tv({
     base: "flex justify-center",
     button: "rounded-full shadow-md",
   },
+  variants: {
+    sticky: {
+      // The region keeps the button's height; only the button takes pointer input, so the region never blocks the post under it.
+      true: {
+        base: "pointer-events-none sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 h-8 items-start pointer-coarse:h-11 *:pointer-events-auto",
+      },
+    },
+  },
 });
 
 export type NewItemsButtonProps = Omit<ComponentPropsWithRef<"div">, "children" | "role"> & {
@@ -21,6 +29,8 @@ export type NewItemsButtonProps = Omit<ComponentPropsWithRef<"div">, "children" 
   label: string;
   /** Shows the waiting items: the caller inserts them and moves the reader to the top of the feed. */
   onPress: () => void;
+  /** Sticks the region to the top of the viewport while the reader scrolls, always as tall as the button. */
+  sticky?: boolean;
 };
 
 /**
@@ -28,8 +38,8 @@ export type NewItemsButtonProps = Omit<ComponentPropsWithRef<"div">, "children" 
  * polite `role="status"` region that is in the page from the first render, so a screen reader reads the
  * new count when it changes without the button taking focus.
  */
-export function NewItemsButton({ count, label, onPress, className, ...props }: NewItemsButtonProps) {
-  const slots = newItemsButton();
+export function NewItemsButton({ count, label, onPress, sticky, className, ...props }: NewItemsButtonProps) {
+  const slots = newItemsButton({ sticky });
   return (
     <div {...props} role="status" className={slots.base({ className })}>
       {count > 0 && (

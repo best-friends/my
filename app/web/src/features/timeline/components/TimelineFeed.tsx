@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, EmptyState, Feed, Link, VisuallyHidden } from "@my/ui";
+import { Button, Cluster, EmptyState, Feed, Link, Stack, Text, VisuallyHidden } from "@my/ui";
 import type { ReactNode } from "react";
 import { useT } from "../../../lib/i18n";
 import type { Status, Timeline } from "../api/timelines";
@@ -38,12 +38,12 @@ export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin, 
   if (entries.length === 0 && !hasMore) return <TimelineEmpty timeline={timeline} origin={origin} />;
 
   return (
-    <div className="flex flex-col">
+    <Stack>
       {origin !== undefined && (
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border px-4 py-3 text-sm text-fg-muted">
+        <Cluster align="baseline" gap="3" rowGap="1" border="bottom" paddingX="4" paddingY="3" textSize="sm" tone="muted">
           <p>{origin.notice}</p>
           <p>{origin.link}</p>
-        </div>
+        </Cluster>
       )}
       {/* The feed role has no keyboard convention, so its keys are told before it (Feed's documentation). */}
       <VisuallyHidden>
@@ -63,13 +63,15 @@ export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin, 
         loadingLabel={t("client:timeline.loading")}
       />
       {loadMoreError !== null && (
-        <div className="flex flex-col items-center gap-3 p-4 text-center">
+        <Stack align="center" gap="3" padding="4">
           {/* Announced by useTimeline when it fails; shown here for everyone. */}
-          <p>{t("client:timeline.load_more.failed", { reason: loadMoreError })}</p>
+          <Text as="p" align="center">
+            {t("client:timeline.load_more.failed", { reason: loadMoreError })}
+          </Text>
           <Button onPress={loadMore}>{t("client:timeline.retry")}</Button>
-        </div>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }
 

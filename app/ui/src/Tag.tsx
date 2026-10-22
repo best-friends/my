@@ -6,6 +6,7 @@ const tag = tv({
   variants: {
     variant: {
       outlined: "rounded-sm border border-border px-1 text-sm text-fg-muted",
+      solid: "rounded-full bg-accent px-2 text-xs font-semibold text-accent-fg",
       pill: "rounded-full bg-surface-sunken px-2 py-0.5 text-sm text-fg",
     },
   },
@@ -13,8 +14,8 @@ const tag = tv({
 });
 
 export type TagProps = Omit<ComponentPropsWithRef<"span">, "className" | "style"> & {
-  /** `outlined` qualifies the value beside it; `pill` is a filled, rounded label in a list of them. */
-  variant?: "outlined" | "pill";
+  /** `outlined` qualifies the value beside it; `pill` is a filled, rounded label in a list of them; `solid` is an accent-colored mark such as "Unread". */
+  variant?: "outlined" | "pill" | "solid";
   /** `li` for a tag in a `ul`. */
   as?: "span" | "li";
 };

@@ -4,13 +4,16 @@ import {
   BoostIcon,
   Button,
   Dialog,
+  DialogActions,
   Menu,
   MenuItem,
   MenuTrigger,
   MoreIcon,
   QuoteIcon,
   ReplyIcon,
+  Stack,
   StarIcon,
+  Text,
   ToggleButton,
   type ToggleButtonProps,
 } from "@my/ui";
@@ -60,24 +63,22 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
   return (
     <>
       <Button
-        variant="ghost"
+        variant="quiet"
         size="toolbar"
         aria-label={t("client:status.action.reply")}
         {...(post.replies_count > 0 && { "aria-describedby": repliesId })}
         onPress={actions.reply}
-        className="text-fg-muted"
       >
         <ReplyIcon />
         <Count id={repliesId} value={post.replies_count} />
       </Button>
       <RelationButton label={t("client:status.action.boost")} toggle={actions.boost} tone="success" icon={(on) => <BoostIcon filled={on} />} />
       <Button
-        variant="ghost"
+        variant="quiet"
         size="toolbar"
         aria-label={t("client:status.action.quote")}
         onPress={actions.quote.onPress}
         isDisabled={actions.quote.isDisabled}
-        className="text-fg-muted"
       >
         <QuoteIcon />
       </Button>
@@ -89,7 +90,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
       />
       <RelationButton label={t("client:status.action.bookmark")} toggle={actions.bookmark} tone="accent" icon={(on) => <BookmarkIcon filled={on} />} />
       <MenuTrigger>
-        <Button variant="ghost" size="toolbar" aria-label={t("client:status.action.more")} className="text-fg-muted">
+        <Button variant="quiet" size="toolbar" aria-label={t("client:status.action.more")}>
           <MoreIcon />
         </Button>
         <Menu aria-label={t("client:status.action.more")} placement="bottom end">
@@ -159,9 +160,9 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
           onOpenChange={setIsConfirmingDelete}
         >
           {({ close }) => (
-            <div className="flex flex-col gap-4">
+            <Stack gap="4">
               <p>{t("client:status.delete.description")}</p>
-              <div className="flex flex-wrap justify-end gap-2">
+              <DialogActions>
                 {/* The least destructive choice has the focus first (APG, alert dialog pattern). */}
                 <Button autoFocus onPress={close}>
                   {t("client:status.delete.cancel")}
@@ -179,8 +180,8 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
                 >
                   {t("client:status.delete.confirm")}
                 </Button>
-              </div>
-            </div>
+              </DialogActions>
+            </Stack>
           )}
         </Dialog>
       )}
@@ -218,8 +219,8 @@ function Count({ value, id }: { value: number; id?: string }) {
   const intl = useIntl();
   if (value === 0) return null;
   return (
-    <span id={id} className="tabular-nums">
+    <Text id={id} numeric>
       {intl.formatNumber(value, { notation: "compact" })}
-    </span>
+    </Text>
   );
 }
