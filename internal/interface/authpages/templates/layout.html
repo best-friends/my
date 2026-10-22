@@ -10,8 +10,11 @@
 {{end}}</head>
 <body>
 <main class="page{{if .Document}} page-document{{end}}">
+<header class="site-header">
+<span class="site-logo" aria-hidden="true"></span>
 {{with .InstanceName}}<p class="site-name" dir="auto">{{.}}</p>
-{{end}}<div class="card">
+{{end}}</header>
+<div class="card">
 {{template "content" .}}
 </div>
 </main>
