@@ -116,7 +116,10 @@ func Open(r *repo.Repo, o OpenOptions) (string, error) {
 	if is != nil {
 		ac = acceptanceCriteria(is.Body)
 	}
-	if len(ac) == 0 {
+	switch {
+	case is == nil:
+		b.WriteString("No issue: nothing to check.\n")
+	case len(ac) == 0:
 		b.WriteString("- [ ] (the issue has no checklist)\n")
 	}
 	for _, a := range ac {
