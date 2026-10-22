@@ -14,7 +14,6 @@ const appShell = tv({
   slots: {
     base: [
       "min-h-svh px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
-      "md:grid md:grid-cols-[auto_minmax(0,1fr)]",
     ],
     skipLink: "sr-only z-20 rounded-md bg-surface-raised px-3 py-2 shadow-md focus:not-sr-only focus:fixed focus:inset-s-2 focus:top-2",
     // The end padding keeps the last item of a list clear of what floats over it (web-client.md G4): below md the tab
@@ -34,13 +33,19 @@ const appShell = tv({
     ],
   },
   variants: {
-    withAside: { true: { base: "xl:grid-cols-[auto_minmax(0,1fr)_24rem]" } },
+    // `side`: the navigation is the tab bar, then the rail beside the page. `top`: the signed-out top bar above it.
+    navigationPlacement: { side: { base: "md:grid md:grid-cols-[auto_minmax(0,1fr)]" }, top: {} },
+    withAside: { true: {} },
   },
+  compoundVariants: [{ navigationPlacement: "side", withAside: true, class: { base: "xl:grid-cols-[auto_minmax(0,1fr)_24rem]" } }],
+  defaultVariants: { navigationPlacement: "side" },
 });
 
 export type AppShellProps = {
   /** The main navigation (`AppNav`): the bottom tab bar below md, the rail and the sidebar from md. */
   navigation: ReactNode;
+  /** `side` (default) for the tab bar and the rail; `top` when the navigation is the signed-out top bar (`AppNav` `placement="top"`), above the page. */
+  navigationPlacement?: "side" | "top";
   /** The page, in the `main` landmark. */
   children: ReactNode;
   /** The skip link's text ("Skip to main content"), the first focusable element of the page. */
@@ -67,8 +72,8 @@ export type AppShellProps = {
  * The app's frame: the skip link, the navigation, `main` and the third column or the floating slot. Render the
  * connection bar (`OfflineBanner`) before it, since it pads for the top safe-area inset itself.
  */
-export function AppShell({ navigation, children, skipLinkLabel, mainId = "main", mainRef, aside, floating, floatingVisible = false }: AppShellProps) {
-  const slots = appShell({ withAside: aside !== undefined });
+export function AppShell({ navigation, children, skipLinkLabel, mainId = "main", mainRef, aside, floating, floatingVisible = false, navigationPlacement = "side" }: AppShellProps) {
+  const slots = appShell({ navigationPlacement, withAside: aside !== undefined });
   return (
     <div className={slots.base()}>
       {/* The first focusable element of the page; visible only while focused. */}

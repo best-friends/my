@@ -11,7 +11,7 @@ import { useViewer } from "../../features/session";
 import { useUserDisplaySettings } from "../../features/settings";
 import { useT } from "../../lib/i18n";
 import { ConnectionBanner } from "./ConnectionBanner";
-import { Navigation } from "./Navigation";
+import { Navigation, useSignedOut } from "./Navigation";
 import { ServerInfo } from "./ServerInfo";
 import { useLiveUpdates } from "./useLiveUpdates";
 import { useMediaQuery } from "./useMediaQuery";
@@ -37,6 +37,7 @@ export function AppLayout() {
   const medium = useMediaQuery(mediumQuery);
   // Only pages with a feed float the new-post button (timelines and profiles: their routes' static data).
   const pageWantsButton = useMatches({ select: (matches) => matches.some((match) => match.staticData.composeButton === true) });
+  const signedOut = useSignedOut();
   const signedIn = useViewer().status === "signed-in";
   const showButton = !wide && pageWantsButton && signedIn;
   return (
@@ -46,6 +47,7 @@ export function AppLayout() {
       <ConnectionBanner />
       <AppShell
         navigation={<Navigation />}
+        navigationPlacement={signedOut ? "top" : "side"}
         skipLinkLabel={t("client:shell.skip_to_main")}
         mainId={mainId}
         mainRef={mainRef}

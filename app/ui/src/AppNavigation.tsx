@@ -8,7 +8,7 @@
 // are hidden from assistive technology and the link is named with the count instead ("Notifications, 3 unread"), a
 // name that starts with the visible label (WCAG 2.5.3). The tab bar's last item can be a menu (`AppNavMenu`), a
 // button that opens a sheet with the items that only the rail shows.
-import { type ReactNode, useId } from "react";
+import { createContext, type ReactNode, use, useId } from "react";
 import { tv } from "tailwind-variants";
 import { Button } from "./Button";
 import { Badge } from "./Badge";
@@ -16,42 +16,81 @@ import { Sheet, DialogTrigger } from "./Dialog";
 import { MenuIcon } from "./Icons";
 import { Link } from "./Link";
 import { PostCardAuthor } from "./PostCard";
+import { Wordmark } from "./Wordmark";
+import { RailItem, type RailItemBadge } from "./RailItem";
 
 const appNav = tv({
   slots: {
     base: [
-      "fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface-raised",
-      "px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)]",
-      "md:sticky md:top-0 md:bottom-auto md:flex md:h-svh md:flex-col md:overflow-y-auto md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0 lg:w-60",
+      "z-10 bg-surface-raised px-[max(env(safe-area-inset-left),env(safe-area-inset-right))]",
     ],
     header: "mx-2 hidden px-3 pt-4 pb-2 lg:block",
-    list: "flex md:flex-col md:gap-1 md:p-2",
+    list: "flex",
   },
+  variants: {
+    // `side`: the tab bar below md, the rail from md and the sidebar from lg. `top`: the signed-out top bar.
+    placement: {
+      side: {
+        base: [
+          "fixed inset-x-0 bottom-0 border-t border-border pb-[env(safe-area-inset-bottom)]",
+          "md:sticky md:top-0 md:bottom-auto md:flex md:h-svh md:flex-col md:overflow-y-auto md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0 lg:w-60",
+        ],
+        list: "md:flex-col md:gap-1 md:p-2",
+      },
+      top: {
+        base: "sticky top-0 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2",
+        header: "mx-0 block p-0",
+        list: "flex-wrap items-center gap-1",
+      },
+    },
+  },
+  defaultVariants: { placement: "side" },
 });
 
 export type AppNavProps = {
   /** The landmark's name ("Main"). */
   label: string;
-  /** Above the list in the sidebar (lg) only: the server's name (`ServerNameLink` at `size="lg"`). */
+  /** Above the list in the sidebar (lg) and at the start of the top bar: the wordmark and the server's name. */
   header?: ReactNode;
   /** The items: `AppNavItem`s and, last, an `AppNavMenu`. */
   children: ReactNode;
   /** Under the list in the sidebar (lg) only: the signed-in account (`AppNavAccount`). */
   footer?: ReactNode;
+  /** `side` (default): tab bar, rail and sidebar. `top`: a light bar along the top for signed-out pages (`AppShell` `navigationPlacement="top"`). */
+  placement?: "side" | "top";
 };
+
+const PlacementContext = createContext<"side" | "top">("side");
 
 /**
  * The `nav` landmark and its list. The header and the footer are outside the list, so the list's links stay the same
  * and in the same order at every width.
  */
-export function AppNav({ label, header, children, footer }: AppNavProps) {
-  const slots = appNav();
+export function AppNav({ label, header, children, footer, placement = "side" }: AppNavProps) {
+  const slots = appNav({ placement });
   return (
-    <nav aria-label={label} className={slots.base()}>
-      {header !== undefined && <div className={slots.header()}>{header}</div>}
-      <ul className={slots.list()}>{children}</ul>
-      {footer}
-    </nav>
+    <PlacementContext value={placement}>
+      <nav aria-label={label} className={slots.base()}>
+        {header !== undefined && <div className={slots.header()}>{header}</div>}
+        <ul className={slots.list({ className: placement === "top" ? "ms-auto" : undefined })}>{children}</ul>
+        {footer}
+      </nav>
+    </PlacementContext>
+  );
+}
+
+export type AppNavBrandProps = {
+  /** The server's name (`ServerNameLink`), which names the brand: the wordmark beside it is decorative. */
+  children: ReactNode;
+};
+
+/** The wordmark with the server's name beside it: the start of the sidebar and of the signed-out top bar. */
+export function AppNavBrand({ children }: AppNavBrandProps) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <Wordmark name="my" decorative size="sm" />
+      {children}
+    </div>
   );
 }
 
@@ -60,18 +99,23 @@ const appNavItem = tv({
     // In the tab bar each item is as wide as its label and the room left is shared out evenly (flex: 1 1 auto), so
     // that a long label ("Notifications") takes the room that short ones ("Menu") leave and fits a 320 px screen.
     base: "min-w-0",
-    // The label is never cut: where the labels together are wider than the bar (a long translation), they wrap,
-    // inside a word if they must, so that every label is read whole (ADR-0039). The icon is size-6 (G11).
+    // The menu button wears the classes of a `RailItem` in the tab bar.
     item: [
-      "group flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-none px-0.5 text-xs font-normal text-fg-muted",
-      "data-hovered:bg-surface-sunken pointer-coarse:min-h-16 short:min-h-12 aria-[current=page]:font-semibold aria-[current=page]:text-accent",
-      "md:w-20 md:rounded-lg lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-base [&_svg]:size-6 [&_svg]:shrink-0",
+      "group flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-none px-0.5 text-xs font-bold text-fg-muted",
+      "data-hovered:bg-surface-sunken pointer-coarse:min-h-16 short:min-h-12 [&_svg]:size-6 [&_svg]:shrink-0",
     ],
-    // The pill around the icon, filled for the current item.
-    pill: "relative rounded-full px-2 py-0.5 group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-fg md:px-4 lg:px-1",
-    badge: "absolute -top-1.5 -inset-e-1 ring-2 ring-surface-raised md:ring-surface",
-    // The label under the icon (beside it from lg).
-    label: "max-w-full text-center leading-tight text-balance wrap-anywhere lg:text-start",
+    // What the tab bar's item becomes from md (a compact column of icon over label) and from lg (a row, the count at
+    // the end), and on short screens.
+    railItem: [
+      "short:min-h-12 md:w-20 md:rounded-lg md:text-fg md:data-current:rounded-lg md:data-current:bg-soft md:data-current:text-accent md:data-current:data-hovered:bg-soft",
+      "lg:min-h-12 lg:w-auto lg:flex-row lg:justify-start lg:gap-4 lg:px-4 lg:text-base",
+    ],
+    railPill: "lg:contents",
+    railBadge: "md:ring-surface lg:static lg:order-last lg:ms-auto lg:ring-0",
+    railLabel: "lg:text-start",
+    pill: "relative",
+    badge: "absolute -top-1.5 -inset-e-1 ring-2 ring-surface-raised",
+    label: "max-w-full text-center leading-tight text-balance wrap-anywhere",
   },
   variants: {
     shows: {
@@ -79,17 +123,14 @@ const appNavItem = tv({
       "tab-bar": { base: "flex-auto md:hidden" },
       rail: { base: "hidden md:block" },
     },
+    // In the top bar every item shows, at every width.
+    placement: { side: {}, top: { base: "flex-none" } },
   },
+  compoundVariants: [{ placement: "top", shows: "rail", class: { base: "block" } }],
 });
 
 /** A count on an item: the number, what it means, and the name of the item while it shows it. */
-export type AppNavBadge = {
-  count: number;
-  /** What the number means, read instead of the digits ("3 unread notifications"). */
-  label: string;
-  /** The item's accessible name while it shows the count, starting with the visible label ("Notifications, 3 unread"). */
-  name: string;
-};
+export type AppNavBadge = RailItemBadge;
 
 export type AppNavItemProps = {
   href: string;
@@ -97,32 +138,33 @@ export type AppNavItemProps = {
   icon: ReactNode;
   /** The visible label, the link's name without a count. */
   label: string;
-  /** Whether the link is the place the user is in: `aria-current="page"`, the filled pill and the accent label. */
+  /** Whether the link is the place the user is in: `aria-current="page"`, the soft fill and the accent label. */
   current?: boolean;
   /** The count on the icon's corner, or nothing for an item without a count now. */
   badge?: AppNavBadge;
-  /** Where the item shows: everywhere, only in the tab bar (below md), or only in the rail and the sidebar (from md). */
+  /** Where the item shows: everywhere, only in the tab bar (below md), or only in the rail and the sidebar (from md). In the top bar every item shows. */
   shows?: "always" | "tab-bar" | "rail";
+  /** In the top bar, the call to action (a coral pill). */
+  prominent?: boolean;
 };
 
-/** One item of the navigation: a link with its icon in a pill, its label and its count. */
-export function AppNavItem({ href, icon, label, current = false, badge, shows = "always" }: AppNavItemProps) {
-  const slots = appNavItem({ shows });
+/** One item of the navigation: a `RailItem` in a list item. */
+export function AppNavItem({ href, icon, label, current = false, badge, shows = "always", prominent }: AppNavItemProps) {
+  const placement = use(PlacementContext);
+  const slots = appNavItem({ shows, placement });
+  const side = placement === "side";
   return (
     <li className={slots.base()}>
-      <Link
+      <RailItem
         href={href}
-        {...(badge !== undefined && { "aria-label": badge.name })}
-        aria-current={current ? "page" : undefined}
-        variant="navigation"
-        className={slots.item()}
-      >
-        <span className={slots.pill()}>
-          {icon}
-          {badge !== undefined && <Badge count={badge.count} label={badge.label} className={slots.badge()} />}
-        </span>
-        <span className={slots.label()}>{label}</span>
-      </Link>
+        icon={icon}
+        label={label}
+        current={current}
+        form={side ? "tab" : "top"}
+        {...(side && { classNames: { item: slots.railItem(), pill: slots.railPill(), badge: slots.railBadge(), label: slots.railLabel() } })}
+        {...(badge !== undefined && { badge })}
+        {...(prominent !== undefined && { prominent })}
+      />
     </li>
   );
 }
