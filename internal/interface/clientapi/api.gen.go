@@ -1675,6 +1675,30 @@ func (e InstanceDomainActionKind) Valid() bool {
 	}
 }
 
+// Defines values for InstanceFederationMode.
+const (
+	InstanceFederationModeBoth     InstanceFederationMode = "both"
+	InstanceFederationModeInbound  InstanceFederationMode = "inbound"
+	InstanceFederationModeOff      InstanceFederationMode = "off"
+	InstanceFederationModeOutbound InstanceFederationMode = "outbound"
+)
+
+// Valid indicates whether the value is a known member of the InstanceFederationMode enum.
+func (e InstanceFederationMode) Valid() bool {
+	switch e {
+	case InstanceFederationModeBoth:
+		return true
+	case InstanceFederationModeInbound:
+		return true
+	case InstanceFederationModeOff:
+		return true
+	case InstanceFederationModeOutbound:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceRegistrationsMode.
 const (
 	InstanceRegistrationsModeApproval InstanceRegistrationsMode = "approval"
@@ -5556,7 +5580,9 @@ type CreateStatusRequest struct {
 	QuotePolicy *QuotePolicy `json:"quote_policy,omitempty"`
 
 	// QuotedStatusId The status to quote (FR-114, ADR-0069). It must be one the user may see and may quote
-	// (`Status.quotable`); a quote of a boost is a quote of the boosted status.
+	// (`Status.quotable`); a quote of a boost is a quote of the boosted status. Quoting a
+	// remote status while the instance does not send posts out (`Instance.federation.mode`
+	// `off` or `inbound`) is the 403 `/api/v1/problems/federation-restricted`.
 	QuotedStatusId *Id `json:"quoted_status_id,omitempty"`
 
 	// Sensitive Whether the media are sensitive.
@@ -6454,6 +6480,10 @@ type Instance struct {
 	// Domain The domain that serves the instance.
 	Domain string `json:"domain"`
 
+	// Federation How the instance federates with other servers (FR-413), so that clients offer only the
+	// operations on remote accounts and posts that can work.
+	Federation InstanceFederation `json:"federation"`
+
 	// FinanceVisibility How much of the instance's costs everyone may read (the instance setting
 	// `finance_visibility`, FR-903, ADR-0067 §8). `private`: nothing, and
 	// `GET /instance/cost_totals` is a 404; `totals`: the total of each currency by period;
@@ -6576,6 +6606,40 @@ type InstanceDomainActionPage struct {
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
+
+// InstanceFederation How the instance federates with other servers (FR-413), so that clients offer only the
+// operations on remote accounts and posts that can work.
+type InstanceFederation struct {
+	// Mode The direction the instance federates in (the instance setting `federation_mode`):
+	//
+	// - `off`: neither way. Following, looking up with `resolve`, and quoting remote
+	//   accounts and posts are refused with the 403 `/api/v1/problems/federation-restricted`.
+	// - `inbound`: the instance follows and reads remote accounts but sends none of the local
+	//   posts, profiles, and reactions out. Favourites, boosts, reactions, and replies to
+	//   remote posts are recorded here but do not reach their servers; quoting a remote post
+	//   is refused with the 403 `/api/v1/problems/federation-restricted`, since the quote
+	//   request cannot be sent.
+	// - `outbound`: the instance delivers the local posts to remote followers but takes none
+	//   of the remote posts and reactions in. Following and resolving remote accounts are
+	//   refused with the 403 `/api/v1/problems/federation-restricted`.
+	// - `both`: both ways.
+	Mode InstanceFederationMode `json:"mode"`
+}
+
+// InstanceFederationMode The direction the instance federates in (the instance setting `federation_mode`):
+//
+//   - `off`: neither way. Following, looking up with `resolve`, and quoting remote
+//     accounts and posts are refused with the 403 `/api/v1/problems/federation-restricted`.
+//   - `inbound`: the instance follows and reads remote accounts but sends none of the local
+//     posts, profiles, and reactions out. Favourites, boosts, reactions, and replies to
+//     remote posts are recorded here but do not reach their servers; quoting a remote post
+//     is refused with the 403 `/api/v1/problems/federation-restricted`, since the quote
+//     request cannot be sent.
+//   - `outbound`: the instance delivers the local posts to remote followers but takes none
+//     of the remote posts and reactions in. Following and resolving remote accounts are
+//     refused with the 403 `/api/v1/problems/federation-restricted`.
+//   - `both`: both ways.
+type InstanceFederationMode string
 
 // InstanceLimits Limits that clients check before sending a request.
 type InstanceLimits struct {
@@ -7632,6 +7696,10 @@ type PreviewDomainBlockImportRequest struct {
 //     can still sign in to the server's sign-in page, which says why.
 //   - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
 //     from following it. Unblock it first.
+//   - `/api/v1/problems/federation-restricted` (403): the instance's federation mode
+//     (`Instance.federation.mode`) does not let the operation through: following a remote
+//     account or resolving one (`off`, `outbound`), or quoting a remote status (`off`,
+//     `inbound`).
 //   - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
 //     instance accepts.
 //   - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an

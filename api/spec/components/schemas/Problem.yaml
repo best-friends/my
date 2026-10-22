@@ -14,6 +14,10 @@ description: |
     can still sign in to the server's sign-in page, which says why.
   - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
     from following it. Unblock it first.
+  - `/api/v1/problems/federation-restricted` (403): the instance's federation mode
+    (`Instance.federation.mode`) does not let the operation through: following a remote
+    account or resolving one (`off`, `outbound`), or quoting a remote status (`off`,
+    `inbound`).
   - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
     instance accepts.
   - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an

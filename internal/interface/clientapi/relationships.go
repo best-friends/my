@@ -9,6 +9,7 @@ import (
 	"slices"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/domain/graph"
 )
@@ -95,17 +96,28 @@ func (s *Server) graphProblem(ctx context.Context, err error) (problem, bool) {
 // the viewer may see the account. It returns either the resulting relationship or the problem
 // to answer with.
 func (s *Server) relate(ctx context.Context, targetID string, change func(v Viewer) (appgraph.Relationship, error)) (*RelationshipJSONResponse, *problem, error) {
+	return s.relateGuarded(ctx, targetID, nil, change)
+}
+
+// relateGuarded is relate with guard, which runs on the visible account before change and
+// returns the problem that refuses the change, or nil; a nil guard refuses nothing.
+func (s *Server) relateGuarded(ctx context.Context, targetID string, guard func(ctx context.Context, v Viewer, a appaccount.Actor) (*problem, error), change func(v Viewer) (appgraph.Relationship, error)) (*RelationshipJSONResponse, *problem, error) {
 	v, err := requireViewer(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	_, ok, err := s.visibleAccount(ctx, &v, targetID)
+	a, ok, err := s.visibleAccount(ctx, &v, targetID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if !ok {
 		p := s.notFoundResponse(ctx)
 		return nil, &p, nil
+	}
+	if guard != nil {
+		if p, err := guard(ctx, v, a); err != nil || p != nil {
+			return nil, p, err
+		}
 	}
 	r, err := change(v)
 	if err != nil {
@@ -153,7 +165,7 @@ func (s *Server) GetRelationships(ctx context.Context, req GetRelationshipsReque
 
 // FollowAccount serves POST /api/v1/accounts/{id}/follow.
 func (s *Server) FollowAccount(ctx context.Context, req FollowAccountRequestObject) (FollowAccountResponseObject, error) {
-	res, p, err := s.relate(ctx, req.Id, func(v Viewer) (appgraph.Relationship, error) {
+	res, p, err := s.relateGuarded(ctx, req.Id, s.followableRemotely, func(v Viewer) (appgraph.Relationship, error) {
 		r, err := s.o.Graph.Follow(ctx, v.AccountID, req.Id)
 		if err != nil || req.Body == nil || (req.Body.ShowBoosts == nil && req.Body.Notify == nil) {
 			return r, err
@@ -174,6 +186,27 @@ func (s *Server) FollowAccount(ctx context.Context, req FollowAccountRequestObje
 		return FollowAccountdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	return FollowAccount200JSONResponse{*res}, nil
+}
+
+// followableRemotely refuses a new follow of a remote account while the federation mode does
+// not follow remote accounts (ADR-0076); a follow or request that exists already may still change
+// its preferences, since nothing goes out for that.
+func (s *Server) followableRemotely(ctx context.Context, v Viewer, a appaccount.Actor) (*problem, error) {
+	if a.Account.IsLocal() {
+		return nil, nil
+	}
+	if ok, err := s.federationAllows(ctx, remoteAccountFlows...); err != nil || ok {
+		return nil, err
+	}
+	r, err := s.o.Graph.Relationship(ctx, v.AccountID, a.Account.ID)
+	if err != nil {
+		return nil, err
+	}
+	if r.Following == graph.StateActive || r.Following == graph.StatePending {
+		return nil, nil
+	}
+	p := s.federationRestricted(ctx)
+	return &p, nil
 }
 
 // UnfollowAccount serves POST /api/v1/accounts/{id}/unfollow.

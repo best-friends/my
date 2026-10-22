@@ -936,7 +936,10 @@ export interface paths {
          *     whose handle WebFinger confirms are returned; a handle or URL that does not lead to one
          *     is a 404. Resolving needs an access token (anonymous requests get the 401 of
          *     `/api/v1/problems/unauthenticated`) and is limited to 30 fetches per account every
-         *     5 minutes (429 with `Retry-After`); finding a known account is not limited.
+         *     5 minutes (429 with `Retry-After`); finding a known account is not limited. While the
+         *     instance takes nothing in from other servers (`Instance.federation.mode` `off` or
+         *     `outbound`), only the known accounts are found: resolving one that the instance does
+         *     not know is a 403 `/api/v1/problems/federation-restricted`, and nothing is fetched.
          */
         get: operations["lookupAccount"];
         put?: never;
@@ -1028,7 +1031,10 @@ export interface paths {
          *     account that the viewer already follows or has requested to follow changes only the
          *     preferences in the body. Following an account that the viewer blocks is a 409
          *     `/api/v1/problems/blocking`. A follow of an account on another server is a request
-         *     until that server accepts it.
+         *     until that server accepts it. While the instance does not follow remote accounts
+         *     (`Instance.federation.mode` `off` or `outbound`), following an account on another
+         *     server that the viewer does not follow or request yet is a 403
+         *     `/api/v1/problems/federation-restricted`.
          */
         post: operations["followAccount"];
         delete?: never;
@@ -7025,7 +7031,9 @@ export interface components {
             poll?: components["schemas"]["PollInput"];
             /**
              * @description The status to quote (FR-114, ADR-0069). It must be one the user may see and may quote
-             *     (`Status.quotable`); a quote of a boost is a quote of the boosted status.
+             *     (`Status.quotable`); a quote of a boost is a quote of the boosted status. Quoting a
+             *     remote status while the instance does not send posts out (`Instance.federation.mode`
+             *     `off` or `inbound`) is the 403 `/api/v1/problems/federation-restricted`.
              */
             quoted_status_id?: components["schemas"]["Id"];
             /** @description Who may quote the new status; the user's `default_quote_policy` when left out. */
@@ -7652,6 +7660,7 @@ export interface components {
             source_url: string;
             limits: components["schemas"]["InstanceLimits"];
             timelines: components["schemas"]["InstanceTimelines"];
+            federation: components["schemas"]["InstanceFederation"];
             /**
              * @description Whether the instance sends email (the server setting `mail` is not `none`). Without
              *     email, the moderator notifications come only in the app, so clients do not offer
@@ -7732,6 +7741,29 @@ export interface components {
         /** @description A page of public domain actions, newest first. */
         InstanceDomainActionPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["InstanceDomainAction"][];
+        };
+        /**
+         * @description How the instance federates with other servers (FR-413), so that clients offer only the
+         *     operations on remote accounts and posts that can work.
+         */
+        InstanceFederation: {
+            /**
+             * @description The direction the instance federates in (the instance setting `federation_mode`):
+             *
+             *     - `off`: neither way. Following, looking up with `resolve`, and quoting remote
+             *       accounts and posts are refused with the 403 `/api/v1/problems/federation-restricted`.
+             *     - `inbound`: the instance follows and reads remote accounts but sends none of the local
+             *       posts, profiles, and reactions out. Favourites, boosts, reactions, and replies to
+             *       remote posts are recorded here but do not reach their servers; quoting a remote post
+             *       is refused with the 403 `/api/v1/problems/federation-restricted`, since the quote
+             *       request cannot be sent.
+             *     - `outbound`: the instance delivers the local posts to remote followers but takes none
+             *       of the remote posts and reactions in. Following and resolving remote accounts are
+             *       refused with the 403 `/api/v1/problems/federation-restricted`.
+             *     - `both`: both ways.
+             * @enum {string}
+             */
+            mode: "off" | "inbound" | "outbound" | "both";
         };
         /** @description Limits that clients check before sending a request. */
         InstanceLimits: {
@@ -8639,6 +8671,10 @@ export interface components {
          *       can still sign in to the server's sign-in page, which says why.
          *     - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
          *       from following it. Unblock it first.
+         *     - `/api/v1/problems/federation-restricted` (403): the instance's federation mode
+         *       (`Instance.federation.mode`) does not let the operation through: following a remote
+         *       account or resolving one (`off`, `outbound`), or quoting a remote status (`off`,
+         *       `inbound`).
          *     - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
          *       instance accepts.
          *     - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an

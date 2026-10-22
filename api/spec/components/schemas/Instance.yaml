@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 description: Public information about the instance.
 type: object
-required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules, search_indexing, ai_usage, finance_visibility, income_visibility, supporters_enabled, supporter_list_visibility]
+required: [domain, name, version, source_url, registrations, limits, timelines, federation, sends_email, rules, search_indexing, ai_usage, finance_visibility, income_visibility, supporters_enabled, supporter_list_visibility]
 properties:
   domain:
     description: The domain that serves the instance.
@@ -28,6 +28,8 @@ properties:
     $ref: ./InstanceLimits.yaml
   timelines:
     $ref: ./InstanceTimelines.yaml
+  federation:
+    $ref: ./InstanceFederation.yaml
   sends_email:
     description: |
       Whether the instance sends email (the server setting `mail` is not `none`). Without

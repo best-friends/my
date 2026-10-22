@@ -446,6 +446,13 @@ func (s *Server) CreateStatus(ctx context.Context, req CreateStatusRequestObject
 		return CreateStatusdefaultApplicationProblemPlusJSONResponse{Body: p, Headers: h, StatusCode: http.StatusTooManyRequests}, nil
 	}
 	body := req.Body
+	if body.QuotedStatusId != nil {
+		if p, err := s.quotableRemotely(ctx, *body.QuotedStatusId); err != nil {
+			return nil, err
+		} else if p != nil {
+			return CreateStatusdefaultApplicationProblemPlusJSONResponse(*p), nil
+		}
+	}
 	post, err := s.o.Statuses.Create(ctx, appcontent.CreateInput{
 		TextInput: appcontent.TextInput{
 			Text: body.Text, SpoilerText: deref(body.SpoilerText), Sensitive: deref(body.Sensitive),
@@ -465,6 +472,26 @@ func (s *Server) CreateStatus(ctx context.Context, req CreateStatusRequestObject
 		return CreateStatusdefaultApplicationProblemPlusJSONResponse(p), nil
 	}
 	return nil, err
+}
+
+// quotableRemotely refuses a quote of a remote status while the federation mode does not send
+// posts out, since the QuoteRequest cannot go to its server (ADR-0076). A status that the viewer
+// cannot see is left to Create, which answers it as any quote of one.
+func (s *Server) quotableRemotely(ctx context.Context, statusID string) (*problem, error) {
+	if ok, err := s.federationAllows(ctx, remoteQuoteFlows...); err != nil || ok {
+		return nil, err
+	}
+	view, err := s.o.StatusReader.View(ctx, contentViewer(ctx), statusID)
+	switch {
+	case errors.Is(err, appcontent.ErrNotFound):
+		return nil, nil
+	case err != nil:
+		return nil, err
+	case view.Status.IsLocal:
+		return nil, nil
+	}
+	p := s.federationRestricted(ctx)
+	return &p, nil
 }
 
 // pollInput maps the poll of a new status, nil for none.

@@ -351,6 +351,12 @@ func (s *Server) LookupAccount(ctx context.Context, req LookupAccountRequestObje
 		return nil, err
 	}
 	if !found && resolve && s.o.Resolver != nil && s.resolvable(req.Params.Acct) {
+		// A mode that takes nothing in finds only the known accounts (ADR-0076).
+		if ok, err := s.federationAllows(ctx, remoteAccountFlows...); err != nil {
+			return nil, err
+		} else if !ok {
+			return LookupAccountdefaultApplicationProblemPlusJSONResponse(s.federationRestricted(ctx)), nil
+		}
 		if p, h, limited := s.LimitProblem(ctx, ResolveLimit, v.AccountID); limited {
 			return LookupAccountdefaultApplicationProblemPlusJSONResponse{Body: p, Headers: h, StatusCode: http.StatusTooManyRequests}, nil
 		}

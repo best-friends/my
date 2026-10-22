@@ -663,6 +663,10 @@
     "defaultMessage": "‮⊥ɥıs ɐɹɔɥıʌǝ ɔɐuuoʇ qǝ poʍuʅoɐpǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.federation_restricted": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ poǝs uoʇ ɟǝpǝɹɐʇǝ ıu ʇɥǝ pıɹǝɔʇıou ʇɥɐʇ ʇɥıs uǝǝps.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.forbidden": {
     "defaultMessage": "‮⅄on ɐɹǝ uoʇ ɐʅʅoʍǝp ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -651,6 +651,10 @@
     "defaultMessage": "This archive cannot be downloaded.",
     "description": "API error title for HTTP 409 when the user downloads an archive of their data that is still being built, failed, or has expired."
   },
+  "errors.federation_restricted": {
+    "defaultMessage": "This server does not federate in the direction that this needs.",
+    "description": "API error title for HTTP 403 when the instance's federation mode (off, inbound only, or outbound only) does not let the operation through: following or resolving a remote account, or quoting a remote post."
+  },
   "errors.forbidden": {
     "defaultMessage": "You are not allowed to do this.",
     "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."

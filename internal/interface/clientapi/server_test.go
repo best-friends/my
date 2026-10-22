@@ -61,6 +61,8 @@ func TestGetInstance(t *testing.T) {
 		Limits:        clientapi.InstanceLimits{MaxPostCharacters: 500},
 		Timelines:     clientapi.InstanceTimelines{Local: true, Federated: true},
 		Rules:         []clientapi.InstanceRule{},
+		// Unset, the instance federates both ways (ADR-0076).
+		Federation: clientapi.InstanceFederation{Mode: clientapi.InstanceFederationModeBoth},
 		// Unset, the instance denies search engines and AI (ADR-0057).
 		SearchIndexing: clientapi.SearchIndexingDeny, AiUsage: clientapi.AIUsageDeny,
 		// Unset, the costs are private (ADR-0067 §8).
@@ -101,6 +103,7 @@ func TestGetInstanceFromSettings(t *testing.T) {
 			{Key: instance.SettingMaxStatusLength, RevisionID: "r1", Value: "1200"},
 			{Key: instance.SettingRegistrationMode, RevisionID: "r2", Value: "invite"},
 			{Key: instance.SettingFederatedTimelineEnabled, RevisionID: "r3", Value: "false"},
+			{Key: instance.SettingFederationMode, RevisionID: "r4", Value: "inbound"},
 		},
 		texts: map[instance.TextKey]string{
 			instance.TextName:             "例のソーシャル",
@@ -133,7 +136,8 @@ func TestGetInstanceFromSettings(t *testing.T) {
 			}
 			if got.Name != tt.wantName || got.ShortDescription == nil || *got.ShortDescription != "A small instance." ||
 				got.Description != nil || got.Limits.MaxPostCharacters != 1200 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeInvite ||
-				got.Timelines != (clientapi.InstanceTimelines{Local: true, Federated: false}) || !got.SendsEmail {
+				got.Timelines != (clientapi.InstanceTimelines{Local: true, Federated: false}) || !got.SendsEmail ||
+				got.Federation.Mode != clientapi.InstanceFederationModeInbound {
 				t.Errorf("instance = %+v, want name %q, the stored settings and email", got, tt.wantName)
 			}
 			if cc := res.Header.Get("Cache-Control"); cc != tt.wantCache {
