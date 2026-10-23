@@ -40,6 +40,15 @@ type projectionRepositories struct {
 	supporters    supporters.Repository
 }
 
+// projectionRepositories returns the repositories of the database that the projections rebuild.
+func (r *repositories) projectionRepositories() projectionRepositories {
+	return projectionRepositories{
+		accounts: r.accounts, instances: r.instances, follows: r.follows, statuses: r.statuses, interactions: r.interactions,
+		feeds: r.feeds, notifications: r.notifs, moderation: r.mods, identities: r.identities, webhooks: r.hooks, relays: r.feds,
+		finance: r.finance, quotes: r.quotes, supporters: r.supporters,
+	}
+}
+
 // setUpProjections builds the service of `my projection` and registers the projection.verify
 // job (data-model §2.3, §9). Each projection runs its module's rebuild function; the order is
 // the order of `my projection list` and of the job.
