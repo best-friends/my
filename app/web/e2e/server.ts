@@ -4,7 +4,7 @@
 // the admin, the documents, and the third-party OAuth client of e2e/server-origin.ts, then
 // `my serve -pseudo-locales` (so that the en-XA and ar-XB projects get their locale) until Playwright stops it.
 // Playwright runs it as a
-// webServer with Node.js (`node e2e/server.ts`), from the binary `make build` writes (override with
+// webServer with Node.js (`node e2e/server.ts`), from the binary `scripts/task.sh go:bin` writes (override with
 // E2E_MY_BIN), in the environment of e2e/server-cli.ts.
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";

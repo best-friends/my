@@ -3,9 +3,9 @@
 // Package schema embeds the desired-state schema files (ADR-0023) so that Go code can apply
 // them without depending on the working directory.
 //
-// Atlas applies these files in every real deployment (`make db-apply`). Database adapter tests
+// Atlas applies these files in every real deployment (`scripts/task.sh db:apply`). Database adapter tests
 // instead execute them directly on a new, empty database: on an empty database Atlas's plan
-// consists of exactly the statements in the file, and CI's `make db-check` verifies, for both
+// consists of exactly the statements in the file, and CI's `scripts/task.sh db:check-all` verifies, for both
 // dialects, that Atlas applies the same file cleanly and leaves no diff.
 //
 // Tables lists the tables a file declares. The readiness check of the database adapters uses

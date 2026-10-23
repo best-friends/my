@@ -53,19 +53,19 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 
 1. Only take issues labeled **`agent:ready`** with no assignee. Never take `status:needs-decision`.
 2. Branch `<type>/<issue>-<slug>`; never push to `main`.
-3. Before every commit, run the checks of the contexts you touched (`make go-check`, `make web-check`, ...) or
-   `make check-changed`; the CI `check` gate runs every affected context and must pass. Run the full `make check`
+3. Before every commit, run the checks of the contexts you touched (`scripts/task.sh go:check`, `scripts/task.sh web:check`, ...) or
+   `scripts/task.sh check:changed`; the CI `check` gate runs every affected context and must pass. Run the full `scripts/task.sh check`
    when the change touches shared configuration.
 4. Open a PR using the template, with `Closes #N` and the acceptance criteria checked, and wait for its CI to pass.
    Pull requests run the `check` gate ([ADR-0047](docs/adr/0047-ci-protection-layers.md)) but not the web E2E: in single-issue work, for a
-   change to the web client, run `make web-e2e` or `gh workflow run web-e2e.yml --ref <branch>`. In a parallel batch run by an orchestrator,
+   change to the web client, run `scripts/task.sh web:e2e` or `gh workflow run web-e2e.yml --ref <branch>`. In a parallel batch run by an orchestrator,
    follow [workflow.md §9](docs/agents/workflow.md#9-parallel-batches) instead (no per-PR web E2E; web E2E failures on `main` are fixed together at the end of the milestone).
    Do not merge or queue the PR yourself: the orchestrator or the decider queues it with `gh pr merge --auto`, and the merge queue
    runs `check` again on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
    queue drops it. Pushes to `main` and the nightly run the slower suites, and CodeQL code scanning (`codeql.yml`) runs on
    pushes to `main` and weekly, never on PRs; the table of what runs where is in the workflow.
 5. If you need a decision that no Accepted ADR covers: small → state the assumption in the PR; large → draft a *Proposed* ADR
-   (`make adr-new TITLE=... SLUG=...`), comment on the issue, add `agent:blocked`, and stop.
+   (`scripts/task.sh docs:adr-new TITLE=... SLUG=...`), comment on the issue, add `agent:blocked`, and stop.
 
 ## Hard rules
 
@@ -77,7 +77,7 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 - **Every file in the repo describes the present, never its history** ([ADR-0021](docs/adr/0021-documents-describe-present-state.md)).
   No changelog sections, no "previously / in the first draft / old proposal" wording, no `[x]` resolved items in Open Questions —
   fold resolved answers into the body. Explain *why it changed* in the commit message and PR description instead.
-- After adding/renaming an ADR, run `make adr-index`.
+- After adding/renaming an ADR, run `scripts/task.sh docs:adr-index`.
 - v0 allows breaking changes everywhere ([ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)) — no migrations, no compat shims.
   Exception: ActivityPub wire formats and federated URIs must stay spec-compliant.
 - Do not add Mastodon *client* API compatibility code ([ADR-0007](docs/adr/0007-client-api.md)). Federation with Mastodon servers is still required.
@@ -93,7 +93,7 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 
 These come from Accepted ADRs and are binding.
 
-- Dependency direction ([ADR-0002](docs/adr/0002-modular-monolith-hexagonal.md)) is enforced by depguard rules in `.golangci.yml` (part of `make check`):
+- Dependency direction ([ADR-0002](docs/adr/0002-modular-monolith-hexagonal.md)) is enforced by depguard rules in `.golangci.yml` (part of `scripts/task.sh check`):
   `internal/domain/<module>` imports only the standard library and its own module's domain;
   `internal/app/<module>` adds its own module's domain and other modules' `internal/app` packages (the only cross-module path)
   and the leaf library `internal/i18n`;
@@ -117,7 +117,7 @@ These come from Accepted ADRs and are binding.
 - Visibility checks go through the single domain policy function; never re-implement them in API or federation code.
   Levels are `public` / `local` / `unlisted` / `private` / `direct`; `local` is never federated beyond the author's followers ([ADR-0017](docs/adr/0017-visibility-local.md)).
 - **i18n**: never hard-code user-facing strings or date/number formats. Add ICU messages to `locales/en` *and* `locales/ja`,
-  run `make i18n-gen`, and format them through the generated typed accessors (`internal/i18n` in Go);
+  run `scripts/task.sh i18n:gen`, and format them through the generated typed accessors (`internal/i18n` in Go);
   use CSS logical properties; render user content with `dir="auto"` ([ADR-0009](docs/adr/0009-internationalization.md)).
   Namespaces other than `client*` are formatted by Go too and must avoid rich-text tags, number skeletons, and `date` / `time` arguments.
 
@@ -135,8 +135,10 @@ Use agentkit (`scripts/agentkit.sh <command>`, [tools/agentkit/README.md](tools/
 - Run the workflow steps through it: `issue claim <n>`, `check`, `pr open`, `pr wait <pr>` in the background (instead of
   watching CI), `regen` after merging `main`, `issue block <n>`; orchestrators watch every PR with `pr watch`.
 - When you add a directory, module, adapter, or feature, add or extend its entry in `tools/agentkit/context-map.yaml` in
-  the same change; `make agentkit-check` (every PR) fails otherwise.
+  the same change; `scripts/task.sh agentkit:check` (every PR) fails otherwise.
 
-Every `make` target and the pinned toolchain: [docs/reference/commands.md](docs/reference/commands.md). The common ones:
-`make check-changed`, `make check`, `make go-check`, `make web-check`, `make generate`, `make sqlc`, `make i18n-gen`,
-`make adr-new TITLE=... SLUG=...`, `make adr-index`, `make db-check`, `make web-e2e`.
+Tasks run with go-task through `scripts/task.sh <task>` ([ADR-0080](docs/adr/0080-task-runner-go-task.md)), never a `task` on PATH;
+the task names are `<area>:<task>` from `tasks/<area>.yml`. Every task and the pinned toolchain:
+[docs/reference/commands.md](docs/reference/commands.md). The common ones (each prefixed with `scripts/task.sh`):
+`check:changed`, `check`, `go:check`, `web:check`, `generate`, `api:generate`, `go:sqlc`, `i18n:gen`,
+`docs:adr-new TITLE=... SLUG=...`, `docs:adr-index`, `db:check`, `web:e2e`.

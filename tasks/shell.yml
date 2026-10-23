@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Shell scripts (the shell context of scripts/changed-contexts.sh).
+version: "3"
+
+tasks:
+  check:
+    desc: Run the shell script checks (shellcheck)
+    deps: [lint]
+
+  lint:
+    desc: Lint shell scripts with shellcheck
+    cmds:
+      - shellcheck scripts/*.sh

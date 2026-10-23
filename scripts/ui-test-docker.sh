@@ -8,7 +8,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-image="${PLAYWRIGHT_IMAGE:?set PLAYWRIGHT_IMAGE (make ui-test-docker does)}"
+image="${PLAYWRIGHT_IMAGE:?set PLAYWRIGHT_IMAGE (scripts/task.sh ui:test-docker does)}"
 bun_version="$(awk '$1 == "bun" { print $2 }' "$root/.tool-versions")"
 
 # shellcheck disable=SC2016 # expanded by the container's shell

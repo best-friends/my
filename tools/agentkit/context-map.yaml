@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # The map from the repository's paths to what governs them: the document sections an agent reads before
-# changing them (docs), the `make check` contexts they need (checks), whether parallel work must treat them as
+# changing them (docs), the `scripts/task.sh check` contexts they need (checks), whether parallel work must treat them as
 # shared files (shared, docs/agents/workflow.md §9), and short notes printed in every context pack.
 #
-# `agentkit ctx` and `agentkit map show <path>` read it. `agentkit map check` (make agentkit-check, CI) fails when
+# `agentkit ctx` and `agentkit map show <path>` read it. `agentkit map check` (agentkit:check, CI) fails when
 # a tracked file matches no entry and no ignore pattern, when a directory matching a strict pattern is not
 # named literally by some entry, or when a docs reference names a missing file or heading.
 # When you add a directory, a module, an adapter, or a feature, add or extend its entry in the same change.
@@ -43,12 +43,12 @@ entries:
     docs: ["AGENTS.md#hard-rules"]
     checks: [docs]
   - name: build-and-ci
-    paths: ["Makefile", ".github/**", "scripts/**", ".claude/**"]
-    docs: ["docs/agents/workflow.md#what-ci-runs-where", "docs/adr/0047-ci-protection-layers.md"]
+    paths: ["Taskfile.yml", "tasks/**", ".github/**", "scripts/**", ".claude/**"]
+    docs: ["docs/agents/workflow.md#what-ci-runs-where", "docs/adr/0047-ci-protection-layers.md", "docs/adr/0080-task-runner-go-task.md"]
     checks: [docs, go, i18n, api, ui, web, docker, agentkit]
     shared: true
     notes:
-      - "Makefile, workflows and scripts/changed-contexts.sh select every check context: run `make check`."
+      - "Taskfile.yml, tasks/, workflows and scripts/changed-contexts.sh select every check context: run `scripts/task.sh check`."
 
   # --- Documents --------------------------------------------------------------------------------------
   - name: adr
@@ -57,7 +57,7 @@ entries:
     checks: [docs]
     shared: true
     notes:
-      - "Never set Accepted/Rejected yourself; run `make adr-index` after adding or renaming an ADR."
+      - "Never set Accepted/Rejected yourself; run `scripts/task.sh docs:adr-index` after adding or renaming an ADR."
   - name: requirements
     paths: ["docs/requirements/**"]
     docs: ["docs/requirements/00-vision.md"]
@@ -90,7 +90,7 @@ entries:
     docs: ["docs/reference/build-tags.md"]
     checks: [docs, go]
     notes:
-      - "docs/reference/configuration.md is generated: `make config-docs`."
+      - "docs/reference/configuration.md is generated: `scripts/task.sh go:config-docs`."
 
   # --- Server: shared rules ---------------------------------------------------------------------------
   - name: go-server
@@ -110,13 +110,13 @@ entries:
     checks: [i18n, go, web]
     shared: true
     notes:
-      - "Add messages to locales/en and locales/ja, then `make i18n-gen` and commit the result."
+      - "Add messages to locales/en and locales/ja, then `scripts/task.sh i18n:gen` and commit the result."
   - name: platform
     paths: ["internal/platform/**", "cmd/my/**"]
     docs: ["docs/architecture/overview.md#6-リポジトリ構成", "docs/adr/0010-configuration-and-packaging.md"]
     checks: [go, docker]
     notes:
-      - "A change to the config schema regenerates docs/reference/configuration.md (`make config-docs`)."
+      - "A change to the config schema regenerates docs/reference/configuration.md (`scripts/task.sh go:config-docs`)."
 
   # --- Server: modules (internal/domain/<m>, internal/app/<m>) ----------------------------------------
   - name: module-identity
@@ -201,7 +201,7 @@ entries:
     checks: [api, go, web]
     shared: true
     notes:
-      - "Edit api/spec/ (one file per path and component; list new files in api/spec/openapi.yaml), never api/openapi.yaml; then `make generate`."
+      - "Edit api/spec/ (one file per path and component; list new files in api/spec/openapi.yaml), never api/openapi.yaml; then `scripts/task.sh api:generate`."
   - name: oauth
     paths: ["internal/interface/oauth/**", "internal/interface/authpages/**"]
     docs: ["docs/architecture/client-api.md#4-認可oauth-20", "docs/architecture/web-client/08-server-rendered-pages.md#8-サーバーが描画する画面"]
@@ -219,7 +219,7 @@ entries:
     checks: [schema, go]
     shared: true
     notes:
-      - "Edit schema/<dialect>.sql for every dialect together; never hand-write migrations; `make sqlc` after query changes. Query files stay ASCII-only."
+      - "Edit schema/<dialect>.sql for every dialect together; never hand-write migrations; `scripts/task.sh go:sqlc` after query changes. Query files stay ASCII-only."
 
   # --- Test kits ------------------------------------------------------------------------------------------
   - name: testkit
@@ -253,7 +253,7 @@ entries:
     docs: ["docs/architecture/web-client/09-app-shell.md#9-アプリの外枠", "docs/architecture/web-client/11-pwa.md#11-pwa"]
     shared: true
     notes:
-      - "A new route regenerates app/web/src/routeTree.gen.ts (`make web-dist`)."
+      - "A new route regenerates app/web/src/routeTree.gen.ts (`scripts/task.sh web:dist`)."
   - name: web-server-pages
     paths: ["app/web/src/server-pages/**", "app/web/src/server-pages.css"]
     docs: ["docs/architecture/web-client/08-server-rendered-pages.md#8-サーバーが描画する画面"]

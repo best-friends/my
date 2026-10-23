@@ -3,7 +3,6 @@
 package ops
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -44,8 +43,15 @@ func CheckPassed(r *repo.Repo) bool {
 	return err == nil && strings.TrimSpace(string(b)) == treeKey(r)
 }
 
-// Check runs `make check-changed BASE=base` with its output in a log file, and returns the lines to print:
-// the contexts and their results, and on failure the failing lines. It records a pass for `pr open`.
+// task runs `scripts/task.sh args...` in the root of r, with its output combined.
+func task(r *repo.Repo, args ...string) ([]byte, error) {
+	cmd := exec.Command(filepath.Join(r.Root, "scripts", "task.sh"), args...)
+	cmd.Dir = r.Root
+	return cmd.CombinedOutput()
+}
+
+// Check runs `scripts/task.sh check:changed BASE=base` with its output in a log file, and returns the lines to
+// print: the contexts it checks, and on failure the failing lines. It records a pass for `pr open`.
 func Check(r *repo.Repo, base string) (bool, []string, error) {
 	dir, err := r.TmpDir("check")
 	if err != nil {
@@ -54,28 +60,15 @@ func Check(r *repo.Repo, base string) (bool, []string, error) {
 	log := filepath.Join(dir, time.Now().Format("20060102-150405")+".log")
 	key := treeKey(r)
 	start := time.Now()
-	cmd := exec.Command("make", "--no-print-directory", "check-changed", "BASE="+base)
-	cmd.Dir = r.Root
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-	runErr := cmd.Run()
-	if err := os.WriteFile(log, out.Bytes(), 0o600); err != nil {
+	out, runErr := task(r, "check:changed", "BASE="+base)
+	if err := os.WriteFile(log, out, 0o600); err != nil {
 		return false, nil, err
 	}
 	var lines []string
-	inSummary := false
-	for _, l := range strings.Split(out.String(), "\n") {
-		switch {
-		case strings.HasPrefix(l, "contexts changed since"), strings.HasPrefix(l, "also run"), strings.HasPrefix(l, "no check covers"):
+	for _, l := range strings.Split(string(out), "\n") {
+		l = plain(l)
+		if strings.HasPrefix(l, "contexts changed since") || strings.HasPrefix(l, "also run") || strings.HasPrefix(l, "no check covers") {
 			lines = append(lines, l)
-		case l == "make check:":
-			inSummary = true
-			lines = append(lines, l)
-		case inSummary && strings.HasPrefix(l, "  "):
-			lines = append(lines, l)
-		default:
-			inSummary = false
 		}
 	}
 	rel, _ := filepath.Rel(r.Root, log)
@@ -87,23 +80,23 @@ func Check(r *repo.Repo, base string) (bool, []string, error) {
 	}
 	_ = os.Remove(passedFile(r))
 	lines = append(lines, "", "failing lines:")
-	lines = append(lines, Failures(out.String(), 80)...)
+	lines = append(lines, Failures(string(out), 80)...)
 	lines = append(lines, fmt.Sprintf("FAILED after %s (full log: %s)", time.Since(start).Round(time.Second), rel))
 	return false, lines, nil
 }
 
-// generators maps the sources of generated code to the make target that regenerates it (workflow.md §7).
+// generators maps the sources of generated code to the task that regenerates it (workflow.md §7).
 var generators = []struct {
 	prefix, target string
 }{
-	{"api/spec/", "generate"},
-	{"schema/", "sqlc"},
-	{"queries/", "sqlc"},
-	{"sqlc.yaml", "sqlc"},
-	{"locales/", "i18n-gen"},
-	{"app/web/src/routes/", "web-dist"},
-	{"internal/platform/config/", "config-docs"},
-	{"docs/adr/", "adr-index"},
+	{"api/spec/", "api:generate"},
+	{"schema/", "go:sqlc"},
+	{"queries/", "go:sqlc"},
+	{"sqlc.yaml", "go:sqlc"},
+	{"locales/", "i18n:gen"},
+	{"app/web/src/routes/", "web:dist"},
+	{"internal/platform/config/", "go:config-docs"},
+	{"docs/adr/", "docs:adr-index"},
 }
 
 // Regen runs the generators the files changed since base need, in a stable order, and returns one line each.
@@ -128,19 +121,17 @@ func Regen(r *repo.Repo, base string, dryRun bool) ([]string, error) {
 	var lines []string
 	for _, t := range order {
 		if dryRun {
-			lines = append(lines, "would run make "+t)
+			lines = append(lines, "would run scripts/task.sh "+t)
 			continue
 		}
 		start := time.Now()
-		cmd := exec.Command("make", "--no-print-directory", t)
-		cmd.Dir = r.Root
-		out, err := cmd.CombinedOutput()
+		out, err := task(r, t)
 		if err != nil {
-			lines = append(lines, fmt.Sprintf("make %s: FAILED", t))
+			lines = append(lines, fmt.Sprintf("%s: FAILED", t))
 			lines = append(lines, Failures(string(out), 30)...)
-			return lines, fmt.Errorf("make %s failed", t)
+			return lines, fmt.Errorf("scripts/task.sh %s failed", t)
 		}
-		lines = append(lines, fmt.Sprintf("make %s: ok (%s)", t, time.Since(start).Round(time.Second)))
+		lines = append(lines, fmt.Sprintf("%s: ok (%s)", t, time.Since(start).Round(time.Second)))
 	}
 	status, _ := repo.Git(r.Root, "status", "--short")
 	if s := strings.TrimSpace(status); s != "" {

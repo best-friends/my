@@ -10,7 +10,7 @@
 | `api/spec/openapi.yaml` | API の正のルート。`info`・`servers`・`security`・`tags`・`securitySchemes` と、すべてのパスと `components` の項目への `$ref` の一覧 |
 | `api/spec/paths/<パス>.yaml` | Path Item 1 つ。名前はパスの先頭の `/` を除き `/` を `_` にしたもの（`/statuses/{id}/favourite` → `statuses_{id}_favourite.yaml`） |
 | `api/spec/components/<種類>/<名前>.yaml` | `components` の項目 1 つ（`schemas`・`responses`・`parameters`・`headers`）。ファイル名は `components` の名前と同じ |
-| `api/openapi.yaml` | 生成物。`make generate` が `api/spec/` を Redocly CLI の `bundle` でまとめた OpenAPI 3.1 の 1 ファイル。生成器・照合ヘルパー・第三者が読む。手で編集しない |
+| `api/openapi.yaml` | 生成物。`scripts/task.sh api:generate` が `api/spec/` を Redocly CLI の `bundle` でまとめた OpenAPI 3.1 の 1 ファイル。生成器・照合ヘルパー・第三者が読む。手で編集しない |
 | `api/redocly.yaml` | `api/spec/` の lint 設定（Redocly CLI）。推奨ルールと、使える 3.1 の部分集合・命名規約を強制する独自ルール |
 | `api/api.go` | バンドルの `openapi.yaml` を埋め込む Go パッケージ（`api.Spec`）。テストの照合ヘルパーが読む |
 | `internal/interface/clientapi/oapi-codegen.yaml` | oapi-codegen の設定（strict server、`net/http`。`streamEvents` は生成から除く） |
@@ -21,16 +21,16 @@
 | `internal/interface/clientapi/streaming.go` | 手書きの `GET /streaming`（SSE、§5） |
 | `internal/interface/clientapi/apitest` | ハンドラの応答を spec と照合するテストヘルパー |
 | `app/web/src/lib/api/schema.gen.ts` | 生成物。Web クライアントの型（openapi-typescript）。手で編集しない |
-| `scripts/api-spec-check.sh` | ルートが `api/spec/` のすべてのファイルを列挙し、各ファイルが SPDX の見出しで始まることの検査（`make api-spec-check`、`make api-check` に含む） |
-| `scripts/generate.sh` | 生成スクリプト（`make generate` / `make generate-check`）。`api/spec/` をバンドルしてから、バンドルを生成器に渡す。TS の型の生成に `app/web` の依存を使うので、先に `make web-install` を実行する（Makefile の依存で自動） |
+| `scripts/api-spec-check.sh` | ルートが `api/spec/` のすべてのファイルを列挙し、各ファイルが SPDX の見出しで始まることの検査（`scripts/task.sh api:spec-check`、`scripts/task.sh api:check` に含む） |
+| `scripts/generate.sh` | 生成スクリプト（`scripts/task.sh api:generate` / `scripts/task.sh api:generate-check`）。`api/spec/` をバンドルしてから、バンドルを生成器に渡す。TS の型の生成に `app/web` の依存を使うので、先に `scripts/task.sh web:install` を実行する（`api:generate` の依存で自動） |
 
 列挙型の定数は `<型名><値>`（`StatusVisibilityPublic`）の名前で生成します（`oapi-codegen.yaml` の `always-prefix-enum-values`）。別の列挙型を足しても名前が衝突・変化しません。
 
-spec はパス 1 つ・`components` の項目 1 つを 1 ファイルにして `api/spec/` に書き、`make generate` がまとめた `api/openapi.yaml` から生成します（[ADR-0066](../adr/0066-openapi-split-and-bundle.md)）。
+spec はパス 1 つ・`components` の項目 1 つを 1 ファイルにして `api/spec/` に書き、`scripts/task.sh api:generate` がまとめた `api/openapi.yaml` から生成します（[ADR-0066](../adr/0066-openapi-split-and-bundle.md)）。
 oapi-codegen は分割したファイルを直接読めないので、バンドルは省けません。分割したファイルの書き方は次のとおりです。
 
 - ルートは、`paths` のパスごとに `$ref: ./paths/<パス>.yaml` を、`components` の種類ごとにすべての項目を `<名前>: {$ref: ./components/<種類>/<名前>.yaml}` で列挙します。
-  列挙しない項目は、どこからも参照されないとバンドルから落ちます。`make api-spec-check` が列挙の漏れを見つけます。
+  列挙しない項目は、どこからも参照されないとバンドルから落ちます。`scripts/task.sh api:spec-check` が列挙の漏れを見つけます。
 - `paths` はタグのまとまりの順に並べ、新しいパスはそのタグのまとまりの末尾に足します。`components` は種類ごとに名前の順に並べます。
 - パスと `components` のファイルは、`components` を相対パスのファイルで参照します（`../components/schemas/Status.yaml`、同じ種類の中では `./Status.yaml`）。
   ルート以外のファイルで `#/components/...` は書きません（そのファイル自身を指すため）。バンドルでは `#/components/schemas/Status` に戻ります。
@@ -38,7 +38,7 @@ oapi-codegen は分割したファイルを直接読めないので、バンド�
 - 1 ファイルは 1 つのオブジェクトで、`file.yaml#/...` の断片で他のファイルの中を指しません。パスのファイルは他のパスのファイルを参照しません。リモートの URL への `$ref` は書きません。
 - ファイルはそれぞれ `# SPDX-License-Identifier: AGPL-3.0-only` で始めます。
 - YAML のコメントはバンドルで消えます。クライアントに伝えることは `description` に書き、コメントは保守のための短い注記だけにします。区切りのコメントは置きません。
-- `api/openapi.yaml` が main と競合したときは、手でマージせず `make generate` で作り直します（他の生成物と同じ）。spec 全体の検索は `api/openapi.yaml` で行えます。
+- `api/openapi.yaml` が main と競合したときは、手でマージせず `scripts/task.sh api:generate` で作り直します（他の生成物と同じ）。spec 全体の検索は `api/openapi.yaml` で行えます。
 
 ## 2. 規約
 
@@ -85,7 +85,7 @@ oapi-codegen は分割したファイルを直接読めないので、バンド�
   ロケールは `i18n.Resolver` が ADR-0009 §2 の順（利用者設定 → `Accept-Language` → インスタンス設定 `default_locale` → `en`）で決めます。
   サーバーの HTTP 応答（クライアント API、ログイン画面、HTML の外枠、プラットフォームの問題応答）はすべて `platform.App.Locales` の同じ Resolver を使います。
   `default_locale` は解決のたびに読むので、変更は再起動なしで反映されます。
-  文言は `locales/en` と `locales/ja` に追加して `make i18n-gen` を実行し、生成された型付きアクセサ（`l.ServerErrors...()`）で整形します。
+  文言は `locales/en` と `locales/ja` に追加して `scripts/task.sh i18n:gen` を実行し、生成された型付きアクセサ（`l.ServerErrors...()`）で整形します。
 - ハンドラが返す問題は `Server.NewProblem` で作り、その操作の `default` 応答型（`<Operation>defaultApplicationProblemPlusJSONResponse`）で返します。
   `Server.problem` は同じ問題をどの操作の `default` 応答型にも型変換できる `problem` で返します（`GetAccountdefaultApplicationProblemPlusJSONResponse(s.problem(...))`）。
   生成コードの外（認証・認可・レート制限、解釈できないリクエスト）で返す問題は `Server.writeProblem` が書き、`Cache-Control: no-store` を付けます。
@@ -139,10 +139,10 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 1. `api/spec/paths/<パス>.yaml` に操作を書き、新しいパスならルートの `api/spec/openapi.yaml` の `paths` に `$ref` を足します。
    `operationId`、`summary`、`tags`、成功時の応答と `default: {$ref: ../components/responses/Problem.yaml}` を必ず書きます。
    新しいスキーマ・応答・パラメータは `api/spec/components/<種類>/<名前>.yaml` に書き、ルートの `components` に名前の順で足します。
-   `security` は §4.2 の 3 つの形のどれかで書き、アクセストークンを受け付ける操作は必要なスコープを必ず挙げます（挙げないと `make generate` が失敗します）。
-2. `make api-lint` で spec を検査します。問題の場所は分割したファイルで示されます。
-3. `make generate` でバンドルの `api/openapi.yaml`、`internal/interface/clientapi/api.gen.go`・`security.gen.go` と Web クライアントの `app/web/src/lib/api/schema.gen.ts` を再生成します。`StrictServerInterface` に新しいメソッドが増え、未実装のためビルドが失敗します。
-   main を取り込んだあとも、生成物は手でマージせず `make generate` で作り直します。
+   `security` は §4.2 の 3 つの形のどれかで書き、アクセストークンを受け付ける操作は必要なスコープを必ず挙げます（挙げないと `scripts/task.sh api:generate` が失敗します）。
+2. `scripts/task.sh api:lint` で spec を検査します。問題の場所は分割したファイルで示されます。
+3. `scripts/task.sh api:generate` でバンドルの `api/openapi.yaml`、`internal/interface/clientapi/api.gen.go`・`security.gen.go` と Web クライアントの `app/web/src/lib/api/schema.gen.ts` を再生成します。`StrictServerInterface` に新しいメソッドが増え、未実装のためビルドが失敗します。
+   main を取り込んだあとも、生成物は手でマージせず `scripts/task.sh api:generate` で作り直します。
 4. `internal/interface/clientapi` にメソッドを実装します。アプリケーション層（`internal/app/<module>`）のユースケースを呼び、
    ドメインの型を生成された応答型に詰め替えます。必要な依存は `clientapi.Options` に追加し、`platform.NewApp` で渡します。
    閲覧者は `requireViewer(ctx)`（トークン必須の操作）か `ViewerFrom(ctx)`（匿名も受け付ける操作）で取ります。スコープの検査はハンドラの前に済んでいます。
@@ -153,13 +153,13 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    1 回にまとめて読み、`newAccount` と `newStatus` に渡します。アカウントごとに読まない（N+1 にしない）ため、一覧は `Server.newAccounts` や `Server.presentStatuses` を使います。
    フォロー数とロールのバッジ（`Account.badges`、ADR-0071。`Options.Badges` から読む）を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。ほかの `Account` の `badges` は空の配列です。
    ID で指定されたアカウントは `Server.visibleAccount` で引き、見せられないアカウント（[visibility.md §6](visibility.md#6-アカウントの表示)）は存在しないものと同じ 404 にします。
-5. 新しい利用者向けの文言は `locales/en` と `locales/ja` の `server` 名前空間に追加し、`make i18n-gen` を実行します。
+5. 新しい利用者向けの文言は `locales/en` と `locales/ja` の `server` 名前空間に追加し、`scripts/task.sh i18n:gen` を実行します。
 6. テストは `apitest.Load(t).Serve(t, handler, req)` を通してリクエストを送ります。応答の状態コード・`Content-Type`・本文が spec と一致しない場合、テストが失敗します。
    不正なリクエストを送るテストもそのまま使えます（`Serve` はリクエストを照合しません。照合するときは `ValidateRequest`）。
    正常系に加えて、問題の応答（`Accept-Language` によるローカライズを含む）を検査します。
    トークンが要る操作は `auth_test.go` の `newAuthEnv`（偽の `Authenticator`・`Accounts` と停止した時計のレート制限）で、トークンなし・スコープ不足も検査します。
    `TestEveryOperationIsGuarded` が spec のすべての操作に匿名とスコープなしのトークンで要求を送り、401 / 403 になることを確かめます。
-7. `make check` を実行します。ルートの列挙の検査（`api-spec-check`）、バンドルと生成物の差分検査（`generate-check`）と spec の lint（`api-lint`）が含まれます。
+7. `scripts/task.sh check` を実行します。ルートの列挙の検査（`api:spec-check`）、バンドルと生成物の差分検査（`api:generate-check`）と spec の lint（`api:lint`）が含まれます。
 
 ## 4. 認可（OAuth 2.0）
 

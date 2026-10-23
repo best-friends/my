@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The database schema (ADR-0023; the schema context of scripts/changed-contexts.sh): Atlas Community Edition,
+# pinned and checksum-verified by scripts/install-atlas.sh, and the dev PostgreSQL container.
+# Pick the dialect with DB_DIALECT and point DB_URL / DB_DEV_URL elsewhere to override the defaults.
+version: "3"
+
+vars:
+  ATLAS: bin/atlas
+  DB_DIALECT: '{{.DB_DIALECT | default "sqlite"}}'
+  PG_CONTAINER: '{{.PG_CONTAINER | default "my-postgres"}}'
+  PG_IMAGE: '{{.PG_IMAGE | default "postgres:18-alpine"}}'
+  PG_PORT: '{{.PG_PORT | default "5432"}}'
+  # PostgreSQL URLs are schema-scoped: Atlas manages only the `public` schema.
+  DB_URL: >-
+    {{if .DB_URL}}{{.DB_URL}}{{else if eq .DB_DIALECT "postgres"}}postgres://my:my@localhost:{{.PG_PORT}}/my?sslmode=disable&search_path=public{{else}}sqlite://my.db{{end}}
+  DB_DEV_URL: >-
+    {{if .DB_DEV_URL}}{{.DB_DEV_URL}}{{else if eq .DB_DIALECT "postgres"}}postgres://my:my@localhost:{{.PG_PORT}}/my_dev?sslmode=disable&search_path=public{{else}}sqlite://dev?mode=memory{{end}}
+  # Runs schema/postgres.bootstrap.sql (from stdin) against the target database before each apply.
+  # For a database outside the db:up container: PG_BOOTSTRAP='psql -v ON_ERROR_STOP=1 -q "postgres://..."'
+  PG_BOOTSTRAP: >-
+    {{.PG_BOOTSTRAP | default (printf "docker exec -i -e PGOPTIONS=--client-min-messages=warning %s psql -v ON_ERROR_STOP=1 -q -U my -d my" .PG_CONTAINER)}}
+  DB_SCHEMA: schema/{{.DB_DIALECT}}.sql
+
+tasks:
+  check:
+    desc: Reset DB_URL, apply schema/<DB_DIALECT>.sql, and fail if any diff remains
+    deps: [reset]
+    cmds:
+      - |
+        diff="$({{.ATLAS}} schema diff --from '{{.DB_URL}}' --to 'file://{{.DB_SCHEMA}}' --dev-url '{{.DB_DEV_URL}}' --format '{{"{{"}} sql . {{"}}"}}')"
+        if [ -n "$diff" ]; then printf 'schema diff is not empty after apply:\n%s\n' "$diff" >&2; exit 1; fi
+      - "echo '{{.DB_DIALECT}}: schema applies cleanly and leaves no diff'"
+
+  check-all:
+    desc: Run db:check for SQLite and, on the db:up container, PostgreSQL (needs Docker)
+    # In processes of their own: the dialect's variables (DB_URL, ...) derive from DB_DIALECT, and variables passed to
+    # a task do not reach its dependencies.
+    cmds:
+      - DB_DIALECT=sqlite scripts/task.sh db:check
+      - task: up
+      - DB_DIALECT=postgres scripts/task.sh db:check
+
+  atlas:
+    desc: Install the pinned Atlas Community Edition into bin/atlas
+    run: once
+    sources: [scripts/install-atlas.sh]
+    generates: ["{{.ATLAS}}"]
+    cmds:
+      - scripts/install-atlas.sh {{.ATLAS}}
+
+  up:
+    desc: Start the dev PostgreSQL container (databases `my` and `my_dev`, both bootstrapped)
+    silent: true
+    cmds:
+      - >-
+        docker inspect {{.PG_CONTAINER}} >/dev/null 2>&1 || docker run -d --name {{.PG_CONTAINER}}
+        -e POSTGRES_USER=my -e POSTGRES_PASSWORD=my -e POSTGRES_DB=my -p {{.PG_PORT}}:5432 {{.PG_IMAGE}} >/dev/null
+      - docker start {{.PG_CONTAINER}} >/dev/null
+      - for _ in $(seq 60); do docker exec {{.PG_CONTAINER}} pg_isready -q -U my -d my -h 127.0.0.1 && break; sleep 1; done
+      - >-
+        docker exec {{.PG_CONTAINER}} psql -q -U my -d my -tAc "SELECT 1 FROM pg_database WHERE datname = 'my_dev'" | grep -q 1
+        || docker exec {{.PG_CONTAINER}} createdb -U my my_dev
+      - |
+        for db in my my_dev; do
+          docker exec -i -e PGOPTIONS=--client-min-messages=warning {{.PG_CONTAINER}} psql -v ON_ERROR_STOP=1 -q -U my -d $db < schema/postgres.bootstrap.sql || exit 1
+        done
+      - echo "PostgreSQL is up in container {{.PG_CONTAINER}} on localhost:{{.PG_PORT}}"
+
+  down:
+    desc: Remove the dev PostgreSQL container and its data
+    cmds:
+      - docker rm -f {{.PG_CONTAINER}}
+
+  bootstrap:
+    desc: Run the dialect's bootstrap SQL against DB_URL (PostgreSQL only; no-op for SQLite)
+    preconditions: &dialect
+      - sh: case '{{.DB_DIALECT}}' in sqlite|postgres) true;; *) false;; esac
+        msg: DB_DIALECT must be sqlite or postgres, got "{{.DB_DIALECT}}"
+    cmds:
+      - cmd: "{{.PG_BOOTSTRAP}} < schema/postgres.bootstrap.sql"
+        if: '[ "{{.DB_DIALECT}}" = postgres ]'
+
+  apply:
+    desc: Apply schema/<DB_DIALECT>.sql to DB_URL (DB_DIALECT=sqlite|postgres)
+    preconditions: *dialect
+    cmds:
+      - task: atlas
+      - task: bootstrap
+      - "{{.ATLAS}} schema apply --url '{{.DB_URL}}' --to 'file://{{.DB_SCHEMA}}' --dev-url '{{.DB_DEV_URL}}' --auto-approve"
+
+  diff:
+    desc: Print the SQL that would bring DB_URL to schema/<DB_DIALECT>.sql
+    deps: [atlas]
+    preconditions: *dialect
+    cmds:
+      - "{{.ATLAS}} schema diff --from '{{.DB_URL}}' --to 'file://{{.DB_SCHEMA}}' --dev-url '{{.DB_DEV_URL}}'"
+
+  reset:
+    desc: Drop everything in DB_URL, then apply the schema (destroys data)
+    deps: [atlas]
+    preconditions: *dialect
+    cmds:
+      - "{{.ATLAS}} schema clean --url '{{.DB_URL}}' --auto-approve"
+      - task: apply

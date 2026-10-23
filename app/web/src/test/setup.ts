@@ -9,7 +9,7 @@ import { forgetUnsavedStorage } from "../lib/storage";
 import { server } from "./msw/server";
 
 // findBy and waitFor give up after this long (web-client/README.md T7). The wait is wall-clock time, which a busy
-// machine stretches: Testing Library's 1 s default timed out in `make check` while Go and PostgreSQL ran
+// machine stretches: Testing Library's 1 s default timed out in `scripts/task.sh check` while Go and PostgreSQL ran
 // alongside. A test that passes never waits this long; the limit only bounds how long a broken one hangs.
 // testTimeout in vitest.config.ts leaves room for several such waits.
 configure({ asyncUtilTimeout: 10_000 });

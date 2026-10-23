@@ -14,7 +14,7 @@ DB の初期化は `my` のコマンドではなく、Atlas Community Edition �
 ### Docker Compose
 
 [`deploy/docker/compose.yaml`](../../deploy/docker/compose.yaml) では、一回限りの `schema` サービスが適用してから、サーバー（`my`）が起動します。
-`make docker-smoke`（`scripts/docker-smoke.sh`）が確かめているのも、この手順です。
+`scripts/task.sh docker:smoke`（`scripts/docker-smoke.sh`）が確かめているのも、この手順です。
 
 ```sh
 cd deploy/docker
@@ -59,8 +59,8 @@ docker run --rm my-schema schema apply \
 
 ### リポジトリから（開発）
 
-`make db-apply`（`DB_DIALECT=sqlite|postgres`、`DB_URL`・`DB_DEV_URL` で宛先を変える）が、固定版の Atlas（`bin/atlas`）で同じ適用を行います。
-`make db-diff` は流す SQL を表示するだけです。
+`scripts/task.sh db:apply`（`DB_DIALECT=sqlite|postgres`、`DB_URL`・`DB_DEV_URL` で宛先を変える）が、固定版の Atlas（`bin/atlas`）で同じ適用を行います。
+`scripts/task.sh db:diff` は流す SQL を表示するだけです。
 
 ## 作り直す（データを消す）
 
@@ -98,4 +98,4 @@ docker run --rm -it my-schema schema clean --url 'postgres://my:...@db.example/m
 
 ### リポジトリから（開発）
 
-`make db-reset` は `atlas schema clean --auto-approve` の後に `make db-apply` を実行します。確かめずに消すので、開発用の DB だけに使います。
+`scripts/task.sh db:reset` は `atlas schema clean --auto-approve` の後に `scripts/task.sh db:apply` を実行します。確かめずに消すので、開発用の DB だけに使います。

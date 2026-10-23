@@ -58,7 +58,7 @@ type entryTags struct {
 }
 
 // errNoBuild means the build has no Vite manifest: app/web was not built into dist/.
-var errNoBuild = errors.New("web: the build has no " + manifestPath + "; run make web-build")
+var errNoBuild = errors.New("web: the build has no " + manifestPath + "; run scripts/task.sh web:build")
 
 // readEntry builds the tags of the SPA entry from the build manifest, following Vite's
 // backend integration guide: the entry's file, the CSS of the entry and of its static

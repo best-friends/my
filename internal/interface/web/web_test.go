@@ -404,7 +404,7 @@ func TestInstanceName(t *testing.T) {
 	check("例のサーバー")
 }
 
-// TestWithoutBuild checks the binary that Go builds without `make web-build`: it starts,
+// TestWithoutBuild checks the binary that Go builds without `scripts/task.sh web:build`: it starts,
 // warns, and serves a shell that loads nothing.
 func TestWithoutBuild(t *testing.T) {
 	var logs bytes.Buffer
@@ -421,7 +421,7 @@ func TestWithoutBuild(t *testing.T) {
 		t.Errorf("GET /.gitkeep = %q, want the shell", rec.Body)
 	}
 
-	// The embedded build is the placeholder, or the build of `make web-build`.
+	// The embedded build is the placeholder, or the build of `scripts/task.sh web:build`.
 	if _, err := web.New(web.Options{Host: "social.example", Build: web.Embedded()}); err != nil {
 		t.Errorf("New on the embedded build: %v", err)
 	}

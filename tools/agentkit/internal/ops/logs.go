@@ -11,7 +11,7 @@ import (
 )
 
 // errorPatterns match the lines of Go, golangci-lint, TypeScript, Vitest, Playwright, markdownlint, shellcheck,
-// Atlas and make output that say what failed.
+// Atlas and go-task output that say what failed.
 var errorPatterns = regexp.MustCompile(strings.Join([]string{
 	`^\s*--- FAIL`,
 	`^FAIL\b`,
@@ -23,8 +23,7 @@ var errorPatterns = regexp.MustCompile(strings.Join([]string{
 	`^\s*(Error|AssertionError|TypeError|ReferenceError):`,
 	`\bMD\d{3}\b`,
 	`\bSC\d{4}\b`,
-	`^make(\[\d+\])?: \*\*\*`,
-	`^make check: .* FAILED`,
+	`^task: Failed to run task `,
 	`\bFAILED after\b`,
 	`(?i)^\s*error:`,
 	`^\s*Expected:|^\s*Received:|^\s*expected .* (to|but)`,
@@ -38,16 +37,32 @@ var followers = regexp.MustCompile(`^\s*--- FAIL|^panic:|^\s*(Error|AssertionErr
 // timestamp strips the prefix GitHub Actions puts on every log line: "<job>\t<step>\t2026-10-22T01:02:03.456Z ".
 var timestamp = regexp.MustCompile(`^(?:[^\t]*\t){0,2}\d{4}-\d\d-\d\dT[\d:.]+Z ?`)
 
+// color strips terminal colors, which go-task prints in CI.
+var color = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// taskPrefix strips the name go-task puts before each line of a task's output ("[go:test] ").
+var taskPrefix = regexp.MustCompile(`^\[[\w:.-]+\] `)
+
+// plain returns a log line without its GitHub Actions timestamp, colors, go-task prefix, and trailing CR.
+func plain(l string) string {
+	l = color.ReplaceAllString(timestamp.ReplaceAllString(l, ""), "")
+	return strings.TrimRight(taskPrefix.ReplaceAllString(l, ""), "\r")
+}
+
+// echoed matches the commands go-task prints before running them ("task: [go:test] go test ./..."), which
+// say nothing about what failed.
+var echoed = regexp.MustCompile(`^task: \[[\w:.-]+\] `)
+
 // Failures returns the lines of log that say what failed, each with a little context, without duplicates,
 // at most limit lines.
 func Failures(log string, limit int) []string {
 	lines := strings.Split(log, "\n")
 	for i, l := range lines {
-		lines[i] = strings.TrimRight(timestamp.ReplaceAllString(l, ""), "\r")
+		lines[i] = plain(l)
 	}
 	keep := make([]bool, len(lines))
 	for i, l := range lines {
-		if !errorPatterns.MatchString(l) {
+		if echoed.MatchString(l) || !errorPatterns.MatchString(l) {
 			continue
 		}
 		keep[i] = true

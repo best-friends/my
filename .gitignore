@@ -45,3 +45,6 @@ storybook-static/
 
 # Scratch space of local tools and agents (logs, temporary clones).
 /.tmp/
+
+# go-task's checksums of the generators' inputs (ADR-0080).
+/.task/

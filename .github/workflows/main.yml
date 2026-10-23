@@ -1,7 +1,7 @@
 name: Main
 
 # The post-merge suites of a push to main (ADR-0047). A main commit is the head of a merge group that the merge queue
-# has already checked, so the contexts of `make check` (ci.yml) do not run again here. This workflow saves the Go and
+# has already checked, so the contexts of `scripts/task.sh check` (ci.yml) do not run again here. This workflow saves the Go and
 # Bun caches that pull requests and merge groups restore, and runs the checks too slow for the merge queue: the web
 # E2E subset, the Docker Compose smoke test (except on docs-only pushes), the @my/ui story tests (when the ui context
 # changes), the PostgreSQL tests on a real postgres container (when a path they depend on changes), and the
@@ -48,9 +48,9 @@ jobs:
             git fetch --no-tags --depth=1 origin "$BEFORE"; then
             git diff --name-only "$BEFORE" "$AFTER" > "$RUNNER_TEMP/changed"
             contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
-            # The paths the PostgreSQL tests depend on: the packages they test (POSTGRES_TEST_PACKAGES in the
-            # Makefile), the queries and the schema, the test kit, the Go modules, and how CI runs them.
-            if grep -qE '^(internal/adapter/((db|kv|queue)/|stream/postgres/)|internal/platform/|queries/|schema/|pkg/testkit/|sqlc\.yaml$|go\.(mod|sum)$|Makefile$|\.tool-versions$|\.github/workflows/(main|postgres-contract)\.yml$)' \
+            # The paths the PostgreSQL tests depend on: the packages they test (POSTGRES_TEST_PACKAGES in
+            # tasks/go.yml), the queries and the schema, the test kit, the Go modules, and how CI runs them.
+            if grep -qE '^(internal/adapter/((db|kv|queue)/|stream/postgres/)|internal/platform/|queries/|schema/|pkg/testkit/|sqlc\.yaml$|go\.(mod|sum)$|tasks/go\.yml$|\.tool-versions$|\.github/workflows/(main|postgres-contract)\.yml$)' \
               "$RUNNER_TEMP/changed"; then
               postgres=true
             else
@@ -58,7 +58,7 @@ jobs:
             fi
             # The paths the stream.Bus contracts on broker containers depend on: the adapters and their connections,
             # the port, the test kit, the Go modules, and how CI runs them.
-            if grep -qE '^(internal/adapter/(stream|valkey)/|internal/app/stream/|pkg/testkit/|go\.(mod|sum)$|Makefile$|\.tool-versions$|\.github/workflows/(main|stream-contract)\.yml$)' \
+            if grep -qE '^(internal/adapter/(stream|valkey)/|internal/app/stream/|pkg/testkit/|go\.(mod|sum)$|tasks/go\.yml$|\.tool-versions$|\.github/workflows/(main|stream-contract)\.yml$)' \
               "$RUNNER_TEMP/changed"; then
               stream=true
             else
@@ -160,6 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-task
       - name: Look up the Bun package cache
         id: lookup
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -173,7 +174,7 @@ jobs:
           bun-version-file: .tool-versions
       - name: Install the client and i18n tool packages
         if: steps.lookup.outputs.cache-hit != 'true'
-        run: make web-install i18n-install
+        run: scripts/task.sh --parallel web:install i18n:install
       - name: Save the Bun package cache
         if: steps.lookup.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

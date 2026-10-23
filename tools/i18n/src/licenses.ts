@@ -3,11 +3,12 @@
 //
 //   bun run src/licenses.ts MIT,Apache-2.0,... [node_modules ...]
 //
-// The first argument is the allowed SPDX identifiers (the Makefile passes its list); the rest are
-// the node_modules directories to check, tools/i18n's own when none is given. Both layouts Bun
-// installs are covered: hoisted packages and the isolated store in node_modules/.bun that the
-// client workspace uses (app/bunfig.toml). Symlinks are skipped: in the isolated layout they
-// point into the store, and workspace packages are our own code.
+// The first argument is the allowed SPDX identifiers (i18n:licenses and web:licenses pass
+// NPM_ALLOWED_LICENSES of Taskfile.yml); the rest are the node_modules directories to check,
+// tools/i18n's own when none is given. Both layouts Bun installs are covered: hoisted packages
+// and the isolated store in node_modules/.bun that the client workspace uses (app/bunfig.toml).
+// Symlinks are skipped: in the isolated layout they point into the store, and workspace packages
+// are our own code.
 //
 // SPDX expressions are evaluated: "A OR B" needs one allowed side, "A AND B" needs both.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -37,7 +38,7 @@ const reviewed: Record<string, string> = {
   // imposes nothing that conflicts with AGPL-3.0.
   "minimatch@10.2.6": "BlueOak-1.0.0",
   // The YAML loader's argument parser (js-yaml, through @redocly/openapi-core), which openapi-typescript
-  // runs in `make generate` (app/web devDependency; never bundled into the client). The FSF lists the
+  // runs in `scripts/task.sh api:generate` (app/web devDependency; never bundled into the client). The FSF lists the
   // Python license of 2.0.1 and later as compatible with the GPL, and so with AGPLv3.
   "argparse@2.0.1": "Python-2.0",
 };

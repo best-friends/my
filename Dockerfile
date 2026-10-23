@@ -16,7 +16,7 @@ ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666ba
 # The bun binary for the web stage, which runs on the build host's platform.
 FROM --platform=$BUILDPLATFORM ${BUN_IMAGE} AS bun
 
-# The web client (app/web), built as `make web-build` does: Bun installs the packages and runs the
+# The web client (app/web), built as `scripts/task.sh web:build` does: Bun installs the packages and runs the
 # script, Vite runs on Node.js (ADR-0025). The output is the same for every platform, so it is built
 # once on the build host's platform.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS web

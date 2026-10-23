@@ -23,12 +23,12 @@ a binary without a database adapter cannot start.
 
 ## Building
 
-Pass the tags, separated by commas, to the Go build, to `make build`, or to the container build:
+Pass the tags, separated by commas, to the Go build, to `scripts/task.sh go:bin`, or to the container build:
 
 ```sh
 CGO_ENABLED=0 go build -tags no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws,no_billing_gcp,no_payments_stripe ./cmd/my
-make build GO_TAGS=no_sqlite,no_valkey,no_pubsub
-make docker-build GO_TAGS=no_sqlite,no_valkey,no_sns            # docker build --build-arg GO_TAGS=...
+scripts/task.sh go:bin GO_TAGS=no_sqlite,no_valkey,no_pubsub
+scripts/task.sh docker:build GO_TAGS=no_sqlite,no_valkey,no_sns  # docker build --build-arg GO_TAGS=...
 ```
 
 The binary validates the configuration at start ([configuration reference](configuration.md)), and `my config check` and
@@ -40,7 +40,7 @@ db (MY_DB): "postgres" is not in this build: the build tag no_postgres left its 
 
 ## Checks
 
-`make go-build-tags` (part of `make go-check` and of the `check` gate of CI, [ADR-0015](../adr/0015-test-strategy.md) Build matrix)
+`scripts/task.sh go:build-tags` (part of `scripts/task.sh go:check` and of the `check` gate of CI, [ADR-0015](../adr/0015-test-strategy.md) Build matrix)
 runs, for each of these representative sets of tags, `CGO_ENABLED=0 go build` and `go vet` on every package,
 and fails when `cmd/my` still depends on a package that a tag of the set leaves out:
 
@@ -50,7 +50,7 @@ and fails when `cmd/my` still depends on a package that a tag of the set leaves 
 | `no_sqlite,no_valkey,no_pubsub,no_otel,no_billing_gcp` | AWS: PostgreSQL, the SNS broker, and the EMF metrics |
 | `no_sqlite,no_valkey,no_sns,no_billing_aws` | Google Cloud: PostgreSQL and the Pub/Sub broker |
 
-`scripts/go-build-tags.sh SET...` checks other sets. The tests (`make go-test`) run without tags, on every adapter.
+`scripts/go-build-tags.sh SET...` checks other sets. The tests (`scripts/task.sh go:test`) run without tags, on every adapter.
 
 ## Adding a tag
 
@@ -64,4 +64,4 @@ An adapter that brings a dependency of its own gets the tag `no_<name>`:
 - An adapter package shared by several dialects (such as `internal/adapter/kv/db`) puts the code of each dialect,
   its constructor, and its tests in files with the dialect's constraint.
 - Add the tag to the table above, to the choice documentation in `internal/platform/config/schema.go`
-  (`make config-docs`), and to `excluded_packages` in `scripts/go-build-tags.sh`, and use it in one of the representative sets.
+  (`scripts/task.sh go:config-docs`), and to `excluded_packages` in `scripts/go-build-tags.sh`, and use it in one of the representative sets.

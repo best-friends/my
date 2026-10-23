@@ -2,8 +2,8 @@
 
 設計判断の記録です。運用ルールは [ADR-0000](0000-record-architecture-decisions.md) を参照してください。
 
-- 新規作成: `make adr-new TITLE="短いタイトル"`
-- 一覧の再生成: `make adr-index`（CI で差分を検査します）
+- 新規作成: `scripts/task.sh docs:adr-new TITLE="短いタイトル"`
+- 一覧の再生成: `scripts/task.sh docs:adr-index`（CI で差分を検査します）
 - `Proposed` は推奨案であり未確定です。`Accepted` にできるのは人間の Decider のみです。
 
 ## 一覧

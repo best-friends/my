@@ -51,7 +51,7 @@ func acceptanceCriteria(body string) []string {
 
 // Open pushes the branch and opens its pull request from .github/pull_request_template.md's sections: the
 // summary, Closes #N (or Stacked on #M first), the commit subjects as the changes, the issue's acceptance
-// criteria checked, the decisions, and the checklist (make check checked when `agentkit check` passed on
+// criteria checked, the decisions, and the checklist (`scripts/task.sh check` checked when `agentkit check` passed on
 // this content of the tree). It comments the PR on the issue and returns the PR URL.
 func Open(r *repo.Repo, o OpenOptions) (string, error) {
 	branch, err := r.Branch()
@@ -130,7 +130,7 @@ func Open(r *repo.Repo, o OpenOptions) (string, error) {
 		decisions = "None"
 	}
 	fmt.Fprintf(&b, "\n## Decisions and assumptions\n\n%s\n\n## Checklist\n\n", decisions)
-	fmt.Fprintf(&b, "- [%s] `make check` passes locally\n", mark(CheckPassed(r)))
+	fmt.Fprintf(&b, "- [%s] `scripts/task.sh check` passes locally\n", mark(CheckPassed(r)))
 	fmt.Fprintf(&b, "- [%s] Docs / ADR index / i18n catalogs updated where needed\n", mark(o.Confirm))
 	fmt.Fprintf(&b, "- [%s] No secrets, no unrelated changes\n", mark(o.Confirm))
 	if o.Footer != "" {
@@ -159,7 +159,7 @@ func Open(r *repo.Repo, o OpenOptions) (string, error) {
 	}
 	note := ""
 	if !CheckPassed(r) {
-		note = " (make check is unchecked: run `agentkit check` and tick it)"
+		note = " (the check item is unchecked: run `agentkit check` and tick it)"
 	}
 	return url + note, nil
 }

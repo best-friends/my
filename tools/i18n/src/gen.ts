@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Regenerates pseudo-locales, typed accessors (Go and TS), and the parity golden file
-// from the source catalogs. Run after editing locales/: `make i18n-gen`.
+// from the source catalogs. Run after editing locales/: `scripts/task.sh i18n:gen`.
 // Generated files are committed, so building the Go server never needs Bun.
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

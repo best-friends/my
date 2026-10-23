@@ -3,7 +3,7 @@
 // Package web serves the web client (ADR-0028): the HTML shell that starts the SPA, the
 // Vite build output, and the Web App Manifest generated from the instance settings.
 //
-// The build of app/web is embedded from dist/, which `make web-build` fills with a copy of
+// The build of app/web is embedded from dist/, which `scripts/task.sh web:build` fills with a copy of
 // app/web/dist (the Dockerfile mounts the build there instead). Only dist/.gitkeep is
 // committed, so the package compiles and its tests run without Bun; a binary built that way
 // serves a shell without scripts and logs a warning at start.

@@ -1,7 +1,7 @@
 name: "Context: docker"
 
-# The docker context of `make check` (scripts/changed-contexts.sh): the Dockerfile image version check
-# (make docker-check), the Docker Compose smoke test (linux/amd64), and the linux/arm64 image builds. Called by
+# The docker context of `scripts/task.sh check` (scripts/changed-contexts.sh): the Dockerfile image version check
+# (docker:check), the Docker Compose smoke test (linux/amd64), and the linux/arm64 image builds. Called by
 # ci.yml, main.yml, and nightly.yml, with the inputs `check`, `smoke`, and `arm64` selecting the jobs, and runnable
 # by hand (ADR-0047).
 
@@ -13,7 +13,7 @@ on:
         type: string
         default: pr
       check:
-        description: Run make docker-check.
+        description: Run docker:check.
         type: boolean
         default: true
       smoke:
@@ -32,7 +32,7 @@ on:
         options: [pr, queue]
         default: pr
       check:
-        description: Run make docker-check.
+        description: Run docker:check.
         type: boolean
         default: true
       smoke:
@@ -53,8 +53,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: make docker-check
-        run: make docker-check
+      - uses: ./.github/actions/setup-task
+      - name: docker:check
+        run: scripts/task.sh docker:check
 
   docker-smoke:
     # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
@@ -67,8 +68,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - uses: ./.github/actions/setup-task
       - name: Smoke-test the Docker Compose setup
-        run: make docker-smoke
+        run: scripts/task.sh docker:smoke
 
   docker-arm64:
     # The smoke test covers linux/amd64; build both images for linux/arm64 too (ADR-0010) under QEMU. The Go server

@@ -30,7 +30,7 @@ prints the directory's `README.md`.
 | Step | Run |
 | --- | --- |
 | Take an issue (§1) | `issue claim <n> --plan "<one line>"`: refuses when the issue is not `agent:ready`, needs a decision, is assigned to someone else, depends on a non-Accepted ADR, or waits for an open issue |
-| Verify (§5) | `check`: `make check-changed` with the contexts, their results, and only the failing lines |
+| Verify (§5) | `check`: `scripts/task.sh check:changed` with the contexts it checks and only the failing lines |
 | Open the PR (§6) | `pr open [--summary-file f] [--decisions text] [--confirm] [--footer text] [--base <branch>]` |
 | Wait for CI (§6) | `pr wait <pr>` **in the background**: one line when CI passes; the failing lines of the failed jobs otherwise; exit 3 on a conflict |
 | Resolve a conflict (§7) | `git merge origin/main`, `regen`, `check`, push |
@@ -42,7 +42,7 @@ prints the directory's `README.md`.
 [context-map.yaml](context-map.yaml) maps paths to the document sections that govern them, their check contexts,
 whether parallel work treats them as shared files, and short notes. `ctx` uses it to pick the rules of the areas an
 issue touches. When you add a directory, module, adapter, or feature, add or extend its entry in the same change:
-`make agentkit-check` (and CI, on every change) fails when a file is not covered, when a directory under a `strict`
+`scripts/task.sh agentkit:check` (and CI, on every change) fails when a file is not covered, when a directory under a `strict`
 pattern has no entry naming it, or when a document reference does not resolve ([ADR-0003](docs/adr/0003-context-map.md)).
 `map show <path>` prints the entries of a path.
 
@@ -75,6 +75,6 @@ a change to see what it saved.
 
 ## Developing
 
-`make agentkit-check` runs `go mod tidy -diff`, `go vet`, golangci-lint (`.golangci.yml` here), the tests, the
-dependency check (only module versions the server's `go.sum` has, so `make go-licenses` covers their licenses), and
+`scripts/task.sh agentkit:check` runs `go mod tidy -diff`, `go vet`, golangci-lint (`.golangci.yml` here), the tests, the
+dependency check (only module versions the server's `go.sum` has, so `scripts/task.sh go:licenses` covers their licenses), and
 `map check`. Bump `extract.Version` when an extractor's output changes, so that indexes are rebuilt.

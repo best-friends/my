@@ -24,7 +24,7 @@ body:
       description: Verifiable checklist. An agent must be able to judge each item objectively.
       value: |
         - [ ]
-        - [ ] `make check` passes
+        - [ ] `scripts/task.sh check` passes
     validations:
       required: true
   - type: input

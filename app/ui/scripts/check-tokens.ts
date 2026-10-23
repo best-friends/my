@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Checks the design tokens of @my/ui (web-client/README.md D6, D8, Y3). Run by `make web-check`.
+// Checks the design tokens of @my/ui (web-client/README.md D6, D8, Y3). Run by `scripts/task.sh web:check`.
 //
 //   bun run scripts/check-tokens.ts [<app entry stylesheet>...]
 //

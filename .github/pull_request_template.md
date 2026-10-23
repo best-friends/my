@@ -20,6 +20,6 @@ Closes #
 
 ## Checklist
 
-- [ ] `make check` passes locally
+- [ ] `scripts/task.sh check` passes locally
 - [ ] Docs / ADR index / i18n catalogs updated where needed
 - [ ] No secrets, no unrelated changes

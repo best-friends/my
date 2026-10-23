@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
-# The bundle of api/spec/ that `make generate` writes (ADR-0066): collapsed in pull request diffs.
+# The bundle of api/spec/ that `scripts/task.sh api:generate` writes (ADR-0066): collapsed in pull request diffs.
 api/openapi.yaml linguist-generated=true

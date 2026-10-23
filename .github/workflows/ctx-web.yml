@@ -1,7 +1,7 @@
 name: "Context: web"
 
-# The client contexts of `make check` (scripts/changed-contexts.sh): ui (make ui-check and the @my/ui story tests)
-# and web (make web-check, split into the static checks and Vitest). Called by ci.yml when a pull request or a merge
+# The client contexts of `scripts/task.sh check` (scripts/changed-contexts.sh): ui (ui:check and the @my/ui story tests)
+# and web (web:check, split into the static checks and Vitest). Called by ci.yml when a pull request or a merge
 # group touches either context, with the inputs `ui` and `web` selecting the jobs, and runnable by hand (ADR-0047).
 
 on:
@@ -44,6 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-task
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
@@ -57,15 +58,17 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
-      - name: make ui-check
-        run: make ui-check
+      - name: ui:check
+        run: scripts/task.sh ui:check
 
   web:
-    # make web-check without web-test (the web-test job): tsc, Oxlint, knip, the Vite build, and the route tree.
+    # web:check without web:test (the web-test job): tsc, Oxlint, knip, the Vite build, and the route tree, after
+    # web:lint-rules, whose fixtures must not be in app/web/src while they run.
     if: inputs.web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-task
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
@@ -79,20 +82,21 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
-      - name: make web-check (static checks, except the ones decided file by file)
-        run: make web-typecheck web-lint-code web-dist web-routes-check
+      - name: web:check (static checks, except the ones decided file by file)
+        run: scripts/task.sh web:lint-rules && scripts/task.sh web:static
       # Decided file by file or by the lockfile alone, so two stacked pull requests cannot break them and the merge
       # queue skips them (ADR-0047).
-      - name: make web-check (licenses, tokens, Playwright image, 100vh)
+      - name: web:check (licenses, tokens, Playwright image, 100vh)
         if: inputs.scope == 'pr'
-        run: make web-lint-css web-licenses web-tokens playwright-image-check
+        run: scripts/task.sh --parallel web:lint-css web:licenses web:tokens web:playwright-image-check
 
   web-test:
-    # The Vitest half of make web-check, in a job of its own so that it runs beside the static checks (ADR-0047).
+    # The Vitest half of web:check, in a job of its own so that it runs beside the static checks (ADR-0047).
     if: inputs.web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-task
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
@@ -106,8 +110,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
-      - name: make web-test
-        run: make web-test
+      - name: web:test
+        run: scripts/task.sh web:test
 
   ui-test:
     # The @my/ui story tests (ui-test.yml), which main.yml also runs after the merge. The merge queue skips them: a

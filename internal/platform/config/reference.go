@@ -13,7 +13,7 @@ const ReferencePath = "docs/reference/configuration.md"
 // Reference renders the configuration reference from the schema as Markdown.
 func Reference() string {
 	var b strings.Builder
-	b.WriteString(`<!-- Code generated from internal/platform/config/schema.go by "make config-docs". DO NOT EDIT. -->
+	b.WriteString(`<!-- Code generated from internal/platform/config/schema.go by "scripts/task.sh go:config-docs". DO NOT EDIT. -->
 
 # Configuration reference
 

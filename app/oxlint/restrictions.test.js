@@ -3,7 +3,7 @@
 // intended alternative, with the options the workspace is linted with for a file of each kind. The rules of
 // JS plugins (restrict/*, better-tailwindcss/no-restricted-classes) run in Oxlint's RuleTester; Oxlint's
 // native rules (no-restricted-imports / -globals / -properties) run in the oxlint binary, which is the only
-// way to run them. Run with `node --test` from app/ (part of `make web-lint`): the RuleTester needs Node.js.
+// way to run them. Run with `node --test` from app/ (part of `scripts/task.sh web:lint`): the RuleTester needs Node.js.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

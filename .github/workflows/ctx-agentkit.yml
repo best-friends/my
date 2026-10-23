@@ -1,8 +1,8 @@
 name: "Context: agentkit"
 
-# The agentkit context of `make check` (scripts/changed-contexts.sh): tools/agentkit, the context and workflow
+# The agentkit context of `scripts/task.sh check` (scripts/changed-contexts.sh): tools/agentkit, the context and workflow
 # tools for coding agents (go mod tidy, vet, golangci-lint, tests, its dependencies against go.sum), and its
-# context map, which must cover every path, so every change runs it (make agentkit-check).
+# context map, which must cover every path, so every change runs it (agentkit:check).
 # Called by ci.yml when a pull request or a merge group touches the context, and runnable by hand (ADR-0047).
 
 on:
@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-task
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .tool-versions
@@ -52,5 +53,5 @@ jobs:
         with:
           version: v${{ steps.tools.outputs.golangci-lint }}
           install-only: true
-      - name: make agentkit-check
-        run: make agentkit-check
+      - name: agentkit:check
+        run: scripts/task.sh agentkit:check

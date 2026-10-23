@@ -58,7 +58,7 @@ for out in "${outs[@]}"; do
   fi
 done
 if [ "$stale" -ne 0 ]; then
-  echo "sqlc-generated code is stale; run 'make sqlc' and commit the result" >&2
+  echo "sqlc-generated code is stale; run 'scripts/task.sh go:sqlc' and commit the result" >&2
   exit 1
 fi
 echo "sqlc-generated code is up to date"

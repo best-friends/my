@@ -10,7 +10,7 @@
 //   - TEST_POSTGRES_URL: an existing server, as a postgres:// URL whose user may create databases.
 //   - TEST_POSTGRES: without TEST_POSTGRES_URL, "pgmem" (the default) runs pgmem, PostgreSQL in
 //     memory inside the test process, and "container" starts a container with testcontainers-go.
-//   - TEST_POSTGRES_IMAGE: the container image; it defaults to the one `make db-up` uses.
+//   - TEST_POSTGRES_IMAGE: the container image; it defaults to the one `scripts/task.sh db:up` uses.
 //   - TEST_POSTGRES_REQUIRED: when non-empty, a container that cannot start because Docker is
 //     unavailable fails the tests instead of skipping them. CI sets it.
 //
@@ -55,7 +55,7 @@ const (
 	ServerContainer = "container"
 )
 
-// DefaultImage is the container image of TEST_POSTGRES=container, the one `make db-up` uses.
+// DefaultImage is the container image of TEST_POSTGRES=container, the one `scripts/task.sh db:up` uses.
 const DefaultImage = "postgres:18-alpine"
 
 // server is the PostgreSQL server of this test binary and its template database.

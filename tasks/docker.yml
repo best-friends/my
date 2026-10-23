@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The container image and the deployments (ADR-0010; the docker context of scripts/changed-contexts.sh).
+version: "3"
+
+vars:
+  VERSION:
+    sh: '{{if .VERSION}}echo {{shellQuote .VERSION}}{{else}}git describe --tags --always --dirty 2>/dev/null || echo dev{{end}}'
+
+tasks:
+  check:
+    desc: Run the offline container image checks
+    deps: [dockerfile-check]
+
+  dockerfile-check:
+    desc: Fail if the Dockerfile's Go, Node.js, or Bun image differs from the version in .tool-versions
+    silent: true
+    cmds:
+      - |
+        status=0
+        for pair in GO_IMAGE:golang:golang NODE_IMAGE:node:nodejs BUN_IMAGE:oven/bun:bun; do
+          arg="${pair%%:*}"; rest="${pair#*:}"; image="${rest%:*}"; tool="${rest##*:}"
+          want="$image:$(awk -v t="$tool" '$1 == t { print $2 }' .tool-versions)-"
+          grep -q "^ARG $arg=$want" Dockerfile || { echo "Dockerfile: $arg must start with $want" >&2; status=1; }
+        done
+        exit "$status"
+
+  build:
+    desc: Build the server image my:VERSION for the local platform (GO_TAGS as in go:bin)
+    cmds:
+      - docker build --build-arg VERSION={{.VERSION}} --build-arg GO_TAGS={{.GO_TAGS}} -t my:{{.VERSION}} .
+
+  smoke:
+    desc: Start deploy/docker/compose.yaml, create an admin, check WebFinger / Actor / NodeInfo, tear down
+    env:
+      MY_VERSION: "{{.VERSION}}"
+    cmds:
+      - scripts/docker-smoke.sh
+
+  # Not part of `check`: it pulls Mastodon, GoToSocial, and Misskey and takes minutes (CI job federation-live, nightly).
+  federation-live:
+    desc: Run the live interoperability scenarios against Mastodon, GoToSocial, and Misskey (deploy/docker/federation-live)
+    env:
+      MY_VERSION: "{{.VERSION}}"
+    cmds:
+      - scripts/federation-live.sh {{.FEDERATION_LIVE_FLAGS}}
