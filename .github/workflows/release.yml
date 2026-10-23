@@ -1,0 +1,92 @@
+name: Release
+
+# The only way a release is made (ADR-0079): run by hand with a version on the commit to release
+# (`gh workflow run release.yml --ref main -f version=v0.1.0`). It runs the slow suite (slow-suite.yml) on that commit
+# (github.sha) and, only when every job of the suite passed, tags the commit and creates a draft GitHub Release.
+# The decider reviews the draft and publishes it. docs/operations/releasing.md describes the procedure.
+#
+# The version is vX.Y.Z or vX.Y.Z-<pre-release>. A ref other than main takes a pre-release version only, so that the
+# gate can be tried on a branch without making a release of it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version to release: vX.Y.Z, or vX.Y.Z-<pre-release> (e.g. v0.1.0-rc.1)."
+        type: string
+        required: true
+
+permissions: {}
+
+# One release at a time; a second one waits instead of cancelling the first.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Validate the version and check that its tag does not exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+          REF: ${{ github.ref }}
+        run: |
+          if ! [[ "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::The version must be vX.Y.Z or vX.Y.Z-<pre-release>: $VERSION"
+            exit 1
+          fi
+          if [ "$REF" != refs/heads/main ] && [[ "$VERSION" != *-* ]]; then
+            echo "::error::$REF is not main: release it as a pre-release version (vX.Y.Z-<pre-release>)."
+            exit 1
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/$VERSION" > /dev/null 2>&1; then
+            echo "::error::The tag $VERSION already exists."
+            exit 1
+          fi
+
+  slow-suite:
+    needs: validate
+    uses: ./.github/workflows/slow-suite.yml
+    # The permissions of slow-suite.yml's CodeQL job.
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+  release:
+    # Runs only when the slow suite passed: a failed or cancelled suite skips this job, and nothing is tagged.
+    needs: [validate, slow-suite]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Tag the commit and create a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+          SHA: ${{ github.sha }}
+        run: |
+          # The suite takes hours; check again that no one made the tag or the release in the meantime.
+          if gh api "repos/$GH_REPO/git/ref/tags/$VERSION" > /dev/null 2>&1; then
+            echo "::error::The tag $VERSION already exists."
+            exit 1
+          fi
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            echo "::error::A release named $VERSION already exists."
+            exit 1
+          fi
+          # A draft release makes no tag until it is published: create the tag first, at the tested commit.
+          gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/$VERSION" -f sha="$SHA" > /dev/null
+          prerelease=()
+          if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
+          gh release create "$VERSION" --draft --verify-tag --generate-notes "${prerelease[@]}" --title "$VERSION"
+          echo "Draft release $VERSION created at $SHA." >> "$GITHUB_STEP_SUMMARY"
+
+      # M5 (#30) adds the release artefacts here, after the draft exists and before it is published: publishing the
+      # container images of the tagged commit and writing the release notes.

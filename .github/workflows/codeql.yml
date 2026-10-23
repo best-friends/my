@@ -7,6 +7,7 @@ name: CodeQL
 # security-extended suite mostly adds log-injection alerts on slog calls, whose handlers already quote the values.
 
 on:
+  workflow_call:
   push:
     branches: [main]
   schedule:

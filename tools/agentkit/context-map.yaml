@@ -44,7 +44,7 @@ entries:
     checks: [docs]
   - name: build-and-ci
     paths: ["Taskfile.yml", "tasks/**", ".github/**", "scripts/**", ".claude/**"]
-    docs: ["docs/agents/workflow.md#what-ci-runs-where", "docs/adr/0047-ci-protection-layers.md", "docs/adr/0080-task-runner-go-task.md"]
+    docs: ["docs/agents/workflow.md#what-ci-runs-where", "docs/adr/0047-ci-protection-layers.md", "docs/adr/0079-ci-single-gate-merge-queue.md", "docs/adr/0080-task-runner-go-task.md", "docs/operations/releasing.md"]
     checks: [docs, go, i18n, api, ui, web, docker, agentkit]
     shared: true
     notes:

@@ -37,7 +37,7 @@ tasks:
     cmds:
       - scripts/docker-smoke.sh
 
-  # Not part of `check`: it pulls Mastodon, GoToSocial, and Misskey and takes minutes (CI job federation-live, nightly).
+  # Not part of `check`: it pulls Mastodon, GoToSocial, and Misskey and takes minutes (CI job federation-live, in the slow suite).
   federation-live:
     desc: Run the live interoperability scenarios against Mastodon, GoToSocial, and Misskey (deploy/docker/federation-live)
     env:

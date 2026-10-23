@@ -2,7 +2,7 @@ name: "Context: docker"
 
 # The docker context of `scripts/task.sh check` (scripts/changed-contexts.sh): the Dockerfile image version check
 # (docker:check), the Docker Compose smoke test (linux/amd64), and the linux/arm64 image builds. Called by
-# ci.yml, main.yml, and nightly.yml, with the inputs `check`, `smoke`, and `arm64` selecting the jobs, and runnable
+# ci.yml, main.yml, and slow-suite.yml, with the inputs `check`, `smoke`, and `arm64` selecting the jobs, and runnable
 # by hand (ADR-0047).
 
 on:
@@ -75,7 +75,7 @@ jobs:
   docker-arm64:
     # The smoke test covers linux/amd64; build both images for linux/arm64 too (ADR-0010) under QEMU. The Go server
     # cross-builds with CGO_ENABLED=0, so only a change to the Dockerfile or the deployments makes the arm64 images
-    # differ: ci.yml runs it on a change to the docker context and nightly.yml every night (ADR-0047).
+    # differ: ci.yml runs it on a change to the docker context and slow-suite.yml in every run (ADR-0079).
     if: inputs.arm64 && inputs.scope == 'pr'
     runs-on: ubuntu-latest
     steps:

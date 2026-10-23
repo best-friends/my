@@ -39,7 +39,7 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 鍵の生成・暗号化とパスワードのハッシュ計算は、トランザクションの前に済ませます。
 
 PostgreSQL の並行性の挙動（READ COMMITTED、`SELECT ... FOR UPDATE`、`FOR UPDATE SKIP LOCKED`、トランザクションスコープのアドバイザリロック、デッドロック（40P01）の再実行）は、
-同じコントラクトテストが確かめます。毎 PR では pgmem（PGlite のフォークの PostgreSQL 18）の上で、main への push と nightly では本物の PostgreSQL のコンテナの上で流します（[ADR-0041](../../adr/0041-postgres-tests-on-pgmem.md)）。
+同じコントラクトテストが確かめます。毎 PR では pgmem（PGlite のフォークの PostgreSQL 18）の上で、遅い検査（リリースの関門・nightly・手動）では本物の PostgreSQL のコンテナの上で流します（[ADR-0041](../../adr/0041-postgres-tests-on-pgmem.md)、[ADR-0079](../../adr/0079-ci-single-gate-merge-queue.md)）。
 
 ### 2.2 冪等キーと一意制約
 
