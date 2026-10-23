@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The app shell in every width × locale project (ADR-0027): the layout of each page, its landmarks, and
-// what a navigation does to focus and the document title (web-client.md Y5). Names change with the
+// what a navigation does to focus and the document title (web-client/README.md Y5). Names change with the
 // locale, so elements are found by role and position, and texts are compared with each other. The user's
 // navigation needs a session: `vite preview` has no API, so serveSignedIn answers as a signed-in user's server.
 import type { Page, Route } from "@playwright/test";
@@ -45,7 +45,7 @@ async function serveSignedIn(page: Page, account: Record<string, unknown> = alic
 /** Every page of the shell, in the order of the navigation. */
 const pages = ["/home", "/local", "/notifications", "/search", "/profile", "/settings"] as const;
 
-/** The pages whose h1 only says where the user is, visually hidden (web-client.md G5). */
+/** The pages whose h1 only says where the user is, visually hidden (web-client/16-look-states-and-wording.md G5). */
 const hiddenHeadingPages: ReadonlySet<string> = new Set(["/home", "/local", "/notifications", "/search", "/settings"]);
 
 /** The pages that phones reach from the menu's sheet instead of the tab bar (ADR-0039). */

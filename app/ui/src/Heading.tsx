@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A heading whose level (the page outline) and look (the type role) are separate props, so that no level is skipped for
-// its look (web-client.md G5). The look follows the level unless `size` says otherwise.
+// its look (web-client/16-look-states-and-wording.md G5). The look follows the level unless `size` says otherwise.
 import type { ComponentPropsWithRef } from "react";
 import { tv } from "tailwind-variants";
 import { Spark, type SparkMark } from "./Spark";

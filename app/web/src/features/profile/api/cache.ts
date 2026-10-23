@@ -2,7 +2,7 @@
 // One account appears in many cached answers at once: its own queries (GET /accounts/lookup and
 // /accounts/{id}), the author of each of its posts in every timeline, thread and post, the notifications it
 // caused and the lists of accounts it is in. A change of its profile that the server has answered is known
-// for certain, so it is written into every copy at once (web-client.md S1, S8): a page that a route shows
+// for certain, so it is written into every copy at once (web-client/README.md S1, S8): a page that a route shows
 // from the cache (S7) shows the new profile from its first render, without fetching it again. The
 // answers are matched by shape, not by key, as the posts' are (features/status/api/cache.ts).
 import type { QueryClient } from "@tanstack/react-query";

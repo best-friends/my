@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The app shell at each of its layouts. The shell answers to the viewport (web-client.md D2), so each story sets one
+// The app shell at each of its layouts. The shell answers to the viewport (web-client/README.md D2), so each story sets one
 // (storyViewports.ts) and is captured once at it; the other projects add the right-to-left direction and the dark theme.
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";

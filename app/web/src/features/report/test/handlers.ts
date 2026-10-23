@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the report feature (web-client.md §7): POST /reports files the report it is
+// The default MSW handlers of the report feature (web-client/README.md §7): POST /reports files the report it is
 // sent, against the accounts the fixtures know, and answers it as the server does. The rules that a
 // violation cites are in `rulesFixture`, which a test serves in GET /instance with `instanceWithRules`.
 import { http, HttpResponse } from "msw";

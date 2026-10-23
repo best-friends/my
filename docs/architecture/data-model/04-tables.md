@@ -1,193 +1,3 @@
-# 論理データモデル（v0）
-
-> 方言に依存しない **論理スキーマ** です。方言別の `schema/<dialect>.sql` はこの文書に従って書き、乖離は CI で検査します（[ADR-0003](../adr/0003-database-abstraction.md)）。
-> モデリングの規約は [ADR-0020](../adr/0020-data-modeling-principles.md)（リソース・イベント・投影の分離と、状態の直交分解）です。この文書はその適用結果です。
-> 前提にしている ADR: [ADR-0002](../adr/0002-modular-monolith-hexagonal.md)、[ADR-0003](../adr/0003-database-abstraction.md)、[ADR-0004](../adr/0004-job-queue-abstraction.md)、[ADR-0007](../adr/0007-client-api.md)、[ADR-0013](../adr/0013-timeline-strategy.md)、[ADR-0017](../adr/0017-visibility-local.md)、[ADR-0018](../adr/0018-federated-uris.md)。
-> v0 はマイグレーションを持たず作り直す前提です（[ADR-0012](../adr/0012-v0-breaking-change-policy.md)）。
-
-## 1. 共通規約
-
-### 1.1 テーブルの分類
-
-すべてのテーブルに、次のいずれかの分類を付けます（ADR-0020 規約 1, 5）。各表の見出しの横に【分類】を記します。
-
-| 分類 | 書き込み | 説明 |
-| --- | --- | --- |
-| 【リソース】 | INSERT のみ（消去ジョブによる物理削除を除く） | 識別子を持つ「もの」。作成時に決まる不変の事実だけを持つ |
-| 【イベント】 | INSERT のみ | 起きた事実。**発生日時のカラムは 1 つだけ**（`*_at`）。訂正・取り消しは別のイベントで表す |
-| 【投影】 | 所有モジュールの projector だけが UPSERT / DELETE | イベントから導出した現在値。§9 の再構築手順で作り直せる |
-| 【現在値】 | 所有モジュールが UPSERT / DELETE | 履歴に意味がない高頻度の関係・設定値（ADR-0020 規約 5）。お気に入り・ミュート・利用者設定など |
-| 【基盤】 | アダプタ | outbox・ジョブ・KV |
-
-- 版（リビジョン）は【イベント】の一種です。「最新版」を頻繁に引くものは投影（`*_heads`）で指します。最新版を引く頻度が低いものは `(親, id DESC)` のインデックスで直接引きます。
-- 期限（`expires_at`、`closes_at`）は「決定の内容」であって発生日時ではありません。イベントが持ってもよい属性です。
-
-### 1.2 論理型
-
-| 論理型 | 意味 | SQLite 系 | PostgreSQL 系 |
-| --- | --- | --- | --- |
-| `id` | UUIDv7 の正規形文字列（36 文字、小文字） | `TEXT` | `uuid`（16 バイトのバイト順 = 時刻順。[ADR-0078](../adr/0078-postgres-uuid-columns.md)）。Go では `string`。UUID でない値を持つ列（外部の事業者の ID、`client_id`、監査ログの `target_id`、`emoji_key` など）は `text COLLATE "C"` |
-| `string(n)` | 長さ上限つき文字列（上限はアプリで検証） | `TEXT` | `text` |
-| `text` | 長文 | `TEXT` | `text` |
-| `iri` | URL / ActivityPub の IRI（最大 2048 文字を想定） | `TEXT` | `text` |
-| `int` / `bigint` | 整数 | `INTEGER` | `integer` / `bigint` |
-| `real` | 倍精度の浮動小数点数（メディアの焦点など、誤差を許す量だけ） | `REAL` | `double precision` |
-| `bool` | 真偽値 | `INTEGER`（0/1） | `boolean` |
-| `timestamp` | UTC・ミリ秒精度の時刻 | `INTEGER`（Unix ミリ秒、#17 の推奨） | `timestamptz` |
-| `date` | 時刻とタイムゾーンを持たない暦の日付（`YYYY-MM-DD`、0001-01-01〜9999-12-31） | `TEXT` + `CHECK (date(x) IS x)` | `date` |
-| `lang` | BCP 47 言語タグ。不明は `und` | `TEXT` | `text` |
-| `enum(…)` | 英小文字スネークケースの列挙 | `TEXT` + `CHECK` | `text` + `CHECK` |
-| `bytes` | バイナリ（暗号化済みの秘密など） | `BLOB` | `bytea` |
-| `document` | **解釈しない** JSON 文書のバイト列（受信した AP 文書の原本など）。書いたバイト列のまま読み戻す。検索・制約・部分更新に使わない | `BLOB` | `bytea` |
-
-- `document` を JSON の型（PostgreSQL の `jsonb`・`json`）や `text` にしないのは、データベースに文書を解釈させないためです。
-  - `jsonb` はキーの順序と空白を変え、重複したキーは最後の値だけを残します。AS2 の正規化（[federation §4](federation.md#4-as2-の正規化)）は最初の値を読み、`contentMap` の順序にも意味を持たせるので、方言によって処理の結果が変わってしまいます。
-  - `jsonb` は `\u0000` と対になっていないサロゲートのエスケープを、`text` はヌル文字を受け付けません。そのような受信を `500` で返すと、送信側は再送し続けます。
-  - 受信した文書の原本は、障害調査とフィクスチャの採取のため、受け取ったバイト列のまま残します。
-- `date` は支払日のように、カードの明細や請求書に書かれた日付そのものです（[ADR-0067 §5](../adr/0067-finance-cost-records.md)）。時刻の値ではないので、`timestamp` の「UTC で保持」は当たりません。
-  SQLite の `date()` は実在する `YYYY-MM-DD` だけを同じ文字列で返すので、`CHECK` は `2026-02-30` や時刻つきの値を拒みます。`TEXT` のままの比較と並べ替えは日付の順と一致します。
-  PostgreSQL の `date` はテストの pgmem（[ADR-0041](../adr/0041-postgres-tests-on-pgmem.md)）でも実際の PostgreSQL と同じに動き、`testkit.FinanceRepositoryContract` が両方言で確かめます。
-  Go では `finance.Date`（`internal/domain/finance`）で持ち、方言のアダプタが `YYYY-MM-DD` の文字列と `pgtype.Date` に変えます。
-- 文字列の論理型（`id`・`string(n)`・`text`・`iri`・`lang`・`enum`）の値は、妥当な UTF-8 でヌル文字（U+0000）を含みません。
-  PostgreSQL の `text` はヌル文字を保存できず、SQLite は保存できるので、方言で結果が変わらないようにアプリが書く前に守ります。
-  ローカルの入力（クライアント API・CLI・認証画面から文字列の列に書く値）は、モジュールのドメインの検証で拒否します。
-  検証は入力の種類ごとに 1 か所にあり（`content.ValidText`、`moderation.TextError` を返す処分と解除の検証、`identity` の `Validate…` など）、クライアント API はそれを `422` で返します。
-  JSON の本文は不正な UTF-8 を U+FFFD として読みますが、`multipart/form-data` の部分とヘッダー（`Idempotency-Key`）はバイト列のまま届くので、ヌル文字と不正な UTF-8 の両方を検証します。
-  リモートの文書の文字列は正規化でヌル文字を U+FFFD に置き換えます（[federation §4](federation.md#4-as2-の正規化)）。
-  検索に使う入力も同じです。PostgreSQL はそのようなパラメーターで検索に失敗し（SQLSTATE 22021）、SQLite は何も見つけないので、検索する前に HTTP の入口で拒否します。
-  リクエストのパス・クエリのパラメーター・`application/x-www-form-urlencoded` の本文のフィールドは `platform` の `rejectInvalidText` が `400` に、
-  クライアント API の JSON の本文の文字列は `clientapi` の `rejectInvalidBodyText`（strict のミドルウェア）がプロパティ名を示す `422` にします。
-  検索に使うヘッダーと Cookie のトークン（アクセストークン・セッション）は、ハッシュにしてから検索します。
-- 表記: カラムは特記がなければ `NOT NULL`。NULL 可のものは「NULL 可」と書きます。
-  - **状態を NULL で表すことはしません**（ADR-0020 規約 4）。NULL 可は「任意の関連」（例: 通報に基づかない処分の `report_id`）と「無期限」（`expires_at`）に限ります。
-- 名前: カラム・テーブルは英語スネークケースで、テーブル名は複数形です。
-  - 大文字小文字を無視する値は正規化済みカラム（`*_normalized`）を別に持ち、そちらに一意制約を張ります。
-  - ドメイン名とリモートの URI のホストは、IDNA 2008 の A-label（小文字の punycode）で保存します（[federation §1.2](federation.md#12-自サーバーの-uri)）。
-- 「ローカル」を表すドメインは空文字 `''` です。NULL は一意制約上は互いに別の値として扱われるため、NULL では表しません。
-
-### 1.3 ID とキーセットページング
-
-- 主キーは UUIDv7 です（`IdGenerator` ポート、Go 1.27 の `uuid.NewV7()`）。辞書順と時刻順が一致するので、`ORDER BY id` がそのまま時系列になります。
-- PostgreSQL の `uuid` には `max` / `min` の集約関数が無いので、「最新の版の `id`」は `ORDER BY id DESC LIMIT 1` や `DISTINCT ON` で取ります。
-- ページングは常にキーセット方式（`id < :cursor ORDER BY id DESC LIMIT :n + 1`）です。不透明なカーソルの中身はこの `id` です（ADR-0016）。
-- リモート投稿の `id` は AP の `published` から生成します（未来の時刻は現在時刻に丸めます）。Go では `IDGenerator.NewIDAt` です。
-  - 同じミリ秒の ID どうしの順序は保証せず、ランダム部で一意性だけを確保します。キーセットページングは `id` の全順序で進むので、順序が任意でも行の取りこぼしや重複は起きません。
-- UUIDv7 は時刻から下限値を作れるので、`id >= uuidv7_floor(now - N days)` を読み取り量の上限として使えます（§6）。Go では `kernel.UUIDv7Floor` が下限値を返します。
-
-### 1.4 参照と削除
-
-- 参照は `xxx_id` による論理参照です。物理的な外部キーは同一モジュール内に限り任意で、モジュールをまたぐ参照には付けません。
-  - Aurora DSQL も外部キーに対応した（#18）ため、同一モジュール内の外部キーは方言別スキーマで付ける方向で検討します（§11）。
-- 削除の扱い（ADR-0020 規約 6）:
-  - **論理的な削除は削除イベントで表します**（`status_deletions`、`account_lifecycle_events`）。
-  - **物理削除は消去ジョブだけが行います**。個人データの行（本文・プロフィール・メールアドレス）を消し、投影を更新します。
-  - 連合の重複排除に必要な URI は削除イベント側に残ります（tombstone を兼ねます）。
-
-## 2. 整合性モデル
-
-### 2.1 トランザクションの規律
-
-ADR-0003（短く再実行可能なトランザクション、内部で外部 I/O をしない）と ADR-0020 規約 7 に従います。
-
-- 1 つのコマンドは、**1 つのモジュールのリソース / イベント** を書き込みます。加えて、そのイベントを購読する **同期 projector**（自分の投影を更新）と `outbox_events` を、同じトランザクションで書きます。
-- projector は購読するイベントの内容だけで投影を更新し、他モジュールのテーブルを読みません。必要な値はイベントに載せます。
-- 同期 projector は起動時に `uow.Projectors` へイベント種別ごとに登録します。コマンドがトランザクション関数の中で `tx.Emit(ctx, event)` を呼ぶと、登録順に同じトランザクションで実行され、projector の失敗はコマンドごとロールバックします。
-- コミットフック（`uow.Projectors.OnCommit`）は、コミットしたトランザクションが `tx.Emit` で発行したイベントを、コミットの後にトランザクションの外で受け取ります。
-  ロールバックした試行・再実行で捨てた試行のイベントは届きません。フックはプロセス内の通知（リアルタイム更新、[overview §4.4](overview.md#44-リアルタイム更新sse)）だけに使い、失わせてはいけない処理は outbox のジョブにします。
-  投影の再構築（§9）は `tx.Emit` を通らないので、フックを起こしません。
-- 件数が利用者数・フォロワー数に比例する処理は、非同期 projector またはカーソル付きのジョブで、一定件数ずつ行います。
-  - 該当するのは、配送先の展開・消去・アカウント単位の制限の全投稿への反映などです。
-- 時刻と ID はトランザクション関数の外で一度だけ生成して渡します（再実行で値が変わらないように）。
-
-| コマンド | 書き込むリソース / イベント | 同期で更新する投影 | outbox |
-| --- | --- | --- | --- |
-| 利用者登録 | `users`, `password_credentials`, `accounts`, `local_accounts`, `account_profile_revisions`, `account_keys`, `local_account_private_keys`（登録画面からは加えて `user_email_addresses`, `registration_applications`, `registration_decisions`, `invite_redemptions`, `user_tokens`, `sessions`） | `account_handles`, `account_profile_heads`（登録画面からは加えて `user_primary_emails`, `user_registration_states`, `session_activity`） | なし（確認メールはコミット後に `Mailer` で送る） |
-| 投稿 | `statuses`, `local_statuses`, `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `account_post_counters`, `local_post_counters`, `notifications`（メンション） | 配送の展開 |
-| 投稿の編集 | `status_revisions` と子テーブル | `status_heads`, `status_mention_index`, `feed_entries`（言語）, `feed_tag_entries`, `feed_direct_recipients`, `notifications`（増えたメンション） | `Update` の配送 |
-| 投稿の削除 | `status_deletions` | `status_heads`, `status_mention_index`, `status_reply_links`, `status_counters`, `account_post_counters`, `local_post_counters`, `boost_edges`, `feed_entries`, `feed_tag_entries`, `feed_direct_recipients`, `notification_deleted_statuses` | `Delete` の配送 |
-| ブースト | `boosts` | `boost_edges`, `feed_entries`, `status_counters`, `local_post_counters`, `notifications` | `Announce` の配送（`local` 投稿のブーストは連合しない） |
-| ブーストの取り消し | `boost_retractions` | `boost_edges`, `feed_entries`, `status_counters`, `local_post_counters` | `Undo Announce` の配送（連合したブーストだけ） |
-| お気に入り / 取り消し | `favourites`（現在値） | `status_counters`, `notifications`（お気に入りだけ） | `Like` / `Undo Like` の配送（リモートの投稿だけ） |
-| 絵文字リアクション / 取り消し | `reactions`（リソース。取り消しで行を消す） | `status_reaction_counts`, `notifications`（リアクションだけ） | 絵文字付きの `Like` / `Undo Like` の配送（ローカルの人のリモートの投稿へのものだけ） |
-| ブックマーク・ピン留め / 取り消し | `bookmarks` / `status_pins`（現在値） | なし | なし |
-| フォロー | `follows`（＋自動承認なら `follow_acceptances`） | `follow_edges`, `feed_follow_edges`, `follow_counters`, `notifications` | `Follow` / `Accept` の配送 |
-| ブロック | `blocks`（＋両方向のフォローの `follow_terminations`） | `block_edges`, `follow_edges`, `feed_follow_edges`, `feed_exclusions`, `follow_counters`, `notification_exclusions` | `Block` の配送 |
-| ミュート / 解除 | `mutes`（現在値） | `feed_exclusions`, `notification_exclusions` | なし |
-| ドメインのミュート / 解除 | `account_domain_mutes`（現在値） | `feed_domain_mutes`, `notification_domain_exclusions` | なし |
-| 処分 | `moderation_actions`（＋`moderation_action_statuses`） | `account_restrictions`, `feed_author_restrictions` | 通知・投稿の削除やセンシティブ化（大量なら非同期） |
-| Inbox 処理 | `received_activities` と対象のリソース / イベント | 対象に応じて | 対象に応じて |
-
-`queue/db` アダプタでは、outbox を経由せず同じトランザクションで `jobs` に挿入してもかまいません。
-
-利用者登録は、ログイン主体（`identity`）とそれが名乗るアカウント（`account`）が片方だけ存在する状態を作らないよう、例外として 2 つのモジュールに書き込みます。
-`identity` のコマンドが `account` のアプリケーション層の公開 API（`PrepareLocalAccount` / `WriteLocalAccount`）を同じトランザクションの中で呼び、`account` のテーブルは `account` のコードだけが書きます。
-鍵の生成・暗号化とパスワードのハッシュ計算は、トランザクションの前に済ませます。
-
-PostgreSQL の並行性の挙動（READ COMMITTED、`SELECT ... FOR UPDATE`、`FOR UPDATE SKIP LOCKED`、トランザクションスコープのアドバイザリロック、デッドロック（40P01）の再実行）は、
-同じコントラクトテストが確かめます。毎 PR では pgmem（PGlite のフォークの PostgreSQL 18）の上で、main への push と nightly では本物の PostgreSQL のコンテナの上で流します（[ADR-0041](../adr/0041-postgres-tests-on-pgmem.md)）。
-
-### 2.2 冪等キーと一意制約
-
-| 対象 | キー | 用途 |
-| --- | --- | --- |
-| 受信アクティビティ | `received_activities (activity_uri)` | Inbox の受信時の重複排除（[ADR-0033](../adr/0033-inbox-processing-model.md)）。`id` を持たないものは `actor` と本文の SHA-256 から `urn:my:digest:<hex>` を合成する（[federation §3.1](federation.md#31-同期の部分)） |
-| 順序の入れ替わり | `remote_object_tombstones (uri)`、`remote_follow_tombstones (activity_uri)`、`status_deletions (uri)` | 先に届いた `Delete` / `Undo` の後に届いた `Create` / `Follow` などを捨てる |
-| AP オブジェクト | `accounts (uri)`, `statuses (uri)`, `boosts (uri)`, `follows (uri)`, `follow_resends (uri)`, `blocks (uri)`, `reports (uri)`, `poll_votes (uri)`, `custom_emojis (uri)` | 受信・取得の重複排除 |
-| 版 | `status_revisions (status_id, seq)`, `account_profile_revisions (account_id, seq)` | 同じ `Update` の再処理を no-op にする。リモートの `updated` が現在版以下なら版を作らない |
-| 状態遷移イベント | `follow_acceptances (follow_id)`, `follow_rejections (follow_id)`, `follow_terminations (follow_id)`, `boost_retractions (boost_id)`, `block_retractions (block_id)`, `moderation_action_lifts (action_id)` | 同じ遷移の二重記録を防ぐ（1 リソースにつき 1 回だけ起きる遷移は PK にする） |
-| 1 回限りの引き換え | `oauth_authorization_code_redemptions (code_hash)`, `user_token_redemptions (token_id)`, `invite_redemptions (invite_id, seq)` | 条件付き UPDATE の代わりに、引き換えイベントの一意制約で 1 回性を保証する |
-| クライアントからの投稿 | `local_statuses (author_account_id, idempotency_key)` | API の `Idempotency-Key`。再送には同じ投稿を返す |
-| 通知 | `notifications (recipient_account_id, dedupe_key)` | 同じイベントの再処理や繰り返した操作で通知を増やさない（§4.7） |
-| 配送 | `deliveries (outbound_activity_id, inbox_url)` | 展開ジョブの再実行で重複しない |
-| ジョブ | `jobs (idempotency_key)` | 未完了のジョブの重複投入を no-op にする（ADR-0004） |
-
-### 2.3 集計値
-
-- カウンタは【投影】です。イベントを集計するモジュールが所有します。
-  - `account_post_counters`・`local_post_counters`・`status_counters` は `content`、`follow_counters` は `graph` が所有します。
-- 加算・減算は、元のイベントが実際に挿入された（影響行数 = 1）ときだけ行います。
-- ずれは定期ジョブ `projection.verify`（1 日ごと）が、イベントから数え直して補正します（§9）。
-- リモートアカウントのフォロワー数などは、取得スナップショットの `totalItems` を表示に使います。ローカルのカウンタは「このインスタンスが知っている件数」として別に持ちます。
-
-## 3. 概念モデル
-
-### 3.1 モジュールと主な概念
-
-```mermaid
-erDiagram
-    users ||--|| local_accounts : "logs in as"
-    accounts ||--o| local_accounts : "subtype"
-    accounts ||--o| remote_accounts : "subtype"
-    accounts ||--o{ account_profile_revisions : "profile versions"
-    accounts ||--o{ account_lifecycle_events : "lifecycle"
-    accounts ||--o{ moderation_actions : "sanctioned by"
-    moderation_actions ||--o| moderation_action_lifts : "lifted by"
-    moderation_actions }o--o| reports : "based on"
-    accounts ||--o{ statuses : "authors"
-    statuses ||--|{ status_revisions : "versions"
-    statuses ||--o| status_deletions : "deleted by"
-    accounts ||--o{ boosts : "boosts"
-    boosts }o--|| statuses : "of"
-    accounts ||--o{ follows : "follows"
-    follows ||--o| follow_acceptances : ""
-    follows ||--o| follow_rejections : ""
-    follows ||--o| follow_terminations : ""
-```
-
-### 3.2 イベントから投影への流れ（例: 処分）
-
-```mermaid
-flowchart LR
-    A[moderation_actions] -->|"処分の種類 → 制限の対応表（§5.2）"| R[account_restrictions]
-    L[moderation_action_lifts] --> R
-    D[domain_moderation_actions] --> DR[domain_restrictions]
-    R --> P{"RestrictionPolicy（ドメイン層）"}
-    DR --> P
-    LC[account_lifecycle_states] --> P
-    P -->|canLogin / canPost / visibilityCeiling / discoverable| UseCases[ユースケース・canView]
-    R --> F[feed_author_restrictions]
-```
-
 ## 4. モジュール別テーブル定義
 
 ### 4.0 所有モジュール
@@ -305,7 +115,7 @@ flowchart LR
 固定の `role` enum ではなく、ロールと権限を分けます。組み込みロールは冪等に作ります（`roles (key)` の一意制約で重複しない）。
 `admin`（`position` 1000）はすべての権限、`moderator`（`position` 100）は最初 `manage_reports`・`manage_accounts`・`view_audit` を持ちます。
 組み込みロールを作り直すときは、ない組み込みロールを足し、`admin` にすべての権限（新しい版で増えた権限を含む）を持たせ、`moderator` の権限と位置は管理者が変えたまま残します。
-権限は区分（[ADR-0058](../adr/0058-moderation-admin-separation.md)、[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）を持ちます。モデレーションは `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`、
+権限は区分（[ADR-0058](../../adr/0058-moderation-admin-separation.md)、[ADR-0070](../../adr/0070-permission-split-emoji-finance.md)）を持ちます。モデレーションは `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`、
 利用者の機能は `view_finance`、サーバー管理はそれ以外のすべて（`manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs` など）です。区分は列に持たず、`internal/domain/identity` の `Permission.Category` が返します
 （Web クライアントのナビゲーションの出し分けと `my admin role list` の表示が使う）。
 
@@ -318,7 +128,7 @@ flowchart LR
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |
 | `role_badges` | 現在値 | `role_id`（PK）, `label`（`string(32)`）, `color`（`enum(neutral, red, orange, yellow, green, teal, blue, purple, pink)`）, `updated_at` | 行がある = バッジがある |
 | `user_role_badge_displays` | 現在値 | `user_id`, `role_id`, `created_at` | PK `(user_id, role_id)`。行がある = プロフィールに出す |
-| `managed_roles` | 現在値 | `role_id`（PK）, `manager`（`enum(supporters)`）, `created_at` | 行がある = 課金のプランが管理するロール（[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §5） |
+| `managed_roles` | 現在値 | `role_id`（PK）, `manager`（`enum(supporters)`）, `created_at` | 行がある = 課金のプランが管理するロール（[ADR-0072](../../adr/0072-supporter-plans-and-roles.md) §5） |
 
 - 付与は `user_role_grants` に 1 行足して `user_roles` に加え、剥奪は `user_role_revocations` に 1 行足して `user_roles` から除きます。どちらも同じトランザクションで監査ログ（`role_granted`・`role_revoked`）を書きます。
   持っているロールの付与と持っていないロールの剥奪は何もしません。
@@ -330,14 +140,14 @@ flowchart LR
   `admin` はバッジのほかは変えられず（すべての権限と `position` 1000。権限を取り戻す道のため）、`admin` と `moderator` は削除できません。`moderator` の権限と位置は変えられます。
   持っている人がいるロールは削除できない（先に剥奪する）ので、`user_roles` が消えたロールを指すことはありません。消えたロールを指すのは剥奪済みの `user_role_grants` だけです。
   利用者は自分のいちばん高いロール以下のロールだけを作り・変え・消せ（新しい位置も同じ）、自分のロールが持つ権限だけを付け外しできます。CLI は何でもできます。
-- ロールのバッジ（[ADR-0071](../adr/0071-role-badges-and-supporter-list.md)、FR-913）は `role_badges` の行で、名前（1〜32 文字の 1 行。管理者が書く文字列で、どのロケールでも同じ値）と色（`@my/ui` のトークンの 9 色の名前）だけを持ちます。
+- ロールのバッジ（[ADR-0071](../../adr/0071-role-badges-and-supporter-list.md)、FR-913）は `role_badges` の行で、名前（1〜32 文字の 1 行。管理者が書く文字列で、どのロケールでも同じ値）と色（`@my/ui` のトークンの 9 色の名前）だけを持ちます。
   組み込みのロールを含めどのロールにも付けられ、既定ではどのロールも持ちません。設定・変更・削除はロールの変更（`role_updated`）で、ロールを削除すると `role_badges` の行も消えます。
 - 利用者は、持っていてバッジのあるロールごとに、プロフィールに出すかを選びます（`user_role_badge_displays`。既定は出さない）。
   剥奪（`user_role_revocations` を足す処理）とバッジの削除は、同じトランザクションでその選択の行を消します。付与も同じトランザクションで古い行を消すので、もう一度付与されれば既定の「出さない」から始まります。
   プランの変更でロールが入れ替わるときは、`identity.Service.ReplaceRole` が古いロールの剥奪と新しいロールの付与を 1 つのトランザクションで行い、古いロールの選択を新しいロールに移します。新しいロールにバッジが無ければ選択は消えます。
 - プロフィールのバッジは `user_role_badge_displays`・`user_roles`・`role_badges`・`roles` の結合 1 回で、ロールの `position` の高い順に読みます。読むのはアカウント自身の取得だけで、タイムラインや一覧のアカウントでは読みません。
   バッジは ActivityPub・NodeInfo・WebFinger に載せず、リモートのバッジも取り込みません。アカウントの消去（§8）は本人の選択の行を消します。
-- 課金のプランのロール（[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §5、FR-912）は `managed_roles` の行で表します。プランの作成が、持っている人のいない、権限がすべて区分 `member` の、
+- 課金のプランのロール（[ADR-0072](../../adr/0072-supporter-plans-and-roles.md) §5、FR-912）は `managed_roles` の行で表します。プランの作成が、持っている人のいない、権限がすべて区分 `member` の、
   どのスタッフのロール（組み込みのロールか、区分 `moderation`・`server` の権限を 1 つでも持つロール）よりも `position` の低いロールを、同じトランザクションで `managed_roles` に入れます（`identity.Service.ManageRole`）。
   管理されたロールの付与・剥奪・入れ替えは `supporters` だけが、加入の遷移のトランザクションで行い（`GrantManagedRole`・`RevokeManagedRole`・`ReplaceManagedRole`。監査ログの操作者は `system`）、権限と位置はプランのフォームから変えます（`UpdateManagedRole`）。
   FR-720 の手での付与・剥奪と、権限・位置の直接の変更とロールの削除は `ErrRoleManagedByPlan`（409）で断り、バッジはふつうに変えられます。
@@ -349,7 +159,7 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `sessions` | リソース | `id`, `user_id`, `token_hash`（`bytes`。Cookie の値の SHA-256）, `created_at`, `expires_at` | 一意 `(token_hash)`。インデックス `(user_id)`（処分による失効） |
-| `session_origins` | リソース（子） | `session_id`（PK）, `user_id`, `ip`（NULL 可）, `user_agent`（`string(512)`、NULL 可）, `created_at` | インデックス `(ip)`（同じ IP のアカウントの検索、FR-714）, `(user_id, created_at DESC)`（アカウントの最近のログイン元、FR-714）, `(created_at)`（保持期間による消去）。保持期間（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)、既定 180 日）を過ぎた行を消去ジョブが消す |
+| `session_origins` | リソース（子） | `session_id`（PK）, `user_id`, `ip`（NULL 可）, `user_agent`（`string(512)`、NULL 可）, `created_at` | インデックス `(ip)`（同じ IP のアカウントの検索、FR-714）, `(user_id, created_at DESC)`（アカウントの最近のログイン元、FR-714）, `(created_at)`（保持期間による消去）。保持期間（[ADR-0038](../../adr/0038-moderation-personal-data-retention.md)、既定 180 日）を過ぎた行を消去ジョブが消す |
 | `session_revocations` | イベント | `session_id`（PK）, `reason`（`enum(logout, replaced, password_changed, moderation, expired_cleanup, account_deleted)`）, `revoked_at` | 有効なセッション = 失効イベントが無く `expires_at` を過ぎていないもの。`replaced` は同じブラウザでのログインし直し |
 | `session_activity` | 現在値 | `session_id`（PK）, `last_seen_at` | ログイン時に作り、以後の更新は 1 時間に 1 回に間引く |
 | `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `is_first_party`, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)` |
@@ -453,7 +263,7 @@ flowchart LR
 | `remote_accounts` | リソース（部分型） | `account_id`（PK）, `first_seen_at` | |
 | `remote_account_snapshots` | イベント | `id`, `account_id`, `preferred_username`, `profile_url`（NULL 可）, `inbox_url`, `shared_inbox_url`（NULL 可）, `outbox_url` / `followers_url` / `following_url` / `featured_url`（NULL 可。持たない実装がある）, `followers_total` / `following_total` / `statuses_total`（`bigint`、NULL 可）, `document_digest`（`bytes`。文書の SHA-256）, `fetched_at` | インデックス `(account_id, id DESC)`。取得のたびに 1 行。内容（ダイジェスト）が前回と同じなら挿入しない |
 | `remote_account_heads` | 投影 | `account_id`（PK）, `snapshot_id`, `inbox_url`, `shared_inbox_url`（NULL 可）, `last_fetched_at`, `consecutive_fetch_failures`（`int`） | インデックス `(last_fetched_at)`（定期リフレッシュ）、`(shared_inbox_url)`（アカウント削除の `Delete` を送る既知の shared inbox、§8）。取得のたびに最新のスナップショットを指し、`last_fetched_at` を取得の時刻、`consecutive_fetch_failures` を 0 にする。取得に失敗したら `consecutive_fetch_failures` を 1 増やし、`last_fetched_at` を失敗の時刻にする（次の定期リフレッシュを 24 時間後に送る） |
-| `remote_account_handle_verifications` | イベント | `id`, `account_id`, `username`, `domain`, `outcome`（`enum(verified, mismatch)`）, `checked_at` | インデックス `(account_id, id DESC)`。WebFinger で `acct:{username}@{domain}` を確かめた記録（[federation.md §6.2](federation.md#62-actor-とハンドル)）。`verified` は `self` リンクが Actor の `uri` を指したこと、`mismatch` は答えがそれを確かめなかったこと。結果が最新の記録と同じなら挿入しない |
+| `remote_account_handle_verifications` | イベント | `id`, `account_id`, `username`, `domain`, `outcome`（`enum(verified, mismatch)`）, `checked_at` | インデックス `(account_id, id DESC)`。WebFinger で `acct:{username}@{domain}` を確かめた記録（[federation.md §6.2](../federation.md#62-actor-とハンドル)）。`verified` は `self` リンクが Actor の `uri` を指したこと、`mismatch` は答えがそれを確かめなかったこと。結果が最新の記録と同じなら挿入しない |
 | `account_handles` | 投影 | `account_id`（PK）, `username`, `username_normalized`, `domain` | **一意 `(username_normalized, domain)`**。WebFinger・`@user@host` の解決（FR-305, FR-401）。ローカルは `local_accounts`、リモートは最新の `remote_account_handle_verifications` が `verified` のときだけ作る（確かめていない・`mismatch` のリモートのアカウントは行を持たない） |
 
 - インスタンス自身の Actor（`Application`）もローカルの `accounts` に 1 行持ちます（`local_accounts` と `account_handles` には入れません）。
@@ -483,9 +293,9 @@ flowchart LR
 - アバター・ヘッダーにできるのは、本人がアップロードして処理が成功した `media_files` だけです。
   表示する画像は、版が指すファイルの現在の処理結果（§4.4 メディア）の `full` 版です。ファイルの所有者がそのアカウントでないか、現在の処理結果が `ready` でなければ表示しません。
   アカウントの一覧・タイムライン・通知は、1 ページ分のアカウントの画像を `content` モジュールの公開 API（`MediaService.ImageURLs`）で 1 回の問い合わせにまとめて読みます。
-- リモートのプロフィールは、取得した文書から版を作ります（内容が変わったときだけ）。`summary` と補足情報の値は取り込み時にサニタイズして `note_html` / `value_html` に保存し、表示名と補足情報の名前はプレーンテキストにします（[federation.md §5](federation.md#5-リモート-html-のサニタイズ)）。
+- リモートのプロフィールは、取得した文書から版を作ります（内容が変わったときだけ）。`summary` と補足情報の値は取り込み時にサニタイズして `note_html` / `value_html` に保存し、表示名と補足情報の名前はプレーンテキストにします（[federation.md §5](../federation.md#5-リモート-html-のサニタイズ)）。
   Actor の `tag` の `Emoji` は、投稿の絵文字と同じ規則（§4.4 のリモート投稿のコマンド）で `content` の公開 API（`Service.RecordRemoteEmojis`）が記録し、版の `account_profile_revision_emojis` に結びます。絵文字の組が変わったときも新しい版になります。
-- ローカルのアカウントとの関係が無いリモートのアカウント（どちらの向きのフォローも無く、保存した投稿も無い）は、1 日ごとの消去ジョブ `account.prune_remote_profiles` が、プロフィールの版を現在の 1 つに縮めます（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)）。
+- ローカルのアカウントとの関係が無いリモートのアカウント（どちらの向きのフォローも無く、保存した投稿も無い）は、1 日ごとの消去ジョブ `account.prune_remote_profiles` が、プロフィールの版を現在の 1 つに縮めます（[ADR-0034](../../adr/0034-remote-content-scope-and-retention.md)）。
   現在の版でない版と子テーブルの行（`account_profile_fields`、`account_profile_revision_emojis`、`remote_profile_revisions`）、`remote_account_heads` と現在の版のどちらも指さない `remote_account_snapshots` を消し、`accounts`・`remote_accounts`・鍵は残します。
   関係の判定は `graph` と `content` の公開 API で行い（`account` はこの 2 つを import しないので、組み立てる側が渡す）、トランザクションの前に読みます。1 トランザクションで調べるのは 100 アカウントまでで、続きはカーソル（`account_id`）を持った次のジョブが読みます。
 
@@ -498,7 +308,7 @@ flowchart LR
 | `account_key_revocations` | イベント | `account_key_id`（PK）, `revoked_at` | |
 
 - ローカルの Actor（インスタンス Actor を含む）は、作成時に RSA 2048 ビット（`rsa_sha256`、`key_id` = `{actor}#main-key`）と Ed25519（`ed25519`、`key_id` = `{actor}#ed25519-key`）の 2 つの鍵を持ちます。
-- リモートの Actor は、同じ `key_id` のまま公開鍵を替えることがあります（Mastodon の `#main-key`）。取得した鍵の `fingerprint` が既存の行と違えば新しい行を作り、同じトランザクションで古い行に `account_key_revocations` を記録します。文書が宣言しなくなった鍵も同じように失効させます。別のアカウントの鍵になっている `key_id` は書き換えません。署名の検証は、`key_id` の失効していない最新の行を使います（[ADR-0032](../adr/0032-http-signature-profile.md)）。
+- リモートの Actor は、同じ `key_id` のまま公開鍵を替えることがあります（Mastodon の `#main-key`）。取得した鍵の `fingerprint` が既存の行と違えば新しい行を作り、同じトランザクションで古い行に `account_key_revocations` を記録します。文書が宣言しなくなった鍵も同じように失効させます。別のアカウントの鍵になっている `key_id` は書き換えません。署名の検証は、`key_id` の失効していない最新の行を使います（[ADR-0032](../../adr/0032-http-signature-profile.md)）。
 - `private_key_enc` は PKCS #8 の秘密鍵を `kernel.Sealer` で暗号化した値です（ADR-0019 §6）。AAD は `account_key_id` と列名 `local_account_private_keys.private_key_enc` で、別の行・列に写すと復号できません。
 
 #### ライフサイクル
@@ -517,7 +327,7 @@ flowchart LR
   本人による削除の予約はログインできない（§4.1）ので、予約しても本人には取り消せないためです。データの消去は、ほかの削除と同じく `deleted` から 7 日後です（下記）。削除済みのアカウントには記録しません。
 - 期日を過ぎた `deletion_scheduled` は、1 時間ごとのジョブ `account.execute_deletions` が `deleted`（`initiated_by = system`）にします（`account.Service.ExecuteDueDeletions`）。
   1 回で 100 件まで、アカウントごとに短いトランザクションで、状態を読み直してから記録するので、再実行しても二重に削除しません。
-  `deleted` は既存の購読者を通して、アカウントと投稿を表示から外し、`Delete`（Actor）を送ります（[federation.md §7.1](federation.md)）。
+  `deleted` は既存の購読者を通して、アカウントと投稿を表示から外し、`Delete`（Actor）を送ります（[federation.md §7.1](../federation.md)）。
 - `deleted` から 7 日（`account.ErasureDelay`。`Delete`（Actor）の配送のリトライが終わるまで、鍵とフォローが要る）を過ぎたローカルのアカウントは、1 時間ごとのジョブ `account.erase_deleted` がデータを消します（§8）。
 - 行が無いアカウントは `active` とみなします。作成時には行を作らず、最初のライフサイクルイベントで作ります（イベントからの再構築と一致させるため）。
 - 投影はイベントを `id` 順に畳み込んで作ります: `deactivated` → `deactivated`、`reactivated` / `deletion_cancelled` → `active`、`deletion_scheduled` → `deletion_scheduled`（`deletion_due_at` を写す）、`deleted` / `remote_deleted` → `deleted`。`deleted` は最終状態で、以後のイベントでは変わりません。`since` は最後に状態を変えたイベントの `occurred_at` です。
@@ -554,7 +364,7 @@ flowchart LR
 - 複数の処分が重なった場合は、制限の和集合になります。解除すると、その処分由来の行だけが消えます。期限切れの行は、読み取り時の条件で無効になり、定期ジョブで掃除します。
   `account_restrictions` の期限切れの行は、5 分ごとのジョブ `moderation.expire_restrictions` が、1 トランザクションあたり件数を区切って消します。
 - アカウントの凍結（`federation` の制限）が効き始めたとき（効いている `federation` の行が無かったアカウントに行ができた）と、終わったとき（`federation` の行が消え、効いている行が残らない）に、`moderation` は同じトランザクションで `moderation.account_suspension_changed` を発行します。
-  終わりは、解除か期限切れの行の削除の、先に行を消した方が 1 回だけ伝えます。ローカルのアカウントなら `federation` がこれを受けて `Update`（Actor）を積みます（[federation.md §11.1](federation.md#111-処分の伝播)）。
+  終わりは、解除か期限切れの行の削除の、先に行を消した方が 1 回だけ伝えます。ローカルのアカウントなら `federation` がこれを受けて `Update`（Actor）を積みます（[federation.md §11.1](../federation.md#111-処分の伝播)）。
 
 #### ドメイン単位の処分
 
@@ -564,7 +374,7 @@ flowchart LR
 | `domain_moderation_action_lifts` | イベント | `action_id`（PK）, `lifted_by_user_id`（NULL 可 = CLI）, `lifted_at` | |
 | `domain_restrictions` | 投影 | `domain`, `restriction`, `source_action_id`, `effective_until`（NULL 可） | PK `(domain, restriction, source_action_id)` |
 
-- `domain` は正規化したホスト（IDNA の A-label、[federation.md §1.2](federation.md#ホスト名の正規化idn)）です。
+- `domain` は正規化したホスト（IDNA の A-label、[federation.md §1.2](../federation.md#ホスト名の正規化idn)）です。
 - サブドメインにも効きます。判定は、対象ドメインとその親ドメイン群を列挙して `domain IN (…)` で引きます。
 - 処分と同じトランザクションで、その処分が生む制限の行を `account_restrictions` / `domain_restrictions` に書きます。解除は同じトランザクションでその処分の行（`source_action_id`）を消します。解除の再実行は何もしません。
 - ドメイン単位の制限を各アカウントの行に展開することはしません（件数が膨らむため）。判定時に `account_restrictions` と合成します（§5.3）。
@@ -588,7 +398,7 @@ flowchart LR
 - 通報者（`reporter_account_id`）は、ローカルの通報ならローカルのアカウント、受信した `Flag` なら送ってきた Actor（多くはリモートのインスタンス Actor）です。通報者は対象に見せません（ADR-0038）。
 - ローカルの通報者は、自分の通報を `(reporter_account_id, id)` のキーセットで新しい順に引けます。見せるのは通報の内容と状態（`open` / `resolved`）だけで、`outcome`・担当・処分・メモは見せません（FR-711）。
 - 解決はすべて、通報と解決を載せたドメインイベント（`moderation.report_resolved`）を同じトランザクションで発行します。`notification` はそこから `report_resolved` を作り、`dedupe_key` が通報ごとなので、再開のあとの解決では通知し直しません（§4.7）。
-- `forwarded` は、ローカルの通報者がリモートのアカウントの通報で相手のサーバーへの転送を求めたかどうかです（受け付けた時点で決まる事実）。対象がローカルのアカウントなら、求めても `false` です。転送は受け付けのトランザクションで outbox に積みます（[ADR-0036](../adr/0036-moderation-federation-propagation.md)）。受信した `Flag` は常に `false` です。
+- `forwarded` は、ローカルの通報者がリモートのアカウントの通報で相手のサーバーへの転送を求めたかどうかです（受け付けた時点で決まる事実）。対象がローカルのアカウントなら、求めても `false` です。転送は受け付けのトランザクションで outbox に積みます（[ADR-0036](../../adr/0036-moderation-federation-propagation.md)）。受信した `Flag` は常に `false` です。
 - ローカルの通報のコメントは 1,000 文字、受信した `Flag` のコメントは 5,000 文字までです。`report_rule_citations` は `category = violation` のときだけ持てます。
 - ローカルの通報が指せる投稿は、対象のアカウントの投稿のうち通報者が見られるもの（単一の閲覧判定 `CanView` を通す）を 20 件まで、引用できるルールは効いているもの（引退していないもの）を 20 件までです。自分自身は通報できません。
 - 通報の状態の投影は、受け付けで `open`、解決で `resolved`（`outcome` を写す）、再開で `open` に戻します（担当は残します）。再開できるのは解決済みの通報だけです。
@@ -616,7 +426,7 @@ flowchart LR
 
 #### 監査ログ【イベント】
 
-[ADR-0037](../adr/0037-audit-log.md) の記録です。
+[ADR-0037](../../adr/0037-audit-log.md) の記録です。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -732,8 +542,8 @@ flowchart LR
 - 返信先は `in_reply_to_uri`（不変の事実）だけを持ちます。親の `status_id` は `statuses (uri)` で引けるため保存しません。
   親を後から取得しても、投稿の行を更新する必要はありません。スレッド表示を速くするために、投影 `status_reply_links` を持ちます。
 - ローカル投稿も `uri` を生成して保存します（ADR-0018 の規約）。
-- リモートの投稿の公開範囲は、宛先（`to` / `cc`）から決めます（[federation.md §4](federation.md#4-as2-の正規化)）。
-- `origin = retention`（保持期間による消去、[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)）の削除は、同じ URI の取得し直しを妨げません。それ以外の削除は tombstone として、遅れて届いた `Create` / `Update` と取得を拒みます。
+- リモートの投稿の公開範囲は、宛先（`to` / `cc`）から決めます（[federation.md §4](../federation.md#4-as2-の正規化)）。
+- `origin = retention`（保持期間による消去、[ADR-0034](../../adr/0034-remote-content-scope-and-retention.md)）の削除は、同じ URI の取得し直しを妨げません。それ以外の削除は tombstone として、遅れて届いた `Create` / `Update` と取得を拒みます。
   取得し直した投稿は新しい `id` の行になり、後でまた消えることがあるので、1 つの URI が `retention` の削除を複数持てます。tombstone になる削除は URI ごとに 1 つです（部分一意）。URI で削除を引くときは tombstone を優先し、無ければ最新の `retention` の削除を返します。
   `retention` の削除しか無い URI への `Delete` は、未知のオブジェクトへの `Delete` として `remote_object_tombstones` を残します。
 
@@ -769,7 +579,7 @@ flowchart LR
   - 生成する HTML は `p`、`br`、`span[class]`、`a[href, class, rel, target]` だけで、テキストはすべてエスケープします。リンクには `rel="nofollow noopener noreferrer"` と `target="_blank"` を付けます。
   - メンション `@user`（`@user@{account_domain}`・`@user@{host}` も同じ）は、`account` の公開 API で引いたローカルの `active` なアカウントをリンクにし、版の `status_revision_mentions` に記録します。リンク先は `https://{host}/@{username}` です。
   - それ以外のドメインのメンション `@user@domain` は、そのハンドル（`account_handles`）を持つリモートの `active` なアカウントをリンクにし、同じく記録します。リンク先は Actor の `url`（最新の `remote_account_snapshots.profile_url`）、無ければ Actor の `uri` です。
-  - 未知のハンドルは、トランザクションの前に `federation` の `RemoteActors.ResolveHandle`（WebFinger → Actor の取得 → 書き込み、[federation.md §6.2](federation.md#62-actor-とハンドル)）で解決します。1 つの本文で解決するのは 5 件まで、合計 10 秒までです。解決できないハンドル、`active` でないアカウントのハンドルはテキストのままです。
+  - 未知のハンドルは、トランザクションの前に `federation` の `RemoteActors.ResolveHandle`（WebFinger → Actor の取得 → 書き込み、[federation.md §6.2](../federation.md#62-actor-とハンドル)）で解決します。1 つの本文で解決するのは 5 件まで、合計 10 秒までです。解決できないハンドル、`active` でないアカウントのハンドルはテキストのままです。
   - ハッシュタグ `#name` は、NFKC + 小文字化した名前で `tags` を引き（無ければ作り）、版の `status_revision_tags` に記録します。リンク先は `https://{host}/tags/{正規化した名前}` です。
   - `http` / `https` の URL だけを自動リンクにします。URL は空白・非 ASCII 文字・`<>"` などで終わり、末尾の句読点と対応しない閉じ括弧は含めません。
 - **文字数**: 本文と CW の文字数（Unicode のコードポイント数）の合計が、インスタンス設定 `max_status_length` 以下でなければなりません。設定はコマンドごとに `instance` の公開 API から読みます。
@@ -791,7 +601,7 @@ flowchart LR
 
 #### リモート投稿のコマンド
 
-受信した `Create` / `Update` / `Delete` の投稿は、`federation` のハンドラ（[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）が、取り込み範囲（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)）を判定してから `content` の公開 API（`IngestRemoteStatus` / `ReviseRemoteStatus` / `DeleteRemoteStatus`）を 1 つのトランザクションの中で呼びます。
+受信した `Create` / `Update` / `Delete` の投稿は、`federation` のハンドラ（[federation.md §3.4](../federation.md#34-アクティビティごとのハンドラ)）が、取り込み範囲（[ADR-0034](../../adr/0034-remote-content-scope-and-retention.md)）を判定してから `content` の公開 API（`IngestRemoteStatus` / `ReviseRemoteStatus` / `DeleteRemoteStatus`）を 1 つのトランザクションの中で呼びます。
 ローカル投稿と同じドメインイベント（`content.status_created` / `content.status_revised` / `content.status_deleted`）を発行するので、投稿の投影・`feed_*`・メンションの通知は同じ projector で更新されます。
 
 - **投稿の行**: `id` は `published` の時刻の UUIDv7（§1.3）、`is_local` は偽です。公開範囲は宛先から決め（`local` にはならない）、`url` は表示用 URL が `id` と異なるときだけ持ちます。
@@ -808,7 +618,7 @@ flowchart LR
 
 #### リモート投稿の保持期間
 
-1 時間ごとの消去ジョブ `content.purge_remote_statuses` が、保持期間を過ぎたリモートの投稿を消します（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、FR-803）。
+1 時間ごとの消去ジョブ `content.purge_remote_statuses` が、保持期間を過ぎたリモートの投稿を消します（[ADR-0034](../../adr/0034-remote-content-scope-and-retention.md)、FR-803）。
 
 - 対象は、公開から設定 `remote_status_retention`（既定 90 日）を過ぎ、ローカルからの参照が無いリモートの投稿です。参照は、削除されていないローカルの返信、削除されていないローカルの投稿を含むスレッド（同じ `conversation_uri`）、取り消されていないローカルのブースト、お気に入り、ブックマーク、ピン留め、その投稿についての通知です。
   通知は `notification` の公開 API（`StatusNotified`）で、同じトランザクションの中で調べます。
@@ -818,7 +628,7 @@ flowchart LR
   `status_deletions`、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留めは残し、読み取りでは対象の投稿を削除済みとして扱います（一覧から外れる）。
 - 1 トランザクションで消すのは 100 件まで、1 回のジョブで 10 トランザクションまでです。続きはカーソル（投稿の `id`）を持った次のジョブが読みます。
   リモートの投稿の `id` は公開日時の UUIDv7（§1.3）なので、走査は主キーの範囲（期限の UUIDv7 の下限より前）で止まります。
-- リレーだけが運んだ投稿（[ADR-0061](../adr/0061-federation-relays.md)）は、取り込みのトランザクションで `relayed_statuses` に記録します。
+- リレーだけが運んだ投稿（[ADR-0061](../../adr/0061-federation-relays.md)）は、取り込みのトランザクションで `relayed_statuses` に記録します。
   1 時間ごとの消去ジョブ `content.purge_relayed_statuses` が、`relayed_statuses` にあり、公開から設定 `relay_status_retention`（既定 7 日）を過ぎ、上と同じくローカルからの参照が無く、作者をローカルのアカウントがフォローしていない投稿を、同じ規則（`origin = retention`、保全と通報の対象を残す）で消します。
   フォローは `graph` の公開 API（フォロワーの数）でトランザクションの外で調べ、消すトランザクションで候補を読み直して、その間に参照されたものを残します。走査は `relayed_statuses` の主キーで行い、残ったものは `content.purge_remote_statuses` の対象になります。
 
@@ -856,7 +666,7 @@ flowchart LR
 - `boost_edges` は、取り消されていないブーストのうち、元投稿が削除されていないものを持ちます。投稿の削除イベントを記録したトランザクションで、その投稿の行を消します（取り消しイベントは作りません）。
 - `status_counters.boosts_count` は `boost_edges` の行を挿入・削除したときだけ増減し、`favourites_count` は `favourites` の行を実際に挿入・削除したときだけ増減します（§2.3）。再構築は、取り消されていない `boosts` と `favourites` の件数を数えます。
 - 同じ組への同時のブーストは、後の方が `boost_edges` の主キーで再実行され、既存のブーストを返します。同時の取り消しは、後の方が `boost_retractions` の主キーで再実行され、何もしません。
-- **リモートのブーストとお気に入り**: 受信した `Announce` / `Like` / `Undo` は、`federation` のハンドラ（[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）が `content` の公開 API（`RecordRemoteBoost` / `RetractRemoteBoost` / `RecordRemoteFavourite` / `RemoveRemoteFavourite`）で記録します。ローカルのコマンドと同じドメインイベントを発行するので、件数・`feed_entries`・通知は同じ projector で更新されます。
+- **リモートのブーストとお気に入り**: 受信した `Announce` / `Like` / `Undo` は、`federation` のハンドラ（[federation.md §3.4](../federation.md#34-アクティビティごとのハンドラ)）が `content` の公開 API（`RecordRemoteBoost` / `RetractRemoteBoost` / `RecordRemoteFavourite` / `RemoveRemoteFavourite`）で記録します。ローカルのコマンドと同じドメインイベントを発行するので、件数・`feed_entries`・通知は同じ projector で更新されます。
   - リモートのアカウントがブーストできるのは、閲覧できる投稿のうち `Boostable` なものです。ローカルの投稿は、そのアカウントが ActivityPub で取得したときに見られるもの（`canView` の `ContextObjectFetch`）で、`local` の投稿は誰もブーストできません（ADR-0017）。公開範囲が `direct` になる（宛先が公開でもフォロワーでもない）`Announce` は記録しません。
   - ブーストの `id` は `Announce` の `published`（無い・未来なら受信時刻）の UUIDv7、`boosts.uri` は `Announce` の `id` です。`Undo Announce` は `boost_retractions`（`origin = remote`）を記録します。
   - リモートのアカウントがお気に入りできるのは、閲覧できる（`ContextObjectFetch`）ローカルの投稿だけです。`favourites.uri` は `Like`（または `EmojiReact`）の `id` です。そのため、リモートの投稿のお気に入りは常にローカルのアカウントのもので、`Like` の配送の対象です。
@@ -883,12 +693,12 @@ flowchart LR
 - 絵文字リアクション（FR-116、ADR-0052）は、お気に入りとは別の資源です。1 人が 1 投稿に絵文字ごとに 1 つ付けられ、取り消すと行を消して `content.unreacted` を発行します（取り消した後の付け直しは新しい行）。
 - `status_reaction_counts` は削除されていない投稿のリアクションを絵文字ごとに数え、`reactions` の行を実際に挿入・削除したときだけ増減します。件数が 0 になった行は消し、投稿の削除イベントでその投稿の行を消します。再構築は、削除されていない投稿の `reactions` を絵文字ごとに数えます。
 - Unicode 絵文字は、Unicode の `emoji-test.txt`（`make emoji-table` が生成する `internal/domain/content/emoji_table.gen.go`）の fully-qualified の形に正規化してから `emoji_key` にします。異体字セレクタ（U+FE0F）の有無が違う同じ絵文字は、同じ件数に数えます。
-- **リモートのリアクション**: 受信した `EmojiReact` と、絵文字の付いた `Like`（[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）を、`content` の公開 API（`RecordRemoteReaction` / `RemoveRemoteReaction`）で記録します。リモートのアカウントがリアクションできるのは、お気に入りと同じく閲覧できる（`ContextObjectFetch`）ローカルの投稿だけで、交流の禁止（`interact`）の制限があれば記録しません。リアクションの `id` は活動の `published`（無い・未来なら受信時刻）の UUIDv7 です。
+- **リモートのリアクション**: 受信した `EmojiReact` と、絵文字の付いた `Like`（[federation.md §3.4](../federation.md#34-アクティビティごとのハンドラ)）を、`content` の公開 API（`RecordRemoteReaction` / `RemoveRemoteReaction`）で記録します。リモートのアカウントがリアクションできるのは、お気に入りと同じく閲覧できる（`ContextObjectFetch`）ローカルの投稿だけで、交流の禁止（`interact`）の制限があれば記録しません。リアクションの `id` は活動の `published`（無い・未来なら受信時刻）の UUIDv7 です。
   - カスタム絵文字は、投稿のカスタム絵文字と同じく `custom_emojis` と `custom_emoji_images` に取り込み、画像はリアクションした人のリモートのメディアです。ドメインは `Emoji` の `id` のホスト（`id` が無ければリアクションした人のドメイン）で、第三のサーバーの絵文字はそのサーバーの絵文字になります。
   - `Undo` は、`reactions (uri)`、`favourites (uri)` の順に引き、どちらにも無ければ埋め込みの活動の投稿と絵文字で主体のリアクション（またはお気に入り）を消します。
 - **ローカルの人のリアクションと `Like` の枠**（ADR-0052 §1、§2）: ローカルの人は 1 投稿にお気に入りかリアクション 1 つのどちらか一方だけを持ちます。`content.Interactions.React` は、同じトランザクションで同じ投稿へのお気に入り（`content.unfavourited`）と別の絵文字のリアクション（`content.unreacted`）を消してから行を挿入し（`content.reacted`）、`Favourite` も同じくリアクションを消してからお気に入りを挿入します。同じ絵文字で付け直しても何も変えません。`Unreact` はその人のリアクションを消します。
   - 使える絵文字は、Unicode 絵文字（fully-qualified の形に正規化）と、このサーバーの有効な（`custom_emoji_settings.enabled`）画像のあるカスタム絵文字です。リモートのカスタム絵文字は使えません。閲覧の可否・ブロック・交流の禁止（`interact`）はお気に入りと同じ規則です。
-  - リモートの投稿へのリアクションは、イベントにカスタム絵文字の `Emoji` タグの材料（ショートコード・画像）を持たせ、`federation` が絵文字付きの `Like` と `Undo Like` を組み立てて保存します（[federation.md §7.1](federation.md#71-記録)）。
+  - リモートの投稿へのリアクションは、イベントにカスタム絵文字の `Emoji` タグの材料（ショートコード・画像）を持たせ、`federation` が絵文字付きの `Like` と `Undo Like` を組み立てて保存します（[federation.md §7.1](../federation.md#71-記録)）。
 
 #### メディア
 
@@ -896,17 +706,17 @@ flowchart LR
 | --- | --- | --- | --- |
 | `media_files` | リソース | `id`, `owner_account_id`（NULL 可。リンクのカードの画像は NULL）, `origin`（`enum(upload, remote)`）, `created_at` | インデックス `(owner_account_id, id)` |
 | `uploaded_media` | リソース（部分型） | `media_id`（PK）, `blob_key`, `content_type`, `file_size`（`bigint`） | |
-| `remote_media` | リソース（部分型） | `media_id`（PK）, `owner_account_id`（`media_files` の値を写す）, `remote_url`, `declared_content_type`（NULL 可。AP の `mediaType`）, `declared_media_type`（`enum(image, gifv, video, audio, unknown)`）, `purpose`（`enum(attachment, avatar, header, emoji)`。記録した用途で、メディアプロキシの `small` の大きさを決める）, `width` / `height`（NULL 可）, `blurhash`（NULL 可）, `focus_x` / `focus_y`（`real`、-1.0〜1.0、NULL 可。範囲外の宣言は取り込み時に丸める）, `description`（`text`、NULL 可） | 一意 `(owner_account_id, remote_url)`。受信した文書が宣言した値で、ファイルは取得しない（[federation.md §9](federation.md#9-リモートメディア)） |
+| `remote_media` | リソース（部分型） | `media_id`（PK）, `owner_account_id`（`media_files` の値を写す）, `remote_url`, `declared_content_type`（NULL 可。AP の `mediaType`）, `declared_media_type`（`enum(image, gifv, video, audio, unknown)`）, `purpose`（`enum(attachment, avatar, header, emoji)`。記録した用途で、メディアプロキシの `small` の大きさを決める）, `width` / `height`（NULL 可）, `blurhash`（NULL 可）, `focus_x` / `focus_y`（`real`、-1.0〜1.0、NULL 可。範囲外の宣言は取り込み時に丸める）, `description`（`text`、NULL 可） | 一意 `(owner_account_id, remote_url)`。受信した文書が宣言した値で、ファイルは取得しない（[federation.md §9](../federation.md#9-リモートメディア)） |
 | `media_processing_results` | イベント | `id`, `media_id`, `purpose`（`enum(attachment, avatar, header, emoji)`）, `outcome`（`enum(ready, failed)`）, `media_type`（`enum(image, gifv, video, audio, unknown)`）, `width` / `height` / `duration_ms`（NULL 可）, `blurhash`（NULL 可）, `processed_at` | インデックス `(media_id, id DESC)`。最新行が現在の処理結果 |
-| `media_variants` | イベント（結果の子） | `result_id`, `size`（`enum(small, medium, large)`）, `motion`（`enum(still, animated)`）, `blob_key`, `content_type`, `file_size`（`bigint`）, `width` / `height`（`int`） | PK `(result_id, size, motion)`（[ADR-0054](../adr/0054-media-variants-video-audio.md)） |
+| `media_variants` | イベント（結果の子） | `result_id`, `size`（`enum(small, medium, large)`）, `motion`（`enum(still, animated)`）, `blob_key`, `content_type`, `file_size`（`bigint`）, `width` / `height`（`int`） | PK `(result_id, size, motion)`（[ADR-0054](../../adr/0054-media-variants-video-audio.md)） |
 | `media_focus` | 現在値 | `media_id`（PK）, `focus_x` / `focus_y`（`real`、-1.0〜1.0） | 行がなければ中央 |
 | `media_descriptions` | 現在値 | `media_id`（PK）, `description`（`text`、空でない、1,500 文字まで） | 行がなければ説明なし。投稿が添付するときに `status_revision_attachments.description` へ写す |
 | `remote_media_cache` | 現在値（キャッシュ） | `url`（PK。メディアプロキシの `small` は `{URL}#small-{purpose}`）, `blob_key`（`remote/{url の SHA-256}`）, `content_type`（中身で判定した形式）, `file_size`（`bigint`）, `fetched_at`, `expires_at`, `last_accessed_at`（1 時間単位で更新） | FR-409, NFR-COST-4。インデックス `(expires_at)`, `(last_accessed_at)`。メディアプロキシが書き、`media.cleanup_remote` が期限切れと容量超過の分を消す（federation.md §9） |
-| `link_card_media` | リソース（部分型） | `media_id`（PK）, `remote_url`, `content_type`（中身で判定した形式）, `width` / `height`（`int`）, `blurhash`, `description`（`og:image:alt`。無ければ空） | 一意 `(remote_url)`。リンクのカードの画像（[ADR-0062](../adr/0062-link-preview-cards.md) §3）。所有者はアカウントではなくカードの URL で、`media_files.owner_account_id` は空。1 回だけ取得して形式・寸法・blurhash を記録し、本体は保存しない。メディアプロキシが添付の画像と同じ規則で中継する |
+| `link_card_media` | リソース（部分型） | `media_id`（PK）, `remote_url`, `content_type`（中身で判定した形式）, `width` / `height`（`int`）, `blurhash`, `description`（`og:image:alt`。無ければ空） | 一意 `(remote_url)`。リンクのカードの画像（[ADR-0062](../../adr/0062-link-preview-cards.md) §3）。所有者はアカウントではなくカードの URL で、`media_files.owner_account_id` は空。1 回だけ取得して形式・寸法・blurhash を記録し、本体は保存しない。メディアプロキシが添付の画像と同じ規則で中継する |
 
 #### リンクのカード
 
-[ADR-0062](../adr/0062-link-preview-cards.md) の、投稿中のリンクの先のページから作るカードです（FR-117、[federation.md §9.1](federation.md#91-リンクのカード)）。
+[ADR-0062](../../adr/0062-link-preview-cards.md) の、投稿中のリンクの先のページから作るカードです（FR-117、[federation.md §9.1](../federation.md#91-リンクのカード)）。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -918,7 +728,7 @@ flowchart LR
 
 #### 引用
 
-[ADR-0069](../adr/0069-quote-posts.md) の、投稿が引用する投稿と、その承認です（FR-114、[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）。
+[ADR-0069](../../adr/0069-quote-posts.md) の、投稿が引用する投稿と、その承認です（FR-114、[federation.md §3.4](../federation.md#34-アクティビティごとのハンドラ)）。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -938,14 +748,14 @@ flowchart LR
 
 - アップロードは同期で受け付けます。形式は中身から判定し（申告された `Content-Type` とファイル名は信用しない）、サイズと寸法の上限は全体をデコードする前にヘッダで検査します（ADR-0019 §8）。
   `uploaded_media.content_type` は判定した形式で、`blob_key`（`uploads/<id>`）は受け取ったままの非公開のファイルです。
-- 処理はジョブ `media.process` が非同期に行います。アップロードの用途（`purpose`。API の `MediaUpload.purpose`、既定 `attachment`）の大きさで、再エンコードでメタデータ（EXIF の位置情報など）を落とした `media_variants` を作り（[ADR-0054](../adr/0054-media-variants-video-audio.md) §1〜§3）、
+- 処理はジョブ `media.process` が非同期に行います。アップロードの用途（`purpose`。API の `MediaUpload.purpose`、既定 `attachment`）の大きさで、再エンコードでメタデータ（EXIF の位置情報など）を落とした `media_variants` を作り（[ADR-0054](../../adr/0054-media-variants-video-audio.md) §1〜§3）、
   処理結果ごとの公開のキー（`media/<id>/<result_id>/<size>.<ext>`、アニメーションの動く版は `media/<id>/<result_id>/<size>-animated.<ext>`）に書き、結果を記録してから受け取ったままのファイルを Blob から削除します（位置情報を残さない）。
   キーは処理結果を含むので同じキーが別の中身を指すことはなく、`Cache-Control: public, max-age=31536000, immutable` で配ります。
   - 静止版は `small` / `medium` / `large` の 3 つです。`large` は不透明なら JPEG、透過があれば PNG で、`small` / `medium` は WebP です。アニメーション（GIF、アニメーション WebP）は、最初のフレームの静止版と、動く版（`large` は GIF、`small` / `medium` はアニメーション WebP）の 6 つです。
   - 用途ごとの大きさ: 投稿の画像は面積 640×360 / 1920×1080 / 3840×2160 まで、アイコンは焦点（`media_focus`、なければ中央）に合わせて正方形に切り抜いた 96 / 192 / 400 px、ヘッダーは 750×250 / 1500×500 / 3000×1000 の箱、カスタム絵文字は 64 / 128 / 256 px の箱に収めます。元より大きくはしません。
   - 別の用途で使う（投稿の画像をアバターにするなど）と、`content.MediaService.CheckProfileImage` が新しい用途の `media.process` を投入し、現在の結果の `large`（アニメーションなら動く版）から処理し直して新しい結果を記録します。それまでは前の結果の版を表示します。古い結果の Blob は残ります。
   ジョブは冪等です。最新の結果が同じ用途のファイルは受け取ったままのファイルの削除だけを繰り返し、消去済みのファイルは何もしません。初めての処理で処理できない中身は `outcome = failed`（版なし）の結果として記録します。処理し直しが失敗したときは記録せず、前の結果が残ります。
-- 動画・音声（投稿の添付だけ）はトランスコードしません（[ADR-0054](../adr/0054-media-variants-video-audio.md) §6）。アップロードのときに container を解析して codec・長さ・寸法を検査し（上限は設定 `media_max_av_bytes`・`media_max_video_duration`・`media_max_audio_duration`、[設定リファレンス](../reference/configuration.md)）、
+- 動画・音声（投稿の添付だけ）はトランスコードしません（[ADR-0054](../../adr/0054-media-variants-video-audio.md) §6）。アップロードのときに container を解析して codec・長さ・寸法を検査し（上限は設定 `media_max_av_bytes`・`media_max_video_duration`・`media_max_audio_duration`、[設定リファレンス](../../reference/configuration.md)）、
   クライアントが送ったポスター（API の `thumbnail`）を `uploads/<id>.poster` に置きます。`media.process` は、メタデータを落として並べ直した（remux）ファイルを `size = large`・`motion = animated` の版（`media/<id>/<result_id>/large-animated.<ext>`）にし、
   ポスター（なければファイルに埋め込まれたカバー画像）を投稿の画像として処理した静止版 3 つと blurhash を同じ結果に入れます。ポスターのない動画・音声は静止版を持ちません。結果の `media_type` は `video` / `audio`、`duration_ms` は長さで、受け取ったままのファイルとポスターは処理のあとに消します。
   動画・音声はほかの用途（アバター・ヘッダー・カスタム絵文字）に使えません。
@@ -993,10 +803,10 @@ flowchart LR
   1 回のジョブは 100 件ずつ 10 回まで読み、続きはカーソル（絵文字の `id`）を持った次のジョブが読みます。リモートのメディアのキャッシュの複製は期限で消えます。
 - リモートの投票で `votersCount` が無いときは、単一選択なら票数の合計を投票者数にし、複数選択なら（誰も投票していなければ 0、それ以外は）NULL にします。
 - 投票への回答（FR-112）: ローカルのアカウントは、閲覧できる削除されていない投稿の現在版の投票に、締め切り（`closes_at`）の前に 1 回だけ回答します（`content.Interactions.VotePoll`。交流の禁止 `interact` の対象）。選んだ選択肢ごとに `poll_votes` を 1 行書き、同じトランザクションで既に回答した行が無いことを確かめます。回答は取り消しません。
-  リモートの投票への回答は、行ごとに `uri`（`https://{host}/ap/objects/{id}`）を持ち、ドメインイベント `content.poll_voted` で `federation` が選択肢ごとの `Note` を投票の作者に送ります（[federation.md §7.1](federation.md#71-記録)）。リモートの投票の票数は相手が送る集計（`poll_tallies`）のままで、回答は相手が次に送る `Update` の集計に入ります。
+  リモートの投票への回答は、行ごとに `uri`（`https://{host}/ap/objects/{id}`）を持ち、ドメインイベント `content.poll_voted` で `federation` が選択肢ごとの `Note` を投票の作者に送ります（[federation.md §7.1](../federation.md#71-記録)）。リモートの投票の票数は相手が送る集計（`poll_tallies`）のままで、回答は相手が次に送る `Update` の集計に入ります。
 - ローカルの投票の作成（FR-112）: 投稿（`content.Service.Create`）は投票を 1 つ持てます。選択肢は互いに異なる 2〜4 個（前後の空白を除き、それぞれ 50 文字以内）、期間は 5 分〜30 日（`closes_at` は投稿の時刻に足して秒に切り捨てる）で、複数選択と `hide_totals` を選べます。添付のある投稿には付けられません。
   投稿のトランザクションで、版の `polls` / `poll_options` と、すべての選択肢が 0 票・投票者 0 人の観測を記録します。投票のある投稿は編集できません（回答はその版の投票のものなので、版を作り直すと回答が離れるため）。
-- ローカルの投票の集計: ローカルのアカウントの回答（`VotePoll`）とリモートのアカウントの回答（`content.Interactions.RecordRemotePollVote`。`Question` への返信の `Note` の `name` が選択肢の題、[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）は、
+- ローカルの投票の集計: ローカルのアカウントの回答（`VotePoll`）とリモートのアカウントの回答（`content.Interactions.RecordRemotePollVote`。`Question` への返信の `Note` の `name` が選択肢の題、[federation.md §3.4](../federation.md#34-アクティビティごとのハンドラ)）は、
   同じトランザクションで投票の行をロックし（PostgreSQL は `SELECT … FOR UPDATE`。SQLite は書き込みのトランザクションが 1 つずつ）、`poll_votes` を選択肢ごとと投票者ごとに数え直した観測を記録して `content.poll_tally_observed` を発行します。
   リモートの回答は `Note` の `id` を `uri` に持つので、同じ `Note` を 2 回受けても 1 票です。単一選択の投票に同じアカウントが 2 つ目の選択肢を送ったときと、締め切り後・無い選択肢への回答は捨てます。
 - 投票の締め切り（FR-112）: 締め切りは時刻だけで決まり（`closes_at` を過ぎた投票は回答を受け付けない）、締め切りを表す行は持ちません。ローカルの投票を投稿したときと、ローカルのアカウントがリモートの投票に回答したときに、
@@ -1014,7 +824,7 @@ flowchart LR
 
 - お気に入り・ブックマーク・ピン留めは、閲覧できる（`canView`）削除されていない投稿にだけ付けられます。閲覧できない投稿は、存在しない投稿と同じく見つからないものとして扱います。
 - どれも `INSERT … ON CONFLICT DO NOTHING` と `DELETE` で書き、実際に行が変わったかどうかを返します。繰り返しても結果は変わりません。
-- リモートのアカウントの `status_pins` は、そのアカウントの `featured` コレクションの写しです（[federation.md §6.2](federation.md#62-actor-とハンドル)、ADR-0044）。Actor の取得・取り直しのたびに `content.Interactions.ReplaceRemotePins` が 1 つのトランザクションで全部を消して入れ直し（`id` はコレクションの順を保つ）、ローカルのピン留めのコマンドは書きません。上限と `slot` の規則はローカルと同じです。
+- リモートのアカウントの `status_pins` は、そのアカウントの `featured` コレクションの写しです（[federation.md §6.2](../federation.md#62-actor-とハンドル)、ADR-0044）。Actor の取得・取り直しのたびに `content.Interactions.ReplaceRemotePins` が 1 つのトランザクションで全部を消して入れ直し（`id` はコレクションの順を保つ）、ローカルのピン留めのコマンドは書きません。上限と `slot` の規則はローカルと同じです。
 - ローカルのアカウントのピン留めは自分の投稿だけで、`direct` は除きます。1 アカウント 5 件までで、各ピン留めは空いている最小の `slot` に入ります。一意 `(account_id, slot)` と `slot` の CHECK が上限をスキーマで保証するので、同時のピン留めでも 5 件を超えません。同時の挿入に `slot` を取られたら（行が増えず、そのピン留めも無く、空きがあるとき）次の空きで挿入し直し、空きがなければ上限超過として拒否します。
 - 投稿が削除されても行はすぐには消さず、消去ジョブが物理削除します（§8）。削除された投稿は `status_counters` を持たないので、件数は変わりません。
 
@@ -1213,13 +1023,13 @@ flowchart LR
 
 ### 4.8 federation
 
-設計は [連合の設計](federation.md) にあります。
+設計は [連合の設計](../federation.md) にあります。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `received_activities` | イベント | `activity_uri`（PK）, `actor_uri`, `type`, `signature_scheme`（`enum(rfc9421, cavage)`）, `trust`（`enum(signed, refetch)`。署名者と `actor` が一致しない、または `id` のホストが `actor` のホストと異なれば `refetch`）, `received_at` | インデックス `(received_at)`（保持期間後に削除） |
 | `received_activity_documents` | イベント | `activity_uri`（PK）, `document`（`document`） | 原本。非同期の処理が読む。障害調査とフィクスチャ採取のため短期保持（#44） |
-| `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。`uri` は `actor_uri` と同じオリジンのものだけ（[federation §3.3](federation.md#33-順序と冪等性)）。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除）、`(activity_uri)`（`remote_follow_tombstones` を使い終えたかの判定） |
+| `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。`uri` は `actor_uri` と同じオリジンのものだけ（[federation §3.3](../federation.md#33-順序と冪等性)）。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除）、`(activity_uri)`（`remote_follow_tombstones` を使い終えたかの判定） |
 | `remote_follow_tombstones` | イベント | `activity_uri`（PK。`Undo`）, `actor_uri`（フォローした人）, `object_uri`（埋め込みの `Follow` の `object`）, `received_at` | 未知の `Follow` への `Undo` を、埋め込みの `Follow` の 2 人の組で記録する。後から届いた同じ組の最初の `Follow` を捨て、その URI を同じ `activity_uri` で `remote_object_tombstones` に記録する（その行があれば使い終えた tombstone）。インデックス `(actor_uri, object_uri, received_at)`、`(received_at)`（30 日で削除） |
 | `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report, poll_vote, relay, quote, refusal)`）, `object_id`（`favourite` と `poll_vote` は投稿の ID）, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
 | `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て（投稿の `Delete` と `Like` / `Undo Like` は記録のトランザクションで組み立てる）、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
@@ -1229,24 +1039,24 @@ flowchart LR
 | `instance_nodeinfo_observations` | イベント | `id`, `domain`, `software_name`, `software_version`, `observed_at` | インデックス `(domain, id DESC)` |
 | `instance_availability_events` | イベント | `id`, `domain`, `kind`（`enum(marked_unavailable, marked_available)`）, `reason`（`enum(failure_days, delivery_succeeded, inbound_request, probe_succeeded, operator)`）, `occurred_at` | インデックス `(domain, id DESC)`。配送先として扱うかの判断の記録（管理画面で理由を示す） |
 | `instance_health` | 現在値 | `domain`（PK）, `state`（`enum(available, unavailable)`）, `since`, `failure_days`（`int`。直近の連続した失敗の、異なる UTC の日の数）, `last_failure_day`（`string(8)`、`YYYYMMDD`。失敗が無ければ空文字） | インデックス `(state)`。`delivery_attempts` と `instance_availability_events` から更新する。成功時の更新は、`failure_days > 0` か `state = unavailable` のときだけ行う |
-| `relays` | リソース | `id`, `protocol`（`enum(mastodon, litepub)`）, `url`（登録した URL。`mastodon` は inbox、`litepub` は Actor）, `inbox_url`（配送先）, `receive`（`bool`）, `created_by_user_id`（NULL 可 = CLI）, `created_at` | 一意 `(url)`。`left` か `rejected` のときだけ、子の行と一緒に消せる（[ADR-0061](../adr/0061-federation-relays.md)） |
+| `relays` | リソース | `id`, `protocol`（`enum(mastodon, litepub)`）, `url`（登録した URL。`mastodon` は inbox、`litepub` は Actor）, `inbox_url`（配送先）, `receive`（`bool`）, `created_by_user_id`（NULL 可 = CLI）, `created_at` | 一意 `(url)`。`left` か `rejected` のときだけ、子の行と一緒に消せる（[ADR-0061](../../adr/0061-federation-relays.md)） |
 | `relay_events` | イベント | `id`, `relay_id`, `kind`（`enum(follow_sent, accepted, rejected, left)`）, `follow_activity_uri`（`follow_sent` が送った `Follow` の `id`。ほかは対象の `Follow`）, `relay_actor_uri`（`accepted` の主体。ほかは NULL）, `actor_user_id`（NULL 可 = CLI か受信）, `occurred_at` | 一意 `(relay_id, follow_activity_uri, kind)`（同じ答えの再処理で増えない）。インデックス `(relay_id, id DESC)`。CHECK `(kind = 'accepted') = (relay_actor_uri IS NOT NULL)` |
 | `relay_states` | 投影 | `relay_id`（PK）, `state`（`enum(pending, accepted, rejected, left)`）, `follow_activity_uri`, `relay_actor_uri`（NULL 可）, `since` | `relay_events` の最新の行から作る。インデックス `(follow_activity_uri)`（`Accept` / `Reject` の照合）、`(relay_actor_uri)`（受信の署名者の照合） |
 
 - **配送先の記録** は `deliveries` が兼ねます。
   - 投稿の `Update` / `Delete` は、その投稿の `Create` の `outbound_activities` に紐づく `deliveries` の inbox に送ります（§7）。
-- `relay` の活動はリレーの参加と脱退の `Follow` / `Undo` と、インスタンス Actor への `Follow` に答える `Accept` / `Reject` です（[federation §13](federation.md#13-リレー)）。主体はインスタンス Actor、`object_id` はリレーの ID（リレーでない相手の `Follow` への `Reject` は相手のアカウントの ID）です。
+- `relay` の活動はリレーの参加と脱退の `Follow` / `Undo` と、インスタンス Actor への `Follow` に答える `Accept` / `Reject` です（[federation §13](../federation.md#13-リレー)）。主体はインスタンス Actor、`object_id` はリレーの ID（リレーでない相手の `Follow` への `Reject` は相手のアカウントの ID）です。
   本文は `relay_events` を書くトランザクションで組み立てて保存し、宛先の inbox は展開ジョブのペイロードが持ちます（登録を消した後でも届く）。
   リレーの状態の遷移（`follow_sent` は状態が無いか `rejected` / `left` から `pending`、`accepted` は同じ `Follow` の `pending` から、`rejected` は同じ `Follow` の `pending` / `accepted` から、`left` は同じ `Follow` の `pending` / `accepted` から）は `federation.RelayStatus.Next` が決め、行を読んでから書くまで `relays` の行ロックを取ります（PostgreSQL は `SELECT ... FOR UPDATE`、SQLite は書き込みが直列）。
-- `report` の活動は通報の転送の `Flag` です。主体（`actor_account_id`）はインスタンス Actor、`object_id` は通報（`reports`）の ID で、`forwarded` の通報だけが持ちます（[federation §11](federation.md#11-モデレーションとの連携)）。
+- `report` の活動は通報の転送の `Flag` です。主体（`actor_account_id`）はインスタンス Actor、`object_id` は通報（`reports`）の ID で、`forwarded` の通報だけが持ちます（[federation §11](../federation.md#11-モデレーションとの連携)）。
 - お気に入りは現在値で、取り消すと行が消えます。そこで `favourite` の活動は、お気に入りを決める組（`actor_account_id` と投稿）で記録し、`object_id` は投稿の ID です。
   `Like` / `Undo Like` の本文はイベントの値（お気に入りの `uri`・投稿の `uri`）から記録のトランザクションで組み立てるので、行が消えた後の `Undo Like` も `Like` の `id` を埋め込めます。
 - `instance_health` は【現在値】です。`delivery_attempts` と受信・probe の成功から更新しますが、成功は間引いて記録しないので、イベントから作り直せません（§9）。
 - `instance_health` は、`retryable_failure` を記録した日が `last_failure_day` と違えば `failure_days` を 1 増やし、7 に達したら `instance_availability_events`（`marked_unavailable`）を記録して `unavailable` にします。
-  成功・署名付きの受信・probe の成功は `failure_days` を 0 に戻し、`unavailable` なら `marked_available` を記録します（[federation.md §7.3](federation.md#73-配送とリトライ)）。
+  成功・署名付きの受信・probe の成功は `failure_days` を 0 に戻し、`unavailable` なら `marked_available` を記録します（[federation.md §7.3](../federation.md#73-配送とリトライ)）。
   `permanent_failure` と `skipped` は `instance_health` を変えません。projector は同じドメインへの同時の更新を失わないよう、行を読んでから書くまで行ロックを取ります（PostgreSQL は `SELECT ... FOR UPDATE`、SQLite は書き込みが直列）。
 - `delivery_attempts.signature_scheme` が NULL の行は、応答を得ていない試行です（送らなかった `skipped` とサーキットブレーカーが開いていた `retryable_failure`、接続・TLS・タイムアウトの失敗、`HTTPClient` が拒否した宛先）。
-- 受信の記録（`received_activities`）は 30 日、原本は 7 日で削除します（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、FR-803）。
+- 受信の記録（`received_activities`）は 30 日、原本は 7 日で削除します（[ADR-0034](../../adr/0034-remote-content-scope-and-retention.md)、FR-803）。
   1 時間ごとの消去ジョブ `federation.purge` が、原本、受信の記録、`remote_follow_tombstones`（30 日）、`remote_object_tombstones`（30 日）、`outbound_activity_documents`（30 日）、`delivery_attempts`（30 日）の順に、1 文あたり 1,000 行・1 テーブルあたり 20 文まで、古い順に消します。続きは次の回が消します。
   受信の記録は原本が消えたものだけを消すので、原本が受信の記録より長く残ることはありません。`outbound_activity_documents` と `delivery_attempts` の走査は、主キーの UUIDv7 の範囲（期限の下限より前）で止まります。
   `remote_follow_tombstones` を `remote_object_tombstones` より先に消すので、使い終えた tombstone が、使い終えた印（同じ `activity_uri` の `remote_object_tombstones`。tombstone より新しい）より長く残って `Follow` をもう一度捨てることはありません。
@@ -1284,7 +1094,7 @@ flowchart LR
   文書が無ければ、文書の API は 404 で、登録の画面・各画面のフッター・`GET /api/v1/instance` の `terms_url` / `privacy_policy_url` もそれを指しません。
 - 環境変数・設定ファイルによる設定（ADR-0010）とインスタンス設定は、同じキーを持ちません。
   再起動で反映するデプロイの構成（アダプタ・接続先・ホスト名・秘密情報）は設定に、運営者が稼働中に変える方針と文章はこの表に置きます。
-  どちらかがもう一方を上書きすることはありません（[設定リファレンス](../reference/configuration.md)、[運用手順](../operations/instance-settings.md)）。
+  どちらかがもう一方を上書きすることはありません（[設定リファレンス](../../reference/configuration.md)、[運用手順](../../operations/instance-settings.md)）。
 - 新しい設定は、それを使う機能と一緒にキーを追加します。
 - ルールの文の改訂と並べ替えは、どちらも位置と文と補足を写した新しい版を記録します。`rule_id` は変わらないので、通報の引用（`report_rule_citations`）はそのまま残ります。
   - 新しいルールは有効なルールの最後（最大の `position` + 1）に置きます。有効なルールは 100 個までです。
@@ -1292,7 +1102,7 @@ flowchart LR
     廃止で空いた番号は、次の並べ替えで詰まります。同じ `position` のルールは `rule_id` の順に並べます（PostgreSQL の READ COMMITTED で同時に追加した場合）。
 - `instance_rule_heads` は、廃止していないルールの `id` が最大の版を指します。廃止すると行が消え、廃止は取り消せません。
 - ルールの文と補足は、文章と同じく読み手のロケールによらず同じ値を返します。
-- テーマ（[ADR-0059](../adr/0059-design-tokens-and-instance-theme.md)）は版ごとにテーマ全体（上書きしたトークンとカスタム CSS）を記録し、`instance_theme` が `id` の最大の版を指します。
+- テーマ（[ADR-0059](../../adr/0059-design-tokens-and-instance-theme.md)）は版ごとにテーマ全体（上書きしたトークンとカスタム CSS）を記録し、`instance_theme` が `id` の最大の版を指します。
   `instance_theme_tokens.token` の `CHECK` は、`app/ui/src/theme.css` から生成したトークンの一覧（`internal/domain/instance/theme_tokens.gen.go`）と同じで、`schema` のテストが食い違いを検出します。
   値は保存の前にドメインが種類ごとの形・範囲と色の組のコントラストを検査し、検査済みの値だけからスタイルシートを組み立てます。版の内容は変わらないので、過去の版のスタイルシートの URL も同じ内容を返し続けます。
 - お知らせ（FR-726）は、`manage_announcements` を持つ人が下書きとして作り、公開し、取り下げます。本文と表示の期間（`starts_at`・`ends_at`）を変えるたびに版を記録し、`announcement_heads` が `id` の最大の版と、状態の変化の最後の結果を指します。
@@ -1313,13 +1123,13 @@ flowchart LR
 
 - ジョブのペイロードはアダプタ間を渡る「解釈しない文書」なので `document` 型です（ドメインのデータは入れず、ID を渡します）。
 - `outbox_events` は投入先のキューに渡す値（`run_at` を含む）をすべて持ち、リレーがそのまま `JobQueue.Enqueue` に渡します。
-- `trace_parent` はジョブを投入した span の W3C `traceparent` で、ジョブの実行の span はこれへの link を持ちます（[ADR-0063](../adr/0063-distributed-tracing.md) §2）。
+- `trace_parent` はジョブを投入した span の W3C `traceparent` で、ジョブの実行の span はこれへの link を持ちます（[ADR-0063](../../adr/0063-distributed-tracing.md) §2）。
   状態でなくジョブの属性で、記録していない span から投入したジョブは NULL です。リレー・dead job への移動・再実行はそのまま引き継ぎます。
 - `jobs` は未完了のジョブだけを持ちます。完了したジョブは削除し、恒久的に失敗したジョブは `dead_jobs` に移します。
   そのため `jobs (idempotency_key)` の一意制約は「未完了のジョブの間での一意」を表します。
 - `dead_jobs` は管理 API から再実行するまで残り、`failed_at` から設定 `dead_job_retention`（既定 30 日）を過ぎた行を 1 時間ごとの消去ジョブ `queue.purge_dead_jobs` が
   `DeadJobs.DeleteDeadJobsBefore` で古い順に、1 回 1,000 件・20 回まで消します（FR-803）。続きは次の回が消します。
-- `job_attempts` は【イベント】で、成功しなかったジョブの試行（`retry` と `dead`）を 1 試行 1 行で記録します（[ADR-0064](../adr/0064-queue-job-dashboard.md)）。
+- `job_attempts` は【イベント】で、成功しなかったジョブの試行（`retry` と `dead`）を 1 試行 1 行で記録します（[ADR-0064](../../adr/0064-queue-job-dashboard.md)）。
   成功した試行は記録しないので、書き込みは失敗の数にだけ比例します。runner が `queue.AttemptLog` を通して、キューのアダプタによらずアプリの DB に書き、記録の失敗はジョブの結果を変えません。
   ペイロードとハンドラのログは持たず、`error` はハンドラが返したエラーの先頭 2,000 バイト（UTF-8 の境界で切る）で、ハンドラはエラーにメールアドレス・IP アドレス・トークン・本文を入れません。
   dead job の再実行は試行回数を数え直すので、同じ `attempt` が 2 回現れることがあり、`finished_at` を主キーに含めて区別します。同じ試行を繰り返し記録しても 1 行です。
@@ -1339,7 +1149,7 @@ flowchart LR
 
 ### 4.11 webhook
 
-サーバー単位の webhook（FR-722、[ADR-0060](../adr/0060-instance-webhooks.md)）。`internal/app/webhook` が所有します。
+サーバー単位の webhook（FR-722、[ADR-0060](../../adr/0060-instance-webhooks.md)）。`internal/app/webhook` が所有します。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -1368,7 +1178,7 @@ flowchart LR
 
 ### 4.12 finance
 
-サーバーの維持費用と収入（FR-901・FR-902・FR-904・FR-917、[ADR-0067](../adr/0067-finance-cost-records.md)・[ADR-0068](../adr/0068-billing-import.md)・[ADR-0073](../adr/0073-income-records-and-publication.md)）。`internal/app/finance` が所有します。
+サーバーの維持費用と収入（FR-901・FR-902・FR-904・FR-917、[ADR-0067](../../adr/0067-finance-cost-records.md)・[ADR-0068](../../adr/0068-billing-import.md)・[ADR-0073](../../adr/0073-income-records-and-publication.md)）。`internal/app/finance` が所有します。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -1409,8 +1219,8 @@ flowchart LR
 
 ### 4.13 supporters
 
-決済の事業者の事実を運ぶ経路の記録（FR-910・FR-911、[ADR-0074](../adr/0074-payment-provider-port.md) §3・§4）。`internal/app/supporters` が所有します。
-加入・顧客・価格・加入の状態の表は [ADR-0072](../adr/0072-supporter-plans-and-roles.md) §15 が決めます。
+決済の事業者の事実を運ぶ経路の記録（FR-910・FR-911、[ADR-0074](../../adr/0074-payment-provider-port.md) §3・§4）。`internal/app/supporters` が所有します。
+加入・顧客・価格・加入の状態の表は [ADR-0072](../../adr/0072-supporter-plans-and-roles.md) §15 が決めます。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -1425,7 +1235,7 @@ flowchart LR
 
 #### サポーターの課金・プラン・加入
 
-課金の有効化・プラン・事業者の価格・顧客・加入・加入の状態・猶予・掲載の選択（[ADR-0072](../adr/0072-supporter-plans-and-roles.md) §15）。投影はすべて同期で、`my projection` の `supporters` が記録から作り直します。
+課金の有効化・プラン・事業者の価格・顧客・加入・加入の状態・猶予・掲載の選択（[ADR-0072](../../adr/0072-supporter-plans-and-roles.md) §15）。投影はすべて同期で、`my projection` の `supporters` が記録から作り直します。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
@@ -1458,357 +1268,3 @@ flowchart LR
 - 事業者への命令（すぐ解約・期間の終わりの解約）は、遷移のトランザクションで積むジョブ `supporters.command` がコミットの後に送り、取り直したスナップショットを当てます。全額の返金とチャージバック、アカウントの削除（BAN の予約を含む）、管理者による解約は、こちらの状態を先に終端にしてから事業者をすぐ解約します。凍結は期間の終わりの解約を予約します。
 - プランの作成と、条件の版を足す変更は、同じトランザクションでジョブ `supporters.ensure_prices`（冪等キー `ensure_prices:<版の ID>`）を積みます。ジョブは事業者に月と年の価格を作らせ（`EnsurePlan`）、`supporter_plan_prices` と今の価格、アーカイブを記録します。今の価格は、事業者が今の条件に返した価格で、プランと間隔ごとにアーカイブされていない最新の価格（作った順）と一致します。金額を以前の金額に戻しても新しい価格として記録するので、プランは毎回使える状態になります。既存の加入はもとの価格のまま続きます。
 - 決済画面の行（`supporter_checkouts`）は ADR-0072 §15 の表にない追加で、`pending` の加入の取り直しと定期の照合（`Syncer.OpenCheckouts`）が読みます。
-
-## 5. 状態とポリシー
-
-### 5.1 アカウントの状態の軸
-
-| 軸 | 対象 | 投影 | 値 |
-| --- | --- | --- | --- |
-| 登録審査 | `users` | `user_registration_states` | `pending` / `approved` / `rejected` |
-| メール確認 | `users` | `user_primary_emails` + `user_email_verifications` | 確認済みか |
-| ライフサイクル | `accounts` | `account_lifecycle_states` | `active` / `deactivated` / `deletion_scheduled` / `deleted` |
-| モデレーション上の制限 | `accounts`（とドメイン） | `account_restrictions` + `domain_restrictions` | 能力の集合（§5.2） |
-| 権限 | `users` | `user_roles` + `role_permissions` | 権限の集合 |
-
-軸は互いに独立しています。たとえば「承認済み・メール確認済み・有効・サイレンス中・モデレーター」のような組み合わせを、状態 enum を増やさずに表せます。
-
-### 5.2 処分の種類と制限（能力の剥奪）
-
-処分の種類（`moderation_actions.kind`）と、それが生む制限（`account_restrictions.restriction`）の対応表です。この表はドメインのコードに定義し、変更したら `account_restrictions` を再構築します（§9）。
-
-| 処分 `kind` | 日本語 | 生む制限 | 備考 |
-| --- | --- | --- | --- |
-| `warn` | 警告 | なし | 通知だけ |
-| `mark_statuses_sensitive` | 投稿のセンシティブ化 | なし（対象投稿に `status_sensitivity_overrides`） | `moderation_action_statuses` で対象を指定。期限なし（`expires_at` は NULL）。解除すれば元の表示に戻る |
-| `delete_statuses` | 投稿の削除 | なし（対象投稿に `status_deletions`、`origin = moderation`、`moderation_action_id`） | 同上。期限なし。本人の削除と同じく投影から外し、作者にも表示しない。解除しても投稿は戻らない |
-| `force_sensitive` | メディアの強制センシティブ | `media_sensitive` | 以後の添付をすべてセンシティブとして表示 |
-| `limit` | サイレンス | `visibility_ceiling_private`, `public_discovery`, `unsolicited_reach` | 公開範囲の上限がフォロワー限定になる（§5.4） |
-| `restrict_posting` | 投稿禁止 | `post` | 閲覧・フォロー・お気に入りはできる |
-| `restrict_interaction` | 交流の禁止（S） | `interact` | フォロー・お気に入り・ブースト・投票・返信を禁止 |
-| `disable_login` | ログイン停止 | `login` | 公開済みの内容は表示されたまま |
-| `suspend` | 凍結 | `login`, `post`, `interact`, `profile_view`, `federation` | 期限付き可。解除すれば元に戻る。データは保持 |
-| `ban` | BAN | `suspend` と同じ | **期限なし**（`expires_at` は NULL 必須）で、**解除できない**（FR-703。取り消せない操作として扱う、NFR-MOD-7）。例外は、削除までの 30 日のあいだの異議申し立てを覆したときで、削除を取り消して解除する（§4.3）。`account_lifecycle_events` に 30 日後の `deletion_scheduled` を発生させ（§4.2）、任意で `signup_blocks` を作る |
-
-制限（能力）の enum:
-
-| `restriction` | 意味 | 判定に使う場面 |
-| --- | --- | --- |
-| `login` | アプリ（認可・API）の利用の禁止 | 認証。有効なセッションとトークンは処分時に失効させる（`session_revocations` / `oauth_token_revocations`、`reason = moderation`）。サーバーが返す画面には処分を確かめるためにログインできる（§4.1） |
-| `post` | 投稿・返信・ブースト・編集の禁止 | 投稿系ユースケース |
-| `interact` | フォロー・お気に入り・ブースト・投票の禁止 | 交流系ユースケース |
-| `visibility_ceiling_private` | 公開範囲の上限を `private` にする | 投稿時の公開範囲の決定、`canView`（§5.4） |
-| `public_discovery` | ローカル / 連合 / ハッシュタグのタイムライン・検索・おすすめに出さない | タイムライン・検索 |
-| `unsolicited_reach` | フォローされていない相手への通知・メンションを届けない | 通知生成 |
-| `media_sensitive` | 添付を常にセンシティブとして表示 | 表示 |
-| `profile_view` | プロフィール・投稿を本人とモデレーター以外に表示しない | `canView`、Actor・オブジェクトの GET（404） |
-| `federation` | 連合しない（リモートなら受信を破棄、ローカルなら配送しない） | Inbox 処理・配送 |
-| `media_fetch` | メディアを取得・表示しない（ドメイン単位の `reject_media`） | メディアプロキシ |
-| `report_intake` | 通報を受け付けない（ドメイン単位の `reject_reports`） | `Flag` の受信 |
-
-- 新しい処分は、`kind` に値を足して対応表に 1 行書くだけで追加できます（テーブル変更なし）。
-- リモートアカウントへの処分は、制限だけを生む `limit` / `suspend` / `force_sensitive` を同じ表で扱います。ほかの種類（`login` や `post` の制限、本人への通知、投稿への処分、`ban`）はリモートには意味がないので受け付けません（`moderation.ErrUnsupportedAction`）。`notify_target` は常に偽です。
-- リモートのアカウントの `suspend` は、同じトランザクションで両方向のフォローを切ります（`relationship_severances`）。切断は、ローカルのアカウントと同じく凍結の始まりに発行される `moderation.account_suspension_changed`（凍結した処分の ID を持つ）と同じ時点で行います。
-- ローカルのアカウントの `suspend` / `ban` とその解除・期限切れ、`delete_statuses` が連合先に送るものは [ADR-0036](../adr/0036-moderation-federation-propagation.md) と [federation.md §11](federation.md#11-モデレーションとの連携) にあります。
-- ドメイン単位の処分の対応: `limit` → `public_discovery`, `unsolicited_reach`、`suspend` → `profile_view`, `federation`、`reject_media` → `media_fetch`、`reject_reports` → `report_intake`、`force_sensitive` → `media_sensitive`。
-
-### 5.3 判定（RestrictionPolicy）
-
-ドメイン層の `RestrictionPolicy` が、次の 4 つから「有効な制限の集合」を作ります。
-
-1. `account_restrictions`（期限内のもの）
-2. `domain_restrictions`（対象ドメインと親ドメイン、期限内のもの）
-3. ライフサイクル（`deactivated` / `deletion_scheduled` / `deleted` は `login`・`post`・`interact`・`profile_view` 相当として扱います。本人による無効化は再有効化でログインできるため、`login` は除きます）
-4. 登録審査（`approved` 以外は、ログインはできても投稿・交流はできない）
-
-ユースケースは `policy.CanLogin()`、`policy.CanPost()`、`policy.VisibilityCeiling()`、`policy.Discoverable()` などを通じてだけ判定し、テーブルを直接見ません。
-1 と 2 は `moderation.AccountPolicy` が呼ばれるたびに読み、各モジュールは自分のポートを通して判定します。
-
-| モジュール | ポート | 判定すること |
-| --- | --- | --- |
-| `content` | `RestrictionPolicy`（`AccountPolicy.Content()`） | 投稿・編集（`post`）、返信・お気に入り・ブースト（`interact`。ブーストは `post` も）、公開範囲の上限、閲覧、添付のセンシティブ表示（`media_sensitive`） |
-| `graph` | `InteractionPolicy` | フォロー（`interact`） |
-| `identity` | `LoginPolicy` | 認可とアクセストークンの照合（`login`。要求ごと） |
-| `notification` | `ReachPolicy` | 通知の作成（`unsolicited_reach`。受け取る人が差出人をフォローしていなければ作らない） |
-| クライアント API | `ProfileRestrictions` | アカウントの表示（`profile_view`。本人以外には存在しないものと同じ 404） |
-
-`login` を含む制限の変化（`moderation.account_restrictions_changed`）を受けて、`identity` の同期の購読者が処分と同じトランザクションでその利用者のセッションとトークンを失効させます（`reason = moderation`）。解除しても失効したものは戻りません。
-タイムラインの SQL は、`feed_author_restrictions` / `feed_domain_restrictions` を同じ規則で写像した条件を使います（共通のクエリビルダ）。
-
-### 5.4 サイレンスと公開範囲
-
-オーナーの定義: サイレンスされたアカウントの **全部の投稿がフォロワー限定になる**。
-
-- **投稿時**: 要求された公開範囲を上限で切り詰めます。`public` / `local` / `unlisted` は `private` になり、`private` / `direct` はそのままです。切り詰めた結果を `statuses.visibility`（不変）に記録します。
-- **過去の投稿**: `statuses.visibility` は書き換えません。`canView` が「実効公開範囲 = min(元の公開範囲, 上限)」で判定するので、このサーバー上ではサイレンス中は過去の投稿もフォロワー限定として扱われ、解除すれば元に戻ります。
-- **連合**: 公開として配送済みの過去の投稿を、連合先から取り消すことはできません（ActivityPub の制約）。サイレンス後の新しい投稿は `private` として配送されます。
-- 実効公開範囲は `content.EffectiveVisibility` が求めます。`canView` の判定表は [公開範囲の閲覧判定](visibility.md) にあります。
-- **投稿の前**: 上限と、要求どおりに記録される公開範囲（`content.PostingVisibilities`。`EffectiveVisibility` が変えないもの）は `content.Service.PostingLimits` が返し、クライアント API は閲覧者の `CredentialAccount` の `posting` で示します。クライアントは投稿の前に上限を知らせられます。
-
-## 6. タイムラインのクエリ
-
-v0 は fan-out-on-read（ADR-0013）です。`timeline` モジュールの投影だけを読みます。返す直前にドメインの `canView`（[公開範囲の閲覧判定](visibility.md)）を再適用します（多重防御、NFR-SEC-4）。以下は方言に依存しない概略で、実際のクエリは `queries/<dialect>/timeline.sql` です。
-
-共通の規則:
-
-- ページングは `id` のキーセット（§1.3）で、`:limit + 1` 件を読んで次のページの有無を決めます。次のページのカーソルは、`canView` で除いた行も含めて読んだ最後の行の `id` です（除いた結果、ページが `:limit` 件より少なくなることがあります）。
-- 期限つきの除外・制限は、`expires_at` / `effective_until` が NULL か `:now` より後のものだけが効きます。
-- ドメイン単位の制限は、そのドメインとサブドメイン（`author_domain = d.domain` または `author_domain` が `'.' || d.domain` で終わる）に効きます。
-- **言語フィルタ（FR-208）**: 言語の一覧を渡すと `language IN (:languages)` に加えて `language = 'und'`（不明）も通します。空なら絞り込みません。一覧は呼び出し側が `identity` の `user_timeline_languages` から渡します（`timeline` は `identity` のテーブルを読みません）。
-- `canView` の再適用: 投稿は投稿として、ブーストは「ブーストした人の、元投稿と同じ公開範囲の投稿」として文脈ごとに判定し、さらに元投稿を単体の取得として判定します。閲覧者との関係（承認済みのフォロー・ブロック・宛先か）と作者の制限は、ページの行について `feed_*` からまとめて読みます。ミュートは `canView` の外の絞り込みですが、同じ段階でも除きます。
-
-### 6.1 ホーム（FR-201）
-
-```sql
-SELECT e.*
-FROM feed_entries e
-WHERE e.author_account_id IN (
-        SELECT followee_account_id FROM feed_follow_edges WHERE follower_account_id = :viewer
-        UNION ALL SELECT :viewer)
-  AND e.id < :cursor
-  AND e.id >= :window_floor                       -- uuidv7_floor(基準時刻 - 読み取り窓)
-  AND (e.kind = 'post' OR e.author_account_id = :viewer OR EXISTS (SELECT 1 FROM feed_follow_edges f
-         WHERE f.follower_account_id = :viewer AND f.followee_account_id = e.author_account_id AND f.show_boosts))
-  AND (e.visibility <> 'direct' OR e.author_account_id = :viewer
-       OR EXISTS (SELECT 1 FROM feed_direct_recipients d
-                  WHERE d.recipient_account_id = :viewer AND d.entry_id = e.id))
-  AND NOT EXISTS (SELECT 1 FROM feed_exclusions x
-         WHERE x.viewer_account_id = :viewer
-           AND x.target_account_id IN (e.author_account_id, e.original_author_account_id)
-           AND (x.expires_at IS NULL OR x.expires_at > :now))
-  AND NOT EXISTS (SELECT 1 FROM feed_author_restrictions r
-         WHERE r.account_id IN (e.author_account_id, e.original_author_account_id)
-           AND r.restriction = 'profile_view'
-           AND (r.effective_until IS NULL OR r.effective_until > :now))
-  AND NOT EXISTS (/* feed_domain_restrictions の profile_view を author_domain と original_author_domain に */)
-  AND /* 言語フィルタ */
-ORDER BY e.id DESC
-LIMIT :limit + 1
-```
-
-- 使うインデックス: `feed_entries (author_account_id, id)`、`feed_follow_edges (follower_account_id, followee_account_id)`、`feed_exclusions` の PK。
-- フォローしている相手の投稿は、`public` / `local` / `unlisted` / `private` のどれでも表示できます（閲覧者はフォロワーかつローカル）。自分の投稿とブーストも表示します。
-- ブーストは、ブーストした人と元投稿の作者（`original_author_account_id`）の両方について、ブロック・ミュート・制限で除外します。閲覧者がミュートしたドメイン（`feed_domain_mutes`）の投稿のブーストも除外しますが、フォローしているそのドメインのアカウントの投稿は除外しません（§4.5）。
-- フォローしていない相手からの `direct` 投稿（自分宛て）は、ホームではなく会話一覧で `feed_direct_recipients (recipient_account_id, entry_id)` から読みます。
-- **読み取り窓**: `:window_floor` は「基準時刻 − 窓」の UUIDv7 の下限です（§1.3）。基準時刻は現在時刻で、カーソルがあればカーソルの `id` の時刻です。
-  窓の既定値は 7 日（`timeline.HomeWindow`）です。ページが埋まらなければ、窓を 4 倍（`timeline.HomeWindowGrowth`）に広げて読み直すことを 3 回（`timeline.HomeWindowWidenings`）まで行い、それでも埋まらなければ下限なしで読みます。
-
-### 6.2 ローカル / 連合（FR-202）
-
-```sql
-SELECT e.* FROM feed_entries e
-WHERE e.is_local AND e.kind = 'post'
-  AND e.visibility IN ('public', 'local')          -- 未ログインは 'public' だけ（ADR-0017）
-  AND e.id < :cursor
-  AND NOT EXISTS (SELECT 1 FROM feed_author_restrictions r
-        WHERE r.account_id = e.author_account_id
-          AND r.restriction IN ('public_discovery', 'visibility_ceiling_private', 'profile_view')
-          AND (r.effective_until IS NULL OR r.effective_until > :now))
-  AND NOT EXISTS (SELECT 1 FROM feed_exclusions x  -- 閲覧者のブロック・ミュート（未ログインなら無し）
-        WHERE x.viewer_account_id = :viewer AND x.target_account_id = e.author_account_id
-          AND (x.expires_at IS NULL OR x.expires_at > :now))
-  AND /* 言語フィルタ */
-ORDER BY e.id DESC LIMIT :limit + 1;
-```
-
-- 連合タイムラインは `kind = 'post' AND visibility = 'public'` の部分インデックスを使い、`feed_domain_restrictions`（`public_discovery`・`visibility_ceiling_private`・`profile_view`）も除外します。
-  閲覧者がミュートしたドメイン（`feed_domain_mutes`。サブドメインを含む）の投稿も除外します。ローカルタイムラインはリモートの投稿を含まないので、ドメインのミュートは関係しません。
-
-### 6.3 ハッシュタグ・プロフィール・スレッド
-
-- **ハッシュタグ（FR-203）**: `feed_tag_entries (tag_id, entry_id)` を `visibility IN ('public','local')`（未ログインは `public`）で絞り、言語のために `feed_entries` と結合します。
-  作者の `public_discovery`・`visibility_ceiling_private`・`profile_view` は `feed_author_restrictions` と `feed_domain_restrictions`（作者のドメイン）で、閲覧者のブロック・ミュートは `feed_exclusions` で、閲覧者がミュートしたドメインは `feed_domain_mutes` で除外します。
-- **プロフィール（FR-204）**: `feed_entries (author_account_id, id)` を使い、作者の投稿とブーストを読みます。
-  許される公開範囲の集合は、閲覧者と作者の関係（本人・承認済みフォロワー・ブロック）と作者の制限を `canView`（`ContextProfile`）に公開範囲ごとに与えて求め、`IN (…)` に入れます。
-  `direct` は本人なら全部、それ以外は自分宛てのもの（`feed_direct_recipients`）だけです。ブーストは、元投稿の作者を閲覧者が除外している・元投稿の作者やそのドメインに `profile_view` がある・元投稿の作者のドメインを閲覧者がミュートしているものを除きます。
-  返信を除くときは `NOT is_reply`、ブーストを除くときは `kind = 'post'` で絞ります。言語フィルタは掛けません（プロフィールは作者のすべての言語を見せる）。
-  ピン留めした投稿は `timeline` ではなく `content` が `status_pins` から読み、投稿ごとに `canView`（`ContextStatus`）を適用します。
-- **スレッド（FR-106）**: `statuses (conversation_uri, id)` で一括取得し、行ごとに `canView` を適用します。親子関係は `status_reply_links` を使います。
-
-## 7. 公開範囲と配送
-
-| 公開範囲 | 配送先（作成時） | `Update` / `Delete` の宛先 |
-| --- | --- | --- |
-| `public` | 作者のリモートフォロワー + メンション先 + 参加中（`accepted`）のリレーの inbox（ADR-0061） | 作成時の `deliveries` + その時点のフォロワー |
-| `unlisted` | 作者のリモートフォロワー + メンション先 | 作成時の `deliveries` + その時点のフォロワー |
-| `local` | 作者の **リモートフォロワーだけ**。フォロワーでないメンション先には送らない（ADR-0017、オーナー確認済み） | 作成時の `deliveries` |
-| `private` | 作者のリモートフォロワー + メンション先 | 作成時の `deliveries` |
-| `direct` | メンション先 | 作成時の `deliveries` |
-
-1. 投稿のトランザクションで、`outbound_activities`（`Create`）と `outbox_events`（`federation.fanout`）を記録します。
-2. `federation.fanout` ジョブが宛先を一定件数ずつ算出し、`deliveries` に挿入します（`ON CONFLICT DO NOTHING`）。挿入できた行ごとに `federation.deliver` ジョブを投入し、カーソルを進めます（[federation.md §7.2](federation.md#72-展開fan-out)）。
-3. `federation.deliver` の結果は `delivery_attempts` に記録し、同期 projector が `instance_health` を更新します。
-4. 配送先の算出とオブジェクト IRI への GET は、`canView` で判定します（ADR-0017, ADR-0018、[公開範囲の閲覧判定](visibility.md)）。
-   - `public` / `unlisted` は署名がなくても返します。
-   - `local` は「署名者のドメインに作者の `active` なフォロワーがいる」場合だけ返します。`private` はそれに加えて署名者のドメインにメンション先がいる場合も、`direct` はメンション先がいる場合だけ返します。それ以外は 404 にします。
-   - 作者に `profile_view` の制限があれば 404 にします。
-
-## 8. 削除と消去
-
-| 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
-| --- | --- | --- | --- |
-| 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `reactions` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）・投稿の自動削除の設定、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・リアクション・ブックマーク・ピン留めを含む）、本人のお気に入り・リアクション・ブックマーク・ピン留め・ブースト（件数から引く）・投票への回答、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート・ドメインのミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions`・`notification_domain_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、お知らせの既読（`announcement_reads`）、本人のアップロード（`media_files` と子テーブル・Blob）、参加者の一覧の掲載の選択（`supporter_listings`）と決済の事業者の顧客（`supporter_customers`） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア、課金の加入・遷移・決済画面・返金とチャージバックの記録（会計と事業者との照合のため。ADR-0072 §10） |
-| BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
-| モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
-| 投稿の自動削除（FR-118） | `status_deletions`（`origin = auto_delete`） | 投稿の削除と同じ | 投稿の削除と同じ |
-| リモート投稿の保持期間（FR-803） | `status_deletions`（`origin = retention`） | `statuses`・版と子テーブル・投票・投影の行・リモートのアカウントのブースト（§4.4 リモート投稿の保持期間） | `status_deletions`（取得し直しは拒まない）、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留め・通知 |
-
-- `Delete`（Actor）は、`active` なフォロワーの inbox と、既知の shared inbox（削除されていないリモートの Actor の `remote_account_heads.shared_inbox_url`）に送ります。
-- 消去は「イベントを記録 → 投影から即時に除外 → 消去ジョブが一定件数ずつ物理削除」の順です。表示から消えるのは即時、物理削除は非同期です。
-- アカウント削除の消去は、1 時間ごとのジョブ `account.erase_deleted` が、`deleted` から 7 日を過ぎた、保全（§4.3）の無いローカルのアカウントに行います。
-  - モジュールごとの消去（`content` の投稿と操作 → `graph` → `timeline` → `notification` → `instance` のお知らせの既読 → `content` のメディア → `identity` → `account`）を、1 文あたり 100 行（投稿は 100 件）・1 回のジョブで 50 トランザクションまで行い、使い切ったらカーソル（アカウントの ID）を持った次のジョブが続けます。どれも再実行してよい。
-  - 削除されていない投稿には `status_deletions`（`origin = account_deletion`）を記録して `content.status_deleted` を発行し（投影・`feed_*` から外れる）、同じトランザクションで行を消します。投稿ごとの `Delete` は送りません（`Delete`（Actor）が代わりを務める）。
-  - 有効なフォローは `follow_terminations`（`account_deleted`）で終わらせ、相手の `follow_counters` から引いてから消します。相手のサーバーには何も送りません。
-  - 通報か投稿単位の処分が指す投稿（`moderation` の `StatusRetained`）は、削除だけを記録して行を残し、その記録が消えた後の回で消します。それまで `account_erasures` は記録せず、毎回そのアカウントを調べ直します。
-  - 本人のアップロードは、Blob（受け取ったままのファイルと各処理結果の版）をトランザクションの外で消してから、同じ回の 1 トランザクションで `media_files` と子テーブル（`uploaded_media`・`media_processing_results`・`media_variants`・`media_focus`・`media_descriptions`）を消します。行が残りの消去の記録なので、Blob の削除に失敗しても次の回が消し直します（存在しない Blob の削除は成功する）。
-  - 残した投稿の版が添付するファイルは、投稿と同じく記録が消えた後の回で消します（ADR-0038）。インスタンス設定（§4.9）のどれかの版が指すファイルはインスタンスのものとして残し、消去を止めません。プロフィールの版が指すアバターとヘッダーは、プロフィールと一緒に消えます。
-
-## 9. 投影の再構築と検証
-
-| 投影 | 元になるイベント / リソース | 更新 |
-| --- | --- | --- |
-| `account_restrictions` | `moderation_actions`, `moderation_action_lifts`, §5.2 の対応表 | 同期 |
-| `domain_restrictions` | `domain_moderation_actions`, `domain_moderation_action_lifts` | 同期 |
-| `report_states` | `reports`, `report_assignments`, `report_resolutions`, `report_reopenings` | 同期 |
-| `appeal_states` | `moderation_appeals`, `moderation_appeal_decisions` | 同期 |
-| `status_sensitivity_overrides` | `mark_statuses_sensitive` の `moderation_actions` と `moderation_action_statuses`、`moderation_action_lifts` | 同期 |
-| `account_lifecycle_states` | `account_lifecycle_events` | 同期 |
-| `user_registration_states` | `registration_applications`, `registration_decisions` | 同期 |
-| `user_roles` | `user_role_grants`, `user_role_revocations` | 同期 |
-| `user_primary_emails` | `user_email_addresses` | 同期 |
-| `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts` と `remote_account_handle_verifications`、`remote_account_snapshots` と取得の結果、`account_profile_revisions` | 同期 |
-| `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
-| `status_link_cards` | `status_revisions` の本文・ソース・添付・投票、`status_deletions` | 同期（URL は Go の `content.LinkCardURL` が選ぶので、`my projection` の対象ではない） |
-| `status_quote_states` | `status_quotes`, `status_quote_events` | 同期（再構築は Go の `content.RebuildQuoteStates`） |
-| `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
-| `feed_*` | `content` と `graph` の `ReplayEvents` が現在の状態から再生するイベント（下記） | 同期 |
-| `feed_author_restrictions` / `feed_domain_restrictions` | `moderation.ReplayEvents` と `account.ReplayDeletions` が再生するイベント（下記） | 同期 |
-| `poll_tallies` | `poll_tally_observations`, `poll_tally_observation_counts` | 同期 |
-| `notification_exclusions` / `notification_domain_exclusions` | `blocks` と取り消し（`block_edges`）、`mutes`、`account_domain_mutes` | 同期 |
-| `notification_deleted_statuses` | `status_deletions` | 同期 |
-| `instance_settings` / `instance_texts` / `instance_rule_heads` / `instance_theme` / `announcement_heads` | `instance_setting_revisions`、`instance_text_revisions`、`instance_rules` と `instance_rule_revisions`・`instance_rule_retirements`、`instance_theme_revisions`、`announcement_revisions`・`announcement_state_changes` | 同期 |
-| `webhook_endpoint_heads` / `webhook_endpoint_failures` | `webhook_endpoint_revisions`・`webhook_endpoint_state_changes`・`webhook_secrets`、`webhook_delivery_attempts` | 同期 |
-| `relay_states` | `relay_events` | 同期 |
-| `cost_item_heads` | `cost_items`, `cost_item_label_revisions`, `cost_item_end_changes`, `cost_item_cancellations` | 同期 |
-| `supporter_plan_heads` / `supporter_plan_price_heads` / `supporter_subscription_heads` / `supporter_live_subscriptions` / `supporter_subscription_deadlines` | `supporter_plan_revisions`・`supporter_plan_retirements`、`supporter_plan_prices`・`supporter_plan_price_archivals`、`supporter_subscriptions`・`supporter_subscription_transitions`・`supporter_grace_periods` | 同期 |
-| カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
-
-- CLI: `my projection list` は投影と所有モジュールと表を示します。投影の名前は所有モジュールの再構築関数の単位です
-  （`instance`、`account`、`identity`、`moderation`、`graph`、`content`、`status_sensitivity_overrides`、`boost_edges`、`feeds`、`feed_restrictions`、
-  `notification_exclusions`、`notification_deleted_statuses`、`relay_states`、`webhook`、`finance`、`supporters`）。
-  `<name>` には投影の名前か、その表の名前を渡します。省略するとすべての投影です。
-  - `my projection verify [<name>]` は、1 つのトランザクションの中で現在の表を読み、所有モジュールの再構築関数を実行し、結果の表を読んでロールバックします。
-    差分の行（現在の表にあって作り直した結果にない行、その逆）を表示し、差分があれば 1 で終了します。何も変えません。
-  - `my projection rebuild [<name>]` は同じ比較のあと、差分だけを 1 トランザクション 500 行までに分けて書きます（ADR-0003 の行数上限）。
-    余分な行を消してから欠けた行を入れるので、読み手が空の投影を見ることはなく、正しい行は書き直しません。
-    消すのは全列が一致する行だけ、入れるのはキーが重なる行のない行だけなので、比較と書き込みの間に変わった行は新しい値のまま残り、次の検証が残ったずれを見つけます。
-  - 定期ジョブ `projection.verify`（1 日ごと）は、すべての投影に `rebuild` と同じことをし、ずれていた投影をログに残します。
-  - 表を列に依存せず読み書きするのはアダプタの `projection.Store` です（`testkit.ProjectionStoreContract`）。
-  - `remote_account_heads` の取得の状態（`last_fetched_at`、`consecutive_fetch_failures`）はイベントに残らないので、再構築は既存の行の値を残し、
-    行のない Actor には最新のスナップショットの取得時刻と 0 を入れます。`snapshot_id` と配送先は最新のスナップショットから作ります。
-  - `notification_deleted_statuses` は、通知の対象の投稿のうち `content` の公開 API が削除済みと答えるものから作ります。
-  - `account_restrictions` は、解除されていない処分の行のうち、期限の来ていない行と、期限の来た行で表にまだあるものから作ります。
-    期限の来た行は何も制限せず、`moderation.expire_restrictions` がそれを消すときに凍結の終わりを伝えます（§4.3）。消したことはイベントに残らないので、
-    再構築は表にある期限の来た行を残し、ジョブが消した行を戻しません。`domain_restrictions` は期限の来た行を解除まで持つので、解除されていない処分の行をすべて作ります。
-  - `report_states` は、受け付けで `open`、解決（`open` の通報だけ）で `resolved`、再開（`resolved` の通報だけ）で `open` という規則から作ります。
-    解決が再開より多ければ `resolved` で、`outcome` と `since` は最新の解決のもの、そうでなければ `open` で、`since` は最新の再開か受け付けの時刻です。担当は最新の割り当てのものです。
-    `appeal_states` は、審査があればその結果と審査の時刻、なければ `pending` と申し立ての時刻です。
-  - `status_sensitivity_overrides` は、`content` が `moderation` の表を読まないので、`moderation.ReplaySensitivityMarks` が返す、解除されていない `mark_statuses_sensitive` の処分の投稿から作ります。
-  - `user_registration_states` は、登録の申請に最新の決定があればその結果と決定の時刻、なければ `pending` と申請の時刻です。
-    `user_primary_emails` は利用者の最初のメールアドレスから作ります。アドレスは登録と管理者の作成で 1 つだけ加わるので、それが主アドレスです。
-    主アドレスを切り替える操作を足すときは、切り替えをイベントとして記録し、再構築をそれに合わせます。
-  - `poll_tallies` は投票ごとに最新の観測（ID の最も大きい `poll_tally_observations`）の票数です。
-  - `webhook_endpoint_heads` は宛先ごとに最新（ID の最も大きい）の版・状態の変化・秘密から作ります。
-    `webhook_endpoint_failures` は、宛先の最新の成功した試行より後の失敗した試行から、その最初の試行と件数で作ります。
-    試行は 14 日で消えるので、最初の失敗が消えた連続の行は作り直せません。再構築はその行を、残っている成功が連続を終えていないかぎり、表にあるまま残します。
-  - `relay_states` はリレーごとに最新（ID の最も大きい）の `relay_events` の種類から状態を、その行から `Follow`・主体・時刻を作ります。
-  - `cost_item_heads` は取り消しのない費用の項目ごとに、最新（ID の最も大きい）のラベルの版と、最新の終了の変更の `ends_on`（変更がなければ無期限）から作ります。
-  - `instance_health` は投影ではなく【現在値】で、再構築・検証の対象ではありません（§4.8）。失敗の日数を 0 に戻す署名付きの受信と probe の成功は、
-    `unavailable` からの復帰でないかぎり記録せず（間引き）、`delivery_attempts` は 30 日で消えるので、イベントから作り直せません。
-- コントラクトテスト: 各 projector に「イベント列を与えて投影を作る」テストと、「インクリメンタル更新の結果 = 一括再構築の結果」の性質テストを書きます。
-- 他のモジュールのイベントから作る投影（`feed_*`）は、元のモジュールのテーブルを読まずに再構築します。
-  `content.ReplayEvents` は削除されていない投稿ごとに現在版つきの `content.status_created` を、有効なブーストごとに `content.boosted` を、
-  `graph.ReplayEvents` は有効なフォローごとに `graph.followed`（承認待ちなら `graph.follow_requested`）を、有効なブロックごとに `graph.blocked` を、ミュートごとに `graph.muted` を、ドメインのミュートごとに `graph.domain_muted` を、
-  再構築のトランザクションの中で発行します。`timeline.RebuildProjections` は `feed_*`（制限の 2 表を除く）を空にして、これらに自分の projector を適用します。
-- 制限の 2 表は `timeline.RebuildRestrictions` が作ります。`moderation.ReplayEvents` は解除されていない処分のあるアカウントごとに `moderation.account_restrictions_changed` を、
-  ドメインごとに `moderation.domain_restrictions_changed` を、その時点で効いている制限を載せて発行し、`account.ReplayDeletions` はアカウントを削除したライフサイクルのイベントごとに
-  `account.lifecycle_event_recorded` を発行します。`timeline` の projector は処分と解除のたびにしか行を置き換えないので、期限の来た行が次の処分か解除まで残ります。
-  その行は読み取りの条件で何も制限しないので、再構築は表にある期限の来た行を、同じ制限の行を作らなかったときに残します。
-
-## 10. 機能要件とテーブルの対応
-
-| FR | 優先度 | 主なテーブル |
-| --- | --- | --- |
-| FR-001 登録モード | M | `instance_settings`（`registration_mode`）, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions` |
-| FR-002 メール + パスワード | M | `user_email_addresses`, `user_email_verifications`, `user_primary_emails`, `password_credentials`, `user_tokens` |
-| FR-003 OAuth 2.0 + PKCE | M | `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_access_tokens`, `sessions` |
-| FR-004 パスキー | C | `passkey_credentials`, `passkey_credential_revocations`, `password_credential_removals` |
-| FR-005 TOTP | S | `totp_enrollments`, `totp_recovery_codes`, `totp_recovery_code_uses` |
-| FR-006 プロフィール | M | `account_profile_revisions`, `account_profile_fields`, `account_profile_heads` |
-| FR-007 言語・タイムゾーン | M | `user_preferences`, `user_time_zones` |
-| FR-008 アカウント削除・エクスポート・インポート | S | `account_lifecycle_events`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` |
-| FR-101〜104 投稿・公開範囲・メンション・タグ・CW | M | `statuses`, `status_revisions` と子テーブル, `status_mention_index`, `feed_tag_entries` |
-| FR-105 画像添付・代替テキスト | M | `media_files`, `uploaded_media`, `media_processing_results`, `media_variants`, `media_focus`, `media_descriptions`, `status_revision_attachments` |
-| FR-106 返信・スレッド | M | `statuses.in_reply_to_uri` / `conversation_uri`, `status_reply_links` |
-| FR-107 ブースト・お気に入り | M | `boosts`, `boost_retractions`, `boost_edges`, `favourites`, `status_counters` |
-| FR-108 削除 | M | `status_deletions`, `deliveries` |
-| FR-109 編集と履歴 | S | `status_revisions`, `status_heads` |
-| FR-110 言語タグ | M | `status_revisions.language`, `status_revision_bodies` |
-| FR-111 カスタム絵文字 | S | `custom_emojis`, `custom_emoji_images`, `custom_emoji_settings`, `custom_emoji_aliases`, `status_revision_emojis`, `account_profile_revision_emojis`, `audit_log_entries` |
-| FR-112 投票 | C | `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tallies` |
-| FR-113 ブックマーク | S | `bookmarks` |
-| FR-114 引用投稿 | S | `status_quotes`, `status_quote_events`, `status_quote_states`, `status_quote_policies`, `quote_authorizations`, `quote_authorization_revocations`, `user_preferences`（`default_quote_policy`）, `notifications`（`quote`） |
-| FR-116 絵文字リアクション | M | `reactions`, `status_reaction_counts`, `custom_emojis`, `notifications`（`reaction`） |
-| FR-117 リンクのカード | S | `link_cards`, `link_card_media`, `status_link_cards`, `instance_settings`（`link_cards_enabled`） |
-| FR-201〜204 タイムライン | M | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |
-| FR-205 通知 | M | `notifications`, `notification_dismissals`, `notification_read_markers` |
-| FR-206 Web Push | S | `push_subscriptions`, `push_subscription_alerts` |
-| FR-208 言語フィルタ | S | `user_timeline_languages`, `feed_entries.language` |
-| FR-301〜302 フォロー・リクエスト | M | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `follow_edges` |
-| FR-303 ブロック・ミュート | M | `blocks`, `block_retractions`, `block_edges`, `mutes` |
-| FR-304 ドメインミュート | C | `account_domain_mutes`, `feed_domain_mutes`, `notification_domain_exclusions` |
-| FR-305 リモートアカウント検索 | M | `account_handles`, `accounts.uri` |
-| FR-401〜404 WebFinger・NodeInfo・Actor・署名 | M | `account_handles`, `account_keys`, `local_account_private_keys`, `follow_edges`, `feed_entries` |
-| FR-405 受信アクティビティ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones` |
-| FR-406 配送・リトライ・一時停止 | M | `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `instance_availability_events`, `instance_health`, `jobs` |
-| FR-407 リモート取得 | M | `remote_account_snapshots`, `remote_account_heads`, `remote_account_handle_verifications`, `remote_profile_revisions`, `remote_status_revisions`, `account_keys`, `kv_entries` |
-| FR-409 リモートメディア方針 | M | `remote_media`, `remote_media_cache`, `instance_settings` |
-| FR-411 リレーへの送信と受信 | S | `relay_states`, `deliveries`, `relayed_statuses`, `kv_entries`（時間あたりの件数） |
-| FR-501 クライアント API | M | `oauth_*`, `local_statuses.idempotency_key` |
-| FR-602 管理画面 | M | `user_roles`, `role_permissions`、モデレーション系 |
-| FR-701 通報 | M | `reports`, `report_statuses`, `report_rule_citations`, `report_states` |
-| FR-709〜711 通報の転送・対応・結果の通知 | S / M | `reports.forwarded`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `notifications`（`report_resolved`） |
-| FR-712 モデレーターへの通知 | M | `notifications`（`admin_report`, `admin_sign_up`, `admin_appeal`, `admin_webhook_disabled`） |
-| FR-714 アカウントの管理 | M | `session_origins`, `registration_origins`, `user_primary_emails`, `moderation_actions`, `reports` |
-| FR-716〜717 連合への伝播・切れた関係 | M / S | `outbox_events`, `follow_terminations`, `relationship_severances` |
-| FR-718 処分したドメインの公開 | S | `domain_moderation_actions`（`public_comment`, `obfuscate`）, `instance_settings`（`domain_actions_visibility`） |
-| FR-719 登録の拒否リスト | S | `signup_blocks`, `signup_block_lifts`, `registration_origins` |
-| FR-720 ロール | S | `user_role_grants`, `user_role_revocations`, `user_roles` |
-| FR-722 サーバー単位の webhook | S | §4.11 の `webhook_*`, `audit_log_entries`, `notifications`（`admin_webhook_disabled`） |
-| FR-724 リレーの参加と脱退の管理 | S | `relays`, `relay_events`, `relay_states`, `outbound_activities`（`relay`）, `audit_log_entries` |
-| FR-901 費用の記録 | S | §4.12 の `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations`, `cost_item_heads` |
-| FR-902 期間の集計 | S | `cost_item_heads` と §4.12 の項目・改定（読み取りのときに計算し、投影を持たない） |
-| FR-903 費用の公開範囲 | S | `instance_settings`（`finance_visibility`）と FR-902 の集計（読み取りのときに計算する） |
-| FR-904 利用料金の自動取り込み | S | §4.12 の `billing_import_runs`, `imported_cost_revisions`, `imported_cost_heads`, `audit_log_entries`（手動の取り込み） |
-| FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`, `supporter_*` の表, `notifications`（`supporter_*` の種類） |
-| FR-912 課金のロールの安全柵 | S | `managed_roles`, `role_permissions`, `roles` |
-| FR-913 ロールのバッジ | S | `role_badges`, `user_role_badge_displays`, `user_roles` |
-| FR-914 参加者の一覧 | S | `supporter_listings`, `supporter_subscription_heads`, `supporter_plan_heads`, `instance_settings`（`supporter_list_visibility`） |
-| FR-915 絵文字の作成の権限と承認制 | S | `role_permissions`（`create_custom_emojis`）, `custom_emojis`（`created_by_user_id`）, `custom_emoji_requests`, `custom_emoji_request_outcomes`, `custom_emoji_pending_requests`, `audit_log_entries`, `notifications`（`admin_custom_emoji_request`, `custom_emoji_request_decided`） |
-| FR-916 会計の閲覧の権限 | S | `role_permissions`（`view_finance`）, `instance_settings`（`finance_viewer_item_names`, `finance_viewer_item_memos`, `finance_viewer_income`）と FR-902 の集計（読み取りのときに計算する） |
-| FR-917 収入の記録と公開 | S | §4.12 の `income_movements` と、`instance_settings`（`income_visibility`）。集計は読み取りのときに計算する |
-| FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
-| FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |
-| FR-707 異議申し立て | S | `moderation_appeals`, `moderation_appeal_decisions`, `appeal_states` |
-| FR-708 交流の禁止 | S | `moderation_actions`（`restrict_interaction`）, `account_restrictions`（`interact`） |
-| FR-704 監査ログ | M | `audit_log_entries` |
-| FR-705 インスタンス設定 | M | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules` とその版 |
-| FR-801 CLI | M | `dead_jobs`, §9 の再構築、管理者作成（`users`, `user_primary_emails`, `user_role_grants`） |
-| FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activity_documents`, 保持期間を過ぎたリモートの投稿, `delivery_attempts`, `remote_media_cache`, 参照されない `link_cards` と `link_card_media`, 未添付の `media_files`, `kv_entries`, `webhook_messages` とその配送・試行, 期限切れの制限 |
-
-## 11. 未決事項
-
-- [ ] 同一モジュール内の外部キーを方言別スキーマに付けるか（Aurora DSQL は対応済み、#18）
-- [ ] ホームタイムラインの読み取り窓の既定値 7 日と広げ方の見直し（ADR-0013 の計測で決める）
-- [ ] 書き込み行数の増加（イベント + 投影）が従量課金 DB のコストに与える影響の計測（M2）

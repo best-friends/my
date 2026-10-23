@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Integration tests of the error boundaries (web-client.md E1, G16): the app's layout, error components and
+// Integration tests of the error boundaries (web-client/README.md E1, web-client/16-look-states-and-wording.md G16): the app's layout, error components and
 // router options, over a route tree of the test's own with a page whose loader fails, and over the app's routes
 // with an API that fails in each of the ways the error tells apart.
 import { createRootRouteWithContext, createRoute, createRouter, type RouterHistory } from "@tanstack/react-router";

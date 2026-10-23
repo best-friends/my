@@ -7,7 +7,7 @@
 
 ## Context（背景・課題）
 
-`@my/ui` のアイコン集（`app/ui/src/Icons.tsx`、#367）は、23 個のアイコンを 24 × 24 の格子・線幅 2 の SVG のパスとして手で描いて埋め込んでいる（[web-client.md §16.3](../architecture/web-client.md#163-アイコン) の G10）。
+`@my/ui` のアイコン集（`app/ui/src/Icons.tsx`、#367）は、23 個のアイコンを 24 × 24 の格子・線幅 2 の SVG のパスとして手で描いて埋め込んでいる（[web-client.md §16.3](../architecture/web-client/16-look-states-and-wording.md#163-アイコン) の G10）。
 決定者から「react-icons の Phosphor Icons や Remix Icons などを利用してアイコンを使うべき。現在の SVG 埋込式はデザインのレビューが困難」というフィードバックがあった。
 
 - パスの数字の列は、差分を読んでも形が分からない。形を確かめるには Storybook を開くしかなく、レビューでは見落としやすい。
@@ -83,5 +83,5 @@
 - 後続の作業:
   1. #501: `@my/ui` に `react-icons` を足し、ADR-0031 の許可リスト・`app/eslint.config.js` の `@my/ui` の許可・`react-icons/pi` 以外と `Icons.tsx` 以外からの import の禁止を足す。
      `Icons.tsx` を薄い層に書き換え、`Icons.stories.tsx` を表から作る一覧にし、スクリーンショットの基準を `make ui-snapshots-update` で撮り直す。
-     [web-client.md §16.3](../architecture/web-client.md#163-アイコン) の G10〜G13 と `app/ui/README.md` のアイコンの節を、Phosphor の太さの決まりに合わせて書き換える。
+     [web-client.md §16.3](../architecture/web-client/16-look-states-and-wording.md#163-アイコン) の G10〜G13 と `app/ui/README.md` のアイコンの節を、Phosphor の太さの決まりに合わせて書き換える。
   2. #502: G10 の「機能やルートに SVG のパスを書かない」を、`app/web` の `<svg>` を lint で禁じる形で強制する（今はレビューと `knip` だけ）。

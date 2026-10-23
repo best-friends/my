@@ -21,7 +21,7 @@ Mastodon・Misskey・Pleroma / Akkoma の利用者はこのカードを前提に
 - 取得は相手のサイトに「この URL がいつ投稿されたか」を知らせ、画像の表示は閲覧者の IP を知らせ得る。プライバシーの扱いを先に決めないと、API の形とデータモデルが決まらない（NFR-SEC、FR-102 の公開範囲）。
 - カードの画像はリモートのメディアで、[ADR-0005](0005-blob-storage-and-media.md) のメディアプロキシと FR-409 のキャッシュ方針、メディアの派生を決める ADR-0054（#644。メディアプロキシが静止版の `small` を作る）と整合させる必要がある。
 - データは [ADR-0020](0020-data-modeling-principles.md) の分類に従い、リモートの投稿の保持は [ADR-0034](0034-remote-content-scope-and-retention.md)、ドメイン単位の処分は
-  [data-model.md §5](../architecture/data-model.md) の制限（`media_fetch` など）と [ADR-0036](0036-moderation-federation-propagation.md) に従う。
+  [data-model.md §5](../architecture/data-model/README.md) の制限（`media_fetch` など）と [ADR-0036](0036-moderation-federation-propagation.md) に従う。
 - 後続の実装 #669 がこの決定を待っている。
 
 ## Decision Drivers（判断基準）
@@ -175,7 +175,7 @@ Mastodon・Misskey・Pleroma / Akkoma の利用者はこのカードを前提に
 | `author` | 省略可。§5 で検証できた作者の `Account` |
 
 Web クライアントは、カード全体を `url` へのリンク（`rel="noopener noreferrer nofollow"`、`target="_blank"`）にし、題名・説明・サイト名は `dir="auto"` と `lang` を付けて出す（ADR-0009）。
-カードの部品は独立して失敗し得る区画として `react-error-boundary` で囲む（[web-client.md](../architecture/web-client.md) の E1）。
+カードの部品は独立して失敗し得る区画として `react-error-boundary` で囲む（[web-client.md](../architecture/web-client/README.md) の E1）。
 
 ### この決定を見直す条件
 

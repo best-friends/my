@@ -91,7 +91,7 @@ export type ReactorsState =
 
 /**
  * The accounts that reacted to post `id`, newest first, read while `enabled` (the list is open). The next pages load
- * on demand; a failure of one is announced and kept with the accounts already shown (web-client.md E2).
+ * on demand; a failure of one is announced and kept with the accounts already shown (web-client/README.md E2).
  */
 export function useReactors(id: string, enabled: boolean): ReactorsState {
   const api = useApi();

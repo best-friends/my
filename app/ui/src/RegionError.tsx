@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The error state of one region of data (web-client.md G16): what happened, the reason and "Try again", in place of
+// The error state of one region of data (web-client/16-look-states-and-wording.md G16): what happened, the reason and "Try again", in place of
 // the region's content only, so that a page keeps its h1 and a list keeps the items it has already loaded.
 // It is not a live region unless `alert` is set: a failure the user only opened the page to see is found by reading,
 // and only the result of the user's own action (a retry that failed again) interrupts as an alert

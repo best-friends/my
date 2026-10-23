@@ -13,7 +13,7 @@ export type EmojiPickerButtonProps = EmojiTarget & {
  * An icon button that opens the picker of custom emoji in a popover (WAI-ARIA APG, dialog pattern): the search field
  * takes focus, the grid of emoji follows it, and picking one puts its `:shortcode:` into the field at its caret,
  * closes the popover and moves focus back to the field. Nothing shows when the server offers no emoji. The button
- * is named by aria-label and shows the same words as a tooltip (web-client.md G12).
+ * is named by aria-label and shows the same words as a tooltip (web-client/16-look-states-and-wording.md G12).
  */
 export function EmojiPickerButton({ label, isDisabled = false, ...target }: EmojiPickerButtonProps) {
   const t = useT();

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the terms and policies screen (web-client.md S1): the instance texts (GET
+// The queries and mutations of the terms and policies screen (web-client/README.md S1): the instance texts (GET
 // /admin/instance_texts), one value each that every locale shows, writing one (PUT /admin/instance_texts/{key}),
 // and the instance, whose links to the public pages of the documents change with them.
 import type { QueryClient } from "@tanstack/react-query";

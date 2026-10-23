@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries of the session feature (web-client.md S1): every feature keeps its `queryOptions` in its
+// The queries of the session feature (web-client/README.md S1): every feature keeps its `queryOptions` in its
 // api/ directory, built from the openapi-react-query client so that keys and types come from the spec.
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";

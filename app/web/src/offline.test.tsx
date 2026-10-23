@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Integration tests of going offline and back (web-client.md G17, T4): the app's one offline bar, what a page and a
+// Integration tests of going offline and back (web-client/16-look-states-and-wording.md G17, web-client/README.md T4): the app's one offline bar, what a page and a
 // region show when they cannot load offline, what loads again when the app is back online, and the navigation's
 // timelines on a start without the network. jsdom has no network to lose, so `goOffline` makes navigator.onLine
 // false, fires the `offline` event and lets every request fail as a browser offline does; `goOnline` undoes it.

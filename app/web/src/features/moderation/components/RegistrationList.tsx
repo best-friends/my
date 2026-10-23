@@ -116,7 +116,7 @@ function RegistrationRow({ registration, review }: { registration: Registration;
         {registration.reason === undefined ? (
           t("client:admin.registrations.reason.none")
         ) : (
-          // Written by the applicant, in any language and direction (web-client.md Y10).
+          // Written by the applicant, in any language and direction (web-client/README.md Y10).
           <Text as="p" dir="auto" align="start" whitespace="preWrap" wrap="anywhere">
             {registration.reason}
           </Text>

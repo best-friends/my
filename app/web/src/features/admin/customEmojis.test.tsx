@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The custom emoji screen through the whole app (web-client.md T4, ADR-0051): an administrator with
+// The custom emoji screen through the whole app (web-client/README.md T4, ADR-0051): an administrator with
 // manage_custom_emojis registers an emoji with an image, changes, replaces and deletes it, and disables another
 // server's; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";

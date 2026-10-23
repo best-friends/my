@@ -10,7 +10,7 @@ import { sampleTheme, themeStylesheet } from "./sampleTheme";
 
 /**
  * The locales the client ships: the source locale, Japanese and the two pseudo-locales (ADR-0009).
- * The kit does not read the catalogs (web-client.md A2), so the list and directions are spelled out here.
+ * The kit does not read the catalogs (web-client/README.md A2), so the list and directions are spelled out here.
  */
 const locales = {
   en: { title: "English", dir: "ltr" },
@@ -46,7 +46,7 @@ type PreviewRootProps = { locale: Locale; theme: Theme; instanceTheme: InstanceT
  * the React Aria locale. A server theme is applied the way the Tauri app applies one (ADR-0059 §6): its
  * stylesheet as a constructed stylesheet, which, like the server's stylesheet, is outside any cascade layer.
  * The frame is a size container, so components answer to its width
- * (web-client.md D2); the visual tests set its inline size.
+ * (web-client/README.md D2); the visual tests set its inline size.
  * Overlays (dialogs, popovers, toasts) are portalled into the frame instead of <body>, so its screenshots
  * show them. Layout containment makes the frame the containing block of fixed-position descendants too,
  * so a modal covers the frame rather than the page.
@@ -132,7 +132,7 @@ const preview: Preview = {
     // The theme paints the page (body uses --color-surface); Storybook's backgrounds would hide it.
     backgrounds: { disable: true },
     a11y: {
-      // Every story test fails on an axe violation (web-client.md Y1).
+      // Every story test fails on an axe violation (web-client/README.md Y1).
       test: "error",
       options: { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } },
     },

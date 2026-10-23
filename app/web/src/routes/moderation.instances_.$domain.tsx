@@ -55,13 +55,13 @@ function InstancePage() {
   return (
     <>
       <InstanceHeading />
-      {/* Another server is another page: nothing of the previous one carries over (web-client.md R10). */}
+      {/* Another server is another page: nothing of the previous one carries over (web-client/README.md R10). */}
       <InstanceDetail key={domain} domain={domain} />
     </>
   );
 }
 
-/** The page keeps its name, the domain, when it fails (web-client.md G16). */
+/** The page keeps its name, the domain, when it fails (web-client/16-look-states-and-wording.md G16). */
 function InstanceError(props: ErrorComponentProps) {
   return <AdminError {...props} permission="manage_domains" heading={<PageName />} />;
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server's announcements above the home timeline through the whole app (web-client.md T4, FR-726): the
+// The server's announcements above the home timeline through the whole app (web-client/README.md T4, FR-726): the
 // unread ones say so in words and in the heading's badge, marking one read sends it and moves focus to its
 // heading, and the event stream adds, changes and removes announcements; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // One post appears in many cached answers at once: its own query, the threads it is part of, and the pages
 // of every timeline, either itself or inside a boost. An action on it rewrites every copy, so that each
-// screen shows the same state (web-client.md S8: the change reaches several screens, so the cache is
+// screen shows the same state (web-client/README.md S8: the change reaches several screens, so the cache is
 // rewritten and restored on failure). The answers are matched by shape, not by key, so a list that a
 // later feature caches (a profile's posts, the bookmarks) is rewritten too as long as it holds statuses.
 import type { QueryClient } from "@tanstack/react-query";

@@ -5,7 +5,7 @@
 // and its button that removes it after an alert dialog (ConfirmDialog: it can no longer sign in). A browser that
 // cannot create passkeys gets a note instead of the form. What adding did stays on the page in a StatusMessage
 // (role="status"); removing is announced and moves focus to the next row. A wrong password is the password field's
-// error and any other failure an alert next to the form (web-client.md E2, G16).
+// error and any other failure an alert next to the form (web-client/README.md E2, web-client/16-look-states-and-wording.md G16).
 import { Box, Button, Cluster, ConfirmDialog, EmptyState, Heading, Hint, InlineError, Stack, StatusMessage, Text, TextField } from "@my/ui";
 import { type ReactNode, useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";

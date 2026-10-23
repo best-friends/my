@@ -17,7 +17,7 @@ export type PageHeadingProps = {
   id?: string;
   /**
    * For assistive technology only: on a page whose heading only says where the user is, which the navigation already
-   * shows (a timeline, the notifications), it is visually hidden but stays in the accessibility tree (web-client.md Y5).
+   * shows (a timeline, the notifications), it is visually hidden but stays in the accessibility tree (web-client/README.md Y5).
    */
   visuallyHidden?: boolean;
   /** A decorative mark (`✳` or `✧`, mango) after the text, hidden from assistive technology. */

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The layout around every page of the app (ADR-0026, web-client.md §9). Mobile first (D1): one column with the
+// The layout around every page of the app (ADR-0026, web-client/09-app-shell.md §9). Mobile first (D1): one column with the
 // navigation as a bottom tab bar; from md a side rail and the page; from xl a third column. Heights use svh (D5) and
 // every edge that touches the screen adds its safe-area inset. It answers to the viewport, not to a container: the
 // shell is the one place where viewport breakpoints belong (D2), since what it lays out is the screen itself (the tab
@@ -16,7 +16,7 @@ const appShell = tv({
       "min-h-svh px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
     ],
     skipLink: "sr-only z-20 rounded-md bg-surface-raised px-3 py-2 shadow-md focus:not-sr-only focus:fixed focus:inset-s-2 focus:top-2",
-    // The end padding keeps the last item of a list clear of what floats over it (web-client.md G4): below md the tab
+    // The end padding keeps the last item of a list clear of what floats over it (web-client/16-look-states-and-wording.md G4): below md the tab
     // bar (min-h-16 and its border; min-h-12 on short screens) and, while the floating button shows (data-compose-fab),
     // the button (3rem) above it; from md the button in the corner; from xl nothing. Each gap is 1rem (0.5rem on short
     // screens). The app's stylesheet clears focused elements of the same (scroll-padding-block-end).

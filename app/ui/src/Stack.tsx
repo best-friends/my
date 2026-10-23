@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The vertical layout of a screen: blocks, fields and lines one above another, with a gap from the spacing steps
-// (web-client.md G1) or rules between them (a list, G3). It renders the element the content needs (`as`), so a
+// (web-client/16-look-states-and-wording.md G1) or rules between them (a list, G3). It renders the element the content needs (`as`), so a
 // screen keeps its sections, lists and forms without a wrapper and without classes of its own.
 import { createElement } from "react";
 import { tv } from "tailwind-variants";
@@ -20,7 +20,7 @@ const stack = tv({
 type StackOwnProps = FlexLayoutProps & {
   /** The gap between the children, in a spacing step; none by default. Use the step of the role (README "Spacing"). */
   gap?: Space;
-  /** Rules between the children (`divide-y divide-border`): the rows of a list, which then take no gap (web-client.md G3). */
+  /** Rules between the children (`divide-y divide-border`): the rows of a list, which then take no gap (web-client/16-look-states-and-wording.md G3). */
   divided?: boolean;
   /** List markers for a `ul` / `ol` of running text: `disc` and `decimal` hang in `ps-6`, `discInside` and `decimalInside` sit inside the text. */
   marker?: "disc" | "decimal" | "discInside" | "decimalInside";

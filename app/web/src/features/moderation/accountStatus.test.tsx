@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The account status page through the whole app (web-client.md T4): the moderation actions on the user's own
+// The account status page through the whole app (web-client/README.md T4): the moderation actions on the user's own
 // account in effect and past, their posts, and appealing one through its dialog, with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

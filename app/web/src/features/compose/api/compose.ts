@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server data of the compose feature (web-client.md S1): the limits and preferences a new post
+// The server data of the compose feature (web-client/README.md S1): the limits and preferences a new post
 // follows, the post being replied to, the uploaded media while the server processes them, the accounts
 // that mentions name and the viewer's relationships with them, and the writes (uploading a file,
 // posting). Types come from the spec (S9).
@@ -89,7 +89,7 @@ export async function createStatus(api: Api, body: CreateStatusRequest, idempote
 }
 
 /**
- * Puts a new post into the cache and marks stale every cached list of posts it can appear in (web-client.md S1);
+ * Puts a new post into the cache and marks stale every cached list of posts it can appear in (web-client/README.md S1);
  * resolves once those on screen are fetched again. Opening one of the others afterwards fetches it again before
  * it shows (S7), so it shows the post from its first render. A reply also marks the post it answers, which has
  * one more reply.
@@ -104,7 +104,7 @@ export async function cachePostedStatus(api: Api, queryClient: QueryClient, stat
 }
 
 /**
- * The viewer's own account, for its posting limits (data-model.md §5.4). The key is the session's viewer
+ * The viewer's own account, for its posting limits (data-model/05-states-and-policies.md §5.4). The key is the session's viewer
  * query, so this reads the account already in the cache.
  */
 export function credentialsQueryOptions(api: Api) {
@@ -113,7 +113,7 @@ export function credentialsQueryOptions(api: Api) {
 
 /**
  * The account a mention names, resolved from its server when the instance does not know it yet
- * (`resolve`), as the server resolves the mentions of a post (data-model.md §4.4). A handle that does not
+ * (`resolve`), as the server resolves the mentions of a post (data-model/04-tables.md §4.4). A handle that does not
  * resolve is a 404 and a spent fetch budget a 429: answers rather than failures to retry, and the server
  * leaves such a mention as text. Without `resolve` (while the instance takes nothing in from other servers,
  * ADR-0076, when the server refuses to resolve), only an account the instance knows is found.

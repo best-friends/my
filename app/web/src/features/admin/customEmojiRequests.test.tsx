@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The requests tab of the custom emoji screen through the whole app (web-client.md T4, ADR-0070 §2, §9): an
+// The requests tab of the custom emoji screen through the whole app (web-client/README.md T4, ADR-0070 §2, §9): an
 // administrator with manage_custom_emojis sees how many requests await review, approves one, rejects one with a
 // reason, is told why one cannot be approved, and lists those in another state; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";

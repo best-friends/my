@@ -69,7 +69,7 @@ export { Wordmark, type WordmarkProps } from "./Wordmark";
 export { StatusMessage, type StatusMessageProps } from "./StatusMessage";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 
-// Icons (web-client.md §16.3): Phosphor through react-icons/pi (ADR-0043), decorative, sized by the control around them.
+// Icons (web-client/16-look-states-and-wording.md §16.3): Phosphor through react-icons/pi (ADR-0043), decorative, sized by the control around them.
 export {
   AboutIcon,
   CheckIcon,
@@ -130,7 +130,7 @@ export { badgeColors, type BadgeColor } from "./tokens";
 export { themeTokens, type ThemeToken } from "./themeTokens.gen";
 export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./themeContrast";
 
-// Layout and text (web-client.md §16.1, §16.2): screens lay themselves out with these instead of classes of their own.
+// Layout and text (web-client/16-look-states-and-wording.md §16.1, §16.2): screens lay themselves out with these instead of classes of their own.
 export { Box, type BoxProps } from "./Box";
 export { Card, type CardElement, type CardProps } from "./Card";
 export { SettingsLayout, type SettingsLayoutProps } from "./SettingsLayout";
@@ -193,7 +193,7 @@ export {
 export { NotificationLinks, NotificationOthers, NotificationSentence, type NotificationOthersProps, type NotificationSentenceProps } from "./NotificationRow";
 export { PostExcerpt, PostExcerptText, QuoteBlock, type PostExcerptProps, type PostExcerptTextProps, type QuoteBlockProps } from "./Quote";
 
-// The app shell (web-client.md §9): the frame, the navigation, the page heading and the routes' states.
+// The app shell (web-client/09-app-shell.md §9): the frame, the navigation, the page heading and the routes' states.
 export { AppShell, AsidePanel, type AppShellProps, type AsidePanelProps } from "./AppShell";
 export {
   AppNav,

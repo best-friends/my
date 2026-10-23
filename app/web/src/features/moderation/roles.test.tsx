@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Granting and revoking the roles of a local account on its admin page through the whole app (web-client.md T4,
+// Granting and revoking the roles of a local account on its admin page through the whole app (web-client/README.md T4,
 // FR-720): a viewer with manage_roles sees every role of the instance, changes the ones at or below their highest
 // role after a confirmation, and reads why the others cannot be changed and why the last admin keeps admin, with
 // MSW playing the role API.

@@ -29,7 +29,7 @@ ADR-0015 は E2E を `en` / `ja` / `en-XA` / `ar-XB` で実行すると定めて
 
 ### 部品と画面のルール
 
-規約の全文は [Web クライアントの設計規約](../architecture/web-client.md) にある。要点:
+規約の全文は [Web クライアントの設計規約](../architecture/web-client/README.md) にある。要点:
 
 - **タイムラインは WAI-ARIA の feed パターンで作る。**
   - `role="feed"`、各投稿は `<article>`、`aria-posinset` / `aria-setsize`、読み込み中は `aria-busy` を付ける。

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server data of the report feature (web-client.md S1): the instance rules a report can cite, the
+// The server data of the report feature (web-client/README.md S1): the instance rules a report can cite, the
 // account's recent posts to choose from, and filing the report (POST /reports, FR-701). Types come from the
 // spec (S9).
 import type { QueryClient } from "@tanstack/react-query";

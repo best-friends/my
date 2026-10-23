@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Web Push in the preferences through the whole app (web-client.md T4, FR-206): MSW plays the server, and a stand-in
+// Web Push in the preferences through the whole app (web-client/README.md T4, FR-206): MSW plays the server, and a stand-in
 // for the browser's Push API (jsdom has none) plays the Service Worker registration's PushManager and the
 // Notifications API.
 import { screen, waitFor, within } from "@testing-library/react";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the announcements screen (FR-726, manage_announcements, web-client.md S1): every
+// The queries and mutations of the announcements screen (FR-726, manage_announcements, web-client/README.md S1): every
 // announcement with its Markdown and state (GET /admin/announcements), writing one as a draft or published at
 // once, revising its text, publishing a draft, and withdrawing one for good. Every change goes to the audit log,
 // and the users' list (GET /announcements) follows the published ones.

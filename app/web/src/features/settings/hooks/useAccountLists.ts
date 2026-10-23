@@ -62,7 +62,7 @@ type MutationCallbacks = { onSuccess: () => void; onError: (error: unknown) => v
 /**
  * The `onSuccess` of a mutation that makes `change` to the viewer's relationship with the account it is given:
  * the action is done once what the change shows elsewhere is in the cache (cacheListChange; the row stays
- * pending until then), so that a page opened next shows it at once (web-client.md S1). The list itself is
+ * pending until then), so that a page opened next shows it at once (web-client/README.md S1). The list itself is
  * updated by the action (useListAction), which then moves focus.
  */
 function useCacheListChange(change: ListChange): (relationship: Relationship) => Promise<void> {
@@ -91,7 +91,7 @@ function useListAction(options: {
           onDone();
           announce(options.done(account.display_name || account.username));
         },
-        // A failure keeps the row and its focus, and says why (web-client.md E2).
+        // A failure keeps the row and its focus, and says why (web-client/README.md E2).
         onError: (error) => {
           announce(errorMessage(error), "assertive");
         },

@@ -5,7 +5,7 @@ import { requireSignIn } from "../lib/auth/requireSignIn";
 
 /**
  * The navigation's "Profile": the signed-in user's own profile page (`/@username`), to which it redirects. It needs
- * a session (web-client.md §10).
+ * a session (web-client/10-api-client-and-auth.md §10).
  */
 export const Route = createFileRoute("/profile")({
   staticData: { title: "client:profile.title" },

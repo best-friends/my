@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the rules screen (FR-705, manage_rules, web-client.md S1): the rules in effect (GET
+// The queries and mutations of the rules screen (FR-705, manage_rules, web-client/README.md S1): the rules in effect (GET
 // /admin/rules), adding one, changing its text and hint, moving it among the others and retiring it. A rule's text
 // and hint hold one value each, which every locale shows. GET /instance lists the rules (the about page, the
 // report form), and every change goes to the audit log.

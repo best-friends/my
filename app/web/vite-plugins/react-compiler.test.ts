@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Runs the React Compiler plugin on small modules as `vite build` would and proves that the gate of
-// web-client.md R4 fails on a function the compiler skips, prints the compiler's reason and location, lets a
+// web-client/README.md R4 fails on a function the compiler skips, prints the compiler's reason and location, lets a
 // "use no memo" opt-out through, and fails when the compiler compiled nothing.
 import { describe, expect, it } from "vitest";
 import { compileModule, reactCompiler } from "./react-compiler.ts";
@@ -79,7 +79,7 @@ describe("compileModule", () => {
   });
 
   // The compiler reports a library it cannot compile even inside a function that opts out (oxc#26140); the
-  // virtualizer hook of @my/ui's Feed is the one documented opt-out (web-client.md R4), and the useVirtual
+  // virtualizer hook of @my/ui's Feed is the one documented opt-out (web-client/README.md R4), and the useVirtual
   // example of app/oxlint/violations is the same call without it.
   const virtual = (body: string) => `
     import { useVirtualizer } from "@tanstack/react-virtual";

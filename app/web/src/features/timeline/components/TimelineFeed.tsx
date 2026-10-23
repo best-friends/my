@@ -27,7 +27,7 @@ export type TimelineFeedProps = {
 const noPosts: readonly Status[] = [];
 
 /**
- * A timeline as a feed (web-client.md Y6) with its older pages loaded as the reader nears the end, or an
+ * A timeline as a feed (web-client/README.md Y6) with its older pages loaded as the reader nears the end, or an
  * empty state. The first page comes from the route loader; render it inside the route that loads it.
  */
 export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin, pinned = noPosts, feedRef, keepPosition, onTopChange }: TimelineFeedProps) {

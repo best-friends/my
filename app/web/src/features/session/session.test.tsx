@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The whole sign-in round trip through the app (web-client.md T4): the sign-in page, the authorization
+// The whole sign-in round trip through the app (web-client/README.md T4): the sign-in page, the authorization
 // redirect with PKCE, the callback, an API call whose token has to be refreshed, and the sign-out. MSW
 // models the server's OAuth endpoints, with the refresh token cookie as a variable (the browser's cookie
 // jar is not part of jsdom's fetch).

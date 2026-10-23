@@ -14,7 +14,7 @@
 
 - FR-407（リモート Actor / Object の取得とキャッシュ、定期リフレッシュ）、FR-803（古いリモート投稿の定期クリーンアップ）、FR-106（スレッド表示）、FR-202（連合タイムライン）
 - [ADR-0020](0020-data-modeling-principles.md)（イベントと版。消去はイベントの不変性より優先）、[ADR-0013](0013-timeline-strategy.md)（fan-out-on-read）
-- [data-model §11](../architecture/data-model.md#11-未決事項) の未決事項「古いリモート投稿の消去条件」
+- [data-model §11](../architecture/data-model/11-open-questions.md#11-未決事項) の未決事項「古いリモート投稿の消去条件」
 - [ActivityPub 付録 B.5](https://www.w3.org/TR/activitypub/#security-recursive-objects): オブジェクトを再帰的に解決するときは深さに上限を置く
 
 主要実装の参考値（2026-10-17 にソースで確認。出典は [#232 の調査報告](https://github.com/best-friends/my/issues/232)）: Mastodon は Actor を 1 日で古いとみなして取り直し、GoToSocial は Actor を 6 時間・投稿を 2 時間で古いとみなし、スレッドの祖先と子孫を最大 1,024 回の反復で取得する。

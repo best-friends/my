@@ -15,11 +15,11 @@ import { SignInLink } from "./-layout/SignInLink";
  * the instance serves it.
  */
 export const Route = createFileRoute("/public")({
-  // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  // A feed to add to: the shell floats the new-post button over this page (web-client/16-look-states-and-wording.md G4).
   staticData: { title: "client:public.title", hideHeading: true, composeButton: true },
   loader: async ({ context: { queryClient, api } }) => {
     // Cached pages that no write has marked stale are shown at once (and refetched in the background once
-    // old); marked or missing ones are fetched and waited for (web-client.md S7).
+    // old); marked or missing ones are fetched and waited for (web-client/README.md S7).
     await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "public" }), staleTime: Infinity });
   },
   component: PublicPage,

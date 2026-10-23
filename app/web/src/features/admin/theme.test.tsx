@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The theme screen through the whole app (web-client.md T4, ADR-0059): an administrator with manage_settings
+// The theme screen through the whole app (web-client/README.md T4, ADR-0059): an administrator with manage_settings
 // overrides design tokens and adds a custom CSS, sees the contrast of the color pairs as they type, and gets every
 // reason the server refuses a theme; with MSW playing the API.
 import { screen, within } from "@testing-library/react";

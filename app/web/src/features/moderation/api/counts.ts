@@ -32,7 +32,7 @@ export function adminCountsQueryOptions(api: Api) {
 const countedNotifications: ReadonlySet<string> = new Set(["admin_report", "admin_sign_up", "admin_appeal"]);
 
 /**
- * What the streaming API changes in the counts (web-client.md S10): a notification of a new report or
+ * What the streaming API changes in the counts (web-client/README.md S10): a notification of a new report or
  * registration, or a reconnect that may have missed one, reads them again.
  */
 export function refreshAdminCounts(queryClient: QueryClient, api: Api, notificationType?: string): void {

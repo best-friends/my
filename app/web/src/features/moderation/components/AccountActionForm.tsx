@@ -28,7 +28,7 @@ const kindDescriptions: Readonly<Record<AccountActionKind, ClientMessageKey>> = 
   ban: "client:admin.account_actions.kind.ban.description",
 };
 
-/** The question, the result and the verb of the confirmation of a kind that cannot be undone (web-client.md G22). */
+/** The question, the result and the verb of the confirmation of a kind that cannot be undone (web-client/16-look-states-and-wording.md G22). */
 function confirmationOf(t: Translate, kind: AccountActionKind, handle: string, count: number): { title: string; description: string; confirm: string } {
   if (kind === "ban") {
     return {

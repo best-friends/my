@@ -2,9 +2,9 @@
 // The result of an operator's action that stays on the page ("example.com is suspended until 24 Oct"):
 // a polite live region (role="status") that is in the page from the first render, empty, and shows the
 // message as a box once there is one. A live region announces only what changes after it is in the page,
-// so the region must not mount together with its message (web-client.md Y7).
+// so the region must not mount together with its message (web-client/README.md Y7).
 // A failed action is not a status: it stays in the dialog that ran it (`ConfirmDialog`'s errorMessage) or goes
-// to a toast (web-client.md E2).
+// to a toast (web-client/README.md E2).
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { AboutIcon, CheckIcon } from "./Icons";

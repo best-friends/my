@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The navigation's staff entries and their counts through the whole app (web-client.md T4, FR-712, ADR-0058):
+// The navigation's staff entries and their counts through the whole app (web-client/README.md T4, FR-712, ADR-0058):
 // Moderation shown only to a viewer with a permission of a moderation screen and Administration only to one with
 // a permission of a server administration screen (a moderator never sees it), the same in the rail, the sidebar
 // and the phones' menu sheet, with what awaits the moderators in the names of Moderation's links (and drawn as

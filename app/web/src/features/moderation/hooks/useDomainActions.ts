@@ -73,7 +73,7 @@ export function useLiftDomainAction(onLifted: (action: DomainAction) => void): L
       onLifted(lifted);
       cacheLiftedDomainAction(queryClient, lifted);
     },
-    // The action stays in effect, and its row and focus stay (web-client.md E2).
+    // The action stays in effect, and its row and focus stay (web-client/README.md E2).
     onError: (error) => {
       toast.show({ message: t("client:admin.domain_actions.lift_failed", { reason: errorMessage(error) }), tone: "danger" });
     },

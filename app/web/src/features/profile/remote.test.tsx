@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A profile of an account of another server through the whole app (web-client.md T4, ADR-0044): the notice
+// A profile of an account of another server through the whole app (web-client/README.md T4, ADR-0044): the notice
 // that only the posts this server received are shown, with the link to the profile on the account's server,
 // above the posts and in the empty state; and, when the first page started fetching the account's recent
 // posts, the line that says so, announced, until the posts are read again once a few seconds later.
@@ -15,7 +15,7 @@ import { remoteFetchRereadDelay } from "../timeline";
 
 const notice = "Only the posts this server has received are shown.";
 const fetching = "Fetching recent posts from the original server.";
-/** The link's name: the host inside the sentence is isolated, as names are (web-client.md Y10). */
+/** The link's name: the host inside the sentence is isolated, as names are (web-client/README.md Y10). */
 const original = { name: newTabName("See on ⁨remote.example⁩") };
 const path = "/@carol@remote.example";
 

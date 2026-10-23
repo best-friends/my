@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queue dashboard below its heading (ADR-0064): the state of the job queue (its jobs by state and type, and since
 // when the oldest due job waits), then the jobs under tabs that filter by state, kept in the URL by the route
-// (web-client.md S3). Each job shows its state, why its last run failed, its keys and payload, and a disclosure with
+// (web-client/README.md S3). Each job shows its state, why its last run failed, its keys and payload, and a disclosure with
 // the records of its runs that did not succeed; a dead job also has a button that runs it again, after which it leaves
 // the list and focus moves to the next job's button. A queue that cannot list its pending jobs (Cloud Tasks, SQS)
 // says so, and still lists the dead jobs. The tabs follow the WAI-ARIA APG tabs pattern with automatic activation
@@ -254,7 +254,7 @@ function JobRow({ job, retry }: { job: Job; retry: RetryJob }) {
 }
 
 /**
- * The records of the job's runs that did not succeed, as a WAI-ARIA disclosure (web-client.md Y8): a button with
+ * The records of the job's runs that did not succeed, as a WAI-ARIA disclosure (web-client/README.md Y8): a button with
  * aria-expanded and aria-controls, and a panel that is `hidden` while closed. The records are read when it opens.
  */
 function JobHistory({ job }: { job: Job }) {

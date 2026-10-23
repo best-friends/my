@@ -92,7 +92,7 @@ export function AppI18nProvider({ i18n, timeZone, children }: AppI18nProviderPro
 }
 
 /**
- * How the links of @my/ui leave the app (web-client.md Y12): every ExternalLink, and every link of a post body or a
+ * How the links of @my/ui leave the app (web-client/README.md Y12): every ExternalLink, and every link of a post body or a
  * profile (PostContent) but those to the app's own pages (lib/contentLinks.ts), opens in a new tab and reads
  * "(opens in a new tab)" to assistive technology.
  */

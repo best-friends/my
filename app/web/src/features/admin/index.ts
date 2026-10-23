@@ -4,7 +4,7 @@
 // is for a viewer whose roles have its permission (manage_settings, manage_rules, manage_custom_emojis, manage_announcements, manage_webhooks, manage_jobs); the server checks it on every
 // request. The parts and the permissions that the screens share with the moderation screens come from the
 // moderation feature.
-// Routes and other features use it through this file only (web-client.md A3).
+// Routes and other features use it through this file only (web-client/README.md A3).
 export { adminPages, AdminPages, useAdminEntry } from "./components/AdminMenu";
 // The queue dashboard: the jobs of the job queue by state, their attempts, and running failed ones again (ADR-0064), for manage_jobs.
 export { type JobFilter, jobFilters, jobQueueQueryOptions, jobsQueryOptions } from "./api/jobs";

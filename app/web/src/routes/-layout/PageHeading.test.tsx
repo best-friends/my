@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The page's h1 (web-client.md Y5): on a page whose heading only says where the user is, which the navigation
+// The page's h1 (web-client/README.md Y5): on a page whose heading only says where the user is, which the navigation
 // already shows, it is visually hidden (sr-only) and stays in the accessibility tree, on the page and on its
 // error; a page that says more than where the user is shows it.
 import { screen } from "@testing-library/react";

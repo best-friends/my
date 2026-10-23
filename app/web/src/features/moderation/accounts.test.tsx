@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The account search and an account's admin page through the whole app (web-client.md T4): a moderator with
+// The account search and an account's admin page through the whole app (web-client/README.md T4): a moderator with
 // manage_accounts searches the local and remote accounts, opens one, shows its email and IP addresses only by
 // pressing "show", and takes and lifts moderation actions on it; an administrator also removes two-factor
 // authentication and issues a password reset link, shown once. MSW plays the admin API.

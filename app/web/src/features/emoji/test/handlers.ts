@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handler of the custom emoji feature (web-client.md §7): the picker's emoji, none by default, so
+// The default MSW handler of the custom emoji feature (web-client/README.md §7): the picker's emoji, none by default, so
 // that the forms show no picker unless a test offers emoji with `server.use(customEmojisHandler(...))`.
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";

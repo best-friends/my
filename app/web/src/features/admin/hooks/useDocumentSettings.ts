@@ -49,7 +49,7 @@ type EditorContext = {
   setDraft: (key: DocumentKey, value: string | undefined) => void;
 };
 
-/** One document's form; the screen has three, so this is called three times (never in a loop, web-client.md R3). */
+/** One document's form; the screen has three, so this is called three times (never in a loop, web-client/README.md R3). */
 function useDocumentEditor(key: DocumentKey, { texts, drafts, setDraft }: EditorContext, pageUrl: string | undefined): DocumentEditor {
   const api = useApi();
   const t = useT();

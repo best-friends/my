@@ -7,7 +7,7 @@ import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `filter`: the tab of the list; omitted, or anything unknown, shows the blocks in effect (web-client.md S3). */
+/** `filter`: the tab of the list; omitted, or anything unknown, shows the blocks in effect (web-client/README.md S3). */
 const searchSchema = z.object({
   filter: z.enum(signupBlockFilters).exclude(["active"]).optional().catch(undefined),
 });

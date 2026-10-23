@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The user's follows, blocks, mutes, muted domains, and bookmarks as Mastodon's CSV files (FR-008): downloading them, and importing a file
-// after a preview, with the progress of the imports, which the server carries out in the background (web-client.md S1).
+// after a preview, with the progress of the imports, which the server carries out in the background (web-client/README.md S1).
 import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";

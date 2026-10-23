@@ -10,7 +10,7 @@ import { RouteError } from "./-layout/RouteStates";
 
 /**
  * `granularity` and `basis` of the totals; omitted, or anything unknown, shows the months amortized (ADR-0067 §4,
- * web-client.md S3).
+ * web-client/README.md S3).
  */
 const searchSchema = z.object({
   granularity: z.enum(["week", "year"]).optional().catch(undefined),
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/finance")({
   beforeLoad: requireSignIn,
   loader: async ({ context: { queryClient, api }, deps: { granularity, basis, today } }) => {
     // The viewer's permissions decide whether the page reads anything; a viewer without them is told why, and the
-    // totals' own failures show in the page (useFinanceCosts). Cached data is shown at once (web-client.md S7).
+    // totals' own failures show in the page (useFinanceCosts). Cached data is shown at once (web-client/README.md S7).
     const viewer = await queryClient.query(viewerQueryOptions(api));
     if (!viewer.permissions.includes("view_finance") && !viewer.permissions.includes("manage_finance")) return;
     await Promise.all([

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Reporting an account from a post's menu and from a profile's menu, through the whole app (web-client.md T4):
+// Reporting an account from a post's menu and from a profile's menu, through the whole app (web-client/README.md T4):
 // the real router and QueryClient, MSW for the client API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The audit log (FR-704): the operations under a filter, newest first, and loading more of them. The route keeps
-// the filter and the number of loaded pages in the address (web-client.md S3), so that a reload or a shared link
+// the filter and the number of loaded pages in the address (web-client/README.md S3), so that a reload or a shared link
 // shows the same entries; the list tells it how many pages it has after each one it loads.
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";

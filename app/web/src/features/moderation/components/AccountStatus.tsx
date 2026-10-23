@@ -70,7 +70,7 @@ export function AccountStatus() {
   );
 }
 
-/** The actions of a list, divided by lines (web-client.md G3), then "show more" while there are more. */
+/** The actions of a list, divided by lines (web-client/16-look-states-and-wording.md G3), then "show more" while there are more. */
 function ActionListView({ list, form, empty }: { list: ActionList; form: AppealForm; empty: ReactNode }) {
   const t = useT();
   // The past actions are the whole list without those in effect, so a page can have none of them.
@@ -130,7 +130,7 @@ function ActionRow({ action, form }: { action: ModerationAction; form: AppealFor
           {action.public_reason === undefined ? (
             t("client:account_status.public_reason.none")
           ) : (
-            // Written by a moderator, in any language and direction (web-client.md Y10).
+            // Written by a moderator, in any language and direction (web-client/README.md Y10).
             <Text dir="auto" whitespace="preWrap" wrap="anywhere">
               {action.public_reason}
             </Text>
@@ -235,7 +235,7 @@ function AppealFacts({ appeal }: { appeal: ModerationAppeal }) {
       </DescriptionList>
       <DescriptionList>
         <DescriptionItem term={t("client:account_status.appeal.text")}>
-          {/* The user's own text (web-client.md Y10). */}
+          {/* The user's own text (web-client/README.md Y10). */}
           <Text dir="auto" whitespace="preWrap" wrap="anywhere">
             {appeal.text}
           </Text>

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Vite 8 build of the web client (ADR-0025). React Compiler runs through oxc-transform-react in a plugin of
-// our own, which also fails the build on the functions the compiler skips (ADR-0065, web-client.md R4).
+// our own, which also fails the build on the functions the compiler skips (ADR-0065, web-client/README.md R4).
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";

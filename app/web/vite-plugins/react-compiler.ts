@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // React Compiler for the client build (ADR-0065): runs oxc-transform-react, Oxc's port of the compiler, on the
-// client environment's modules and holds the gate of web-client.md R4, which fails `vite build` when the
+// client environment's modules and holds the gate of web-client/README.md R4, which fails `vite build` when the
 // compiler reports a diagnostic outside a function that opts out, or when it compiled no function.
 import { transform } from "oxc-transform-react";
 import { type Plugin, parseSync } from "vite";
@@ -89,7 +89,7 @@ export async function compileModule(id: string, code: string, sourcemap = true):
 }
 
 /**
- * The Vite plugin. It compiles the client environment's modules only (web-client.md T6). In `vite build` it fails
+ * The Vite plugin. It compiles the client environment's modules only (web-client/README.md T6). In `vite build` it fails
  * the build at the end with every problem's location and reason, or when it compiled no function; in the dev
  * server it prints the problems as warnings.
  */
@@ -122,7 +122,7 @@ export function reactCompiler(): Plugin {
       if (error || config.consumer !== "client" || config.command !== "build") return;
       const found = [...problems.values()].flat();
       if (found.length > 0) {
-        this.error(`React Compiler skipped these functions; rewrite them so that it compiles them (web-client.md R4):\n${found.join("\n")}`);
+        this.error(`React Compiler skipped these functions; rewrite them so that it compiles them (web-client/README.md R4):\n${found.join("\n")}`);
       }
       const total = [...compiled.values()].reduce((sum, n) => sum + n, 0);
       if (total === 0) this.error("React Compiler compiled no function; check reactCompiler() in vite.config.ts");

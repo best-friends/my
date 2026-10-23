@@ -14,7 +14,7 @@ describe("LinkCard", () => {
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer nofollow");
     expect(screen.getAllByRole("link")).toHaveLength(1);
-    // The page's texts are user content (web-client.md Y10).
+    // The page's texts are user content (web-client/README.md Y10).
     expect(screen.getByText("It rose.")).toHaveAttribute("dir", "auto");
     expect(screen.getByText("It rose.")).toHaveAttribute("lang", "en");
     expect(screen.getByText("Example News")).toHaveAttribute("dir", "auto");

@@ -104,7 +104,7 @@ function isLive(state: SupporterSubscriptionState): boolean {
 }
 
 type SupporterSettingsProps = {
-  /** The subscriptions shown, from the URL (web-client.md S3). */
+  /** The subscriptions shown, from the URL (web-client/README.md S3). */
   filter: SupporterSubscriptionFilter;
   onFilterChange: (filter: SupporterSubscriptionFilter) => void;
 };

@@ -142,7 +142,7 @@ api/
   - `scripts/generate.sh`・Makefile の `api-lint` と未列挙のファイルの検査・`api/redocly.yaml` の正規表現・`.gitattributes`。
   - 文書: [client-api.md](../architecture/client-api.md) の §1（配置と「分割しない」）と §3（追加の手順）、AGENTS.md の Commands の `make generate` の行、
     [CONTRIBUTING.md](../../CONTRIBUTING.md)、[overview.md §6](../architecture/overview.md#6-リポジトリ構成) の `api/` の行、
-    [workflow.md](../agents/workflow.md) の生成物の源の一覧、[web-client.md](../architecture/web-client.md) の `api/openapi.yaml` への言及（バンドルを指すなら残す）。
+    [workflow.md](../agents/workflow.md) の生成物の源の一覧、[web-client.md](../architecture/web-client/README.md) の `api/openapi.yaml` への言及（バンドルを指すなら残す）。
 
 ## Pros and Cons of the Options（詳細比較・任意）
 

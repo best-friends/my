@@ -6,7 +6,7 @@ import { AccountSearch, maxSearchLength } from "../features/search";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `q`: the text of the last search, which the field starts with when the page is opened again (web-client.md S3). */
+/** `q`: the text of the last search, which the field starts with when the page is opened again (web-client/README.md S3). */
 const searchSchema = z.object({
   q: z.string().max(maxSearchLength).optional().catch(undefined),
 });

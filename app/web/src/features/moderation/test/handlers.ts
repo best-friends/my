@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the moderation feature (web-client.md §7). On the user's side: the actions on the
+// The default MSW handlers of the moderation feature (web-client/README.md §7). On the user's side: the actions on the
 // user's own account (none by default) and appealing one. On the staff's side: the health of remote servers, the
 // domain actions, the sign-up blocks, the audit log, the registrations awaiting approval, the reports, the
 // appeals, the accounts and their roles, all empty and every server available by default. The default viewer

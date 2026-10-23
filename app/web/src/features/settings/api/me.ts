@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries of the user's own profile and preferences (web-client.md S1). Their keys come from the
+// The queries of the user's own profile and preferences (web-client/README.md S1). Their keys come from the
 // openapi-react-query client, so the account here shares its cache entry with the session's viewer.
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -55,7 +55,7 @@ function isTimelineQuery(queryKey: QueryKey): boolean {
 }
 
 /**
- * Puts the preferences as the server answered `change` into the cache (web-client.md S1, ADR-0045). A change of
+ * Puts the preferences as the server answered `change` into the cache (web-client/README.md S1, ADR-0045). A change of
  * the timeline languages changes what every timeline shows, so the cached timelines are marked stale, and this
  * resolves once those on screen are fetched again; a profile shows its posts in every language. A change of
  * the locale is handled where the app displays it (lib/services.ts marks every query).
@@ -68,7 +68,7 @@ export async function cacheSavedPreferences(api: Api, queryClient: QueryClient, 
 /**
  * Puts the viewer's account as the server answered a change of the profile into the cache: the viewer's own
  * query, and every cached copy of the account (the profile page, the author of the viewer's posts), so that
- * each shows the new profile from its first render (web-client.md S1, ADR-0045).
+ * each shows the new profile from its first render (web-client/README.md S1, ADR-0045).
  */
 export function cacheSavedProfile(api: Api, queryClient: QueryClient, saved: CredentialAccount): void {
   queryClient.setQueryData(credentialsQueryOptions(api).queryKey, saved);

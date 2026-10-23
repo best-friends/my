@@ -28,7 +28,7 @@ export type ComposeToolsProps = { form: ReadyComposeForm };
 
 /**
  * The tools of the form, in one row under the text: images, poll, content warning, custom emoji, visibility, who may
- * quote the post (FR-114) and language (web-client.md §12). Every control is a button of the same height, so the row
+ * quote the post (FR-114) and language (web-client/12-compose.md §12). Every control is a button of the same height, so the row
  * stays level at every width. The icon-only buttons are named by aria-label and show the same words as a tooltip
  * (G12); each control also says its current value: the images attached (description), the poll and the warning
  * (aria-pressed), the visibility (its name and who can see it), and the quote policy and the language (the selects

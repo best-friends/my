@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries of the timeline feature (web-client.md S1). A timeline is an infinite query of pages that
+// The queries of the timeline feature (web-client/README.md S1). A timeline is an infinite query of pages that
 // follow each other by `next_cursor` (TanStack Query, "Infinite Queries"). openapi-react-query has a hook
 // for infinite queries but no options factory, so the options are built here with infiniteQueryOptions
 // over the openapi-fetch client; the key follows openapi-react-query's `[method, path, init]` and ends with
@@ -33,7 +33,7 @@ export const accountTimelineFilters = ["posts", "replies", "no_boosts"] as const
 
 export type AccountTimelineFilter = (typeof accountTimelineFilters)[number];
 
-/** Which timeline to show; the route puts it in the URL (web-client.md S3). */
+/** Which timeline to show; the route puts it in the URL (web-client/README.md S3). */
 export type Timeline =
   | { kind: "home" }
   | { kind: "local" }
@@ -127,7 +127,7 @@ export function timelineQueryOptions(api: Api, timeline: Timeline) {
     // A failed page is shown at once with a button to try again (the route's error for the first page,
     // the end of the feed for an older one), instead of after seconds of silent retries.
     retry: false,
-    // A refetch while the reader is in the timeline would insert new posts at its top (web-client.md
+    // A refetch while the reader is in the timeline would insert new posts at its top (web-client/README.md
     // Y7). The home timeline's news wait behind its "N new posts" button (newStatuses.ts); the timelines
     // refetch when the reader opens them again.
     refetchOnWindowFocus: false,

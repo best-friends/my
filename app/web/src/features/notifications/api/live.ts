@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What the streaming API's notifications change in the cache (web-client.md S10): the unread count of
+// What the streaming API's notifications change in the cache (web-client/README.md S10): the unread count of
 // the read marker, which the navigation's badge shows. The lists are only marked stale, not refetched
 // (`refetchType: "none"`): the one on screen does not change under the reader, and the route fetches the
-// marked ones again, and waits for them, when it opens next (web-client.md S7, ADR-0045).
+// marked ones again, and waits for them, when it opens next (web-client/README.md S7, ADR-0045).
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { type Notification, type NotificationMarker, notificationMarkerQueryOptions } from "./notifications";

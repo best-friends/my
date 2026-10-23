@@ -6,7 +6,7 @@
 // Baselines live in src/__screenshots__/ and are generated only in the pinned Playwright image
 // (`make ui-snapshots-update`), because fonts and anti-aliasing differ between machines.
 // The capture runs with prefers-reduced-motion: reduce, and first checks that nothing in the frame
-// still animates then: every animation sits under motion-safe: (web-client.md D6), and a spinner
+// still animates then: every animation sits under motion-safe: (web-client/README.md D6), and a spinner
 // cannot keep the screenshot from settling. Stories render and run play functions without it.
 // The Playwright provider types cdp() with Chromium's DevTools protocol.
 import type {} from "@vitest/browser-playwright";

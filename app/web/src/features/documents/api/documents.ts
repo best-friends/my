@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server data of the documents feature (web-client.md S1): the instance, whose `terms_url` and
+// The server data of the documents feature (web-client/README.md S1): the instance, whose `terms_url` and
 // `privacy_policy_url` lead to the pages of its terms of service and privacy policy, and the documents themselves
 // (GET /instance/documents/{kind}), which the pages at `/about/terms`, `/about/privacy` and `/about/commerce` show.
 import type { Api } from "../../../lib/api/client";

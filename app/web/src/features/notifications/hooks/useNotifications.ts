@@ -42,7 +42,7 @@ function isAfter(id: string, marker: NotificationMarker): boolean {
 /**
  * The read marker as it was when the page opened: the page keeps showing which notifications were new
  * after it has marked them read. It is a snapshot taken once (useState's initializer), not a copy kept in
- * sync with the server (web-client.md S2); `null` when the marker had not loaded, and nothing is marked new.
+ * sync with the server (web-client/README.md S2); `null` when the marker had not loaded, and nothing is marked new.
  */
 function useMarkerAtOpen(marker: NotificationMarker | undefined): NotificationMarker | null {
   const [atOpen] = useState(() => marker ?? null);

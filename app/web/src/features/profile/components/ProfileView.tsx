@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A profile (FR-204): the header with the account's picture, name, handle, role badges, profile text, metadata fields,
 // follow counts and the relationship buttons, then its posts in tabs (WAI-ARIA APG, tabs pattern) whose
-// selection the route keeps in the URL (web-client.md S3), the posts tab starting with its pinned posts.
+// selection the route keeps in the URL (web-client/README.md S3), the posts tab starting with its pinned posts.
 import {
   Box,
   EmojiText,
@@ -154,7 +154,7 @@ function ProfileTabs({ accountId, name, original, tab, onTabChange }: ProfileTab
           <VisuallyHidden>
             <h2 id={headingId}>{t(tabLabels[filter])}</h2>
           </VisuallyHidden>
-          {/* Another tab is another timeline: nothing of the previous one carries over (web-client.md R10). */}
+          {/* Another tab is another timeline: nothing of the previous one carries over (web-client/README.md R10). */}
           <AccountPosts key={filter} accountId={accountId} filter={filter} original={original} labelledBy={headingId} />
         </TabPanel>
       ))}

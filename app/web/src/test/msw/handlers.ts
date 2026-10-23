@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The modules of the default MSW handlers, one line each (web-client.md §7): every module exports
+// The modules of the default MSW handlers, one line each (web-client/README.md §7): every module exports
 // `handlers`, one successful response per client API operation in api/openapi.yaml that it owns. A feature
 // keeps its handlers and the fixtures only it uses in features/<x>/test/handlers.ts; the fixtures that
 // several features use are in src/test/fixtures.ts. Each operation has one default handler, so the order of

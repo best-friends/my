@@ -61,7 +61,7 @@ export type ReadyComposeForm = {
   textLimit: number;
   /** The visibility the post gets: the chosen one, or the ceiling of the account's posting limits. */
   visibility: Visibility;
-  /** What the account's restrictions let it post (data-model.md §5.4), or null while they keep every visibility. */
+  /** What the account's restrictions let it post (data-model/05-states-and-policies.md §5.4), or null while they keep every visibility. */
   limits: PostingLimits | null;
   /**
    * The accounts of other servers that the text mentions and that will not receive the post because it is
@@ -161,7 +161,7 @@ export function useComposeFormPending(): boolean {
 }
 
 /**
- * The logic of the new-post form (web-client.md A4): the draft from the store, the limits and defaults
+ * The logic of the new-post form (web-client/README.md A4): the draft from the store, the limits and defaults
  * from the server, the attachments, and sending.
  *
  * Sending moves the draft into the outbox and empties the form; the outbox shows the post from the
@@ -201,11 +201,11 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
     mutationFn: ({ idempotencyKey, body }: SendVariables) => createStatus(api, body, idempotencyKey),
     onSuccess: async (status, { idempotencyKey, body }) => {
       // The post is done once the lists it appears in are fetched again (it stays in the outbox as sending
-      // until then), so that a list opened next shows it at once (web-client.md S1). A failed refetch does
+      // until then), so that a list opened next shows it at once (web-client/README.md S1). A failed refetch does
       // not fail the post: that list fetches again when it is shown.
       await cachePostedStatus(api, queryClient, status);
       store.remove(idempotencyKey);
-      // The server narrows the visibility of a restricted account (data-model.md §5.4); say so.
+      // The server narrows the visibility of a restricted account (data-model/05-states-and-policies.md §5.4); say so.
       const narrowed = status.visibility !== body.visibility;
       toast.show({
         message: narrowed ? t("client:compose.visibility.limited", { visibility: t(visibilityLabel[status.visibility]) }) : t("client:compose.posted"),

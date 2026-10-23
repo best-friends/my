@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The errors of the profile routes. Their h1 is the account's name, which is not known when the account failed
-// to load, so the page keeps the handle from its address instead (web-client.md G16).
+// to load, so the page keeps the handle from its address instead (web-client/16-look-states-and-wording.md G16).
 import { type ErrorComponentProps, useParams } from "@tanstack/react-router";
 import { isolate } from "../../features/profile";
 import { useT } from "../../lib/i18n";

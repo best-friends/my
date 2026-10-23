@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The custom emoji picker of the post form and the profile (web-client.md T4, ADR-0051 §4): the real router and
+// The custom emoji picker of the post form and the profile (web-client/README.md T4, ADR-0051 §4): the real router and
 // QueryClient, MSW for the server.
 import { screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test } from "vitest";

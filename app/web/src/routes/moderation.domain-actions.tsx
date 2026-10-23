@@ -10,7 +10,7 @@ import { PageHeading } from "./-layout/PageHeading";
 /**
  * `filter`: the tab of the list; omitted, or anything unknown, shows the actions in effect. `domain`: the one
  * domain whose actions to list and to fill in the form (the link from a remote server's page); omitted, or
- * anything that is not a domain's length, lists every domain (web-client.md S3).
+ * anything that is not a domain's length, lists every domain (web-client/README.md S3).
  */
 const searchSchema = z.object({
   filter: z.enum(domainActionFilters).exclude(["active"]).optional().catch(undefined),

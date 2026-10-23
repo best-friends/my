@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 
 /**
  * Whether the viewport matches `query`, following its changes (react.dev, useSyncExternalStore: subscribing
- * to a browser API). Only the app shell uses viewport queries (web-client.md D2). Without matchMedia
+ * to a browser API). Only the app shell uses viewport queries (web-client/README.md D2). Without matchMedia
  * (jsdom), nothing matches.
  */
 export function useMediaQuery(query: string): boolean {

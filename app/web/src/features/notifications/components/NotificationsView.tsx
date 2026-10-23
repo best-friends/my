@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The notifications page below its heading (FR-205): tabs that filter by type, kept in the URL by the
-// route (web-client.md S3), and the notifications of the selected filter as a feed (Y6). The tabs follow
+// route (web-client/README.md S3), and the notifications of the selected filter as a feed (Y6). The tabs follow
 // the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs); only the selected panel is
 // mounted, and switching tabs keeps focus on the tab (the layout moves focus only when the path changes).
 import { EmptyState, Feed, Hint, Link, RegionError, Stack, Tab, TabList, TabPanel, Tabs } from "@my/ui";
@@ -61,7 +61,7 @@ export function NotificationsView({ filter, onFilterChange, headingId }: Notific
 type NotificationsErrorProps = { message: string; retry: () => void; isRetrying: boolean };
 
 /**
- * The list's failure in place of the list (web-client.md G16). The failure the page opened with is read, not
+ * The list's failure in place of the list (web-client/16-look-states-and-wording.md G16). The failure the page opened with is read, not
  * announced; a retry that fails again is the result of the user's action, and interrupts as an alert.
  */
 function NotificationsError({ message, retry, isRetrying }: NotificationsErrorProps) {

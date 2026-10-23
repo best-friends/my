@@ -1,5 +1,5 @@
 // Oxlint for the client workspace (ADR-0049). Each override implements rows of the 強制 column in
-// docs/architecture/web-client.md; the row IDs (R1, A5, ...) are noted next to them. The rule sets of the
+// docs/architecture/web-client/README.md; the row IDs (R1, A5, ...) are noted next to them. The rule sets of the
 // presets (ESLint recommended, typescript-eslint strict-type-checked, @eslint-react strict-type-checked,
 // TanStack Query recommended-strict, TanStack Router recommended, Testing Library react, better-tailwindcss
 // correctness) are written out rule by rule, as `@oxlint/migrate --type-aware` writes them.
@@ -558,15 +558,15 @@
             "restrict": [
               {
                 "pattern": "^(?!(?:[^:\\s]+:)*(?:rtl|ltr):)(?:[^:\\s]+:)*!?-?(?:m[lr]|p[lr]|scroll-[mp][lr]|left|right|rounded-[lr]|rounded-[tb][lr]|border-[lr]|mask-[lr]|text-(?:left|right)|float-(?:left|right)|clear-(?:left|right))(?:-|$)",
-                "message": "Use logical utilities (ms- / me- / ps- / pe- / start- / end- / text-start / rounded-s / border-s); physical directions are allowed only under rtl: / ltr: (web-client.md D7)."
+                "message": "Use logical utilities (ms- / me- / ps- / pe- / start- / end- / text-start / rounded-s / border-s); physical directions are allowed only under rtl: / ltr: (web-client/README.md D7)."
               },
               {
                 "pattern": "^(?:[^:\\s]+:)*!?(?:min-|max-)?h-screen!?$|100vh",
-                "message": "Do not use 100vh (h-screen); use h-svh / h-dvh (web-client.md D5)."
+                "message": "Do not use 100vh (h-screen); use h-svh / h-dvh (web-client/README.md D5)."
               },
               {
                 "pattern": "^(?!(?:[^:\\s]+:)*motion-(?:safe|reduce):)(?:[^:\\s]+:)*!?animate-(?!none)",
-                "message": "Put animations under motion-safe: (web-client.md D6)."
+                "message": "Put animations under motion-safe: (web-client/README.md D6)."
               }
             ]
           }
@@ -582,25 +582,25 @@
                   "useCallback",
                   "memo"
                 ],
-                "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client.md R5)."
+                "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client/README.md R5)."
               },
               {
                 "name": "openapi-fetch",
-                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
               },
               {
                 "name": "openapi-react-query",
-                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
               }
             ],
             "patterns": [
               {
                 "regex": "(^|/)lib/api(/|$)",
-                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
               },
               {
                 "regex": "^react-icons(/|$)",
-                "message": "Icons come from the @my/ui icon set: only app/ui/src/Icons.tsx imports react-icons, and only Phosphor (react-icons/pi) (ADR-0043, web-client.md G10)."
+                "message": "Icons come from the @my/ui icon set: only app/ui/src/Icons.tsx imports react-icons, and only Phosphor (react-icons/pi) (ADR-0043, web-client/16-look-states-and-wording.md G10)."
               }
             ]
           }
@@ -609,7 +609,7 @@
           "error",
           {
             "name": "fetch",
-            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
           }
         ],
         "no-restricted-properties": [
@@ -617,17 +617,17 @@
           {
             "object": "window",
             "property": "fetch",
-            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
           },
           {
             "object": "globalThis",
             "property": "fetch",
-            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
           },
           {
             "object": "self",
             "property": "fetch",
-            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+            "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
           }
         ],
         "react/no-deriving-state-in-effects": "error",
@@ -636,22 +636,22 @@
           {
             "types": {
               "FC": {
-                "message": "Type props explicitly instead of using React.FC (web-client.md A7)."
+                "message": "Type props explicitly instead of using React.FC (web-client/README.md A7)."
               },
               "React.FC": {
-                "message": "Type props explicitly instead of using React.FC (web-client.md A7)."
+                "message": "Type props explicitly instead of using React.FC (web-client/README.md A7)."
               },
               "FunctionComponent": {
-                "message": "Type props explicitly instead of using React.FC (web-client.md A7)."
+                "message": "Type props explicitly instead of using React.FC (web-client/README.md A7)."
               },
               "React.FunctionComponent": {
-                "message": "Type props explicitly instead of using React.FC (web-client.md A7)."
+                "message": "Type props explicitly instead of using React.FC (web-client/README.md A7)."
               },
               "VFC": {
-                "message": "Type props explicitly instead of using React.FC (web-client.md A7)."
+                "message": "Type props explicitly instead of using React.FC (web-client/README.md A7)."
               },
               "React.VFC": {
-                "message": "Type props explicitly instead of using React.FC (web-client.md A7)."
+                "message": "Type props explicitly instead of using React.FC (web-client/README.md A7)."
               }
             }
           }
@@ -660,69 +660,69 @@
           "error",
           {
             "selector": "JSXOpeningElement[name.name=/^(div|span)$/] > JSXAttribute[name.name=/^on(Click|DoubleClick|KeyDown|KeyUp|KeyPress|MouseDown|MouseUp|PointerDown|PointerUp)(Capture)?$/]",
-            "message": "Do not make a <div> or <span> interactive; use a @my/ui component built on React Aria Components (web-client.md A5)."
+            "message": "Do not make a <div> or <span> interactive; use a @my/ui component built on React Aria Components (web-client/README.md A5)."
           },
           {
             "selector": "Literal[value=/\\b100vh\\b/], TemplateElement[value.raw=/\\b100vh\\b/]",
-            "message": "Do not use 100vh; use svh / dvh (web-client.md D5)."
+            "message": "Do not use 100vh; use svh / dvh (web-client/README.md D5)."
           },
           {
             "selector": "CallExpression[callee.property.name='setAttribute'][arguments.0.value=/^style$/i]",
-            "message": "Do not set the style attribute; it breaks the CSP. Use React's style={} (web-client.md D10)."
+            "message": "Do not set the style attribute; it breaks the CSP. Use React's style={} (web-client/README.md D10)."
           },
           {
             "selector": "MemberExpression[property.name='cssText']",
-            "message": "Do not write cssText; it breaks the CSP. Use React's style={} (web-client.md D10)."
+            "message": "Do not write cssText; it breaks the CSP. Use React's style={} (web-client/README.md D10)."
           },
           {
             "selector": "AssignmentExpression > MemberExpression.left[property.name='defaultProps']",
-            "message": "Do not use defaultProps; use default parameter values (web-client.md R13)."
+            "message": "Do not use defaultProps; use default parameter values (web-client/README.md R13)."
           },
           {
             "selector": "MemberExpression[object.name='React'][property.name=/^(useMemo|useCallback|memo)$/]",
-            "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client.md R5)."
+            "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client/README.md R5)."
           },
           {
             "selector": "ExpressionStatement[directive=/^use no (memo|forget)$/]",
-            "message": "Do not opt out of React Compiler. If a library cannot be compiled, wrap it in one hook and disable this line with a reason (web-client.md R4)."
+            "message": "Do not opt out of React Compiler. If a library cannot be compiled, wrap it in one hook and disable this line with a reason (web-client/README.md R4)."
           },
           {
             "selector": "CallExpression > MemberExpression.callee[object.property.name='query'][property.name=/^use[A-Z]/]",
-            "message": "Do not call the hooks of the API client (api.query.useQuery / useMutation); React Compiler skips the calling hook. Pass api.query.queryOptions(...) to useQuery, and a function of features/<x>/api to useMutation (web-client.md R4, §10)."
+            "message": "Do not call the hooks of the API client (api.query.useQuery / useMutation); React Compiler skips the calling hook. Pass api.query.queryOptions(...) to useQuery, and a function of features/<x>/api to useMutation (web-client/README.md R4, web-client/10-api-client-and-auth.md §10)."
           },
           {
             "selector": "Property[key.name='staleTime'][value.value='static']",
-            "message": "Do not use staleTime: \"static\"; it ignores invalidation. A loader reads with staleTime: Infinity (web-client.md S7, ADR-0045)."
+            "message": "Do not use staleTime: \"static\"; it ignores invalidation. A loader reads with staleTime: Infinity (web-client/README.md S7, ADR-0045)."
           },
           {
             "selector": "CallExpression > MemberExpression.callee[property.name=/^ensure(Infinite)?QueryData$/]",
-            "message": "Do not use ensureQueryData; a loader reads with queryClient.query / infiniteQuery and staleTime: Infinity (web-client.md S7)."
+            "message": "Do not use ensureQueryData; a loader reads with queryClient.query / infiniteQuery and staleTime: Infinity (web-client/README.md S7)."
           },
           {
             "selector": "JSXOpeningElement[name.name=/^(a|Link)$/] > JSXAttribute[name.name='target']",
-            "message": "A link that opens in a new tab is the ExternalLink of @my/ui, which adds rel and the \"opens in a new tab\" text (web-client.md Y12)."
+            "message": "A link that opens in a new tab is the ExternalLink of @my/ui, which adds rel and the \"opens in a new tab\" text (web-client/README.md Y12)."
           },
           {
             "selector": "JSXOpeningElement[name.name=/^(a|Link)$/] > JSXAttribute[name.name='href'] > Literal[value=/^https?:/i]",
-            "message": "A link to another site is the ExternalLink of @my/ui, which opens it in a new tab (web-client.md Y12)."
+            "message": "A link to another site is the ExternalLink of @my/ui, which opens it in a new tab (web-client/README.md Y12)."
           }
         ],
         "restrict/svg": [
           "error",
           {
             "selector": "JSXOpeningElement[name.name=/^(svg|g|path|circle|ellipse|line|polygon|polyline|rect|text|tspan|textPath|defs|use|symbol|marker|mask|clipPath|pattern|linearGradient|radialGradient|stop|filter|foreignObject|image)$/]",
-            "message": "Do not draw SVG; use an icon of @my/ui (Icons.tsx), and add a row to its table for a new one (ADR-0043, web-client.md G10)."
+            "message": "Do not draw SVG; use an icon of @my/ui (Icons.tsx), and add a row to its table for a new one (ADR-0043, web-client/16-look-states-and-wording.md G10)."
           }
         ],
         "restrict/storage": [
           "error",
           {
             "selector": "Identifier[name=/^(localStorage|sessionStorage)$/]",
-            "message": "Do not use the browser's storage directly; read and write a key declared in lib/storage (web-client.md S11)."
+            "message": "Do not use the browser's storage directly; read and write a key declared in lib/storage (web-client/README.md S11)."
           },
           {
             "selector": "MemberExpression[computed=true][property.value=/^(localStorage|sessionStorage)$/]",
-            "message": "Do not use the browser's storage directly; read and write a key declared in lib/storage (web-client.md S11)."
+            "message": "Do not use the browser's storage directly; read and write a key declared in lib/storage (web-client/README.md S11)."
           }
         ],
         // The sinks that the shell's Trusted Types (`require-trusted-types-for 'script'`) refuse a string in: only
@@ -731,15 +731,15 @@
           "error",
           {
             "selector": "NewExpression[callee.name='DOMParser'], CallExpression > MemberExpression.callee[property.name=/^(parseFromString|insertAdjacentHTML|createContextualFragment|setHTMLUnsafe|parseHTMLUnsafe)$/]",
-            "message": "Do not parse or insert HTML; render server-sanitized HTML with PostContent and take its text with sanitizedHtmlText of @my/ui, which pass it through the Trusted Types policy (web-client.md A8)."
+            "message": "Do not parse or insert HTML; render server-sanitized HTML with PostContent and take its text with sanitizedHtmlText of @my/ui, which pass it through the Trusted Types policy (web-client/README.md A8)."
           },
           {
             "selector": "AssignmentExpression > MemberExpression.left[property.name=/^(innerHTML|outerHTML|srcdoc)$/], JSXAttribute[name.name='srcDoc'], CallExpression[callee.property.name='setAttribute'][arguments.0.value=/^srcdoc$/i]",
-            "message": "Do not assign HTML; the app's Trusted Types refuse a string. Render server-sanitized HTML with PostContent of @my/ui, and build other DOM with React or textContent (web-client.md A8)."
+            "message": "Do not assign HTML; the app's Trusted Types refuse a string. Render server-sanitized HTML with PostContent of @my/ui, and build other DOM with React or textContent (web-client/README.md A8)."
           },
           {
             "selector": "CallExpression > MemberExpression.callee[object.name='document'][property.name=/^(write|writeln)$/], CallExpression[callee.property.name='createElement'][arguments.0.value=/^script$/i], CallExpression[callee.name='eval'], NewExpression[callee.name='Function']",
-            "message": "Do not write a document, create a script, or compile code from a string; the app's Trusted Types refuse it (web-client.md A8)."
+            "message": "Do not write a document, create a script, or compile code from a string; the app's Trusted Types refuse it (web-client/README.md A8)."
           }
         ]
       },
@@ -780,11 +780,11 @@
           "error",
           {
             "selector": "JSXAttribute[name.name='className'], Property[key.name='className']",
-            "message": "Do not write className in web/src; a look or layout is a prop of a @my/ui component, or a new prop or component there (web-client.md A4)."
+            "message": "Do not write className in web/src; a look or layout is a prop of a @my/ui component, or a new prop or component there (web-client/README.md A4)."
           },
           {
             "selector": "ImportDeclaration[source.value=/^(tailwind-variants|tailwind-merge|clsx|classnames|class-variance-authority)(\\/|$)/]",
-            "message": "Do not compose classes in web/src; tailwind-variants, tailwind-merge and clsx belong to @my/ui (web-client.md A4)."
+            "message": "Do not compose classes in web/src; tailwind-variants, tailwind-merge and clsx belong to @my/ui (web-client/README.md A4)."
           }
         ]
       },
@@ -811,13 +811,13 @@
                   "useCallback",
                   "memo"
                 ],
-                "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client.md R5)."
+                "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client/README.md R5)."
               }
             ],
             "patterns": [
               {
                 "regex": "^react-icons(/|$)",
-                "message": "Icons come from the @my/ui icon set: only app/ui/src/Icons.tsx imports react-icons, and only Phosphor (react-icons/pi) (ADR-0043, web-client.md G10)."
+                "message": "Icons come from the @my/ui icon set: only app/ui/src/Icons.tsx imports react-icons, and only Phosphor (react-icons/pi) (ADR-0043, web-client/16-look-states-and-wording.md G10)."
               }
             ]
           }
@@ -843,7 +843,7 @@
           "error",
           {
             "selector": "CallExpression > MemberExpression.callee[property.name=/^(setQueryData|setQueriesData|invalidateQueries|refetchQueries|resetQueries|removeQueries|cancelQueries)$/]",
-            "message": "Do not change the query cache in a hook or a component; call the cache function next to the write in features/<x>/api (e.g. cachePostedStatus) from onSuccess (web-client.md S1)."
+            "message": "Do not change the query cache in a hook or a component; call the cache function next to the write in features/<x>/api (e.g. cachePostedStatus) from onSuccess (web-client/README.md S1)."
           }
         ]
       }
@@ -868,19 +868,19 @@
             "restrict": [
               {
                 "pattern": "^(?!(?:[^:\\s]+:)*(?:rtl|ltr):)(?:[^:\\s]+:)*!?-?(?:m[lr]|p[lr]|scroll-[mp][lr]|left|right|rounded-[lr]|rounded-[tb][lr]|border-[lr]|mask-[lr]|text-(?:left|right)|float-(?:left|right)|clear-(?:left|right))(?:-|$)",
-                "message": "Use logical utilities (ms- / me- / ps- / pe- / start- / end- / text-start / rounded-s / border-s); physical directions are allowed only under rtl: / ltr: (web-client.md D7)."
+                "message": "Use logical utilities (ms- / me- / ps- / pe- / start- / end- / text-start / rounded-s / border-s); physical directions are allowed only under rtl: / ltr: (web-client/README.md D7)."
               },
               {
                 "pattern": "^(?:[^:\\s]+:)*!?(?:min-|max-)?h-screen!?$|100vh",
-                "message": "Do not use 100vh (h-screen); use h-svh / h-dvh (web-client.md D5)."
+                "message": "Do not use 100vh (h-screen); use h-svh / h-dvh (web-client/README.md D5)."
               },
               {
                 "pattern": "^(?!(?:[^:\\s]+:)*motion-(?:safe|reduce):)(?:[^:\\s]+:)*!?animate-(?!none)",
-                "message": "Put animations under motion-safe: (web-client.md D6)."
+                "message": "Put animations under motion-safe: (web-client/README.md D6)."
               },
               {
                 "pattern": "^(?:[^:\\s]+:)*(?:max-)?(?:sm|md|lg|xl|2xl|min-\\[[^\\]]*\\]|max-\\[[^\\]]*\\]):",
-                "message": "Components use container queries (@container, @md:); viewport breakpoints belong to the app shell (web-client.md D2)."
+                "message": "Components use container queries (@container, @md:); viewport breakpoints belong to the app shell (web-client/README.md D2)."
               }
             ]
           }
@@ -907,25 +907,25 @@
                   "useCallback",
                   "memo"
                 ],
-                "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client.md R5)."
+                "message": "React Compiler memoizes; do not write useMemo / useCallback / memo. If one is required, disable this line with a reason (web-client/README.md R5)."
               },
               {
                 "name": "openapi-fetch",
-                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
               },
               {
                 "name": "openapi-react-query",
-                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
               }
             ],
             "patterns": [
               {
                 "regex": "(^|/)lib/api(/|$)",
-                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client.md S1)."
+                "message": "Server data goes through TanStack Query: only features/<x>/api and lib/ use the API client (web-client/README.md S1)."
               },
               {
                 "group": ["react-icons", "react-icons/*", "!react-icons/pi"],
-                "message": "Icons come from the @my/ui icon set: only app/ui/src/Icons.tsx imports react-icons, and only Phosphor (react-icons/pi) (ADR-0043, web-client.md G10)."
+                "message": "Icons come from the @my/ui icon set: only app/ui/src/Icons.tsx imports react-icons, and only Phosphor (react-icons/pi) (ADR-0043, web-client/16-look-states-and-wording.md G10)."
               }
             ]
           }
@@ -1008,7 +1008,7 @@
           {
             "default": "disallow",
             "checkAllOrigins": true,
-            "message": "{{from.element.types}} must not import {{to.element.types}}{{to.module.source}} (web-client.md A1–A3).",
+            "message": "{{from.element.types}} must not import {{to.element.types}}{{to.module.source}} (web-client/README.md A1–A3).",
             "policies": [
               {
                 "allow": {
@@ -1193,7 +1193,7 @@
                     }
                   }
                 },
-                "message": "@my/ui depends only on React, React Aria, TanStack Virtual, the Tailwind helpers and, in Icons.tsx, react-icons/pi, not {{to.module.source}} (web-client.md A2)."
+                "message": "@my/ui depends only on React, React Aria, TanStack Virtual, the Tailwind helpers and, in Icons.tsx, react-icons/pi, not {{to.module.source}} (web-client/README.md A2)."
               },
               {
                 "from": {
@@ -1349,23 +1349,23 @@
           "error",
           {
             "selector": "CallExpression[callee.object.name='vi'][callee.property.name=/^(mock|doMock)$/][arguments.0.value=/(^|\\/)api(\\/|$)|^openapi-(fetch|react-query)$/]",
-            "message": "Do not mock API modules; mock the network with MSW (web-client.md T3)."
+            "message": "Do not mock API modules; mock the network with MSW (web-client/README.md T3)."
           },
           {
             "selector": "CallExpression[callee.object.name='vi'][callee.property.name=/^(mock|doMock)$/][arguments.0.source.value=/(^|\\/)api(\\/|$)|^openapi-(fetch|react-query)$/]",
-            "message": "Do not mock API modules; mock the network with MSW (web-client.md T3)."
+            "message": "Do not mock API modules; mock the network with MSW (web-client/README.md T3)."
           },
           {
             "selector": "CallExpression[callee.object.name='vi'][callee.property.name=/^(spyOn|stubGlobal)$/] > Literal.arguments[value='fetch']",
-            "message": "Do not mock fetch; mock the network with MSW (web-client.md T3)."
+            "message": "Do not mock fetch; mock the network with MSW (web-client/README.md T3)."
           },
           {
             "selector": "AssignmentExpression > MemberExpression.left[property.name='fetch']",
-            "message": "Do not replace fetch; mock the network with MSW (web-client.md T3)."
+            "message": "Do not replace fetch; mock the network with MSW (web-client/README.md T3)."
           },
           {
             "selector": "CallExpression[callee.object.name='vi'][callee.property.name='waitFor']",
-            "message": "Wait with findBy or Testing Library's waitFor, which use the timeout of the test setup (web-client.md T7)."
+            "message": "Wait with findBy or Testing Library's waitFor, which use the timeout of the test setup (web-client/README.md T7)."
           }
         ],
         "restrict/svg": "off",

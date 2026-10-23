@@ -24,7 +24,7 @@ export function About() {
     <Stack gap="8">
       {about.thumbnail !== undefined && <ServerThumbnail thumbnail={about.thumbnail} />}
       {about.summary !== "" && (
-        // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
+        // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client/README.md Y10).
         <Text as="p" dir="auto" lang="" size="lg">
           {about.summary}
         </Text>
@@ -344,7 +344,7 @@ function ModeratedDomain({ action }: { action: PublicDomainAction }) {
         <Hint as="span">{t(kindLabels[action.kind])}</Hint>
       </Cluster>
       {action.comment !== undefined && action.comment !== "" && (
-        // The moderators' public comment, in any language (web-client.md Y10).
+        // The moderators' public comment, in any language (web-client/README.md Y10).
         <Text as="p" dir="auto" size="sm" wrap="anywhere">
           {action.comment}
         </Text>

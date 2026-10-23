@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Skeletons in the shape of the rows a list loads (web-client.md G15): a post, a row of an account list and a
+// Skeletons in the shape of the rows a list loads (web-client/16-look-states-and-wording.md G15): a post, a row of an account list and a
 // notification. Each one is hidden from assistive technology as a whole. The region they fill sets
 // aria-busy="true" and carries the one loading label (a VisuallyHidden text or a role="status" Spinner), however
 // many rows it repeats.

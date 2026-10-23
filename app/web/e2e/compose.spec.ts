@@ -332,7 +332,7 @@ async function boxOf(locator: ReturnType<Page["getByRole"]>): Promise<Box> {
   return box;
 }
 
-test.describe("the floating new-post button (web-client.md G4)", () => {
+test.describe("the floating new-post button (web-client/16-look-states-and-wording.md G4)", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, "from md the rail has the button and nothing floats");
 
   test.beforeEach(async ({ page }) => {

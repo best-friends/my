@@ -8,7 +8,7 @@
 ## Context（背景・課題）
 
 ID は UUIDv7 をアプリで生成し、36 文字の小文字の正規形で保存している（[ADR-0003](0003-database-abstraction.md) の「型・ID・時刻の共通規約」）。
-PostgreSQL では、照合順序に依らずバイト順で並ぶように `text COLLATE "C"` で持つ（`schema/postgres.sql` の 516 列、[data-model §1.2](../architecture/data-model.md#12-論理型)）。
+PostgreSQL では、照合順序に依らずバイト順で並ぶように `text COLLATE "C"` で持つ（`schema/postgres.sql` の 516 列、[data-model §1.2](../architecture/data-model/01-conventions.md#12-論理型)）。
 ADR-0003 は `COLLATE "C"` の `text` と `uuid` 型のどちらでもよいとし、どちらにするかは data-model §11 の未決事項として残っている（spike #17）。
 
 `uuid` 型なら 1 値が 37 バイト（可変長の頭の 1 バイトと 36 文字）から 16 バイトになり、表と索引が小さくなり、比較が速くなり、不正な値を DB が拒む。

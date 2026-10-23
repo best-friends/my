@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The totals of the instance's costs (ADR-0067 §4, §5, §9, web-client.md S1): the types and the dates that the
+// The totals of the instance's costs (ADR-0067 §4, §5, §9, web-client/README.md S1): the types and the dates that the
 // administrators' costs screen, the public costs page and the finances page share; the public totals
 // (GET /instance/cost_totals), which the instance setting `finance_visibility` publishes: nothing (404), the totals
 // only, or their breakdown by provider and category; and the totals of the finances page (GET /finance/cost_totals,

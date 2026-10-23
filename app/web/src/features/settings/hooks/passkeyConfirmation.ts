@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What the operations confirmed with the password or a passkey say when the confirmation fails (web-client.md E2, G16):
+// What the operations confirmed with the password or a passkey say when the confirmation fails (web-client/README.md E2, web-client/16-look-states-and-wording.md G16):
 // a dismissed or failed prompt of the browser, a passkey that the server did not take, or a confirmation that took too
 // long. The other failures are each operation's own.
 import { errorMessage } from "../../../lib/errors";

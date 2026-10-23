@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Integration tests of the app shell (web-client.md T4): the real router, providers and layout.
+// Integration tests of the app shell (web-client/README.md T4): the real router, providers and layout.
 import { screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test } from "vitest";
 import { signedInHandler } from "./test/msw/http";
