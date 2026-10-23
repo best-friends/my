@@ -2,21 +2,20 @@
 name: Set up Go
 description: >-
   Install the Go of .tool-versions and restore the Go module, build, and golangci-lint cache that main.yml builds
-  from scratch once a day (ADR-0079), without saving one; with `golangci-lint: true`, install golangci-lint too.
-  Run it after actions/checkout.
+  from scratch once a day (ADR-0079), without saving one. Run it after actions/checkout.
 
 inputs:
   restore:
     description: "`false` installs Go and computes the key without restoring the cache (main.yml, which builds it)."
     default: "true"
-  golangci-lint:
-    description: "`true` also installs the golangci-lint of .tool-versions (go:lint, agentkit:lint)."
-    default: "false"
 
 outputs:
   key:
     description: The key of today's cache for this Go and these go.sum files.
     value: ${{ steps.key.outputs.key }}
+  golangci-lint:
+    description: The golangci-lint version of .tool-versions, for golangci/golangci-lint-action (`v` + this).
+    value: ${{ steps.key.outputs.golangci-lint }}
 
 runs:
   using: composite
@@ -28,7 +27,7 @@ runs:
         cache: false
     # A build cache only serves the same Go, and the module cache the same go.sum files. The date makes main.yml start
     # a new cache each day, so a cache holds one build's worth of entries instead of growing with every push.
-    - name: Compute the Go cache key
+    - name: Compute the Go cache key and read the golangci-lint version
       id: key
       shell: bash
       env:
@@ -41,6 +40,7 @@ runs:
           echo "base=${base}-"
           echo "sums=${base}-${SUMS}-"
           echo "key=${base}-${SUMS}-$(date -u +%Y%m%d)"
+          echo "golangci-lint=$(awk '$1 == "golangci-lint" { print $2 }' .tool-versions)"
         } >> "$GITHUB_OUTPUT"
     # Without today's cache, the newest one of the same go.sum files, then of the same Go, then any: the build cache
     # entries of the packages that did not change since still hit, and the modules of another Go still serve.
@@ -57,15 +57,3 @@ runs:
           ${{ steps.key.outputs.sums }}
           ${{ steps.key.outputs.base }}
           ${{ steps.key.outputs.os }}
-    - name: Read the golangci-lint version from .tool-versions
-      if: inputs.golangci-lint == 'true'
-      id: tools
-      shell: bash
-      run: echo "golangci-lint=$(awk '$1 == "golangci-lint" { print $2 }' .tool-versions)" >> "$GITHUB_OUTPUT"
-    # The prebuilt binary; the task runs it, so its lint cache is the one restored above.
-    - name: Install golangci-lint
-      if: inputs.golangci-lint == 'true'
-      uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-      with:
-        version: v${{ steps.tools.outputs.golangci-lint }}
-        install-only: true

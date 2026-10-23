@@ -45,8 +45,11 @@ jobs:
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
-      - name: ci:docker
-        run: scripts/task.sh ci:docker ARM64=true
+      - parallel:
+          - name: docker:smoke
+            run: scripts/task.sh docker:smoke
+          - name: docker:build-arm64
+            run: scripts/task.sh docker:build-arm64
 
   codeql:
     uses: ./.github/workflows/codeql.yml

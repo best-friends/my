@@ -4,10 +4,14 @@
 version: "3"
 
 tasks:
+  # It skips while node_modules exists and the manifests are unchanged, as web:install does.
   install:
     desc: Install the pinned i18n tool dependencies (tools/i18n/bun.lock)
     run: once
     dir: tools/i18n
+    sources: [bun.lock, bunfig.toml, package.json]
+    status:
+      - test -d node_modules
     cmds:
       - bun install --frozen-lockfile
 
