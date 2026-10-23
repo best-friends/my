@@ -114,8 +114,7 @@ jobs:
         run: scripts/task.sh web:test
 
   ui-test:
-    # The @my/ui story tests (ui-test.yml), which main.yml also runs after the merge. The merge queue skips them: a
-    # pull request that changes a screenshot fixes its baselines itself, and a change from stacking two of them is
-    # rare enough to find after the merge (ADR-0047).
+    # The @my/ui story tests (ui-test.yml). The merge queue skips them: a pull request that changes a screenshot fixes
+    # its baselines itself, and a change from stacking two of them is rare (ADR-0047).
     if: inputs.ui && inputs.scope == 'pr'
     uses: ./.github/workflows/ui-test.yml

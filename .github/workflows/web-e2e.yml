@@ -2,15 +2,15 @@ name: Web E2E
 
 # Playwright E2E of the web client (ADR-0015, ADR-0027) in three stages (ADR-0047): one build of app/web/dist and
 # bin/my, Playwright `--shard` jobs that all test that same build, and one HTML report merged from the shards' blob
-# reports. main.yml calls it on every push to main (ADR-0040) with the subset on 4 shards, and nightly.yml with the
-# full width × locale matrix (app/web/playwright.config.ts) on 8. Pull requests never start it on their own: run it
-# by hand on a PR's branch with `gh workflow run web-e2e.yml --ref <branch>` (or the Actions tab).
+# reports. nightly.yml calls it with the full width × locale matrix (app/web/playwright.config.ts) on 8 shards. Pull
+# requests never start it on their own: run it by hand on a PR's branch with `gh workflow run web-e2e.yml --ref <branch>`
+# (or the Actions tab).
 
 on:
   workflow_call:
     inputs:
       matrix:
-        description: "`pr` for the default subset (main pushes), `full` for every width × locale project."
+        description: "`pr` for the default subset, `full` for every width × locale project."
         type: string
         required: true
       shards:
@@ -150,7 +150,7 @@ jobs:
           retention-days: 1
 
   report:
-    # Merges the blob reports even when shards failed; a cancelled run (a newer push to main) skips it.
+    # Merges the blob reports even when shards failed; a cancelled run skips it.
     needs: [build, shard]
     if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest

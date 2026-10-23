@@ -207,8 +207,8 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     種類の変わるボタン（「フォロー」のアクセントから「リクエスト中」の面へ）は `motion-safe:transition-colors` で色を移すので、途中で `color-contrast` が中間の文字色と背景色を読むと違反になるため。
     終わりのないアニメーション（スピナー、スケルトンの明滅）は待たない。
   - プロジェクトは画面幅 320 / 390 / 768 / 1024 / 1440 px × ロケール `en` / `ja` / `en-XA` / `ar-XB` の 20 個。768 px 未満はタッチと粗いポインタのスマートフォンとして動かす。
-  - main への push では全ロケールの 320 / 1440 px だけを動かし（PR では動かさない、[ADR-0040](../../adr/0040-e2e-on-main-only.md)。Web に触れる PR では作者が手元で `scripts/task.sh web:e2e` を回すか、PR のブランチに対して `web-e2e.yml` を `workflow_dispatch` で手で回す）、nightly（`E2E_MATRIX=full`）は全体を動かす。
-  - CI（`web-e2e.yml`）は `app/web/dist` と `bin/my` を 1 回だけビルドし、全シャードが同じビルドを検査する（[ADR-0047](../../adr/0047-ci-protection-layers.md)）。シャードは main が 4、nightly が 8 で、各シャードの blob レポートを 1 つの HTML レポートにまとめる。`scripts/task.sh web:e2e` は手元で全部を 1 回で回す。
+  - 既定の部分集合（`E2E_MATRIX` なし）は全ロケールの 320 / 1440 px だけを動かし、nightly（`E2E_MATRIX=full`）は全体を動かす（[ADR-0079](../../adr/0079-ci-single-gate-merge-queue.md)）。PR では自動では動かさず、Web に触れる PR では作者が手元で `scripts/task.sh web:e2e` を回すか、PR のブランチに対して `web-e2e.yml` を `workflow_dispatch` で手で回す。
+  - CI（`web-e2e.yml`）は `app/web/dist` と `bin/my` を 1 回だけビルドし、全シャードが同じビルドを検査する（[ADR-0047](../../adr/0047-ci-protection-layers.md)）。シャードは部分集合が 4、nightly が 8 で、各シャードの blob レポートを 1 つの HTML レポートにまとめる。`scripts/task.sh web:e2e` は手元で全部を 1 回で回す。
   - spec は `e2e/fixtures.ts` から `test` / `expect` を import する。`vite preview` は `index.html`（ランタイム設定の代わりを含む）をそのまま返すので、fixture がプロジェクトのロケールを `<html lang dir>` に書き込み、サーバーの外枠と同じ状態にする。ビルドのファイルへの相対のリンクは、`my serve` と同じくルートからのものにする（ルートより下の画面のため）。`vite preview` は CSP を付けないので、fixture は `my serve`（`e2e/server.ts`）の外枠が送る CSP を取得してそのまま付ける。spec も本番と同じ Trusted Types と取得元の制限の下で動き、CSP が拒む sink（`DOMParser` や `innerHTML` への文字列）はアプリと同じく spec を失敗させる。画像は自分のオリジンからしか読めないので、spec が作る画像は `data:` URL を `servedImage` に渡し、プレビューのオリジンで配る。ランタイム設定の `apiOrigin` もその回の `vite preview` のオリジンに書き換えるので、クライアントの API と OAuth の要求はプレビューに届き、spec が `page.route` で応答できる（ログイン済みの画面は、`/oauth/token/refresh` と API の操作に応答して作る）。axe は `makeAxeBuilder` と `expectNoAxeViolations`（規則と対象のセレクタの一覧が空であることを検査）、横スクロールは `expectNoHorizontalScroll` で検査する。
   - 構造は `toMatchAriaSnapshot` で検査する。ロケールで変わる名前は、スナップショットから省くか正規表現にする。
   - CI は、digest で固定した Playwright の公式イメージで動かす。イメージの版は `@playwright/test` の版と合わせる。
@@ -231,5 +231,5 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     手元の OS のフォントや描画では一致しないので、手元で作った画像はコミットしない。
     - 見た目を変えたら `scripts/task.sh ui:snapshots-update`（Docker でそのイメージを使う）で作り直し、差分の画像を確かめてからコミットする。
     - 同じ比較を手元でするときは `scripts/task.sh ui:test-docker` を使う。`scripts/task.sh ui:test` を手元で動かす（`scripts/task.sh ui:test-install` でブラウザを入れる）と、axe は信用できるが、スクリーンショットは一致しない。
-  - `scripts/task.sh check` はブラウザなしで動く検査だけを集める。`scripts/task.sh ui:test` は CI の `ui-test` ジョブがそのイメージの中で、`app/ui` を変える PR と main への push で動かす（Merge Queue では動かさない、[ADR-0047](../../adr/0047-ci-protection-layers.md)）。失敗したときの実際の画像と差分は成果物 `ui-test-screenshots` にある。
+  - `scripts/task.sh check` はブラウザなしで動く検査だけを集める。`scripts/task.sh ui:test` は CI の `ui-test` ジョブがそのイメージの中で、`app/ui` を変える PR で動かす（Merge Queue では動かさない、[ADR-0047](../../adr/0047-ci-protection-layers.md)）。失敗したときの実際の画像と差分は成果物 `ui-test-screenshots` にある。
   - ワークフローのイメージと `PLAYWRIGHT_IMAGE`、`playwright` / `@playwright/test` の版が食い違うと、`scripts/task.sh web:playwright-image-check`（`scripts/task.sh check` の一部）が失敗する。

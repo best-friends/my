@@ -74,9 +74,9 @@ The layout of [ADR-0047](../adr/0047-ci-protection-layers.md) (`.github/workflow
 | --- | --- | --- |
 | Pull request | `ci.yml` | The `ctx-<context>.yml` of every context the change touches and of its dependents (`scripts/changed-contexts.sh`), the same checks as `scripts/task.sh check`, with the PostgreSQL tests on pgmem; the `@my/ui` story tests (`ui-test.yml`) when `app/ui` changes; the linux/arm64 image builds when the docker context changes; the Docker Compose smoke test when the docker context, `cmd/`, or `internal/platform/` changes. The required `check` collects the results |
 | Merge queue | `ci.yml` | The same contexts again on the merge group (the PR on top of `main` and the PRs queued ahead of it), without the checks decided file by file (markdownlint, Go and npm licenses, shellcheck, the CSS `100vh` check, design tokens, the Playwright image version) and without the story tests, the smoke test, and the arm64 builds. The queue merges the group when `check` passes |
-| Push to `main` | `main.yml` | The web E2E subset on 4 shards; the smoke test unless the push changes docs only; the story tests when `app/ui` changes; the PostgreSQL tests on a real container (`postgres-contract.yml`) and the `stream.Bus` contracts on broker containers (`stream-contract.yml`), each when a path they depend on changes; the Go and Bun caches that pull requests and the queue restore. The `scripts/task.sh check` contexts do not run again |
+| Push to `main` | `main.yml` | No checks: only the caches that pull requests and the queue restore ([ADR-0079](../adr/0079-ci-single-gate-merge-queue.md)). The Go cache (modules, builds, golangci-lint) is built from empty directories, keyed on the Go version, `go.sum`, `tools/go.sum`, and the date; the Bun caches are keyed on the lockfiles. Each is built only when no cache of its key exists yet |
 | Nightly (03:00 JST) | `nightly.yml` | The full web E2E matrix on 8 shards, the live interoperability test (`federation-live.yml`), the PostgreSQL tests on a real container, the `stream.Bus` contracts on broker containers, the smoke test, and the arm64 builds |
-| Push to `main`, weekly (Monday 06:00 JST) | `codeql.yml` | CodeQL code scanning of Go, JavaScript / TypeScript, and GitHub Actions, which follows untrusted values to SQL, HTML, paths, redirects, and the like; the results go to the Security tab. An addition to the main and nightly layers of ADR-0047: it never runs on pull requests or merge groups and is not part of `check` |
+| Daily (06:00 JST) | `codeql.yml` | CodeQL code scanning of Go, JavaScript / TypeScript, and GitHub Actions, which follows untrusted values to SQL, HTML, paths, redirects, and the like; the results go to the Security tab. One of the slow suites of ADR-0079: it never runs on pull requests, merge groups, or pushes to `main`, and is not part of `check` |
 
 `ctx-<context>.yml`, `nightly.yml`, `federation-live.yml`, and `codeql.yml` also run by hand (`gh workflow run <file> --ref <branch>`).
 
@@ -183,8 +183,7 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 
 - Failures of the `check` gate, the Go tests, or the merge queue are fixed at once. The merge queue keeps them off
   `main` by design; when a build or a test on `main` still breaks, fix it before starting more issues.
-- The web E2E runs on pushes to `main` ([ADR-0047](../adr/0047-ci-protection-layers.md)) and nightly, and does not
-  pause the queue. Collect its failures on `main` as they appear.
+- The web E2E runs nightly ([ADR-0079](../adr/0079-ci-single-gate-merge-queue.md)), and does not pause the queue. Collect its failures on `main` as they appear.
 - Once the milestone's implementation issues are done, run the full matrix on `main`
   (`gh workflow run web-e2e.yml -R best-friends/my --ref main -f matrix=full`), group the collected failures by cause,
   file one issue per cause, and fix them together.

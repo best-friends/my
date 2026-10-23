@@ -21,7 +21,7 @@ scripts/task.sh check
 
 - Go ツール（go-licenses, sqlc, oapi-codegen）は `tools/go.mod` の `tool` ディレクティブでバージョン固定しています。
 - 依存関係の既知の脆弱性は GitHub の Dependabot Alerts で検知し、版更新の PR は Dependabot が作ります（`.github/dependabot.yml`、ADR-0046）。
-- Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `scripts/task.sh check` には含めず、`scripts/task.sh docker:smoke` で実行します（CI では Docker の構成・`cmd/`・`internal/platform/` を変える PR、ドキュメント以外を変えた main への push、nightly で実行。linux/arm64 のイメージのビルドは Docker の構成を変える PR と nightly）。
+- Docker Compose 構成のスモークテスト（イメージのビルド、スキーマ適用、管理者作成、WebFinger・Actor・NodeInfo の確認）は Docker が必要なため `scripts/task.sh check` には含めず、`scripts/task.sh docker:smoke` で実行します（CI では Docker の構成・`cmd/`・`internal/platform/` を変える PR と nightly で実行。linux/arm64 のイメージのビルドは Docker の構成を変える PR と nightly）。
 - Mastodon・GoToSocial・Misskey とのライブの相互運用テストは `scripts/task.sh check` に含めず、`scripts/task.sh docker:federation-live` で実行します（CI では nightly。手順は [deploy/docker/federation-live/README.md](deploy/docker/federation-live/README.md)）。
 - 依存ライブラリのライセンスは AGPL-3.0 と両立するもの（`Taskfile.yml` の `GO_ALLOWED_LICENSES`。`tools/i18n` と `app/` の npm パッケージも同じ一覧で検査）に限ります。
   増やす場合は PR で理由を説明してください。
@@ -46,9 +46,9 @@ CI（`.github/workflows/`）は、どこで何を検査するかを次のよう�
 | --- | --- | --- |
 | PR | `ci.yml` | 変更したコンテキストとその依存先の `ctx-<context>.yml`（`scripts/task.sh check` と同じ検査。Go のテストは pgmem の上で動く）。`app/ui` を変えたら `@my/ui` のストーリーテスト（`ui-test.yml`）、Docker の構成を変えたら linux/arm64 のイメージのビルド、Docker の構成・`cmd/`・`internal/platform/` を変えたら Docker Compose のスモークテストも回す。必須チェック `check` が結果を集める |
 | Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で、変更したコンテキストの検査をもう一度回す。ファイルごとに決まる検査（markdownlint・Go と npm の依存ライセンス・shellcheck・CSS の `100vh`・デザイントークン・Playwright のイメージの版）と、ストーリーテスト・スモークテスト・arm64 のビルドは飛ばす。`check` が通ればキューがマージする |
-| `main` への push | `main.yml` | Web の E2E（幅 × ロケールの部分集合を 4 シャード）、ドキュメント以外を変えたらスモークテスト、`app/ui` を変えたらストーリーテスト、DB のアダプタ・クエリ・スキーマなどを変えたら本物の PostgreSQL でのテスト（`postgres-contract.yml`）。PR と Merge Queue が使う Go と Bun のキャッシュもここで作る。`scripts/task.sh check` のコンテキストは回し直さない |
+| `main` への push | `main.yml` | 検査はせず、PR と Merge Queue が復元するキャッシュだけを作る（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。Go のキャッシュ（モジュール・ビルド・golangci-lint）は、Go の版・`go.sum`・`tools/go.sum`・日付をキーに空から作り直し、Bun のキャッシュは lockfile をキーにする。どちらもそのキーのキャッシュがまだないときだけ作る |
 | nightly（03:00 JST） | `nightly.yml` | Web の E2E の全マトリクス（8 シャード）、ライブの相互運用テスト（`federation-live.yml`）、本物の PostgreSQL でのテスト、スモークテストと linux/arm64 のイメージのビルド |
-| `main` への push・週 1 回（月曜 06:00 JST） | `codeql.yml` | CodeQL のコードスキャン（Go・JavaScript / TypeScript・GitHub Actions）。外から来た値が SQL・HTML・パス・リダイレクト先などに届く流れを追い、結果は Security タブに出る。ADR-0047 の main と nightly の層に足したもので、PR と Merge Queue では回さず、`check` にも入らない |
+| 毎日（06:00 JST） | `codeql.yml` | CodeQL のコードスキャン（Go・JavaScript / TypeScript・GitHub Actions）。外から来た値が SQL・HTML・パス・リダイレクト先などに届く流れを追い、結果は Security タブに出る。遅い検査の 1 つで（ADR-0079）、PR・Merge Queue・`main` への push では回さず、`check` にも入らない |
 
 - PR では Web の E2E は自動では回りません。Web クライアントに触れる PR は、手元で `scripts/task.sh web:e2e` を回すか、PR のブランチに対して
   `gh workflow run web-e2e.yml -R best-friends/my --ref <branch>`（全マトリクスは `-f matrix=full` を足す。Actions タブからも実行できる）で回します。
@@ -136,7 +136,7 @@ scripts/task.sh go:sqlc-check  # 生成物が最新でなければ失敗（check
 - PostgreSQL のテストは `pkg/testkit/pgtest` でサーバーを得ます（[ADR-0041](docs/adr/0041-postgres-tests-on-pgmem.md)）。
   既定では、テストのプロセスの中で pgmem（メモリ上で動く PostgreSQL）を起動するので、Docker は要りません。
   テストのバイナリごとにサーバーを 1 つ起動し、テストごとにスキーマを当てたテンプレートのデータベースを複製します。
-- 本物の PostgreSQL で流すときは、次のどちらかを使います。CI はそれらのテストが依存するパスを変えた `main` への push と nightly で `scripts/task.sh go:test-postgres` を流します。
+- 本物の PostgreSQL で流すときは、次のどちらかを使います。CI は nightly で `scripts/task.sh go:test-postgres` を流します。
   - `scripts/task.sh go:test-postgres`: `TEST_POSTGRES=container` で testcontainers-go のコンテナ（`TEST_POSTGRES_IMAGE`、既定は `postgres:18-alpine`）を起動します。
     Docker がないと、`TEST_POSTGRES_REQUIRED=1` なので失敗します。
   - `TEST_POSTGRES_URL=postgres://...`（DB を作成できるユーザー）: 既存のサーバーを使います
@@ -144,13 +144,13 @@ scripts/task.sh go:sqlc-check  # 生成物が最新でなければ失敗（check
   `valkey/valkey` のコンテナ（`TEST_VALKEY_IMAGE` で変更可）を起動し、なければ飛ばします。`TEST_VALKEY_URL=valkey://...` は既存のサーバーを使います。
   CI の `go:test` は `TEST_VALKEY_REQUIRED=1` で流すので、Docker がないと失敗します。
 - Amazon SNS / SQS のアダプタ（`stream/sns`）のテストは、`pkg/testkit/awstest` のメモリの偽物で流します。AWS のエミュレータ
-  [Floci](https://github.com/floci-io/floci) でも流すときは、次のどちらかを使います。CI はそれらのテストが依存するパスを変えた `main` への push と nightly で `scripts/task.sh go:test-stream` を流します。
+  [Floci](https://github.com/floci-io/floci) でも流すときは、次のどちらかを使います。CI は nightly で `scripts/task.sh go:test-stream` を流します。
   - `scripts/task.sh go:test-stream`: `TEST_AWS=container` で testcontainers-go のコンテナ（`TEST_AWS_IMAGE`、既定は `floci/floci:2.1.0`）を起動します。
     Docker がないと、`TEST_AWS_REQUIRED=1` なので失敗します。
   - `TEST_AWS_ENDPOINT=http://localhost:4566`: 起動済みのエミュレータを使います
 - Google Cloud Pub/Sub のアダプタ（`stream/pubsub`）のテストは、既定ではプロセスの中の偽サーバー pstest で流すので、Docker は要りません。
   `scripts/task.sh go:test-stream`（`TEST_STREAM=container`）は Pub/Sub エミュレータのコンテナ（`TEST_PUBSUB_IMAGE` で変更可）を起動して同じコントラクトを流し、
-  Docker がないと `TEST_PUBSUB_REQUIRED=1` なので失敗します。CI はそれが依存するパスを変えた `main` への push と nightly で流します。
+  Docker がないと `TEST_PUBSUB_REQUIRED=1` なので失敗します。CI は nightly で流します。
 
 ## 設計判断
 

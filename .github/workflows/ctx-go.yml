@@ -32,22 +32,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
-      # setup-go's own cache is keyed on go.sum alone and never refreshed. This one is saved by main.yml on the
-      # pushes to main that touch Go and restored here, so the builds of unchanged packages stay cached.
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-lint-${{ runner.os }}-
+      # Restores the Go cache that main.yml builds, so the builds of unchanged packages stay cached.
+      - uses: ./.github/actions/setup-go
       - name: Verify Go version matches .tool-versions
         run: |
           want="go$(awk '$1 == "golang" { print $2 }' .tool-versions)"
@@ -73,28 +59,14 @@ jobs:
 
   go-test:
     # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); postgres-contract.yml
-    # runs them on a real postgres container after the merge (main.yml) and nightly. The Valkey tests run on a container,
+    # runs them on a real postgres container nightly. The Valkey tests run on a container,
     # except the stream.Bus contracts: miniredis here, the container in stream-contract.yml. The Pub/Sub contracts run on
     # pstest here and on the emulator container in stream-contract.yml.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
-      # Saved by main.yml like the go job's, of the test builds.
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-test-${{ runner.os }}-
+      - uses: ./.github/actions/setup-go
       # The Valkey tests (pkg/testkit/valkeytest) start valkey/valkey on the runner's Docker; TEST_VALKEY_REQUIRED
       # makes a missing Docker fail the job instead of skipping them.
       - name: go:test

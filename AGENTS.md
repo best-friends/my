@@ -62,8 +62,9 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
    follow [workflow.md §9](docs/agents/workflow.md#9-parallel-batches) instead (no per-PR web E2E; web E2E failures on `main` are fixed together at the end of the milestone).
    Do not merge or queue the PR yourself: the orchestrator or the decider queues it with `gh pr merge --auto`, and the merge queue
    runs `check` again on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
-   queue drops it. Pushes to `main` and the nightly run the slower suites, and CodeQL code scanning (`codeql.yml`) runs on
-   pushes to `main` and weekly, never on PRs; the table of what runs where is in the workflow.
+   queue drops it. Pushes to `main` check nothing and only build the caches that PRs and the queue restore
+   ([ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)); the nightly runs the slower suites, and CodeQL code scanning
+   (`codeql.yml`) runs daily, never on PRs or pushes; the table of what runs where is in the workflow.
 5. If you need a decision that no Accepted ADR covers: small → state the assumption in the PR; large → draft a *Proposed* ADR
    (`scripts/task.sh docs:adr-new TITLE=... SLUG=...`), comment on the issue, add `agent:blocked`, and stop.
 
