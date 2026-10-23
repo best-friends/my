@@ -3,14 +3,17 @@ name: CI
 # The pull request and merge queue checks (ADR-0079). One workflow and one required status check, `check`, whose jobs
 # depend on the event:
 #
-# - pull_request: `preflight`, the checks a pull request's own files decide (scripts/task.sh ci:preflight), and the
-#   @my/ui story tests (ui-test.yml) when the ui context changes.
+# - pull_request: `preflight`, the checks a pull request's own files decide, and the @my/ui story tests (ui-test.yml)
+#   when the ui context changes.
 # - merge_group: the full check of the contexts the group changes (scripts/changed-contexts.sh): server-static,
 #   server-test, client-static, client-test (2 shards), repo, and docker, at most 7 jobs.
 # - pull_request labelled `ci:full`: both.
 #
-# Each job sets up its tools and runs one `scripts/task.sh ci:<job>`, the same task that runs locally. The workflow has
-# no path filter, so it always runs and `check` always reports. Pushes to main run main.yml instead.
+# Each job sets up its tools and generates what its checks read, then runs the checks as parallel steps (ADR-0083),
+# each named after the one task it runs (`scripts/task.sh go:vet`), so that each check keeps its own log and time.
+# Locally `scripts/task.sh check` runs the same tasks; scripts/ci-coverage.sh (docs:ci-coverage, in the repo job) fails
+# when a check of `check` runs in no step. The workflow has no path filter, so it always runs and `check` always
+# reports. Pushes to main run main.yml instead.
 
 on:
   # labeled / unlabeled rerun the checks when `ci:full` is added or removed, and the concurrency group cancels the
@@ -109,8 +112,29 @@ jobs:
       - uses: ./.github/actions/setup-bun
         with:
           node: "false"
-      - name: ci:preflight
-        run: scripts/task.sh ci:preflight
+      - name: Install the Bun packages
+        run: scripts/task.sh web:install i18n:install
+      - parallel:
+          - name: docs:lint
+            run: scripts/task.sh docs:lint
+          - name: shell:lint
+            run: scripts/task.sh shell:lint
+          - name: go:fmt-check
+            run: scripts/task.sh go:fmt-check
+          - name: go:licenses
+            run: scripts/task.sh go:licenses
+          - name: web:licenses
+            run: scripts/task.sh web:licenses
+          - name: i18n:licenses
+            run: scripts/task.sh i18n:licenses
+          - name: docker:dockerfile-check
+            run: scripts/task.sh docker:dockerfile-check
+          - name: web:playwright-image-check
+            run: scripts/task.sh web:playwright-image-check
+          - name: web:tokens
+            run: scripts/task.sh web:tokens
+          - name: web:lint-css
+            run: scripts/task.sh web:lint-css
 
   ui-test:
     # The @my/ui story tests (ADR-0027), on pull requests alone: a pull request that changes a screenshot fixes its
@@ -130,12 +154,42 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
       - uses: ./.github/actions/setup-go
-        with:
-          golangci-lint: "true"
-      # api:check bundles the spec with Redocly and i18n:lint checks the catalogs, both on Bun.
+        id: go
+      # The api checks bundle the spec with Redocly and i18n:lint checks the catalogs, both on Bun.
       - uses: ./.github/actions/setup-bun
-      - name: ci:server-static
-        run: scripts/task.sh ci:server-static
+      # Both db:check steps use Atlas, and the PostgreSQL one the container of db:up.
+      - name: Install Atlas and start PostgreSQL
+        run: scripts/task.sh db:atlas db:up
+      # More than 10 steps: the last ones, the short ones, start as the first ones finish.
+      - parallel:
+          # Its cache is the one setup-go restores; the action adds the issues to the pull request as annotations.
+          - name: go:lint
+            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+            with:
+              version: v${{ steps.go.outputs.golangci-lint }}
+              skip-cache: true
+          - name: go:build-tags
+            run: scripts/task.sh go:build-tags
+          - name: go:vet
+            run: scripts/task.sh go:vet
+          - name: go:build
+            run: scripts/task.sh go:build
+          - name: db:check (postgres)
+            run: scripts/task.sh db:check DB_DIALECT=postgres
+          - name: db:check (sqlite)
+            run: scripts/task.sh db:check DB_DIALECT=sqlite
+          - name: go:sqlc-check
+            run: scripts/task.sh go:sqlc-check
+          - name: api:generate-check
+            run: scripts/task.sh api:generate-check
+          - name: api:lint
+            run: scripts/task.sh api:lint
+          - name: i18n:lint
+            run: scripts/task.sh i18n:lint
+          - name: go:mod-check
+            run: scripts/task.sh go:mod-check
+          - name: api:spec-check
+            run: scripts/task.sh api:spec-check
 
   server-test:
     # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); the slow suite runs them
@@ -148,8 +202,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
       - uses: ./.github/actions/setup-go
-      - name: ci:server-test
-        run: scripts/task.sh ci:server-test
+      - name: go:test
+        run: scripts/task.sh go:test
         env:
           TEST_VALKEY_REQUIRED: "1"
 
@@ -161,8 +215,28 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
       - uses: ./.github/actions/setup-bun
-      - name: ci:client-static
-        run: scripts/task.sh ci:client-static
+      # The packages and the generated files every step reads, once: the steps' own generators then skip.
+      - name: Generate the client files
+        run: scripts/task.sh web:generate
+      # web:lint-rules copies its fixtures into app/web/src, so the steps that read app/web/src run after it.
+      - parallel:
+          - name: web:lint-rules
+            run: scripts/task.sh web:lint-rules
+          - name: ui:typecheck
+            run: scripts/task.sh ui:typecheck
+          - name: i18n:lint
+            run: scripts/task.sh i18n:lint
+          - name: i18n:typecheck
+            run: scripts/task.sh i18n:typecheck
+      - parallel:
+          - name: web:typecheck
+            run: scripts/task.sh web:typecheck
+          - name: web:oxlint
+            run: scripts/task.sh web:oxlint
+          - name: web:knip
+            run: scripts/task.sh web:knip
+          - name: web:dist
+            run: scripts/task.sh web:dist
 
   client-test:
     # Vitest of app/web in two shards, the longest job otherwise; the first shard also runs app/ui and tools/i18n.
@@ -178,11 +252,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
       - uses: ./.github/actions/setup-bun
-      - name: ci:client-test
-        run: scripts/task.sh ci:client-test SHARD=${{ matrix.shard }}
+      - name: Generate the client files
+        run: scripts/task.sh web:generate
+      - parallel:
+          - name: web:test
+            run: scripts/task.sh web:test SHARD=${{ matrix.shard }}
+          - name: ui:unit-test
+            if: matrix.shard == '1/2'
+            run: scripts/task.sh ui:unit-test
+          - name: i18n:test
+            if: matrix.shard == '1/2'
+            run: scripts/task.sh i18n:test
 
   repo:
-    # agentkit and its context map, which must cover every path, and the ADR numbers: any change can break them.
+    # agentkit and its context map, which must cover every path, the ADR numbers, and that every check of
+    # `scripts/task.sh check` runs in a job: any change can break them.
     needs: changes
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
@@ -190,10 +274,28 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
       - uses: ./.github/actions/setup-go
-        with:
-          golangci-lint: "true"
-      - name: ci:repo
-        run: scripts/task.sh ci:repo
+        id: go
+      - parallel:
+          - name: agentkit:lint
+            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+            with:
+              version: v${{ steps.go.outputs.golangci-lint }}
+              working-directory: tools/agentkit
+              skip-cache: true
+          - name: agentkit:test
+            run: scripts/task.sh agentkit:test
+          - name: agentkit:vet
+            run: scripts/task.sh agentkit:vet
+          - name: agentkit:map-check
+            run: scripts/task.sh agentkit:map-check
+          - name: agentkit:mod-check
+            run: scripts/task.sh agentkit:mod-check
+          - name: agentkit:deps-check
+            run: scripts/task.sh agentkit:deps-check
+          - name: docs:adr-numbers
+            run: scripts/task.sh docs:adr-numbers
+          - name: docs:ci-coverage
+            run: scripts/task.sh docs:ci-coverage
 
   docker:
     # The Docker Compose smoke test (linux/amd64), and on a change to the docker context the linux/arm64 image builds
@@ -211,8 +313,12 @@ jobs:
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
-      - name: ci:docker
-        run: scripts/task.sh ci:docker ARM64=${{ needs.changes.outputs.arm64 }}
+      - parallel:
+          - name: docker:smoke
+            run: scripts/task.sh docker:smoke
+          - name: docker:build-arm64
+            if: needs.changes.outputs.arm64 == 'true'
+            run: scripts/task.sh docker:build-arm64
 
   check:
     # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when

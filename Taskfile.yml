@@ -3,12 +3,13 @@
 # The task runner of the repository (ADR-0080). Run it with scripts/task.sh, never with a `task` on PATH;
 # `scripts/task.sh --list` lists the tasks. Each area keeps its tasks in tasks/<area>.yml under its own namespace:
 # a new area is a new file there and one line under `includes`. This file holds only the includes, the checks across
-# areas (check, check:changed), the generators (generate), and the CI jobs (ci:*, ADR-0079).
+# areas (check, check:changed), and the generators (generate). The CI jobs are workflow steps that each call one of the
+# area tasks (ADR-0083); scripts/ci-coverage.sh fails when a check of `check` runs in no step.
 #
 # Pass variables as arguments (`scripts/task.sh go:bin VERSION=v1.2.3`) or in the environment.
 version: "3"
 
-# Locally each line carries its task's name; in CI scripts/task.sh switches to grouped output of the failed tasks only.
+# Each line carries its task's name.
 output: prefixed
 
 vars:
@@ -77,72 +78,3 @@ tasks:
       - i18n:gen
       - web:tokens-gen
       - web:routes-gen
-
-  # --- CI jobs (ADR-0079): each job runs one of these, and the same task runs locally ------------------------------
-
-  ci:preflight:
-    desc: "CI preflight: the checks a pull request's own files decide (formatting, licenses, image versions, tokens)"
-    deps:
-      - docs:lint
-      - shell:lint
-      - go:fmt-check
-      - go:licenses
-      - web:licenses
-      - i18n:licenses
-      - docker:dockerfile-check
-      - web:playwright-image-check
-      - web:tokens
-      - web:lint-css
-
-  ci:server-static:
-    desc: "CI server-static: tidy, vet, golangci-lint, the builds, the generated code Go reads, the schema of both dialects"
-    deps:
-      - go:mod-check
-      - go:vet
-      - go:lint
-      - go:build
-      - go:build-tags
-      - go:sqlc-check
-      - api:check
-      - i18n:lint
-      - db:check-all
-
-  ci:server-test:
-    desc: "CI server-test: the Go tests (PostgreSQL on pgmem, ADR-0041)"
-    deps:
-      - go:test
-
-  ci:client-static:
-    desc: "CI client-static: tsc, Oxlint, knip, the Vite build, the i18n catalogs"
-    deps:
-      # web:static reads app/web/src, where web:lint-rules copies its fixtures, so it runs after the deps.
-      - web:lint-rules
-      - ui:typecheck
-      - i18n:lint
-      - i18n:typecheck
-    cmds:
-      - task: web:static
-
-  ci:client-test:
-    desc: "CI client-test: Vitest of app/web (SHARD=1/2 runs one of two shards), app/ui, and tools/i18n"
-    vars:
-      # The app/ui and tools/i18n tests are short: only an unsharded run or the first shard runs them.
-      TESTS: 'web:test{{if or (not .SHARD) (hasPrefix "1/" .SHARD)}} ui:unit-test i18n:test{{end}}'
-    deps:
-      - for: { var: TESTS }
-        task: "{{.ITEM}}"
-        vars: { SHARD: "{{.SHARD}}" }
-
-  ci:repo:
-    desc: "CI repo: agentkit and its context map, and the ADR numbers"
-    deps:
-      - agentkit:check
-      - docs:adr-numbers
-
-  ci:docker:
-    desc: "CI docker: the Dockerfile image versions and the Docker Compose smoke test (needs Docker); ARM64=true adds the arm64 images"
-    vars:
-      TASKS: 'docker:check docker:smoke{{if eq .ARM64 "true"}} docker:build-arm64{{end}}'
-    deps:
-      - for: { var: TASKS }
-        task: "{{.ITEM}}"

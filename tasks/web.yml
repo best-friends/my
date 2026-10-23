@@ -21,18 +21,23 @@ tasks:
     cmds:
       - task: check-after-lint-rules
 
+  # Without a desc, so `--list` leaves it out; not internal, so scripts/ci-coverage.sh can read it with --summary.
   check-after-lint-rules:
-    internal: true
     deps: [static, lint-css, licenses, tokens, test, playwright-image-check]
 
   static:
     desc: Run tsc, Oxlint, knip, and the Vite build in parallel (without web:lint-rules, which must not run beside them)
     deps: [typecheck, oxlint, knip, dist]
 
+  # It skips while app/node_modules exists and the manifests are unchanged, so that the tasks of several processes (the
+  # parallel steps of a CI job, ADR-0083) never install at once after the job's first install.
   install:
     desc: Install the pinned client workspace dependencies (app/bun.lock)
     run: once
     dir: app
+    sources: [bun.lock, bunfig.toml, package.json, "*/package.json"]
+    status:
+      - test -d node_modules
     cmds:
       - bun install --frozen-lockfile
 
@@ -98,7 +103,6 @@ tasks:
       - task: lint-after-lint-rules
 
   lint-after-lint-rules:
-    internal: true
     deps: [oxlint, knip, lint-css]
 
   oxlint:

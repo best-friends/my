@@ -7,13 +7,16 @@ Coding agents run the workflow steps through agentkit ([tools/agentkit/README.md
 
 ## How tasks run
 
-- `Taskfile.yml` holds the includes, `check`, `check:changed`, `generate`, and the CI jobs `ci:*`. Each area keeps its tasks in
+- `Taskfile.yml` holds the includes, `check`, `check:changed`, and `generate`. Each area keeps its tasks in
   `tasks/<area>.yml`, named `<area>:<task>` (`go:test`, `web:check`). A new area is a new file there and one line under `includes`.
 - The `deps` of a task run in parallel, also inside a context (`go:vet`, `go:lint`, and `go:test` at once). A failed task does not stop
   the others, so one run shows every failure; the exit code is the failed command's own.
 - Locally `scripts/task.sh` limits the parallel tasks to half the CPUs (`TASK_CONCURRENCY=N` overrides it), since several agents
-  check on one machine, and prefixes each line with its task's name. In CI (`CI` set) the concurrency is unlimited and the output
-  is grouped by task, showing only the tasks that failed.
+  check on one machine; in CI (`CI` set) the concurrency is unlimited. Each line carries its task's name.
+- The CI jobs are not tasks ([ADR-0083](../adr/0083-ci-steps-not-tasks.md)): each job of `.github/workflows/ci.yml` sets up its tools,
+  generates what its checks read, and runs the checks as parallel workflow steps, each named after the one area task it runs
+  (`scripts/task.sh go:vet`; golangci-lint runs through golangci-lint-action, in the steps `go:lint` and `agentkit:lint`). To rerun a
+  failed step locally, run the task it names. `docs:ci-coverage` fails when a check of `check` runs in no step.
 - Generators declare their inputs and outputs (`sources` / `generates`) and skip when the checksums of their inputs have not changed
   since their last run (kept in `.task/`). `--force` runs a task anyway.
 - Variables are arguments (`scripts/task.sh go:bin VERSION=v1.2.3`) or environment variables.
@@ -28,13 +31,12 @@ Coding agents run the workflow steps through agentkit ([tools/agentkit/README.md
 | `check` [`CHECKS="go web"`] | Every offline check, one `<context>:check` per context, the contexts and the checks inside each in parallel: `docs:check`, `go:check`, `i18n:check`, `api:check`, `ui:check`, `web:check`, `docker:check`, `agentkit:check` |
 | `check:changed` [`BASE=origin/main`] | `check` of only the contexts changed since the merge base with `BASE` (working tree and untracked files included) and of their dependents (`scripts/changed-contexts.sh`); shared configuration (`Taskfile.yml`, `tasks/`, `.tool-versions`, workflows, lockfiles, `api/`, `locales/`, `tools/i18n/`) or an unknown path selects every context. It names `shell:check` and `db:check-all` when the shell scripts or the schema changed. CI skips the jobs of the other contexts the same way |
 | `generate` | Every generator whose inputs changed since its last run: `api:generate`, `go:sqlc`, `go:config-docs`, `i18n:gen`, `web:tokens-gen`, `web:routes-gen`. The generated files Go reads are committed; the ones only the TypeScript clients read are not, and the tasks that read them generate them first ([ADR-0081](../adr/0081-generated-files-policy.md)). Run it once after a clone for an editor's type checks |
-| `ci:preflight` / `ci:server-static` / `ci:server-test` / `ci:client-static` / `ci:client-test` [`SHARD=1/2`] / `ci:repo` / `ci:docker` | The CI jobs of [ADR-0079](../adr/0079-ci-single-gate-merge-queue.md), each a set of the area tasks below in parallel: the checks a pull request's own files decide (markdownlint, shellcheck, gofmt, licenses, image versions, tokens, no `100vh`) / tidy, vet, golangci-lint, the builds, sqlc and the client API code, the i18n catalogs, `db:check-all` / `go:test` / tsc, Oxlint, knip, the Vite build, the i18n catalogs / Vitest of `app/web` (`SHARD` runs one shard; the first or an unsharded run also runs `app/ui` and `tools/i18n`) / agentkit and the ADR numbers / the Dockerfile check and the Docker smoke test (`ARM64=true` also builds the linux/arm64 images). `.github/workflows/ci.yml` runs `ci:preflight` on pull requests and the others in the merge queue or on a pull request labelled `ci:full` |
 
 ## Areas
 
 | Task | Purpose |
 | --- | --- |
-| `docs:check` | `docs:lint` (markdownlint on all Markdown files) and `docs:adr-numbers` (no two files in `docs/adr` share a number) |
+| `docs:check` | `docs:lint` (markdownlint on all Markdown files), `docs:adr-numbers` (no two files in `docs/adr` share a number), and `docs:ci-coverage` (every check that `check` reaches runs in a step of `.github/workflows/`, or is listed with a reason in `scripts/ci-coverage.sh`) |
 | `docs:adr-new TITLE="..." [SLUG=...]` | Create a new Proposed ADR (pass `SLUG` when the title is not ASCII), numbered one past the largest ADR number in the working tree and in the open pull requests (the working tree only, with a warning, when `gh` is unavailable) |
 | `shell:check` / `shell:lint` | shellcheck on `scripts/*.sh` |
 | `agentkit:build` / `agentkit:check` | Build `bin/agentkit`, the context and workflow tools for coding agents ([tools/agentkit/README.md](../../tools/agentkit/README.md); `scripts/agentkit.sh` builds it on demand) / check `tools/agentkit` (tidy, vet, lint, tests, dependencies within `go.sum`) and that `tools/agentkit/context-map.yaml` covers every path (`agentkit:map-check`) |

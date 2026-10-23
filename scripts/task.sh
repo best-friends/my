@@ -8,7 +8,7 @@
 #
 # The exit code is the failed command's own (--exit-code), not go-task's 201. Locally, TASK_CONCURRENCY defaults to
 # half the CPUs, since several agents run checks on one machine; set it to override. In CI (CI set) the concurrency
-# is unlimited and the output is grouped by task, showing only the tasks that failed.
+# is unlimited: each workflow step runs one task (ADR-0083).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,14 +20,11 @@ if [ ! -x "$bin" ] || [ "$(cat "$bin.sum" 2>/dev/null)" != "$sum" ]; then
   printf '%s\n' "$sum" > "$bin.sum"
 fi
 
-flags=(--exit-code --dir "$root")
-if [ -n "${CI:-}" ]; then
-  flags+=(--output group --output-group-error-only)
-elif [ -z "${TASK_CONCURRENCY:-}" ]; then
+if [ -z "${CI:-}" ] && [ -z "${TASK_CONCURRENCY:-}" ]; then
   cpus="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
   TASK_CONCURRENCY=$((cpus / 2))
   [ "$TASK_CONCURRENCY" -ge 1 ] || TASK_CONCURRENCY=1
   export TASK_CONCURRENCY
 fi
 
-exec "$bin" "${flags[@]}" "$@"
+exec "$bin" --exit-code --dir "$root" "$@"

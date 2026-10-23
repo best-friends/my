@@ -47,12 +47,13 @@ TypeScript だけが読む生成物（`app/web/src/routeTree.gen.ts`・`app/web/
 ## CI
 
 CI（`.github/workflows/`）は、どこで何を検査するかを次のように分けています（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。
-`ci.yml` の各ジョブはツールを準備して `scripts/task.sh ci:<job>` を 1 つ呼ぶだけなので、同じ検査を手元でも回せます。
+`ci.yml` の各ジョブは、ツールを準備したあと、検査を並列のステップで回します（[ADR-0083](docs/adr/0083-ci-steps-not-tasks.md)）。各ステップは検査の名前を持ち、タスクを 1 つ呼ぶ（`scripts/task.sh go:vet`）ので、Actions の画面で検査ごとのログと所要時間が見え、落ちた検査は手元でも同じタスクで回せます。
+手元の `scripts/task.sh check` と同じ検査が CI のどこかのステップで回ることは、`scripts/task.sh docs:ci-coverage` が確かめます。
 
 | いつ | ワークフロー | 回すもの |
 | --- | --- | --- |
-| PR | `ci.yml` | `preflight`（`ci:preflight`）。その PR のファイルや lockfile だけで結果が決まる検査で、markdownlint・shellcheck・gofmt・Go と npm の依存ライセンス・Dockerfile と `.tool-versions` の版・Playwright のイメージの版・デザイントークン・CSS の `100vh`。ui の文脈を変えたら `@my/ui` のストーリーテスト（`ui-test.yml`）も回す。必須チェック `check` が結果を集める。ラベル `ci:full` を付けた PR では Merge Queue と同じジョブも回す（ラベルの付け外しで回し直す） |
-| Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で本検査を回す。変えた文脈（`scripts/changed-contexts.sh`）に応じて、go・schema・api・i18n なら `server-static`（tidy・vet・golangci-lint・ビルド・Go が読む生成物・両方言のスキーマ）と `server-test`（Go のテスト。PostgreSQL は pgmem）、ui・web・api・i18n なら `client-static`（tsc・Oxlint・knip・Vite のビルド・i18n のカタログ）と `client-test`（Vitest を 2 シャード）、常に `repo`（agentkit・文脈の地図・ADR の番号）、Docker の構成・`cmd/`・`internal/platform/` なら `docker`（Docker Compose のスモークテスト。Docker の構成なら linux/arm64 のイメージのビルドも）。最大 7 ジョブで、スキップしたジョブは成功として数える。`check` が通ればキューがマージする |
+| PR | `ci.yml` | `preflight`。その PR のファイルや lockfile だけで結果が決まる検査で、markdownlint・shellcheck・gofmt・Go と npm の依存ライセンス・Dockerfile と `.tool-versions` の版・Playwright のイメージの版・デザイントークン・CSS の `100vh`。ui の文脈を変えたら `@my/ui` のストーリーテスト（`ui-test.yml`）も回す。必須チェック `check` が結果を集める。ラベル `ci:full` を付けた PR では Merge Queue と同じジョブも回す（ラベルの付け外しで回し直す） |
+| Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で本検査を回す。変えた文脈（`scripts/changed-contexts.sh`）に応じて、go・schema・api・i18n なら `server-static`（tidy・vet・golangci-lint・ビルド・Go が読む生成物・両方言のスキーマ）と `server-test`（Go のテスト。PostgreSQL は pgmem）、ui・web・api・i18n なら `client-static`（tsc・Oxlint・knip・Vite のビルド・i18n のカタログ）と `client-test`（Vitest を 2 シャード）、常に `repo`（agentkit・文脈の地図・ADR の番号・CI が `check` の検査をすべて回すこと）、Docker の構成・`cmd/`・`internal/platform/` なら `docker`（Docker Compose のスモークテスト。Docker の構成なら linux/arm64 のイメージのビルドも）。最大 7 ジョブで、スキップしたジョブは成功として数える。`check` が通ればキューがマージする |
 | `main` への push | `main.yml` | 検査はせず、PR と Merge Queue が復元するキャッシュだけを作る（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。Go のキャッシュ（モジュール・ビルド・golangci-lint）は、Go の版・`go.sum`・`tools/go.sum`・日付をキーに空から作り直し、Bun のキャッシュは lockfile をキーにする。どちらもそのキーのキャッシュがまだないときだけ作る |
 | リリースの関門・nightly・手動 | `slow-suite.yml` | 遅い検査（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。Web の E2E の全マトリクス（8 シャード）、ライブの相互運用テスト（`federation-live.yml`）、本物の PostgreSQL でのテスト、`stream.Bus` の契約のブローカーのコンテナでのテスト、スモークテストと linux/arm64 のイメージのビルド、CodeQL のコードスキャン（`codeql.yml`。結果は Security タブに出る）。PR と Merge Queue では回さず、`check` にも入らない |
 | リリース（手動） | `release.yml` | 指定したコミットで遅い検査を回し、通ったときだけタグと GitHub Release の下書きを作る |
