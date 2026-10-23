@@ -1,6 +1,6 @@
 # ADR-0009: 国際化（i18n）と地域化（l10n）
 
-- Status: Accepted（生成物をコミットする範囲を ADR-0081（Go が読む生成物だけをコミットする） が置き換える）
+- Status: Accepted（生成物をコミットする範囲を ADR-0081（Go が読む生成物だけをコミットする） が置き換える。絵文字の符号位置のフォントを ADR-0095（絵文字を Noto Color Emoji で描く）が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #5
