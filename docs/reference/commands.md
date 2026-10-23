@@ -61,8 +61,8 @@ Coding agents run the workflow steps through agentkit ([tools/agentkit/README.md
 | `db:atlas` | Install the pinned Atlas Community Edition into `bin/atlas` |
 | `docker:check` | `docker:dockerfile-check`: the Dockerfile's Go, Node.js, and Bun images match `.tool-versions` |
 | `docker:build` [`VERSION=...`] | Build the server image `my:<version>` (`Dockerfile` target `app`; target `schema` is the Atlas image) |
-| `docker:smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker`: merge groups that touch the docker context, `cmd/`, or `internal/platform/`, and the slow suite) |
-| `docker:build-arm64` | Build both images (targets `schema` and `app`) for linux/arm64; needs an arm64 host or QEMU (CI job `docker`: merge groups that touch the docker context, and the slow suite) |
+| `docker:smoke` | Build and start `deploy/docker/compose.yaml`, create an admin, check WebFinger / Actor / NodeInfo, tear down (CI job `docker-smoke`: pull requests that touch the docker context; and the slow suite) |
+| `docker:build-arm64` | Build both images (targets `schema` and `app`) for linux/arm64; needs an arm64 host or QEMU (CI: the slow suite only) |
 | `docker:federation-live` [`FEDERATION_LIVE_FLAGS=...`] | Live interoperability scenarios against Mastodon, GoToSocial, and Misskey in `deploy/docker/federation-live` (private CA, container DNS); logs and captured activities go to `.tmp/federation-live/out`. Not part of `check` (CI job `federation-live` in the slow suite) |
 | `i18n:gen` | Regenerate pseudo-locales, Go / TS typed accessors, and parity fixtures from `locales/` (commit the files Go reads: the `server` pseudo-locales, `messages_gen.go`, `golden.json`) |
 | `i18n:gen-ts` | Generate the files only the TypeScript clients read and the repository does not commit: the `client` pseudo-locales and `tools/i18n/src/runtime/messages.gen.ts`. The tasks that read them run it first |
