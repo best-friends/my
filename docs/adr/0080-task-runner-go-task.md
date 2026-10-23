@@ -50,6 +50,7 @@ go-task は MIT ライセンスの Go 製の単一バイナリで、最新版は
 
 - `deps` は既定で並列に動く。`--concurrency`（`-C`）で同時の数を絞れる。`--parallel` で、コマンドラインに並べたタスクも並列に回せる。
 - `sources` と `generates` で入力と出力を宣言でき、既定の判断はチェックサム（`method: checksum`）で行う。指紋は `.task/` に置く（`.gitignore` に入れる）。
+  このリポジトリで測ると、Go の 1,492 ファイル（`**/*.go`）で 0.26〜0.38 秒、`app/` の TS と CSS の 907 ファイルで 0.11 秒だった（go-task 3.54.0、2026-10-23）。
 - 出力を `output: group` でコマンドごとにまとめられる。`error_only: true` にすると、失敗したコマンドの出力だけを出せる。
 - `includes` で Taskfile を分け、名前空間を付けられる。
 
@@ -70,10 +71,16 @@ tasks/
 - `task generate` は、すべての生成（[ADR-0081](0081-generated-files-policy.md)）を回す。入力が変わっていない生成は飛ぶので、
   検査とビルドのタスクは、毎回 `generate` の該当のタスクを `deps` に持てる。衝突のあとに全部を作り直す手順（agentkit の `regen`）は要らなくなる。
 - CI のジョブ（ADR-0079）は `task ci:<job>` を 1 つ呼ぶ。`ci:*` はルートに置き、各領域のタスクを `deps` で並べるだけにする。
-- 同時の数: CI では制限しない（runner の 4 vCPU を使い切る）。手元では、`task check` の既定を CPU の数の半分にする（`TASK_CONCURRENCY` などの環境変数か Taskfile の変数で上書きする。要検証）。
+- 同時の数: CI では制限しない（runner の 4 vCPU を使い切る）。手元では、`scripts/task.sh` が `TASK_CONCURRENCY` を CPU の数の半分にして呼ぶ。
+  go-task は、設定ファイル（`.taskrc.yml` の `concurrency`）・環境変数 `TASK_CONCURRENCY`・`-C` の順に後のものを優先する
+  （[Configuration Reference](https://taskfile.dev/reference/config/)、2026-10-23 確認）。手元で `TASK_CONCURRENCY=1` にすると、2 秒のタスク 3 つが 2.1 秒から 6.1 秒になり、直列に戻ることを確かめた。
   1 台のマシンで 4〜5 個のエージェントが同時に検査を回すからである。
 - 出力: CI は `output: group` と `error_only: true` にし、落ちたタスクの出力だけを見せる。手元は `prefixed` にする。
+- 失敗: go-task は、タスクが失敗すると自分の終了コード（201）で終わる。CI と `scripts/task.sh` は `--exit-code`（`-x`）を付け、コマンドの終了コードをそのまま返す。
+  並列の `deps` は、1 つが落ちても残りを最後まで回す（既定。`--failfast` は付けない）。1 回の実行で落ちた検査をすべて見せるためである。
 - go-task の版は `tools/go.mod` の `tool` で固定し、`scripts/task.sh` が `bin/task` をビルドして呼ぶ（`scripts/agentkit.sh` と同じ形）。
+  この ADR と文書の `task <name>` は `scripts/task.sh <name>` を指す。スクリプトは PATH の `task` を使わない。
+  Taskwarrior のコマンドも `task` なので、PATH の `task` が go-task とは限らず、go-task でも版がずれうるからである。
   CI もこのスクリプトで導入する。GitHub の `go-task/setup-task` は使わない（版の固定が `tools/go.mod` と二重になり、手元では使えないから）。
 - `Makefile` は消す。v0 は互換の層を残さない（[ADR-0012](0012-v0-breaking-change-policy.md)）。文書の `make <target>` は、同じ PR で `task <name>` に書き換える。
 
@@ -109,5 +116,4 @@ tasks/
 
 ## Open Questions / 要検証
 
-- 手元の既定の同時の数を、環境変数で切り替えられる形（Taskfile の変数で `-C` を組むか、ラッパーの `scripts/task.sh` で付けるか）。
-- `sources` に大量のファイル（`app/**/*.ts` など）を宣言したときに、チェックサムの計算にかかる時間。
+- なし。

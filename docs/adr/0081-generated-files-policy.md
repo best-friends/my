@@ -17,7 +17,8 @@
 | 生成物 | 衝突の回数 | 入力 | 読む側 |
 | --- | --- | --- | --- |
 | `tools/i18n/src/runtime/messages.gen.ts` | 42 | `locales/` | TS |
-| `locales/en-XA/*.json`・`locales/ar-XB/*.json`（疑似ロケール） | 各 36 | `locales/en/` | TS、Go（開発と E2E だけ、`i18n.WithPseudoLocales`） |
+| `locales/{en-XA,ar-XB}/client.json`（`client` の疑似ロケール） | 各 36 | `locales/en/client.json` | TS |
+| `locales/{en-XA,ar-XB}/server.json`（`server` の疑似ロケール） | 各 3 | `locales/en/server.json` | Go（開発・E2E・テストで `i18n.WithPseudoLocales`）、TS |
 | `docs/adr/README.md`（ADR の索引） | 16 | `docs/adr/*.md` | 人 |
 | sqlc の生成物（`postgresgen`・`sqlitegen` など） | 各 7 | `schema/`・`queries/` | Go |
 | `app/web/src/routeTree.gen.ts` | 7 | `app/web/src/routes/` | TS |
@@ -42,7 +43,7 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
 ## Considered Options（選択肢）
 
 1. 今のまま。すべてコミットし、出力の形式を衝突しにくくする
-2. Go が読む生成物だけコミットし、TS だけが読む生成物・疑似ロケール・ADR の索引はコミットしない
+2. Go が読む生成物だけコミットし、TS だけが読む生成物（`client` の疑似ロケールを含む）・ADR の索引はコミットしない
 3. 生成物を一切コミットしない。Go の生成器を Go に移すか、`go build` の前に Bun の生成を必ず挟む
 
 ## Decision（決定）
@@ -66,17 +67,25 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
 | `app/web/src/lib/api/schema.gen.ts` | **コミットしない** | 同上 |
 | `app/web/src/routeTree.gen.ts` | **コミットしない** | 同上 |
 | `app/ui/src/themeTokens.gen.ts` | **コミットしない** | 同上 |
-| 疑似ロケール（`locales/en-XA`・`locales/ar-XB`） | **コミットしない** | 開発の起動・E2E・クライアントのビルドの前 |
+| `server` の疑似ロケール（`locales/{en-XA,ar-XB}/server.json`） | コミットする（Go が読む） | `task i18n:generate` |
+| `client` の疑似ロケール（`locales/{en-XA,ar-XB}/client.json`） | **コミットしない** | 開発の起動・E2E・クライアントのビルドの前 |
 | ADR の索引（`docs/adr/README.md` の表） | **なくす** | — |
 
 - コミットしない生成物は `.gitignore` に入れる。生成のタスクは `sources` と `generates` を宣言する（ADR-0080）。
   使う側のタスク（`web:typecheck`・`web:build`・`web:test`・`i18n:test` など）は、生成のタスクを `deps` に持つ。入力が変わっていなければ、生成は飛ぶ。
+- ルートの木（`routeTree.gen.ts`）は、Vite を通さず `@tanstack/router-generator`（MIT）の `Generator` と `getConfig` を直接呼んで作る。
+  `vite.config.ts` と同じ設定（`target: "react"`、`autoCodeSplitting: true`）で回すと、200 ms で、コミット済みのファイルとバイト単位で同じものができた
+  （1.167.40、2026-10-23）。今は `@tanstack/router-plugin` の推移的な依存なので、版を固定して直接の依存に足す。
 - エディタの型検査のために、`task generate` を一度回す手順を CONTRIBUTING.md に書く。開発の起動（`task dev`）も生成を `deps` に持つ。
 - コミットする生成物の鮮度は、Merge Queue の `server-static`（ADR-0079）で検査する。2 つの PR の入力を重ねると古くなりうるからである。
-- **疑似ロケール**: Go がこれを読むのは、開発と E2E で `i18n.WithPseudoLocales` を付けたときだけである。本番のビルドには要らない。
-  そのため、「Go が読む物」には入れずにコミットをやめる。疑似ロケールのファイルがないときに `WithPseudoLocales` を付けたら、生成の手順を示すエラーで起動を止める。
-  E2E と開発の起動のタスクは、生成を `deps` に持つ。疑似ロケールを使う Go のテストは、`testdata` の小さなカタログに移す。
-  こうして `go test ./...` を Bun なしで回せる状態を保つ。
+- **疑似ロケール**: Go が整形するのは `client` 以外の名前空間だけである（Go のコードに `client:` のキーの参照はなく、
+  `internal/i18n/testdata/cases.json` の 11 件もすべて `server`）。そこで、名前空間で分ける。
+  - `server` の疑似ロケールは、Go が読む生成物としてコミットを続ける。`internal/i18n`・`internal/interface/authpages`・`internal/platform` のテストが
+    `i18n.WithPseudoLocales` で読むので、`go test ./...` を Bun なしで回すために要る。衝突は 14 日で各 3 回と少ない。
+  - `client` の疑似ロケールはコミットしない。読むのは TS だけで、疑似ロケールの衝突（各 36 回）はすべてこちらで起きている。
+  - `locales.go` の `go:embed` は、Go が読む名前空間（`client` 以外）だけを埋め込む。`client` の疑似ロケールがあってもなくても、Go のビルドとテストは同じに動く。
+  - 疑似ロケールを Go で実行時に作る案は採らない。FormatJS の疑似ロケールの変換は、`@formatjs/cli-lib` のネイティブのバイナリ（`cli-native-linux-x64`）の中にあり、
+    Go で同じ結果を作るには移植と照合の仕組みが要るからである。
 - **ADR の索引**: README の表をなくし、運用の規則だけを残す。一覧は `scripts/agentkit.sh adr list`（番号・タイトル・Status。`--status Proposed` で絞る）で見る。
   GitHub では、ディレクトリの一覧とコード検索（`path:docs/adr "Status: Proposed"`）で見る。
 - **ADR の番号**: `scripts/adr-new.sh` は、main と開いている PR（`gh pr list` と `gh pr diff --name-only`）にある ADR の番号の最大に 1 を足して番号を選ぶ。
@@ -84,7 +93,7 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
 
 ### 置き換える決定
 
-- ADR-0009 の「生成物をコミットする」を、Go の型付きアクセサだけに狭める（TS のアクセサと疑似ロケールはコミットしない）。
+- ADR-0009 の「生成物をコミットする」を、Go が読む生成物（Go の型付きアクセサと `server` の疑似ロケール）だけに狭める（TS のアクセサと `client` の疑似ロケールはコミットしない）。
 - ADR-0059 の「生成物はコミットし、`make web-tokens` が古いと失敗する」を、Go の `theme_tokens.gen.go` だけに狭める。
 - ADR-0000 の「一覧（README.md）は `make adr-index` で再生成し、CI で差分を検査する」を、上の索引と番号の決め方に置き換える。
 - ADR-0066 は変えない（バンドルは Go が読むのでコミットを続ける）。
@@ -98,7 +107,7 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
 ## Consequences（影響）
 
 - 良い影響:
-  - 衝突の原因のうち、TS の生成物・疑似ロケール・ADR の索引による衝突（14 日で約 140 回）がなくなる。
+  - 衝突の原因のうち、TS の生成物・`client` の疑似ロケール・ADR の索引による衝突（14 日で約 140 回）がなくなる。
   - 古い生成物を検査する検査（`i18n` の TS 側・`web-routes-check`・トークンの TS 側・`adr-index-check`）が要らなくなる。
   - PR の差分から、生成物の大きな変更が消える。
 - 悪い影響・トレードオフ:
@@ -106,10 +115,10 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
   - API の TS の型やルートの木の変化は、PR の差分では見えなくなる。レビューは入力（`api/spec/`・`app/web/src/routes/`）で行う。
   - Go が読む生成物（sqlc・API・i18n の Go 側）の衝突は残る。これは ADR-0082 のファイルの分割で減らす。
   - README を見ても ADR の Status の一覧が分からない。
-  - 疑似ロケールを使う Go のテストを、`testdata` のカタログに書き直す手間がかかる。
 - 後続の作業（issue にする）:
-  - TS の生成物と疑似ロケールを `.gitignore` に入れ、生成のタスクと `deps` を整える（ADR-0080 の移行と一緒に行う）
-  - `i18n.WithPseudoLocales` のエラーと、疑似ロケールを使う Go のテストの書き直し
+  - TS の生成物と `client` の疑似ロケールを `.gitignore` に入れ、生成のタスクと `deps` を整える（ADR-0080 の移行と一緒に行う）
+  - `locales.go` の `go:embed` を `client` 以外の名前空間に絞る
+  - `@tanstack/router-generator` を `app/web` の devDependencies に足し、ルートの木を生成するタスクを作る
   - `docs/adr/README.md` の索引と `scripts/adr-index.sh` を消し、`agentkit adr list` と `scripts/adr-new.sh` の番号の選び方、番号の重複の検査を足す
   - AGENTS.md の「After adding/renaming an ADR, run `make adr-index`」と workflow.md §7・§9 の生成物の衝突の手順を書き直す
   - `app/web/vite.config.ts` のコメント（`routeTree.gen.ts` をコミットする理由）を書き直す
@@ -125,5 +134,4 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
 
 ## Open Questions / 要検証
 
-- TanStack Router のルートの木を、ビルドせずに生成する手段（`@tanstack/router-cli` の `tsr generate`、または `@tanstack/router-generator` を直接呼ぶ）。`tsc` の前に回すのに要る。
-- `internal/i18n` のテストのうち、`locales.FS` の疑似ロケールに依るものの範囲（`parity_test.go` と `golden.json`）。
+- なし。

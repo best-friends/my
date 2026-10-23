@@ -78,6 +78,7 @@
 ## Decision（決定）
 
 > 推奨案。決定者の回答（チャット、原文）: 本検査の場所は「MQ に一本化」、遅い検査は「リリースを作成しようとしたら回す、とかどうですか？任意に実行するのと定時で回すのも用意はしつつ」。
+> リリースの関門の範囲（タグと GitHub Release の下書きまでを決め、成果物は M5 に残す）は「そのままで構いません」（#1053）。
 
 **B・S3・J2 を推奨する。**
 
@@ -109,22 +110,28 @@ Merge Queue の `check`（本検査）は、変わった文脈（`scripts/change
 | `server-static` | `go mod tidy -diff`、`go vet`、golangci-lint（1 回）、`CGO_ENABLED=0` のビルド、ビルドタグの組み合わせ、Go が読む生成物の鮮度（ADR-0081）、`db-check`（両方言） | go・schema・api・i18n |
 | `server-test` | `go test ./...`（pgmem、ADR-0041） | go・schema・api・i18n |
 | `client-static` | 生成（ADR-0081）→ `tsc`・Oxlint・knip・`vite build`・i18n のカタログの検査 | ui・web・api・i18n |
-| `client-test` | Vitest（`app/web`・`app/ui`・`tools/i18n`） | ui・web・api・i18n |
+| `client-test`（2 シャード） | Vitest（`app/web`・`app/ui`・`tools/i18n`）。`app/web` は `vitest --shard=<i>/2` で 2 ジョブに分ける | ui・web・api・i18n |
 | `repo` | agentkit の検査と文脈の地図、ADR の番号の重複（ADR-0081） | 常に |
 | `docker` | Compose の smoke test（amd64）。Docker の文脈が変わったときは arm64 のイメージのビルドも | docker・`cmd/`・`internal/platform/` |
 
 - ジョブの中身は、ADR-0080 のタスク（`task ci:<ジョブ>`）1 つにする。ワークフローは、ツールの準備とそのタスクの呼び出しだけを書く。
   同じタスクを手元でも同じに回せる。
-- Merge Queue で同時に組むグループは最大 2、1 回にマージするのは最大 5 のまま（`.github/rulesets/protect-main.json`）。1 グループのジョブは最大 6 なので、
-  Merge Queue が同時 20 ジョブのうち 12 を超えて使うことはない。
+- `client-test` を初めから 2 つに分けるのは、今の `web-test` だけで 242 / 274 秒かかり、Merge Queue の最長のジョブになるからである。
+  Vitest 5.0.5 の `--shard <index>/<count>` で分ける（`vitest --help`、2026-10-23 確認）。
+- Merge Queue で同時に組むグループは最大 2、1 回にマージするのは最大 5 のまま（`.github/rulesets/protect-main.json`）。1 グループのジョブは最大 7 なので、
+  Merge Queue が同時 20 ジョブのうち 14 を超えて使うことはない。
 - PR の `check` を本検査にしたいとき（外の貢献者の PR を早めに確かめる、Merge Queue で落ちた原因を PR で調べる）は、
   PR に `ci:full` のラベルを付ける。そのときだけ、PR でも Merge Queue と同じジョブを回す。
 - 必須チェックは今までどおり `check` の 1 つにし、`pull_request` と `merge_group` で中身を変える。ワークフローにパスのフィルタは付けない（ADR-0047 の理由のまま）。
+  1 つの `check` の中身をイベントで変える形は、ADR-0047 の入力 `scope`（shellcheck などを PR だけで回す）ですでに動いている。
 
 ### main への push
 
 - 検査は回し直さない。main のコミットは、Merge Queue で検査したマージグループの head そのものである（ADR-0047 のまま）。
-- `main.yml` は、PR と Merge Queue が復元するキャッシュだけを作る。Go のキャッシュは、空の `GOCACHE` から作り直して保存する（前のキャッシュを復元して足さない）。
+- `main.yml` は、PR と Merge Queue が復元するキャッシュだけを作る。キャッシュを作れるのは main だけである。
+  実行は、そのブランチと既定のブランチで作られたキャッシュしか復元できない。マージグループは `gh-readonly-queue/main/...` という自分のブランチで動くので、
+  そこで保存したキャッシュはほかのグループや PR から使えない（[Dependency caching](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching)、2026-10-23 確認）。
+  Go のキャッシュは、空の `GOCACHE` から作り直して保存する（前のキャッシュを復元して足さない）。
   これでキャッシュの大きさを 1 回のビルドの分に保つ。キーは `go.sum`・`tools/go.sum`・Go の版・日付にする。保存するのは、そのキーのキャッシュがまだないときだけにする。
   Bun のキャッシュは lockfile をキーにする（今のまま）。
 - CodeQL は main への push では回さず、毎日の schedule・リリースの関門・手動で回す。
@@ -195,7 +202,4 @@ Merge Queue の `check`（本検査）は、変わった文脈（`scripts/change
 
 ## Open Questions / 要検証
 
-- `merge_group` の実行で保存したキャッシュは、main や他のグループから使えない（ref に閉じる）。そのため、キャッシュは main だけで作る前提にしている（要検証: GitHub の docs の cache の scope）。
-- 1 つの `check` の中身を `pull_request` と `merge_group` で変える形で、ルールセットと Merge Queue が期待どおりに動くこと。
-  ADR-0047 で同じ形をすでに使っている（`scope` の入力）ので、問題はないと見ている。
-- `server-test` と `client-test` が 5 分を超えるなら、パッケージやファイルで 2 つに分ける（Vitest の `--shard`、`go test` のパッケージのリスト）。
+- なし。

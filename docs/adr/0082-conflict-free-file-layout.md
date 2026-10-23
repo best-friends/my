@@ -61,15 +61,23 @@ workflow.md §9 は、同じ共有のファイルに触る issue を同時に走
 | `docs/architecture/web-client.md` | `docs/architecture/web-client/<NN>-<slug>.md`（今の節ごと。`14-admin.md` など） | `web-client/README.md` に節の一覧と、節をまたぐ原則（今の §1〜§7）を置く |
 | `docs/architecture/data-model.md` | `docs/architecture/data-model/<NN>-<slug>.md`（同上） | `data-model/README.md` |
 | `internal/platform/app.go` の `NewApp` | `internal/platform/setup_<module>.go` ごとに、モジュールの配線を `(a *App) setUp<Module>(...)` にまとめる | `NewApp` はモジュールの `setUp*` を依存の順に呼ぶだけにする |
-| `schema/<dialect>.sql` | `schema/<dialect>/<NN>-<module>.sql`（番号は外部キーの依存の順） | `task schema:*` が番号の順に連結して Atlas に渡す。Go の埋め込みも同じ順で連結する |
+| `schema/<dialect>.sql` | `schema/<dialect>/<NN>-<module>.sql`（番号は外部キーと索引の依存の順） | Atlas にはディレクトリ（`file://schema/<dialect>`）をそのまま渡す。Go の埋め込みは同じ名前の順に連結する |
 
+- カタログの分け方の実測: `en` の `client`（約 3,000 キー）をこの規則で分けると 70 ファイルになり、最大は `settings` の 352 キー、中央値は 30 キーだった。
+  14 日間の衝突でカタログの中の変わった行は、`admin/report`・`admin/account`・`admin/accounts`・`account_status`・`admin/appeal` に集まっていた。
+  そのため、`admin` は 2 つ目の区切りまで分ける。
+- Atlas Community Edition 1.3.0 は、`file://` にディレクトリを渡すと、中の SQL ファイルを名前の順に dev データベースで実行して desired state を作る。
+  今の `schema/sqlite.sql` と `schema/postgres.sql` を `CREATE TABLE` の区切りで 3 ファイルに分けて `schema inspect` で比べると、両方言とも 1 ファイルのときと同じ結果になった。
+  名前の順を逆にすると、PostgreSQL では後のファイルの表を参照する索引で失敗した（2026-10-23）。番号の順は、`db-check` でそのまま検査できる。
+- 翻訳のプラットフォームの候補（ADR-0009）は、どちらも分けたカタログを扱える。Weblate は Component discovery のアドオンが、
+  名前付きのグループ（`language`・`component`）を持つ正規表現でファイルを探し、コンポーネントを自動で足し引きする（[Add-ons](https://docs.weblate.org/en/latest/admin/addons.html)）。
+  Crowdin は `crowdin.yml` の `source` に `**` を、`translation` に `%locale%` を書ける（[Configuration file](https://support.crowdin.com/configuration-file/)）。いずれも 2026-10-23 確認。
 - 節の参照: agentkit の `show web-client§14.2` と `data-model§4.4` は、節の番号から分けたファイルを引くようにする。
   文書の中のリンク（`web-client.md#14-管理画面` など）は、移行の PR でスクリプトを使って新しいファイルとアンカーに書き換える。
 - `AGENTS.md`（12 回）と機能要件の表（`01-functional.md`、5 回）は分けない。規則や要件の追加は決定者の判断を伴い、並行して変わることが少ないからである。
 
 ### 覆す条件
 
-- 翻訳のプラットフォーム（M5、ADR-0009）が、分けたカタログを扱えないなら、カタログの分割をやめるか、翻訳のプラットフォームとの受け渡しで 1 ファイルに束ねる。
 - 分けた設計文書を読むのに、エージェントが読むファイルの数と手間がかえって増えるなら、節の大きさを見直す。
 
 ## Consequences（影響）
@@ -87,7 +95,7 @@ workflow.md §9 は、同じ共有のファイルに触る issue を同時に走
   - ロケールのカタログの分割と、`tools/i18n`・`locales.go`・`internal/i18n` のローダーの対応
   - `web-client.md` と `data-model.md` の分割、リンクの書き換え、agentkit の節の参照の対応、`context-map.yaml` の更新
   - `internal/platform` の配線の分割
-  - スキーマの分割と、`task schema:*`・Go の埋め込みの連結
+  - スキーマの分割と、`task schema:*` のディレクトリの指定・Go の埋め込みの連結
   - workflow.md §9 の「共有のファイル」の一覧を、分けた後の構成に合わせて書き直す
 
 ## Pros and Cons of the Options（詳細比較・任意）
@@ -98,7 +106,4 @@ workflow.md §9 は、同じ共有のファイルに触る issue を同時に走
 
 ## Open Questions / 要検証
 
-- 翻訳のプラットフォームの候補（ADR-0009、M5）が、ディレクトリに分けた FormatJS の JSON を扱えるか。
-- Atlas Community Edition が `file://` にディレクトリを受け取り、複数の SQL ファイルを desired state として読めるか（[Atlas の宣言的な適用](https://atlasgo.io/declarative/apply)には、ファイル 1 つの例しかない）。
-  読めなくても、タスクが連結したファイルを渡す形にすれば済む。
-- `admin` のカタログ（1,816 キー）を 2 つ目の区切りで分けたときの、ファイルの大きさの偏り。
+- なし。
