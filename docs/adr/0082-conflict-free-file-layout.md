@@ -1,6 +1,6 @@
 # ADR-0082: 並列の作業で衝突しないファイルの構成
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1052
@@ -28,6 +28,10 @@ workflow.md §9 は、同じ共有のファイルに触る issue を同時に走
 
 関係する要件は NFR-DEV-1・NFR-I18N（[ADR-0009](0009-internationalization.md) のカタログの形）。
 
+決定者の決定（チャット、原文）:
+
+> 全 ADR Accepted
+
 ## Decision Drivers（判断基準）
 
 1. 別の機能を作る 2 つの PR が、同じファイルの近い行を変えない
@@ -44,7 +48,7 @@ workflow.md §9 は、同じ共有のファイルに触る issue を同時に走
 
 ## Decision（決定）
 
-**選択肢 3 を推奨する。**
+**選択肢 3 を採る。**
 
 ### 規則
 

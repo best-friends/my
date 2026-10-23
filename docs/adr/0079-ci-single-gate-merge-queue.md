@@ -1,6 +1,6 @@
 # ADR-0079: CI の検査を Merge Queue に一本化する
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1052
@@ -45,6 +45,10 @@
 - 14 日間で PR のマージ 235 件に対し、ブランチに main をマージしたコミットが 138 件ある。衝突のたびに Merge Queue から外れ、
   PR と Merge Queue の CI が両方とも最初から回り直す（衝突の原因は ADR-0081・ADR-0082）。
 
+決定者の決定（チャット、原文）:
+
+> 全 ADR Accepted
+
 ## Decision Drivers（判断基準）
 
 1. main を壊さない。2 つの PR を重ねて初めて壊れるもの（コンパイル・型・テスト・生成物）は、マージの前に統合した状態で必ず止める
@@ -77,10 +81,10 @@
 
 ## Decision（決定）
 
-> 推奨案。決定者の回答（チャット、原文）: 本検査の場所は「MQ に一本化」、遅い検査は「リリースを作成しようとしたら回す、とかどうですか？任意に実行するのと定時で回すのも用意はしつつ」。
+> 決定者の回答（チャット、原文）: 本検査の場所は「MQ に一本化」、遅い検査は「リリースを作成しようとしたら回す、とかどうですか？任意に実行するのと定時で回すのも用意はしつつ」。
 > リリースの関門の範囲（タグと GitHub Release の下書きまでを決め、成果物は M5 に残す）は「そのままで構いません」（#1053）。
 
-**B・S3・J2 を推奨する。**
+**B・S3・J2 を採る。**
 
 ### 守るものと防ぐ場所
 
@@ -184,8 +188,6 @@ Merge Queue の `check`（本検査）は、変わった文脈（`scripts/change
   - `slow-suite.yml` と `release.yml` を作り、`nightly.yml` を `slow-suite.yml` の呼び出しにし、main が動いていない日は飛ばす
   - CodeQL の起動を schedule・リリース・手動にする
   - [workflow.md](../agents/workflow.md)・AGENTS.md・CONTRIBUTING.md・[docs/reference/commands.md](../reference/commands.md) の CI の説明を書き直す
-  - ADR-0047 を `Superseded by ADR-0079` にする。ADR-0040（main への push での E2E）・ADR-0041（コンテナの PostgreSQL の頻度）・
-    ADR-0050 §5（stream の契約の頻度）の状態の行に、置き換えた部分を書く（この ADR を Accepted にするときに同じ PR で行う）
 
 ## Pros and Cons of the Options（詳細比較・任意）
 

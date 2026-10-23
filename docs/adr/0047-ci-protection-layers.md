@@ -1,6 +1,6 @@
 # ADR-0047: CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける
 
-- Status: Accepted
+- Status: Superseded by ADR-0079（CI の検査を Merge Queue に一本化する）
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #553

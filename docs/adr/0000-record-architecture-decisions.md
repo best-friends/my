@@ -1,6 +1,6 @@
 # ADR-0000: 設計判断を ADR で記録する
 
-- Status: Accepted
+- Status: Accepted（ADR の一覧を README.md に生成して CI で検査する部分を ADR-0081（Go が読む生成物だけをコミットする） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: —

@@ -1,6 +1,6 @@
 # ADR-0050: リアルタイム更新のプロセス間 Pub/Sub
 
-- Status: Accepted
+- Status: Accepted（§5 のアダプタの契約テストを main への push で回す部分を ADR-0079（CI の検査を Merge Queue に一本化する） が置き換える）
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #196

@@ -1,6 +1,6 @@
 # ADR-0080: タスクの実行を Make から go-task に移す
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1052
@@ -23,6 +23,10 @@ NFR-DEV-1 は「`make check` 一発で lint・型検査・テスト・ドキュ�
 
 [ADR-0079](0079-ci-single-gate-merge-queue.md) は、CI のジョブをツールチェーンごとに数個にまとめ、ジョブの中を並列で埋める。そのためには、依存を表せて、並列に回せるタスクの実行器が要る。
 
+決定者の決定（チャット、原文）:
+
+> 全 ADR Accepted
+
 ## Decision Drivers（判断基準）
 
 1. 互いに依存しない検査を、手元でも CI でも既定で並列に回せる
@@ -41,9 +45,7 @@ NFR-DEV-1 は「`make check` 一発で lint・型検査・テスト・ドキュ�
 
 ## Decision（決定）
 
-> 推奨案。決定者の回答は Context のとおり。
-
-**選択肢 2（go-task）を推奨する。**
+**選択肢 2（go-task）を採る。**
 
 go-task は MIT ライセンスの Go 製の単一バイナリで、最新版は v3.54.0（2026-10-01）である（GitHub API で 2026-10-23 確認）。次の性質がこの ADR の判断基準に合う
 （[Dependencies](https://taskfile.dev/docs/guide/dependencies)・[Up-to-date checks](https://taskfile.dev/docs/guide/up-to-date)・[Output](https://taskfile.dev/docs/guide/output)、2026-10-23 確認）:

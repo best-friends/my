@@ -1,6 +1,6 @@
 # ADR-0081: Go が読む生成物だけをコミットする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1052
@@ -32,6 +32,10 @@ GitHub は、サーバーでのマージにカスタムのマージドライバ�
 決定者の回答（チャット、原文）: 生成物は「Go が読む物だけ残す」。
 ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go の CI は Bun を入れない）」は守る。
 
+決定者の決定（チャット、原文）:
+
+> 全 ADR Accepted
+
 ## Decision Drivers（判断基準）
 
 1. 並行の PR が、生成物だけで衝突しない
@@ -48,9 +52,7 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
 
 ## Decision（決定）
 
-> 推奨案。決定者の回答は Context のとおり。
-
-**選択肢 2 を推奨する。**
+**選択肢 2 を採る。**
 
 ### 生成物の扱い
 
@@ -122,7 +124,6 @@ ADR-0066 の判断基準「`go build` / `go test` が Bun なしで動く（Go �
   - `docs/adr/README.md` の索引と `scripts/adr-index.sh` を消し、`agentkit adr list` と `scripts/adr-new.sh` の番号の選び方、番号の重複の検査を足す
   - AGENTS.md の「After adding/renaming an ADR, run `make adr-index`」と workflow.md §7・§9 の生成物の衝突の手順を書き直す
   - `app/web/vite.config.ts` のコメント（`routeTree.gen.ts` をコミットする理由）を書き直す
-  - ADR-0000・ADR-0009・ADR-0059 の状態の行に、置き換えた部分を書く（この ADR を Accepted にするときに同じ PR で行う）
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
