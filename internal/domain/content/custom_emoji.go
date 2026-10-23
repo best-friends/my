@@ -199,25 +199,35 @@ func CheckCustomEmojiImage(f CustomEmojiImageFacts, maxBytes int64) error {
 func ScanShortcodes(texts ...string) []string {
 	var out []string
 	for _, t := range texts {
-		for i := 0; i < len(t); i++ {
-			if t[i] != ':' || i > 0 && blocksShortcode(t, i, true) {
-				continue
-			}
-			j := i + 1
-			for j < len(t) && shortcodeByte(t[j]) {
-				j++
-			}
-			if j >= len(t) || t[j] != ':' || j-i-1 < MinShortcodeLength {
-				continue
-			}
-			if j+1 < len(t) && blocksShortcode(t, j+1, false) {
-				continue
-			}
-			if code := t[i+1 : j]; !slices.Contains(out, code) {
+		for _, span := range shortcodeSpans(t) {
+			if code := t[span[0]+1 : span[1]-1]; !slices.Contains(out, code) {
 				out = append(out, code)
 			}
-			i = j // the closing colon cannot open another shortcode: it follows a letter
 		}
+	}
+	return out
+}
+
+// shortcodeSpans returns the byte ranges [start, end) of every :shortcode: in t, colons
+// included, in order, under the rules of ScanShortcodes.
+func shortcodeSpans(t string) [][2]int {
+	var out [][2]int
+	for i := 0; i < len(t); i++ {
+		if t[i] != ':' || i > 0 && blocksShortcode(t, i, true) {
+			continue
+		}
+		j := i + 1
+		for j < len(t) && shortcodeByte(t[j]) {
+			j++
+		}
+		if j >= len(t) || t[j] != ':' || j-i-1 < MinShortcodeLength {
+			continue
+		}
+		if j+1 < len(t) && blocksShortcode(t, j+1, false) {
+			continue
+		}
+		out = append(out, [2]int{i, j + 1})
+		i = j // the closing colon cannot open another shortcode: it follows a letter
 	}
 	return out
 }

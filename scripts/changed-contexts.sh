@@ -141,6 +141,13 @@ classify() {
       ;;
   esac
   case "$path" in
+    # The shared text token vectors, which the web client's lib/textTokens.ts test reads too (ADR-0092 §4).
+    pkg/testkit/fixtures/text/*)
+      select_contexts web
+      known=1
+      ;;
+  esac
+  case "$path" in
     internal/interface/clientapi/* | app/web/src/lib/api/* | scripts/generate.sh | scripts/api-spec-check.sh)
       select_contexts api
       known=1
