@@ -135,6 +135,12 @@ entries:
     docs: ["docs/architecture/data-model/04-tables/04-content.md#44-content", "docs/architecture/visibility.md"]
     notes:
       - "Visibility checks go through the single domain policy function; never re-implement them."
+  - name: text-tokens
+    paths: ["pkg/testkit/fixtures/text/**", "internal/app/content/text.go", "internal/domain/content/custom_emoji.go", "app/web/src/lib/textTokens.ts"]
+    docs: ["docs/adr/0092-composer-autocomplete-highlight.md#decision決定"]
+    checks: [go, web]
+    notes:
+      - "ParseText, ScanShortcodes and app/web/src/lib/textTokens.ts follow the same rules: change them together with the shared vectors pkg/testkit/fixtures/text/tokens.json, which the Go tests and Vitest both read."
   - name: module-graph
     paths: ["internal/domain/graph/**", "internal/app/graph/**"]
     docs: ["docs/architecture/data-model/04-tables/05-graph.md#45-graph"]
