@@ -216,7 +216,7 @@ func registrationApproval(t *testing.T, e *accountEnv) {
 		one.AccountID != bob.AccountID || one.Email != "bob@example.com" || one.State.State != identity.RegistrationPending {
 		t.Errorf("Registration(bob) = %+v, %v", one, err)
 	}
-	if _, err := r.Registration(ctx, "nobody"); !errors.Is(err, appidentity.ErrNotFound) {
+	if _, err := r.Registration(ctx, NamedID("nobody")); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("Registration(nobody) = %v, want ErrNotFound", err)
 	}
 	p := pending[0]
@@ -237,7 +237,7 @@ func registrationApproval(t *testing.T, e *accountEnv) {
 	if a := r.access(t, alice.User.ID); a.Registration != identity.RegistrationPending {
 		t.Errorf("access after invalid decisions = %+v; want pending", a)
 	}
-	d, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: identity.DecisionApproved, DecidedByUserID: "mod", Note: "welcome"})
+	d, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: identity.DecisionApproved, DecidedByUserID: NamedID("mod"), Note: "welcome"})
 	if err != nil || d.DecidedBy != identity.DecidedByModerator || d.ApplicationID != p.Application.ID {
 		t.Fatalf("approve = %+v, %v", d, err)
 	}
@@ -247,7 +247,7 @@ func registrationApproval(t *testing.T, e *accountEnv) {
 	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: bob.User.ID, Decision: identity.DecisionRejected}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: "nobody", Decision: identity.DecisionApproved}); !errors.Is(err, appidentity.ErrNotFound) {
+	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: NamedID("nobody"), Decision: identity.DecisionApproved}); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("deciding on an unknown user = %v, want ErrNotFound", err)
 	}
 	st, err := e.h.Identity.FindRegistrationState(ctx, alice.User.ID)
@@ -276,7 +276,7 @@ func registrationInvite(t *testing.T, e *accountEnv) {
 	if _, err := r.SignUp(ctx, in); !errors.Is(err, appidentity.ErrInvalidInvite) {
 		t.Errorf("SignUp with an unknown code = %v, want ErrInvalidInvite", err)
 	}
-	inv, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{CreatedByUserID: "admin", MaxUses: 1, ExpiresIn: time.Hour})
+	inv, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{CreatedByUserID: NamedID("admin"), MaxUses: 1, ExpiresIn: time.Hour})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -389,7 +389,7 @@ func registrationDecisionConcurrency(t *testing.T, e *accountEnv) {
 			decisions[i] = identity.DecisionRejected
 		}
 		wg.Go(func() {
-			_, errs[i] = r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: decisions[i], DecidedByUserID: fmt.Sprintf("mod%d", i)})
+			_, errs[i] = r.DecideRegistration(ctx, appidentity.DecideInput{UserID: alice.User.ID, Decision: decisions[i], DecidedByUserID: NamedID(fmt.Sprintf("mod%d", i))})
 		})
 	}
 	wg.Wait()
@@ -553,14 +553,14 @@ func registrationInvites(t *testing.T, e *accountEnv) {
 		t.Fatal(err)
 	}
 	e.clock.Advance(time.Second)
-	b, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{CreatedByUserID: "admin", ExpiresIn: 24 * time.Hour})
+	b, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{CreatedByUserID: NamedID("admin"), ExpiresIn: 24 * time.Hour})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if a.Code == b.Code {
 		t.Fatal("two invites got the same code")
 	}
-	if _, err := r.RevokeInvite(ctx, strings.ToLower(a.Code), "admin"); err != nil {
+	if _, err := r.RevokeInvite(ctx, strings.ToLower(a.Code), NamedID("admin")); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.RevokeInvite(ctx, a.Code, ""); err != nil {
@@ -574,7 +574,7 @@ func registrationInvites(t *testing.T, e *accountEnv) {
 		t.Fatalf("ListInvites = %+v, %v", list, err)
 	}
 	now := e.clock.Now()
-	if list[0].ID != b.ID || list[0].Revoked || !list[0].Usable(now) || list[0].CreatedByUserID != "admin" ||
+	if list[0].ID != b.ID || list[0].Revoked || !list[0].Usable(now) || list[0].CreatedByUserID != NamedID("admin") ||
 		list[0].ExpiresAt == nil || !list[0].ExpiresAt.Equal(b.CreatedAt.Add(24*time.Hour)) {
 		t.Errorf("list[0] = %+v; want b, usable", list[0])
 	}
@@ -595,11 +595,11 @@ func registrationInvites(t *testing.T, e *accountEnv) {
 	if err != nil || len(page) != 1 || page[0].ID != a.ID {
 		t.Errorf("ListInvites(before b) = %+v, %v; want a", page, err)
 	}
-	got, err := r.RevokeInviteByID(ctx, b.ID, "admin")
+	got, err := r.RevokeInviteByID(ctx, b.ID, NamedID("admin"))
 	if err != nil || got.ID != b.ID || !got.Revoked || got.Uses != 0 || got.Code != b.Code || got.State != appidentity.InviteRevoked {
 		t.Errorf("RevokeInviteByID(b) = %+v, %v; want b, revoked", got, err)
 	}
-	if _, err := r.RevokeInviteByID(ctx, "no-such-invite", "admin"); !errors.Is(err, appidentity.ErrNotFound) {
+	if _, err := r.RevokeInviteByID(ctx, NamedID("no-such-invite"), NamedID("admin")); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("RevokeInviteByID(unknown) = %v, want ErrNotFound", err)
 	}
 
@@ -613,9 +613,9 @@ func registrationInvites(t *testing.T, e *accountEnv) {
 	}
 	want := []audited{
 		{moderation.AuditInviteCreated, a, moderation.AuditActorCLI, ""},
-		{moderation.AuditInviteCreated, b, moderation.AuditActorUser, "admin"},
-		{moderation.AuditInviteRevoked, a, moderation.AuditActorUser, "admin"},
-		{moderation.AuditInviteRevoked, b, moderation.AuditActorUser, "admin"},
+		{moderation.AuditInviteCreated, b, moderation.AuditActorUser, NamedID("admin")},
+		{moderation.AuditInviteRevoked, a, moderation.AuditActorUser, NamedID("admin")},
+		{moderation.AuditInviteRevoked, b, moderation.AuditActorUser, NamedID("admin")},
 	}
 	entries := rec.all()
 	if len(entries) != len(want) {

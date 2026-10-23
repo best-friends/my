@@ -26,7 +26,7 @@
 
 | 論理型 | 意味 | SQLite 系 | PostgreSQL 系 |
 | --- | --- | --- | --- |
-| `id` | UUIDv7 の正規形文字列（36 文字、小文字） | `TEXT` | `text COLLATE "C"`（照合順序に依らずバイト順 = 時刻順）。[ADR-0078](../adr/0078-postgres-uuid-columns.md) で `uuid` 型に移す |
+| `id` | UUIDv7 の正規形文字列（36 文字、小文字） | `TEXT` | `uuid`（16 バイトのバイト順 = 時刻順。[ADR-0078](../adr/0078-postgres-uuid-columns.md)）。Go では `string`。UUID でない値を持つ列（外部の事業者の ID、`client_id`、監査ログの `target_id`、`emoji_key` など）は `text COLLATE "C"` |
 | `string(n)` | 長さ上限つき文字列（上限はアプリで検証） | `TEXT` | `text` |
 | `text` | 長文 | `TEXT` | `text` |
 | `iri` | URL / ActivityPub の IRI（最大 2048 文字を想定） | `TEXT` | `text` |
@@ -68,6 +68,7 @@
 ### 1.3 ID とキーセットページング
 
 - 主キーは UUIDv7 です（`IdGenerator` ポート、Go 1.27 の `uuid.NewV7()`）。辞書順と時刻順が一致するので、`ORDER BY id` がそのまま時系列になります。
+- PostgreSQL の `uuid` には `max` / `min` の集約関数が無いので、「最新の版の `id`」は `ORDER BY id DESC LIMIT 1` や `DISTINCT ON` で取ります。
 - ページングは常にキーセット方式（`id < :cursor ORDER BY id DESC LIMIT :n + 1`）です。不透明なカーソルの中身はこの `id` です（ADR-0016）。
 - リモート投稿の `id` は AP の `published` から生成します（未来の時刻は現在時刻に丸めます）。Go では `IDGenerator.NewIDAt` です。
   - 同じミリ秒の ID どうしの順序は保証せず、ランダム部で一意性だけを確保します。キーセットページングは `id` の全順序で進むので、順序が任意でも行の取りこぼしや重複は起きません。
@@ -893,7 +894,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `media_files` | リソース | `id`, `owner_account_id`（リンクのカードの画像は空）, `origin`（`enum(upload, remote)`）, `created_at` | インデックス `(owner_account_id, id)` |
+| `media_files` | リソース | `id`, `owner_account_id`（NULL 可。リンクのカードの画像は NULL）, `origin`（`enum(upload, remote)`）, `created_at` | インデックス `(owner_account_id, id)` |
 | `uploaded_media` | リソース（部分型） | `media_id`（PK）, `blob_key`, `content_type`, `file_size`（`bigint`） | |
 | `remote_media` | リソース（部分型） | `media_id`（PK）, `owner_account_id`（`media_files` の値を写す）, `remote_url`, `declared_content_type`（NULL 可。AP の `mediaType`）, `declared_media_type`（`enum(image, gifv, video, audio, unknown)`）, `purpose`（`enum(attachment, avatar, header, emoji)`。記録した用途で、メディアプロキシの `small` の大きさを決める）, `width` / `height`（NULL 可）, `blurhash`（NULL 可）, `focus_x` / `focus_y`（`real`、-1.0〜1.0、NULL 可。範囲外の宣言は取り込み時に丸める）, `description`（`text`、NULL 可） | 一意 `(owner_account_id, remote_url)`。受信した文書が宣言した値で、ファイルは取得しない（[federation.md §9](federation.md#9-リモートメディア)） |
 | `media_processing_results` | イベント | `id`, `media_id`, `purpose`（`enum(attachment, avatar, header, emoji)`）, `outcome`（`enum(ready, failed)`）, `media_type`（`enum(image, gifv, video, audio, unknown)`）, `width` / `height` / `duration_ms`（NULL 可）, `blurhash`（NULL 可）, `processed_at` | インデックス `(media_id, id DESC)`。最新行が現在の処理結果 |

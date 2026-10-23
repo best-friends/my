@@ -159,7 +159,7 @@ func (e *erasureEnv) deleteAccount(t *testing.T, accountID string) {
 	t.Helper()
 	ctx := t.Context()
 	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		return e.accounts.ScheduleDeletionByModeration(ctx, tx, accountID, "action-ban", e.clock.Now())
+		return e.accounts.ScheduleDeletionByModeration(ctx, tx, accountID, NamedID("action-ban"), e.clock.Now())
 	})
 	if err != nil {
 		t.Fatalf("ScheduleDeletionByModeration = %v", err)

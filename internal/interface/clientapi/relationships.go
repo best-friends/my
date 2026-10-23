@@ -142,6 +142,7 @@ func (s *Server) GetRelationships(ctx context.Context, req GetRelationshipsReque
 	out := []Relationship{}
 	var seen []string
 	for _, id := range req.Params.Id {
+		id = knownID(id)
 		if slices.Contains(seen, id) {
 			continue
 		}

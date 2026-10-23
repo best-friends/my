@@ -32,7 +32,7 @@ var (
 // ListAccountsToErase implements account.ErasureRepository.
 func (r *AccountRepository) ListAccountsToErase(ctx context.Context, deletedBefore time.Time, after string, limit int) ([]appaccount.ErasureTarget, error) {
 	rows, err := r.db.reader().ListAccountsToErase(ctx, postgresgen.ListAccountsToEraseParams{
-		DeletedBefore: deletedBefore, After: after, Lim: batchLimit(limit),
+		DeletedBefore: deletedBefore, After: toNullString(after), Lim: batchLimit(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list accounts to erase")
@@ -94,7 +94,7 @@ func (r *StatusRepository) ListAuthorStatusesToErase(ctx context.Context, tx uow
 		return nil, err
 	}
 	rows, err := q.ListAuthorStatusesToErase(ctx, postgresgen.ListAuthorStatusesToEraseParams{
-		AuthorAccountID: authorAccountID, After: after, Lim: batchLimit(limit),
+		AuthorAccountID: authorAccountID, After: toNullString(after), Lim: batchLimit(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list statuses to erase")

@@ -42,15 +42,16 @@ FROM webhook_endpoint_heads h
 JOIN webhook_endpoints e ON e.id = h.endpoint_id
 JOIN webhook_endpoint_revisions r ON r.id = h.revision_id
 JOIN webhook_endpoint_state_changes c ON c.id = (
-  SELECT max(c2.id) FROM webhook_endpoint_state_changes c2 WHERE c2.endpoint_id = h.endpoint_id
+  SELECT c2.id FROM webhook_endpoint_state_changes c2 WHERE c2.endpoint_id = h.endpoint_id
+  ORDER BY c2.id DESC LIMIT 1
 )
 LEFT JOIN webhook_endpoint_failures f ON f.endpoint_id = h.endpoint_id
-WHERE h.state <> 'deleted' AND (sqlc.arg(id)::text = '' OR h.endpoint_id = sqlc.arg(id)::text)
+WHERE h.state <> 'deleted' AND (sqlc.narg(id)::uuid IS NULL OR h.endpoint_id = sqlc.narg(id)::uuid)
 ORDER BY e.id DESC;
 
 -- name: ListWebhookRevisionEvents :many
 SELECT revision_id, event_type FROM webhook_endpoint_revision_events
-WHERE revision_id = ANY(sqlc.arg(ids)::text[])
+WHERE revision_id = ANY(sqlc.arg(ids)::uuid[])
 ORDER BY revision_id, event_type;
 
 -- name: ListSubscribedWebhookEndpoints :many
@@ -113,11 +114,12 @@ SELECT d.id, d.message_id, d.endpoint_id, d.created_at, m.event_type,
 FROM webhook_deliveries d
 JOIN webhook_messages m ON m.id = d.message_id
 LEFT JOIN webhook_delivery_attempts la ON la.id = (
-  SELECT max(a.id) FROM webhook_delivery_attempts a WHERE a.delivery_id = d.id
+  SELECT a.id FROM webhook_delivery_attempts a WHERE a.delivery_id = d.id
+  ORDER BY a.id DESC LIMIT 1
 )
-WHERE d.endpoint_id = sqlc.arg(endpoint_id)::text
-  AND (sqlc.arg(before)::text = '' OR d.id < sqlc.arg(before)::text)
-  AND (sqlc.arg(id)::text = '' OR d.id = sqlc.arg(id)::text)
+WHERE d.endpoint_id = sqlc.arg(endpoint_id)::uuid
+  AND (sqlc.narg(before)::uuid IS NULL OR d.id < sqlc.narg(before)::uuid)
+  AND (sqlc.narg(id)::uuid IS NULL OR d.id = sqlc.narg(id)::uuid)
 ORDER BY d.id DESC
 LIMIT sqlc.arg(lim);
 
@@ -126,17 +128,17 @@ SELECT id FROM webhook_messages WHERE created_at < sqlc.arg(before) ORDER BY cre
 
 -- name: DeleteWebhookAttemptsOfMessages :exec
 DELETE FROM webhook_delivery_attempts WHERE delivery_id IN (
-  SELECT d.id FROM webhook_deliveries d WHERE d.message_id = ANY(sqlc.arg(ids)::text[])
+  SELECT d.id FROM webhook_deliveries d WHERE d.message_id = ANY(sqlc.arg(ids)::uuid[])
 );
 
 -- name: DeleteWebhookDeliveriesOfMessages :exec
-DELETE FROM webhook_deliveries WHERE message_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM webhook_deliveries WHERE message_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: DeleteWebhookMessages :execrows
-DELETE FROM webhook_messages WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM webhook_messages WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- ListExistingWebhookEndpointIDs returns, in ID order, the endpoints among ids that are not
 -- deleted (the audit log).
 -- name: ListExistingWebhookEndpointIDs :many
-SELECT endpoint_id FROM webhook_endpoint_heads WHERE endpoint_id = ANY(sqlc.arg(ids)::text[]) AND state <> 'deleted'
+SELECT endpoint_id FROM webhook_endpoint_heads WHERE endpoint_id = ANY(sqlc.arg(ids)::uuid[]) AND state <> 'deleted'
 ORDER BY endpoint_id;

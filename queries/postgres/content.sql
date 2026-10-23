@@ -83,11 +83,11 @@ WHERE s.in_reply_to_uri = $1 AND NOT EXISTS (SELECT 1 FROM status_deletions d WH
 ORDER BY s.id;
 
 -- name: ListLiveRemoteStatusIDsOfAuthor :many
--- The remote statuses of an author that are not deleted, newest first, below an ID ('' for the
+-- The remote statuses of an author that are not deleted, newest first, below an ID (NULL for the
 -- first page).
 SELECT s.id FROM statuses s
 WHERE s.author_account_id = sqlc.arg(author_account_id) AND s.is_local = FALSE
-  AND (sqlc.arg(before)::text = '' OR s.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR s.id < sqlc.narg(before)::uuid)
   AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
 ORDER BY s.id DESC
 LIMIT sqlc.arg(lim);

@@ -243,7 +243,7 @@ func (s *Server) CreateCustomEmojiRequest(ctx context.Context, req CreateCustomE
 		return CreateCustomEmojiRequestdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "body")), nil
 	}
 	in := appcontent.SubmitCustomEmojiRequestInput{
-		Kind: content.CustomEmojiRequestKind(req.Body.Kind), MediaID: req.Body.MediaId, RequesterUserID: v.UserID, RequesterAccountID: v.AccountID,
+		Kind: content.CustomEmojiRequestKind(req.Body.Kind), MediaID: knownID(req.Body.MediaId), RequesterUserID: v.UserID, RequesterAccountID: v.AccountID,
 	}
 	switch in.Kind {
 	case content.RequestCreate:
@@ -255,7 +255,7 @@ func (s *Server) CreateCustomEmojiRequest(ctx context.Context, req CreateCustomE
 		if req.Body.EmojiId == nil {
 			return CreateCustomEmojiRequestdefaultApplicationProblemPlusJSONResponse(s.unprocessable(ctx, "emoji_id")), nil
 		}
-		in.EmojiID = *req.Body.EmojiId
+		in.EmojiID = knownID(*req.Body.EmojiId)
 	default:
 		return CreateCustomEmojiRequestdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "kind")), nil
 	}

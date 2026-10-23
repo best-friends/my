@@ -188,7 +188,7 @@ func (postgresStore) listDead(ctx context.Context, tx uow.Tx, jobType string, af
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.ListDeadJobs(ctx, postgresqueue.ListDeadJobsParams{JobType: jobType, AfterID: after.ID, AfterFailedAt: after.FailedAt, BatchLimit: int32Of(limit)})
+	rows, err := q.ListDeadJobs(ctx, postgresqueue.ListDeadJobsParams{JobType: jobType, AfterID: toNullString(after.ID), AfterFailedAt: after.FailedAt, BatchLimit: int32Of(limit)})
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (postgresStore) listPending(ctx context.Context, tx uow.Tx, now time.Time, 
 		return nil, err
 	}
 	rows, err := q.ListPendingJobs(ctx, postgresqueue.ListPendingJobsParams{
-		JobType: f.Type, State: string(f.State), Now: now, AfterID: after.ID, AfterRunAt: after.RunAt, BatchLimit: int32Of(limit),
+		JobType: f.Type, State: string(f.State), Now: now, AfterID: toNullString(after.ID), AfterRunAt: after.RunAt, BatchLimit: int32Of(limit),
 	})
 	if err != nil {
 		return nil, err

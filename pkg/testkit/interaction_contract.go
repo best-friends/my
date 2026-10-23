@@ -331,10 +331,10 @@ func interactionRejectsDuplicates(t *testing.T, e *interactionEnv) {
 	}
 
 	for name, err := range map[string]error{
-		"FindBoost":           second(e.h.Interactions.FindBoost(ctx, "missing")),
+		"FindBoost":           second(e.h.Interactions.FindBoost(ctx, NamedID("missing"))),
 		"FindBoostRetraction": second(e.h.Interactions.FindBoostRetraction(ctx, s.ID)),
 		"FindBoostEdge":       second(e.h.Interactions.FindBoostEdge(ctx, author, s.ID)),
-		"FindFavourite":       second(e.h.Interactions.FindFavourite(ctx, author, "missing")),
+		"FindFavourite":       second(e.h.Interactions.FindFavourite(ctx, author, NamedID("missing"))),
 		"FindFavouriteByURI":  second(e.h.Interactions.FindFavouriteByURI(ctx, "https://social.example/missing")),
 		"FindBookmark":        second(e.h.Interactions.FindBookmark(ctx, author, s.ID)),
 		"FindPin":             second(e.h.Interactions.FindPin(ctx, author, s.ID)),
@@ -413,7 +413,7 @@ func interactionBoosts(t *testing.T, e *interactionEnv) {
 	if c := e.counters(t, s.ID); c.BoostsCount != 1 {
 		t.Errorf("BoostsCount after boosting again = %d, want 1", c.BoostsCount)
 	}
-	if err := e.svc.Unboost(ctx, booster, "missing"); err != nil {
+	if err := e.svc.Unboost(ctx, booster, NamedID("missing")); err != nil {
 		t.Errorf("Unboost(missing status) = %v", err)
 	}
 }
@@ -783,7 +783,7 @@ func interactionChecksVisibility(t *testing.T, e *interactionEnv) {
 		{"anyone on a deleted status", stranger, deleted, appcontent.ErrNotFound, nil},
 		{"a remote account", remote, public, appcontent.ErrActorUnavailable, nil},
 		{"an inactive account", inactive, public, appcontent.ErrActorUnavailable, nil},
-		{"an unknown account", "unknown", public, appcontent.ErrActorUnavailable, nil},
+		{"an unknown account", NamedID("unknown"), public, appcontent.ErrActorUnavailable, nil},
 	} {
 		for name, cmd := range commands {
 			want := tc.want
@@ -795,7 +795,7 @@ func interactionChecksVisibility(t *testing.T, e *interactionEnv) {
 			}
 		}
 	}
-	if err := second(e.svc.Favourite(ctx, stranger, "missing")); !errors.Is(err, appcontent.ErrNotFound) {
+	if err := second(e.svc.Favourite(ctx, stranger, NamedID("missing"))); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Errorf("Favourite(missing) = %v, want ErrNotFound", err)
 	}
 	if err := e.svc.Pin(ctx, author, deleted.ID); !errors.Is(err, appcontent.ErrNotFound) {

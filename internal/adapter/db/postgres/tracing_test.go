@@ -23,7 +23,7 @@ func TestTracing(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return insertProbe(ctx, q, "alice")
+		return insertProbe(ctx, q, testkit.NamedID("alice"))
 	}); err != nil {
 		t.Fatal(err)
 	}

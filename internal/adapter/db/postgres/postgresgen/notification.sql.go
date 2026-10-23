@@ -36,7 +36,7 @@ func (q *Queries) AdvanceNotificationReadMarker(ctx context.Context, arg Advance
 const countNotificationsAfter = `-- name: CountNotificationsAfter :one
 SELECT COUNT(*) FROM notifications n
 WHERE n.recipient_account_id = $1
-  AND n.id > $2::text
+  AND n.id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000')
   AND NOT (n.type = ANY($3::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
@@ -50,7 +50,7 @@ WHERE n.recipient_account_id = $1
 
 type CountNotificationsAfterParams struct {
 	RecipientAccountID string
-	After              string
+	After              *string
 	HiddenTypes        []string
 	Now                time.Time
 }
@@ -303,7 +303,7 @@ SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.source_domai
   n.subject_user_id, n.severance_id, n.appeal_id, n.custom_emoji_request_id, n.supporter_subscription_id, n.reaction_emoji, n.reaction_custom_emoji_id, n.dedupe_key, n.created_at
 FROM notifications n
 WHERE n.recipient_account_id = $1
-  AND ($2::text = '' OR n.id < $2::text)
+  AND ($2::uuid IS NULL OR n.id < $2::uuid)
   AND ($3::boolean OR n.type = ANY($4::text[]))
   AND NOT (n.type = ANY($5::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
@@ -320,7 +320,7 @@ LIMIT $7
 
 type ListNotificationsParams struct {
 	RecipientAccountID string
-	Before             string
+	Before             *string
 	AllTypes           bool
 	Types              []string
 	HiddenTypes        []string

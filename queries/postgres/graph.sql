@@ -103,7 +103,7 @@ SELECT account_id, followers_count, following_count FROM follow_counters WHERE a
 SELECT follower_account_id, followee_account_id, follow_id, state, since
 FROM follow_edges
 WHERE followee_account_id = sqlc.arg(account_id) AND state = sqlc.arg(state)
-  AND (sqlc.arg(before)::text = '' OR follow_id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR follow_id < sqlc.narg(before)::uuid)
 ORDER BY follow_id DESC
 LIMIT sqlc.arg(page_limit);
 
@@ -113,7 +113,7 @@ LIMIT sqlc.arg(page_limit);
 SELECT follower_account_id, followee_account_id, follow_id, state, since
 FROM follow_edges
 WHERE follower_account_id = sqlc.arg(account_id) AND state = sqlc.arg(state)
-  AND (sqlc.arg(before)::text = '' OR follow_id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR follow_id < sqlc.narg(before)::uuid)
 ORDER BY follow_id DESC
 LIMIT sqlc.arg(page_limit);
 

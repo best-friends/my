@@ -182,7 +182,7 @@ func (s *Server) CreateAccountAction(ctx context.Context, req CreateAccountActio
 			return unprocessable(l.ServerErrorsInvalidValue("reason_category"))
 		}
 	}
-	in.PublicReason, in.PrivateNote, in.ReportID = deref(b.PublicReason), deref(b.PrivateNote), deref(b.ReportId)
+	in.PublicReason, in.PrivateNote, in.ReportID = deref(b.PublicReason), deref(b.PrivateNote), knownID(deref(b.ReportId))
 	if b.ExpiresIn != nil {
 		if *b.ExpiresIn < 1 {
 			return unprocessable(l.ServerErrorsInvalidValue("expires_in"))
@@ -190,7 +190,7 @@ func (s *Server) CreateAccountAction(ctx context.Context, req CreateAccountActio
 		in.Duration = time.Duration(*b.ExpiresIn) * time.Second
 	}
 	if b.StatusIds != nil {
-		in.StatusIDs = *b.StatusIds
+		in.StatusIDs = knownIDs(*b.StatusIds)
 	}
 	in.BlockEmail = b.BlockEmail != nil && *b.BlockEmail
 	target, ok, err := s.adminAccount(ctx, req.Id)

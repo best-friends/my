@@ -16,7 +16,7 @@ const deleteRegistrationOriginsBefore = `-- name: DeleteRegistrationOriginsBefor
 DELETE FROM registration_origins
 WHERE user_id IN (
   SELECT o.user_id FROM registration_origins o WHERE o.recorded_at < $1
-    AND NOT (o.user_id = ANY($2::text[]))
+    AND NOT (o.user_id = ANY($2::uuid[]))
   ORDER BY o.recorded_at, o.user_id LIMIT $3
 )
 `
@@ -28,7 +28,7 @@ type DeleteRegistrationOriginsBeforeParams struct {
 }
 
 // DeleteRegistrationOriginsBefore removes at most @batch_limit registration origins recorded
-// before @recorded_before, except those of the users in @except_user_ids, the oldest first.
+// before @recorded_before, except those of the users in sqlc.arg(except_user_ids)::uuid, the oldest first.
 func (q *Queries) DeleteRegistrationOriginsBefore(ctx context.Context, arg DeleteRegistrationOriginsBeforeParams) (int64, error) {
 	result, err := q.db.Exec(ctx, deleteRegistrationOriginsBefore, arg.RecordedBefore, arg.ExceptUserIds, arg.BatchLimit)
 	if err != nil {
@@ -41,7 +41,7 @@ const deleteSessionOriginsBefore = `-- name: DeleteSessionOriginsBefore :execrow
 DELETE FROM session_origins
 WHERE session_id IN (
   SELECT o.session_id FROM session_origins o WHERE o.created_at < $1
-    AND NOT (o.user_id = ANY($2::text[]))
+    AND NOT (o.user_id = ANY($2::uuid[]))
   ORDER BY o.created_at, o.session_id LIMIT $3
 )
 `
@@ -63,7 +63,7 @@ func (q *Queries) DeleteSessionOriginsBefore(ctx context.Context, arg DeleteSess
 }
 
 const getRegistrationOrigin = `-- name: GetRegistrationOrigin :one
-SELECT user_id, ip, recorded_at FROM registration_origins WHERE user_id = $1
+SELECT user_id, ip, recorded_at FROM registration_origins WHERE user_id = $1::uuid
 `
 
 func (q *Queries) GetRegistrationOrigin(ctx context.Context, userID string) (RegistrationOrigin, error) {
@@ -74,7 +74,7 @@ func (q *Queries) GetRegistrationOrigin(ctx context.Context, userID string) (Reg
 }
 
 const getSessionOrigin = `-- name: GetSessionOrigin :one
-SELECT session_id, user_id, ip, user_agent, created_at FROM session_origins WHERE session_id = $1
+SELECT session_id, user_id, ip, user_agent, created_at FROM session_origins WHERE session_id = $1::uuid
 `
 
 func (q *Queries) GetSessionOrigin(ctx context.Context, sessionID string) (SessionOrigin, error) {

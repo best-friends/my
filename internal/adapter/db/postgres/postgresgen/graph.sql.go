@@ -476,7 +476,7 @@ const listFollowersPage = `-- name: ListFollowersPage :many
 SELECT follower_account_id, followee_account_id, follow_id, state, since
 FROM follow_edges
 WHERE followee_account_id = $1 AND state = $2
-  AND ($3::text = '' OR follow_id < $3::text)
+  AND ($3::uuid IS NULL OR follow_id < $3::uuid)
 ORDER BY follow_id DESC
 LIMIT $4
 `
@@ -484,7 +484,7 @@ LIMIT $4
 type ListFollowersPageParams struct {
 	AccountID string
 	State     string
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 
@@ -525,7 +525,7 @@ const listFollowingPage = `-- name: ListFollowingPage :many
 SELECT follower_account_id, followee_account_id, follow_id, state, since
 FROM follow_edges
 WHERE follower_account_id = $1 AND state = $2
-  AND ($3::text = '' OR follow_id < $3::text)
+  AND ($3::uuid IS NULL OR follow_id < $3::uuid)
 ORDER BY follow_id DESC
 LIMIT $4
 `
@@ -533,7 +533,7 @@ LIMIT $4
 type ListFollowingPageParams struct {
 	AccountID string
 	State     string
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 

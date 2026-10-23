@@ -45,8 +45,8 @@ SELECT i.id, i.schedule, i.interval, i.starts_on, i.created_by_user_id, i.create
 FROM cost_item_heads h
 JOIN cost_items i ON i.id = h.cost_item_id
 JOIN cost_item_label_revisions l ON l.id = h.label_revision_id
-WHERE (sqlc.arg(id)::text = '' OR h.cost_item_id = sqlc.arg(id))
-  AND (sqlc.arg(before)::text = '' OR h.cost_item_id < sqlc.arg(before))
+WHERE (sqlc.narg(id)::uuid IS NULL OR h.cost_item_id = sqlc.narg(id)::uuid)
+  AND (sqlc.narg(before)::uuid IS NULL OR h.cost_item_id < sqlc.narg(before)::uuid)
 ORDER BY h.cost_item_id DESC
 LIMIT sqlc.arg(lim);
 
@@ -54,7 +54,7 @@ LIMIT sqlc.arg(lim);
 -- were recorded.
 -- name: ListCostItemPriceRevisions :many
 SELECT id, cost_item_id, effective_on, amount_minor, currency, revised_at FROM cost_item_price_revisions
-WHERE cost_item_id = ANY(sqlc.arg(ids)::text[])
+WHERE cost_item_id = ANY(sqlc.arg(ids)::uuid[])
 ORDER BY cost_item_id, id;
 
 -- The billing imports (ADR-0068 section 5). billing_import_runs and imported_cost_revisions are
@@ -151,7 +151,7 @@ SELECT m.id, m.provider, m.provider_id, m.kind, m.subscription_id, m.occurred_at
 FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
 WHERE m.occurred_on >= sqlc.arg(starts_on)::date AND m.occurred_on <= sqlc.arg(ends_on)::date
   AND (sqlc.arg(kind)::text = '' OR m.kind = sqlc.arg(kind)::text)
-  AND (sqlc.arg(before)::text = ''
-    OR (m.occurred_at, m.id) < (SELECT b.occurred_at, b.id FROM income_movements b WHERE b.id = sqlc.arg(before)::text))
+  AND (sqlc.narg(before)::uuid IS NULL
+    OR (m.occurred_at, m.id) < (SELECT b.occurred_at, b.id FROM income_movements b WHERE b.id = sqlc.narg(before)::uuid))
 ORDER BY m.occurred_at DESC, m.id DESC
 LIMIT sqlc.arg(lim);

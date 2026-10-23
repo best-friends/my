@@ -102,7 +102,7 @@ func (q *Queries) EraseAutoDeletePolicyBy(ctx context.Context, accountID string)
 }
 
 const eraseBlockEdgesOfBlocks = `-- name: EraseBlockEdgesOfBlocks :exec
-DELETE FROM block_edges WHERE block_id = ANY($1::text[])
+DELETE FROM block_edges WHERE block_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseBlockEdgesOfBlocks(ctx context.Context, ids []string) error {
@@ -111,7 +111,7 @@ func (q *Queries) EraseBlockEdgesOfBlocks(ctx context.Context, ids []string) err
 }
 
 const eraseBlockRetractions = `-- name: EraseBlockRetractions :exec
-DELETE FROM block_retractions WHERE block_id = ANY($1::text[])
+DELETE FROM block_retractions WHERE block_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseBlockRetractions(ctx context.Context, ids []string) error {
@@ -120,7 +120,7 @@ func (q *Queries) EraseBlockRetractions(ctx context.Context, ids []string) error
 }
 
 const eraseBlocks = `-- name: EraseBlocks :exec
-DELETE FROM blocks WHERE id = ANY($1::text[])
+DELETE FROM blocks WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseBlocks(ctx context.Context, ids []string) error {
@@ -148,7 +148,7 @@ func (q *Queries) EraseBookmarksBy(ctx context.Context, arg EraseBookmarksByPara
 }
 
 const eraseBookmarksOfStatuses = `-- name: EraseBookmarksOfStatuses :exec
-DELETE FROM bookmarks WHERE status_id = ANY($1::text[])
+DELETE FROM bookmarks WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseBookmarksOfStatuses(ctx context.Context, ids []string) error {
@@ -176,7 +176,7 @@ func (q *Queries) EraseBoostEdgesBy(ctx context.Context, arg EraseBoostEdgesByPa
 }
 
 const eraseBoostEdgesOfStatuses = `-- name: EraseBoostEdgesOfStatuses :exec
-DELETE FROM boost_edges WHERE status_id = ANY($1::text[])
+DELETE FROM boost_edges WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseBoostEdgesOfStatuses(ctx context.Context, ids []string) error {
@@ -202,7 +202,7 @@ func (q *Queries) EraseBoostRetractionsBy(ctx context.Context, arg EraseBoostRet
 
 const eraseBoostRetractionsOfStatuses = `-- name: EraseBoostRetractionsOfStatuses :exec
 DELETE FROM boost_retractions WHERE boost_id IN (
-  SELECT b.id FROM boosts b WHERE b.status_id = ANY($1::text[]))
+  SELECT b.id FROM boosts b WHERE b.status_id = ANY($1::uuid[]))
 `
 
 func (q *Queries) EraseBoostRetractionsOfStatuses(ctx context.Context, ids []string) error {
@@ -230,7 +230,7 @@ func (q *Queries) EraseBoostsBy(ctx context.Context, arg EraseBoostsByParams) (i
 }
 
 const eraseBoostsOfStatuses = `-- name: EraseBoostsOfStatuses :exec
-DELETE FROM boosts WHERE status_id = ANY($1::text[])
+DELETE FROM boosts WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseBoostsOfStatuses(ctx context.Context, ids []string) error {
@@ -239,7 +239,7 @@ func (q *Queries) EraseBoostsOfStatuses(ctx context.Context, ids []string) error
 }
 
 const eraseCountersOfStatuses = `-- name: EraseCountersOfStatuses :exec
-DELETE FROM status_counters WHERE status_id = ANY($1::text[])
+DELETE FROM status_counters WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseCountersOfStatuses(ctx context.Context, ids []string) error {
@@ -248,7 +248,7 @@ func (q *Queries) EraseCountersOfStatuses(ctx context.Context, ids []string) err
 }
 
 const eraseDeletedStatusesOfStatuses = `-- name: EraseDeletedStatusesOfStatuses :exec
-DELETE FROM notification_deleted_statuses WHERE status_id = ANY($1::text[])
+DELETE FROM notification_deleted_statuses WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseDeletedStatusesOfStatuses(ctx context.Context, ids []string) error {
@@ -316,7 +316,7 @@ func (q *Queries) EraseFavouritesBy(ctx context.Context, arg EraseFavouritesByPa
 }
 
 const eraseFavouritesOfStatuses = `-- name: EraseFavouritesOfStatuses :exec
-DELETE FROM favourites WHERE status_id = ANY($1::text[])
+DELETE FROM favourites WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFavouritesOfStatuses(ctx context.Context, ids []string) error {
@@ -344,7 +344,7 @@ func (q *Queries) EraseFeedDirectRecipientsOf(ctx context.Context, arg EraseFeed
 }
 
 const eraseFeedDirectRecipientsOfEntries = `-- name: EraseFeedDirectRecipientsOfEntries :exec
-DELETE FROM feed_direct_recipients WHERE entry_id = ANY($1::text[])
+DELETE FROM feed_direct_recipients WHERE entry_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFeedDirectRecipientsOfEntries(ctx context.Context, ids []string) error {
@@ -372,7 +372,7 @@ func (q *Queries) EraseFeedDomainMutesOf(ctx context.Context, arg EraseFeedDomai
 }
 
 const eraseFeedEntries = `-- name: EraseFeedEntries :exec
-DELETE FROM feed_entries WHERE id = ANY($1::text[])
+DELETE FROM feed_entries WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFeedEntries(ctx context.Context, ids []string) error {
@@ -457,7 +457,7 @@ func (q *Queries) EraseFeedFollowEdgesAsFollower(ctx context.Context, arg EraseF
 }
 
 const eraseFeedTagEntriesOfEntries = `-- name: EraseFeedTagEntriesOfEntries :exec
-DELETE FROM feed_tag_entries WHERE entry_id = ANY($1::text[])
+DELETE FROM feed_tag_entries WHERE entry_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFeedTagEntriesOfEntries(ctx context.Context, ids []string) error {
@@ -466,7 +466,7 @@ func (q *Queries) EraseFeedTagEntriesOfEntries(ctx context.Context, ids []string
 }
 
 const eraseFollowAcceptances = `-- name: EraseFollowAcceptances :exec
-DELETE FROM follow_acceptances WHERE follow_id = ANY($1::text[])
+DELETE FROM follow_acceptances WHERE follow_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFollowAcceptances(ctx context.Context, ids []string) error {
@@ -484,7 +484,7 @@ func (q *Queries) EraseFollowCounters(ctx context.Context, accountID string) err
 }
 
 const eraseFollowEdgesOfFollows = `-- name: EraseFollowEdgesOfFollows :exec
-DELETE FROM follow_edges WHERE follow_id = ANY($1::text[])
+DELETE FROM follow_edges WHERE follow_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFollowEdgesOfFollows(ctx context.Context, ids []string) error {
@@ -493,7 +493,7 @@ func (q *Queries) EraseFollowEdgesOfFollows(ctx context.Context, ids []string) e
 }
 
 const eraseFollowPreferences = `-- name: EraseFollowPreferences :exec
-DELETE FROM follow_preferences WHERE follow_id = ANY($1::text[])
+DELETE FROM follow_preferences WHERE follow_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFollowPreferences(ctx context.Context, ids []string) error {
@@ -502,7 +502,7 @@ func (q *Queries) EraseFollowPreferences(ctx context.Context, ids []string) erro
 }
 
 const eraseFollowRejections = `-- name: EraseFollowRejections :exec
-DELETE FROM follow_rejections WHERE follow_id = ANY($1::text[])
+DELETE FROM follow_rejections WHERE follow_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFollowRejections(ctx context.Context, ids []string) error {
@@ -511,7 +511,7 @@ func (q *Queries) EraseFollowRejections(ctx context.Context, ids []string) error
 }
 
 const eraseFollowResends = `-- name: EraseFollowResends :exec
-DELETE FROM follow_resends WHERE follow_id = ANY($1::text[])
+DELETE FROM follow_resends WHERE follow_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFollowResends(ctx context.Context, ids []string) error {
@@ -520,7 +520,7 @@ func (q *Queries) EraseFollowResends(ctx context.Context, ids []string) error {
 }
 
 const eraseFollowTerminations = `-- name: EraseFollowTerminations :exec
-DELETE FROM follow_terminations WHERE follow_id = ANY($1::text[])
+DELETE FROM follow_terminations WHERE follow_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFollowTerminations(ctx context.Context, ids []string) error {
@@ -529,7 +529,7 @@ func (q *Queries) EraseFollowTerminations(ctx context.Context, ids []string) err
 }
 
 const eraseFollows = `-- name: EraseFollows :exec
-DELETE FROM follows WHERE id = ANY($1::text[])
+DELETE FROM follows WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseFollows(ctx context.Context, ids []string) error {
@@ -558,7 +558,7 @@ func (q *Queries) EraseKeys(ctx context.Context, accountID string) error {
 
 const eraseLocalStatusesOfStatuses = `-- name: EraseLocalStatusesOfStatuses :exec
 
-DELETE FROM local_statuses WHERE status_id = ANY($1::text[])
+DELETE FROM local_statuses WHERE status_id = ANY($1::uuid[])
 `
 
 // The EraseOfStatuses* statements delete what refers to the statuses @ids beyond what
@@ -608,7 +608,7 @@ func (q *Queries) EraseMutesOf(ctx context.Context, arg EraseMutesOfParams) (int
 }
 
 const eraseNotificationDismissals = `-- name: EraseNotificationDismissals :exec
-DELETE FROM notification_dismissals WHERE notification_id = ANY($1::text[])
+DELETE FROM notification_dismissals WHERE notification_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseNotificationDismissals(ctx context.Context, ids []string) error {
@@ -619,7 +619,7 @@ func (q *Queries) EraseNotificationDismissals(ctx context.Context, ids []string)
 const eraseNotificationDismissalsOfStatuses = `-- name: EraseNotificationDismissalsOfStatuses :exec
 
 DELETE FROM notification_dismissals WHERE notification_id IN (
-  SELECT n.id FROM notifications n WHERE n.status_id = ANY($1::text[]))
+  SELECT n.id FROM notifications n WHERE n.status_id = ANY($1::uuid[]))
 `
 
 // notification ------------------------------------------------------------------------------------
@@ -695,7 +695,7 @@ func (q *Queries) EraseNotificationReadMarker(ctx context.Context, accountID str
 }
 
 const eraseNotifications = `-- name: EraseNotifications :exec
-DELETE FROM notifications WHERE id = ANY($1::text[])
+DELETE FROM notifications WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseNotifications(ctx context.Context, ids []string) error {
@@ -704,7 +704,7 @@ func (q *Queries) EraseNotifications(ctx context.Context, ids []string) error {
 }
 
 const eraseNotificationsOfStatuses = `-- name: EraseNotificationsOfStatuses :exec
-DELETE FROM notifications WHERE status_id = ANY($1::text[])
+DELETE FROM notifications WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseNotificationsOfStatuses(ctx context.Context, ids []string) error {
@@ -763,7 +763,7 @@ func (q *Queries) ErasePinsBy(ctx context.Context, accountID string) (int64, err
 }
 
 const erasePinsOfStatuses = `-- name: ErasePinsOfStatuses :exec
-DELETE FROM status_pins WHERE status_id = ANY($1::text[])
+DELETE FROM status_pins WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) ErasePinsOfStatuses(ctx context.Context, ids []string) error {
@@ -860,7 +860,7 @@ func (q *Queries) EraseProfileRevisions(ctx context.Context, accountID string) e
 }
 
 const eraseReactionCountsOfStatuses = `-- name: EraseReactionCountsOfStatuses :exec
-DELETE FROM status_reaction_counts WHERE status_id = ANY($1::text[])
+DELETE FROM status_reaction_counts WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseReactionCountsOfStatuses(ctx context.Context, ids []string) error {
@@ -887,7 +887,7 @@ func (q *Queries) EraseReactionsBy(ctx context.Context, arg EraseReactionsByPara
 }
 
 const eraseReactionsOfStatuses = `-- name: EraseReactionsOfStatuses :exec
-DELETE FROM reactions WHERE status_id = ANY($1::text[])
+DELETE FROM reactions WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseReactionsOfStatuses(ctx context.Context, ids []string) error {
@@ -1077,7 +1077,7 @@ const listAccountsToErase = `-- name: ListAccountsToErase :many
 SELECT s.account_id, la.user_id FROM account_lifecycle_states s
 JOIN local_accounts la ON la.account_id = s.account_id
 WHERE s.state = 'deleted' AND s.since <= $1::timestamptz
-  AND s.account_id > $2::text
+  AND s.account_id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000')
   AND NOT EXISTS (SELECT 1 FROM account_erasures e WHERE e.account_id = s.account_id)
 ORDER BY s.account_id
 LIMIT $3
@@ -1085,7 +1085,7 @@ LIMIT $3
 
 type ListAccountsToEraseParams struct {
 	DeletedBefore time.Time
-	After         string
+	After         *string
 	Lim           int32
 }
 
@@ -1127,14 +1127,14 @@ SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_r
   s.conversation_uri, s.published_at,
   EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id) AS deleted
 FROM statuses s
-WHERE s.author_account_id = $1 AND s.id > $2::text
+WHERE s.author_account_id = $1 AND s.id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000')
 ORDER BY s.id
 LIMIT $3
 `
 
 type ListAuthorStatusesToEraseParams struct {
 	AuthorAccountID string
-	After           string
+	After           *string
 	Lim             int32
 }
 

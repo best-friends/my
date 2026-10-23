@@ -279,7 +279,7 @@ func (r *TimelineRepository) ListHome(ctx context.Context, hq apptimeline.HomeQu
 		return nil, err
 	}
 	rows, err := r.db.reader().ListHomeEntries(ctx, postgresgen.ListHomeEntriesParams{
-		Viewer: hq.ViewerAccountID, Before: hq.Before, WindowFloor: hq.Floor, Now: hq.Now,
+		Viewer: hq.ViewerAccountID, Before: toNullString(hq.Before), WindowFloor: toNullString(hq.Floor), Now: hq.Now,
 		AllLanguages: all, Languages: langs, PageLimit: limit,
 	})
 	return entriesFrom(rows, err, "list home entries")
@@ -293,7 +293,7 @@ func (r *TimelineRepository) ListLocal(ctx context.Context, lq apptimeline.Local
 		return nil, err
 	}
 	rows, err := r.db.reader().ListLocalEntries(ctx, postgresgen.ListLocalEntriesParams{
-		IncludeLocal: lq.IncludeLocal, Before: lq.Before, Now: lq.Now, Viewer: lq.ViewerAccountID,
+		IncludeLocal: lq.IncludeLocal, Before: toNullString(lq.Before), Now: lq.Now, Viewer: toNullString(lq.ViewerAccountID),
 		AllLanguages: all, Languages: langs, PageLimit: limit,
 	})
 	return entriesFrom(rows, err, "list local entries")
@@ -307,7 +307,7 @@ func (r *TimelineRepository) ListPublic(ctx context.Context, pq apptimeline.Publ
 		return nil, err
 	}
 	rows, err := r.db.reader().ListPublicEntries(ctx, postgresgen.ListPublicEntriesParams{
-		Before: pq.Before, Now: pq.Now, Viewer: pq.ViewerAccountID,
+		Before: toNullString(pq.Before), Now: pq.Now, Viewer: toNullString(pq.ViewerAccountID),
 		AllLanguages: all, Languages: langs, PageLimit: limit,
 	})
 	return entriesFrom(rows, err, "list public entries")
@@ -321,8 +321,8 @@ func (r *TimelineRepository) ListTag(ctx context.Context, tq apptimeline.TagQuer
 		return nil, err
 	}
 	rows, err := r.db.reader().ListTagEntries(ctx, postgresgen.ListTagEntriesParams{
-		TagID: tq.TagID, IncludeLocal: tq.IncludeLocal, Before: tq.Before, Now: tq.Now,
-		Viewer: tq.ViewerAccountID, AllLanguages: all, Languages: langs, PageLimit: limit,
+		TagID: tq.TagID, IncludeLocal: tq.IncludeLocal, Before: toNullString(tq.Before), Now: tq.Now,
+		Viewer: toNullString(tq.ViewerAccountID), AllLanguages: all, Languages: langs, PageLimit: limit,
 	})
 	return entriesFrom(rows, err, "list tag entries")
 }
@@ -336,10 +336,10 @@ func (r *TimelineRepository) ListProfile(ctx context.Context, pq apptimeline.Pro
 	}
 	has := func(v appcontent.Visibility) bool { return slices.Contains(pq.Visibilities, v) }
 	rows, err := r.db.reader().ListProfileEntries(ctx, postgresgen.ListProfileEntriesParams{
-		Author: pq.AuthorAccountID, Before: pq.Before,
+		Author: pq.AuthorAccountID, Before: toNullString(pq.Before),
 		IncludePublic: has(appcontent.VisibilityPublic), IncludeLocal: has(appcontent.VisibilityLocal),
 		IncludeUnlisted: has(appcontent.VisibilityUnlisted), IncludePrivate: has(appcontent.VisibilityPrivate),
-		IncludeDirect: pq.IncludeDirect, Viewer: pq.ViewerAccountID, Now: pq.Now,
+		IncludeDirect: pq.IncludeDirect, Viewer: toNullString(pq.ViewerAccountID), Now: pq.Now,
 		ExcludeReplies: pq.ExcludeReplies, ExcludeBoosts: pq.ExcludeBoosts,
 		AllLanguages: all, Languages: langs, PageLimit: limit,
 	})

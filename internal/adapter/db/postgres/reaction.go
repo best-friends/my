@@ -140,7 +140,7 @@ func (r *InteractionRepository) ListStatusReactions(ctx context.Context, statusI
 		return nil, err
 	}
 	rows, err := r.db.reader().ListStatusReactions(ctx, postgresgen.ListStatusReactionsParams{
-		StatusID: statusID, EmojiKey: emojiKey, Before: before, PageLimit: n,
+		StatusID: statusID, EmojiKey: emojiKey, Before: toNullString(before), PageLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list reactions to a status")

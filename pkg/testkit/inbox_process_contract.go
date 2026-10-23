@@ -152,7 +152,7 @@ func (e *inboxProcessEnv) job(t *testing.T, uri federation.IRI, trust federation
 	if err != nil {
 		t.Fatal(err)
 	}
-	return e.processor.HandleJob(t.Context(), queue.Job{ID: "job", Type: nj.Type, Payload: nj.Payload, IdempotencyKey: nj.IdempotencyKey})
+	return e.processor.HandleJob(t.Context(), queue.Job{ID: NamedID("job"), Type: nj.Type, Payload: nj.Payload, IdempotencyKey: nj.IdempotencyKey})
 }
 
 // process records doc as signed by its actor and processes it, failing the test on an error.
@@ -214,7 +214,7 @@ func (a *inboxActors) Resolve(_ context.Context, uri string) (appaccount.Actor, 
 		return appaccount.Actor{}, fmt.Errorf("%w: %s", appfederation.ErrFetchNotFound, uri)
 	}
 	var actor appaccount.Actor
-	actor.Account = account.Account{ID: "account:" + uri, URI: uri, Domain: iri.Host()}
+	actor.Account = account.Account{ID: NamedID("account:" + uri), URI: uri, Domain: iri.Host()}
 	return actor, nil
 }
 
@@ -477,7 +477,7 @@ func inboxDropsRestrictedActors(t *testing.T, e *inboxProcessEnv) {
 	if got := e.process(t, inboxDoc(t, "Undo", inboxAlice+"#undo", "", inboxAlice+"#follow")); got != appfederation.InboxTombstoned {
 		t.Errorf("Undo of a suspended domain = %q, want %q", got, appfederation.InboxTombstoned)
 	}
-	e.suspended["account:"+inboxBob] = true
+	e.suspended[NamedID("account:"+inboxBob)] = true
 	bobNote := inboxNote("https://other.example/notes/1")
 	bobNote["attributedTo"] = inboxBob
 	if got := e.process(t, inboxDoc(t, "Create", "https://other.example/notes/1/activity", inboxBob, bobNote)); got != appfederation.InboxDropped {

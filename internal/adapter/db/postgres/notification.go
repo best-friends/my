@@ -155,7 +155,7 @@ func (r *NotificationRepository) ListNotifications(ctx context.Context, recipien
 		return nil, err
 	}
 	rows, err := r.db.reader().ListNotifications(ctx, postgresgen.ListNotificationsParams{
-		RecipientAccountID: recipientAccountID, Before: before, AllTypes: len(types) == 0, Types: typeNames(types), HiddenTypes: typeNames(hidden), Now: now, PageLimit: n,
+		RecipientAccountID: recipientAccountID, Before: toNullString(before), AllTypes: len(types) == 0, Types: typeNames(types), HiddenTypes: typeNames(hidden), Now: now, PageLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list notifications")
@@ -170,7 +170,7 @@ func (r *NotificationRepository) ListNotifications(ctx context.Context, recipien
 // CountNotificationsAfter implements notification.Repository.
 func (r *NotificationRepository) CountNotificationsAfter(ctx context.Context, recipientAccountID, after string, hidden []notification.Type, now time.Time) (int64, error) {
 	n, err := r.db.reader().CountNotificationsAfter(ctx, postgresgen.CountNotificationsAfterParams{
-		RecipientAccountID: recipientAccountID, After: after, HiddenTypes: typeNames(hidden), Now: now,
+		RecipientAccountID: recipientAccountID, After: toNullString(after), HiddenTypes: typeNames(hidden), Now: now,
 	})
 	return n, wrap(err, "count notifications")
 }

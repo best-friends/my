@@ -399,22 +399,22 @@ const listDeadJobs = `-- name: ListDeadJobs :many
 SELECT id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at
 FROM dead_jobs
 WHERE ($1::text = '' OR type = $1::text)
-  AND ($2::text = ''
+  AND ($2::uuid IS NULL
     OR failed_at < $3::timestamptz
-    OR (failed_at = $3::timestamptz AND id < $2::text))
+    OR (failed_at = $3::timestamptz AND id < $2::uuid))
 ORDER BY failed_at DESC, id DESC
 LIMIT $4
 `
 
 type ListDeadJobsParams struct {
 	JobType       string
-	AfterID       string
+	AfterID       *string
 	AfterFailedAt time.Time
 	BatchLimit    int32
 }
 
 // ListDeadJobs returns the dead jobs of the type @job_type (every type when empty), most
-// recently failed first, after the position (@after_failed_at, @after_id); an empty @after_id
+// recently failed first, after the position (@after_failed_at, @after_id); a NULL @after_id
 // starts at the first.
 func (q *Queries) ListDeadJobs(ctx context.Context, arg ListDeadJobsParams) ([]DeadJob, error) {
 	rows, err := q.db.Query(ctx, listDeadJobs,
@@ -551,9 +551,9 @@ WHERE ($1::text = '' OR type = $1::text)
     OR ($2::text = 'running' AND locked_until > $3::timestamptz)
     OR ($2::text = 'queued' AND (locked_until IS NULL OR locked_until <= $3::timestamptz) AND attempt = 0)
     OR ($2::text = 'retrying' AND (locked_until IS NULL OR locked_until <= $3::timestamptz) AND attempt > 0))
-  AND ($4::text = ''
+  AND ($4::uuid IS NULL
     OR run_at > $5::timestamptz
-    OR (run_at = $5::timestamptz AND id > $4::text))
+    OR (run_at = $5::timestamptz AND id > $4::uuid))
 ORDER BY run_at, id
 LIMIT $6
 `
@@ -562,7 +562,7 @@ type ListPendingJobsParams struct {
 	JobType    string
 	State      string
 	Now        time.Time
-	AfterID    string
+	AfterID    *string
 	AfterRunAt time.Time
 	BatchLimit int32
 }
@@ -584,7 +584,7 @@ type ListPendingJobsRow struct {
 // ListPendingJobs returns the jobs of the type @job_type (every type when empty) in the state
 // @state at @now (every state when empty; the states of ADR-0064 section 3: running while the
 // lease holds, otherwise queued before the first run and retrying after it), the earliest run_at
-// first, after the position (@after_run_at, @after_id); an empty @after_id starts at the first.
+// first, after the position (@after_run_at, @after_id); a NULL @after_id starts at the first.
 func (q *Queries) ListPendingJobs(ctx context.Context, arg ListPendingJobsParams) ([]ListPendingJobsRow, error) {
 	rows, err := q.db.Query(ctx, listPendingJobs,
 		arg.JobType,

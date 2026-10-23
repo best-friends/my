@@ -470,7 +470,7 @@ func (r *AccountRepository) ListLocalAccountIDs(ctx context.Context, after strin
 	if err != nil {
 		return nil, err
 	}
-	out, err := r.db.reader().ListLocalAccountIDsAfter(ctx, postgresgen.ListLocalAccountIDsAfterParams{After: after, PageLimit: pageLimit})
+	out, err := r.db.reader().ListLocalAccountIDsAfter(ctx, postgresgen.ListLocalAccountIDsAfterParams{After: toNullString(after), PageLimit: pageLimit})
 	if err != nil {
 		return nil, wrap(err, "list local account ids")
 	}

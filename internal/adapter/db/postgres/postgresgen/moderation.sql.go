@@ -26,7 +26,7 @@ func (q *Queries) CountModerationActionsOfTarget(ctx context.Context, targetAcco
 
 const countOtherReportsOfTarget = `-- name: CountOtherReportsOfTarget :one
 SELECT COUNT(*) FROM reports
-WHERE target_account_id = $1::text AND id <> $2::text
+WHERE target_account_id = $1::uuid AND id <> $2::uuid
 `
 
 type CountOtherReportsOfTargetParams struct {
@@ -344,7 +344,7 @@ func (q *Queries) GetReportStateForUpdate(ctx context.Context, reportID string) 
 const hasOtherOpenReportOf = `-- name: HasOtherOpenReportOf :one
 SELECT EXISTS (
   SELECT 1 FROM reports r JOIN report_states s ON s.report_id = r.id
-  WHERE r.target_account_id = $1::text AND r.id <> $2::text AND s.state = 'open'
+  WHERE r.target_account_id = $1::uuid AND r.id <> $2::uuid AND s.state = 'open'
 )
 `
 
@@ -764,7 +764,7 @@ WHERE ($1::text = '' OR a.domain = $1::text)
   AND (cardinality($2::text[]) = 0 OR a.kind = ANY($2::text[]))
   AND ($3::timestamptz IS NULL
     OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > $3::timestamptz)))
-  AND ($4::text = '' OR a.id < $4::text)
+  AND ($4::uuid IS NULL OR a.id < $4::uuid)
 ORDER BY a.id DESC
 LIMIT $5
 `
@@ -773,7 +773,7 @@ type ListDomainModerationActionsParams struct {
 	Domain     string
 	Kinds      []string
 	InEffectAt *time.Time
-	Before     string
+	Before     *string
 	Lim        int32
 }
 
@@ -906,18 +906,18 @@ SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.
   l.action_id AS lift_action_id, l.lifted_by_user_id, l.reason AS lift_reason, l.lifted_at
 FROM moderation_actions a
 LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
-WHERE ($1::text = '' OR a.target_account_id = $1::text)
+WHERE ($1::uuid IS NULL OR a.target_account_id = $1::uuid)
   AND ($2::timestamptz IS NULL
     OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > $2::timestamptz)))
-  AND ($3::text = '' OR a.id < $3::text)
+  AND ($3::uuid IS NULL OR a.id < $3::uuid)
 ORDER BY a.id DESC
 LIMIT $4
 `
 
 type ListModerationActionsParams struct {
-	AccountID  string
+	AccountID  *string
 	InEffectAt *time.Time
-	Before     string
+	Before     *string
 	Lim        int32
 }
 
@@ -1069,14 +1069,14 @@ SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.co
   r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
 FROM reports r JOIN report_states s ON s.report_id = r.id
 WHERE ($1::text = '' OR s.state = $1::text)
-  AND ($2::text = '' OR r.id < $2::text)
+  AND ($2::uuid IS NULL OR r.id < $2::uuid)
 ORDER BY r.id DESC
 LIMIT $3
 `
 
 type ListReportsParams struct {
 	State  string
-	Before string
+	Before *string
 	Lim    int32
 }
 
@@ -1134,15 +1134,15 @@ const listReportsByReporter = `-- name: ListReportsByReporter :many
 SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.comment, r.forwarded,
   r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
 FROM reports r JOIN report_states s ON s.report_id = r.id
-WHERE r.reporter_account_id = $1::text
-  AND ($2::text = '' OR r.id < $2::text)
+WHERE r.reporter_account_id = $1::uuid
+  AND ($2::uuid IS NULL OR r.id < $2::uuid)
 ORDER BY r.id DESC
 LIMIT $3
 `
 
 type ListReportsByReporterParams struct {
 	ReporterAccountID string
-	Before            string
+	Before            *string
 	Lim               int32
 }
 

@@ -95,7 +95,7 @@ func (r *ModerationRepository) ListSignupBlocks(ctx context.Context, q appmodera
 		return nil, err
 	}
 	rows, err := r.db.reader().ListSignupBlocks(ctx, postgresgen.ListSignupBlocksParams{
-		Kind: string(q.Kind), InEffectAt: q.InEffectAt, Before: q.Before, Lim: lim,
+		Kind: string(q.Kind), InEffectAt: q.InEffectAt, Before: toNullString(q.Before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list signup blocks")

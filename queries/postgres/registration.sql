@@ -42,8 +42,8 @@ JOIN registration_applications a ON a.user_id = s.user_id
 LEFT JOIN user_primary_emails p ON p.user_id = s.user_id
 LEFT JOIN user_email_addresses e ON e.id = p.email_address_id
 WHERE s.state = sqlc.arg(state)
-  AND (CAST(sqlc.arg(after_user_id) AS TEXT) = '' OR s.since > sqlc.arg(after_since)
-    OR (s.since = sqlc.arg(after_since) AND s.user_id > sqlc.arg(after_user_id)))
+  AND (sqlc.narg(after_user_id)::uuid IS NULL OR s.since > sqlc.arg(after_since)
+    OR (s.since = sqlc.arg(after_since) AND s.user_id > sqlc.narg(after_user_id)::uuid))
 ORDER BY s.since, s.user_id
 LIMIT sqlc.arg(page_limit);
 
@@ -73,7 +73,7 @@ SELECT i.id, i.code, i.created_by_user_id, i.max_uses, i.expires_at, i.created_a
   (SELECT COUNT(*) FROM invite_redemptions r WHERE r.invite_id = i.id) AS uses,
   EXISTS (SELECT 1 FROM invite_revocations v WHERE v.invite_id = i.id) AS revoked
 FROM invites i
-WHERE sqlc.arg(before)::text = '' OR i.id < sqlc.arg(before)::text
+WHERE sqlc.narg(before)::uuid IS NULL OR i.id < sqlc.narg(before)::uuid
 ORDER BY i.id DESC
 LIMIT sqlc.arg(page_limit);
 

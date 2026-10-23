@@ -332,8 +332,8 @@ func severanceOfDomain(t *testing.T, e *severanceEnv) {
 
 	// A payload without an action fails the job.
 	handle, _, _ := e.handlers.Lookup(appmoderation.JobSeverDomain)
-	payload, _ := json.Marshal(map[string]string{"domain_action_id": "missing"})
-	if r := handle(ctx, queue.Job{ID: "j", Type: appmoderation.JobSeverDomain, Payload: payload}); r.IsDone() || r.Err() == nil {
+	payload, _ := json.Marshal(map[string]string{"domain_action_id": NamedID("missing")})
+	if r := handle(ctx, queue.Job{ID: NamedID("j"), Type: appmoderation.JobSeverDomain, Payload: payload}); r.IsDone() || r.Err() == nil {
 		t.Errorf("job of a missing action = %+v, want a failure", r)
 	}
 }

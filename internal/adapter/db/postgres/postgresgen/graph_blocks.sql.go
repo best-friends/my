@@ -306,9 +306,9 @@ SELECT account_id, target_account_id, hide_notifications, expires_at, created_at
 FROM mutes
 WHERE account_id = $1
   AND (expires_at IS NULL OR expires_at > $2::timestamptz)
-  AND ($3::text = ''
+  AND ($3::uuid IS NULL
     OR created_at < $4::timestamptz
-    OR (created_at = $4::timestamptz AND target_account_id < $3::text))
+    OR (created_at = $4::timestamptz AND target_account_id < $3::uuid))
 ORDER BY created_at DESC, target_account_id DESC
 LIMIT $5
 `
@@ -316,7 +316,7 @@ LIMIT $5
 type ListActiveMutesPageParams struct {
 	AccountID             string
 	Now                   time.Time
-	BeforeTargetAccountID string
+	BeforeTargetAccountID *string
 	BeforeCreatedAt       time.Time
 	PageLimit             int32
 }
@@ -486,14 +486,14 @@ const listBlockingPage = `-- name: ListBlockingPage :many
 SELECT blocker_account_id, blocked_account_id, block_id
 FROM block_edges
 WHERE blocker_account_id = $1
-  AND ($2::text = '' OR block_id < $2::text)
+  AND ($2::uuid IS NULL OR block_id < $2::uuid)
 ORDER BY block_id DESC
 LIMIT $3
 `
 
 type ListBlockingPageParams struct {
 	AccountID string
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 

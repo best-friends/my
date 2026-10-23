@@ -135,8 +135,8 @@ FROM reports WHERE target_account_id = $1 ORDER BY id;
 SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.comment, r.forwarded,
   r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
 FROM reports r JOIN report_states s ON s.report_id = r.id
-WHERE r.reporter_account_id = sqlc.arg(reporter_account_id)::text
-  AND (sqlc.arg(before)::text = '' OR r.id < sqlc.arg(before)::text)
+WHERE r.reporter_account_id = sqlc.arg(reporter_account_id)::uuid
+  AND (sqlc.narg(before)::uuid IS NULL OR r.id < sqlc.narg(before)::uuid)
 ORDER BY r.id DESC
 LIMIT sqlc.arg(lim);
 
@@ -163,7 +163,7 @@ SELECT r.id, r.uri, r.reporter_account_id, r.target_account_id, r.category, r.co
   r.filed_at, s.state, s.outcome, s.assignee_user_id, s.since
 FROM reports r JOIN report_states s ON s.report_id = r.id
 WHERE (sqlc.arg(state)::text = '' OR s.state = sqlc.arg(state)::text)
-  AND (sqlc.arg(before)::text = '' OR r.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR r.id < sqlc.narg(before)::uuid)
 ORDER BY r.id DESC
 LIMIT sqlc.arg(lim);
 
@@ -180,7 +180,7 @@ WHERE (sqlc.arg(domain)::text = '' OR a.domain = sqlc.arg(domain)::text)
   AND (cardinality(sqlc.arg(kinds)::text[]) = 0 OR a.kind = ANY(sqlc.arg(kinds)::text[]))
   AND (sqlc.narg(in_effect_at)::timestamptz IS NULL
     OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > sqlc.narg(in_effect_at)::timestamptz)))
-  AND (sqlc.arg(before)::text = '' OR a.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR a.id < sqlc.narg(before)::uuid)
 ORDER BY a.id DESC
 LIMIT sqlc.arg(lim);
 
@@ -200,10 +200,10 @@ SELECT a.id, a.target_account_id, a.kind, a.reason_category, a.public_reason, a.
   l.action_id AS lift_action_id, l.lifted_by_user_id, l.reason AS lift_reason, l.lifted_at
 FROM moderation_actions a
 LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
-WHERE (sqlc.arg(account_id)::text = '' OR a.target_account_id = sqlc.arg(account_id)::text)
+WHERE (sqlc.narg(account_id)::uuid IS NULL OR a.target_account_id = sqlc.narg(account_id)::uuid)
   AND (sqlc.narg(in_effect_at)::timestamptz IS NULL
     OR (l.action_id IS NULL AND (a.expires_at IS NULL OR a.expires_at > sqlc.narg(in_effect_at)::timestamptz)))
-  AND (sqlc.arg(before)::text = '' OR a.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR a.id < sqlc.narg(before)::uuid)
 ORDER BY a.id DESC
 LIMIT sqlc.arg(lim);
 
@@ -225,7 +225,7 @@ SELECT COUNT(*) FROM report_states WHERE state = $1;
 -- name: HasOtherOpenReportOf :one
 SELECT EXISTS (
   SELECT 1 FROM reports r JOIN report_states s ON s.report_id = r.id
-  WHERE r.target_account_id = sqlc.arg(target_account_id)::text AND r.id <> sqlc.arg(report_id)::text AND s.state = 'open'
+  WHERE r.target_account_id = sqlc.arg(target_account_id)::uuid AND r.id <> sqlc.arg(report_id)::uuid AND s.state = 'open'
 );
 
 -- Notes on reports and their reopenings (#333) -------------------------------------------------
@@ -243,7 +243,7 @@ SELECT id, report_id, author_user_id, body, written_at FROM report_notes WHERE r
 -- CountOtherReportsOfTarget counts the reports of a target account other than the one given.
 -- name: CountOtherReportsOfTarget :one
 SELECT COUNT(*) FROM reports
-WHERE target_account_id = sqlc.arg(target_account_id)::text AND id <> sqlc.arg(report_id)::text;
+WHERE target_account_id = sqlc.arg(target_account_id)::uuid AND id <> sqlc.arg(report_id)::uuid;
 
 -- CountModerationActionsOfTarget counts the actions on an account, ended ones included.
 -- name: CountModerationActionsOfTarget :one

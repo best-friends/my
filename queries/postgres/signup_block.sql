@@ -28,7 +28,7 @@ LEFT JOIN signup_block_lifts l ON l.block_id = b.id
 WHERE (sqlc.arg(kind)::text = '' OR b.kind = sqlc.arg(kind)::text)
   AND (sqlc.narg(in_effect_at)::timestamptz IS NULL
     OR (l.block_id IS NULL AND (b.expires_at IS NULL OR b.expires_at > sqlc.narg(in_effect_at)::timestamptz)))
-  AND (sqlc.arg(before)::text = '' OR b.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR b.id < sqlc.narg(before)::uuid)
 ORDER BY b.id DESC
 LIMIT sqlc.arg(lim);
 

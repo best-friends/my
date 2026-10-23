@@ -22,7 +22,7 @@ func (q *Queries) DeleteAllRelayStates(ctx context.Context) error {
 }
 
 const deleteRelay = `-- name: DeleteRelay :exec
-DELETE FROM relays WHERE id = $1
+DELETE FROM relays WHERE id = $1::uuid
 `
 
 func (q *Queries) DeleteRelay(ctx context.Context, id string) error {
@@ -31,7 +31,7 @@ func (q *Queries) DeleteRelay(ctx context.Context, id string) error {
 }
 
 const deleteRelayEvents = `-- name: DeleteRelayEvents :exec
-DELETE FROM relay_events WHERE relay_id = $1
+DELETE FROM relay_events WHERE relay_id = $1::uuid
 `
 
 func (q *Queries) DeleteRelayEvents(ctx context.Context, relayID string) error {
@@ -40,7 +40,7 @@ func (q *Queries) DeleteRelayEvents(ctx context.Context, relayID string) error {
 }
 
 const deleteRelayState = `-- name: DeleteRelayState :exec
-DELETE FROM relay_states WHERE relay_id = $1
+DELETE FROM relay_states WHERE relay_id = $1::uuid
 `
 
 func (q *Queries) DeleteRelayState(ctx context.Context, relayID string) error {
@@ -95,7 +95,7 @@ const getRelay = `-- name: GetRelay :one
 SELECT r.id, r.protocol, r.url, r.inbox_url, r.receive, r.created_by_user_id, r.created_at,
   s.state, s.follow_activity_uri, s.relay_actor_uri, s.since
 FROM relays r LEFT JOIN relay_states s ON s.relay_id = r.id
-WHERE r.id = $1
+WHERE r.id = $1::uuid
 `
 
 type GetRelayRow struct {
@@ -323,7 +323,7 @@ const lockRelay = `-- name: LockRelay :one
 SELECT r.id, r.protocol, r.url, r.inbox_url, r.receive, r.created_by_user_id, r.created_at,
   s.state, s.follow_activity_uri, s.relay_actor_uri, s.since
 FROM relays r LEFT JOIN relay_states s ON s.relay_id = r.id
-WHERE r.id = $1
+WHERE r.id = $1::uuid
 FOR UPDATE OF r
 `
 

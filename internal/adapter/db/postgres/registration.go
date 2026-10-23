@@ -91,7 +91,7 @@ func (r *IdentityRepository) ListRegistrations(ctx context.Context, state identi
 		return nil, err
 	}
 	rows, err := r.db.reader().ListRegistrationsInState(ctx, postgresgen.ListRegistrationsInStateParams{
-		State: string(state), AfterUserID: after.UserID, AfterSince: after.Since, PageLimit: n})
+		State: string(state), AfterUserID: toNullString(after.UserID), AfterSince: after.Since, PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list registrations")
 	}
@@ -212,7 +212,7 @@ func (r *IdentityRepository) ListInvites(ctx context.Context, before string, lim
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.db.reader().ListInvites(ctx, postgresgen.ListInvitesParams{Before: before, PageLimit: n})
+	rows, err := r.db.reader().ListInvites(ctx, postgresgen.ListInvitesParams{Before: toNullString(before), PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list invites")
 	}

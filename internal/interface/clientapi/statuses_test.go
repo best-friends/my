@@ -354,16 +354,16 @@ func TestCreateStatus(t *testing.T) {
 	}
 	e := newStatusEnv(t, f)
 	res := e.send(t, http.MethodPost, "/statuses", "write", `{"text":"hi","visibility":"local","spoiler_text":"cw","sensitive":true,
-		"language":"en","in_reply_to_id":"parent","media":[{"id":"m1","description":"a cat"},{"id":"m2"}]}`)
+		"language":"en","in_reply_to_id":"`+sampleStatusID+`","media":[{"id":"`+sampleMediaID+`","description":"a cat"},{"id":"`+otherMediaID+`"}]}`)
 	if res.StatusCode != http.StatusOK || res.Header.Get("Cache-Control") != "no-store" {
 		t.Fatalf("POST = %d", res.StatusCode)
 	}
 	want := appcontent.CreateInput{
 		TextInput: appcontent.TextInput{
 			Text: "hi", SpoilerText: "cw", Sensitive: true, Language: "en",
-			Media: []appcontent.MediaInput{{MediaID: "m1", Description: "a cat"}, {MediaID: "m2"}},
+			Media: []appcontent.MediaInput{{MediaID: sampleMediaID, Description: "a cat"}, {MediaID: otherMediaID}},
 		},
-		AuthorAccountID: aliceAccountID, Visibility: content.VisibilityLocal, InReplyToID: "parent", ClientID: "client-1",
+		AuthorAccountID: aliceAccountID, Visibility: content.VisibilityLocal, InReplyToID: sampleStatusID, ClientID: "client-1",
 	}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Errorf("CreateInput = %+v, want %+v", got, want)
@@ -630,3 +630,8 @@ func TestGetStatusContextFetchesTheThread(t *testing.T) {
 		t.Errorf("threads fetched = %v, want %s twice", threads.opened, sampleStatusID)
 	}
 }
+
+const (
+	sampleMediaID = "01890a5d-ac96-774b-bcce-b302099a9501"
+	otherMediaID  = "01890a5d-ac96-774b-bcce-b302099a9502"
+)

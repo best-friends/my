@@ -547,12 +547,12 @@ func fedRecordsOutboundActivities(t *testing.T, e *fedEnv) {
 	at := e.clock.Now()
 	create := federation.OutboundActivity{
 		ID: e.ids.NewID(), ActivityURI: "https://social.example/ap/objects/s1/activity", Type: federation.ActivityCreate,
-		ActorAccountID: "a1", ObjectKind: federation.OutboundStatus, ObjectID: "s1", CreatedAt: at,
+		ActorAccountID: NamedID("a1"), ObjectKind: federation.OutboundStatus, ObjectID: NamedID("s1"), CreatedAt: at,
 	}
 	update := create
 	update.ID, update.ActivityURI, update.Type, update.CreatedAt = e.ids.NewID(), "https://social.example/ap/activities/u1", federation.ActivityUpdate, at.Add(time.Second)
 	other := create
-	other.ID, other.ActivityURI, other.ObjectKind, other.ObjectID, other.Type = e.ids.NewID(), "https://social.example/ap/activities/b1", federation.OutboundBoost, "s1", federation.ActivityAnnounce
+	other.ID, other.ActivityURI, other.ObjectKind, other.ObjectID, other.Type = e.ids.NewID(), "https://social.example/ap/activities/b1", federation.OutboundBoost, NamedID("s1"), federation.ActivityAnnounce
 	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		for _, a := range []federation.OutboundActivity{create, update, other} {
 			if err := e.h.Federation.InsertOutboundActivity(ctx, tx, a); err != nil {
@@ -570,7 +570,7 @@ func fedRecordsOutboundActivities(t *testing.T, e *fedEnv) {
 	if _, err := e.h.Federation.FindOutboundActivity(ctx, e.ids.NewID()); !errors.Is(err, appfederation.ErrNotFound) {
 		t.Errorf("FindOutboundActivity(missing) = %v, want ErrNotFound", err)
 	}
-	got, err := e.h.Federation.ListOutboundActivitiesOf(ctx, federation.OutboundStatus, "s1")
+	got, err := e.h.Federation.ListOutboundActivitiesOf(ctx, federation.OutboundStatus, NamedID("s1"))
 	if err != nil || !reflect.DeepEqual(got, []federation.OutboundActivity{create, update}) {
 		t.Errorf("ListOutboundActivitiesOf = %+v, %v; want the Create and the Update", got, err)
 	}
@@ -588,7 +588,7 @@ func fedKeepsTheFirstDocument(t *testing.T, e *fedEnv) {
 		var inserted bool
 		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 			var err error
-			inserted, err = e.h.Federation.InsertOutboundDocument(ctx, tx, "o1", []byte(doc), e.clock.Now())
+			inserted, err = e.h.Federation.InsertOutboundDocument(ctx, tx, NamedID("o1"), []byte(doc), e.clock.Now())
 			return err
 		})
 		if err != nil {
@@ -602,12 +602,12 @@ func fedKeepsTheFirstDocument(t *testing.T, e *fedEnv) {
 	if insert(`{"id":"second"}`) {
 		t.Error("a second document was inserted")
 	}
-	b, err := e.h.Federation.FindOutboundDocument(ctx, "o1")
+	b, err := e.h.Federation.FindOutboundDocument(ctx, NamedID("o1"))
 	var doc map[string]any
 	if err != nil || json.Unmarshal(b, &doc) != nil || doc["id"] != "first" {
 		t.Errorf("FindOutboundDocument = %s, %v; want the first document", b, err)
 	}
-	if _, err := e.h.Federation.FindOutboundDocument(ctx, "o2"); !errors.Is(err, appfederation.ErrNotFound) {
+	if _, err := e.h.Federation.FindOutboundDocument(ctx, NamedID("o2")); !errors.Is(err, appfederation.ErrNotFound) {
 		t.Errorf("FindOutboundDocument(missing) = %v, want ErrNotFound", err)
 	}
 }
@@ -618,7 +618,7 @@ func fedDeliversToAnInboxOnce(t *testing.T, e *fedEnv) {
 	for _, inbox := range []string{"https://a.example/inbox", "https://b.example/inbox", "https://c.example/inbox"} {
 		e.clock.Advance(time.Millisecond)
 		want = append(want, federation.Delivery{
-			ID: e.ids.NewID(), OutboundActivityID: "o1", InboxURL: federation.IRI(inbox), Domain: federation.IRI(inbox).Host(), CreatedAt: e.clock.Now(),
+			ID: e.ids.NewID(), OutboundActivityID: NamedID("o1"), InboxURL: federation.IRI(inbox), Domain: federation.IRI(inbox).Host(), CreatedAt: e.clock.Now(),
 		})
 	}
 	insert := func(d federation.Delivery) bool {
@@ -644,15 +644,15 @@ func fedDeliversToAnInboxOnce(t *testing.T, e *fedEnv) {
 		t.Error("a second delivery to the same inbox was inserted")
 	}
 	other := again
-	other.OutboundActivityID = "o2"
+	other.OutboundActivityID = NamedID("o2")
 	if !insert(other) {
 		t.Error("the delivery of another activity to the same inbox was not inserted")
 	}
-	first, err := e.h.Federation.ListDeliveries(ctx, "o1", "", 2)
+	first, err := e.h.Federation.ListDeliveries(ctx, NamedID("o1"), "", 2)
 	if err != nil || !reflect.DeepEqual(first, want[:2]) {
 		t.Errorf("ListDeliveries(first 2) = %+v, %v; want %+v", first, err, want[:2])
 	}
-	rest, err := e.h.Federation.ListDeliveries(ctx, "o1", want[1].ID, 2)
+	rest, err := e.h.Federation.ListDeliveries(ctx, NamedID("o1"), want[1].ID, 2)
 	if err != nil || !reflect.DeepEqual(rest, want[2:]) {
 		t.Errorf("ListDeliveries(after 2) = %+v, %v; want %+v", rest, err, want[2:])
 	}

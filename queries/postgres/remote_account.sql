@@ -23,14 +23,14 @@ INSERT INTO remote_account_snapshots (
 SELECT id, account_id, preferred_username, profile_url, inbox_url, shared_inbox_url, outbox_url,
   followers_url, following_url, featured_url, followers_total, following_total, statuses_total,
   document_digest, fetched_at
-FROM remote_account_snapshots WHERE account_id = @account_id ORDER BY id DESC LIMIT 1;
+FROM remote_account_snapshots WHERE account_id = sqlc.arg(account_id)::uuid ORDER BY id DESC LIMIT 1;
 
 -- ListRemoteProfileURLs returns the profile page (url) of the current snapshot of each actor in
 -- @account_ids that declares one, for presenting a page of accounts.
 -- name: ListRemoteProfileURLs :many
 SELECT h.account_id, s.profile_url FROM remote_account_heads h
 JOIN remote_account_snapshots s ON s.id = h.snapshot_id
-WHERE h.account_id = ANY(@account_ids::text[]) AND s.profile_url IS NOT NULL
+WHERE h.account_id = ANY(sqlc.arg(account_ids)::uuid[]) AND s.profile_url IS NOT NULL
 ORDER BY h.account_id;
 
 -- name: UpsertRemoteAccountHead :exec
@@ -46,7 +46,7 @@ ON CONFLICT (account_id) DO UPDATE SET
 
 -- name: GetRemoteAccountHead :one
 SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
-FROM remote_account_heads WHERE account_id = @account_id;
+FROM remote_account_heads WHERE account_id = sqlc.arg(account_id)::uuid;
 
 -- ListStaleRemoteAccountHeads returns the actors fetched before @fetched_before, the least
 -- recently fetched first, after the cursor (@after_fetched_at, @after_account_id), for the
@@ -55,7 +55,7 @@ FROM remote_account_heads WHERE account_id = @account_id;
 SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
 FROM remote_account_heads
 WHERE last_fetched_at < @fetched_before
-  AND (last_fetched_at > @after_fetched_at OR (last_fetched_at = @after_fetched_at AND account_id > @after_account_id))
+  AND (last_fetched_at > @after_fetched_at OR (last_fetched_at = @after_fetched_at AND account_id > COALESCE(sqlc.narg(after_account_id)::uuid, '00000000-0000-0000-0000-000000000000')))
 ORDER BY last_fetched_at, account_id LIMIT @batch_limit;
 
 -- ListKnownSharedInboxes returns the distinct shared inboxes that the heads of remote actors not
@@ -75,7 +75,7 @@ VALUES (@id, @account_id, @username, @domain, @outcome, @checked_at);
 -- GetLatestRemoteAccountHandleVerification returns the newest handle check of an actor.
 -- name: GetLatestRemoteAccountHandleVerification :one
 SELECT id, account_id, username, domain, outcome, checked_at FROM remote_account_handle_verifications
-WHERE account_id = @account_id ORDER BY id DESC LIMIT 1;
+WHERE account_id = sqlc.arg(account_id)::uuid ORDER BY id DESC LIMIT 1;
 
 -- ListLatestRemoteAccountHandleVerifications returns the newest handle check of every actor,
 -- oldest first, for rebuilding account_handles.
@@ -89,25 +89,25 @@ WHERE v.id = (
 ORDER BY v.id;
 
 -- name: DeleteAccountHandle :exec
-DELETE FROM account_handles WHERE account_id = @account_id;
+DELETE FROM account_handles WHERE account_id = sqlc.arg(account_id)::uuid;
 
 -- DeleteOtherAccountHandle removes the handle of another account that holds the same name,
 -- so that the account that verified it last keeps it.
 -- name: DeleteOtherAccountHandle :exec
 DELETE FROM account_handles
-WHERE username_normalized = @username_normalized AND domain = @domain AND account_id <> @account_id;
+WHERE username_normalized = @username_normalized AND domain = @domain AND account_id <> sqlc.arg(account_id)::uuid;
 
 -- RecordRemoteAccountFetchFailure counts a failed fetch of an actor and defers its next refresh.
 -- name: RecordRemoteAccountFetchFailure :execrows
 UPDATE remote_account_heads
 SET consecutive_fetch_failures = consecutive_fetch_failures + 1, last_fetched_at = @last_fetched_at
-WHERE account_id = @account_id;
+WHERE account_id = sqlc.arg(account_id)::uuid;
 
 -- ListActiveAccountKeys returns the keys of an account without a revocation, oldest first.
 -- name: ListActiveAccountKeys :many
 SELECT k.id, k.account_id, k.key_id, k.algorithm, k.public_key_pem, k.fingerprint, k.created_at
 FROM account_keys k
-WHERE k.account_id = @account_id
+WHERE k.account_id = sqlc.arg(account_id)::uuid
   AND NOT EXISTS (SELECT 1 FROM account_key_revocations r WHERE r.account_key_id = k.id)
 ORDER BY k.id;
 

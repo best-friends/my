@@ -642,12 +642,12 @@ func retentionRelayed(t *testing.T, e *retentionEnv) {
 	plain := e.note(t, alice, alice+"/notes/plain", 10*24*time.Hour, nil)
 	err := e.rh.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		for _, st := range []content.Status{old, older, young, ofFollowed, favourited} {
-			if err := e.content.RecordRelayedStatus(ctx, tx, st.ID, "relay-1", remoteNow); err != nil {
+			if err := e.content.RecordRelayedStatus(ctx, tx, st.ID, NamedID("relay-1"), remoteNow); err != nil {
 				return err
 			}
 		}
 		// Recording again changes nothing.
-		return e.content.RecordRelayedStatus(ctx, tx, old.ID, "relay-2", remoteNow)
+		return e.content.RecordRelayedStatus(ctx, tx, old.ID, NamedID("relay-2"), remoteNow)
 	})
 	if err != nil {
 		t.Fatalf("RecordRelayedStatus = %v", err)

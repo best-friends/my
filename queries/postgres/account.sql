@@ -102,25 +102,25 @@ SELECT id, uri, domain, actor_type, created_at FROM accounts WHERE uri = $1;
 
 -- AnyAccountOnDomain reports whether one of the accounts ids is on domain.
 -- name: AnyAccountOnDomain :one
-SELECT EXISTS (SELECT 1 FROM accounts WHERE domain = sqlc.arg(domain) AND id = ANY(sqlc.arg(ids)::text[])) AS found;
+SELECT EXISTS (SELECT 1 FROM accounts WHERE domain = sqlc.arg(domain) AND id = ANY(sqlc.arg(ids)::uuid[])) AS found;
 
 -- ListAccountsOnDomain returns, in ID order, the accounts among ids that are on domain or one
 -- of its subdomains.
 -- name: ListAccountsOnDomain :many
 SELECT id FROM accounts
-WHERE id = ANY(sqlc.arg(ids)::text[])
+WHERE id = ANY(sqlc.arg(ids)::uuid[])
   AND (domain = sqlc.arg(domain)
     OR (length(domain) > length(sqlc.arg(domain)) AND substr(domain, length(domain) - length(sqlc.arg(domain))) = '.' || sqlc.arg(domain)))
 ORDER BY id;
 
 -- ListExistingAccountIDs returns, in ID order, the accounts among ids that exist.
 -- name: ListExistingAccountIDs :many
-SELECT id FROM accounts WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+SELECT id FROM accounts WHERE id = ANY(sqlc.arg(ids)::uuid[]) ORDER BY id;
 
 -- ListLocalAccountIDsAfter pages the local accounts in ID order after the ID after ("" for the
 -- first page).
 -- name: ListLocalAccountIDsAfter :many
-SELECT account_id FROM local_accounts WHERE account_id > sqlc.arg(after)::text ORDER BY account_id LIMIT sqlc.arg(page_limit);
+SELECT account_id FROM local_accounts WHERE account_id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000') ORDER BY account_id LIMIT sqlc.arg(page_limit);
 
 -- name: GetLocalAccount :one
 SELECT account_id, user_id, username, username_normalized FROM local_accounts WHERE account_id = $1;

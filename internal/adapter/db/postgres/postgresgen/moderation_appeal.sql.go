@@ -130,14 +130,14 @@ FROM moderation_appeals a
 JOIN appeal_states s ON s.appeal_id = a.id
 LEFT JOIN moderation_appeal_decisions d ON d.appeal_id = a.id
 WHERE ($1::text = '' OR s.state = $1::text)
-  AND ($2::text = '' OR a.id < $2::text)
+  AND ($2::uuid IS NULL OR a.id < $2::uuid)
 ORDER BY a.id DESC
 LIMIT $3
 `
 
 type ListModerationAppealsParams struct {
 	State  string
-	Before string
+	Before *string
 	Lim    int32
 }
 
@@ -191,7 +191,7 @@ const listModerationAppealsOfActions = `-- name: ListModerationAppealsOfActions 
 SELECT a.id, a.action_id, a.account_id, a.body, a.submitted_at, d.appeal_id AS decision_appeal_id,
   d.decision, d.public_reason, d.decided_by_user_id, d.decided_at
 FROM moderation_appeals a LEFT JOIN moderation_appeal_decisions d ON d.appeal_id = a.id
-WHERE a.action_id = ANY($1::text[])
+WHERE a.action_id = ANY($1::uuid[])
 `
 
 type ListModerationAppealsOfActionsRow struct {

@@ -52,7 +52,7 @@ FROM block_edges ORDER BY blocker_account_id, blocked_account_id;
 SELECT blocker_account_id, blocked_account_id, block_id
 FROM block_edges
 WHERE blocker_account_id = sqlc.arg(account_id)
-  AND (sqlc.arg(before)::text = '' OR block_id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR block_id < sqlc.narg(before)::uuid)
 ORDER BY block_id DESC
 LIMIT sqlc.arg(page_limit);
 
@@ -95,9 +95,9 @@ SELECT account_id, target_account_id, hide_notifications, expires_at, created_at
 FROM mutes
 WHERE account_id = sqlc.arg(account_id)
   AND (expires_at IS NULL OR expires_at > sqlc.arg(now)::timestamptz)
-  AND (sqlc.arg(before_target_account_id)::text = ''
+  AND (sqlc.narg(before_target_account_id)::uuid IS NULL
     OR created_at < sqlc.arg(before_created_at)::timestamptz
-    OR (created_at = sqlc.arg(before_created_at)::timestamptz AND target_account_id < sqlc.arg(before_target_account_id)::text))
+    OR (created_at = sqlc.arg(before_created_at)::timestamptz AND target_account_id < sqlc.narg(before_target_account_id)::uuid))
 ORDER BY created_at DESC, target_account_id DESC
 LIMIT sqlc.arg(page_limit);
 

@@ -203,12 +203,12 @@ func queueRecordsUnsuccessfulAttempts(t *testing.T, newHarness QueueFactory) {
 		t.Errorf("ListAttempts() after the requeue = %+v, want a new record of attempt 1 first", got)
 	}
 
-	long := queue.Attempt{JobID: "long", JobType: contractJobType, Attempt: 1, Outcome: queue.OutcomeRetry, Error: strings.Repeat("e", 3000),
+	long := queue.Attempt{JobID: NamedID("long"), JobType: contractJobType, Attempt: 1, Outcome: queue.OutcomeRetry, Error: strings.Repeat("e", 3000),
 		Worker: "w1", StartedAt: f.clock.Now(), FinishedAt: f.clock.Now()}
 	if err := f.h.Attempts.RecordAttempt(t.Context(), long); err != nil {
 		t.Fatalf("RecordAttempt(long): %v", err)
 	}
-	if got, err := f.h.Attempts.ListAttempts(t.Context(), "long", queue.AttemptPosition{}, 1); err != nil || len(got) != 1 || len(got[0].Error) != queue.MaxAttemptErrorBytes {
+	if got, err := f.h.Attempts.ListAttempts(t.Context(), NamedID("long"), queue.AttemptPosition{}, 1); err != nil || len(got) != 1 || len(got[0].Error) != queue.MaxAttemptErrorBytes {
 		t.Errorf("long error kept %+v, %v; want %d bytes", got, err, queue.MaxAttemptErrorBytes)
 	}
 

@@ -14,7 +14,10 @@ import (
 	"github.com/best-friends/my/internal/domain/content"
 )
 
-const samplePollID = "01890a5d-ac96-774b-bcce-b302099a9300"
+const (
+	samplePollID = "01890a5d-ac96-774b-bcce-b302099a9300"
+	otherPollID  = "01890a5d-ac96-774b-bcce-b302099a9301"
+)
 
 // pollView is sampleView with a single-choice poll that ends at closesAt; a local viewer voted
 // for its second option.
@@ -86,7 +89,7 @@ func TestVoteInPoll(t *testing.T) {
 		"vote:" + samplePollID + ":[1]":   content.ErrAlreadyVoted,
 		"vote:" + samplePollID + ":[2]":   content.ErrPollClosed,
 		"vote:" + samplePollID + ":[3]":   content.ErrNoPoll,
-		"vote:other:[0]":                  content.ErrPollChanged,
+		"vote:" + otherPollID + ":[0]":    content.ErrPollChanged,
 	}
 	f := &fakeStatuses{
 		interact: func(op, accountID, id string) error {
@@ -126,7 +129,7 @@ func TestVoteInPoll(t *testing.T) {
 		{samplePollID, "[1]", http.StatusUnprocessableEntity},
 		{samplePollID, "[2]", http.StatusUnprocessableEntity},
 		{samplePollID, "[3]", http.StatusUnprocessableEntity},
-		{"other", "[0]", http.StatusConflict},
+		{otherPollID, "[0]", http.StatusConflict},
 	} {
 		if res := e.send(t, http.MethodPost, path, "write", body(c.pollID, c.choices)); res.StatusCode != c.want {
 			t.Errorf("POST %s %s = %d, want %d", c.pollID, c.choices, res.StatusCode, c.want)

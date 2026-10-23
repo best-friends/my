@@ -174,14 +174,15 @@ WHERE EXISTS (SELECT 1 FROM webhook_delivery_attempts a WHERE a.id = webhook_end
 INSERT INTO webhook_endpoint_failures (endpoint_id, first_failure_attempt_id, first_failed_at, consecutive_failures)
 SELECT g.endpoint_id, g.first_id, f.attempted_at, g.failures
 FROM (
-  SELECT d.endpoint_id, MIN(a.id) AS first_id, COUNT(*) AS failures
+  SELECT DISTINCT ON (d.endpoint_id) d.endpoint_id, a.id AS first_id,
+    COUNT(*) OVER (PARTITION BY d.endpoint_id) AS failures
   FROM webhook_delivery_attempts a JOIN webhook_deliveries d ON d.id = a.delivery_id
   WHERE a.outcome <> 'succeeded'
     AND NOT EXISTS (
       SELECT 1 FROM webhook_delivery_attempts s JOIN webhook_deliveries sd ON sd.id = s.delivery_id
       WHERE sd.endpoint_id = d.endpoint_id AND s.outcome = 'succeeded' AND s.id > a.id
     )
-  GROUP BY d.endpoint_id
+  ORDER BY d.endpoint_id, a.id
 ) g JOIN webhook_delivery_attempts f ON f.id = g.first_id
 WHERE NOT EXISTS (SELECT 1 FROM webhook_endpoint_failures x WHERE x.endpoint_id = g.endpoint_id);
 
@@ -207,6 +208,7 @@ DELETE FROM imported_cost_heads;
 -- key (the largest id, a UUIDv7 that follows the recording order).
 -- name: RebuildImportedCostHeads :exec
 INSERT INTO imported_cost_heads (source, billing_month, service, charge_type, revision_id)
-SELECT r.source, r.billing_month, r.service, r.charge_type, MAX(r.id)
+SELECT DISTINCT ON (r.source, r.billing_month, r.service, r.charge_type)
+  r.source, r.billing_month, r.service, r.charge_type, r.id
 FROM imported_cost_revisions r
-GROUP BY r.source, r.billing_month, r.service, r.charge_type;
+ORDER BY r.source, r.billing_month, r.service, r.charge_type, r.id DESC;

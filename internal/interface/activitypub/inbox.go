@@ -36,7 +36,7 @@ func (h *Handler) sharedInbox(w http.ResponseWriter, r *http.Request) {
 // other id. Every inbox records the activity the same way; who it is for is in its addressing.
 func (h *Handler) actorInbox(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if !validID(id) {
+	if !kernel.ValidID(id) {
 		h.notFound(w, r)
 		return
 	}

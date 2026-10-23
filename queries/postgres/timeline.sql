@@ -134,9 +134,9 @@ SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.origin
 FROM feed_entries e
 WHERE e.author_account_id IN (
     SELECT f.followee_account_id FROM feed_follow_edges f WHERE f.follower_account_id = sqlc.arg(viewer)
-    UNION ALL SELECT sqlc.arg(viewer)::text)
-  AND (sqlc.arg(before)::text = '' OR e.id < sqlc.arg(before)::text)
-  AND e.id >= sqlc.arg(window_floor)::text
+    UNION ALL SELECT sqlc.arg(viewer)::uuid)
+  AND (sqlc.narg(before)::uuid IS NULL OR e.id < sqlc.narg(before)::uuid)
+  AND e.id >= COALESCE(sqlc.narg(window_floor)::uuid, '00000000-0000-0000-0000-000000000000')
   AND (e.kind = 'post' OR e.author_account_id = sqlc.arg(viewer) OR EXISTS (
     SELECT 1 FROM feed_follow_edges f
     WHERE f.follower_account_id = sqlc.arg(viewer) AND f.followee_account_id = e.author_account_id AND f.show_boosts))
@@ -168,14 +168,14 @@ LIMIT sqlc.arg(page_limit);
 
 -- ListLocalEntries is the local timeline (FR-202): the public and local posts of local accounts
 -- (public only when include_local is 0, for visitors that are not logged in), except those of
--- authors kept from discovery and those the viewer ('' for none) blocks, is blocked by, or mutes.
+-- authors kept from discovery and those the viewer (NULL for none) blocks, is blocked by, or mutes.
 -- name: ListLocalEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
   e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.is_local AND e.kind = 'post' AND e.visibility IN ('public', 'local')
   AND (sqlc.arg(include_local)::boolean OR e.visibility = 'public')
-  AND (sqlc.arg(before)::text = '' OR e.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR e.id < sqlc.narg(before)::uuid)
   AND NOT EXISTS (
     SELECT 1 FROM feed_author_restrictions r
     WHERE r.account_id = e.author_account_id
@@ -183,21 +183,21 @@ WHERE e.is_local AND e.kind = 'post' AND e.visibility IN ('public', 'local')
       AND (r.effective_until IS NULL OR r.effective_until > sqlc.arg(now)::timestamptz))
   AND NOT EXISTS (
     SELECT 1 FROM feed_exclusions x
-    WHERE x.viewer_account_id = sqlc.arg(viewer) AND x.target_account_id = e.author_account_id
+    WHERE x.viewer_account_id = sqlc.narg(viewer)::uuid AND x.target_account_id = e.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
   AND (sqlc.arg(all_languages)::boolean OR e.language = 'und' OR e.language = ANY(sqlc.arg(languages)::text[]))
 ORDER BY e.id DESC
 LIMIT sqlc.arg(page_limit);
 
 -- ListPublicEntries is the federated timeline (FR-202): the public posts of local and remote
--- accounts, except those of authors and domains kept from discovery and those the viewer ('' for
+-- accounts, except those of authors and domains kept from discovery and those the viewer (NULL for
 -- none) blocks, is blocked by, or mutes.
 -- name: ListPublicEntries :many
 SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.original_author_account_id,
   e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.kind = 'post' AND e.visibility = 'public'
-  AND (sqlc.arg(before)::text = '' OR e.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR e.id < sqlc.narg(before)::uuid)
   AND NOT EXISTS (
     SELECT 1 FROM feed_author_restrictions r
     WHERE r.account_id = e.author_account_id
@@ -210,11 +210,11 @@ WHERE e.kind = 'post' AND e.visibility = 'public'
       AND (dr.domain = e.author_domain OR right(e.author_domain, length(dr.domain) + 1) = '.' || dr.domain))
   AND NOT EXISTS (
     SELECT 1 FROM feed_exclusions x
-    WHERE x.viewer_account_id = sqlc.arg(viewer) AND x.target_account_id = e.author_account_id
+    WHERE x.viewer_account_id = sqlc.narg(viewer)::uuid AND x.target_account_id = e.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
   AND NOT EXISTS (
     SELECT 1 FROM feed_domain_mutes dm
-    WHERE dm.viewer_account_id = sqlc.arg(viewer)
+    WHERE dm.viewer_account_id = sqlc.narg(viewer)::uuid
       AND (dm.domain = e.author_domain OR right(e.author_domain, length(dm.domain) + 1) = '.' || dm.domain))
   AND (sqlc.arg(all_languages)::boolean OR e.language = 'und' OR e.language = ANY(sqlc.arg(languages)::text[]))
 ORDER BY e.id DESC
@@ -230,7 +230,7 @@ FROM feed_tag_entries t
 JOIN feed_entries e ON e.id = t.entry_id
 WHERE t.tag_id = sqlc.arg(tag_id) AND t.visibility IN ('public', 'local')
   AND (sqlc.arg(include_local)::boolean OR t.visibility = 'public')
-  AND (sqlc.arg(before)::text = '' OR t.entry_id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR t.entry_id < sqlc.narg(before)::uuid)
   AND NOT EXISTS (
     SELECT 1 FROM feed_author_restrictions r
     WHERE r.account_id = t.author_account_id
@@ -243,11 +243,11 @@ WHERE t.tag_id = sqlc.arg(tag_id) AND t.visibility IN ('public', 'local')
       AND (dr.domain = e.author_domain OR right(e.author_domain, length(dr.domain) + 1) = '.' || dr.domain))
   AND NOT EXISTS (
     SELECT 1 FROM feed_exclusions x
-    WHERE x.viewer_account_id = sqlc.arg(viewer) AND x.target_account_id = t.author_account_id
+    WHERE x.viewer_account_id = sqlc.narg(viewer)::uuid AND x.target_account_id = t.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
   AND NOT EXISTS (
     SELECT 1 FROM feed_domain_mutes dm
-    WHERE dm.viewer_account_id = sqlc.arg(viewer)
+    WHERE dm.viewer_account_id = sqlc.narg(viewer)::uuid
       AND (dm.domain = e.author_domain OR right(e.author_domain, length(dm.domain) + 1) = '.' || dm.domain))
   AND (sqlc.arg(all_languages)::boolean OR e.language = 'und' OR e.language = ANY(sqlc.arg(languages)::text[]))
 ORDER BY t.entry_id DESC
@@ -264,18 +264,18 @@ SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.origin
   e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.author_account_id = sqlc.arg(author)
-  AND (sqlc.arg(before)::text = '' OR e.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR e.id < sqlc.narg(before)::uuid)
   AND ((e.visibility = 'public' AND sqlc.arg(include_public)::boolean)
     OR (e.visibility = 'local' AND sqlc.arg(include_local)::boolean)
     OR (e.visibility = 'unlisted' AND sqlc.arg(include_unlisted)::boolean)
     OR (e.visibility = 'private' AND sqlc.arg(include_private)::boolean)
     OR (sqlc.arg(include_direct)::boolean
-    AND e.visibility = 'direct' AND (e.author_account_id = sqlc.arg(viewer) OR EXISTS (
-      SELECT 1 FROM feed_direct_recipients d WHERE d.recipient_account_id = sqlc.arg(viewer) AND d.entry_id = e.id))))
+    AND e.visibility = 'direct' AND (e.author_account_id = sqlc.narg(viewer)::uuid OR EXISTS (
+      SELECT 1 FROM feed_direct_recipients d WHERE d.recipient_account_id = sqlc.narg(viewer)::uuid AND d.entry_id = e.id))))
   AND (e.original_author_account_id = e.author_account_id OR (
     NOT EXISTS (
       SELECT 1 FROM feed_exclusions x
-      WHERE x.viewer_account_id = sqlc.arg(viewer) AND x.target_account_id = e.original_author_account_id
+      WHERE x.viewer_account_id = sqlc.narg(viewer)::uuid AND x.target_account_id = e.original_author_account_id
         AND (x.expires_at IS NULL OR x.expires_at > sqlc.arg(now)::timestamptz))
     AND NOT EXISTS (
       SELECT 1 FROM feed_author_restrictions r
@@ -289,7 +289,7 @@ WHERE e.author_account_id = sqlc.arg(author)
           OR right(e.original_author_domain, length(dr.domain) + 1) = '.' || dr.domain))))
   AND (e.original_author_account_id = e.author_account_id OR NOT EXISTS (
     SELECT 1 FROM feed_domain_mutes dm
-    WHERE dm.viewer_account_id = sqlc.arg(viewer)
+    WHERE dm.viewer_account_id = sqlc.narg(viewer)::uuid
       AND (dm.domain = e.original_author_domain OR right(e.original_author_domain, length(dm.domain) + 1) = '.' || dm.domain)))
   AND (sqlc.arg(all_languages)::boolean OR e.language = 'und' OR e.language = ANY(sqlc.arg(languages)::text[]))
   AND (NOT sqlc.arg(exclude_replies)::boolean OR NOT e.is_reply)
@@ -301,17 +301,17 @@ LIMIT sqlc.arg(page_limit);
 
 -- name: ListFeedFollowedAmong :many
 SELECT followee_account_id FROM feed_follow_edges
-WHERE follower_account_id = sqlc.arg(viewer) AND followee_account_id = ANY(sqlc.arg(account_ids)::text[]);
+WHERE follower_account_id = sqlc.arg(viewer) AND followee_account_id = ANY(sqlc.arg(account_ids)::uuid[]);
 
 -- name: ListFeedExclusionsAmong :many
 SELECT target_account_id, reason FROM feed_exclusions
 WHERE viewer_account_id = sqlc.arg(viewer) AND (expires_at IS NULL OR expires_at > sqlc.arg(now)::timestamptz)
-  AND target_account_id = ANY(sqlc.arg(account_ids)::text[]);
+  AND target_account_id = ANY(sqlc.arg(account_ids)::uuid[]);
 
 -- name: ListFeedAuthorRestrictionsAmong :many
 SELECT account_id, restriction FROM feed_author_restrictions
 WHERE (effective_until IS NULL OR effective_until > sqlc.arg(now)::timestamptz)
-  AND account_id = ANY(sqlc.arg(account_ids)::text[]);
+  AND account_id = ANY(sqlc.arg(account_ids)::uuid[]);
 
 -- name: ListFeedDomainRestrictionsAmong :many
 SELECT domain, restriction FROM feed_domain_restrictions
@@ -320,4 +320,4 @@ WHERE (effective_until IS NULL OR effective_until > sqlc.arg(now)::timestamptz)
 
 -- name: ListFeedDirectEntriesAmong :many
 SELECT entry_id FROM feed_direct_recipients
-WHERE recipient_account_id = sqlc.arg(viewer) AND entry_id = ANY(sqlc.arg(entry_ids)::text[]);
+WHERE recipient_account_id = sqlc.arg(viewer) AND entry_id = ANY(sqlc.arg(entry_ids)::uuid[]);

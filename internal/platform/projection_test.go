@@ -282,7 +282,7 @@ func fillModeration(t *testing.T, a *platform.App, ids map[string]string, dave, 
 	if err != nil {
 		t.Fatalf("FileRemoteReport = %v", err)
 	}
-	if _, err := a.Moderation.AssignReport(ctx, r.ID, "someone", ""); err != nil {
+	if _, err := a.Moderation.AssignReport(ctx, r.ID, testkit.NamedID("someone"), ""); err != nil {
 		t.Fatalf("AssignReport = %v", err)
 	}
 	if _, err := a.Moderation.ResolveReport(ctx, r.ID, moderation.OutcomeDismissed, ""); err != nil {
@@ -449,13 +449,13 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	exec("UPDATE status_counters SET favourites_count = favourites_count + 5")
 	exec("DELETE FROM feed_tag_entries")
 	exec("DELETE FROM notification_exclusions WHERE reason = 'mute'")
-	exec("INSERT INTO notification_deleted_statuses (status_id) VALUES ('no-such-status')")
+	exec("INSERT INTO notification_deleted_statuses (status_id) VALUES ('" + testkit.NamedID("no-such-status") + "')")
 	exec("UPDATE remote_account_heads SET inbox_url = 'https://elsewhere.example/inbox', consecutive_fetch_failures = 3")
 	exec("DELETE FROM follow_counters")
 	exec("UPDATE local_post_counters SET posts_count = posts_count + 1")
 	exec("UPDATE poll_tallies SET votes = votes + 1")
 	exec("DELETE FROM account_restrictions WHERE restriction = 'public_discovery'")
-	exec("INSERT INTO domain_restrictions (domain, restriction, source_action_id) VALUES ('nowhere.example', 'federation', 'no-such-action')")
+	exec("INSERT INTO domain_restrictions (domain, restriction, source_action_id) VALUES ('nowhere.example', 'federation', '" + testkit.NamedID("no-such-action") + "')")
 	exec("UPDATE report_states SET assignee_user_id = NULL")
 	exec("DELETE FROM appeal_states WHERE state = 'pending'")
 	exec("DELETE FROM status_sensitivity_overrides")

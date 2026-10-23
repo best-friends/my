@@ -61,25 +61,25 @@ func linkCardTx(t *testing.T, h LinkCardHarness, fn func(ctx context.Context, tx
 
 func linkCardStatusURLs(t *testing.T, h LinkCardHarness) {
 	ctx := t.Context()
-	if _, err := h.Cards.StatusLinkCardURL(ctx, "s1"); !errors.Is(err, appcontent.ErrNotFound) {
+	if _, err := h.Cards.StatusLinkCardURL(ctx, NamedID("s1")); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Fatalf("StatusLinkCardURL of a status without a card: %v, want ErrNotFound", err)
 	}
 	linkCardTx(t, h, func(ctx context.Context, tx uow.Tx) error {
-		if err := h.Cards.UpsertStatusLinkCard(ctx, tx, content.StatusLinkCard{StatusID: "s1", URL: "https://a.example/"}); err != nil {
+		if err := h.Cards.UpsertStatusLinkCard(ctx, tx, content.StatusLinkCard{StatusID: NamedID("s1"), URL: "https://a.example/"}); err != nil {
 			return err
 		}
-		return h.Cards.UpsertStatusLinkCard(ctx, tx, content.StatusLinkCard{StatusID: "s1", URL: "https://b.example/"})
+		return h.Cards.UpsertStatusLinkCard(ctx, tx, content.StatusLinkCard{StatusID: NamedID("s1"), URL: "https://b.example/"})
 	})
-	if u, err := h.Cards.StatusLinkCardURL(ctx, "s1"); err != nil || u != "https://b.example/" {
+	if u, err := h.Cards.StatusLinkCardURL(ctx, NamedID("s1")); err != nil || u != "https://b.example/" {
 		t.Errorf("StatusLinkCardURL = %q, %v, want the replaced URL", u, err)
 	}
 	linkCardTx(t, h, func(ctx context.Context, tx uow.Tx) error {
-		if err := h.Cards.DeleteStatusLinkCard(ctx, tx, "s1"); err != nil {
+		if err := h.Cards.DeleteStatusLinkCard(ctx, tx, NamedID("s1")); err != nil {
 			return err
 		}
-		return h.Cards.DeleteStatusLinkCard(ctx, tx, "s1") // deleting nothing is not an error
+		return h.Cards.DeleteStatusLinkCard(ctx, tx, NamedID("s1")) // deleting nothing is not an error
 	})
-	if _, err := h.Cards.StatusLinkCardURL(ctx, "s1"); !errors.Is(err, appcontent.ErrNotFound) {
+	if _, err := h.Cards.StatusLinkCardURL(ctx, NamedID("s1")); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Errorf("StatusLinkCardURL after the deletion: %v, want ErrNotFound", err)
 	}
 }
@@ -178,7 +178,7 @@ func linkCardCleanup(t *testing.T, h LinkCardHarness) {
 				return err
 			}
 		}
-		return h.Cards.UpsertStatusLinkCard(ctx, tx, content.StatusLinkCard{StatusID: "s1", URL: "https://a.example/"})
+		return h.Cards.UpsertStatusLinkCard(ctx, tx, content.StatusLinkCard{StatusID: NamedID("s1"), URL: "https://a.example/"})
 	})
 	cards, err := h.Cards.ListUnreferencedLinkCards(ctx, cutoff, 10)
 	if err != nil {

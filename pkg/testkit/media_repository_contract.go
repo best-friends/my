@@ -575,7 +575,7 @@ func mediaReadsImagesTogether(t *testing.T, e *mediaEnv) {
 	small, _ := r.Variant(content.SizeSmall, content.MotionStill)
 	refs := []appcontent.ImageRef{
 		{AccountID: mediaOwner, MediaID: ready.File.ID},
-		{AccountID: "someone-else", MediaID: other.File.ID},
+		{AccountID: NamedID("someone-else"), MediaID: other.File.ID},
 		{AccountID: mediaOwner, MediaID: pending.File.ID},
 		{AccountID: mediaOwner, MediaID: reprocessed.File.ID},
 		{AccountID: mediaOwner, MediaID: unknown},

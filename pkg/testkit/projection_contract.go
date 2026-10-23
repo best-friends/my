@@ -42,7 +42,14 @@ func ProjectionStoreContract(t *testing.T, newHarness func(t *testing.T) Project
 
 var tallyColumns = []string{"poll_id", "position", "votes", "voters_count"}
 
-func tally(poll string, position, votes int64, voters *int64) []any {
+// pollKey is the poll ID for a letter: later letters sort after earlier ones.
+func pollKey(letter string) string { return OrderedID(uint32(letter[0]-'a') + 1) }
+
+// tallyLine is the line readTallies reports for the poll with the letter and the rest of the row.
+func tallyLine(letter, rest string) string { return pollKey(letter) + " " + rest }
+
+func tally(letter string, position, votes int64, voters *int64) []any {
+	poll := pollKey(letter)
 	var v any
 	if voters != nil {
 		v = *voters
@@ -102,7 +109,7 @@ func projectionStoreRows(t *testing.T, h ProjectionStoreHarness) {
 	if n := writeTallies(t, h, true, tally("a", 0, 9, nil)); n != 0 {
 		t.Errorf("Insert of a row whose key exists = %d, want 0", n)
 	}
-	want := []string{"a 0 1 5", "a 1 2 5", "b 0 3 <nil>"}
+	want := []string{tallyLine("a", "0 1 5"), tallyLine("a", "1 2 5"), tallyLine("b", "0 3 <nil>")}
 	if got := readTallies(t, h, 0, 10); !slices.Equal(got, want) {
 		t.Fatalf("Rows = %q, want %q", got, want)
 	}
@@ -144,7 +151,7 @@ func projectionStoreRefuses(t *testing.T, h ProjectionStoreHarness) {
 		t.Error("Rows of an unknown table succeeded")
 	}
 	err = h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		_, err := h.Store.Insert(ctx, tx, "poll_tallies", []string{"poll_id", "position", "votes"}, [][]any{{"a", int64(0), int64(1)}})
+		_, err := h.Store.Insert(ctx, tx, "poll_tallies", []string{"poll_id", "position", "votes"}, [][]any{{pollKey("a"), int64(0), int64(1)}})
 		return err
 	})
 	if err == nil {
@@ -212,7 +219,7 @@ func projectionServiceDrift(t *testing.T, h ProjectionStoreHarness) {
 	if r.Deleted != 2 || r.Inserted != 4 {
 		t.Errorf("Rebuild deleted %d and inserted %d rows, want 2 and 4", r.Deleted, r.Inserted)
 	}
-	want := []string{"a 0 1 <nil>", "a 1 2 3", "b 0 4 <nil>", "c 0 5 <nil>", "d 0 6 <nil>"}
+	want := []string{tallyLine("a", "0 1 <nil>"), tallyLine("a", "1 2 3"), tallyLine("b", "0 4 <nil>"), tallyLine("c", "0 5 <nil>"), tallyLine("d", "0 6 <nil>")}
 	if got := readTallies(t, h, 0, 100); !slices.Equal(got, want) {
 		t.Errorf("after Rebuild = %q, want %q", got, want)
 	}

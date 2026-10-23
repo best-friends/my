@@ -15,7 +15,7 @@ import (
 const deleteDeliveryAttemptsBefore = `-- name: DeleteDeliveryAttemptsBefore :execrows
 DELETE FROM delivery_attempts
 WHERE id IN (
-  SELECT a.id FROM delivery_attempts a WHERE a.id < $1 AND a.attempted_at < $2
+  SELECT a.id FROM delivery_attempts a WHERE a.id < $1::uuid AND a.attempted_at < $2
   ORDER BY a.id LIMIT $3
 )
 `
@@ -41,7 +41,7 @@ const deleteOutboundActivityDocumentsBefore = `-- name: DeleteOutboundActivityDo
 DELETE FROM outbound_activity_documents
 WHERE outbound_activity_id IN (
   SELECT d.outbound_activity_id FROM outbound_activity_documents d
-  WHERE d.outbound_activity_id < $1 AND d.built_at < $2
+  WHERE d.outbound_activity_id < $1::uuid AND d.built_at < $2
   ORDER BY d.outbound_activity_id LIMIT $3
 )
 `
@@ -155,7 +155,7 @@ func (q *Queries) DeleteRemoteObjectTombstonesBefore(ctx context.Context, arg De
 }
 
 const getDelivery = `-- name: GetDelivery :one
-SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries WHERE id = $1
+SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries WHERE id = $1::uuid
 `
 
 func (q *Queries) GetDelivery(ctx context.Context, id string) (Delivery, error) {
@@ -236,7 +236,7 @@ func (q *Queries) GetLiveRemoteFollowTombstone(ctx context.Context, arg GetLiveR
 
 const getOutboundActivity = `-- name: GetOutboundActivity :one
 SELECT id, activity_uri, type, actor_account_id, object_type, object_id, created_at
-FROM outbound_activities WHERE id = $1
+FROM outbound_activities WHERE id = $1::uuid
 `
 
 func (q *Queries) GetOutboundActivity(ctx context.Context, id string) (OutboundActivity, error) {
@@ -255,7 +255,7 @@ func (q *Queries) GetOutboundActivity(ctx context.Context, id string) (OutboundA
 }
 
 const getOutboundActivityDocument = `-- name: GetOutboundActivityDocument :one
-SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = $1
+SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = $1::uuid
 `
 
 func (q *Queries) GetOutboundActivityDocument(ctx context.Context, outboundActivityID string) ([]byte, error) {
@@ -584,12 +584,12 @@ func (q *Queries) InsertRemoteObjectTombstone(ctx context.Context, arg InsertRem
 
 const listDeliveriesOfOutboundActivity = `-- name: ListDeliveriesOfOutboundActivity :many
 SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries
-WHERE outbound_activity_id = $1 AND id > $2 ORDER BY id LIMIT $3
+WHERE outbound_activity_id = $1::uuid AND id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000') ORDER BY id LIMIT $3
 `
 
 type ListDeliveriesOfOutboundActivityParams struct {
 	OutboundActivityID string
-	AfterID            string
+	AfterID            *string
 	BatchLimit         int32
 }
 
@@ -623,7 +623,7 @@ func (q *Queries) ListDeliveriesOfOutboundActivity(ctx context.Context, arg List
 
 const listDeliveryAttempts = `-- name: ListDeliveryAttempts :many
 SELECT id, delivery_id, outcome, signature_scheme, http_status, error, attempted_at FROM delivery_attempts
-WHERE delivery_id = $1 ORDER BY id
+WHERE delivery_id = $1::uuid ORDER BY id
 `
 
 func (q *Queries) ListDeliveryAttempts(ctx context.Context, deliveryID string) ([]DeliveryAttempt, error) {
@@ -656,18 +656,18 @@ func (q *Queries) ListDeliveryAttempts(ctx context.Context, deliveryID string) (
 
 const listInstanceAvailabilityEvents = `-- name: ListInstanceAvailabilityEvents :many
 SELECT id, domain, kind, reason, occurred_at FROM instance_availability_events
-WHERE domain = $1 AND ($2::text = '' OR id < $2::text)
+WHERE domain = $1 AND ($2::uuid IS NULL OR id < $2::uuid)
 ORDER BY id DESC LIMIT $3
 `
 
 type ListInstanceAvailabilityEventsParams struct {
 	Domain     string
-	Before     string
+	Before     *string
 	BatchLimit int32
 }
 
 // ListInstanceAvailabilityEvents returns the availability events of a server, newest first,
-// before the event @before (” for the newest).
+// before the event @before (NULL for the newest).
 func (q *Queries) ListInstanceAvailabilityEvents(ctx context.Context, arg ListInstanceAvailabilityEventsParams) ([]InstanceAvailabilityEvent, error) {
 	rows, err := q.db.Query(ctx, listInstanceAvailabilityEvents, arg.Domain, arg.Before, arg.BatchLimit)
 	if err != nil {

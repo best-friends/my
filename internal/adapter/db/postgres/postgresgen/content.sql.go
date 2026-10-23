@@ -771,7 +771,7 @@ func (q *Queries) ListAccountPostCounters(ctx context.Context) ([]AccountPostCou
 const listLiveRemoteStatusIDsOfAuthor = `-- name: ListLiveRemoteStatusIDsOfAuthor :many
 SELECT s.id FROM statuses s
 WHERE s.author_account_id = $1 AND s.is_local = FALSE
-  AND ($2::text = '' OR s.id < $2::text)
+  AND ($2::uuid IS NULL OR s.id < $2::uuid)
   AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
 ORDER BY s.id DESC
 LIMIT $3
@@ -779,11 +779,11 @@ LIMIT $3
 
 type ListLiveRemoteStatusIDsOfAuthorParams struct {
 	AuthorAccountID string
-	Before          string
+	Before          *string
 	Lim             int32
 }
 
-// The remote statuses of an author that are not deleted, newest first, below an ID (” for the
+// The remote statuses of an author that are not deleted, newest first, below an ID (NULL for the
 // first page).
 func (q *Queries) ListLiveRemoteStatusIDsOfAuthor(ctx context.Context, arg ListLiveRemoteStatusIDsOfAuthorParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, listLiveRemoteStatusIDsOfAuthor, arg.AuthorAccountID, arg.Before, arg.Lim)

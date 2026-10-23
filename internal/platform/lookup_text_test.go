@@ -29,6 +29,10 @@ import (
 // and a byte that is not UTF-8.
 var badTexts = []string{"\x00", "\xff"}
 
+// placeholderID stands for the path parameters that a request does not test, in the canonical
+// form that the client API accepts for an ID (ADR-0078 §5).
+const placeholderID = "01890a5d-ac96-774b-bcce-b302099a8057"
+
 // sweepRequest is one request of the sweep: an input that a handler may look up holds a bad
 // text.
 type sweepRequest struct {
@@ -165,13 +169,13 @@ func sweepRequests(doc *openapi3.T) []sweepRequest {
 					case openapi3.ParameterInQuery:
 						add(sweepRequest{
 							name: label + " in query " + p.Name, method: method, header: jsonHeader.Clone(), body: body, api: true,
-							target: pathWith("x") + "?" + url.QueryEscape(p.Name) + "=" + url.QueryEscape(bad),
+							target: pathWith(placeholderID) + "?" + url.QueryEscape(p.Name) + "=" + url.QueryEscape(bad),
 							want:   http.StatusBadRequest,
 						})
 					case openapi3.ParameterInHeader:
 						hdr := jsonHeader.Clone()
 						hdr.Set(p.Name, bad)
-						add(sweepRequest{name: label + " in header " + p.Name, method: method, target: pathWith("x"), header: hdr, body: body, api: true})
+						add(sweepRequest{name: label + " in header " + p.Name, method: method, target: pathWith(placeholderID), header: hdr, body: body, api: true})
 					}
 				}
 			}
@@ -192,7 +196,7 @@ func sweepRequests(doc *openapi3.T) []sweepRequest {
 				}
 				add(sweepRequest{
 					name:   fmt.Sprintf("%s %s NUL in body %s", method, path, field),
-					method: method, target: pathWith("x"), header: jsonHeader.Clone(), body: string(b), api: true,
+					method: method, target: pathWith(placeholderID), header: jsonHeader.Clone(), body: string(b), api: true,
 					want: want,
 				})
 			}

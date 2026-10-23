@@ -23,7 +23,7 @@ WHERE h.id = $1;
 SELECT h.id, h.account_id, h.reason, h.created_by_user_id, h.created_at, r.hold_id AS release_hold_id,
   r.released_by_user_id, r.released_at
 FROM retention_holds h LEFT JOIN retention_hold_releases r ON r.hold_id = h.id
-WHERE sqlc.arg(account_id)::text = '' OR h.account_id = sqlc.arg(account_id)
+WHERE sqlc.narg(account_id)::uuid IS NULL OR h.account_id = sqlc.narg(account_id)::uuid
 ORDER BY h.id DESC;
 
 -- ListHeldAccountIDs returns the accounts that a hold in effect preserves.
@@ -53,7 +53,7 @@ SELECT a.id FROM moderation_actions a
 LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
 LEFT JOIN moderation_appeals ap ON ap.action_id = a.id
 LEFT JOIN moderation_appeal_decisions d ON d.appeal_id = ap.id
-WHERE a.id < sqlc.arg(id_before)::text
+WHERE a.id < sqlc.arg(id_before)::uuid
   AND (CASE
     WHEN a.kind IN ('warn', 'delete_statuses') THEN a.issued_at
     WHEN l.lifted_at IS NOT NULL AND a.expires_at IS NOT NULL THEN LEAST(l.lifted_at, a.expires_at)
@@ -72,33 +72,33 @@ LIMIT sqlc.arg(batch_limit)::integer;
 
 -- name: PurgeModerationAppealStates :exec
 DELETE FROM appeal_states WHERE appeal_id IN (
-  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeModerationAppealDecisions :exec
 DELETE FROM moderation_appeal_decisions WHERE appeal_id IN (
-  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeModerationAppeals :exec
-DELETE FROM moderation_appeals WHERE action_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM moderation_appeals WHERE action_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeModerationActionStatuses :exec
-DELETE FROM moderation_action_statuses WHERE action_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM moderation_action_statuses WHERE action_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeModerationActionLifts :exec
-DELETE FROM moderation_action_lifts WHERE action_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM moderation_action_lifts WHERE action_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeModerationActionRestrictions :exec
-DELETE FROM account_restrictions WHERE source_action_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM account_restrictions WHERE source_action_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeModerationActions :exec
-DELETE FROM moderation_actions WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM moderation_actions WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- ListReportsToPurge returns, oldest first and below @id_before, the resolved reports whose
 -- state dates from before @resolved_before, that no action follows from, and whose target and
 -- reporter no hold in effect preserves.
 -- name: ListReportsToPurge :many
 SELECT r.id FROM reports r JOIN report_states s ON s.report_id = r.id
-WHERE r.id < sqlc.arg(id_before)::text
+WHERE r.id < sqlc.arg(id_before)::uuid
   AND s.state = 'resolved' AND s.since < sqlc.arg(resolved_before)::timestamptz
   AND NOT EXISTS (SELECT 1 FROM moderation_actions a WHERE a.report_id = r.id)
   AND NOT EXISTS (
@@ -110,28 +110,28 @@ LIMIT sqlc.arg(batch_limit)::integer;
 -- The PurgeReport* statements delete the reports (@ids) with their children.
 
 -- name: PurgeReportStatuses :exec
-DELETE FROM report_statuses WHERE report_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM report_statuses WHERE report_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeReportRuleCitations :exec
-DELETE FROM report_rule_citations WHERE report_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM report_rule_citations WHERE report_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeReportAssignments :exec
-DELETE FROM report_assignments WHERE report_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM report_assignments WHERE report_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeReportResolutions :exec
-DELETE FROM report_resolutions WHERE report_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM report_resolutions WHERE report_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeReportReopenings :exec
-DELETE FROM report_reopenings WHERE report_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM report_reopenings WHERE report_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeReportNotes :exec
-DELETE FROM report_notes WHERE report_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM report_notes WHERE report_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeReportStates :exec
-DELETE FROM report_states WHERE report_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM report_states WHERE report_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeReports :exec
-DELETE FROM reports WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM reports WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- ListSignupBlocksToPurge returns, oldest first and below @id_before, the sign-up blocks that
 -- ended before @ended_before, at the earlier of their lift and their expiry (never for one with
@@ -139,7 +139,7 @@ DELETE FROM reports WHERE id = ANY(sqlc.arg(ids)::text[]);
 -- name: ListSignupBlocksToPurge :many
 SELECT b.id FROM signup_blocks b
 LEFT JOIN signup_block_lifts l ON l.block_id = b.id
-WHERE b.id < sqlc.arg(id_before)::text
+WHERE b.id < sqlc.arg(id_before)::uuid
   AND (CASE
     WHEN l.lifted_at IS NOT NULL AND b.expires_at IS NOT NULL THEN LEAST(l.lifted_at, b.expires_at)
     ELSE COALESCE(l.lifted_at, b.expires_at)
@@ -154,10 +154,10 @@ LIMIT sqlc.arg(batch_limit)::integer;
 -- The PurgeSignupBlock* statements delete the blocks (@ids) with their lifts.
 
 -- name: PurgeSignupBlockLifts :exec
-DELETE FROM signup_block_lifts WHERE block_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM signup_block_lifts WHERE block_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeSignupBlocks :exec
-DELETE FROM signup_blocks WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM signup_blocks WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- DeleteAuditLogEntriesBefore deletes at most @batch_limit entries below @id_before recorded
 -- before @occurred_before, the oldest first, except those on an account that a hold in effect
@@ -165,17 +165,17 @@ DELETE FROM signup_blocks WHERE id = ANY(sqlc.arg(ids)::text[]);
 -- name: DeleteAuditLogEntriesBefore :execrows
 DELETE FROM audit_log_entries WHERE id IN (
   SELECT e.id FROM audit_log_entries e
-  WHERE e.id < sqlc.arg(id_before)::text AND e.occurred_at < sqlc.arg(occurred_before)::timestamptz
+  WHERE e.id < sqlc.arg(id_before)::uuid AND e.occurred_at < sqlc.arg(occurred_before)::timestamptz
     AND NOT EXISTS (
       SELECT 1 FROM retention_holds h
       WHERE NOT EXISTS (SELECT 1 FROM retention_hold_releases rr WHERE rr.hold_id = h.id)
         AND (
-          (e.target_kind = 'account' AND e.target_id = h.account_id)
+          (e.target_kind = 'account' AND e.target_id = h.account_id::text)
           OR (e.target_kind = 'report' AND EXISTS (
-            SELECT 1 FROM reports r WHERE r.id = e.target_id
+            SELECT 1 FROM reports r WHERE r.id::text = e.target_id
               AND h.account_id IN (r.target_account_id, r.reporter_account_id)))
           OR (e.target_kind = 'appeal' AND EXISTS (
-            SELECT 1 FROM moderation_appeals ap WHERE ap.id = e.target_id AND ap.account_id = h.account_id))))
+            SELECT 1 FROM moderation_appeals ap WHERE ap.id::text = e.target_id AND ap.account_id = h.account_id))))
   ORDER BY e.id
   LIMIT sqlc.arg(batch_limit)::integer
 );

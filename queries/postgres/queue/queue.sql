@@ -63,15 +63,15 @@ FROM jobs AS j
 WHERE j.id = sqlc.arg(id) AND j.locked_by = sqlc.arg(worker) AND j.attempt = sqlc.arg(attempt);
 
 -- ListDeadJobs returns the dead jobs of the type @job_type (every type when empty), most
--- recently failed first, after the position (@after_failed_at, @after_id); an empty @after_id
+-- recently failed first, after the position (@after_failed_at, @after_id); a NULL @after_id
 -- starts at the first.
 -- name: ListDeadJobs :many
 SELECT id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at
 FROM dead_jobs
 WHERE (sqlc.arg(job_type)::text = '' OR type = sqlc.arg(job_type)::text)
-  AND (sqlc.arg(after_id)::text = ''
+  AND (sqlc.narg(after_id)::uuid IS NULL
     OR failed_at < sqlc.arg(after_failed_at)::timestamptz
-    OR (failed_at = sqlc.arg(after_failed_at)::timestamptz AND id < sqlc.arg(after_id)::text))
+    OR (failed_at = sqlc.arg(after_failed_at)::timestamptz AND id < sqlc.narg(after_id)::uuid))
 ORDER BY failed_at DESC, id DESC
 LIMIT sqlc.arg(batch_limit);
 
@@ -123,7 +123,7 @@ SELECT COUNT(*) FROM dead_jobs;
 -- ListPendingJobs returns the jobs of the type @job_type (every type when empty) in the state
 -- @state at @now (every state when empty; the states of ADR-0064 section 3: running while the
 -- lease holds, otherwise queued before the first run and retrying after it), the earliest run_at
--- first, after the position (@after_run_at, @after_id); an empty @after_id starts at the first.
+-- first, after the position (@after_run_at, @after_id); a NULL @after_id starts at the first.
 -- name: ListPendingJobs :many
 SELECT id, type, payload, idempotency_key, ordering_key, attempt, run_at, locked_by, locked_until, last_error, created_at
 FROM jobs
@@ -132,9 +132,9 @@ WHERE (sqlc.arg(job_type)::text = '' OR type = sqlc.arg(job_type)::text)
     OR (sqlc.arg(state)::text = 'running' AND locked_until > sqlc.arg(now)::timestamptz)
     OR (sqlc.arg(state)::text = 'queued' AND (locked_until IS NULL OR locked_until <= sqlc.arg(now)::timestamptz) AND attempt = 0)
     OR (sqlc.arg(state)::text = 'retrying' AND (locked_until IS NULL OR locked_until <= sqlc.arg(now)::timestamptz) AND attempt > 0))
-  AND (sqlc.arg(after_id)::text = ''
+  AND (sqlc.narg(after_id)::uuid IS NULL
     OR run_at > sqlc.arg(after_run_at)::timestamptz
-    OR (run_at = sqlc.arg(after_run_at)::timestamptz AND id > sqlc.arg(after_id)::text))
+    OR (run_at = sqlc.arg(after_run_at)::timestamptz AND id > sqlc.narg(after_id)::uuid))
 ORDER BY run_at, id
 LIMIT sqlc.arg(batch_limit);
 

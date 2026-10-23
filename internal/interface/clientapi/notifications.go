@@ -70,6 +70,10 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 		body, headers := s.invalidParameter(ctx, "limit")
 		return ListNotificationsdefaultApplicationProblemPlusJSONResponse{Body: body, Headers: headers, StatusCode: http.StatusBadRequest}, nil
 	}
+	if !validCursor(req.Params.Cursor) {
+		body, headers := s.invalidParameter(ctx, "cursor")
+		return ListNotificationsdefaultApplicationProblemPlusJSONResponse{Body: body, Headers: headers, StatusCode: http.StatusBadRequest}, nil
+	}
 	q := appnotification.Query{Limit: limit + 1} // one more tells whether a next page exists
 	if req.Params.Cursor != nil {
 		q.Before = *req.Params.Cursor
@@ -416,7 +420,7 @@ func (s *Server) UpdateNotificationMarker(ctx context.Context, req UpdateNotific
 		body, headers := s.invalidParameter(ctx, "last_read_id")
 		return UpdateNotificationMarkerdefaultApplicationProblemPlusJSONResponse{Body: body, Headers: headers, StatusCode: http.StatusBadRequest}, nil
 	}
-	m, err := s.o.Notifications.MarkRead(ctx, v.AccountID, req.Body.LastReadId)
+	m, err := s.o.Notifications.MarkRead(ctx, v.AccountID, knownID(req.Body.LastReadId))
 	if errors.Is(err, appnotification.ErrNotFound) {
 		body, headers := s.notFound(ctx)
 		return UpdateNotificationMarkerdefaultApplicationProblemPlusJSONResponse{Body: body, Headers: headers, StatusCode: http.StatusNotFound}, nil

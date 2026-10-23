@@ -34,7 +34,7 @@ const getInstanceRule = `-- name: GetInstanceRule :one
 SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.text, v.hint, v.revised_by_user_id, v.revised_at,
   t.retired_by_user_id, t.retired_at
 FROM instance_rules r
-JOIN instance_rule_revisions v ON v.id = (SELECT MAX(x.id) FROM instance_rule_revisions x WHERE x.rule_id = r.id)
+JOIN instance_rule_revisions v ON v.id = (SELECT x.id FROM instance_rule_revisions x WHERE x.rule_id = r.id ORDER BY x.id DESC LIMIT 1)
 LEFT JOIN instance_rule_retirements t ON t.rule_id = r.id
 WHERE r.id = $1
 `
@@ -149,7 +149,7 @@ const listAllInstanceRules = `-- name: ListAllInstanceRules :many
 SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.text, v.hint, v.revised_by_user_id, v.revised_at,
   t.retired_by_user_id, t.retired_at
 FROM instance_rules r
-JOIN instance_rule_revisions v ON v.id = (SELECT MAX(x.id) FROM instance_rule_revisions x WHERE x.rule_id = r.id)
+JOIN instance_rule_revisions v ON v.id = (SELECT x.id FROM instance_rule_revisions x WHERE x.rule_id = r.id ORDER BY x.id DESC LIMIT 1)
 LEFT JOIN instance_rule_retirements t ON t.rule_id = r.id
 ORDER BY t.rule_id IS NOT NULL, v.position, r.id
 `

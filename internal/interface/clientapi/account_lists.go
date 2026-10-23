@@ -10,6 +10,7 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appgraph "github.com/best-friends/my/internal/app/graph"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/domain/graph"
 )
 
@@ -27,6 +28,18 @@ type pageQuery struct {
 }
 
 func (s *Server) parsePage(ctx context.Context, cursor *Cursor, limit *Limit) pageQuery {
+	return s.parsePageOf(ctx, cursor, limit, kernel.ValidID)
+}
+
+// parseOpaquePage is parsePage for a cursor that is not an ID (a domain, a time and an ID):
+// the endpoint's own decoder checks its content.
+func (s *Server) parseOpaquePage(ctx context.Context, cursor *Cursor, limit *Limit) pageQuery {
+	return s.parsePageOf(ctx, cursor, limit, func(string) bool { return true })
+}
+
+// parsePageOf parses a page request whose cursor is valid when its decoded content passes
+// valid; a cursor that does not is a broken cursor.
+func (s *Server) parsePageOf(ctx context.Context, cursor *Cursor, limit *Limit, valid func(string) bool) pageQuery {
 	n, ok := pageLimit(limit)
 	if !ok {
 		p := s.invalidParameterResponse(ctx, "limit")
@@ -35,7 +48,7 @@ func (s *Server) parsePage(ctx context.Context, cursor *Cursor, limit *Limit) pa
 	q := pageQuery{limit: n}
 	if cursor != nil {
 		b, err := base64.RawURLEncoding.DecodeString(*cursor)
-		if err != nil || len(b) == 0 {
+		if err != nil || len(b) == 0 || !valid(string(b)) {
 			p := s.invalidParameterResponse(ctx, "cursor")
 			return pageQuery{problem: &p}
 		}
@@ -216,7 +229,7 @@ func encodeMuteCursor(m graph.Mute) *Cursor {
 
 func decodeMuteCursor(position string) (appgraph.MuteCursor, bool) {
 	at, target, ok := strings.Cut(position, muteCursorSeparator)
-	if !ok || target == "" {
+	if !ok || !kernel.ValidID(target) {
 		return appgraph.MuteCursor{}, false
 	}
 	t, err := time.Parse(time.RFC3339Nano, at)
@@ -232,7 +245,7 @@ func (s *Server) ListMutes(ctx context.Context, req ListMutesRequestObject) (Lis
 	if err != nil {
 		return nil, err
 	}
-	q := s.parsePage(ctx, req.Params.Cursor, req.Params.Limit)
+	q := s.parseOpaquePage(ctx, req.Params.Cursor, req.Params.Limit)
 	if q.problem != nil {
 		return ListMutesdefaultApplicationProblemPlusJSONResponse(*q.problem), nil
 	}

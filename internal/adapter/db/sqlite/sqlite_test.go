@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -466,7 +467,7 @@ func TestRetriesWhenTheDatabaseIsLocked(t *testing.T) {
 	if blocker, err = other.db.BeginTx(t.Context(), nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := insertProbe(t.Context(), sqlitegen.New(blocker), "blocker"); err != nil {
+	if err := insertProbe(t.Context(), sqlitegen.New(blocker), testkit.NamedID("blocker")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -475,7 +476,7 @@ func TestRetriesWhenTheDatabaseIsLocked(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return insertProbe(t.Context(), q, "a")
+		return insertProbe(t.Context(), q, testkit.NamedID("a"))
 	})
 	if err != nil {
 		t.Fatalf("Tx = %v", err)
@@ -488,8 +489,10 @@ func TestRetriesWhenTheDatabaseIsLocked(t *testing.T) {
 		t.Errorf("retried error = %v, want a retryable SQLITE_BUSY", retries[0])
 	}
 	got, err := probeKeys(t.Context(), db)
-	if err != nil || strings.Join(got, ",") != "a,blocker" {
-		t.Errorf("committed keys = %q (%v), want [a blocker]", got, err)
+	want := []string{testkit.NamedID("a"), testkit.NamedID("blocker")}
+	slices.Sort(want)
+	if err != nil || !slices.Equal(got, want) {
+		t.Errorf("committed keys = %q (%v), want %q", got, err, want)
 	}
 }
 

@@ -419,7 +419,7 @@ func mediaInput(in *StatusMediaInput) []appcontent.MediaInput {
 	}
 	out := make([]appcontent.MediaInput, 0, len(*in))
 	for _, m := range *in {
-		item := appcontent.MediaInput{MediaID: m.Id}
+		item := appcontent.MediaInput{MediaID: knownID(m.Id)}
 		if m.Description != nil {
 			item.Description = *m.Description
 		}
@@ -447,7 +447,7 @@ func (s *Server) CreateStatus(ctx context.Context, req CreateStatusRequestObject
 	}
 	body := req.Body
 	if body.QuotedStatusId != nil {
-		if p, err := s.quotableRemotely(ctx, *body.QuotedStatusId); err != nil {
+		if p, err := s.quotableRemotely(ctx, knownID(*body.QuotedStatusId)); err != nil {
 			return nil, err
 		} else if p != nil {
 			return CreateStatusdefaultApplicationProblemPlusJSONResponse(*p), nil
@@ -458,9 +458,9 @@ func (s *Server) CreateStatus(ctx context.Context, req CreateStatusRequestObject
 			Text: body.Text, SpoilerText: deref(body.SpoilerText), Sensitive: deref(body.Sensitive),
 			Language: deref(body.Language), Media: mediaInput(body.Media),
 		},
-		AuthorAccountID: v.AccountID, Visibility: content.Visibility(body.Visibility), InReplyToID: deref(body.InReplyToId),
+		AuthorAccountID: v.AccountID, Visibility: content.Visibility(body.Visibility), InReplyToID: knownID(deref(body.InReplyToId)),
 		ClientID: v.ClientID, IdempotencyKey: deref(req.Params.IdempotencyKey), Poll: pollInput(body.Poll),
-		QuotedStatusID: deref(body.QuotedStatusId), QuotePolicy: content.QuotePolicy(deref(body.QuotePolicy)),
+		QuotedStatusID: knownID(deref(body.QuotedStatusId)), QuotePolicy: content.QuotePolicy(deref(body.QuotePolicy)),
 	})
 	if err == nil {
 		var out Status
@@ -660,6 +660,9 @@ func (s *Server) ListBookmarks(ctx context.Context, req ListBookmarksRequestObje
 	if req.Params.Limit != nil {
 		limit = *req.Params.Limit
 	}
+	if !validCursor(req.Params.Cursor) {
+		return ListBookmarksdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "cursor")), nil
+	}
 	page, err := s.o.StatusReader.Bookmarks(ctx, v.AccountID, deref(req.Params.Cursor), limit)
 	if err != nil {
 		if p, ok := s.statusProblem(ctx, err); ok {
@@ -714,7 +717,7 @@ func (s *Server) VoteInPoll(ctx context.Context, req VoteInPollRequestObject) (V
 	var pollID string
 	var choices []int
 	if req.Body != nil {
-		pollID, choices = req.Body.PollId, req.Body.Choices
+		pollID, choices = knownID(req.Body.PollId), req.Body.Choices
 	}
 	res, p, err := s.act(ctx, req.Id, func(a string) error {
 		return ignoreResult(s.o.Interactions.VotePoll(ctx, a, req.Id, pollID, choices))
@@ -816,6 +819,9 @@ func (s *Server) ListStatusQuotes(ctx context.Context, req ListStatusQuotesReque
 	limit := defaultLimit
 	if req.Params.Limit != nil {
 		limit = *req.Params.Limit
+	}
+	if !validCursor(req.Params.Cursor) {
+		return ListStatusQuotesdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "cursor")), nil
 	}
 	page, err := s.o.StatusReader.Quotes(ctx, v.AccountID, req.Id, deref(req.Params.Cursor), limit)
 	if err != nil {

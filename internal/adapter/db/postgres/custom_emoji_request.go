@@ -133,7 +133,7 @@ func (r *CustomEmojiRepository) ListCustomEmojiRequests(ctx context.Context, q a
 		return nil, err
 	}
 	rows, err := r.db.reader().ListCustomEmojiRequests(ctx, postgresgen.ListCustomEmojiRequestsParams{
-		RequesterUserID: q.RequesterUserID, State: string(q.State), BeforeID: q.Before, RowLimit: n,
+		RequesterUserID: toNullString(q.RequesterUserID), State: string(q.State), BeforeID: toNullString(q.Before), RowLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list custom emoji requests")

@@ -28,7 +28,7 @@ WHERE a.id = $1;
 SELECT a.id, a.action_id, a.account_id, a.body, a.submitted_at, d.appeal_id AS decision_appeal_id,
   d.decision, d.public_reason, d.decided_by_user_id, d.decided_at
 FROM moderation_appeals a LEFT JOIN moderation_appeal_decisions d ON d.appeal_id = a.id
-WHERE a.action_id = ANY(sqlc.arg(action_ids)::text[]);
+WHERE a.action_id = ANY(sqlc.arg(action_ids)::uuid[]);
 
 -- ListModerationAppeals returns the appeals with their decisions, newest first: those in a state
 -- (empty for any) before the appeal before (empty for the first page).
@@ -39,7 +39,7 @@ FROM moderation_appeals a
 JOIN appeal_states s ON s.appeal_id = a.id
 LEFT JOIN moderation_appeal_decisions d ON d.appeal_id = a.id
 WHERE (sqlc.arg(state)::text = '' OR s.state = sqlc.arg(state)::text)
-  AND (sqlc.arg(before)::text = '' OR a.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR a.id < sqlc.narg(before)::uuid)
 ORDER BY a.id DESC
 LIMIT sqlc.arg(lim);
 

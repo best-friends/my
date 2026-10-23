@@ -26,7 +26,7 @@ SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.source_domai
   n.subject_user_id, n.severance_id, n.appeal_id, n.custom_emoji_request_id, n.supporter_subscription_id, n.reaction_emoji, n.reaction_custom_emoji_id, n.dedupe_key, n.created_at
 FROM notifications n
 WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
-  AND (sqlc.arg(before)::text = '' OR n.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR n.id < sqlc.narg(before)::uuid)
   AND (sqlc.arg(all_types)::boolean OR n.type = ANY(sqlc.arg(types)::text[]))
   AND NOT (n.type = ANY(sqlc.arg(hidden_types)::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
@@ -46,7 +46,7 @@ LIMIT sqlc.arg(page_limit);
 -- name: CountNotificationsAfter :one
 SELECT COUNT(*) FROM notifications n
 WHERE n.recipient_account_id = sqlc.arg(recipient_account_id)
-  AND n.id > sqlc.arg(after)::text
+  AND n.id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000')
   AND NOT (n.type = ANY(sqlc.arg(hidden_types)::text[]))
   AND NOT EXISTS (SELECT 1 FROM notification_dismissals d WHERE d.notification_id = n.id)
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x

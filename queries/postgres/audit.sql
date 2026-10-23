@@ -13,11 +13,11 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 -- name: ListAuditLogEntries :many
 SELECT id, actor_kind, actor_user_id, action, target_kind, target_id, target_label, source_event_id, occurred_at
 FROM audit_log_entries
-WHERE (sqlc.arg(actor_user_id)::text = '' OR actor_user_id = sqlc.arg(actor_user_id)::text)
+WHERE (sqlc.narg(actor_user_id)::uuid IS NULL OR actor_user_id = sqlc.narg(actor_user_id)::uuid)
   AND (sqlc.arg(action)::text = '' OR action = sqlc.arg(action)::text)
   AND (sqlc.arg(target_kind)::text = '' OR target_kind = sqlc.arg(target_kind)::text)
   AND (sqlc.arg(target_id)::text = '' OR target_id = sqlc.arg(target_id)::text)
-  AND (sqlc.arg(before)::text = '' OR id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR id < sqlc.narg(before)::uuid)
 ORDER BY id DESC
 LIMIT sqlc.arg(lim);
 
@@ -26,10 +26,10 @@ LIMIT sqlc.arg(lim);
 -- that exist.
 
 -- name: ListExistingReportIDs :many
-SELECT id FROM reports WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+SELECT id FROM reports WHERE id = ANY(sqlc.arg(ids)::uuid[]) ORDER BY id;
 
 -- name: ListExistingAppealIDs :many
-SELECT id FROM moderation_appeals WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+SELECT id FROM moderation_appeals WHERE id = ANY(sqlc.arg(ids)::uuid[]) ORDER BY id;
 
 -- name: ListExistingSignupBlockIDs :many
-SELECT id FROM signup_blocks WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+SELECT id FROM signup_blocks WHERE id = ANY(sqlc.arg(ids)::uuid[]) ORDER BY id;

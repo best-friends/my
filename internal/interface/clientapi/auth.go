@@ -149,7 +149,16 @@ func (s *Server) guard(pattern string, next http.Handler) http.Handler {
 			r = r.WithContext(WithViewer(r.Context(), *v))
 			ok = s.limit(w, r, policyAccount, s.o.AccountLimit, v.AccountID)
 		}
-		if ok && s.authorize(w, r, a, v) && s.limitBody(w, r, pattern) {
+		if !ok || !s.authorize(w, r, a, v) {
+			return
+		}
+		// A path ID that is not canonical names nothing: the 404 of a missing resource. It comes
+		// after authorization, so that it shows no more to an anonymous client than a missing ID.
+		if !pathIDsValid(r) {
+			s.writeProblem(w, r, http.StatusNotFound, ProblemTypeBlank, s.localizer(r).ServerErrorsNotFound(), "")
+			return
+		}
+		if s.limitBody(w, r, pattern) {
 			next.ServeHTTP(w, r)
 		}
 	})

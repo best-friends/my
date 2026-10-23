@@ -52,7 +52,7 @@ func (r *StatusRepository) ListQuotesAfter(ctx context.Context, tx uow.Tx, after
 	if err != nil {
 		return nil, err
 	}
-	rows, err := qs.ListStatusQuotesAfter(ctx, postgresgen.ListStatusQuotesAfterParams{After: after, PageLimit: n})
+	rows, err := qs.ListStatusQuotesAfter(ctx, postgresgen.ListStatusQuotesAfterParams{After: toNullString(after), PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list status quotes")
 	}
@@ -172,7 +172,7 @@ func (r *StatusRepository) ListQuotesOf(ctx context.Context, uri, before string,
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.db.reader().ListStatusQuotesOf(ctx, postgresgen.ListStatusQuotesOfParams{QuotedUri: uri, Before: before, PageLimit: n})
+	rows, err := r.db.reader().ListStatusQuotesOf(ctx, postgresgen.ListStatusQuotesOfParams{QuotedUri: uri, Before: toNullString(before), PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list quotes of a status")
 	}

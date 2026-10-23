@@ -4,6 +4,7 @@ package clientapi_test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -135,6 +136,13 @@ func TestListOwnModerationActions(t *testing.T) {
 	for _, path := range []string{"/moderation/actions?limit=0", "/moderation/actions?cursor=%21"} {
 		if res := e.send(t, http.MethodGet, path, "read-accounts", ""); res.StatusCode != http.StatusBadRequest {
 			t.Errorf("GET %s = %d, want 400", path, res.StatusCode)
+		}
+	}
+	// A page cursor is the base64 of an ID; any other content is a broken cursor.
+	for name, id := range malformedIDs {
+		path := "/moderation/actions?cursor=" + base64.RawURLEncoding.EncodeToString([]byte(id))
+		if res := e.send(t, http.MethodGet, path, "read-accounts", ""); res.StatusCode != http.StatusBadRequest {
+			t.Errorf("GET %s cursor = %d, want 400", name, res.StatusCode)
 		}
 	}
 	if res := e.send(t, http.MethodGet, "/moderation/actions", "follow-push", ""); res.StatusCode != http.StatusForbidden {

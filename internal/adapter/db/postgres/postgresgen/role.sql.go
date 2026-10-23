@@ -247,7 +247,7 @@ func (q *Queries) ListDisplayedRoleBadges(ctx context.Context, userID string) ([
 }
 
 const listExistingRoleIDs = `-- name: ListExistingRoleIDs :many
-SELECT id FROM roles WHERE id = ANY($1::text[]) ORDER BY id
+SELECT id FROM roles WHERE id = ANY($1::uuid[]) ORDER BY id
 `
 
 // ListExistingRoleIDs returns, in ID order, the roles among ids that exist (the audit log).

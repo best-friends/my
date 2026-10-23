@@ -12,6 +12,7 @@ import (
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/kernel"
 	appsupporters "github.com/best-friends/my/internal/app/supporters"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/supporters"
@@ -208,7 +209,7 @@ func (s *Server) StartSupporterCheckout(ctx context.Context, req StartSupporterC
 	}
 	back := s.webOrigin() + supporterReturnPath
 	co, err := sup.StartCheckout(ctx, appsupporters.CheckoutInput{
-		UserID: v.UserID, PlanID: req.Body.PlanId, Interval: supporters.Interval(req.Body.Interval),
+		UserID: v.UserID, PlanID: knownID(req.Body.PlanId), Interval: supporters.Interval(req.Body.Interval),
 		SuccessURL: back + "?checkout=success", CancelURL: back + "?checkout=canceled",
 	})
 	if pr, ok := s.ownSupporterProblem(ctx, err); ok {
@@ -253,7 +254,7 @@ func (s *Server) ChangeOwnSupporterSubscription(ctx context.Context, req ChangeO
 		return ChangeOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "interval")), nil
 	}
 	out, p, err := s.changeOwn(ctx, func(sup OwnSupporters, userID string) (appsupporters.SubscriptionView, error) {
-		return sup.ChangePlan(ctx, userID, req.Body.PlanId, supporters.Interval(req.Body.Interval))
+		return sup.ChangePlan(ctx, userID, knownID(req.Body.PlanId), supporters.Interval(req.Body.Interval))
 	})
 	if err != nil || p != nil {
 		if err != nil {
@@ -399,7 +400,7 @@ func decodeSupporterCursor(c string) (*appsupporters.Listing, bool) {
 		return nil, false
 	}
 	var sc supporterCursor
-	if err := json.Unmarshal(b, &sc); err != nil || sc.UserID == "" {
+	if err := json.Unmarshal(b, &sc); err != nil || !kernel.ValidID(sc.UserID) {
 		return nil, false
 	}
 	return &appsupporters.Listing{UserID: sc.UserID, Rank: sc.Rank, ListedAt: time.UnixMicro(sc.At).UTC()}, true
@@ -443,7 +444,7 @@ func (s *Server) ListInstanceSupporters(ctx context.Context, req ListInstanceSup
 		}
 	}
 	if req.Params.PlanId != nil {
-		f.PlanID = *req.Params.PlanId
+		f.PlanID = knownID(*req.Params.PlanId)
 	}
 	list, err := sup.SupporterList(ctx, f)
 	if pr, ok := s.ownSupporterProblem(ctx, err); ok {

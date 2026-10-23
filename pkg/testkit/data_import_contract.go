@@ -69,7 +69,7 @@ func (f *fakeImportTargets) Add(_ context.Context, accountID string, kind identi
 	if f.has == nil {
 		f.has = map[string][]appidentity.ImportTarget{}
 	}
-	f.has[slot] = append(f.has[slot], appidentity.ImportTarget{ID: "id-" + item.Target, Row: identity.ExportRow{Target: item.Target}})
+	f.has[slot] = append(f.has[slot], appidentity.ImportTarget{ID: NamedID("id-" + item.Target), Row: identity.ExportRow{Target: item.Target}})
 	return nil
 }
 
@@ -223,7 +223,7 @@ func importsCarryOutCSVFiles(t *testing.T, e *accountEnv) {
 	}
 
 	// The export writes what the account has, as Mastodon does.
-	x.targets.set(bob.AccountID, identity.ImportMutes, appidentity.ImportTarget{ID: "1", Row: identity.ExportRow{Target: "noisy@remote.example", HideNotifications: true}})
+	x.targets.set(bob.AccountID, identity.ImportMutes, appidentity.ImportTarget{ID: NamedID("1"), Row: identity.ExportRow{Target: "noisy@remote.example", HideNotifications: true}})
 	var b bytes.Buffer
 	if err := x.imports.WriteExport(ctx, bob.AccountID, identity.ImportMutes, &b); err != nil ||
 		b.String() != "Account address,Hide notifications\nnoisy@remote.example,true\n" {

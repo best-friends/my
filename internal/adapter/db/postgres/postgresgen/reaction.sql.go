@@ -14,7 +14,7 @@ import (
 
 const decrementReactionCount = `-- name: DecrementReactionCount :exec
 UPDATE status_reaction_counts SET count = count - 1
-WHERE status_id = $1 AND emoji_key = $2 AND count > 1
+WHERE status_id = $1::uuid AND emoji_key = $2 AND count > 1
 `
 
 type DecrementReactionCountParams struct {
@@ -29,7 +29,7 @@ func (q *Queries) DecrementReactionCount(ctx context.Context, arg DecrementReact
 
 const deleteAccountStatusReactions = `-- name: DeleteAccountStatusReactions :many
 DELETE FROM reactions
-WHERE account_id = $1 AND status_id = $2 AND emoji_key <> CAST($3 AS TEXT)
+WHERE account_id = $1::uuid AND status_id = $2::uuid AND emoji_key <> CAST($3 AS TEXT)
 RETURNING id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at
 `
 
@@ -80,7 +80,7 @@ func (q *Queries) DeleteAllReactionCounts(ctx context.Context) error {
 }
 
 const deleteReaction = `-- name: DeleteReaction :many
-DELETE FROM reactions WHERE id = $1
+DELETE FROM reactions WHERE id = $1::uuid
 RETURNING id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at
 `
 
@@ -113,7 +113,7 @@ func (q *Queries) DeleteReaction(ctx context.Context, id string) ([]Reaction, er
 }
 
 const deleteSingleReactionCount = `-- name: DeleteSingleReactionCount :exec
-DELETE FROM status_reaction_counts WHERE status_id = $1 AND emoji_key = $2 AND count = 1
+DELETE FROM status_reaction_counts WHERE status_id = $1::uuid AND emoji_key = $2 AND count = 1
 `
 
 type DeleteSingleReactionCountParams struct {
@@ -128,7 +128,7 @@ func (q *Queries) DeleteSingleReactionCount(ctx context.Context, arg DeleteSingl
 }
 
 const deleteStatusReactionCounts = `-- name: DeleteStatusReactionCounts :exec
-DELETE FROM status_reaction_counts WHERE status_id = $1
+DELETE FROM status_reaction_counts WHERE status_id = $1::uuid
 `
 
 func (q *Queries) DeleteStatusReactionCounts(ctx context.Context, statusID string) error {
@@ -138,7 +138,7 @@ func (q *Queries) DeleteStatusReactionCounts(ctx context.Context, statusID strin
 
 const getReaction = `-- name: GetReaction :one
 SELECT id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at FROM reactions
-WHERE account_id = $1 AND status_id = $2 AND emoji_key = $3
+WHERE account_id = $1::uuid AND status_id = $2::uuid AND emoji_key = $3
 `
 
 type GetReactionParams struct {
@@ -183,7 +183,7 @@ func (q *Queries) GetReactionByURI(ctx context.Context, uri string) (Reaction, e
 
 const incrementReactionCount = `-- name: IncrementReactionCount :exec
 INSERT INTO status_reaction_counts (status_id, emoji_key, custom_emoji_id, count)
-SELECT c.status_id, $1, $2, 1 FROM status_counters c WHERE c.status_id = $3
+SELECT c.status_id, $1, $2, 1 FROM status_counters c WHERE c.status_id = $3::uuid
 ON CONFLICT (status_id, emoji_key) DO UPDATE SET count = status_reaction_counts.count + 1
 `
 
@@ -239,7 +239,7 @@ func (q *Queries) InsertReaction(ctx context.Context, arg InsertReactionParams) 
 
 const listAccountStatusReactions = `-- name: ListAccountStatusReactions :many
 SELECT id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at FROM reactions
-WHERE account_id = $1 AND status_id = $2 ORDER BY id
+WHERE account_id = $1::uuid AND status_id = $2::uuid ORDER BY id
 `
 
 type ListAccountStatusReactionsParams struct {
@@ -306,7 +306,7 @@ func (q *Queries) ListAllReactionCounts(ctx context.Context) ([]StatusReactionCo
 
 const listReactionCounts = `-- name: ListReactionCounts :many
 SELECT status_id, emoji_key, custom_emoji_id, count FROM status_reaction_counts
-WHERE status_id = $1 ORDER BY count DESC, emoji_key LIMIT $2
+WHERE status_id = $1::uuid ORDER BY count DESC, emoji_key LIMIT $2
 `
 
 type ListReactionCountsParams struct {
@@ -341,16 +341,16 @@ func (q *Queries) ListReactionCounts(ctx context.Context, arg ListReactionCounts
 
 const listStatusReactions = `-- name: ListStatusReactions :many
 SELECT id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at FROM reactions
-WHERE status_id = $1
+WHERE status_id = $1::uuid
   AND ($2::text = '' OR emoji_key = $2::text)
-  AND ($3::text = '' OR id < $3::text)
+  AND ($3::uuid IS NULL OR id < $3::uuid)
 ORDER BY id DESC LIMIT $4
 `
 
 type ListStatusReactionsParams struct {
 	StatusID  string
 	EmojiKey  string
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 
@@ -391,7 +391,7 @@ func (q *Queries) ListStatusReactions(ctx context.Context, arg ListStatusReactio
 
 const rebuildReactionCounts = `-- name: RebuildReactionCounts :exec
 INSERT INTO status_reaction_counts (status_id, emoji_key, custom_emoji_id, count)
-SELECT r.status_id, r.emoji_key, MAX(r.custom_emoji_id), COUNT(*)
+SELECT r.status_id, r.emoji_key, MAX(r.custom_emoji_id::text)::uuid, COUNT(*)
 FROM reactions r
 WHERE NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = r.status_id)
 GROUP BY r.status_id, r.emoji_key

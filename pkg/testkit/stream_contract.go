@@ -409,14 +409,14 @@ func brokerDone(s stream.Subscription, timeout time.Duration) bool {
 }
 
 func brokerRoutes(t *testing.T, b StreamBroker) {
-	alice, bob := brokerSubscribe(t, b, "alice"), brokerSubscribe(t, b, "bob")
+	alice, bob := brokerSubscribe(t, b, NamedID("alice")), brokerSubscribe(t, b, NamedID("bob"))
 
-	note := stream.Event{Kind: stream.KindNotifications, AccountID: "alice"}
+	note := stream.Event{Kind: stream.KindNotifications, AccountID: NamedID("alice")}
 	b.Publisher.Publish(note)
 	if e, ok := brokerNext(alice, b.Timeout); !ok || e != note {
 		t.Errorf("alice received %+v, %v; want %+v", e, ok, note)
 	}
-	entry := stream.Event{Kind: stream.KindHomeEntry, EntryID: "s1"}
+	entry := stream.Event{Kind: stream.KindHomeEntry, EntryID: NamedID("s1")}
 	b.Publisher.Publish(entry)
 	for name, s := range map[string]stream.Subscription{"alice": alice, "bob": bob} {
 		if e, ok := brokerNext(s, b.Timeout); !ok || e != entry {
@@ -436,9 +436,9 @@ func brokerRoutesRemote(t *testing.T, b StreamBroker) {
 	if b.Remote == nil {
 		t.Skip("the broker has no other process")
 	}
-	alice, bob := brokerSubscribe(t, b, "alice"), brokerSubscribe(t, b, "bob")
-	note := stream.Event{Kind: stream.KindNotifications, AccountID: "alice"}
-	entry := stream.Event{Kind: stream.KindHomeEntry, EntryID: "s1"}
+	alice, bob := brokerSubscribe(t, b, NamedID("alice")), brokerSubscribe(t, b, NamedID("bob"))
+	note := stream.Event{Kind: stream.KindNotifications, AccountID: NamedID("alice")}
+	entry := stream.Event{Kind: stream.KindHomeEntry, EntryID: NamedID("s1")}
 	b.Remote.Publish(note)
 	b.Remote.Publish(entry)
 
@@ -473,13 +473,13 @@ func brokerRoutesRemote(t *testing.T, b StreamBroker) {
 }
 
 func brokerLimits(t *testing.T, b StreamBroker) {
-	first := brokerSubscribe(t, b, "alice")
-	brokerSubscribe(t, b, "alice")
-	if _, err := b.Subscriber.Subscribe(t.Context(), "alice"); !errors.Is(err, stream.ErrTooManySubscriptions) {
+	first := brokerSubscribe(t, b, NamedID("alice"))
+	brokerSubscribe(t, b, NamedID("alice"))
+	if _, err := b.Subscriber.Subscribe(t.Context(), NamedID("alice")); !errors.Is(err, stream.ErrTooManySubscriptions) {
 		t.Errorf("third subscription of alice: %v, want ErrTooManySubscriptions", err)
 	}
-	brokerSubscribe(t, b, "bob")
-	if _, err := b.Subscriber.Subscribe(t.Context(), "carol"); !errors.Is(err, stream.ErrTooManySubscriptions) {
+	brokerSubscribe(t, b, NamedID("bob"))
+	if _, err := b.Subscriber.Subscribe(t.Context(), NamedID("carol")); !errors.Is(err, stream.ErrTooManySubscriptions) {
 		t.Errorf("fourth subscription: %v, want ErrTooManySubscriptions", err)
 	}
 	// Closing releases the slot, once.
@@ -488,16 +488,16 @@ func brokerLimits(t *testing.T, b StreamBroker) {
 	if !brokerDone(first, 0) {
 		t.Error("a closed subscription is not done")
 	}
-	brokerSubscribe(t, b, "alice")
-	if _, err := b.Subscriber.Subscribe(t.Context(), "carol"); !errors.Is(err, stream.ErrTooManySubscriptions) {
+	brokerSubscribe(t, b, NamedID("alice"))
+	if _, err := b.Subscriber.Subscribe(t.Context(), NamedID("carol")); !errors.Is(err, stream.ErrTooManySubscriptions) {
 		t.Errorf("a subscription past the limit after Close: %v, want ErrTooManySubscriptions", err)
 	}
 }
 
 func brokerDropsSlow(t *testing.T, b StreamBroker) {
-	slow, other := brokerSubscribe(t, b, "alice"), brokerSubscribe(t, b, "bob")
+	slow, other := brokerSubscribe(t, b, NamedID("alice")), brokerSubscribe(t, b, NamedID("bob"))
 	for range 3 {
-		b.Publisher.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: "s"})
+		b.Publisher.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: NamedID("s")})
 		if _, ok := brokerNext(other, b.Timeout); !ok {
 			t.Fatal("the subscriber that keeps up missed a signal")
 		}
@@ -520,7 +520,7 @@ func brokerEndsOnBroken(t *testing.T, b StreamBroker) {
 	if b.Break == nil {
 		t.Skip("the broker has no listener to break")
 	}
-	alice, bob := brokerSubscribe(t, b, "alice"), brokerSubscribe(t, b, "bob")
+	alice, bob := brokerSubscribe(t, b, NamedID("alice")), brokerSubscribe(t, b, NamedID("bob"))
 	b.Break(t)
 	for name, s := range map[string]stream.Subscription{"alice": alice, "bob": bob} {
 		if !brokerDone(s, b.Timeout) {
@@ -531,12 +531,12 @@ func brokerEndsOnBroken(t *testing.T, b StreamBroker) {
 	bob.Close()
 
 	// A new subscription listens again and receives.
-	again := brokerSubscribe(t, b, "alice")
+	again := brokerSubscribe(t, b, NamedID("alice"))
 	pub := b.Publisher
 	if b.Remote != nil {
 		pub = b.Remote
 	}
-	entry := stream.Event{Kind: stream.KindHomeEntry, EntryID: "after"}
+	entry := stream.Event{Kind: stream.KindHomeEntry, EntryID: NamedID("after")}
 	pub.Publish(entry)
 	if e, ok := brokerNext(again, b.Timeout); !ok || e != entry {
 		t.Errorf("after the break, received %+v, %v; want %+v", e, ok, entry)

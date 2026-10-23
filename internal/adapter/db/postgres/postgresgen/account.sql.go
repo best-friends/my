@@ -13,7 +13,7 @@ import (
 )
 
 const anyAccountOnDomain = `-- name: AnyAccountOnDomain :one
-SELECT EXISTS (SELECT 1 FROM accounts WHERE domain = $1 AND id = ANY($2::text[])) AS found
+SELECT EXISTS (SELECT 1 FROM accounts WHERE domain = $1 AND id = ANY($2::uuid[])) AS found
 `
 
 type AnyAccountOnDomainParams struct {
@@ -606,7 +606,7 @@ func (q *Queries) ListAccountKeys(ctx context.Context, accountID string) ([]Acco
 
 const listAccountsOnDomain = `-- name: ListAccountsOnDomain :many
 SELECT id FROM accounts
-WHERE id = ANY($1::text[])
+WHERE id = ANY($1::uuid[])
   AND (domain = $2
     OR (length(domain) > length($2) AND substr(domain, length(domain) - length($2)) = '.' || $2))
 ORDER BY id
@@ -640,7 +640,7 @@ func (q *Queries) ListAccountsOnDomain(ctx context.Context, arg ListAccountsOnDo
 }
 
 const listExistingAccountIDs = `-- name: ListExistingAccountIDs :many
-SELECT id FROM accounts WHERE id = ANY($1::text[]) ORDER BY id
+SELECT id FROM accounts WHERE id = ANY($1::uuid[]) ORDER BY id
 `
 
 // ListExistingAccountIDs returns, in ID order, the accounts among ids that exist.
@@ -727,11 +727,11 @@ func (q *Queries) ListLifecycleStates(ctx context.Context) ([]AccountLifecycleSt
 }
 
 const listLocalAccountIDsAfter = `-- name: ListLocalAccountIDsAfter :many
-SELECT account_id FROM local_accounts WHERE account_id > $1::text ORDER BY account_id LIMIT $2
+SELECT account_id FROM local_accounts WHERE account_id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000') ORDER BY account_id LIMIT $2
 `
 
 type ListLocalAccountIDsAfterParams struct {
-	After     string
+	After     *string
 	PageLimit int32
 }
 

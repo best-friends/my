@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/best-friends/my/internal/app/kernel"
+
 	"github.com/best-friends/my/internal/domain/content"
 )
 
@@ -38,7 +40,7 @@ func (h *Handler) page(w http.ResponseWriter, r *http.Request) {
 // a post that an anonymous visitor may not see gets the same 404 as a missing one, as its HTML
 // page does (ADR-0017). The username in the path does not matter; the id is the post's.
 func (h *Handler) statusPage(w http.ResponseWriter, r *http.Request, id string) {
-	if !validID(id) {
+	if !kernel.ValidID(id) {
 		h.notFound(w, r)
 		return
 	}

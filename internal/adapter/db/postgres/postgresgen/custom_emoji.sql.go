@@ -13,7 +13,7 @@ import (
 )
 
 const deleteCustomEmojiAliases = `-- name: DeleteCustomEmojiAliases :exec
-DELETE FROM custom_emoji_aliases WHERE emoji_id = $1
+DELETE FROM custom_emoji_aliases WHERE emoji_id = $1::uuid
 `
 
 func (q *Queries) DeleteCustomEmojiAliases(ctx context.Context, emojiID string) error {
@@ -22,7 +22,7 @@ func (q *Queries) DeleteCustomEmojiAliases(ctx context.Context, emojiID string) 
 }
 
 const deleteCustomEmojiImages = `-- name: DeleteCustomEmojiImages :exec
-DELETE FROM custom_emoji_images WHERE emoji_id = $1
+DELETE FROM custom_emoji_images WHERE emoji_id = $1::uuid
 `
 
 func (q *Queries) DeleteCustomEmojiImages(ctx context.Context, emojiID string) error {
@@ -31,7 +31,7 @@ func (q *Queries) DeleteCustomEmojiImages(ctx context.Context, emojiID string) e
 }
 
 const deleteCustomEmojiRow = `-- name: DeleteCustomEmojiRow :exec
-DELETE FROM custom_emojis WHERE id = $1
+DELETE FROM custom_emojis WHERE id = $1::uuid
 `
 
 func (q *Queries) DeleteCustomEmojiRow(ctx context.Context, id string) error {
@@ -40,7 +40,7 @@ func (q *Queries) DeleteCustomEmojiRow(ctx context.Context, id string) error {
 }
 
 const deleteCustomEmojiSettings = `-- name: DeleteCustomEmojiSettings :exec
-DELETE FROM custom_emoji_settings WHERE emoji_id = $1
+DELETE FROM custom_emoji_settings WHERE emoji_id = $1::uuid
 `
 
 func (q *Queries) DeleteCustomEmojiSettings(ctx context.Context, emojiID string) error {
@@ -93,7 +93,7 @@ func (q *Queries) DeleteUnreferencedRemoteMedia(ctx context.Context, mediaID str
 }
 
 const getCustomEmojiSettings = `-- name: GetCustomEmojiSettings :one
-SELECT emoji_id, enabled, visible_in_picker, category FROM custom_emoji_settings WHERE emoji_id = $1
+SELECT emoji_id, enabled, visible_in_picker, category FROM custom_emoji_settings WHERE emoji_id = $1::uuid
 `
 
 func (q *Queries) GetCustomEmojiSettings(ctx context.Context, emojiID string) (CustomEmojiSetting, error) {
@@ -161,12 +161,12 @@ SELECT e.id, e.shortcode, e.domain, e.uri, e.created_by_user_id, e.created_at,
 FROM custom_emojis e
 JOIN custom_emoji_images i ON i.emoji_id = e.id
 LEFT JOIN custom_emoji_settings s ON s.emoji_id = e.id
-WHERE i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
+WHERE i.id = (SELECT l.id FROM custom_emoji_images l WHERE l.emoji_id = e.id ORDER BY l.id DESC LIMIT 1)
   AND ($1::integer = 0 OR ($1::integer = 1) = (e.domain = ''))
   AND ($2::text = '' OR e.domain = $2::text)
   AND ($3::text = '' OR strpos(lower(e.shortcode), $3::text) > 0)
-  AND ($4::text = '' OR e.created_by_user_id = $4::text)
-  AND ($5::text = '' OR e.id < $5::text)
+  AND ($4::uuid IS NULL OR e.created_by_user_id = $4::uuid)
+  AND ($5::uuid IS NULL OR e.id < $5::uuid)
 ORDER BY e.id DESC
 LIMIT $6
 `
@@ -175,8 +175,8 @@ type ListAdminCustomEmojisParams struct {
 	Locality  int32
 	Domain    string
 	Shortcode string
-	CreatedBy string
-	BeforeID  string
+	CreatedBy *string
+	BeforeID  *string
 	RowLimit  int32
 }
 
@@ -241,7 +241,7 @@ func (q *Queries) ListAdminCustomEmojis(ctx context.Context, arg ListAdminCustom
 
 const listCustomEmojiAliases = `-- name: ListCustomEmojiAliases :many
 SELECT emoji_id, alias FROM custom_emoji_aliases
-WHERE emoji_id = ANY($1::text[])
+WHERE emoji_id = ANY($1::uuid[])
 ORDER BY emoji_id, alias
 `
 
@@ -267,7 +267,7 @@ func (q *Queries) ListCustomEmojiAliases(ctx context.Context, emojiIds []string)
 }
 
 const listCustomEmojiImageMediaIDs = `-- name: ListCustomEmojiImageMediaIDs :many
-SELECT DISTINCT media_id FROM custom_emoji_images WHERE emoji_id = $1 ORDER BY media_id
+SELECT DISTINCT media_id FROM custom_emoji_images WHERE emoji_id = $1::uuid ORDER BY media_id
 `
 
 func (q *Queries) ListCustomEmojiImageMediaIDs(ctx context.Context, emojiID string) ([]string, error) {
@@ -291,7 +291,7 @@ func (q *Queries) ListCustomEmojiImageMediaIDs(ctx context.Context, emojiID stri
 }
 
 const listExistingCustomEmojiIDs = `-- name: ListExistingCustomEmojiIDs :many
-SELECT id FROM custom_emojis WHERE id = ANY($1::text[]) ORDER BY id
+SELECT id FROM custom_emojis WHERE id = ANY($1::uuid[]) ORDER BY id
 `
 
 // ListExistingCustomEmojiIDs returns, in ID order, the custom emoji among ids that exist (the
@@ -326,7 +326,7 @@ FROM custom_emojis e
 JOIN custom_emoji_images i ON i.emoji_id = e.id
 LEFT JOIN custom_emoji_settings s ON s.emoji_id = e.id
 WHERE e.domain = ''
-  AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
+  AND i.id = (SELECT l.id FROM custom_emoji_images l WHERE l.emoji_id = e.id ORDER BY l.id DESC LIMIT 1)
   AND ($1::boolean OR e.shortcode = ANY($2::text[]))
 ORDER BY e.shortcode
 `
@@ -388,7 +388,7 @@ func (q *Queries) ListLocalCustomEmojis(ctx context.Context, arg ListLocalCustom
 
 const listUnreferencedRemoteEmojis = `-- name: ListUnreferencedRemoteEmojis :many
 SELECT e.id FROM custom_emojis e
-WHERE e.domain <> '' AND e.id > CAST($1 AS TEXT)
+WHERE e.domain <> '' AND e.id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000')
   AND NOT EXISTS (SELECT 1 FROM status_revision_emojis r WHERE r.emoji_id = e.id)
   AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.custom_emoji_id = e.id)
   AND NOT EXISTS (SELECT 1 FROM custom_emoji_settings s WHERE s.emoji_id = e.id AND NOT s.enabled)
@@ -397,7 +397,7 @@ LIMIT $2
 `
 
 type ListUnreferencedRemoteEmojisParams struct {
-	After    string
+	After    *string
 	RowLimit int32
 }
 

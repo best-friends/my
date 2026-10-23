@@ -192,7 +192,7 @@ func (r *FinanceRepository) AllItems(ctx context.Context) ([]finance.CostItem, e
 
 func (r *FinanceRepository) items(ctx context.Context, id, before string, limit int32) ([]finance.CostItem, error) {
 	q := r.db.reader()
-	rows, err := q.ListCostItems(ctx, postgresgen.ListCostItemsParams{ID: id, Before: before, Lim: limit})
+	rows, err := q.ListCostItems(ctx, postgresgen.ListCostItemsParams{ID: toNullString(id), Before: toNullString(before), Lim: limit})
 	if err != nil {
 		return nil, wrap(err, "list cost items")
 	}

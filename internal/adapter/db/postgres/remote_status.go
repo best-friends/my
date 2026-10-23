@@ -354,7 +354,7 @@ func (r *StatusRepository) ListPollVoterIDs(ctx context.Context, pollID, after s
 	if err != nil {
 		return nil, err
 	}
-	ids, err := r.db.reader().ListPollVoterIDs(ctx, postgresgen.ListPollVoterIDsParams{PollID: pollID, After: after, Lim: lim})
+	ids, err := r.db.reader().ListPollVoterIDs(ctx, postgresgen.ListPollVoterIDsParams{PollID: pollID, After: toNullString(after), Lim: lim})
 	if err != nil {
 		return nil, wrap(err, "list poll voters")
 	}

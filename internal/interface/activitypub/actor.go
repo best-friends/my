@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/best-friends/my/internal/app/kernel"
+
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appfederation "github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/domain/account"
@@ -112,7 +114,7 @@ func (h *Handler) actor(w http.ResponseWriter, r *http.Request) {
 
 // lookupID finds the visible local actor with an id from a URI.
 func (h *Handler) lookupID(r *http.Request, id string) (appaccount.Actor, error) {
-	if !validID(id) {
+	if !kernel.ValidID(id) {
 		return appaccount.Actor{}, appaccount.ErrNotFound
 	}
 	return findVisible(h.o.Accounts.FindByID(r.Context(), id))
@@ -122,7 +124,7 @@ func (h *Handler) lookupID(r *http.Request, id string) (appaccount.Actor, error)
 // visible one, or a suspended one that is not deleted, whatever its lifecycle (a ban schedules
 // its deletion). suspended tells the latter.
 func (h *Handler) lookupActor(r *http.Request, id string) (a appaccount.Actor, suspended bool, err error) {
-	if !validID(id) {
+	if !kernel.ValidID(id) {
 		return appaccount.Actor{}, false, appaccount.ErrNotFound
 	}
 	a, err = h.o.Accounts.FindByID(r.Context(), id)

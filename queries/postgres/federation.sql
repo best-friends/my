@@ -62,7 +62,7 @@ VALUES (@id, @activity_uri, @type, @actor_account_id, @object_type, @object_id, 
 
 -- name: GetOutboundActivity :one
 SELECT id, activity_uri, type, actor_account_id, object_type, object_id, created_at
-FROM outbound_activities WHERE id = @id;
+FROM outbound_activities WHERE id = sqlc.arg(id)::uuid;
 
 -- ListOutboundActivitiesOfObject returns the activities sent about an object, oldest first.
 -- name: ListOutboundActivitiesOfObject :many
@@ -76,7 +76,7 @@ VALUES (@outbound_activity_id, @document, @built_at)
 ON CONFLICT (outbound_activity_id) DO NOTHING;
 
 -- name: GetOutboundActivityDocument :one
-SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = @outbound_activity_id;
+SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = sqlc.arg(outbound_activity_id)::uuid;
 
 -- DeleteOutboundActivityDocumentsBefore removes at most @batch_limit documents built before
 -- @built_before. The activity's ID is a UUIDv7 no later than its document, so @id_before (the
@@ -85,7 +85,7 @@ SELECT document FROM outbound_activity_documents WHERE outbound_activity_id = @o
 DELETE FROM outbound_activity_documents
 WHERE outbound_activity_id IN (
   SELECT d.outbound_activity_id FROM outbound_activity_documents d
-  WHERE d.outbound_activity_id < @id_before AND d.built_at < @built_before
+  WHERE d.outbound_activity_id < sqlc.arg(id_before)::uuid AND d.built_at < @built_before
   ORDER BY d.outbound_activity_id LIMIT @batch_limit
 );
 
@@ -96,13 +96,13 @@ VALUES (@id, @outbound_activity_id, @inbox_url, @domain, @created_at)
 ON CONFLICT (outbound_activity_id, inbox_url) DO NOTHING;
 
 -- name: GetDelivery :one
-SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries WHERE id = @id;
+SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries WHERE id = sqlc.arg(id)::uuid;
 
 -- ListDeliveriesOfOutboundActivity returns the inboxes of an activity in id order after
 -- @after_id, for the Update and Delete of what it created.
 -- name: ListDeliveriesOfOutboundActivity :many
 SELECT id, outbound_activity_id, inbox_url, domain, created_at FROM deliveries
-WHERE outbound_activity_id = @outbound_activity_id AND id > @after_id ORDER BY id LIMIT @batch_limit;
+WHERE outbound_activity_id = sqlc.arg(outbound_activity_id)::uuid AND id > COALESCE(sqlc.narg(after_id)::uuid, '00000000-0000-0000-0000-000000000000') ORDER BY id LIMIT @batch_limit;
 
 -- name: InsertDeliveryAttempt :exec
 INSERT INTO delivery_attempts (id, delivery_id, outcome, signature_scheme, http_status, error, attempted_at)
@@ -110,7 +110,7 @@ VALUES (@id, @delivery_id, @outcome, @signature_scheme, @http_status, @error, @a
 
 -- name: ListDeliveryAttempts :many
 SELECT id, delivery_id, outcome, signature_scheme, http_status, error, attempted_at FROM delivery_attempts
-WHERE delivery_id = @delivery_id ORDER BY id;
+WHERE delivery_id = sqlc.arg(delivery_id)::uuid ORDER BY id;
 
 -- DeleteDeliveryAttemptsBefore removes at most @batch_limit attempts made before
 -- @attempted_before; @id_before (the UUIDv7 floor of @attempted_before) bounds the scan of the
@@ -118,7 +118,7 @@ WHERE delivery_id = @delivery_id ORDER BY id;
 -- name: DeleteDeliveryAttemptsBefore :execrows
 DELETE FROM delivery_attempts
 WHERE id IN (
-  SELECT a.id FROM delivery_attempts a WHERE a.id < @id_before AND a.attempted_at < @attempted_before
+  SELECT a.id FROM delivery_attempts a WHERE a.id < sqlc.arg(id_before)::uuid AND a.attempted_at < @attempted_before
   ORDER BY a.id LIMIT @batch_limit
 );
 
@@ -139,10 +139,10 @@ INSERT INTO instance_availability_events (id, domain, kind, reason, occurred_at)
 VALUES (@id, @domain, @kind, @reason, @occurred_at);
 
 -- ListInstanceAvailabilityEvents returns the availability events of a server, newest first,
--- before the event @before ('' for the newest).
+-- before the event @before (NULL for the newest).
 -- name: ListInstanceAvailabilityEvents :many
 SELECT id, domain, kind, reason, occurred_at FROM instance_availability_events
-WHERE domain = sqlc.arg(domain) AND (sqlc.arg(before)::text = '' OR id < sqlc.arg(before)::text)
+WHERE domain = sqlc.arg(domain) AND (sqlc.narg(before)::uuid IS NULL OR id < sqlc.narg(before)::uuid)
 ORDER BY id DESC LIMIT sqlc.arg(batch_limit);
 
 -- name: UpsertInstanceHealth :exec

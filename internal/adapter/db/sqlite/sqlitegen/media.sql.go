@@ -155,7 +155,7 @@ INSERT INTO media_files (id, owner_account_id, origin, created_at) VALUES (?, ?,
 
 type InsertMediaFileParams struct {
 	ID             string
-	OwnerAccountID string
+	OwnerAccountID sql.NullString
 	Origin         string
 	CreatedAt      int64
 }
@@ -355,7 +355,7 @@ LIMIT ?3
 `
 
 type ListOwnerUploadsParams struct {
-	OwnerAccountID string
+	OwnerAccountID sql.NullString
 	AfterID        string
 	RowLimit       int64
 }
@@ -405,7 +405,7 @@ ORDER BY m.id, v.size, v.motion
 
 type ListReadyMediaVariantsRow struct {
 	ID             string
-	OwnerAccountID string
+	OwnerAccountID sql.NullString
 	Origin         string
 	CreatedAt      int64
 	ResultID       string

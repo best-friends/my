@@ -129,7 +129,7 @@ func (r *WebhookRepository) ListEndpoints(ctx context.Context) ([]webhook.Endpoi
 }
 
 func (r *WebhookRepository) endpoints(ctx context.Context, id string) ([]webhook.Endpoint, error) {
-	rows, err := r.db.reader().ListWebhookEndpoints(ctx, id)
+	rows, err := r.db.reader().ListWebhookEndpoints(ctx, toNullString(id))
 	if err != nil {
 		return nil, wrap(err, "list webhook endpoints")
 	}
@@ -294,7 +294,7 @@ func (r *WebhookRepository) ListDeliveries(ctx context.Context, endpointID, befo
 	if err != nil {
 		return nil, err
 	}
-	return r.deliveries(ctx, postgresgen.ListWebhookDeliveriesParams{EndpointID: endpointID, Before: before, Lim: lim})
+	return r.deliveries(ctx, postgresgen.ListWebhookDeliveriesParams{EndpointID: endpointID, Before: toNullString(before), Lim: lim})
 }
 
 // FindDelivery implements appwebhook.Repository.
@@ -302,7 +302,7 @@ func (r *WebhookRepository) FindDelivery(ctx context.Context, endpointID, delive
 	if deliveryID == "" {
 		return webhook.DeliveryRecord{}, appwebhook.ErrNotFound
 	}
-	out, err := r.deliveries(ctx, postgresgen.ListWebhookDeliveriesParams{EndpointID: endpointID, ID: deliveryID, Lim: 1})
+	out, err := r.deliveries(ctx, postgresgen.ListWebhookDeliveriesParams{EndpointID: endpointID, ID: toNullString(deliveryID), Lim: 1})
 	if err != nil {
 		return webhook.DeliveryRecord{}, err
 	}

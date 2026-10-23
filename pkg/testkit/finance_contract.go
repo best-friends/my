@@ -158,7 +158,7 @@ func financeRecord(t *testing.T, e *financeEnv) {
 		Recurrence: finance.Recurrence{Schedule: finance.ScheduleYears, Interval: 1}, StartsOn: financeDate(t, "2024-02-29"),
 		EndsOn: financeDatePtr(t, "9999-12-31"), Price: financeJPY(1650),
 		Label: finance.Label{Name: " example.org ", Provider: "Ｒｅｇｉｓｔｒａｒ", Category: finance.CategoryDomain, Memo: "auto-renew"},
-	}, "user-1")
+	}, NamedID("user-1"))
 	if err != nil {
 		t.Fatalf("Create(yearly) = %v", err)
 	}
@@ -167,7 +167,7 @@ func financeRecord(t *testing.T, e *financeEnv) {
 		t.Fatalf("Get = %v", err)
 	}
 	if got.Recurrence != (finance.Recurrence{Schedule: finance.ScheduleYears, Interval: 1}) || got.StartsOn.String() != "2024-02-29" ||
-		got.EndsOn == nil || got.EndsOn.String() != "9999-12-31" || got.CreatedByUserID != "user-1" || !got.CreatedAt.Equal(e.clock.Now()) {
+		got.EndsOn == nil || got.EndsOn.String() != "9999-12-31" || got.CreatedByUserID != NamedID("user-1") || !got.CreatedAt.Equal(e.clock.Now()) {
 		t.Errorf("Get = %+v", got)
 	}
 	if got.Label != (finance.Label{Name: "example.org", Provider: "Ｒｅｇｉｓｔｒａｒ", Category: finance.CategoryDomain, Memo: "auto-renew"}) ||
@@ -200,7 +200,7 @@ func financeRecord(t *testing.T, e *financeEnv) {
 	if err != nil || !slices.Equal(ids(rest), []string{once.ID}) {
 		t.Errorf("List(after) = %v, %v; want %v", ids(rest), err, once.ID)
 	}
-	if _, err := e.svc.Get(ctx, "no-such-item"); !errors.Is(err, appfinance.ErrNotFound) {
+	if _, err := e.svc.Get(ctx, NamedID("no-such-item")); !errors.Is(err, appfinance.ErrNotFound) {
 		t.Errorf("Get(unknown) = %v, want ErrNotFound", err)
 	}
 }
@@ -249,7 +249,7 @@ func financeInvalid(t *testing.T, e *financeEnv) {
 	if _, err := e.svc.Relabel(ctx, c.ID, finance.Label{Name: "VPS", Category: finance.CategoryCompute}, ""); !errors.Is(err, finance.ErrInvalidProvider) {
 		t.Errorf("Relabel(no provider) = %v", err)
 	}
-	if _, err := e.svc.RevisePrice(ctx, "no-such-item", financeDate(t, "2026-05-01"), financeJPY(200), ""); !errors.Is(err, appfinance.ErrNotFound) {
+	if _, err := e.svc.RevisePrice(ctx, NamedID("no-such-item"), financeDate(t, "2026-05-01"), financeJPY(200), ""); !errors.Is(err, appfinance.ErrNotFound) {
 		t.Errorf("RevisePrice(unknown) = %v", err)
 	}
 	got, err := e.svc.Get(ctx, c.ID)
@@ -436,7 +436,7 @@ func financeChanges(t *testing.T, e *financeEnv) {
 		map[string]int64{"2026-01": 900, "2026-02": 900, "2026-03": 1300, "2026-04": 1300})
 
 	// A new label regroups every period under its provider and category.
-	got, err = e.svc.Relabel(ctx, c.ID, finance.Label{Name: "Server", Provider: "Other Cloud", Category: finance.CategoryCompute, Memo: "moved"}, "user-1")
+	got, err = e.svc.Relabel(ctx, c.ID, finance.Label{Name: "Server", Provider: "Other Cloud", Category: finance.CategoryCompute, Memo: "moved"}, NamedID("user-1"))
 	if err != nil || got.Label.Provider != "Other Cloud" || got.ProviderNormalized != "other cloud" || got.Label.Memo != "moved" {
 		t.Fatalf("Relabel = %+v, %v", got, err)
 	}
@@ -461,7 +461,7 @@ func financeCancel(t *testing.T, e *financeEnv) {
 	gone := e.create(t, "Gone", finance.Recurrence{Schedule: finance.ScheduleYears, Interval: 1}, "2025-06-01", financeJPY(1200))
 	checkTotals(t, "before the cancellation", e.totals(t, finance.GranularityYear, "2025-01-01", "2026-12-31", finance.BasisCash, "JPY"),
 		map[string]int64{"2025": 1200, "2026": 1200 + 1200})
-	if err := e.svc.Cancel(ctx, gone.ID, "user-1"); err != nil {
+	if err := e.svc.Cancel(ctx, gone.ID, NamedID("user-1")); err != nil {
 		t.Fatalf("Cancel = %v", err)
 	}
 	checkTotals(t, "after the cancellation", e.totals(t, finance.GranularityYear, "2025-01-01", "2026-12-31", finance.BasisCash, "JPY"),

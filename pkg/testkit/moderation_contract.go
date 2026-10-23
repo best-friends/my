@@ -193,7 +193,7 @@ func moderationLifts(t *testing.T, e *moderationEnv) {
 	ctx := t.Context()
 	first := e.domainAction(t, "bad.example", moderation.DomainSuspend, 0)
 	second := e.domainAction(t, "bad.example", moderation.DomainSuspend, 24*time.Hour)
-	limit := e.domainAction(t, "bad.example", moderation.DomainLimit, 0)
+	e.domainAction(t, "bad.example", moderation.DomainLimit, 0)
 	if err := e.svc.LiftDomainAction(ctx, first.ID, ""); err != nil {
 		t.Fatalf("LiftDomainAction = %v", err)
 	}
@@ -210,7 +210,7 @@ func moderationLifts(t *testing.T, e *moderationEnv) {
 	if want := []moderation.Restriction{moderation.RestrictPublicDiscovery, moderation.RestrictUnsolicitedReach}; err != nil || !reflect.DeepEqual(rs, want) {
 		t.Errorf("DomainRestrictions after the lifts = %v, %v; want %v", rs, err, want)
 	}
-	if err := e.svc.LiftDomainAction(ctx, limit.Domain, ""); !errors.Is(err, appmoderation.ErrNotFound) {
+	if err := e.svc.LiftDomainAction(ctx, NamedID("unknown-domain-action"), ""); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("LiftDomainAction(unknown) = %v, want ErrNotFound", err)
 	}
 }
@@ -308,7 +308,7 @@ func moderationLocalAccountActions(t *testing.T, e *moderationEnv) {
 	}
 	lift := func(a moderation.Action) {
 		t.Helper()
-		if err := e.svc.LiftAccountAction(ctx, a.ID, "user-1", ""); err != nil {
+		if err := e.svc.LiftAccountAction(ctx, a.ID, NamedID("user-1"), ""); err != nil {
 			t.Fatalf("LiftAccountAction(%s) = %v", a.Kind, err)
 		}
 	}
@@ -364,7 +364,7 @@ func moderationLocalAccountActions(t *testing.T, e *moderationEnv) {
 	domainLimit := e.domainAction(t, "remote.example", moderation.DomainLimit, 0)
 	reach("domain limit", e.remote, true)
 	reach("local after a domain limit", e.local, false)
-	if err := e.svc.LiftDomainAction(ctx, domainLimit.ID, "user-1"); err != nil {
+	if err := e.svc.LiftDomainAction(ctx, domainLimit.ID, NamedID("user-1")); err != nil {
 		t.Fatalf("LiftDomainAction(limit) = %v", err)
 	}
 	reach("domain limit lifted", e.remote, false)
@@ -413,7 +413,7 @@ func moderationListsAccountActions(t *testing.T, e *moderationEnv) {
 		t.Helper()
 		a, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
 			TargetAccountID: target, Kind: kind, ReasonCategory: moderation.CategoryOther, PublicReason: "public",
-			PrivateNote: "private", IssuedByUserID: "user-1", Duration: d,
+			PrivateNote: "private", IssuedByUserID: NamedID("user-1"), Duration: d,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -425,7 +425,7 @@ func moderationListsAccountActions(t *testing.T, e *moderationEnv) {
 	expiring := issue(e.local, moderation.ActionRestrictPosting, time.Hour)
 	remote := issue(e.remote, moderation.ActionSuspend, 0)
 	lifted := issue(e.local, moderation.ActionDisableLogin, 0)
-	if err := e.svc.LiftAccountAction(ctx, lifted.ID, "user-2", "appealed"); err != nil {
+	if err := e.svc.LiftAccountAction(ctx, lifted.ID, NamedID("user-2"), "appealed"); err != nil {
 		t.Fatal(err)
 	}
 	liftedAt := e.clock.Now()
@@ -446,7 +446,7 @@ func moderationListsAccountActions(t *testing.T, e *moderationEnv) {
 	}
 	all := list(appmoderation.AccountActionFilter{}, 10, lifted.ID, remote.ID, expiring.ID, first.ID)
 	if len(all) == 4 {
-		want := moderation.Lift{ActionID: lifted.ID, LiftedByUserID: "user-2", Reason: "appealed", LiftedAt: liftedAt}
+		want := moderation.Lift{ActionID: lifted.ID, LiftedByUserID: NamedID("user-2"), Reason: "appealed", LiftedAt: liftedAt}
 		if v := all[0]; v.State != moderation.ActionLifted || v.Lift == nil || !reflect.DeepEqual(*v.Lift, want) || !reflect.DeepEqual(v.Action, lifted) {
 			t.Errorf("lifted action = %+v", v)
 		}
@@ -637,13 +637,13 @@ func moderationReports(t *testing.T, e *moderationEnv) {
 	ctx := t.Context()
 	in := appmoderation.RemoteReportInput{
 		URI: "https://remote.example/flags/1", ReporterAccountID: e.reports, TargetAccountID: e.local,
-		StatusIDs: []string{"s2", "s1", "s2"}, Comment: strings.Repeat("あ", moderation.MaxReportComment+10),
+		StatusIDs: []string{OrderedID(2), OrderedID(1), OrderedID(2)}, Comment: strings.Repeat("あ", moderation.MaxReportComment+10),
 	}
 	r, created, err := e.svc.FileRemoteReport(ctx, in)
 	if err != nil || !created {
 		t.Fatalf("FileRemoteReport = %v, %v; want created", created, err)
 	}
-	if r.Comment != strings.Repeat("あ", moderation.MaxReportComment) || !reflect.DeepEqual(r.StatusIDs, []string{"s1", "s2"}) || r.Category != moderation.CategoryOther {
+	if r.Comment != strings.Repeat("あ", moderation.MaxReportComment) || !reflect.DeepEqual(r.StatusIDs, []string{OrderedID(1), OrderedID(2)}) || r.Category != moderation.CategoryOther {
 		t.Errorf("report = %+v, want the comment cut to the limit and the statuses s1 and s2", r)
 	}
 	again, created, err := e.svc.FileRemoteReport(ctx, in)
@@ -685,7 +685,7 @@ func moderationListsDomainActions(t *testing.T, e *moderationEnv) {
 	e.clock.Advance(time.Second)
 	lifted := e.domainAction(t, "bad.example", moderation.DomainLimit, 0)
 	e.clock.Advance(time.Second)
-	if err := e.svc.LiftDomainAction(ctx, lifted.ID, "user-1"); err != nil {
+	if err := e.svc.LiftDomainAction(ctx, lifted.ID, NamedID("user-1")); err != nil {
 		t.Fatal(err)
 	}
 	liftedAt := e.clock.Now()
@@ -706,7 +706,7 @@ func moderationListsDomainActions(t *testing.T, e *moderationEnv) {
 	}
 	all := list(appmoderation.DomainActionFilter{}, 10, lifted.ID, expiring.ID, first.ID)
 	if len(all) == 3 {
-		if v := all[0]; v.State != moderation.ActionLifted || v.Lift == nil || v.Lift.LiftedByUserID != "user-1" || !v.Lift.LiftedAt.Equal(liftedAt) || !reflect.DeepEqual(v.Action, lifted) {
+		if v := all[0]; v.State != moderation.ActionLifted || v.Lift == nil || v.Lift.LiftedByUserID != NamedID("user-1") || !v.Lift.LiftedAt.Equal(liftedAt) || !reflect.DeepEqual(v.Action, lifted) {
 			t.Errorf("lifted action = %+v", v)
 		}
 		if v := all[1]; v.State != moderation.ActionActive || v.Lift != nil || !reflect.DeepEqual(v.Action, expiring) {
@@ -806,21 +806,21 @@ func moderationLocalReports(t *testing.T, e *moderationEnv) {
 	reporter := e.ids.NewID()
 	e.actors.set(appaccount.Actor{Account: account.Account{ID: reporter, Domain: account.LocalDomain}})
 	statuses := reportedStatuses{
-		authors: map[string]string{"r1": e.remote, "r2": e.remote, "hidden": e.remote, "mine": reporter},
-		hidden:  map[string]bool{"hidden": true},
+		authors: map[string]string{OrderedID(1): e.remote, OrderedID(2): e.remote, NamedID("hidden"): e.remote, NamedID("mine"): reporter},
+		hidden:  map[string]bool{NamedID("hidden"): true},
 	}
 	reports := appmoderation.NewLocalReports(appmoderation.LocalReportDeps{
 		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Moderation, Accounts: e.actors, Statuses: statuses,
-		Rules: citableRules{"rule-1": true, "rule-2": true}, Clock: e.clock, IDs: e.ids,
+		Rules: citableRules{OrderedID(11): true, OrderedID(12): true}, Clock: e.clock, IDs: e.ids,
 	})
 	r, err := reports.File(ctx, appmoderation.LocalReportInput{
-		ReporterAccountID: reporter, TargetAccountID: e.remote, StatusIDs: []string{"r2", "r1", "r2"},
-		Category: moderation.CategoryViolation, RuleIDs: []string{"rule-2", "rule-1"}, Comment: "rude", Forward: true,
+		ReporterAccountID: reporter, TargetAccountID: e.remote, StatusIDs: []string{OrderedID(2), OrderedID(1), OrderedID(2)},
+		Category: moderation.CategoryViolation, RuleIDs: []string{OrderedID(12), OrderedID(11)}, Comment: "rude", Forward: true,
 	})
 	if err != nil {
 		t.Fatalf("File = %v", err)
 	}
-	if !reflect.DeepEqual(r.StatusIDs, []string{"r1", "r2"}) || !reflect.DeepEqual(r.RuleIDs, []string{"rule-1", "rule-2"}) || !r.Forwarded || r.URI != "" {
+	if !reflect.DeepEqual(r.StatusIDs, []string{OrderedID(1), OrderedID(2)}) || !reflect.DeepEqual(r.RuleIDs, []string{OrderedID(11), OrderedID(12)}) || !r.Forwarded || r.URI != "" {
 		t.Errorf("report = %+v, want the statuses r1 and r2, the rules rule-1 and rule-2, forwarded", r)
 	}
 	got, err := e.svc.ReportRecord(ctx, r.ID)
@@ -848,12 +848,12 @@ func moderationLocalReports(t *testing.T, e *moderationEnv) {
 		in    appmoderation.LocalReportInput
 		field string
 	}{
-		{"a status the reporter may not see", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{"r1", "hidden"}, Category: moderation.CategorySpam}, "status_ids"},
-		{"another account's status", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{"mine"}, Category: moderation.CategorySpam}, "status_ids"},
-		{"an unknown status", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{"gone"}, Category: moderation.CategorySpam}, "status_ids"},
-		{"a rule of another category", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: moderation.CategorySpam, RuleIDs: []string{"rule-1"}}, "rule_ids"},
+		{"a status the reporter may not see", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{OrderedID(1), NamedID("hidden")}, Category: moderation.CategorySpam}, "status_ids"},
+		{"another account's status", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{NamedID("mine")}, Category: moderation.CategorySpam}, "status_ids"},
+		{"an unknown status", appmoderation.LocalReportInput{TargetAccountID: e.remote, StatusIDs: []string{NamedID("gone")}, Category: moderation.CategorySpam}, "status_ids"},
+		{"a rule of another category", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: moderation.CategorySpam, RuleIDs: []string{OrderedID(11)}}, "rule_ids"},
 		{"an unknown category", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: "abuse"}, "category"},
-		{"a rule not in effect", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: moderation.CategoryViolation, RuleIDs: []string{"retired"}}, "rule_ids"},
+		{"a rule not in effect", appmoderation.LocalReportInput{TargetAccountID: e.remote, Category: moderation.CategoryViolation, RuleIDs: []string{NamedID("retired")}}, "rule_ids"},
 		{"the reporter", appmoderation.LocalReportInput{TargetAccountID: reporter, Category: moderation.CategorySpam}, "account_id"},
 		{"an unknown account", appmoderation.LocalReportInput{TargetAccountID: e.ids.NewID(), Category: moderation.CategorySpam}, "account_id"},
 	} {
@@ -887,7 +887,7 @@ func moderationHandlesReports(t *testing.T, e *moderationEnv) {
 		t.Helper()
 		e.clock.Advance(time.Second)
 		r, _, err := e.svc.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
-			URI: "https://remote.example/flags/" + n, ReporterAccountID: e.reports, TargetAccountID: e.local, StatusIDs: []string{"s" + n},
+			URI: "https://remote.example/flags/" + n, ReporterAccountID: e.reports, TargetAccountID: e.local, StatusIDs: []string{NamedID("s" + n)},
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -915,26 +915,26 @@ func moderationHandlesReports(t *testing.T, e *moderationEnv) {
 	list(appmoderation.ReportQuery{Before: b.ID}, 2, a.ID)
 
 	// Assigning records the assignee; assigning it again changes nothing.
-	r, err := e.svc.AssignReport(ctx, b.ID, "mod-1", "mod-1")
-	if err != nil || r.Status.AssigneeUserID != "mod-1" || r.Status.State != moderation.ReportOpen || !r.Status.Since.Equal(b.FiledAt) {
+	r, err := e.svc.AssignReport(ctx, b.ID, NamedID("mod-1"), NamedID("mod-1"))
+	if err != nil || r.Status.AssigneeUserID != NamedID("mod-1") || r.Status.State != moderation.ReportOpen || !r.Status.Since.Equal(b.FiledAt) {
 		t.Errorf("AssignReport = %+v, %v; want open, assigned to mod-1", r.Status, err)
 	}
-	if r, err = e.svc.AssignReport(ctx, b.ID, "mod-1", ""); err != nil || r.Status.AssigneeUserID != "mod-1" {
+	if r, err = e.svc.AssignReport(ctx, b.ID, NamedID("mod-1"), ""); err != nil || r.Status.AssigneeUserID != NamedID("mod-1") {
 		t.Errorf("AssignReport again = %+v, %v", r.Status, err)
 	}
-	if r, err = e.svc.AssignReport(ctx, b.ID, "", "mod-2"); err != nil || r.Status.AssigneeUserID != "" {
+	if r, err = e.svc.AssignReport(ctx, b.ID, "", NamedID("mod-2")); err != nil || r.Status.AssigneeUserID != "" {
 		t.Errorf("AssignReport(nobody) = %+v, %v", r.Status, err)
 	}
-	if r, err = e.svc.AssignReport(ctx, b.ID, "mod-2", "mod-2"); err != nil || r.Status.AssigneeUserID != "mod-2" {
+	if r, err = e.svc.AssignReport(ctx, b.ID, NamedID("mod-2"), NamedID("mod-2")); err != nil || r.Status.AssigneeUserID != NamedID("mod-2") {
 		t.Errorf("AssignReport(mod-2) = %+v, %v", r.Status, err)
 	}
 
 	// Resolving records the outcome; resolving again keeps it.
 	e.clock.Advance(time.Minute)
 	resolvedAt := e.clock.Now()
-	r, err = e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeDismissed, "mod-2")
+	r, err = e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeDismissed, NamedID("mod-2"))
 	if err != nil || r.Status.State != moderation.ReportResolved || r.Status.Outcome != moderation.OutcomeDismissed ||
-		r.Status.AssigneeUserID != "mod-2" || !r.Status.Since.Equal(resolvedAt) || !reflect.DeepEqual(r.Report, b) {
+		r.Status.AssigneeUserID != NamedID("mod-2") || !r.Status.Since.Equal(resolvedAt) || !reflect.DeepEqual(r.Report, b) {
 		t.Errorf("ResolveReport = %+v, %v; want resolved (dismissed) at %v", r, err, resolvedAt)
 	}
 	e.clock.Advance(time.Minute)
@@ -958,7 +958,7 @@ func moderationHandlesReports(t *testing.T, e *moderationEnv) {
 	if _, err := e.svc.ReportRecord(ctx, unknown); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("ReportRecord(unknown) = %v, want ErrNotFound", err)
 	}
-	if _, err := e.svc.AssignReport(ctx, unknown, "mod-1", ""); !errors.Is(err, appmoderation.ErrNotFound) {
+	if _, err := e.svc.AssignReport(ctx, unknown, NamedID("mod-1"), ""); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("AssignReport(unknown) = %v, want ErrNotFound", err)
 	}
 	if _, err := e.svc.ResolveReport(ctx, unknown, moderation.OutcomeActioned, ""); !errors.Is(err, appmoderation.ErrNotFound) {
@@ -980,7 +980,7 @@ func moderationReportsOfReporter(t *testing.T, e *moderationEnv) {
 		t.Helper()
 		e.clock.Advance(time.Second)
 		r, _, err := e.svc.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
-			URI: "https://remote.example/flags/" + n, ReporterAccountID: reporter, TargetAccountID: e.local, StatusIDs: []string{"s" + n},
+			URI: "https://remote.example/flags/" + n, ReporterAccountID: reporter, TargetAccountID: e.local, StatusIDs: []string{NamedID("s" + n)},
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -1010,10 +1010,10 @@ func moderationReportsOfReporter(t *testing.T, e *moderationEnv) {
 	// Resolving emits the report with its resolution, once.
 	e.clock.Advance(time.Minute)
 	resolvedAt := e.clock.Now()
-	if _, err := e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeActioned, "mod-1"); err != nil {
+	if _, err := e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeActioned, NamedID("mod-1")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeDismissed, "mod-1"); err != nil {
+	if _, err := e.svc.ResolveReport(ctx, b.ID, moderation.OutcomeDismissed, NamedID("mod-1")); err != nil {
 		t.Fatal(err)
 	}
 	events := e.events.take()
@@ -1022,7 +1022,7 @@ func moderationReportsOfReporter(t *testing.T, e *moderationEnv) {
 	}
 	ev, ok := events[0].(appmoderation.ReportResolved)
 	if !ok || !reflect.DeepEqual(ev.Report, b) || ev.Resolution.ReportID != b.ID || ev.Resolution.Outcome != moderation.OutcomeActioned ||
-		ev.Resolution.ResolvedByUserID != "mod-1" || !ev.Resolution.ResolvedAt.Equal(resolvedAt) || ev.Resolution.ID == "" {
+		ev.Resolution.ResolvedByUserID != NamedID("mod-1") || !ev.Resolution.ResolvedAt.Equal(resolvedAt) || ev.Resolution.ID == "" {
 		t.Errorf("event = %+v, want b resolved as actioned at %v", events[0], resolvedAt)
 	}
 	all := list("", 10, c.ID, b.ID, a.ID)

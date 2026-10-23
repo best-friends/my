@@ -13,7 +13,7 @@ import (
 )
 
 const deleteLinkCardMediaFile = `-- name: DeleteLinkCardMediaFile :exec
-DELETE FROM media_files WHERE media_files.id = ?1 AND media_files.origin = 'remote' AND media_files.owner_account_id = ''
+DELETE FROM media_files WHERE media_files.id = ?1 AND media_files.origin = 'remote' AND media_files.owner_account_id IS NULL
 `
 
 // DeleteLinkCardMediaFile deletes the media file of an image of link cards, which has no owner.

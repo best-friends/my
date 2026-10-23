@@ -37,6 +37,13 @@ sql:
         omit_unused_structs: true
         emit_pointers_for_null_types: true
         overrides:
+          - db_type: uuid
+            go_type: string
+          - db_type: uuid
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
           - db_type: timestamptz
             go_type: time.Time
           - db_type: timestamptz
@@ -67,6 +74,13 @@ sql:
         omit_unused_structs: true
         emit_pointers_for_null_types: true
         overrides:
+          - db_type: uuid
+            go_type: string
+          - db_type: uuid
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
           - db_type: timestamptz
             go_type: time.Time
   - name: sqlite-kv
@@ -92,6 +106,13 @@ sql:
         omit_unused_structs: true
         emit_pointers_for_null_types: true
         overrides:
+          - db_type: uuid
+            go_type: string
+          - db_type: uuid
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
           - db_type: timestamptz
             go_type: time.Time
           - db_type: timestamptz

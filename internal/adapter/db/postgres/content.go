@@ -657,7 +657,7 @@ func (r *StatusRepository) ListLiveRemoteStatusIDs(ctx context.Context, authorAc
 		return nil, err
 	}
 	ids, err := r.db.reader().ListLiveRemoteStatusIDsOfAuthor(ctx, postgresgen.ListLiveRemoteStatusIDsOfAuthorParams{
-		AuthorAccountID: authorAccountID, Before: before, Lim: lim,
+		AuthorAccountID: authorAccountID, Before: toNullString(before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list remote statuses of "+authorAccountID)

@@ -20,16 +20,16 @@ func TestListStatusReactions(t *testing.T) {
 	at := time.Date(2026, 10, 16, 9, 0, 0, 0, time.UTC)
 	reactions := []appcontent.ReactedView{
 		{
-			Reaction: content.Reaction{ID: "r3", AccountID: aliceAccountID, StatusID: sampleStatusID, Emoji: content.ReactionEmoji{Unicode: "👍"}, CreatedAt: at},
+			Reaction: content.Reaction{ID: reactionID(3), AccountID: aliceAccountID, StatusID: sampleStatusID, Emoji: content.ReactionEmoji{Unicode: "👍"}, CreatedAt: at},
 			Emoji:    appcontent.EmojiView{Emoji: content.ReactionEmoji{Unicode: "👍"}},
 		},
 		{
 			// An account that no longer exists is left out.
-			Reaction: content.Reaction{ID: "r2", AccountID: "01890a5d-ac96-774b-bcce-b302099a8999", StatusID: sampleStatusID, Emoji: content.ReactionEmoji{Unicode: "👍"}, CreatedAt: at},
+			Reaction: content.Reaction{ID: reactionID(2), AccountID: "01890a5d-ac96-774b-bcce-b302099a8999", StatusID: sampleStatusID, Emoji: content.ReactionEmoji{Unicode: "👍"}, CreatedAt: at},
 			Emoji:    appcontent.EmojiView{Emoji: content.ReactionEmoji{Unicode: "👍"}},
 		},
 		{
-			Reaction: content.Reaction{ID: "r1", AccountID: aliceAccountID, StatusID: sampleStatusID, Emoji: content.ReactionEmoji{CustomEmojiID: sampleCustomEmoji.ID}, CreatedAt: at},
+			Reaction: content.Reaction{ID: reactionID(1), AccountID: aliceAccountID, StatusID: sampleStatusID, Emoji: content.ReactionEmoji{CustomEmojiID: sampleCustomEmoji.ID}, CreatedAt: at},
 			Emoji:    appcontent.EmojiView{Emoji: content.ReactionEmoji{CustomEmojiID: sampleCustomEmoji.ID}, Custom: &sampleCustomEmoji},
 		},
 	}
@@ -64,7 +64,7 @@ func TestListStatusReactions(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&page); err != nil || res.StatusCode != http.StatusOK {
 		t.Fatalf("GET with an emoji = %d, %v", res.StatusCode, err)
 	}
-	if gotEmoji != "blobcat@misskey.example" || gotBefore != "r2" {
+	if gotEmoji != "blobcat@misskey.example" || gotBefore != reactionID(2) {
 		t.Errorf("Reactions(emoji %q, before %q), want the emoji and the cursor", gotEmoji, gotBefore)
 	}
 	if c := page.Items[len(page.Items)-1].Emoji; c.Name != "blobcat@misskey.example" || *c.Shortcode != "blobcat" || *c.Domain != "misskey.example" || c.Emoji == nil || c.Emoji.StaticUrl != sampleCustomEmoji.Image.StaticURL {
@@ -118,3 +118,6 @@ func TestReactToStatus(t *testing.T) {
 		t.Errorf("PUT anonymously = %d, want 401", res.StatusCode)
 	}
 }
+
+// reactionID returns the canonical ID of the n-th reaction of the tests.
+func reactionID(n int) string { return fmt.Sprintf("01890a5d-ac96-774b-bcce-b302099a%04d", 9400+n) }

@@ -13,7 +13,7 @@ import (
 )
 
 const deleteAccountHandle = `-- name: DeleteAccountHandle :exec
-DELETE FROM account_handles WHERE account_id = $1
+DELETE FROM account_handles WHERE account_id = $1::uuid
 `
 
 func (q *Queries) DeleteAccountHandle(ctx context.Context, accountID string) error {
@@ -32,7 +32,7 @@ func (q *Queries) DeleteAllRemoteAccountHeads(ctx context.Context) error {
 
 const deleteOtherAccountHandle = `-- name: DeleteOtherAccountHandle :exec
 DELETE FROM account_handles
-WHERE username_normalized = $1 AND domain = $2 AND account_id <> $3
+WHERE username_normalized = $1 AND domain = $2 AND account_id <> $3::uuid
 `
 
 type DeleteOtherAccountHandleParams struct {
@@ -101,7 +101,7 @@ func (q *Queries) GetCurrentAccountKey(ctx context.Context, keyID string) (Accou
 
 const getLatestRemoteAccountHandleVerification = `-- name: GetLatestRemoteAccountHandleVerification :one
 SELECT id, account_id, username, domain, outcome, checked_at FROM remote_account_handle_verifications
-WHERE account_id = $1 ORDER BY id DESC LIMIT 1
+WHERE account_id = $1::uuid ORDER BY id DESC LIMIT 1
 `
 
 // GetLatestRemoteAccountHandleVerification returns the newest handle check of an actor.
@@ -123,7 +123,7 @@ const getLatestRemoteAccountSnapshot = `-- name: GetLatestRemoteAccountSnapshot 
 SELECT id, account_id, preferred_username, profile_url, inbox_url, shared_inbox_url, outbox_url,
   followers_url, following_url, featured_url, followers_total, following_total, statuses_total,
   document_digest, fetched_at
-FROM remote_account_snapshots WHERE account_id = $1 ORDER BY id DESC LIMIT 1
+FROM remote_account_snapshots WHERE account_id = $1::uuid ORDER BY id DESC LIMIT 1
 `
 
 // GetLatestRemoteAccountSnapshot returns the newest snapshot of an actor.
@@ -152,7 +152,7 @@ func (q *Queries) GetLatestRemoteAccountSnapshot(ctx context.Context, accountID 
 
 const getRemoteAccountHead = `-- name: GetRemoteAccountHead :one
 SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
-FROM remote_account_heads WHERE account_id = $1
+FROM remote_account_heads WHERE account_id = $1::uuid
 `
 
 func (q *Queries) GetRemoteAccountHead(ctx context.Context, accountID string) (RemoteAccountHead, error) {
@@ -306,7 +306,7 @@ func (q *Queries) InsertRemoteProfileRevision(ctx context.Context, arg InsertRem
 const listActiveAccountKeys = `-- name: ListActiveAccountKeys :many
 SELECT k.id, k.account_id, k.key_id, k.algorithm, k.public_key_pem, k.fingerprint, k.created_at
 FROM account_keys k
-WHERE k.account_id = $1
+WHERE k.account_id = $1::uuid
   AND NOT EXISTS (SELECT 1 FROM account_key_revocations r WHERE r.account_key_id = k.id)
 ORDER BY k.id
 `
@@ -498,7 +498,7 @@ func (q *Queries) ListRemoteAccountHeads(ctx context.Context) ([]RemoteAccountHe
 const listRemoteProfileURLs = `-- name: ListRemoteProfileURLs :many
 SELECT h.account_id, s.profile_url FROM remote_account_heads h
 JOIN remote_account_snapshots s ON s.id = h.snapshot_id
-WHERE h.account_id = ANY($1::text[]) AND s.profile_url IS NOT NULL
+WHERE h.account_id = ANY($1::uuid[]) AND s.profile_url IS NOT NULL
 ORDER BY h.account_id
 `
 
@@ -533,14 +533,14 @@ const listStaleRemoteAccountHeads = `-- name: ListStaleRemoteAccountHeads :many
 SELECT account_id, snapshot_id, inbox_url, shared_inbox_url, last_fetched_at, consecutive_fetch_failures
 FROM remote_account_heads
 WHERE last_fetched_at < $1
-  AND (last_fetched_at > $2 OR (last_fetched_at = $2 AND account_id > $3))
+  AND (last_fetched_at > $2 OR (last_fetched_at = $2 AND account_id > COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000')))
 ORDER BY last_fetched_at, account_id LIMIT $4
 `
 
 type ListStaleRemoteAccountHeadsParams struct {
 	FetchedBefore  time.Time
 	AfterFetchedAt time.Time
-	AfterAccountID string
+	AfterAccountID *string
 	BatchLimit     int32
 }
 
@@ -582,7 +582,7 @@ func (q *Queries) ListStaleRemoteAccountHeads(ctx context.Context, arg ListStale
 const recordRemoteAccountFetchFailure = `-- name: RecordRemoteAccountFetchFailure :execrows
 UPDATE remote_account_heads
 SET consecutive_fetch_failures = consecutive_fetch_failures + 1, last_fetched_at = $1
-WHERE account_id = $2
+WHERE account_id = $2::uuid
 `
 
 type RecordRemoteAccountFetchFailureParams struct {

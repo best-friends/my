@@ -458,7 +458,7 @@ func oauthRevokesTokens(t *testing.T, e *accountEnv) {
 	e.wantAccess(t, other.AccessToken, false, "the access token of a family revoked by its refresh token")
 	wantFamily(rotated.Token.FamilyID, false, "a revoked family")
 	wantFamily(other.Token.FamilyID, false, "a family revoked by its refresh token")
-	wantFamily("unknown", false, "an unknown family")
+	wantFamily(NamedID("unknown"), false, "an unknown family")
 
 	// A family whose refresh token expired has ended too.
 	last, _ := e.webTokensFor(t, userID)

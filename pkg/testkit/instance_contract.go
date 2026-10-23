@@ -238,9 +238,9 @@ func instanceSetsSeveralSettings(t *testing.T, e *instanceEnv) {
 
 	e.clock.Advance(time.Second)
 	revs, err := e.service.SetSettings(ctx, []appinstance.SetSettingInput{
-		{Key: instance.SettingRegistrationMode, Value: "invite", RevisedByUserID: "admin"},
-		{Key: instance.SettingDefaultLocale, Value: "ja_jp", RevisedByUserID: "admin"},
-		{Key: instance.SettingFederatedTimelineAccess, Value: "off", RevisedByUserID: "admin"},
+		{Key: instance.SettingRegistrationMode, Value: "invite", RevisedByUserID: NamedID("admin")},
+		{Key: instance.SettingDefaultLocale, Value: "ja_jp", RevisedByUserID: NamedID("admin")},
+		{Key: instance.SettingFederatedTimelineAccess, Value: "off", RevisedByUserID: NamedID("admin")},
 	})
 	if err != nil || len(revs) != 3 {
 		t.Fatalf("SetSettings = %+v, %v; want 3 revisions", revs, err)
@@ -250,7 +250,7 @@ func instanceSetsSeveralSettings(t *testing.T, e *instanceEnv) {
 		t.Errorf("settings = %v %q %v; want invite, ja-JP, off", s.RegistrationMode(), s.DefaultLocale(), s.FederatedTimelineAccess())
 	}
 	history, err := e.service.SettingHistory(ctx, instance.SettingDefaultLocale, 10)
-	if err != nil || !reflect.DeepEqual(history, revs[1:2]) || history[0].RevisedByUserID != "admin" {
+	if err != nil || !reflect.DeepEqual(history, revs[1:2]) || history[0].RevisedByUserID != NamedID("admin") {
 		t.Errorf("SettingHistory(default_locale) = %+v, %v; want [%+v]", history, err, revs[1])
 	}
 }

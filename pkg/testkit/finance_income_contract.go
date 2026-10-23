@@ -74,13 +74,13 @@ func incomeMovement(t *testing.T, id string, kind finance.IncomeKind, day, gross
 func incomeScenario(t *testing.T) []appfinance.IncomeMovement {
 	t.Helper()
 	yearly := incomeMovement(t, "txn_yearly", finance.IncomePayment, "2026-04-10", "12000", "432", "11568")
-	yearly.SubscriptionID, yearly.CoversStart, yearly.CoversEnd = "sub_yearly", "2026-04-10", "2027-04-09"
+	yearly.SubscriptionID, yearly.CoversStart, yearly.CoversEnd = NamedID("sub_yearly"), "2026-04-10", "2027-04-09"
 	refund := incomeMovement(t, "txn_refund", finance.IncomeRefund, "2026-06-01", "-12000", "0", "-12000")
-	refund.SubscriptionID, refund.ParentID = "sub_yearly", "txn_yearly"
+	refund.SubscriptionID, refund.ParentID = NamedID("sub_yearly"), "txn_yearly"
 	monthly := incomeMovement(t, "txn_monthly", finance.IncomePayment, "2026-05-03", "500", "18", "482")
-	monthly.SubscriptionID, monthly.CoversStart, monthly.CoversEnd = "sub_monthly", "2026-05-03", "2026-06-02"
+	monthly.SubscriptionID, monthly.CoversStart, monthly.CoversEnd = NamedID("sub_monthly"), "2026-05-03", "2026-06-02"
 	partial := incomeMovement(t, "txn_partial", finance.IncomeRefund, "2026-05-20", "-200", "0", "-200")
-	partial.SubscriptionID, partial.ParentID = "sub_monthly", "txn_monthly"
+	partial.SubscriptionID, partial.ParentID = NamedID("sub_monthly"), "txn_monthly"
 	fee := incomeMovement(t, "txn_fee", finance.IncomeFee, "2026-05-31", "0", "84", "-84")
 	return []appfinance.IncomeMovement{yearly, refund, monthly, partial, fee}
 }
@@ -193,7 +193,7 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 	if err := e.svc.RecordIncome(ctx, incomeScenario(t)); err != nil {
 		t.Fatal(err)
 	}
-	e.dir.Accounts = map[string]appfinance.Subscriber{"sub_yearly": {AccountID: "acct_1", Username: "alice"}}
+	e.dir.Accounts = map[string]appfinance.Subscriber{NamedID("sub_yearly"): {AccountID: NamedID("acct_1"), Username: "alice"}}
 	var ids []string
 	before := ""
 	for {
@@ -205,7 +205,7 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 			ids = append(ids, m.ProviderID)
 			switch m.ProviderID {
 			case "txn_refund":
-				if m.ParentProviderID != "txn_yearly" || m.Subscriber != (appfinance.Subscriber{AccountID: "acct_1", Username: "alice"}) || m.Net != financeJPY(-12000) || m.Covers != nil {
+				if m.ParentProviderID != "txn_yearly" || m.Subscriber != (appfinance.Subscriber{AccountID: NamedID("acct_1"), Username: "alice"}) || m.Net != financeJPY(-12000) || m.Covers != nil {
 					t.Errorf("refund = %+v, want its payment, account, and net", m)
 				}
 			case "txn_yearly":
@@ -218,7 +218,7 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 				}
 			case "txn_monthly":
 				// The subscriber's account of sub_monthly is gone: the row keeps its subscription.
-				if m.SubscriptionID != "sub_monthly" || m.Subscriber != (appfinance.Subscriber{}) || m.Net != financeJPY(482) {
+				if m.SubscriptionID != NamedID("sub_monthly") || m.Subscriber != (appfinance.Subscriber{}) || m.Net != financeJPY(482) {
 					t.Errorf("payment of a gone account = %+v, want its subscription and no subscriber", m)
 				}
 			}

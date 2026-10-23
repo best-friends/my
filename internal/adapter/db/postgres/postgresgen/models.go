@@ -492,7 +492,7 @@ type MediaDescription struct {
 
 type MediaFile struct {
 	ID             string
-	OwnerAccountID string
+	OwnerAccountID *string
 	Origin         string
 	CreatedAt      time.Time
 }

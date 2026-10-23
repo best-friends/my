@@ -116,7 +116,7 @@ func newPushSenderEnv(t *testing.T, newSender PushSenderFactory) *pushSenderEnv 
 // subscription is the fake browser's subscription.
 func (e *pushSenderEnv) subscription() notification.PushSubscription {
 	return notification.PushSubscription{
-		ID: "sub", AccountID: "acct", TokenFamilyID: "fam", Endpoint: pushServiceEndpoint,
+		ID: NamedID("sub"), AccountID: NamedID("acct"), TokenFamilyID: NamedID("fam"), Endpoint: pushServiceEndpoint,
 		KeyP256DH: base64.RawURLEncoding.EncodeToString(e.browser.PublicKey().Bytes()),
 		KeyAuth:   base64.RawURLEncoding.EncodeToString(e.auth),
 		Alerts:    []notification.Type{notification.TypeMention},

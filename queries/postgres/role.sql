@@ -47,7 +47,7 @@ DELETE FROM roles WHERE id = $1;
 
 -- ListExistingRoleIDs returns, in ID order, the roles among ids that exist (the audit log).
 -- name: ListExistingRoleIDs :many
-SELECT id FROM roles WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+SELECT id FROM roles WHERE id = ANY(sqlc.arg(ids)::uuid[]) ORDER BY id;
 
 -- Role badges (ADR-0071).
 

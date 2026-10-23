@@ -481,7 +481,7 @@ func (q *Queries) ListAllFeedTagEntries(ctx context.Context) ([]FeedTagEntry, er
 const listFeedAuthorRestrictionsAmong = `-- name: ListFeedAuthorRestrictionsAmong :many
 SELECT account_id, restriction FROM feed_author_restrictions
 WHERE (effective_until IS NULL OR effective_until > $1::timestamptz)
-  AND account_id = ANY($2::text[])
+  AND account_id = ANY($2::uuid[])
 `
 
 type ListFeedAuthorRestrictionsAmongParams struct {
@@ -516,7 +516,7 @@ func (q *Queries) ListFeedAuthorRestrictionsAmong(ctx context.Context, arg ListF
 
 const listFeedDirectEntriesAmong = `-- name: ListFeedDirectEntriesAmong :many
 SELECT entry_id FROM feed_direct_recipients
-WHERE recipient_account_id = $1 AND entry_id = ANY($2::text[])
+WHERE recipient_account_id = $1 AND entry_id = ANY($2::uuid[])
 `
 
 type ListFeedDirectEntriesAmongParams struct {
@@ -583,7 +583,7 @@ func (q *Queries) ListFeedDomainRestrictionsAmong(ctx context.Context, arg ListF
 const listFeedExclusionsAmong = `-- name: ListFeedExclusionsAmong :many
 SELECT target_account_id, reason FROM feed_exclusions
 WHERE viewer_account_id = $1 AND (expires_at IS NULL OR expires_at > $2::timestamptz)
-  AND target_account_id = ANY($3::text[])
+  AND target_account_id = ANY($3::uuid[])
 `
 
 type ListFeedExclusionsAmongParams struct {
@@ -620,7 +620,7 @@ func (q *Queries) ListFeedExclusionsAmong(ctx context.Context, arg ListFeedExclu
 const listFeedFollowedAmong = `-- name: ListFeedFollowedAmong :many
 
 SELECT followee_account_id FROM feed_follow_edges
-WHERE follower_account_id = $1 AND followee_account_id = ANY($2::text[])
+WHERE follower_account_id = $1 AND followee_account_id = ANY($2::uuid[])
 `
 
 type ListFeedFollowedAmongParams struct {
@@ -656,9 +656,9 @@ SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.origin
 FROM feed_entries e
 WHERE e.author_account_id IN (
     SELECT f.followee_account_id FROM feed_follow_edges f WHERE f.follower_account_id = $1
-    UNION ALL SELECT $1::text)
-  AND ($2::text = '' OR e.id < $2::text)
-  AND e.id >= $3::text
+    UNION ALL SELECT $1::uuid)
+  AND ($2::uuid IS NULL OR e.id < $2::uuid)
+  AND e.id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000')
   AND (e.kind = 'post' OR e.author_account_id = $1 OR EXISTS (
     SELECT 1 FROM feed_follow_edges f
     WHERE f.follower_account_id = $1 AND f.followee_account_id = e.author_account_id AND f.show_boosts))
@@ -691,8 +691,8 @@ LIMIT $7
 
 type ListHomeEntriesParams struct {
 	Viewer       string
-	Before       string
-	WindowFloor  string
+	Before       *string
+	WindowFloor  *string
 	Now          time.Time
 	AllLanguages bool
 	Languages    []string
@@ -753,7 +753,7 @@ SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.origin
 FROM feed_entries e
 WHERE e.is_local AND e.kind = 'post' AND e.visibility IN ('public', 'local')
   AND ($1::boolean OR e.visibility = 'public')
-  AND ($2::text = '' OR e.id < $2::text)
+  AND ($2::uuid IS NULL OR e.id < $2::uuid)
   AND NOT EXISTS (
     SELECT 1 FROM feed_author_restrictions r
     WHERE r.account_id = e.author_account_id
@@ -761,7 +761,7 @@ WHERE e.is_local AND e.kind = 'post' AND e.visibility IN ('public', 'local')
       AND (r.effective_until IS NULL OR r.effective_until > $3::timestamptz))
   AND NOT EXISTS (
     SELECT 1 FROM feed_exclusions x
-    WHERE x.viewer_account_id = $4 AND x.target_account_id = e.author_account_id
+    WHERE x.viewer_account_id = $4::uuid AND x.target_account_id = e.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > $3::timestamptz))
   AND ($5::boolean OR e.language = 'und' OR e.language = ANY($6::text[]))
 ORDER BY e.id DESC
@@ -770,9 +770,9 @@ LIMIT $7
 
 type ListLocalEntriesParams struct {
 	IncludeLocal bool
-	Before       string
+	Before       *string
 	Now          time.Time
-	Viewer       string
+	Viewer       *string
 	AllLanguages bool
 	Languages    []string
 	PageLimit    int32
@@ -780,7 +780,7 @@ type ListLocalEntriesParams struct {
 
 // ListLocalEntries is the local timeline (FR-202): the public and local posts of local accounts
 // (public only when include_local is 0, for visitors that are not logged in), except those of
-// authors kept from discovery and those the viewer (” for none) blocks, is blocked by, or mutes.
+// authors kept from discovery and those the viewer (NULL for none) blocks, is blocked by, or mutes.
 func (q *Queries) ListLocalEntries(ctx context.Context, arg ListLocalEntriesParams) ([]FeedEntry, error) {
 	rows, err := q.db.Query(ctx, listLocalEntries,
 		arg.IncludeLocal,
@@ -827,18 +827,18 @@ SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.origin
   e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.author_account_id = $1
-  AND ($2::text = '' OR e.id < $2::text)
+  AND ($2::uuid IS NULL OR e.id < $2::uuid)
   AND ((e.visibility = 'public' AND $3::boolean)
     OR (e.visibility = 'local' AND $4::boolean)
     OR (e.visibility = 'unlisted' AND $5::boolean)
     OR (e.visibility = 'private' AND $6::boolean)
     OR ($7::boolean
-    AND e.visibility = 'direct' AND (e.author_account_id = $8 OR EXISTS (
-      SELECT 1 FROM feed_direct_recipients d WHERE d.recipient_account_id = $8 AND d.entry_id = e.id))))
+    AND e.visibility = 'direct' AND (e.author_account_id = $8::uuid OR EXISTS (
+      SELECT 1 FROM feed_direct_recipients d WHERE d.recipient_account_id = $8::uuid AND d.entry_id = e.id))))
   AND (e.original_author_account_id = e.author_account_id OR (
     NOT EXISTS (
       SELECT 1 FROM feed_exclusions x
-      WHERE x.viewer_account_id = $8 AND x.target_account_id = e.original_author_account_id
+      WHERE x.viewer_account_id = $8::uuid AND x.target_account_id = e.original_author_account_id
         AND (x.expires_at IS NULL OR x.expires_at > $9::timestamptz))
     AND NOT EXISTS (
       SELECT 1 FROM feed_author_restrictions r
@@ -852,7 +852,7 @@ WHERE e.author_account_id = $1
           OR right(e.original_author_domain, length(dr.domain) + 1) = '.' || dr.domain))))
   AND (e.original_author_account_id = e.author_account_id OR NOT EXISTS (
     SELECT 1 FROM feed_domain_mutes dm
-    WHERE dm.viewer_account_id = $8
+    WHERE dm.viewer_account_id = $8::uuid
       AND (dm.domain = e.original_author_domain OR right(e.original_author_domain, length(dm.domain) + 1) = '.' || dm.domain)))
   AND ($10::boolean OR e.language = 'und' OR e.language = ANY($11::text[]))
   AND (NOT $12::boolean OR NOT e.is_reply)
@@ -863,13 +863,13 @@ LIMIT $14
 
 type ListProfileEntriesParams struct {
 	Author          string
-	Before          string
+	Before          *string
 	IncludePublic   bool
 	IncludeLocal    bool
 	IncludeUnlisted bool
 	IncludePrivate  bool
 	IncludeDirect   bool
-	Viewer          string
+	Viewer          *string
 	Now             time.Time
 	AllLanguages    bool
 	Languages       []string
@@ -937,7 +937,7 @@ SELECT e.id, e.kind, e.status_id, e.author_account_id, e.author_domain, e.origin
   e.original_author_domain, e.visibility, e.is_local, e.language, e.revision_seq, e.is_reply
 FROM feed_entries e
 WHERE e.kind = 'post' AND e.visibility = 'public'
-  AND ($1::text = '' OR e.id < $1::text)
+  AND ($1::uuid IS NULL OR e.id < $1::uuid)
   AND NOT EXISTS (
     SELECT 1 FROM feed_author_restrictions r
     WHERE r.account_id = e.author_account_id
@@ -950,11 +950,11 @@ WHERE e.kind = 'post' AND e.visibility = 'public'
       AND (dr.domain = e.author_domain OR right(e.author_domain, length(dr.domain) + 1) = '.' || dr.domain))
   AND NOT EXISTS (
     SELECT 1 FROM feed_exclusions x
-    WHERE x.viewer_account_id = $3 AND x.target_account_id = e.author_account_id
+    WHERE x.viewer_account_id = $3::uuid AND x.target_account_id = e.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > $2::timestamptz))
   AND NOT EXISTS (
     SELECT 1 FROM feed_domain_mutes dm
-    WHERE dm.viewer_account_id = $3
+    WHERE dm.viewer_account_id = $3::uuid
       AND (dm.domain = e.author_domain OR right(e.author_domain, length(dm.domain) + 1) = '.' || dm.domain))
   AND ($4::boolean OR e.language = 'und' OR e.language = ANY($5::text[]))
 ORDER BY e.id DESC
@@ -962,16 +962,16 @@ LIMIT $6
 `
 
 type ListPublicEntriesParams struct {
-	Before       string
+	Before       *string
 	Now          time.Time
-	Viewer       string
+	Viewer       *string
 	AllLanguages bool
 	Languages    []string
 	PageLimit    int32
 }
 
 // ListPublicEntries is the federated timeline (FR-202): the public posts of local and remote
-// accounts, except those of authors and domains kept from discovery and those the viewer (” for
+// accounts, except those of authors and domains kept from discovery and those the viewer (NULL for
 // none) blocks, is blocked by, or mutes.
 func (q *Queries) ListPublicEntries(ctx context.Context, arg ListPublicEntriesParams) ([]FeedEntry, error) {
 	rows, err := q.db.Query(ctx, listPublicEntries,
@@ -1020,7 +1020,7 @@ FROM feed_tag_entries t
 JOIN feed_entries e ON e.id = t.entry_id
 WHERE t.tag_id = $1 AND t.visibility IN ('public', 'local')
   AND ($2::boolean OR t.visibility = 'public')
-  AND ($3::text = '' OR t.entry_id < $3::text)
+  AND ($3::uuid IS NULL OR t.entry_id < $3::uuid)
   AND NOT EXISTS (
     SELECT 1 FROM feed_author_restrictions r
     WHERE r.account_id = t.author_account_id
@@ -1033,11 +1033,11 @@ WHERE t.tag_id = $1 AND t.visibility IN ('public', 'local')
       AND (dr.domain = e.author_domain OR right(e.author_domain, length(dr.domain) + 1) = '.' || dr.domain))
   AND NOT EXISTS (
     SELECT 1 FROM feed_exclusions x
-    WHERE x.viewer_account_id = $5 AND x.target_account_id = t.author_account_id
+    WHERE x.viewer_account_id = $5::uuid AND x.target_account_id = t.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > $4::timestamptz))
   AND NOT EXISTS (
     SELECT 1 FROM feed_domain_mutes dm
-    WHERE dm.viewer_account_id = $5
+    WHERE dm.viewer_account_id = $5::uuid
       AND (dm.domain = e.author_domain OR right(e.author_domain, length(dm.domain) + 1) = '.' || dm.domain))
   AND ($6::boolean OR e.language = 'und' OR e.language = ANY($7::text[]))
 ORDER BY t.entry_id DESC
@@ -1047,9 +1047,9 @@ LIMIT $8
 type ListTagEntriesParams struct {
 	TagID        string
 	IncludeLocal bool
-	Before       string
+	Before       *string
 	Now          time.Time
-	Viewer       string
+	Viewer       *string
 	AllLanguages bool
 	Languages    []string
 	PageLimit    int32

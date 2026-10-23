@@ -169,7 +169,7 @@ func (r *AccountRepository) ListStaleRemoteHeads(ctx context.Context, before tim
 		return nil, err
 	}
 	rows, err := r.db.reader().ListStaleRemoteAccountHeads(ctx, postgresgen.ListStaleRemoteAccountHeadsParams{
-		FetchedBefore: before, AfterFetchedAt: after.LastFetchedAt, AfterAccountID: after.AccountID, BatchLimit: batch,
+		FetchedBefore: before, AfterFetchedAt: after.LastFetchedAt, AfterAccountID: toNullString(after.AccountID), BatchLimit: batch,
 	})
 	if err != nil {
 		return nil, wrap(err, "list stale remote account heads")

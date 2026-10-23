@@ -15,17 +15,17 @@ import (
 const deleteAuditLogEntriesBefore = `-- name: DeleteAuditLogEntriesBefore :execrows
 DELETE FROM audit_log_entries WHERE id IN (
   SELECT e.id FROM audit_log_entries e
-  WHERE e.id < $1::text AND e.occurred_at < $2::timestamptz
+  WHERE e.id < $1::uuid AND e.occurred_at < $2::timestamptz
     AND NOT EXISTS (
       SELECT 1 FROM retention_holds h
       WHERE NOT EXISTS (SELECT 1 FROM retention_hold_releases rr WHERE rr.hold_id = h.id)
         AND (
-          (e.target_kind = 'account' AND e.target_id = h.account_id)
+          (e.target_kind = 'account' AND e.target_id = h.account_id::text)
           OR (e.target_kind = 'report' AND EXISTS (
-            SELECT 1 FROM reports r WHERE r.id = e.target_id
+            SELECT 1 FROM reports r WHERE r.id::text = e.target_id
               AND h.account_id IN (r.target_account_id, r.reporter_account_id)))
           OR (e.target_kind = 'appeal' AND EXISTS (
-            SELECT 1 FROM moderation_appeals ap WHERE ap.id = e.target_id AND ap.account_id = h.account_id))))
+            SELECT 1 FROM moderation_appeals ap WHERE ap.id::text = e.target_id AND ap.account_id = h.account_id))))
   ORDER BY e.id
   LIMIT $3::integer
 )
@@ -162,7 +162,7 @@ SELECT a.id FROM moderation_actions a
 LEFT JOIN moderation_action_lifts l ON l.action_id = a.id
 LEFT JOIN moderation_appeals ap ON ap.action_id = a.id
 LEFT JOIN moderation_appeal_decisions d ON d.appeal_id = ap.id
-WHERE a.id < $1::text
+WHERE a.id < $1::uuid
   AND (CASE
     WHEN a.kind IN ('warn', 'delete_statuses') THEN a.issued_at
     WHEN l.lifted_at IS NOT NULL AND a.expires_at IS NOT NULL THEN LEAST(l.lifted_at, a.expires_at)
@@ -301,7 +301,7 @@ func (q *Queries) ListReportResolutions(ctx context.Context, reportID string) ([
 
 const listReportsToPurge = `-- name: ListReportsToPurge :many
 SELECT r.id FROM reports r JOIN report_states s ON s.report_id = r.id
-WHERE r.id < $1::text
+WHERE r.id < $1::uuid
   AND s.state = 'resolved' AND s.since < $2::timestamptz
   AND NOT EXISTS (SELECT 1 FROM moderation_actions a WHERE a.report_id = r.id)
   AND NOT EXISTS (
@@ -344,7 +344,7 @@ const listRetentionHolds = `-- name: ListRetentionHolds :many
 SELECT h.id, h.account_id, h.reason, h.created_by_user_id, h.created_at, r.hold_id AS release_hold_id,
   r.released_by_user_id, r.released_at
 FROM retention_holds h LEFT JOIN retention_hold_releases r ON r.hold_id = h.id
-WHERE $1::text = '' OR h.account_id = $1
+WHERE $1::uuid IS NULL OR h.account_id = $1::uuid
 ORDER BY h.id DESC
 `
 
@@ -361,7 +361,7 @@ type ListRetentionHoldsRow struct {
 
 // ListRetentionHolds returns the holds of an account (of every account when account_id is
 // empty) with their releases, newest first.
-func (q *Queries) ListRetentionHolds(ctx context.Context, accountID string) ([]ListRetentionHoldsRow, error) {
+func (q *Queries) ListRetentionHolds(ctx context.Context, accountID *string) ([]ListRetentionHoldsRow, error) {
 	rows, err := q.db.Query(ctx, listRetentionHolds, accountID)
 	if err != nil {
 		return nil, err
@@ -393,7 +393,7 @@ func (q *Queries) ListRetentionHolds(ctx context.Context, accountID string) ([]L
 const listSignupBlocksToPurge = `-- name: ListSignupBlocksToPurge :many
 SELECT b.id FROM signup_blocks b
 LEFT JOIN signup_block_lifts l ON l.block_id = b.id
-WHERE b.id < $1::text
+WHERE b.id < $1::uuid
   AND (CASE
     WHEN l.lifted_at IS NOT NULL AND b.expires_at IS NOT NULL THEN LEAST(l.lifted_at, b.expires_at)
     ELSE COALESCE(l.lifted_at, b.expires_at)
@@ -436,7 +436,7 @@ func (q *Queries) ListSignupBlocksToPurge(ctx context.Context, arg ListSignupBlo
 }
 
 const purgeModerationActionLifts = `-- name: PurgeModerationActionLifts :exec
-DELETE FROM moderation_action_lifts WHERE action_id = ANY($1::text[])
+DELETE FROM moderation_action_lifts WHERE action_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeModerationActionLifts(ctx context.Context, ids []string) error {
@@ -445,7 +445,7 @@ func (q *Queries) PurgeModerationActionLifts(ctx context.Context, ids []string) 
 }
 
 const purgeModerationActionRestrictions = `-- name: PurgeModerationActionRestrictions :exec
-DELETE FROM account_restrictions WHERE source_action_id = ANY($1::text[])
+DELETE FROM account_restrictions WHERE source_action_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeModerationActionRestrictions(ctx context.Context, ids []string) error {
@@ -454,7 +454,7 @@ func (q *Queries) PurgeModerationActionRestrictions(ctx context.Context, ids []s
 }
 
 const purgeModerationActionStatuses = `-- name: PurgeModerationActionStatuses :exec
-DELETE FROM moderation_action_statuses WHERE action_id = ANY($1::text[])
+DELETE FROM moderation_action_statuses WHERE action_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeModerationActionStatuses(ctx context.Context, ids []string) error {
@@ -463,7 +463,7 @@ func (q *Queries) PurgeModerationActionStatuses(ctx context.Context, ids []strin
 }
 
 const purgeModerationActions = `-- name: PurgeModerationActions :exec
-DELETE FROM moderation_actions WHERE id = ANY($1::text[])
+DELETE FROM moderation_actions WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeModerationActions(ctx context.Context, ids []string) error {
@@ -473,7 +473,7 @@ func (q *Queries) PurgeModerationActions(ctx context.Context, ids []string) erro
 
 const purgeModerationAppealDecisions = `-- name: PurgeModerationAppealDecisions :exec
 DELETE FROM moderation_appeal_decisions WHERE appeal_id IN (
-  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY($1::text[]))
+  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY($1::uuid[]))
 `
 
 func (q *Queries) PurgeModerationAppealDecisions(ctx context.Context, ids []string) error {
@@ -484,7 +484,7 @@ func (q *Queries) PurgeModerationAppealDecisions(ctx context.Context, ids []stri
 const purgeModerationAppealStates = `-- name: PurgeModerationAppealStates :exec
 
 DELETE FROM appeal_states WHERE appeal_id IN (
-  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY($1::text[]))
+  SELECT ap.id FROM moderation_appeals ap WHERE ap.action_id = ANY($1::uuid[]))
 `
 
 // The PurgeModerationAction* statements delete the actions (@ids) with their
@@ -496,7 +496,7 @@ func (q *Queries) PurgeModerationAppealStates(ctx context.Context, ids []string)
 }
 
 const purgeModerationAppeals = `-- name: PurgeModerationAppeals :exec
-DELETE FROM moderation_appeals WHERE action_id = ANY($1::text[])
+DELETE FROM moderation_appeals WHERE action_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeModerationAppeals(ctx context.Context, ids []string) error {
@@ -505,7 +505,7 @@ func (q *Queries) PurgeModerationAppeals(ctx context.Context, ids []string) erro
 }
 
 const purgeReportAssignments = `-- name: PurgeReportAssignments :exec
-DELETE FROM report_assignments WHERE report_id = ANY($1::text[])
+DELETE FROM report_assignments WHERE report_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeReportAssignments(ctx context.Context, ids []string) error {
@@ -514,7 +514,7 @@ func (q *Queries) PurgeReportAssignments(ctx context.Context, ids []string) erro
 }
 
 const purgeReportNotes = `-- name: PurgeReportNotes :exec
-DELETE FROM report_notes WHERE report_id = ANY($1::text[])
+DELETE FROM report_notes WHERE report_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeReportNotes(ctx context.Context, ids []string) error {
@@ -523,7 +523,7 @@ func (q *Queries) PurgeReportNotes(ctx context.Context, ids []string) error {
 }
 
 const purgeReportReopenings = `-- name: PurgeReportReopenings :exec
-DELETE FROM report_reopenings WHERE report_id = ANY($1::text[])
+DELETE FROM report_reopenings WHERE report_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeReportReopenings(ctx context.Context, ids []string) error {
@@ -532,7 +532,7 @@ func (q *Queries) PurgeReportReopenings(ctx context.Context, ids []string) error
 }
 
 const purgeReportResolutions = `-- name: PurgeReportResolutions :exec
-DELETE FROM report_resolutions WHERE report_id = ANY($1::text[])
+DELETE FROM report_resolutions WHERE report_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeReportResolutions(ctx context.Context, ids []string) error {
@@ -541,7 +541,7 @@ func (q *Queries) PurgeReportResolutions(ctx context.Context, ids []string) erro
 }
 
 const purgeReportRuleCitations = `-- name: PurgeReportRuleCitations :exec
-DELETE FROM report_rule_citations WHERE report_id = ANY($1::text[])
+DELETE FROM report_rule_citations WHERE report_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeReportRuleCitations(ctx context.Context, ids []string) error {
@@ -550,7 +550,7 @@ func (q *Queries) PurgeReportRuleCitations(ctx context.Context, ids []string) er
 }
 
 const purgeReportStates = `-- name: PurgeReportStates :exec
-DELETE FROM report_states WHERE report_id = ANY($1::text[])
+DELETE FROM report_states WHERE report_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeReportStates(ctx context.Context, ids []string) error {
@@ -560,7 +560,7 @@ func (q *Queries) PurgeReportStates(ctx context.Context, ids []string) error {
 
 const purgeReportStatuses = `-- name: PurgeReportStatuses :exec
 
-DELETE FROM report_statuses WHERE report_id = ANY($1::text[])
+DELETE FROM report_statuses WHERE report_id = ANY($1::uuid[])
 `
 
 // The PurgeReport* statements delete the reports (@ids) with their children.
@@ -570,7 +570,7 @@ func (q *Queries) PurgeReportStatuses(ctx context.Context, ids []string) error {
 }
 
 const purgeReports = `-- name: PurgeReports :exec
-DELETE FROM reports WHERE id = ANY($1::text[])
+DELETE FROM reports WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeReports(ctx context.Context, ids []string) error {
@@ -580,7 +580,7 @@ func (q *Queries) PurgeReports(ctx context.Context, ids []string) error {
 
 const purgeSignupBlockLifts = `-- name: PurgeSignupBlockLifts :exec
 
-DELETE FROM signup_block_lifts WHERE block_id = ANY($1::text[])
+DELETE FROM signup_block_lifts WHERE block_id = ANY($1::uuid[])
 `
 
 // The PurgeSignupBlock* statements delete the blocks (@ids) with their lifts.
@@ -590,7 +590,7 @@ func (q *Queries) PurgeSignupBlockLifts(ctx context.Context, ids []string) error
 }
 
 const purgeSignupBlocks = `-- name: PurgeSignupBlocks :exec
-DELETE FROM signup_blocks WHERE id = ANY($1::text[])
+DELETE FROM signup_blocks WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeSignupBlocks(ctx context.Context, ids []string) error {

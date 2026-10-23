@@ -12,7 +12,7 @@
 SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
   s.conversation_uri, s.published_at
 FROM statuses s
-WHERE s.id > sqlc.arg(after)::text AND s.id < sqlc.arg(id_before)::text
+WHERE s.id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000') AND s.id < sqlc.arg(id_before)::uuid
   AND NOT s.is_local
   AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
   AND (s.published_at < sqlc.arg(any_before)::timestamptz OR (
@@ -39,78 +39,78 @@ LIMIT sqlc.arg(batch_limit)::integer;
 
 -- name: PurgeStatusRevisionBodies :exec
 DELETE FROM status_revision_bodies WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeStatusRevisionSources :exec
 DELETE FROM status_revision_sources WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeStatusRevisionAttachments :exec
 DELETE FROM status_revision_attachments WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeStatusRevisionMentions :exec
 DELETE FROM status_revision_mentions WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeStatusRevisionTags :exec
 DELETE FROM status_revision_tags WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeStatusRevisionEmojis :exec
 DELETE FROM status_revision_emojis WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeRemoteStatusRevisions :exec
 DELETE FROM remote_status_revisions WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgePollTallyObservationCounts :exec
 DELETE FROM poll_tally_observation_counts WHERE observation_id IN (
   SELECT o.id FROM poll_tally_observations o
   JOIN polls p ON p.id = o.poll_id
   JOIN status_revisions r ON r.id = p.revision_id
-  WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgePollTallyObservations :exec
 DELETE FROM poll_tally_observations WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
-  WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgePollVotes :exec
 DELETE FROM poll_votes WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
-  WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgePollTallies :exec
 DELETE FROM poll_tallies WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
-  WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgePollOptions :exec
 DELETE FROM poll_options WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
-  WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgePolls :exec
 DELETE FROM polls WHERE revision_id IN (
-  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT r.id FROM status_revisions r WHERE r.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeStatusRevisions :exec
-DELETE FROM status_revisions WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM status_revisions WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeRemoteBoostRetractions :exec
 DELETE FROM boost_retractions WHERE boost_id IN (
-  SELECT b.id FROM boosts b WHERE NOT b.is_local AND b.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT b.id FROM boosts b WHERE NOT b.is_local AND b.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: PurgeRemoteBoosts :exec
-DELETE FROM boosts WHERE NOT is_local AND status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM boosts WHERE NOT is_local AND status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeStatuses :exec
-DELETE FROM statuses WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM statuses WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: PurgeRelayedStatuses :exec
-DELETE FROM relayed_statuses WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM relayed_statuses WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- InsertRelayedStatus records a status that only a relay brought in; a status recorded already
 -- keeps its row.
@@ -125,7 +125,7 @@ ON CONFLICT (status_id) DO NOTHING;
 SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
   s.conversation_uri, s.published_at
 FROM relayed_statuses rs JOIN statuses s ON s.id = rs.status_id
-WHERE rs.status_id > sqlc.arg(after)::text AND rs.status_id < sqlc.arg(id_before)::text
+WHERE rs.status_id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000') AND rs.status_id < sqlc.arg(id_before)::uuid
   AND NOT s.is_local
   AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
   AND s.published_at < sqlc.arg(relayed_before)::timestamptz
@@ -154,7 +154,7 @@ SELECT EXISTS (SELECT 1 FROM notifications WHERE status_id = $1);
 -- remaining profile revision points to.
 -- name: ListRemoteAccountsWithPastProfiles :many
 SELECT ra.account_id FROM remote_accounts ra
-WHERE ra.account_id > sqlc.arg(after)::text
+WHERE ra.account_id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000')
   AND (EXISTS (
       SELECT 1 FROM account_profile_revisions r
       JOIN account_profile_heads h ON h.account_id = r.account_id

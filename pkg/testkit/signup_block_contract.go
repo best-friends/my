@@ -180,8 +180,8 @@ func signupBlocksScreen(t *testing.T, e *signupBlockEnv) {
 
 func signupBlocksLiftAndAudit(t *testing.T, e *signupBlockEnv) {
 	ctx := t.Context()
-	b := e.add(t, appmoderation.SignupBlockInput{Kind: moderation.SignupBlockEmailDomain, Value: "spam.example", Comment: "  waves  ", CreatedByUserID: "mod-1"})
-	if b.Comment != "waves" || b.CreatedByUserID != "mod-1" {
+	b := e.add(t, appmoderation.SignupBlockInput{Kind: moderation.SignupBlockEmailDomain, Value: "spam.example", Comment: "  waves  ", CreatedByUserID: NamedID("mod-1")})
+	if b.Comment != "waves" || b.CreatedByUserID != NamedID("mod-1") {
 		t.Errorf("AddSignupBlock = %+v, want the trimmed comment and the moderator", b)
 	}
 	e.screen(t, "a@spam.example", "", moderation.SignupReject)
@@ -193,7 +193,7 @@ func signupBlocksLiftAndAudit(t *testing.T, e *signupBlockEnv) {
 	e.screen(t, "a@spam.example", "", "")
 	// Lifting again changes nothing and records nothing.
 	e.clock.Advance(time.Second)
-	if err := e.svc.LiftSignupBlock(ctx, b.ID, "mod-1"); err != nil {
+	if err := e.svc.LiftSignupBlock(ctx, b.ID, NamedID("mod-1")); err != nil {
 		t.Errorf("LiftSignupBlock again = %v, want nil", err)
 	}
 	v, err := e.svc.SignupBlock(ctx, b.ID)
@@ -212,7 +212,7 @@ func signupBlocksLiftAndAudit(t *testing.T, e *signupBlockEnv) {
 	}
 	checkAudit(t, got, []auditWant{
 		{moderation.AuditActorCLI, "", moderation.AuditSignupBlockLifted, moderation.AuditTargetSignupBlock, b.ID, "email_domain spam.example", b.ID, liftedAt},
-		{moderation.AuditActorUser, "mod-1", moderation.AuditSignupBlockAdded, moderation.AuditTargetSignupBlock, b.ID, "email_domain spam.example", b.ID, b.CreatedAt},
+		{moderation.AuditActorUser, NamedID("mod-1"), moderation.AuditSignupBlockAdded, moderation.AuditTargetSignupBlock, b.ID, "email_domain spam.example", b.ID, b.CreatedAt},
 	})
 }
 
@@ -220,7 +220,7 @@ func signupBlocksFromBan(t *testing.T, e *signupBlockEnv) {
 	ctx := t.Context()
 	ban := func(target string, kind moderation.ActionKind) (moderation.Action, error) {
 		return e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
-			TargetAccountID: target, Kind: kind, ReasonCategory: moderation.CategorySpam, IssuedByUserID: "mod-1", BlockEmail: true,
+			TargetAccountID: target, Kind: kind, ReasonCategory: moderation.CategorySpam, IssuedByUserID: NamedID("mod-1"), BlockEmail: true,
 		})
 	}
 	// Only a ban of a local account with an email address blocks it; a refusal writes nothing.
@@ -251,7 +251,7 @@ func signupBlocksFromBan(t *testing.T, e *signupBlockEnv) {
 	b := blocks[0].Block
 	want := moderation.SignupBlock{
 		ID: b.ID, Kind: moderation.SignupBlockEmailHash, Value: moderation.EmailHash("spam.mer@mail.example"), Severity: moderation.SignupReject,
-		ModerationActionID: a.ID, CreatedByUserID: "mod-1", CreatedAt: a.IssuedAt,
+		ModerationActionID: a.ID, CreatedByUserID: NamedID("mod-1"), CreatedAt: a.IssuedAt,
 	}
 	if !reflect.DeepEqual(b, want) {
 		t.Errorf("ban's block = %+v, want %+v", b, want)
@@ -262,7 +262,7 @@ func signupBlocksFromBan(t *testing.T, e *signupBlockEnv) {
 		t.Fatal(err)
 	}
 	checkAudit(t, got, []auditWant{
-		{moderation.AuditActorUser, "mod-1", moderation.AuditSignupBlockAdded, moderation.AuditTargetSignupBlock, b.ID, "email_hash " + b.Value, b.ID, a.IssuedAt},
+		{moderation.AuditActorUser, NamedID("mod-1"), moderation.AuditSignupBlockAdded, moderation.AuditTargetSignupBlock, b.ID, "email_hash " + b.Value, b.ID, a.IssuedAt},
 	})
 }
 
@@ -432,7 +432,7 @@ func signupBlocksImport(t *testing.T, e *signupBlockEnv) {
 		fmt.Fprintf(&text, "d%03d.example\n", i)
 	}
 	in := appmoderation.SignupBlockImportInput{
-		Kind: domain, Text: text.String(), Severity: moderation.SignupReject, Comment: " disposable ", CreatedByUserID: "mod-1",
+		Kind: domain, Text: text.String(), Severity: moderation.SignupReject, Comment: " disposable ", CreatedByUserID: NamedID("mod-1"),
 	}
 	res, err := e.svc.ImportSignupBlocks(ctx, in)
 	if err != nil {
@@ -452,11 +452,11 @@ func signupBlocksImport(t *testing.T, e *signupBlockEnv) {
 	e.screen(t, "a@lifted.example", "", moderation.SignupReject)
 	e.screen(t, "a@d599.example", "", moderation.SignupReject)
 	vs, err := e.svc.SignupBlocks(ctx, appmoderation.SignupBlockFilter{Kind: domain, Active: true}, 1)
-	if err != nil || len(vs) != 1 || vs[0].Block.Comment != "disposable" || vs[0].Block.CreatedByUserID != "mod-1" || vs[0].Block.ExpiresAt != nil {
+	if err != nil || len(vs) != 1 || vs[0].Block.Comment != "disposable" || vs[0].Block.CreatedByUserID != NamedID("mod-1") || vs[0].Block.ExpiresAt != nil {
 		t.Errorf("newest imported block = %+v, %v; want the trimmed comment, the moderator, no expiry", vs, err)
 	}
 	// Each block added is audited once.
-	entries, err := e.svc.AuditLog(ctx, appmoderation.AuditQuery{ActorUserID: "mod-1"}, 2*bulk)
+	entries, err := e.svc.AuditLog(ctx, appmoderation.AuditQuery{ActorUserID: NamedID("mod-1")}, 2*bulk)
 	if err != nil {
 		t.Fatal(err)
 	}

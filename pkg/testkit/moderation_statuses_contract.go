@@ -163,7 +163,7 @@ func moderationStatusesAndBans(t *testing.T, e *moderationEnv) {
 	if v, err := e.svc.AccountAction(ctx, mark.ID); err != nil || !reflect.DeepEqual(v.Action, mark) {
 		t.Errorf("AccountAction(mark) = %+v, %v; want %+v", v.Action, err, mark)
 	}
-	if err := e.svc.LiftAccountAction(ctx, mark.ID, "user-1", ""); err != nil {
+	if err := e.svc.LiftAccountAction(ctx, mark.ID, NamedID("user-1"), ""); err != nil {
 		t.Fatalf("LiftAccountAction(mark) = %v", err)
 	}
 	if got, ok := e.statuses.marked[mark.ID]; ok {
@@ -198,7 +198,7 @@ func moderationStatusesAndBans(t *testing.T, e *moderationEnv) {
 	if login, err := e.accounts.LoginRestricted(ctx, e.local); err != nil || !login {
 		t.Errorf("LoginRestricted(banned) = %v, %v; want true", login, err)
 	}
-	if err := e.svc.LiftAccountAction(ctx, ban.ID, "user-1", "mistake"); !errors.Is(err, appmoderation.ErrNotLiftable) {
+	if err := e.svc.LiftAccountAction(ctx, ban.ID, NamedID("user-1"), "mistake"); !errors.Is(err, appmoderation.ErrNotLiftable) {
 		t.Errorf("LiftAccountAction(ban) = %v, want ErrNotLiftable", err)
 	}
 	if v, err := e.svc.AccountAction(ctx, ban.ID); err != nil || v.State != moderation.ActionActive || v.Lift != nil {

@@ -79,7 +79,7 @@ WHERE link_card_media.media_id = @media_id
 
 -- DeleteLinkCardMediaFile deletes the media file of an image of link cards, which has no owner.
 -- name: DeleteLinkCardMediaFile :exec
-DELETE FROM media_files WHERE media_files.id = @media_id AND media_files.origin = 'remote' AND media_files.owner_account_id = '';
+DELETE FROM media_files WHERE media_files.id = @media_id AND media_files.origin = 'remote' AND media_files.owner_account_id IS NULL;
 
 -- name: EraseLinkCardsOfStatuses :exec
 DELETE FROM status_link_cards WHERE status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));

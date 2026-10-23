@@ -226,7 +226,7 @@ func instanceErasesAnnouncementReads(t *testing.T, e *instanceEnv) {
 			t.Fatalf("MarkAnnouncementRead(%s) = %v", user, err)
 		}
 	}
-	step, err := e.service.EraseAccountData(ctx, appaccount.ErasureTarget{AccountID: "account", UserID: announcementReader}, "", 100)
+	step, err := e.service.EraseAccountData(ctx, appaccount.ErasureTarget{AccountID: NamedID("account"), UserID: announcementReader}, "", 100)
 	if err != nil || !step.Done {
 		t.Fatalf("EraseAccountData = %+v, %v", step, err)
 	}
