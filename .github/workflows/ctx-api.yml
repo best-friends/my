@@ -45,20 +45,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
-      # oapi-codegen and securitygen are Go: restore the cache of ctx-go.yml's go job from main, without saving one.
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-lint-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-lint-${{ runner.os }}-
+      # oapi-codegen and securitygen are Go.
+      - uses: ./.github/actions/setup-go
       - name: api:check
         run: scripts/task.sh api:check

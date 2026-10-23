@@ -22,21 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      # The go-test cache that main.yml saves, without saving one.
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-test-${{ runner.os }}-
+      # The Go cache that main.yml builds, without saving one.
+      - uses: ./.github/actions/setup-go
       # testcontainers-go starts the brokers on the runner's Docker; the target makes a missing Docker fail the job
       # instead of skipping the tests.
       - name: go:test-stream

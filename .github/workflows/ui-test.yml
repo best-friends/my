@@ -1,8 +1,8 @@
 name: UI story tests
 
 # The @my/ui story tests (ADR-0027): axe on every story and the screenshots at 3 container widths × light / dark
-# × LTR / RTL, in the pinned Playwright image. Called by ctx-web.yml when a pull request touches the ui context and
-# by main.yml when a push to main does (ADR-0047).
+# × LTR / RTL, in the pinned Playwright image. Called by ctx-web.yml when a pull request touches the ui context
+# (ADR-0047).
 
 on:
   workflow_call:

@@ -152,7 +152,7 @@ jobs:
           retention-days: 1
 
   report:
-    # Merges the blob reports even when shards failed; a cancelled run (a newer push to main) skips it.
+    # Merges the blob reports even when shards failed; a cancelled run skips it.
     needs: [build, shard]
     if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest

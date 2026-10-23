@@ -1,26 +1,20 @@
 name: CodeQL
 
 # CodeQL code scanning (advanced setup): follows untrusted values to SQL, HTML, paths, redirects, and the like, which
-# the pattern checks of gosec (golangci-lint) do not. It is one of the post-merge suites of ADR-0047: it runs on pushes
-# to main, weekly, and by hand, never on pull requests or merge groups, and it is not part of the required `check`.
+# the pattern checks of gosec (golangci-lint) do not. It is one of the slow suites of ADR-0079: it runs daily, by hand,
+# and from the release gate (workflow_call), never on pull requests, merge groups, or pushes to main, and it is not part
+# of the required `check`. A caller grants the job's permissions below, security-events: write included.
 # The results go to the repository's Security tab, one category per language. It runs the default query suite: the
 # security-extended suite mostly adds log-injection alerts on slog calls, whose handlers already quote the values.
 
 on:
-  workflow_call:
-  push:
-    branches: [main]
   schedule:
-    - cron: "0 21 * * 0" # Monday 06:00 JST, clear of nightly.yml (03:00 JST)
+    - cron: "0 21 * * *" # 06:00 JST, clear of nightly.yml (03:00 JST)
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
-
-# A newer push to main supersedes the analysis of the previous one.
-concurrency:
-  group: codeql-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   analyze:

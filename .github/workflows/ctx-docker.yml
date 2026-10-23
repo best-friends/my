@@ -2,7 +2,7 @@ name: "Context: docker"
 
 # The docker context of `scripts/task.sh check` (scripts/changed-contexts.sh): the Dockerfile image version check
 # (docker:check), the Docker Compose smoke test (linux/amd64), and the linux/arm64 image builds. Called by
-# ci.yml, main.yml, and slow-suite.yml, with the inputs `check`, `smoke`, and `arm64` selecting the jobs, and runnable
+# ci.yml and slow-suite.yml, with the inputs `check`, `smoke`, and `arm64` selecting the jobs, and runnable
 # by hand (ADR-0047).
 
 on:
@@ -61,7 +61,7 @@ jobs:
     # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
     # then WebFinger, Actor, and NodeInfo (scripts/docker-smoke.sh dumps the logs on failure and always tears down).
     # The merge queue skips it: a change that breaks the images is stopped on its pull request, and the rare break
-    # from stacking two of them is found after the merge (ADR-0047).
+    # from stacking two of them is found nightly (ADR-0047).
     if: inputs.smoke && inputs.scope == 'pr'
     runs-on: ubuntu-latest
     steps:
