@@ -317,8 +317,9 @@ jobs:
             run: scripts/task.sh web:dist
 
   client-test:
-    # Vitest of app/web in two shards, the longest job otherwise; the first shard also runs app/ui and tools/i18n.
-    name: client-test (${{ matrix.shard }})
+    # Vitest of app/web in two shards, the longest job otherwise; the second shard, the shorter half, also runs app/ui
+    # and tools/i18n. No explicit name: GitHub names the jobs `client-test (1/2)` and `client-test (2/2)`, and a skipped
+    # job, whose matrix is never expanded, plain `client-test`.
     needs: changes
     if: needs.changes.outputs.full == 'true' && needs.changes.outputs.client == 'true'
     runs-on: ubuntu-latest

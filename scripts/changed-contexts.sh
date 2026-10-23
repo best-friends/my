@@ -22,9 +22,10 @@
 #   schema  the desired-state schema files                       (db:check-all)
 #   agentkit tools/agentkit and its context map, which covers every path (agentkit:check)
 #
-# A change to shared configuration (Taskfile.yml and tasks/, .tool-versions, the workflows and their actions, the Go or
-# Bun lockfiles, api/, locales/, tools/i18n/) selects every context, and so does any path no rule below knows:
-# a new kind of file runs everything until a rule is added for it.
+# A change to shared configuration (Taskfile.yml and tasks/, .tool-versions, tools/go.mod, the workflows and their
+# actions) selects every context, and so does any path no rule below knows: a new kind of file runs everything until a
+# rule is added for it. A dependency update selects the contexts of its toolchain only (go.mod: go; app/bun.lock: ui
+# and web), so a Dependabot pull request runs the jobs that use the dependency.
 set -euo pipefail
 
 ALL=(docs go i18n api ui web docker shell schema agentkit)
@@ -71,11 +72,31 @@ classify() {
   # tools/agentkit/context-map.yaml must cover every path, so any change can break `agentkit map check`.
   select_contexts agentkit
   case "$path" in
-    # Shared configuration: everything.
+    # Shared configuration, which every check runs through: the task runner and its tasks, the tool versions (go-task,
+    # sqlc, oapi-codegen, and go-licenses are pinned in tools/go.mod), and the workflows. Everything.
     Taskfile.yml | tasks/* | scripts/task.sh | .tool-versions | .github/workflows/* | .github/actions/* | scripts/changed-contexts.sh | \
-      go.mod | go.sum | tools/go.mod | tools/go.sum | \
-      app/bun.lock | app/bunfig.toml | app/package.json | api/* | locales/* | tools/i18n/*)
+      tools/go.mod | tools/go.sum)
       select_contexts "${ALL[@]}"
+      return
+      ;;
+    # The dependencies of one toolchain: the contexts that build with them.
+    go.mod | go.sum)
+      select_contexts go
+      return
+      ;;
+    app/bun.lock | app/bunfig.toml | app/package.json)
+      select_contexts ui web
+      return
+      ;;
+    # The spec; its dependents (go, web) are added below.
+    api/*)
+      select_contexts api
+      return
+      ;;
+    # The catalogs and their tools: the Go accessors (go, added below as i18n's dependent) and the web client, which
+    # bundles the client catalogs and the generated TypeScript accessors. @my/ui reads neither.
+    locales/* | tools/i18n/*)
+      select_contexts i18n web
       return
       ;;
   esac
