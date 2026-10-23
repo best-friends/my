@@ -30,6 +30,14 @@ tasks:
     cmds:
       - docker build --build-arg VERSION={{.VERSION}} --build-arg GO_TAGS={{.GO_TAGS}} -t my:{{.VERSION}} .
 
+  # The smoke test covers linux/amd64. The Go server cross-builds with CGO_ENABLED=0, so only a change to the Dockerfile
+  # or the deployments makes the arm64 images differ (ADR-0010): CI builds them in ci:docker ARM64=true.
+  build-arm64:
+    desc: Build both images (schema, app) for linux/arm64 (needs an arm64 host or QEMU)
+    cmds:
+      - docker build --platform linux/arm64 --target schema .
+      - docker build --platform linux/arm64 --target app .
+
   smoke:
     desc: Start deploy/docker/compose.yaml, create an admin, check WebFinger / Actor / NodeInfo, tear down
     env:

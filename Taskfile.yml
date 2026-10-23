@@ -140,7 +140,9 @@ tasks:
       - docs:adr-numbers
 
   ci:docker:
-    desc: "CI docker: the Dockerfile image versions and the Docker Compose smoke test (needs Docker)"
+    desc: "CI docker: the Dockerfile image versions and the Docker Compose smoke test (needs Docker); ARM64=true adds the arm64 images"
+    vars:
+      TASKS: 'docker:check docker:smoke{{if eq .ARM64 "true"}} docker:build-arm64{{end}}'
     deps:
-      - docker:check
-      - docker:smoke
+      - for: { var: TASKS }
+        task: "{{.ITEM}}"

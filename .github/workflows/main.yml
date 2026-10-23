@@ -24,7 +24,7 @@ env:
 
 jobs:
   go-cache:
-    # The Go module, build, and golangci-lint cache that .github/actions/setup-go restores in ctx-go.yml, ctx-api.yml,
+    # The Go module, build, and golangci-lint cache that .github/actions/setup-go restores in ci.yml,
     # postgres-contract.yml, and stream-contract.yml. It is built from empty directories once a day (the date is in the
     # key) and for each new Go or go.sum, so it holds one build's worth of entries instead of growing with every push.
     # It holds what go:check builds: go:check without go:test, whose results are not cached, and the test binaries
@@ -76,7 +76,7 @@ jobs:
           key: ${{ steps.go.outputs.key }}
 
   bun-cache:
-    # The Bun package cache of ctx-docs.yml, ctx-i18n.yml, ctx-api.yml, ctx-web.yml, and web-e2e.yml's build, keyed by
+    # The Bun package cache that .github/actions/setup-bun restores in ci.yml, and of web-e2e.yml's build, keyed by
     # the lockfiles alone.
     runs-on: ubuntu-latest
     permissions:
@@ -122,7 +122,8 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
 
   bun-ui-cache:
-    # The Bun package cache of ui-test.yml, saved in the same image: the container's home differs from the runner's.
+    # The Bun package cache that ui-test.yml restores, saved in the same image: the container's home differs from the
+    # runner's.
     needs: bun-cache
     if: needs.bun-cache.outputs.ui == 'true'
     runs-on: ubuntu-latest
