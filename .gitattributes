@@ -2,3 +2,7 @@
 
 # The bundle of api/spec/ that `scripts/task.sh api:generate` writes (ADR-0066): collapsed in pull request diffs.
 api/openapi.yaml linguist-generated=true
+
+# The Unicode emoji data that `scripts/task.sh emoji:generate` writes (ADR-0091): collapsed in pull request diffs.
+app/web/src/features/emoji/unicode/*.gen.json linguist-generated=true
+internal/domain/content/emoji_table.gen.go linguist-generated=true

@@ -10,10 +10,6 @@ vars:
   GO_TOOL: go tool -modfile=tools/go.mod
   # The packages whose tests use PostgreSQL through pkg/testkit/pgtest.
   POSTGRES_TEST_PACKAGES: ./internal/adapter/db/postgres/ ./internal/adapter/kv/db/ ./internal/adapter/queue/db/ ./internal/adapter/stream/postgres/ ./internal/platform/
-  # The Unicode emoji that emoji reactions accept and normalize (ADR-0052 §1). To move to a new
-  # Unicode version, change both and run go:emoji-table.
-  EMOJI_VERSION: 18.0.0
-  EMOJI_TEST_SHA256: 8f3735cda1f92a779d78af67cf86066bb1f07143dc22f2ac29394d9bc57ab21a
   # The AI crawlers that /robots.txt names (ADR-0057), from ai-robots-txt/ai.robots.txt (MIT). To
   # update the list, change both to a newer commit, run go:ai-crawlers, and review the diff.
   AI_ROBOTS_COMMIT: a446ec974c221a133cb21cb96f30c4585b208998
@@ -137,16 +133,6 @@ tasks:
     desc: Fail if the committed sqlc-generated code is stale
     cmds:
       - scripts/sqlc.sh --check
-
-  emoji-table:
-    desc: Regenerate internal/domain/content/emoji_table.gen.go from Unicode's emoji-test.txt (EMOJI_VERSION)
-    vars:
-      FILE: .tmp/emoji-test-{{.EMOJI_VERSION}}.txt
-    cmds:
-      - mkdir -p .tmp
-      - curl -fsSL -o {{.FILE}} https://www.unicode.org/Public/{{.EMOJI_VERSION}}/emoji/emoji-test.txt
-      - echo "{{.EMOJI_TEST_SHA256}}  {{.FILE}}" | sha256sum -c -
-      - go run ./scripts/emoji-table -in {{.FILE}} -version {{.EMOJI_VERSION}} -out internal/domain/content/emoji_table.gen.go
 
   ai-crawlers:
     desc: Regenerate internal/interface/web/ai_crawlers.gen.go from ai.robots.txt's robots.json (AI_ROBOTS_COMMIT)
