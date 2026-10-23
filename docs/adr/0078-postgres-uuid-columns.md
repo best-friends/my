@@ -1,6 +1,6 @@
 # ADR-0078: PostgreSQL の ID の列を uuid 型にする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1022
@@ -14,6 +14,10 @@ ADR-0003 は `COLLATE "C"` の `text` と `uuid` 型のどちらでもよいと�
 `uuid` 型なら 1 値が 37 バイト（可変長の頭の 1 バイトと 36 文字）から 16 バイトになり、表と索引が小さくなり、比較が速くなり、不正な値を DB が拒む。
 型の変更は、実運用のデータが溜まった後だとデータの移し替えが要る。v0 は DB を作り直してよいが（[ADR-0012](0012-v0-breaking-change-policy.md)）、
 実運用を始めた後のスキーマ変更の扱いは #1028 で見直している。そのため v0.x の公開の前に決める。表と索引の大きさは、従量課金の DB の保存量と読み取り量に効く（[vision](../requirements/00-vision.md) のほぼゼロ円の運用、[deployment-targets](../architecture/deployment-targets.md)）。
+
+決定者の決定（#1043 のレビュー、原文）:
+
+> ADR Accepted
 
 ## Decision Drivers（判断基準）
 
@@ -33,9 +37,7 @@ ADR-0003 は `COLLATE "C"` の `text` と `uuid` 型のどちらでもよいと�
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案は選択肢 2。** PostgreSQL の UUIDv7 の列を `uuid` 型にし、SQLite と Go の型は変えない。ADR-0003 の「型・ID・時刻の共通規約」の ID の項のうち、
+**選択肢 2 を採る。** PostgreSQL の UUIDv7 の列を `uuid` 型にし、SQLite と Go の型は変えない。ADR-0003 の「型・ID・時刻の共通規約」の ID の項のうち、
 PostgreSQL での型（`COLLATE "C"` の `text` か `uuid` 型）を、この ADR が `uuid` 型に決める。ほかの部分は ADR-0003 のまま。
 
 ### 1. 対象の列
@@ -113,7 +115,7 @@ ID の列が多い表（関係・投影・イベント）ほど効く。読み�
 
 ADR-0012 のとおり移行は書かない。`schema/postgres.sql` を書き換えて、DB を作り直す（`db-reset`）。この変更は v0.x の公開と、#1028 で決める「実運用開始後のスキーマ変更の扱い」より前に入れる。
 
-### この推奨を覆す条件
+### この決定を見直す条件
 
 - M6 の対象のどれかで、`uuid` 型の列の索引や `uuid` と `text` の比較が使えない・遅いと分かった場合
 - 外部キーや結合で `uuid` と `text` が混ざる列が多く、キャストがクエリの大半に要ると分かった場合（そのときは選択肢 1 のまま）
@@ -128,7 +130,7 @@ ADR-0012 のとおり移行は書かない。`schema/postgres.sql` を書き換�
   - 方言でスキーマの型が変わり、PostgreSQL のクエリだけに `::text` のキャスト、`MAX(id)` の書き換え、`sqlc.narg` が入る。SQLite と PostgreSQL のクエリの見た目の差が増える
   - `psql` で ID の列を文字列の関数（`LIKE` など）で扱うときにキャストが要る
   - テストの ID の文字列の多く（`pkg/testkit` などの `"mod-1"`・`"admin"` のような値、500 か所ほど）を、正規形の UUID に直す必要がある
-- 後続の作業（この ADR が Accepted になってから Issue にする）
+- 後続の作業
   1. テストの ID を正規形の UUID に直す（`pkg/testkit` と各パッケージのテスト。スキーマを変える前に入れられる）
   2. `kernel.ValidID` と、client API・AP の入口での検査とそのテスト（§5。スキーマを変える前に入れられる）
   3. `schema/postgres.sql` の対象の列を `uuid` にし、`sqlc.yaml` の対応、`queries/postgres/` の書き換え（キャスト・`MAX` / `MIN`・`sqlc.narg`・`''` の列の NULL 可）、
@@ -153,5 +155,5 @@ ADR-0012 のとおり移行は書かない。`schema/postgres.sql` を書き換�
 
 ## Open Questions / 要検証
 
-- `uuid` と `text` が混ざる比較・結合（§1 の `text` のままの列との結合）が、実際のクエリでどれだけあるか。後続の作業 3 で数え、多すぎれば推奨を見直す
+- `uuid` と `text` が混ざる比較・結合（§1 の `text` のままの列との結合）が、実際のクエリでどれだけあるか。後続の作業 3 で数え、多すぎれば「この決定を見直す条件」に当たる
 - 読み取り量で課金される DB（Aurora DSQL など）での、実際の課金への効き目（M6 の計測）
