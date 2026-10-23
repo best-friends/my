@@ -4,11 +4,11 @@ package sqlite
 
 import (
 	"context"
+	"encoding/json"
 	"maps"
 	"slices"
 	"time"
 
-	"encoding/json"
 	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
 	appcontent "github.com/mycroblog/my/internal/app/content"
 	apptimeline "github.com/mycroblog/my/internal/app/timeline"
