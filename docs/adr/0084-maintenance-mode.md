@@ -99,13 +99,22 @@ v0 の公開（M5）の前に、運用の手順の前提として決める。
 
 - **Web クライアントと Tauri アプリ**: Problem の `type` が `/api/v1/problems/maintenance` なら、画面全体をメンテナンスの表示（`message`・`until`・ステータスページへのリンク）に替え、
   `Retry-After` の後か利用者の操作で再読み込みする。**503 でトークンを捨てない・サインアウトしない**。キャッシュ済みの Service Worker が古いシェルを出しても、API の応答で同じ表示になる。
-  ブラウザは `sw.js` の更新の取得に失敗しても登録済みの Service Worker を使い続ける（要検証: Service Workers の仕様の update 手順）。
+  ブラウザは `sw.js` の更新の取得が 2xx でなければ更新をやめ、登録済みの Service Worker を使い続ける（2026-10-23 に [Service Workers の Update 手順](https://w3c.github.io/ServiceWorker/#update-algorithm)で確認。登録を消すのは既存の worker が無いときだけ）。
 - **連合先**: 503 と `Retry-After` は、こちらの配送の分類（[federation.md §7.3](../architecture/federation.md)）と同じく、送り手から見て「再試行する失敗」に当たる。
-  - Mastodon は 5xx を再試行し、失敗を記録した日がドメインごとに異なる 7 日に達すると配送を止める（`DeliveryFailureTracker`。要検証、こちらの `InstanceHealth` はこれに合わせている）。
-    再試行の回数と間隔（Sidekiq の再試行。合計でおよそ数日）と `Retry-After` を読むかどうかは要検証。
-  - Misskey は 5xx を再試行し、応答しない状態が続くと配送を止める・自動で停止する仕組みがある（要検証: 期間と条件）。Pleroma / Akkoma は Oban の再試行（要検証: 回数と間隔）。
-  - したがってメンテナンスは**数時間以内**を目安にし、それより長いと連合先の再試行が尽きて受け取れない活動が出る。運用の文書にこの目安を書く。
-- **検索エンジン**: 503 と `Retry-After` は一時的な停止として扱われ、索引から外されにくい（要検証: Google Search Central の説明）。`/robots.txt` も 503 を返す。
+  - Mastodon は 5xx を再試行する（再試行しないのは 501 と、401・408・429 を除く 4xx）。再試行は 16 回で、`n` 回目の待ちは `n⁴ + 15` 秒にジッタ（最大 `0.5 × n⁴`）を足したもの（合計およそ 2〜3 日）。
+    `Retry-After` は読まない。失敗した試行のたびにその日（UTC）を記録し、異なる 7 日に達したドメインを配送の対象から外す（`DeliveryFailureTracker`。こちらの `InstanceHealth` はこれに合わせている）。
+    出典: [`delivery_worker.rb`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/workers/activitypub/delivery_worker.rb)・[`delivery_failure_tracker.rb`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/lib/delivery_failure_tracker.rb)・[`json_ld_helper.rb`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/helpers/json_ld_helper.rb)（2026-10-23 に確認）。
+  - Misskey は 5xx を再試行し（再試行しないのは 429 を除く 4xx）、既定 12 回、待ちは `(2ⁿ − 1)` 分（上限 8 時間）に最大 20% のジッタで、合計およそ 1.5 日。`Retry-After` は読まない。
+    失敗すると相手を「応答なし」にし、その状態が 7 日続くと自動で配送を停止する（`autoSuspendedForNotResponding`）。
+    出典: [`DeliverProcessorService.ts`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/queue/processors/DeliverProcessorService.ts)・[`QueueService.ts`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/core/QueueService.ts)・[`QueueProcessorService.ts`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/queue/QueueProcessorService.ts)（2026-10-23 に確認）。
+  - Akkoma は配送のジョブ（`federator_outgoing`）を 6 回まで試し、待ちは 16 秒・約 1 分・約 12 分・約 2.3 時間・約 21 時間で、合計およそ 1 日（[`config.exs`](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/config/config.exs)・[`publisher_worker.ex`](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/workers/publisher_worker.ex)・[`worker_helper.ex`](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/workers/worker_helper.ex)、2026-10-23 に確認）。
+  - Pleroma は配送のジョブを 13 回まで試し、`n` 回目の後の待ちは `n⁵ + 15` 秒にジッタ（最大 `30n` 秒）を足したもので、合計およそ 7 日。最後の試行も失敗すると相手を到達不能とし、以後の配送のジョブを取り消す
+    （2026-10-23 に git.pleroma.social の GitHub ミラーの [`publisher_worker.ex`](https://github.com/minibikini/pleroma/blob/149236e468c453495e0dcf83a9728057436b463b/lib/pleroma/workers/publisher_worker.ex) で確認）。
+  - 最も早く尽きるのが Akkoma のおよそ 1 日なので、メンテナンスは**数時間以内**を目安にし、1 日を超えると連合先の再試行が尽きて受け取れない活動が出る。運用の文書にこの目安を書く。
+- **検索エンジン**: Google は 503 を一時的な停止として扱い、`Retry-After` を再クロールの時期に使うことがある。長く続く 503 は恒久的な停止と見なされ索引から外されうる（2026-10-23 に [Google Search Central Blog](https://developers.google.com/search/blog/2011/01/how-to-deal-with-planned-site-downtime) で確認）。
+  `/robots.txt` も 503 を返す。`robots.txt` が 5xx の間、Google は最初の 12 時間はサイトのクロールを止め、その後は最後に取得できた版を使う（2026-10-23 に [robots.txt の仕様](https://developers.google.com/crawling/docs/robots-txt/robots-txt-spec)で確認）。
+  数時間のメンテナンスでクロールが止まるのは望ましく、`robots.txt` の中身は DB の設定（FR-725）から作るのでメンテナンス中には作れない。
+  Google は 1〜2 日を超えてサイトを止めるときは `robots.txt` に 503 を返さないよう勧めているので（[サイトの一時停止](https://developers.google.com/search/docs/crawling-indexing/pause-online-business)）、それより長い停止はメンテナンスモードではなく ADR-0088 で扱う。
 
 ### 4. メンテナンスのページ（共通のテンプレート）
 
@@ -135,11 +144,22 @@ v0 の公開（M5）の前に、運用の手順の前提として決める。
 `docs/operations/maintenance.md` を新設し、次を書く。IaC のテンプレートへの組み込みは M6（ADR-0010 の `deploy/`）。
 
 - 手順: 告知（[ADR-0085](0085-uptime-monitoring-status-page.md) のステータスページ、FR-726 のお知らせ）→ `MY_MAINTENANCE=true` で再デプロイ → 作業 → 外して再デプロイ。
-  push 型のキュー（Cloud Tasks のキューの一時停止、SQS のイベントソースマッピングの無効化）は作業の前に止める。止めないと 503 の再試行で試行回数を使い切る（要検証: 各サービスの再試行の上限）。
-- Cloud Run・Lambda: 環境変数を変えた新しいリビジョン。`my serve` も動かせないときは、前段の HTTPS ロードバランサ / CloudFront のエラーページに `index.html` を置く。
+  push 型のキューは作業の前に止める。止めないと 503 の再試行で試行回数を使い切る。
+  - Cloud Tasks: `gcloud tasks queues pause` で配信を止め（タスクの追加は続けられる）、`resume` で再開する。試行の上限はキューの `retryConfig.maxAttempts`（ドキュメントの既定の例は 100、`maxBackoff` 3600 秒）で決まる（2026-10-23 に [キューの設定](https://cloud.google.com/tasks/docs/configuring-queues)と [Queue の REST リファレンス](https://cloud.google.com/tasks/docs/reference/rest/v2/projects.locations.queues)で確認）。
+  - SQS（Lambda のイベントソース）: イベントソースマッピングの `Enabled` を偽にするとポーリングと呼び出しが止まる（2026-10-23 に [UpdateEventSourceMapping](https://docs.aws.amazon.com/lambda/latest/api/API_UpdateEventSourceMapping.html) で確認）。
+    止めないと失敗のたびに受信回数が増え、redrive policy の `maxReceiveCount` に達したメッセージはデッドレターキューへ移る（2026-10-23 に [SQS のデッドレターキュー](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html)で確認）。
+- Cloud Run・Lambda: 環境変数を変えた新しいリビジョン。`my serve` も動かせないときは、前段のエラーページに `index.html` を置く。
+  - CloudFront: カスタムエラーレスポンスで、オリジンの 5xx に S3 などに置いた `index.html` を返し、ビューアへの状態コード（`ResponseCode`）を 503 にできる。
+    エラーページはオリジンと別の場所（S3）に置く（同じオリジンだと 5xx の間は取れない）。`Retry-After` はレスポンスヘッダーポリシーのカスタムヘッダーで付けられるが、ポリシーは付けたキャッシュビヘイビアのすべての応答に付くので、メンテナンスの間だけポリシーを付ける
+    （2026-10-23 に [CustomErrorResponse](https://docs.aws.amazon.com/cloudfront/latest/APIReference/API_CustomErrorResponse.html)・[エラーページの設定](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/custom-error-pages-procedure.html)・[レスポンスヘッダーポリシー](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/understanding-response-headers-policies.html)で確認）。
+  - Google Cloud: カスタムエラーレスポンスのポリシーは**グローバル外部アプリケーションロードバランサだけ**が持ち（リージョンとクラシックは非対応）、バックエンドの 5xx に、バックエンドバケット（Cloud Storage）の `index.html` を状態コードを上書き（`overrideResponseCode`）して返せる。
+    リクエストのヘッダー（`Content-Type` など）で HTML と JSON を出し分けられる。エラーの取得元に定義したカスタムレスポンスヘッダーは返す応答に付かないので、この経路では `Retry-After` を返せない。
+    ポリシーが効くのはバックエンドから来た応答だけで、Google Front End が作る応答には効かない（2026-10-23 に [カスタムエラーレスポンスの概要](https://cloud.google.com/load-balancing/docs/https/custom-error-response)で確認）。
+    Cloud Run を直接（ロードバランサなしで）公開する最小構成には前段が無いので、メンテナンスモード（§1）だけで対応する。
 - Docker compose: `MY_MAINTENANCE=true` で `my` のサービスを再作成。前段に nginx などがあれば `<lang>.html` を `error_page 502 503 504` に置く例。
 - microk8s: Deployment の環境変数の変更（ロールアウト）。Ingress の既定のバックエンド・エラーページの例。
-- ALB の固定応答は本文の長さと付けられるヘッダに制限がある（要検証）ので、`Retry-After` を返せない前段では、連合先の再試行はその前段の 5xx を見ることを書く。
+- ALB の固定応答は状態コード・`Content-Type`・最大 1,024 文字の本文だけを持ち、`Retry-After` などのヘッダを付けられない（2026-10-23 に [FixedResponseActionConfig](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_FixedResponseActionConfig.html) で確認）。
+  書き出した HTML は 1,024 文字に収まらないので ALB の固定応答には置けず、短い文と 503 だけを返す例を書く。`Retry-After` を返せない前段では、連合先は §3 の自前の間隔で再試行する。
 
 **この推奨を覆す条件**: 運用者が無停止での切り替え（再デプロイなし）を強く求め、かつ全ターゲットで共有できる DB 以外の置き場（例: 設定の再読み込みをする k8s の ConfigMap、Cloud Run の再デプロイなしの環境の変更）が使えると分かった場合は A2 を足す。
 連合先の再試行が 503 でも短時間で尽きる（数時間のメンテナンスで配送を止められる）と分かった場合は、応答の表を見直す。
@@ -205,8 +225,5 @@ ADR の決定の後、`docs/requirements/01-functional.md` の「運用」の表
 
 ## Open Questions / 要検証
 
-- Mastodon・Misskey・Pleroma / Akkoma の、5xx に対する再試行の回数と間隔、`Retry-After` を読むか、配送を止める・相手を停止する条件（公式のソースで確かめ、§3 の目安の時間を決める）。
-- ALB の固定応答の本文の上限と付けられるヘッダ、Cloud Run の前段の HTTPS ロードバランサ・CloudFront のカスタムエラーページで状態コードと `Retry-After` を返せるか。
-- Cloud Tasks・SQS（Lambda のイベントソース）の再試行の上限と、キューを一時停止する操作（運用文書の手順）。
 - 終了予定の時刻をロケールに合わせて整形する方法（Go の側に CLDR の日付の整形を持つか、ISO 8601 のままにするか）。
 - 書き出しの `index.html` に複数の言語を並べるか、既定ロケールの 1 言語にするか。

@@ -92,24 +92,28 @@ v0 の公開（M5）の前に、外形監視が叩く先と、その応答の形
 ### 3. 費用の目安と監視の頻度
 
 - scale to zero の DB で、監視の間隔が DB の停止までの時間（Neon は 5 分）より短いと、DB は止まらなくなる。連合サーバーは外からの配送で DB が起きている時間が長いので（[deployment-targets.md](../architecture/deployment-targets.md)）、増える費用は無通信の時間帯の分に限られる
-- アイドル時の費用を優先する運営者には、`/healthz`（DB に触れない）を監視し、DB を含む検査は間隔を長くする構成を運用文書で示す。サーバーレス（Cloud Run・Lambda）では、監視の要求がインスタンスを起こす費用（要検証: 料金の単位）も添える
+- アイドル時の費用を優先する運営者には、`/healthz`（DB に触れない）を監視し、DB を含む検査は間隔を長くする構成を運用文書で示す。サーバーレスでは、監視の要求そのものの費用は小さい。5 分ごとで月約 8,640 回、1 分ごとで約 43,200 回で、
+  Lambda の無料枠（月 100 万リクエスト・40 万 GB 秒、超えると 100 万リクエストあたり $0.20、時間は 1 ms 単位。2026-10-23 に [AWS Lambda pricing](https://aws.amazon.com/lambda/pricing/) で確認）に収まる。
+  Cloud Run のリクエストごとの課金も、無料枠（月 200 万リクエスト・18 万 vCPU 秒・36 万 GiB 秒。時間は 100 ms 単位に切り上げ）に収まる
+  （2026-10-23 に [Cloud Run pricing](https://cloud.google.com/run/pricing) で確認）
 
 ### 4. メンテナンスモードとの関係
 
 - メンテナンスモード（[ADR-0084](0084-maintenance-mode.md)）の間、`/api/v1/instance/health` は DB に触れずに `503`・`Retry-After`（値は ADR-0084 に従う）・`{"status":"maintenance"}` を返す。
   ADR-0084 の応答の表で、client API のほかのパス（maintenance の Problem）とは別の行になり、形はこの ADR が持つ。本文の形は正常・障害・メンテナンス中で同じ `{"status": ...}`
-- 多くの外形監視は 2xx 以外を「停止」とみなすので、`503` だけではメンテナンスと障害を区別できない。区別は本文のキーワード（`"maintenance"`）か JSON の値と、各サービスのメンテナンスの時間帯の設定で行うよう運用文書に書く
+- 多くの外形監視は 2xx 以外を「停止」とみなすので、`503` だけではメンテナンスと障害を区別できない。区別は本文のキーワード（`"maintenance"`）か JSON の値と、各サービスのメンテナンスの時間帯の設定で行うよう運用文書に書く。
+  UptimeRobot の Free にはメンテナンスの時間帯がないので（§5）、メンテナンス中は監視を手で止めるか、停止の通知を受け入れる
 
 ### 5. 主な外形監視との対応表
 
 | サービス | 推奨の監視の形 | 判定 | 確認 |
 | --- | --- | --- | --- |
-| UptimeRobot | キーワードの監視（Free で使える。間隔 5 分・50 監視） | 本文に `"status":"ok"` があれば正常 | [料金ページ](https://uptimerobot.com/pricing/)、2026-10-23 確認。2xx 以外を正常とみなす設定は有料（要検証） |
-| Better Stack | HTTP の状態コードの監視（2xx を正常とみなす） | `200` | [Uptime monitor](https://betterstack.com/docs/uptime/uptime-monitor/)、2026-10-23 確認。キーワードの監視の細部は要検証 |
+| UptimeRobot | キーワードの監視（Free で使える。間隔 5 分・50 監視） | 本文に `"status":"ok"` があれば正常 | 2026-10-23 に [料金ページ](https://uptimerobot.com/pricing.md) で確認。状態コードの扱いとヘッダを変える「Custom headers & statuses」とメンテナンスの時間帯は Free になく、Solo（有料、間隔 60 秒）から |
+| Better Stack | HTTP の状態コードの監視（2xx を正常とみなす）か、キーワードの監視（本文にキーワードが無ければ通知。大文字と小文字を区別しない） | `200`、または本文に `"status":"ok"` | 2026-10-23 に [Uptime monitor](https://betterstack.com/docs/uptime/uptime-monitor/)・[Keyword monitor](https://betterstack.com/docs/uptime/keyword-monitor/)・[料金](https://betterstack.com/pricing)（Free は監視とハートビートで 10・ステータスページ 1）で確認 |
 | Gatus | 条件 `[STATUS] == 200` と `[BODY].status == ok`。メンテナンスの時間帯を設定できる | 同左 | [README](https://github.com/TwiN/gatus)、2026-10-23 確認（既定の間隔 60 秒） |
-| Uptime Kuma | HTTP(s) - Keyword か JSON Query（`status` が `ok`） | 同左 | 要検証 |
-| Upptime | GitHub Actions からの HTTP の監視。状態コードで判定 | `200` | 要検証（間隔の下限は GitHub Actions の cron に依る） |
-| Atlassian Statuspage | 監視ではなく掲出先。上の監視の通知や API から部品の状態を変える | — | 部品の状態の値（`operational`・`under_maintenance` など）は要検証 |
+| Uptime Kuma | HTTP(s) - Keyword（本文に `"status":"ok"`）か JSON Query（`status` が `ok`）。受け付ける状態コードの既定は `200-299` | 同左 | 2026-10-23 に [monitor.js](https://github.com/louislam/uptime-kuma/blob/0c287ac4b3a6723c56ab7d8d731017e58deff533/server/model/monitor.js#L478-L720)・[EditMonitor.vue](https://github.com/louislam/uptime-kuma/blob/0c287ac4b3a6723c56ab7d8d731017e58deff533/src/pages/EditMonitor.vue#L3349) で確認 |
+| Upptime | GitHub Actions からの HTTP の監視。既定で 2xx と 3xx を正常とみなし、`__dangerous__body_down_if_text_missing` で本文の語を条件にできる | `200` と本文に `"status":"ok"` | 2026-10-23 に [Configuration](https://upptime.js.org/docs/configuration/) で確認（間隔は既定・最短とも 5 分） |
+| Atlassian Statuspage | 監視ではなく掲出先。上の監視の通知や API から部品の状態を変える | — | 部品の状態は Operational・Under maintenance・Degraded performance・Partial outage・Major outage の 5 つ（2026-10-23 に [What is a component?](https://support.atlassian.com/statuspage/docs/what-is-a-component/) で確認）。API の値は `operational`・`under_maintenance`・`degraded_performance`・`partial_outage`・`major_outage`（2026-10-23 に [Statuspage API](https://developer.statuspage.io/) の部品の `status` の enum で確認）。監視の通知から部品の状態を自動で変える連携は要検証（サービスごとの連携の設定が要る） |
 
 ### 6. ステータスページの URL（設定 `status_page_url`）
 
@@ -125,7 +129,10 @@ v0 の公開（M5）の前に、外形監視が叩く先と、その応答の形
     **Web クライアントは最後に読んだ `status_page_url` をアプリが残し（Service Worker は API に答えないので、オフラインのホームのタイムラインと同じくアプリが残す。web-client §11、ADR-0045）、そこから URL を出す**
   - メンテナンスモードの応答と書き出したメンテナンスのページ（[ADR-0084](0084-maintenance-mode.md)）
   - DB の障害で返す HTML のエラーページ
-- NodeInfo の `metadata` には v0 では足さない。読む実装が見当たらない（Mastodon・Misskey・Pleroma に対応するキーがあるかは要検証）。対応するキーが分かったら足す
+- NodeInfo の `metadata` には v0 では足さない。Mastodon の NodeInfo の `metadata` にはステータスページのキーがなく（[node_info/serializer.rb](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/serializers/node_info/serializer.rb#L40-L47)、2026-10-23 確認）、
+  Misskey のリポジトリにも `statusPage`・`status_page` は見当たらない（GitHub のコード検索、2026-10-23）。Akkoma の `metadata` にもない（[nodeinfo.ex](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/web/nodeinfo/nodeinfo.ex#L52-L92)、2026-10-23 確認）。対応するキーが分かったら足す
+- Mastodon は同じ値を管理画面の設定 `status_page_url` に持ち、インスタンスの API の `configuration.urls.status` と Web のフッターに出す
+  （[instance_serializer.rb](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/serializers/rest/instance_serializer.rb#L59-L67)、2026-10-23 確認）。出す場所はこれと揃う
 
 ### 7. ステータスページの状態の取り込み
 
@@ -180,12 +187,12 @@ v0 では取り込まない（i）。サービスごとに API の形が違い�
 ### C. 部品ごとの詳しい状態（トークン付き）
 
 - 良い: 運営者は外形監視だけで、どの部品が壊れたかまで分かる
-- 悪い: トークンの発行・失効・保存が要り、無料の外形監視の多くはヘッダの追加が有料か制限つき（要検証）。部品ごとの検査はそれぞれのミドルウェアを起こし、配送の滞留・失敗の数は DB の集計で費用が増える。
+- 悪い: トークンの発行・失効・保存が要り、外形監視のヘッダの追加は、UptimeRobot では有料の Solo からの機能（Free にない。2026-10-23 に料金ページで確認）。部品ごとの検査はそれぞれのミドルウェアを起こし、配送の滞留・失敗の数は DB の集計で費用が増える。
   同じ情報は管理画面と指標にある
 
 ### a. インスタンス設定と b. 設定（環境変数）
 
-- a の良い点: 再起動なしに管理画面から変えられ、置き場所の規則と `security_contact` の前例に合う
+- a の良い点: 再起動なしに管理画面から変えられ、置き場所の規則と `security_contact` の前例に合う。Mastodon も管理画面の設定（DB）に置く
 - b の良い点: DB に触れずに読めるので、DB の障害中やメンテナンスモードでも必ず出せる（判断基準 5）
 - b を推すのは、判断基準 5（障害時に届く）を満たすのが b だけだから。a ではメンテナンスモードがこの値を読めず、メンテナンス専用の設定キーを別に要する（同じ URL を 2 か所に持つ）。
   a の利点（再起動なしの変更）は、めったに変わらない値では小さい
@@ -197,8 +204,6 @@ v0 では取り込まない（i）。サービスごとに API の形が違い�
 
 ## Open Questions / 要検証
 
-- UptimeRobot・Better Stack・Uptime Kuma・Upptime の、キーワード・JSON の判定と受け付ける状態コードの設定が無料の範囲で使えるか（公式の文書で確かめて §5 の表を埋める）
-- Atlassian Statuspage の部品の状態の値と、外形監視の通知から部品の状態を自動で変える連携の方法
-- Cloud Run・Lambda で、監視の要求（1〜5 分ごと）が増やす費用の目安
-- NodeInfo の `metadata` に、ステータスページの URL を表すキーを Mastodon・Misskey・Pleroma（Akkoma）のどれかが定めているか
+- Better Stack の Free の確認の間隔とメンテナンスの時間帯（公式の料金ページに Free の範囲の記載がなく、第三者の記事だけが間隔 3 分とする）
+- Atlassian Statuspage で、外形監視の通知から部品の状態を自動で変える連携の方法（サービスごとに確かめる）
 - キャッシュの 60 秒を設定にするか（固定で足りるか）

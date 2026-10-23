@@ -71,9 +71,11 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
   - ユーザー名（`username_normalized`）。`q` に `@` があれば `username@domain` を、ドメインの部分も前方一致で照合する。
   - 表示名を NFKC + 小文字化し、`:shortcode:` を除いた全体と、空白で区切った各語（ADR-0009 §6 と同じ正規化。CJK の表示名は語に分けないので、先頭からの前方一致になる）。
 - 並び: 完全一致 → 閲覧者がフォローしている → ローカル → フォロワーの多い順。
-- 除外: 閲覧者がブロックしている・閲覧者をブロックしている・閲覧者がミュートしている（期限内）アカウント。
-- `indexable`（FR-412、ADR-0057）は補完に効かせない。メンションの補完は、投稿から辿れるハンドルを打つ手間を省くだけで、検索エンジンや全文検索への掲載ではないため（Mastodon もメンションの補完には効かせないとされる。**要検証**）。
-- 解決はしない（`resolve` を持たない）。`q` が完全な `user@domain` で候補に完全一致がないときは、クライアントが既存の `GET /accounts/lookup`（`resolve=true`）を 1 回だけ呼び、見つかれば候補の先頭に足す。
+  Mastodon も完全一致を先頭に置き、フォローの関係があるアカウントを先にしてからフォロワーの数などで並べる（2026-10-23 に [`AccountSearchService`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/services/account_search_service.rb) と [`Account::Search`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/models/concerns/account/search.rb) で確認）。
+- 除外: 閲覧者がブロックしている・閲覧者をブロックしている・閲覧者がミュートしている（期限内）アカウント。Mastodon のアカウントの検索はブロックとミュートを除かない（同じ版で確認）が、補完ではメンションしても届かない・見たくない相手なので除く。
+- `indexable`（FR-412、ADR-0057）は補完に効かせない。メンションの補完は、投稿から辿れるハンドルを打つ手間を省くだけで、検索エンジンや全文検索への掲載ではないため。Mastodon もアカウントの検索で `indexable` を見ず、`discoverable` は自己紹介の全文検索にだけ効かせる（2026-10-23 に上の `Account::Search` の `searchable_text` で確認）。
+- 解決はしない（`resolve` を持たない）。Mastodon の Web の補完も `resolve: false`・`limit: 4` で、200 ms の間引きと前の問い合わせの取り消しをしている（2026-10-23 に [`actions/compose.js`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/javascript/mastodon/actions/compose.js) の `fetchComposeSuggestionsAccounts` で確認）。
+  `q` が完全な `user@domain` で候補に完全一致がないときは、クライアントが既存の `GET /accounts/lookup`（`resolve=true`）を 1 回だけ呼び、見つかれば候補の先頭に足す。
   解決の上限と 429、連合の向き（`off` / `outbound` では `resolve` を送らない、ADR-0076）は既存の lookup の規則をそのまま使う。
 
 **ハッシュタグ: `GET /api/v1/tags/search`**（スコープ `read:statuses`、トークン必須）
@@ -112,14 +114,21 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
   暗黙の `textbox` のまま、`aria-autocomplete="list"`・`aria-controls`（候補の `listbox`）・`aria-activedescendant` を付ける（いずれも WAI-ARIA 1.2 の `textbox` が持てる属性、[WAI-ARIA 1.2 §5.4 textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox)、2026-10-23 確認）。
   `textbox` は `aria-expanded` を持てないので、開いたことと件数は `role="status"` の告知（「候補 5 件」）で伝える。候補は `role="listbox"` の `role="option"` で、選ばれた候補に `aria-selected="true"` を付ける（APG の combobox の listbox の部分）。
 - **作り方**: React Aria Components の `Autocomplete` を `TextArea` と `ListBox` に使う（B1）。公式の文書は `inputValue` に入力の一部を渡して `@` のメンションのような行内の補完を作る例を `TextArea` で示している
-  （[React Aria Autocomplete](https://react-aria.adobe.com/Autocomplete)、2026-10-23 確認）。ただし、IME の扱い・`textarea` に付く ARIA の属性・Enter の扱いは文書から確かめられないので spike で確かめ（**要検証**）、
-  上の要件を満たさなければ `@my/ui` に `useTextAutocomplete` を書き（B2）、React Aria の `useListBox` と仮想フォーカスを使う。どちらも ADR-0031 の許可リストの中である。部品は `@my/ui` の `TextAreaAutocomplete` にし、API を呼ぶ部分は `features/compose` が渡す。
+  （[React Aria Autocomplete](https://react-aria.adobe.com/Autocomplete)、2026-10-23 確認）。
+  リポジトリが固定する `react-aria` 3.52.1 の `useAutocomplete`（`dist/private/autocomplete/useAutocomplete.mjs`、2026-10-23 確認）は、入力に `role` を付けず、`aria-autocomplete="list"`・`aria-controls`・`aria-activedescendant` を付け、
+  `isComposing` の間はキーを処理せず、仮想フォーカスのある候補を Enter で選び、Tab は候補に渡さない。上の要件に合う。一方で次の点は合わないので、`TextAreaAutocomplete` で上書きする。
+  - 入力に `spellCheck="false"`・`autoCorrect="off"`・`enterKeyHint="go"` を付ける。投稿の本文ではスペルチェックと自動修正を保ち、改行のキーを `go` にしないため、`TextArea` の側で戻す。
+  - IME の判定は `isComposing` だけで、`keyCode === 229` を見ない（下の Safari の問題）。`onKeyDown` の前に 229 を見て止める。
+  - 候補の一覧がある間は上下の矢印をすべて候補に渡すので、候補を閉じたら `ListBox` を外し、本文の行の移動を妨げない。
+  これらをブラウザと IME の組み合わせで確かめるのは spike で行い（Chrome・Safari・Firefox、iOS・Android の日本語入力。実機が要る）、
+  上書きで足りなければ `@my/ui` に `useTextAutocomplete` を書き（B2）、React Aria の `useListBox` と仮想フォーカスを使う。どちらも ADR-0031 の許可リストの中である。部品は `@my/ui` の `TextAreaAutocomplete` にし、API を呼ぶ部分は `features/compose` が渡す。
 - **キーボード**: 開いている間、上下の矢印で候補を移り（端で止まる）、Enter と Tab で確定し、Esc で閉じる。開いたときは先頭の候補を選んだ状態にする。
   Esc は候補を閉じるだけで、投稿のシート（`Sheet`）を閉じない（イベントの伝播を止める）。開いていないときのキーは変えない。Ctrl / Cmd + Enter の送信は開いていても送信にする。
 - **確定**: 入力中の語（`@` / `#` / `:` からカーソルまで）を候補の値（`@user` か `@user@domain`、`#Tag`、`:shortcode:`）で置き換え、後ろに空白がなければ半角空白を 1 つ足してカーソルをその後に置く。
-  ローカルのアカウントは `@user`、ほかのサーバーのアカウントは `@user@domain`（Punycode でなく、`acct` のまま）にする。置き換えは `setRangeText` で行い、ブラウザの取り消しの履歴に残る形にする（**要検証**: ブラウザごとの取り消しの挙動）。
+  ローカルのアカウントは `@user`、ほかのサーバーのアカウントは `@user@domain`（Punycode でなく、`acct` のまま）にする。置き換えは、語の範囲を選んで `document.execCommand('insertText')` で入れ、取り消しの履歴に残す。`setRangeText` と `value` の代入は取り消しの履歴に残らない。`execCommand` は非推奨で標準の外だが、`textarea` の取り消しの履歴を保って文字を入れる方法がほかにないので使い、失敗（`false`）したら `setRangeText` に戻す（2026-10-23 に [MDN execCommand](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand) で確認）。
 - **IME**: `compositionstart` から `compositionend` までは候補を開かず、問い合わせず、キーを処理しない（`KeyboardEvent.isComposing` と `keyCode === 229` の両方を見る）。
-  `compositionend` の後に入力中の語を読み直して開く。Safari では変換の確定の Enter の `keydown` が `compositionend` の後に `isComposing: false` で届くとされるので（**要検証**）、`compositionend` の直後のその `keydown` は確定に使わない。
+  `compositionend` の後に入力中の語を読み直して開く。Safari は変換の確定の Enter の `keydown` を `compositionend` の後に `isComposing: false`・`keyCode: 229` で送る（UI Events に反する）ので、`keyCode === 229` の `keydown` は確定に使わない。
+  WebKit の main では直っている（2026-10-23 に [WebKit bug 165004](https://bugs.webkit.org/show_bug.cgi?id=165004) で確認。bug 311717 の重複として解決）が、直る前の Safari が残るので、229 の判定を保つ。
   全角の `＠`・`＃`・`：` は起点にしない（サーバーも読まない）。
 - **位置**: 候補はカーソルの行の直下に、入力欄と同じ幅で出す。カーソルの行の位置は、テキストエリアと同じスタイルの鏡の要素（強調表示の層と兼ねる、§4）で求める。
   画面の下に入らないときは行の上に出す（React Aria の `Popover` の反転）。モバイルのソフトウェアキーボードは `visualViewport` の高さを境にする。320 px のシート（ADR-0039）でも入力欄の幅に収まる。
@@ -186,7 +195,7 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
   - Web の補完: `@my/ui` の `TextAreaAutocomplete`（B1 の spike の結果で B1 か B2）と、投稿フォーム・編集のダイアログ・CW・プロフィールへの組み込み。
   - Web の強調表示: 強調の層、トークン（#988 の体系）、強制カラーモード、スクリーンショットの基準。
   - 文書: FR-119・FR-306、web-client §12、client-api、data-model の更新。
-  - spike（上の issue より先）: React Aria の `Autocomplete` を `TextArea` に付けたときの IME（Chrome・Safari・Firefox・iOS・Android の日本語入力）、付く ARIA の属性、Enter・Esc の扱い、`setRangeText` の取り消し、層のずれ。
+  - spike（上の issue より先）: React Aria の `Autocomplete` を `TextArea` に付けたときの IME（Chrome・Safari・Firefox・iOS・Android の日本語入力）、§3 の上書き（`spellCheck`・`autoCorrect`・`enterKeyHint`・`keyCode === 229`）が効くか、Enter・Esc の扱い、`execCommand('insertText')` の取り消し、層のずれ。
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
@@ -198,7 +207,7 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
 
 ### B. 補完の UI
 
-- B1（React Aria `Autocomplete`）: + 仮想フォーカス・`ListBox`・告知を React Aria が持ち、ほかの部品と同じ作法になる。+ 公式に `@` のメンションの例がある。− `textarea` での IME と属性の振る舞いが文書から確かめられない。
+- B1（React Aria `Autocomplete`）: + 仮想フォーカス・`ListBox`・告知を React Aria が持ち、ほかの部品と同じ作法になる。+ 公式に `@` のメンションの例があり、`role` を付けず `isComposing` を見る。− `spellCheck`・`autoCorrect`・`enterKeyHint` を本文に合わない値にし、`keyCode === 229` を見ないので、上書きが要る。
 - B2（独自のフック）: + IME と Enter を細かく制御できる。− 仮想フォーカスと告知を自分で保守する。
 - B3（`textarea` に `role="combobox"`）: + APG のとおりで `aria-expanded` を使える。− ARIA in HTML に反し、axe などの検査と支援技術の扱いが不確かになる。
 
@@ -211,7 +220,5 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
 ## Open Questions / 要検証
 
 - 決定者が決めること: `indexable` を補完に効かせないこと（§1）、ミュートしている相手を候補から除くこと、Enter で確定すること（Tab だけにする案もある）、閲覧者のタグを端末ごとに持つこと。
-- Mastodon の `GET /api/v1/accounts/search`（`q`・`limit` 既定 40 最大 80・`resolve`・`following`、スコープ `read:accounts`。[Mastodon docs](https://docs.joinmastodon.org/methods/accounts/#search)、2026-10-23 確認）の並びの規則と、メンションの補完で `indexable` / `discoverable` を見るかは文書にない。**要検証**（実装を読む）。
-- React Aria の `Autocomplete` を `TextArea` に付けたときの IME・`aria-*` の属性・Enter / Esc / Tab の扱い。**要検証**（spike）。
-- Safari の変換の確定の Enter の `keydown` の順と `isComposing`、`setRangeText` の取り消しの挙動。**要検証**（spike）。
+- React Aria の `Autocomplete` に §3 の上書きをした `TextArea` が、各ブラウザと日本語 IME の組み合わせ（Chrome・Safari・Firefox、iOS・Android）で変換中に開かず確定を奪わないか、`execCommand('insertText')` の取り消しが各ブラウザで 1 回で戻るか。**要検証**（実機の spike）。
 - 補完の問い合わせの回数が既存のアカウント単位のレート制限に収まるか。**要検証**（実装後の計測）。

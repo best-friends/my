@@ -89,9 +89,21 @@ C の 2 段階:
 - Atlas Community Edition の `migrate lint` で、破壊的な差分を検出する。CI の中で一時的なマイグレーションのディレクトリを作り
   （空 → 比べる元の目標スキーマ、比べる元 → PR の目標スキーマ、の 2 つを `atlas migrate diff` で生成）、最新の 1 つを `migrate lint --latest 1` にかける。
   コミットするマイグレーションのファイルは作らない（ADR-0023 を保つ）。
-  - Atlas Community Edition 1.3.0 で、`atlas login` なしに `migrate lint` が動き、列の削除を `DS103`（destructive change）として報告し、終了コード 1 で終わることを確かめた（SQLite、2026-10-23）
+- Atlas Community Edition 1.3.0 の `migrate lint` は `atlas login` なしに動く。報告の範囲は次のとおり（2026-10-23 に SQLite と PostgreSQL 18 で確認）。
+
+| 変更 | SQLite | PostgreSQL |
+| --- | --- | --- |
+| 表の削除・列の削除（列の名前の変更も、削除と追加の差分になる） | エラー（`DS102`・`DS103`、終了コード 1） | 同左 |
+| `NOT NULL` にする、`NOT NULL` で `DEFAULT` のない列の追加、一意の索引の追加 | 警告だけ（終了コード 0） | 同左 |
+| 型の変更 | 報告しない（表の作り直しで行をコピーする） | 暗黙に変換できる型（`integer` → `bigint`、`text` → `varchar(10)` の縮小も）は報告しない。変換できない型（`text` → `uuid`）は dev DB での実行の失敗として終了コード 1 |
+| `CHECK` の追加 | 報告しない | 報告しない |
+
+- そのため CI は、`migrate lint` の終了コードだけでなく、警告を含むすべての診断を失敗として扱う。さらに、比べる元と PR の `atlas schema inspect` を比べ、既存の列の型と `CHECK` の変化も失敗として扱う。
 - 比べる元は、PR では `main`、Merge Queue では queue の先頭の基準のコミットの目標スキーマ。SQLite と PostgreSQL の両方で行う。
-- 投影の表（B）への破壊的な差分と、contract の PR（C の 2 段階目）は、決定者の承認があるときだけ通す。承認の印の形（ラベル・PR 本文の宣言など）は実装の issue で決める（Open Questions）。
+- 投影の表（B）への破壊的な差分と、contract の PR（C の 2 段階目）は、決定者の承認があるときだけ通す。承認は PR の実行で判定する。
+  PR の実行の `pull_request` の event はラベルを持つが、Merge Queue の `merge_group` の event は `head_sha`・`head_ref`・`base_sha`・`base_ref`・`head_commit` だけを持ち、PR の番号やラベルの欄を持たない
+  （2026-10-23 に [octokit/webhooks の `merge_group` の schema](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/merge_group/checks_requested.schema.json) で確認）。
+  Merge Queue での承認の扱いは実装の issue で決める（Open Questions）。
 - `docs/operations/database.md` の手順は、`--auto-approve` の前に `--dry-run` で流れる SQL を確かめることを勧める。
 
 ### 4. 版の間の更新
@@ -136,10 +148,10 @@ C の 2 段階:
   - 列の削除や型の変更は、2 つのマイナー版にまたがり、間の版では古い列を持ち続ける。開発の手間とスキーマの見通しが少し悪くなる
   - データの書き換えを Go の手順で書くので、SQL 1 文で済む変換でも、手順のコードと記録の表が要る
   - マイナー版を飛ばした更新は保証しない。長く更新しなかった運営者は、版を順に通る必要がある
-  - `migrate lint` の検出は Atlas の解析器の範囲に限られ、意味の変わる変更（値の解釈を変えるなど）は検出できない。レビューで見る
+  - `migrate lint` の検出は Atlas の解析器の範囲に限られ、型の変更と `CHECK` の追加は報告しない。そのため `schema inspect` の比較を自前で足す。意味の変わる変更（値の解釈を変えるなど）はどちらでも検出できず、レビューで見る
   - 古い版のサーバーが新しいスキーマで動く間の互換は「追加は書き込みを壊さない」という規則に頼り、検査は CI の外（レビュー）になる
 - 後続で必要になる作業（この ADR が Accepted になってから issue にする）
-  - CI: `scripts/task.sh db:lint`（両方言の `migrate lint`、比べる元のスキーマの取り出し、承認の印の扱い）と、PR・Merge Queue の `check` への組み込み
+  - CI: `scripts/task.sh db:lint`（両方言の `migrate lint` と `schema inspect` の比較、比べる元のスキーマの取り出し、承認の印の扱い）と、PR・Merge Queue の `check` への組み込み
   - `my db upgrade` / `my db upgrade --check`、更新の手順の登録の仕組み、記録の表（`10-infrastructure.sql`、データモデルの文書への追加）、readiness の検査の拡張
   - `deploy/docker/compose.yaml` の更新の順序（check → schema → upgrade → my）と `scripts/docker-smoke.sh` での前の版からの更新の検査
   - 設定の検査で、消えた・名前の変わったキーをエラーにする（今の挙動を確かめてから）
@@ -167,7 +179,8 @@ C の 2 段階:
   データの書き換えを方言ごとの SQL で書くことになり、「手で書かない」（ADR-0023）を変える。v0 で生成物のレビューと適用の運用を始める重さがある
 - 参考: Mastodon はパッチ版を飛ばしてよいが、マイナー版の系列ごとに少なくとも 1 つの版を経ることを求める（[Upgrading to a new release](https://docs.joinmastodon.org/admin/upgrading/)、2026-10-23 確認）。
   GoToSocial はリリースノートで、起動時にマイグレーションが走るので中断しないよう求め、古い版からは前の版の手順に従うよう案内している（v0.17.4・v0.21.3・v0.22.0 のリリースノート、2026-10-23 確認）。
-  Misskey の扱い（`migrate` の実行と版の飛ばし方）は要検証
+  Misskey は TypeORM の `migration:run` を `pnpm migrate` で実行し、Docker イメージは起動のたびに `migrate` の後にサーバーを起動する（`migrateandstart`）
+  （2026-10-23 に [package.json](https://github.com/misskey-dev/misskey/blob/8f438a8a00ba7f08dfe5fe8db3394c86d82572f3/package.json)・[packages/backend/package.json](https://github.com/misskey-dev/misskey/blob/8f438a8a00ba7f08dfe5fe8db3394c86d82572f3/packages/backend/package.json)・[Dockerfile](https://github.com/misskey-dev/misskey/blob/8f438a8a00ba7f08dfe5fe8db3394c86d82572f3/Dockerfile) で確認）
 
 ### 4. 開発は宣言的、リリースの時に版付き
 
@@ -177,7 +190,7 @@ C の 2 段階:
 
 ## Open Questions / 要検証
 
-- contract と投影の作り直しを通す「決定者の承認の印」の形。ラベルは Merge Queue の実行から読めるか（要検証）、PR 本文の宣言にするか
-- `migrate lint` の解析器が、PostgreSQL の型の変更・`NOT NULL` の追加・`UNIQUE` の追加をどこまで報告するか（PostgreSQL で要検証）
+- contract と投影の作り直しを通す「決定者の承認の印」の形と、Merge Queue での扱い。`merge_group` の event はラベルを持たないので、PR の実行の判定に任せるか、
+  Merge Queue でも API で PR のラベルを引くか
 - 更新の手順（`my db upgrade`）を一回限りのジョブにするか、`my serve` の起動時に実行するか（GoToSocial は起動時。Cloud Run の複数インスタンスで同時に走らない保証が要る）
 - 版を飛ばした更新を将来保証するなら、更新の手順と contract の対応から、通る版を自動で選べるか

@@ -81,10 +81,10 @@ pkg/mykit/
   （Go Modules Reference「Module paths」「Mapping versions to commits」、2026-10-23 に go.dev/ref/mod で確認）。
   `pkg/mykit/go/` にしない（A-2）のは、import のパスの末尾が `go` になり、パッケージ名とずれるため。代わりに Go のモジュールの zip に `ts/` の TS のソースが入る（コミットしたファイルだけで、`node_modules` は入らない）。
 - `mykit` の `go.mod` は `github.com/mycroblog/my`（サーバーのモジュール）を require しない。これを検査する（下の §8）。
-  別モジュールなので、Go の `internal` の規則は効かない。代わりにモジュールの境界が依存を止める。`mykit` は標準ライブラリと、生成物が要る最小の依存（oapi-codegen の runtime など）だけを使う。
+  別モジュールなので、Go の `internal` の規則は効かない。代わりにモジュールの境界が依存を止める。`mykit` は標準ライブラリと、生成物が要る依存だけを使う。生成物をビルドに含めるサードパーティのモジュールは `github.com/oapi-codegen/runtime`（Apache-2.0）・`github.com/apapsch/go-jsonmerge/v2`（MIT）・`github.com/google/uuid`（BSD-3-Clause）の 3 つで、`go.sum` は 23 行になる。runtime の `go.mod` は gin・echo・iris などのフレームワークを require するので、利用者の `go list -m all` には出るが、ビルドには入らない（2026-10-23 に runtime v1.7.0 で、別モジュールとして生成物をビルドして確認）。
 - 開発では、ルートに `go.work` を置かずに、`integration/` の試験用モジュールだけが `replace` でサーバーと `mykit` を結ぶ。`tools/go.mod` と同じく、ルートの `./...` からは外れる。
 - **TS は `pkg/mykit/ts/`** に置き、npm のパッケージ名は **`@mycroblog/mykit`**（npm の組織 `mycroblog` を取る。`app/` の私用の `@my/*` とは別の公開のスコープ）。
-  Bun ワークスペース（ルートは `app/`）の `workspaces` に `../pkg/mykit/ts` を足し、`app/web` は `workspace:*` で使う。ワークスペースのルートの外のパスを Bun が扱えるかは**要検証**。扱えないなら、ワークスペースのルートをリポジトリのルートに移すかを別に決める。
+  Bun ワークスペース（ルートは `app/`）の `workspaces` に `../pkg/mykit/ts` を足し、`app/web` は `workspace:*` で使う。Bun はルートの外のパスをワークスペースとして扱い、`app/bunfig.toml` の `linker = "isolated"` でも `../pkg/mykit/ts` の依存（openapi-fetch）を解決する。`bun.lock` には `../pkg/mykit/ts` の項が入り、`pkg/mykit/ts/node_modules` ができる（2026-10-23 に Bun 1.4.3 で、`app/` と同じ設定の最小のワークスペースを作って確認）。
 - `pkg/mybot`（ADR-0094）も同じ形（`pkg/mybot/` が Go の別モジュール、`pkg/mybot/ts/` が `@mycroblog/mybot`）にし、`mykit` だけに依存する。
 
 ### 2. ライセンス
@@ -104,7 +104,9 @@ pkg/mykit/
 
 - 生成は `api/openapi.yaml`（バンドル）からだけ行い、`scripts/generate.sh` の対象に足す。生成物はコミットし、`api:generate` の差分検査に入れる（ADR-0029・ADR-0066 のまま）。
   - Go: oapi-codegen（`tools/go.mod` の同じ版）で `generate: {models: true, client: true}` を `pkg/mykit/api.gen.go` に生成する。サーバーと同じく `always-prefix-enum-values` にする。
-    SSE の `streamEvents` は生成から外し、手書きする。oapi-codegen の client が今の spec（3.1 の部分集合）を扱えるかは**要検証**（サーバーの生成が通っているので、型は通る見込み）。
+    SSE の `streamEvents` は生成から外し、手書きする。
+    この設定で今の `api/openapi.yaml` から client を生成でき、`CGO_ENABLED=0` でビルドと `go vet` が通る（2026-10-23 に `tools/go.mod` の oapi-codegen v2.8.0 で確認。生成物は約 7.6 万行・3.1 MB）。
+    操作ごとに `<Op>WithResponse` が型付きの応答（`JSON200 *Status`・`ApplicationproblemJSONDefault *Problem`・応答ヘッダ）を返す。multipart の操作（`UploadMedia`）は `content-type` と `io.Reader` を受ける `<Op>WithBody` だけになるので、下のアップロードの関数で補う。
   - TS: openapi-typescript で `pkg/mykit/ts/src/schema.gen.ts` を生成する。`app/web/src/lib/api/schema.gen.ts` は消し、`app/web` は `@mycroblog/mykit` の型を使う。型の生成は 1 か所になる。
 - **手書きの層**は次の横断の処理だけにする。エンドポイントごとの便利な関数は書かない（生成したクライアントをそのまま公開する）。
   - 認証（§5）、`Accept-Language` の付与、`User-Agent`（Go）。
@@ -159,7 +161,6 @@ pkg/mykit/
 
 #### 覆す条件
 
-- Bun のワークスペースがルートの外のパッケージを扱えず、ルートを移すのも重いなら、TS を `app/mykit/` に置き（`pkg/mykit` は Go だけ）、公開の設定だけを分ける。
 - oapi-codegen の client が spec を扱えない、または生成物が利用者に出すには使いにくいなら、Go だけ C-3（別の生成器）か、型だけ生成して手書きのクライアントにする。
 - 決定者が再ライセンスを望まないなら B-3。その場合、外部の作者にはライブラリではなく spec と例だけを示すことになり、`pkg/mybot` の価値は大きく下がる。
 
@@ -175,6 +176,8 @@ pkg/mykit/
   - `app/web` が `mykit` に依存することで、Web クライアントのための変更がライブラリの公開の API の変更になる。v0 では許すが、v1 では分ける判断が要る。
   - 公開の API を持つことで、生成物の名前（oapi-codegen の型名・関数名）が利用者から見える。spec の `operationId` やスキーマ名の変更が破壊的変更になる。
   - Go のモジュールの zip に TS のソースが入る。
+  - Go の生成物は約 7.6 万行・3.1 MB と大きく、`api:generate` の時間とリポジトリの差分の量が増える。
+  - `pkg/mykit/ts` は `app/` の外にあるので、`app/` を前提にした道具（oxlint・knip・`web:check` の文脈）の設定に足す必要がある。
 - 後続で必要になる作業（この ADR が Accepted になってから issue にする）
   1. ライセンスの範囲の変更: `api/spec/`・`api/openapi.yaml` の SPDX を `MIT` に、生成の見出し、`README.md` のライセンスの節、ADR-0011 の Status の注記、SPDX の範囲の検査。
   2. Go の `pkg/mykit`: モジュール・生成の設定・手書きの層（認証・エラー・ページング・再試行・冪等キー・アップロード）・単体テスト。
@@ -205,14 +208,12 @@ pkg/mykit/
 
 ### C. 生成
 
-- C-1: 今の道具と版をそのまま使い、新しい依存がない。oapi-codegen の client の使い勝手は ogen などより素朴。
+- C-1: 今の道具と版をそのまま使い、新しい依存がない。oapi-codegen の client の使い勝手は ogen などより素朴（応答は状態コードと content type ごとのフィールドを持つ構造体で、利用者が `StatusCode` を見て選ぶ）。
 - C-2: 使い勝手を自由に設計できる。spec とのずれを型で止められず、保守の量が操作の数に比例する。
 - C-3: ogen は型の表現が豊かで、TS の Hey API は SDK の形まで生成する。生成器が 2 種類（サーバーと別）になり、ADR-0029 の「生成ツール」を広げる新しい ADR が要る。
 
 ## Open Questions / 要検証
 
-- Bun のワークスペースの `workspaces` に、ルート（`app/`）の外のパス `../pkg/mykit/ts` を書けるか（要検証。だめなら覆す条件のとおり）。
-- oapi-codegen v2 の `client` の生成が、今の spec（3.1 の部分集合、`always-prefix-enum-values`、multipart）で通り、使える形になるか（要検証。小さな spike で確かめる）。
-- npm の組織 `mycroblog` とパッケージ名 `@mycroblog/mykit` が取れるか（要検証）。
+- npm の組織 `mycroblog` を作れるか（要検証。`@mycroblog/mykit`・`@mycroblog/mybot` はレジストリになく、スコープ `mycroblog` の公開のパッケージもない（2026-10-23 に registry.npmjs.org で確認）。同じ名前のユーザーや非公開の組織があるかは、ログインして組織を作るまで分からない）。
 - ライセンスを MIT にするか Apache-2.0 にするか、`api/spec/` まで含めるか（決定者の判断）。
 - ライブラリの版をサーバーと揃えるか、独立の版にするか（推奨は揃える。#1029 のリリースの形に合わせて決める）。

@@ -56,7 +56,7 @@
 - TS: `pkg/mybot/ts/` に `@mycroblog/mybot` を置き、`@mycroblog/mykit` を `dependencies` に置く（同じ版の組で動作を確かめるため）。ESM のみで、対象のランタイムは `mykit` と同じ（Node.js 22 以降・Bun・Deno。ブラウザでの動作は約束しない）。
 - ライセンス: ADR-0093 のとおり MIT（`pkg/mybot/LICENSE`、SPDX ヘッダ `MIT`）。依存は寛容なライセンスのものだけ。
 - 版と公開: サーバー・`mykit` と同じ版の番号で同じリリースに出す（#1029 の仕組み、npm は trusted publishing）。v0 のあいだは ADR-0012 のとおり破壊的変更があり得る。
-- 外部の依存は最小にする。Go は cron の式の解釈だけを依存にするか自作し（Open Questions）、TS は `mykit` と実行環境の標準（`fetch`・`AbortSignal`）だけで書く。
+- 外部の依存は最小にする。cron の式の解釈だけを依存にするか自作し（Open Questions）、ほかは Go・TS とも `mykit` と言語・実行環境の標準（`fetch`・`AbortSignal`）だけで書く。
 
 ### 2. 境界（`mykit` と `mybot`）
 
@@ -88,7 +88,7 @@
 
 | ハンドラ | 起きるとき |
 | --- | --- |
-| `OnMention` | `mention`。返信・`direct` の投稿（DM）を含み、文脈に `IsReply`・`IsDirect` を持つ |
+| `OnMention` | `mention`。返信・`direct` の投稿（DM）を含み、文脈に `IsReply`・`IsDirect` を持つ。サーバーは公開範囲によらず、投稿の版が新しくメンションしたアカウントに `mention` を作る（`internal/app/notification/projection.go` の `projector.mentions`） |
 | `OnCommand(name, ...)` | `OnMention` のうち、本文の先頭の自分へのメンションを除いた最初の語が `name` のもの（例: `@bot help`） |
 | `OnFollow` / `OnFollowRequest` | `follow` / `follow_request` |
 | `OnReaction` / `OnFavourite` / `OnBoost` / `OnQuote` | 同名の通知 |
@@ -140,7 +140,7 @@
 - **自分には応答しない**。自分のアカウントからの通知は振り分けない（外せない）。
 - **bot フラグのアカウントには応答しない**。送り手の `Account.bot` が真なら、ハンドラを呼ばずに処理済みにする。`RespondToBots: true` で外す。
 - **連鎖の上限**: 同じ送り手への返信は 10 分に 5 まで、1 時間に 15 まで。超えた分はハンドラを呼ばずに処理済みにする。bot フラグを立てていない相手のボットとの連鎖も止めるため。
-- **公開範囲**: 返信の公開範囲は元の投稿より広げない（`direct` には `direct`、`private` には `private`、`local` には `local`、`unlisted` には `unlisted`）。`public` への返信の既定は `unlisted`。
+- **公開範囲**: `createStatus` は `visibility` を必須にしていて、サーバーは返信の公開範囲を補わない（`CreateStatusRequest` の `required`。ADR-0017 の「`local` への返信の既定は `local`」はクライアントの既定）。そのため `mybot` が既定を決める。返信の公開範囲は元の投稿より広げない（`direct` には `direct`、`private` には `private`、`local` には `local`、`unlisted` には `unlisted`）。`public` への返信の既定は `unlisted`。
   定期実行の投稿の既定は `unlisted` で、作者が `public`・`local` を明示できる。`local`（ADR-0017）は作者のサーバーの中と作者のフォロワーにだけ届くことを README に書く。
 - **返信の宛先**: 返信の本文には元の送り手だけをメンションし、元の投稿の他のメンションを引き継がない（巻き込みを防ぐ）。
 - サーバーの規約: ライブラリはサーバーごとの規約を読まない。README に、ボットを動かす前にサーバーの規約（ボットの可否・投稿の頻度）を確かめることを書き、上の既定をその下限の目安とする。
@@ -216,6 +216,5 @@
 ## Open Questions / 要検証
 
 - ADR-0090 の登録者自身へのトークンが長命のアクセストークンか、refresh token を伴うか。後者なら `MemoryStore` のボットは再起動で更新できなくなるので、§6 の既定の `FileStore` の推奨を README で強める。
-- Go の cron の式の解釈を依存にするか（候補のライブラリのライセンスが MIT と両立する寛容なものか、要検証）、5 フィールドだけを自作するか。
-- `direct` の投稿でのメンションが `mention` の通知として届くこと、`local` の投稿への返信の既定（ADR-0017 の派生ルール）がクライアントの指定より優先されないことを、サーバーの実装で確かめる。
+- Go の cron の式の解釈を依存にするか、5 フィールドだけを自作するか。候補の `robfig/cron`（Go）と `croner`（TS、Deno・Bun・Node で動く）はどちらも MIT で、§1 の依存の条件を満たす（2026-10-23 に github.com/robfig/cron と github.com/hexagon/croner のライセンス表示で確認）。`robfig/cron` の最後の版は 2020-01 の v3.0.1 で、保守の止まった依存を入れるかが論点になる。
 - 連鎖の上限・送信の予算・追いつきの上限の既定の値（§6・§8）。実際のボットで調整する。

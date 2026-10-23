@@ -10,11 +10,11 @@
 サーバーを畳むとき、利用者と連合先に迷惑をかけない終わり方が要る。いまあるのは個々のアカウントの削除（FR-008。`Delete`（Actor）を承認済みのフォロワーと既知の shared inbox へ送る、[data-model §8](../architecture/data-model/08-deletion-and-purge.md#8-削除と消去)）とお知らせ（FR-726）だけで、サーバー全体を計画的に閉じる仕組みが無い。DB を消して VM を止めるだけだと、
 
 - 利用者はデータ（FR-008 のエクスポートと CSV）を持ち出せず、移転（`Move`、[ADR-0089](0089-account-migration-move.md)）もできない
-- 連合先には Actor と投稿のキャッシュが残り、連合先からこちらへの配送の再試行が続く（相手が到達できないと見なすまで。こちらの基準は 7 日の失敗で、[federation.md §7.3](../architecture/federation.md#73-配送とリトライ) は Mastodon の `DeliveryFailureTracker` と同じ基準としている。他の実装の基準は要検証）
+- 連合先には Actor と投稿のキャッシュが残り、連合先からこちらへの配送の再試行が続く（相手が到達できないと見なすまで。こちらの基準は 7 日の失敗で、[federation.md §7.3](../architecture/federation.md#73-配送とリトライ) は Mastodon の `DeliveryFailureTracker` と同じ基準としている。Misskey も 7 日の不通で配送を止める（2026-10-23 に [`DeliverProcessorService`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/queue/processors/DeliverProcessorService.ts) で確認））
 
 v0 のリリース（M5）で運営者に渡す以上、始め方と同じく終わり方も用意しておく。関連する要件は FR-001（登録モード）、FR-008（削除とエクスポート）、FR-726（お知らせ）、FR-911（サポーターの加入と解約）、NFR-COST-5（配送の集約）、NFR-MOD-7（取り消せない操作の確認）。関連する決定は ADR-0018（URI）、ADR-0020（データモデル）、ADR-0036（凍結の Actor の文書）、ADR-0038（保持期間）、ADR-0072（サポーター）、ADR-0076（連合の向き）。
 
-参考（確認日 2026-10-23、[tootctl の文書](https://docs.joinmastodon.org/admin/tootctl/#self-destruct)）: Mastodon の `tootctl self-destruct` は 4.3.0 からセルフデストラクトのモードへの切り替えを案内し、そのモードが全アカウントの削除の通知を配送する。モード中、利用者はサインインしてデータをダウンロードできるが、ほかの操作はできない。ローカルのデータは消さない（DB や VPS を消すほうが速いため）。操作は取り消せず、キューが空になるまでワーカーを止めてはいけない。
+参考（確認日 2026-10-23、[tootctl の文書](https://docs.joinmastodon.org/admin/tootctl/#self-destruct)）: Mastodon の `tootctl self-destruct` は 4.3.0 からセルフデストラクトのモードへの切り替えを案内し、そのモードが全アカウントの削除の通知を配送する。モード中、利用者はサインインしてデータをダウンロードできるが、ほかの操作はできない。ローカルのデータは消さない（DB や VPS を消すほうが速いため）。操作は取り消せず、キューが空になるまでワーカーを止めてはいけない。モードには環境変数 `SELF_DESTRUCT`（`LOCAL_DOMAIN` を署名した値）で入り、定期ジョブが各ローカルアカウントの `Delete`（Actor）を既知の inbox すべてへ送る（投稿ごとの `Delete` は送らない）。キューの積み残しが 10,000 件か Redis のメモリの半分を超えると、その回は積まない（2026-10-23 に [`SelfDestructScheduler`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/workers/scheduler/self_destruct_scheduler.rb) と [`SelfDestructHelper`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/helpers/self_destruct_helper.rb) で確認）。
 
 ## Decision Drivers（判断基準）
 
@@ -32,7 +32,7 @@ v0 のリリース（M5）で運営者に渡す以上、始め方と同じく終
 
 - A1. `instance` モジュールのイベントと投影（ADR-0020 規約 1・2）
 - A2. インスタンス設定の enum（`service_state`）と日付の設定（ADR-0076 の `federation_mode` と同じ形）
-- A3. 設定ファイル・環境変数（Mastodon のように、起動時の値でモードに入る）
+- A3. 設定ファイル・環境変数（Mastodon の `SELF_DESTRUCT` のように、起動時の値でモードに入る）
 
 ### B. 連合先に送るもの
 
@@ -82,6 +82,8 @@ v0 のリリース（M5）で運営者に渡す以上、始め方と同じく終
 | **インスタンス Actor・WebFinger・NodeInfo** | いつもどおり。NodeInfo の `metadata.serviceClosure` に状態と日付 | インスタンス Actor は返す（署名つきの取得のため）。WebFinger は `410`。NodeInfo は状態を出す | インスタンス Actor も `410`。NodeInfo は状態を出す | `410`（静的） |
 | **外の取得・取り込み・リレー** | いつもどおり | しない（リレーは脱退を送らず止める） | しない | — |
 
+- inbox の `410` は、主要な実装がどれも再試行しない失敗として扱うので、連合先からの配送が早く止まる: Mastodon は 401・408・429 以外の 4xx（[`response_error_unsalvageable?`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/helpers/json_ld_helper.rb)）、Misskey は 429 以外の 4xx（[`StatusError`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/misc/status-error.ts)）、GoToSocial は 429 以外の 4xx（[`httpclient`](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/311cecaeb6e302509c847d20e21185a7ec41d28d/internal/httpclient/client.go)）、Akkoma は 405 と 410（[`PublisherWorker`](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/workers/publisher_worker.ex)）を再試行しない（2026-10-23 にソースで確認）。Misskey は shared inbox の `410` で、そのサーバー全体への配送を止める（`goneSuspended`、同じく [`DeliverProcessorService`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/queue/processors/DeliverProcessorService.ts)）。
+- 配送中に Actor の文書と鍵を返し続けるのは、鍵を取り直す受信側のためである。GoToSocial は、署名の鍵の取得が `410` だと tombstone を記録して inbox に `202` を返し、その `Delete` を処理しない（2026-10-23 に [`authenticate.go`](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/311cecaeb6e302509c847d20e21185a7ec41d28d/internal/federation/authenticate.go) と [`federatingprotocol.go`](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/311cecaeb6e302509c847d20e21185a7ec41d28d/internal/federation/federatingprotocol.go) で確認）。
 - クローズの判定は `federation_mode`（ADR-0076）より優先する: クローズでは `retract` と、鍵を出すための `identify` だけを通す。`federation_mode` が `off` / `inbound` でも `Delete` は送る（予告の期間に連合を狭めた運営者も、外に残ったものを消せるように）。これは ADR-0076 の「`off` は何も通さない」に対する例外で、ADR-0076 自体は変えない（クローズは別の軸の状態として足す）。管理画面の確認でこの例外を示す。ドメインの処分（§11）はいつもどおり効き、凍結したドメインには送らない。
 - メンテナンスモード（ADR-0084）はどの状態でも重ねて使える（すべてを止める）。ステータスページ（[ADR-0085](0085-uptime-monitoring-status-page.md)）への掲出は運用文書の手順に書く。
 
@@ -89,7 +91,7 @@ v0 のリリース（M5）で運営者に渡す以上、始め方と同じく終
 
 - `closed` を記録したトランザクションで、ジョブ `instance.closure_fanout`（カーソルはアカウントの ID）を outbox に積む。ジョブはローカルのアカウント（インスタンス Actor・削除済みを除く。凍結中は含む）を 100 件ずつ、アカウントごとに `Delete`（Actor）の outbound activity を記録し、既存の展開（[federation.md §7.2](../architecture/federation.md#72-展開fan-out)。承認済みのフォロワー → 既知の shared inbox）に渡す。ライフサイクル（`account_lifecycle_events`）は変えない（消去ジョブを動かさない。C1）。
 - 投稿ごとの `Delete` は送らない（B1。アカウントの削除と同じく `Delete`（Actor）が代わりを務める）。
-- 速度: 次のページの展開は、前のページの展開が終わってから積む。同時に動く配送はキューの同時実行数の設定で抑える（値は要調整）。shared inbox への集約と `unavailable` のドメインの除外は既存のまま効く。
+- 速度: 次のページの展開は、前のページの展開が終わってから積む。同時に動く配送はキューの同時実行数の設定で抑え、未処理の配送のジョブが上限（既定 10,000 件、Mastodon と同じ値。要調整）を超えている間は次のページを積まない。shared inbox への集約と `unavailable` のドメインの除外は既存のまま効く。
 - 再試行と諦める時点: 既存の配送の方針（最大 9 回、約 4 日、使い切ったら dead job）。dead job は自動では再実行しない（運営者は既存の管理 API で再実行できる）。
 - 完了: 定期ジョブが、クローズの `Delete` の配送がすべて終わった状態（`succeeded` / `permanent_failure` / `skipped` / dead job）で、展開も残っていないことを確かめたら `delivery_completed` を記録する。
 - 進捗: `GET /api/v1/admin/closure`（と `my admin closure status`）が、処理したアカウント数と、配送の状態ごとの件数を返す。管理画面はそれを示し、ワーカーを止めないよう注意を出す。
@@ -150,9 +152,9 @@ v0 のリリース（M5）で運営者に渡す以上、始め方と同じく終
 
 ### B. 連合先に送るもの: B1 `Delete`（Actor）（推奨）/ B2 投稿ごとにも / B3 送らない
 
-- B1: アカウントの削除と同じ宛先と同じ形で、主要な実装は Actor の削除で投稿も消すと見込む（Mastodon・Misskey・GoToSocial・Akkoma とも要検証）。配送数はアカウント数に比例する。
+- B1: アカウントの削除と同じ宛先と同じ形で、Mastodon の self-destruct と同じ。主要な実装は、主体が自分自身を消す `Delete`（Actor）でアカウントを消す（Mastodon は [`DeleteAccountService`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/lib/activitypub/activity/delete.rb) で投稿ごと、Misskey は [`deleteActor`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/core/activitypub/ApInboxService.ts) が積むアカウントの削除のジョブでノートごと、GoToSocial は [`deleteAccount`](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/311cecaeb6e302509c847d20e21185a7ec41d28d/internal/federation/federatingdb/delete.go)、Akkoma は [`User.delete`](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/web/activity_pub/side_effects.ex)。2026-10-23 にソースで確認）。配送数はアカウント数に比例する。
 - B2: Actor の削除で投稿を消さない実装にも投稿が消える。ただし配送数が投稿数に比例し（数十倍〜数百倍）、費用と時間が判断基準 5 に合わない。B1 で消えない実装が見つかれば、その実装のドメインに限って投稿の `Delete` を足す余地はある。
-- B3: 費用はゼロで実装も最小。ただし連合先は取り直すまでキャッシュを出し続け、取り直さない実装では残り続ける。判断基準 3 に合わない。
+- B3: 費用はゼロで実装も最小。ただし取り直しの `410` でアカウントを消すのは主要な実装のうち Mastodon だけで、Misskey・GoToSocial・Akkoma はキャッシュを持ち続ける（下の Open Questions の確認）。判断基準 3 に合わない。
 
 ### C. ローカルのデータ: C1 消さない（推奨）/ C2 消去ジョブで消す
 
@@ -174,8 +176,9 @@ v0 のリリース（M5）で運営者に渡す以上、始め方と同じく終
   - 新しい権限 `manage_service_closure` を足す（推奨）か、`manage_settings` で足りるとするか。
   - 移転済みのアカウントにも `Delete` を送る（推奨）か、送らずに `movedTo` を連合先のキャッシュに残すか。
   - `410` を返し続ける期間の目安（1 年）。
-- 要検証（相互運用テスト・公式の文書）
-  - Mastodon・Misskey・GoToSocial・Akkoma が、配送中の最小の Actor の文書（`suspended: true`、鍵あり）の下で `Delete`（Actor）を受け付け、アカウントと投稿を消すか。
-  - inbox の `410` を各実装がリトライしない失敗として扱うか。WebFinger の `410` でハンドルの解決を止めるか。
-  - 各実装が Actor の取り直しで `410` を受けたときにアカウントを消すか（ADR-0076 の確認では `404` では消さない）。
-  - Misskey・GoToSocial・Akkoma に、サーバー全体の閉鎖の仕組み（Mastodon の self-destruct に当たるもの）があるか。
+- 確認済みの事実（2026-10-23 にソースで確認）
+  - 自分自身の `Delete`（Actor）は、4 実装ともキャッシュの Actor と鍵で処理し、Actor を取り直さない（Akkoma は [`DeleteValidator`](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/web/activity_pub/object_validators/delete_validator.ex) がキャッシュの利用者を引く）。
+  - 取り直しの `410`: Mastodon は WebFinger の `410` で [`GoneError`](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/lib/webfinger.rb) にし、Actor の取得の `410` で [アカウントの削除を積む](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/services/activitypub/fetch_remote_actor_service.rb)。Misskey は WebFinger の失敗をエラーにするだけで消さない（[`RemoteUserResolveService`](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/core/RemoteUserResolveService.ts)）。GoToSocial は WebFinger の `410` をエラーにし（[`finger.go`](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/311cecaeb6e302509c847d20e21185a7ec41d28d/internal/transport/finger.go)）、Actor の取り直しの `410` でアカウントを消す処理を持たない（[`dereferencing/account.go`](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/311cecaeb6e302509c847d20e21185a7ec41d28d/internal/federation/dereferencing/account.go)）。Akkoma は取り直しが `404` / `410` でもキャッシュの利用者を返し続ける（[`User.get_or_fetch_by_ap_id`](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/user.ex)）。
+  - Misskey・GoToSocial・Akkoma のソースには、サーバー全体の閉鎖の仕組み（Mastodon の self-destruct に当たるもの）が無い（`self-destruct` などで検索して見つからない）。
+- 要検証
+  - 上の振る舞いが、配送中の最小の Actor の文書（`suspended: true`、鍵あり）の下で実際にそのとおりになるか。federation-live で確かめる（ソースの読みと実際の相互運用は別のため）。

@@ -32,7 +32,7 @@ v0 のリリース（M5）に向けて、次が欠けている。
 
 1. **秘密を残さない**: 確認・リセットのリンクの秘密を、ジョブのペイロード（SQS・Cloud Tasks ではクラウドに置かれる）・`dead_jobs`・ログに残さない（ADR-0019、ADR-0064 §2）
 2. **リクエストを外部 I/O から切り離す**: SMTP の遅延・障害が登録やリセットのリクエストを遅らせない。再送がある（ADR-0003・ADR-0004）
-3. **到達性**: 主要なメールボックス事業者の送信者要件（SPF・DKIM・DMARC の整合、通知メールのワンクリック配信停止）を満たせる
+3. **到達性**: 主要なメールボックス事業者の送信者要件を満たせる。Gmail はすべての送信者に SPF か DKIM を、1 日 5,000 通を超えて Gmail に送る送信者に SPF・DKIM・DMARC（`From` のドメインとの整合）と、マーケティング・購読したメールのワンクリック配信停止（`List-Unsubscribe-Post: List-Unsubscribe=One-Click`）と本文の配信停止のリンクを求める。Yahoo も同様で、DMARC は `p=none` 以上、配信停止は 2 日以内に反映する（2026-10-23 に [Gmail](https://support.google.com/a/answer/81126)・[Yahoo](https://senders.yahooinc.com/best-practices/) で確認）。どちらも取引のメールは配信停止を求める対象に挙げていない
 4. **運用の少なさ**: 小さなサーバーの運営者が、SMTP の事業者を 1 つ設定するだけで送れる。v0 で受信（DSN・Webhook）の口を増やさない
 5. **i18n と既存のカタログ**: ICU のメッセージ（ADR-0009）を使い、`server*` 名前空間の制約（リッチテキストのタグ・日時の引数を使わない）を守る
 6. **作る量**: v0 で要るものだけを作る。HTML・バウンスの自動処理は後から足せる形にする
@@ -80,7 +80,7 @@ v0 のリリース（M5）に向けて、次が欠けている。
 - **実行時の再確認**: ハンドラは送る前に、まだ送る理由があるかを確かめる（アドレスが未確認のまま主たるアドレスか、通知の権限と設定がまだあるか）。なければ送らずに完了する
 - **冪等キー**: ジョブの型と、送る理由になった行の ID（通知の ID、確認の要求の ID）で作る。同じ要求から 2 通のジョブは積まない
 - **期限**: 取引のメール（確認・リセット）は要求から一定時間（リセットは 15 分、確認は 1 時間）を過ぎたら、送らずに完了する。古いリセットのメールが遅れて届くのを防ぐ
-- **再試行**: ポートのエラーを 2 つに分ける。`kernel.ErrMailRejected`（宛先・内容の恒久的な拒否: SMTP の `RCPT TO` / `DATA` への 5xx、SES の `MessageRejected` など）と、それ以外（接続・タイムアウト・4xx など一時的）。
+- **再試行**: ポートのエラーを 2 つに分ける。`kernel.ErrMailRejected`（宛先・内容の恒久的な拒否: SMTP の `RCPT TO` / `DATA` への 5xx、SES v2 の `MessageRejected`（内容が不正）など）と、それ以外（接続・タイムアウト・4xx、SES の `TooManyRequestsException`・`SendingPausedException`・`MailFromDomainNotVerifiedException` など一時的なもの、運営者が直せば通るもの）。
   恒久的な拒否と `ErrInvalidMail` は `queue.Fail`、一時的な失敗は `queue.Retry`。再試行の方針は、取引のメールが 6 回（30 秒からの指数、合計およそ 15 分）、通知のメールが既定の方針（10 回、合計およそ 4 時間）
 - **エラーの文**: ハンドラが返すエラーには、メールアドレス・トークン・本文を入れない（ADR-0064 §2）。ジョブの型・通知の ID・SMTP の応答コードだけを入れる
 - 登録の応答は、送信の成否を返さなくなる（「確認のメールを送りました」と表示し、届かなければ再送を求める）。送信の失敗はジョブのダッシュボード（`/admin/jobs`、ADR-0064）で見る
@@ -101,11 +101,11 @@ v0 のリリース（M5）に向けて、次が欠けている。
 | --- | --- |
 | `From` | `"<サーバー名>" <mail_from>`（RFC 2047 で符号化。サーバー名がなければ host） |
 | `Reply-To` | インスタンス設定 `contact_email`。未設定なら付けない（`mail_from` は `noreply@` を想定） |
-| `Message-ID` | `<UUIDv7@mail_from のドメイン>`。SES など事業者が付け替える場合はそれに従う |
+| `Message-ID` | `<UUIDv7@mail_from のドメイン>`。SES は自分の `Message-ID` と `Date` で上書きする（2026-10-23 に [SendRawEmail](https://docs.aws.amazon.com/ses/latest/APIReference/API_SendRawEmail.html) で確認）ので、SES では付け替わった値になる |
 | `Auto-Submitted` | すべてのメールに `auto-generated`（自動応答のループを防ぐ） |
 | `List-Unsubscribe` / `List-Unsubscribe-Post` | **通知（`notification`）と告知（`announcement`）のメールだけ**。`<https://{host}/mail/unsubscribe?token=...>` と `List-Unsubscribe=One-Click` |
 
-確認・リセット・パスワードの変更の通知・支払いの失敗は取引のメールで、配信停止の対象にしない（止めると安全や契約に関わる知らせが届かない）。
+確認・リセット・パスワードの変更の通知・支払いの失敗は取引のメールで、配信停止の対象にしない（止めると安全や契約に関わる知らせが届かない）。Mastodon も `List-Unsubscribe` 系のヘッダを通知のメールにだけ付ける（[notification_mailer.rb](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/mailers/notification_mailer.rb#L77-L81)、2026-10-23 に確認）。
 
 ### 4. 配信の停止
 
@@ -119,7 +119,7 @@ v0 のリリース（M5）に向けて、次が欠けている。
 ### 5. バウンス・苦情
 
 - v0 は **送信時の恒久的な拒否** だけを扱う: `ErrMailRejected` でジョブを `Fail` にし、失敗したジョブとしてダッシュボードに残す
-- 非同期のバウンス（DSN）・苦情（フィードバックループ）は受けない。運用文書で、抑止リストを持つ送信事業者（SES のアカウントの抑止リストなど）を使うよう勧める
+- 非同期のバウンス（DSN）・苦情（フィードバックループ）は受けない。運用文書で、抑止リストを持つ送信事業者を使うよう勧める。SES のアカウントの抑止リストは、2019-11-25 以降のアカウントで既定で有効（バウンスと苦情）、ハードバウンスだけを載せ、載ったアドレスへの送信は受け付けたうえで送らない（同期のエラーにならず、送信の上限には数える）。Gmail は苦情を SES に返さない（2026-10-23 に [SES の文書](https://docs.aws.amazon.com/ses/latest/dg/sending-email-suppression-list.html) で確認）。抑止された送信はジョブの上では成功に見える
 - 届かないアドレスを自前で記録するとき（後続）の形は、ADR-0020 に従ってイベント `email_delivery_failures`（`email_address_id`・種類 `bounce` / `complaint`・`occurred_at`・出どころ）と、
   identity が所有する投影 `email_suppressions`（現在止めているアドレス）にする。アドレスを確認し直すと解除のイベントで投影から外す
 
@@ -128,6 +128,7 @@ v0 のリリース（M5）に向けて、次が欠けている。
 - **M6** で SES v2 の API（`sesv2.SendEmail`、Raw content）で作る。認証は SDK の既定の資格情報の連鎖（IAM ロール）で、SMTP のパスワードを持たない。設定はリージョンと任意の構成セット（configuration set）
 - **M5** の間は、SES を使う運営者は SES の SMTP インタフェース（STARTTLS、587）を `mail = smtp` で使う。運用文書に例を載せる
 - `mail/ses` は `testkit.MailerContract` を通す。恒久的な拒否を `ErrMailRejected` に写す
+- SES は SMTPUTF8 に対応せず、アドレスは 7 ビットの ASCII（ドメインは Punycode）、`From` の表示名は MIME の encoded-word で書く（2026-10-23 に [SendRawEmail](https://docs.aws.amazon.com/ses/latest/APIReference/API_SendRawEmail.html) で確認）。`mail/smtp` と同じ組み立てで満たす
 
 ### 7. 運用文書
 
@@ -144,7 +145,7 @@ v0 のリリース（M5）に向けて、次が欠けている。
 - 良い影響
   - SMTP の障害が登録・リセットのリクエストを遅らせず、失敗は再試行され、ジョブのダッシュボードで見える
   - 秘密がメールの本文にしか現れない。SQS・Cloud Tasks のアダプタでもクラウドに秘密を置かない
-  - ヘッダと配信停止で、通知のメールが主要な事業者の送信者要件に沿う（要検証、Open Questions）
+  - ヘッダと配信停止で、通知のメールが Gmail・Yahoo の送信者要件（Decision Drivers 3）に沿う
   - すべてのメールが同じ外枠・ヘッダを持ち、ユースケースは本文だけを書く
 - 悪い影響・トレードオフ
   - 登録の直後に「送れなかった」と利用者に返せなくなる。届かなければ利用者が再送を求める
@@ -166,16 +167,16 @@ v0 のリリース（M5）に向けて、次が欠けている。
 
 - **1A**: 良い — 秘密がペイロードに載らない。宛先・ロケールが実行時の値になる（ADR-0009 §2 と一致）。今のモデレーター・サポーターのジョブと同じ形。
   悪い — 用途ごとにハンドラを書く。秘密の発行がハンドラの中の DB 書き込みになり、ジョブの実行がトランザクションを 1 つ持つ
-- **1B**: 良い — 送信の処理が 1 か所で、再試行・エラーの分類・計測をまとめやすい（Mastodon の ActionMailer + Sidekiq の `deliver_later` に近い。要検証）。トークンの発行は今の流れのまま。
+- **1B**: 良い — 送信の処理が 1 か所で、再試行・エラーの分類・計測をまとめやすい（Mastodon は Devise のメールも管理者への通知も ActionMailer の `deliver_later` でジョブにする。[user.rb](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/models/user.rb#L448)、2026-10-23 に確認）。トークンの発行は今の流れのまま。
   悪い — 組み立て済みの本文とアドレスがペイロードに載り、失敗したジョブの画面と SQS・Cloud Tasks に個人情報が残る。秘密を Sealer で封じても、KEK を持つ者には読め、`dead_jobs` の保持期間（30 日）残る。ロケールが投入時に固定される
-- **1C**: 良い — 多くの場合すぐ届き、送れなかったことを応答で伝えられる（Misskey はリクエストの中で送ると見られる。要検証）。
+- **1C**: 良い — 多くの場合すぐ届き、送れなかったことを応答で伝えられる（Misskey はキューを通さず、リクエストの処理の中で nodemailer で送る。リセットでは送信を待たない。[request-reset-password.ts](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/server/api/endpoints/request-reset-password.ts#L94)、2026-10-23 に確認）。
   悪い — リクエストが SMTP の遅延に引きずられ、送信と再送の 2 つの経路を持つ。再送のジョブには結局秘密を渡す必要がある
 
 ### 2. 本文の形式
 
 - **2A**: 良い — 作る・試す量が最小。HTML のサニタイズ・メールクライアントごとの表示差・ダークモードの問題がない。読み上げに強い。
-  悪い — 見た目を整えられない。長い URL がそのまま出る。RTL の言語の表示はメールクライアントの双方向の処理に任せる（要検証）
-- **2B**: 良い — 見た目・ボタン・ブランドを出せる。Mastodon・Misskey は HTML のメールを送る（要検証）。
+  悪い — 見た目を整えられない。長い URL がそのまま出る。RTL の言語の表示はメールクライアントの双方向の処理に任せる（Open Questions）
+- **2B**: 良い — 見た目・ボタン・ブランドを出せる。Mastodon（[layouts/mailer.html.haml](https://github.com/mastodon/mastodon/tree/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/views/layouts)）・Misskey（[EmailService.ts](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/core/EmailService.ts#L148-L157)）はテキストと HTML の両方を送る（2026-10-23 に確認）。
   悪い — テンプレートを 2 系統持つ。明暗・RTL・クライアントごとの表示の試験が要る
 
 ### 3. バウンス・苦情
@@ -193,8 +194,5 @@ v0 のリリース（M5）に向けて、次が欠けている。
 
 ## Open Questions / 要検証
 
-- 要検証: Gmail・Yahoo の送信者要件（SPF・DKIM・DMARC、`List-Unsubscribe` のワンクリックを求めるメールの種類と送信量の閾値、取引のメールが対象外か）。公式の文書で確かめて、§3 と運用文書に日付と出典を書く
-- 要検証: SES v2 の `SendEmail` が `Message-ID` を付け替えるか、アカウントの抑止リストの既定の挙動と、抑止されたアドレスへの送信が同期のエラーになるか
-- 要検証: Mastodon（ActionMailer の `deliver_later`、`List-Unsubscribe` の扱い）と Misskey（送信の方式・HTML のテンプレート）の実装
-- 要検証: プレーンテキストのメールで、主要なメールクライアントが RTL の段落を正しく表示するか
+- 要検証: プレーンテキストのメールで、主要なメールクライアントが RTL の段落を正しく表示するか（実際のクライアントでの確認が要る）
 - 取引のメールの期限（リセット 15 分・確認 1 時間）と再試行の回数が妥当か。実装の issue で値を確かめる
