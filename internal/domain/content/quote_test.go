@@ -9,8 +9,9 @@ import (
 )
 
 func TestQuoteStateOf(t *testing.T) {
-	fep := content.Quote{StatusID: "s", QuotedURI: "https://b.example/n/1", Form: content.QuoteFormFEP044f}
-	legacy := content.Quote{StatusID: "s", QuotedURI: "https://b.example/n/1", Form: content.QuoteFormLegacy}
+	quotingID := testID(1)
+	fep := content.Quote{StatusID: quotingID, QuotedURI: "https://b.example/n/1", Form: content.QuoteFormFEP044f}
+	legacy := content.Quote{StatusID: quotingID, QuotedURI: "https://b.example/n/1", Form: content.QuoteFormLegacy}
 	accepted := func(uri string) content.QuoteEvent {
 		return content.QuoteEvent{Kind: content.QuoteEventAccepted, AuthorizationURI: uri}
 	}
@@ -25,24 +26,24 @@ func TestQuoteStateOf(t *testing.T) {
 		events []content.QuoteEvent
 		want   content.QuoteState
 	}{
-		{"FEP-044f starts pending", fep, nil, content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalPending}},
-		{"legacy starts legacy", legacy, nil, content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalLegacy}},
+		{"FEP-044f starts pending", fep, nil, content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalPending}},
+		{"legacy starts legacy", legacy, nil, content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalLegacy}},
 		{"accepted", fep, []content.QuoteEvent{accepted("a1")},
-			content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalAccepted, AuthorizationURI: "a1"}},
+			content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalAccepted, AuthorizationURI: "a1"}},
 		{"accepted without an authorization (own status)", fep, []content.QuoteEvent{accepted("")},
-			content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalAccepted}},
+			content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalAccepted}},
 		{"revoked", fep, []content.QuoteEvent{accepted("a1"), revoked("a1")},
-			content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalRevoked}},
+			content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalRevoked}},
 		{"revoking another authorization", fep, []content.QuoteEvent{accepted("a1"), revoked("a0")},
-			content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalAccepted, AuthorizationURI: "a1"}},
+			content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalAccepted, AuthorizationURI: "a1"}},
 		{"approved again after a revocation", fep, []content.QuoteEvent{accepted("a1"), revoked("a1"), accepted("a2")},
-			content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalAccepted, AuthorizationURI: "a2"}},
-		{"rejected", fep, []content.QuoteEvent{rejected}, content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalRejected}},
+			content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalAccepted, AuthorizationURI: "a2"}},
+		{"rejected", fep, []content.QuoteEvent{rejected}, content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalRejected}},
 		{"detached stays detached", fep, []content.QuoteEvent{accepted("a1"), detached, accepted("a2")},
-			content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalDetached}},
+			content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalDetached}},
 		{"legacy ignores approvals", legacy, []content.QuoteEvent{accepted("a1"), rejected},
-			content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalLegacy}},
-		{"legacy detached", legacy, []content.QuoteEvent{detached}, content.QuoteState{StatusID: "s", Approval: content.QuoteApprovalDetached}},
+			content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalLegacy}},
+		{"legacy detached", legacy, []content.QuoteEvent{detached}, content.QuoteState{StatusID: quotingID, Approval: content.QuoteApprovalDetached}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := content.QuoteStateOf(tc.q, tc.events); got != tc.want {
@@ -54,13 +55,13 @@ func TestQuoteStateOf(t *testing.T) {
 
 func TestMayQuote(t *testing.T) {
 	local := func(v content.Visibility) content.Status {
-		return content.Status{ID: "q", AuthorAccountID: "author", IsLocal: true, Visibility: v}
+		return content.Status{ID: testID(2), AuthorAccountID: localAuthorID, IsLocal: true, Visibility: v}
 	}
 	remote := func(v content.Visibility) content.Status {
-		return content.Status{ID: "q", AuthorAccountID: "author", Visibility: v}
+		return content.Status{ID: testID(2), AuthorAccountID: localAuthorID, Visibility: v}
 	}
 	base := func(q content.Status, p content.QuotePolicy) content.QuoteFacts {
-		return content.QuoteFacts{QuoterAccountID: "quoter", QuoterIsLocal: true, QuoterVisible: true, Quoted: q, Policy: p}
+		return content.QuoteFacts{QuoterAccountID: testID(3), QuoterIsLocal: true, QuoterVisible: true, Quoted: q, Policy: p}
 	}
 	for _, tc := range []struct {
 		name string
@@ -77,7 +78,7 @@ func TestMayQuote(t *testing.T) {
 		{"nobody", func() content.QuoteFacts { return base(local(content.VisibilityPublic), content.QuotePolicyNobody) }, content.QuoteDenied},
 		{"nobody, by the author", func() content.QuoteFacts {
 			f := base(local(content.VisibilityPublic), content.QuotePolicyNobody)
-			f.QuoterAccountID = "author"
+			f.QuoterAccountID = localAuthorID
 			return f
 		}, content.QuoteApproved},
 		{"followers, not following", func() content.QuoteFacts {
@@ -90,7 +91,7 @@ func TestMayQuote(t *testing.T) {
 		}, content.QuoteApproved},
 		{"direct", func() content.QuoteFacts {
 			f := base(local(content.VisibilityDirect), content.QuotePolicyPublic)
-			f.QuoterAccountID = "author"
+			f.QuoterAccountID = localAuthorID
 			return f
 		}, content.QuoteDenied},
 		{"private, by someone else", func() content.QuoteFacts {
@@ -100,12 +101,12 @@ func TestMayQuote(t *testing.T) {
 		}, content.QuoteDenied},
 		{"private, by the author in a private status", func() content.QuoteFacts {
 			f := base(local(content.VisibilityPrivate), content.QuotePolicyNobody)
-			f.QuoterAccountID, f.QuotingVisibility = "author", content.VisibilityPrivate
+			f.QuoterAccountID, f.QuotingVisibility = localAuthorID, content.VisibilityPrivate
 			return f
 		}, content.QuoteApproved},
 		{"private, by the author in a public status", func() content.QuoteFacts {
 			f := base(local(content.VisibilityPrivate), content.QuotePolicyPublic)
-			f.QuoterAccountID, f.QuotingVisibility = "author", content.VisibilityPublic
+			f.QuoterAccountID, f.QuotingVisibility = localAuthorID, content.VisibilityPublic
 			return f
 		}, content.QuoteDenied},
 		{"local-only, by a remote account", func() content.QuoteFacts {

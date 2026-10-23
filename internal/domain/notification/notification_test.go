@@ -22,24 +22,24 @@ func TestTypes(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	ok := Notification{ID: "n", RecipientAccountID: "a", SourceAccountID: "b", Type: TypeFollow, DedupeKey: FollowKey(TypeFollow, "f")}
+	ok := Notification{ID: idN, RecipientAccountID: idA, SourceAccountID: idB, Type: TypeFollow, DedupeKey: FollowKey(TypeFollow, idF)}
 	if err := ok.Validate(); err != nil {
 		t.Errorf("Validate(%+v) = %v", ok, err)
 	}
 	fromInstance := ok
-	fromInstance.SourceAccountID, fromInstance.Type, fromInstance.ModerationActionID = "", TypeModerationNotice, "m"
+	fromInstance.SourceAccountID, fromInstance.Type, fromInstance.ModerationActionID = "", TypeModerationNotice, idM
 	if err := fromInstance.Validate(); err != nil {
 		t.Errorf("Validate(%+v) = %v", fromInstance, err)
 	}
 	resolved := ok
-	resolved.SourceAccountID, resolved.Type, resolved.ReportID = "", TypeReportResolved, "r"
+	resolved.SourceAccountID, resolved.Type, resolved.ReportID = "", TypeReportResolved, idR
 	if err := resolved.Validate(); err != nil {
 		t.Errorf("Validate(%+v) = %v", resolved, err)
 	}
 	noReport := resolved
 	noReport.ReportID = ""
 	strayReport := ok
-	strayReport.ReportID = "r"
+	strayReport.ReportID = idR
 	for _, n := range []Notification{noReport, strayReport} {
 		if err := n.Validate(); err == nil {
 			t.Errorf("Validate(%+v) = nil, want an error for the report", n)
@@ -48,30 +48,30 @@ func TestValidate(t *testing.T) {
 	noAction := fromInstance
 	noAction.ModerationActionID = ""
 	strayAction := ok
-	strayAction.ModerationActionID = "m"
+	strayAction.ModerationActionID = idM
 	for _, n := range []Notification{noAction, strayAction} {
 		if err := n.Validate(); err == nil {
 			t.Errorf("Validate(%+v) = nil, want an error for the moderation action", n)
 		}
 	}
 	severed := ok
-	severed.SourceAccountID, severed.Type, severed.SeveranceID = "", TypeRelationshipsSevered, "s"
+	severed.SourceAccountID, severed.Type, severed.SeveranceID = "", TypeRelationshipsSevered, idS
 	if err := severed.Validate(); err != nil {
 		t.Errorf("Validate(%+v) = %v", severed, err)
 	}
 	noSeverance := severed
 	noSeverance.SeveranceID = ""
 	straySeverance := ok
-	straySeverance.SeveranceID = "s"
+	straySeverance.SeveranceID = idS
 	severedBySomeone := severed
-	severedBySomeone.SourceAccountID = "b"
+	severedBySomeone.SourceAccountID = idB
 	for _, n := range []Notification{noSeverance, straySeverance, severedBySomeone} {
 		if err := n.Validate(); err == nil {
 			t.Errorf("Validate(%+v) = nil, want an error for the severance", n)
 		}
 	}
 	self := ok
-	self.SourceAccountID = "a"
+	self.SourceAccountID = idA
 	if err := self.Validate(); !errors.Is(err, ErrSelfNotification) {
 		t.Errorf("Validate(self) = %v, want ErrSelfNotification", err)
 	}
@@ -80,7 +80,7 @@ func TestValidate(t *testing.T) {
 	if err := unknown.Validate(); !errors.Is(err, ErrInvalidType) {
 		t.Errorf("Validate(poke) = %v, want ErrInvalidType", err)
 	}
-	for _, n := range []Notification{{RecipientAccountID: "a", Type: TypeFollow, DedupeKey: "k"}, {ID: "n", Type: TypeFollow, DedupeKey: "k"}, {ID: "n", RecipientAccountID: "a", Type: TypeFollow}} {
+	for _, n := range []Notification{{RecipientAccountID: idA, Type: TypeFollow, DedupeKey: "k"}, {ID: idN, Type: TypeFollow, DedupeKey: "k"}, {ID: idN, RecipientAccountID: idA, Type: TypeFollow}} {
 		if err := n.Validate(); err == nil {
 			t.Errorf("Validate(%+v) = nil, want an error", n)
 		}
@@ -89,18 +89,18 @@ func TestValidate(t *testing.T) {
 
 func TestKeys(t *testing.T) {
 	for got, want := range map[string]string{
-		FollowKey(TypeFollowRequest, "f1"):        "follow_request:f1",
-		MentionKey("s1"):                          "mention:s1",
-		InteractionKey(TypeFavourite, "s1", "a1"): "favourite:s1:a1",
-		InteractionKey(TypeBoost, "s1", "a1"):     "boost:s1:a1",
-		AdminReportKey("r1"):                      "admin_report:r1",
-		RelationshipsSeveredKey("s1"):             "relationships_severed:s1",
-		AdminSignUpKey("u1"):                      "admin_sign_up:u1",
-		ReportResolvedKey("r1"):                   "report_resolved:r1",
-		ModerationNoticeKey("m1"):                 "moderation_notice:m1",
-		AppealDecidedKey("p1"):                    "appeal_decided:p1",
-		AdminAppealKey("p1"):                      "admin_appeal:p1",
-		PollClosedKey("p1"):                       "poll_closed:p1",
+		FollowKey(TypeFollowRequest, idF):       "follow_request:" + idF,
+		MentionKey(idS):                         "mention:" + idS,
+		InteractionKey(TypeFavourite, idS, idA): "favourite:" + idS + ":" + idA,
+		InteractionKey(TypeBoost, idS, idA):     "boost:" + idS + ":" + idA,
+		AdminReportKey(idR):                     "admin_report:" + idR,
+		RelationshipsSeveredKey(idS):            "relationships_severed:" + idS,
+		AdminSignUpKey(idU):                     "admin_sign_up:" + idU,
+		ReportResolvedKey(idR):                  "report_resolved:" + idR,
+		ModerationNoticeKey(idM):                "moderation_notice:" + idM,
+		AppealDecidedKey(idP):                   "appeal_decided:" + idP,
+		AdminAppealKey(idP):                     "admin_appeal:" + idP,
+		PollClosedKey(idP):                      "poll_closed:" + idP,
 	} {
 		if got != want {
 			t.Errorf("key = %q, want %q", got, want)
@@ -110,9 +110,9 @@ func TestKeys(t *testing.T) {
 
 func TestValidateSupporterNotifications(t *testing.T) {
 	for _, n := range []Notification{
-		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPaymentFailed, SupporterSubscriptionID: "s", DedupeKey: SupporterTransitionKey(TypeSupporterPaymentFailed, "t")},
-		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterSubscriptionEnded, SupporterSubscriptionID: "s", DedupeKey: SupporterTransitionKey(TypeSupporterSubscriptionEnded, "t")},
-		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPlanRetired, SupporterSubscriptionID: "s", DedupeKey: SupporterPlanRetiredKey("p", "s")},
+		{ID: idN, RecipientAccountID: idA, Type: TypeSupporterPaymentFailed, SupporterSubscriptionID: idS, DedupeKey: SupporterTransitionKey(TypeSupporterPaymentFailed, idT)},
+		{ID: idN, RecipientAccountID: idA, Type: TypeSupporterSubscriptionEnded, SupporterSubscriptionID: idS, DedupeKey: SupporterTransitionKey(TypeSupporterSubscriptionEnded, idT)},
+		{ID: idN, RecipientAccountID: idA, Type: TypeSupporterPlanRetired, SupporterSubscriptionID: idS, DedupeKey: SupporterPlanRetiredKey(idP, idS)},
 	} {
 		if !n.Type.Valid() || !n.Type.Supporter() {
 			t.Errorf("%s: Valid %v, Supporter %v", n.Type, n.Type.Valid(), n.Type.Supporter())
@@ -122,9 +122,9 @@ func TestValidateSupporterNotifications(t *testing.T) {
 		}
 	}
 	for _, n := range []Notification{
-		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPaymentFailed, DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeSupporterPlanRetired, SupporterSubscriptionID: "s", SourceAccountID: "b", DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", SupporterSubscriptionID: "s", DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeSupporterPaymentFailed, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeSupporterPlanRetired, SupporterSubscriptionID: idS, SourceAccountID: idB, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeFollow, SourceAccountID: idB, SupporterSubscriptionID: idS, DedupeKey: "k"},
 	} {
 		if err := n.Validate(); err == nil {
 			t.Errorf("Validate(%+v) = nil, want an error", n)
@@ -137,28 +137,28 @@ func TestValidateSupporterNotifications(t *testing.T) {
 
 func TestValidateModeratorNotifications(t *testing.T) {
 	for _, n := range []Notification{
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, ReportID: "r", DedupeKey: AdminReportKey("r")},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminSignUp, SubjectUserID: "u", DedupeKey: AdminSignUpKey("u")},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, AppealID: "p", DedupeKey: AdminAppealKey("p")},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAppealDecided, AppealID: "p", DedupeKey: AppealDecidedKey("p")},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminReport, ReportID: idR, DedupeKey: AdminReportKey(idR)},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminSignUp, SubjectUserID: idU, DedupeKey: AdminSignUpKey(idU)},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminAppeal, AppealID: idP, DedupeKey: AdminAppealKey(idP)},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAppealDecided, AppealID: idP, DedupeKey: AppealDecidedKey(idP)},
 	} {
 		if err := n.Validate(); err != nil {
 			t.Errorf("Validate(%+v) = %v", n, err)
 		}
 	}
 	for _, n := range []Notification{
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminReport, ReportID: "r", SourceAccountID: "b", DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminSignUp, DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, AppealID: "p", SourceAccountID: "b", DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAppealDecided, DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminWebhookDisabled, SourceAccountID: "b", DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminCustomEmojiRequest, DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeAdminCustomEmojiRequest, CustomEmojiRequestID: "r", SourceAccountID: "b", DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeCustomEmojiRequestDecided, DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", CustomEmojiRequestID: "r", DedupeKey: "k"},
-		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", AppealID: "p", DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminReport, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminReport, ReportID: idR, SourceAccountID: idB, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminSignUp, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminAppeal, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminAppeal, AppealID: idP, SourceAccountID: idB, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAppealDecided, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminWebhookDisabled, SourceAccountID: idB, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminCustomEmojiRequest, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeAdminCustomEmojiRequest, CustomEmojiRequestID: idR, SourceAccountID: idB, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeCustomEmojiRequestDecided, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeFollow, SourceAccountID: idB, CustomEmojiRequestID: idR, DedupeKey: "k"},
+		{ID: idN, RecipientAccountID: idA, Type: TypeFollow, SourceAccountID: idB, AppealID: idP, DedupeKey: "k"},
 	} {
 		if err := n.Validate(); err == nil {
 			t.Errorf("Validate(%+v) = nil, want an error", n)

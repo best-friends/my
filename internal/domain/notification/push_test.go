@@ -14,6 +14,10 @@ import (
 const (
 	p256dh = "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4"
 	auth   = "BTBZMqHH6r4Tts7J_aSIgg"
+
+	subscriptionID = "01890a5d-ac96-7000-8000-000000000001"
+	accountID      = "01890a5d-ac96-7000-8000-000000000002"
+	familyID       = "01890a5d-ac96-7000-8000-000000000003"
 )
 
 func TestNormalizeAlerts(t *testing.T) {
@@ -31,7 +35,7 @@ func TestNormalizeAlerts(t *testing.T) {
 
 func TestPushSubscriptionValidate(t *testing.T) {
 	valid := notification.PushSubscription{
-		ID: "id", AccountID: "acct", TokenFamilyID: "family", Endpoint: "https://push.example.net/send/1",
+		ID: subscriptionID, AccountID: accountID, TokenFamilyID: familyID, Endpoint: "https://push.example.net/send/1",
 		KeyP256DH: p256dh, KeyAuth: auth, Alerts: []notification.Type{notification.TypeMention},
 	}
 	if err := valid.Validate(); err != nil {

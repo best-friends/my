@@ -94,8 +94,8 @@ func TestSettingsFallBackToDefaults(t *testing.T) {
 		t.Errorf("zero Settings = %d, %s; want the defaults", zero.MaxStatusLength(), zero.RegistrationMode())
 	}
 	s := instance.NewSettings([]instance.CurrentSetting{
-		{Key: instance.SettingMaxStatusLength, RevisionID: "r1", Value: "42"},
-		{Key: "retired_key", RevisionID: "r2", Value: "x"},
+		{Key: instance.SettingMaxStatusLength, RevisionID: testID(1), Value: "42"},
+		{Key: "retired_key", RevisionID: testID(2), Value: "x"},
 	})
 	if v, stored := s.Value(instance.SettingMaxStatusLength); v != "42" || !stored || s.MaxStatusLength() != 42 {
 		t.Errorf("max_status_length = %q, %v", v, stored)
@@ -111,8 +111,8 @@ func TestRemoteMediaSettings(t *testing.T) {
 		t.Errorf("zero Settings = %s, %v; want none and a day", zero.RemoteMediaPolicy(), zero.RemoteMediaCacheTTL())
 	}
 	s := instance.NewSettings([]instance.CurrentSetting{
-		{Key: instance.SettingRemoteMediaPolicy, RevisionID: "r1", Value: "all"},
-		{Key: instance.SettingRemoteMediaCacheTTL, RevisionID: "r2", Value: "3600"},
+		{Key: instance.SettingRemoteMediaPolicy, RevisionID: testID(1), Value: "all"},
+		{Key: instance.SettingRemoteMediaCacheTTL, RevisionID: testID(2), Value: "3600"},
 	})
 	if s.RemoteMediaPolicy() != instance.RemoteMediaAll || s.RemoteMediaCacheTTL() != time.Hour {
 		t.Errorf("Settings = %s, %v; want all and an hour", s.RemoteMediaPolicy(), s.RemoteMediaCacheTTL())
@@ -140,7 +140,7 @@ func TestAuthorizedFetchSetting(t *testing.T) {
 	if zero.AuthorizedFetch() {
 		t.Error("zero Settings have authorized fetch on, want it off by default")
 	}
-	s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingAuthorizedFetch, RevisionID: "r1", Value: "true"}})
+	s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingAuthorizedFetch, RevisionID: testID(1), Value: "true"}})
 	if !s.AuthorizedFetch() {
 		t.Error("Settings with authorized_fetch true have it off")
 	}
@@ -159,7 +159,7 @@ func TestFederationModeSetting(t *testing.T) {
 		if _, err := d.Parse(string(m)); err != nil {
 			t.Errorf("Parse(%s) = %v", m, err)
 		}
-		s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingFederationMode, RevisionID: "r1", Value: string(m)}})
+		s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingFederationMode, RevisionID: testID(1), Value: string(m)}})
 		if got := s.FederationMode(); got != m {
 			t.Errorf("FederationMode() = %q, want %q", got, m)
 		}
@@ -177,8 +177,8 @@ func TestDomainActionsVisibilitySettings(t *testing.T) {
 			zero.DomainActionsVisibility(), zero.DomainActionsRationaleVisibility())
 	}
 	s := instance.NewSettings([]instance.CurrentSetting{
-		{Key: instance.SettingDomainActionsVisibility, RevisionID: "r1", Value: "all"},
-		{Key: instance.SettingDomainActionsRationaleVisibility, RevisionID: "r2", Value: "users"},
+		{Key: instance.SettingDomainActionsVisibility, RevisionID: testID(1), Value: "all"},
+		{Key: instance.SettingDomainActionsRationaleVisibility, RevisionID: testID(2), Value: "users"},
 	})
 	if s.DomainActionsVisibility() != instance.AudienceAll || s.DomainActionsRationaleVisibility() != instance.AudienceUsers {
 		t.Errorf("Settings list domain actions to %q and their comments to %q, want all and users",
@@ -216,7 +216,7 @@ func TestIncomeVisibility(t *testing.T) {
 		t.Errorf("zero Settings IncomeVisibility() = %q, want private", got)
 	}
 	for _, v := range []instance.IncomeVisibility{instance.IncomeTotals, instance.IncomePlans} {
-		s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingIncomeVisibility, RevisionID: "r1", Value: string(v)}})
+		s := instance.NewSettings([]instance.CurrentSetting{{Key: instance.SettingIncomeVisibility, RevisionID: testID(1), Value: string(v)}})
 		if got := s.IncomeVisibility(); got != v {
 			t.Errorf("IncomeVisibility() = %q, want %q", got, v)
 		}
@@ -241,9 +241,9 @@ func TestFinanceViewerSettings(t *testing.T) {
 		t.Errorf("zero Settings FinanceViewer() = %+v, want %+v", got, want)
 	}
 	s := instance.NewSettings([]instance.CurrentSetting{
-		{Key: instance.SettingFinanceViewerItemNames, RevisionID: "r1", Value: "true"},
-		{Key: instance.SettingFinanceViewerItemMemos, RevisionID: "r2", Value: "true"},
-		{Key: instance.SettingFinanceViewerIncome, RevisionID: "r3", Value: "plans"},
+		{Key: instance.SettingFinanceViewerItemNames, RevisionID: testID(1), Value: "true"},
+		{Key: instance.SettingFinanceViewerItemMemos, RevisionID: testID(2), Value: "true"},
+		{Key: instance.SettingFinanceViewerIncome, RevisionID: testID(3), Value: "plans"},
 	})
 	if got, want := s.FinanceViewer(), (instance.FinanceViewer{ItemNames: true, ItemMemos: true, Income: instance.FinanceViewerIncomePlans}); got != want {
 		t.Errorf("FinanceViewer() = %+v, want %+v", got, want)
@@ -258,16 +258,16 @@ func TestFinanceViewerSettings(t *testing.T) {
 }
 
 func TestSupersedes(t *testing.T) {
-	rev := instance.SettingRevision{ID: "b"}
+	rev := instance.SettingRevision{ID: testID(2)}
 	for _, tc := range []struct {
 		cur  string
 		want bool
-	}{{"", true}, {"a", true}, {"b", false}, {"c", false}} {
+	}{{"", true}, {testID(1), true}, {testID(2), false}, {testID(3), false}} {
 		if got := rev.Supersedes(instance.CurrentSetting{RevisionID: tc.cur}); got != tc.want {
-			t.Errorf("revision b supersedes %q = %v, want %v", tc.cur, got, tc.want)
+			t.Errorf("revision 2 supersedes %q = %v, want %v", tc.cur, got, tc.want)
 		}
-		if got := (instance.TextRevision{ID: "b"}).Supersedes(instance.CurrentText{RevisionID: tc.cur}); got != tc.want {
-			t.Errorf("text revision b supersedes %q = %v, want %v", tc.cur, got, tc.want)
+		if got := (instance.TextRevision{ID: testID(2)}).Supersedes(instance.CurrentText{RevisionID: tc.cur}); got != tc.want {
+			t.Errorf("text revision 2 supersedes %q = %v, want %v", tc.cur, got, tc.want)
 		}
 	}
 }

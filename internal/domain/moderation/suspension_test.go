@@ -11,11 +11,11 @@ func TestSuspensionChange(t *testing.T) {
 	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
 	past, future := now.Add(-time.Minute), now.Add(time.Hour)
 	row := func(r Restriction, action string, until *time.Time) RestrictionRow {
-		return RestrictionRow{Target: "a", Restriction: r, SourceActionID: action, EffectiveUntil: until}
+		return RestrictionRow{Target: testID(11), Restriction: r, SourceActionID: action, EffectiveUntil: until}
 	}
-	suspendA, suspendB := row(RestrictFederation, "A", nil), row(RestrictFederation, "B", &future)
-	expiredA := row(RestrictFederation, "A", &past)
-	login := row(RestrictLogin, "C", nil)
+	suspendA, suspendB := row(RestrictFederation, testID(1), nil), row(RestrictFederation, testID(2), &future)
+	expiredA := row(RestrictFederation, testID(1), &past)
+	login := row(RestrictLogin, testID(3), nil)
 	for _, tc := range []struct {
 		name               string
 		before, after      []RestrictionRow

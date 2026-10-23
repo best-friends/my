@@ -35,6 +35,12 @@ func remote(id string) func(string) content.Viewer {
 }
 
 var (
+	localAuthorID  = testID(1)
+	remoteAuthorID = testID(2)
+	viewerID       = testID(3)
+)
+
+var (
 	following   = content.Relation{Follow: content.FollowActive}
 	followAndAt = content.Relation{Follow: content.FollowActive, Mentioned: true}
 )
@@ -44,24 +50,24 @@ var (
 var viewers = []viewer{
 	{"anonymous", func(string) content.Viewer { return content.Viewer{} }, content.Relation{}},
 	{"author", authorViewer, content.Relation{}},
-	{"local stranger", local("l-stranger"), content.Relation{}},
-	{"local pending follower", local("l-pending"), content.Relation{Follow: content.FollowPending}},
-	{"local follower", local("l-follower"), following},
-	{"local mentioned", local("l-mentioned"), content.Relation{Mentioned: true}},
-	{"local blocking author", local("l-blocking"), withBlocking(followAndAt)},
-	{"local blocked by author", local("l-blocked"), withBlockedBy(followAndAt)},
+	{"local stranger", local(testID(11)), content.Relation{}},
+	{"local pending follower", local(testID(12)), content.Relation{Follow: content.FollowPending}},
+	{"local follower", local(testID(13)), following},
+	{"local mentioned", local(testID(14)), content.Relation{Mentioned: true}},
+	{"local blocking author", local(testID(15)), withBlocking(followAndAt)},
+	{"local blocked by author", local(testID(16)), withBlockedBy(followAndAt)},
 	{"moderator", func(string) content.Viewer {
-		return content.Viewer{Kind: content.ViewerLocal, AccountID: "l-mod", Moderator: true}
+		return content.Viewer{Kind: content.ViewerLocal, AccountID: testID(17), Moderator: true}
 	}, content.Relation{}},
-	{"remote stranger", remote("r-stranger"), content.Relation{}},
-	{"remote follower", remote("r-follower"), following},
-	{"remote mentioned", remote("r-mentioned"), content.Relation{Mentioned: true}},
-	{"remote blocked by author", remote("r-blocked"), withBlockedBy(followAndAt)},
+	{"remote stranger", remote(testID(21)), content.Relation{}},
+	{"remote follower", remote(testID(22)), following},
+	{"remote mentioned", remote(testID(23)), content.Relation{Mentioned: true}},
+	{"remote blocked by author", remote(testID(24)), withBlockedBy(followAndAt)},
 }
 
 // authorViewer is the author looking at their own status, local or remote.
 func authorViewer(authorID string) content.Viewer {
-	if strings.HasPrefix(authorID, "remote") {
+	if authorID == remoteAuthorID {
 		return content.Viewer{Kind: content.ViewerRemote, AccountID: authorID}
 	}
 	return content.Viewer{Kind: content.ViewerLocal, AccountID: authorID}
@@ -307,11 +313,11 @@ func allDenied() []string {
 }
 
 func TestCanViewLocalAuthor(t *testing.T) {
-	checkPolicy(t, localAuthorPolicy, "author", true)
+	checkPolicy(t, localAuthorPolicy, localAuthorID, true)
 }
 
 func TestCanViewRemoteAuthor(t *testing.T) {
-	checkPolicy(t, remoteAuthorPolicy, "remote-author", false)
+	checkPolicy(t, remoteAuthorPolicy, remoteAuthorID, false)
 }
 
 func checkPolicy(t *testing.T, policy []block, authorID string, authorIsLocal bool) {
@@ -374,11 +380,11 @@ func parseSees(t *testing.T, s string) []bool {
 
 // combos runs f over every context × viewer × visibility, for local and remote authors.
 func combos(f func(name string, ctx content.ViewContext, v content.Viewer, s content.StatusFacts, rel content.Relation, isAuthor bool)) {
-	for _, authorID := range []string{"author", "remote-author"} {
+	for _, authorID := range []string{localAuthorID, remoteAuthorID} {
 		for _, ctx := range content.ViewContexts() {
 			for _, vw := range viewers {
 				for _, vis := range content.Visibilities() {
-					s := content.StatusFacts{AuthorAccountID: authorID, AuthorIsLocal: authorID == "author", Visibility: vis}
+					s := content.StatusFacts{AuthorAccountID: authorID, AuthorIsLocal: authorID == localAuthorID, Visibility: vis}
 					name := fmt.Sprintf("%s / %v / %s / %s", authorID, ctx, vw.name, vis)
 					f(name, ctx, vw.who(authorID), s, vw.rel, vw.name == "author")
 				}
@@ -438,10 +444,10 @@ func TestCanViewProfileView(t *testing.T) {
 
 // The rules ADR-0017 and the owner confirmed, spelled out one by one.
 func TestCanViewADR0017(t *testing.T) {
-	localPost := content.StatusFacts{AuthorAccountID: "author", AuthorIsLocal: true, Visibility: content.VisibilityLocal}
+	localPost := content.StatusFacts{AuthorAccountID: localAuthorID, AuthorIsLocal: true, Visibility: content.VisibilityLocal}
 	none := content.AuthorRestrictions{}
 	anon := content.Viewer{}
-	remoteActor := content.Viewer{Kind: content.ViewerRemote, AccountID: "r"}
+	remoteActor := content.Viewer{Kind: content.ViewerRemote, AccountID: remoteAuthorID}
 	cases := []struct {
 		rule string
 		got  bool
@@ -454,11 +460,11 @@ func TestCanViewADR0017(t *testing.T) {
 		{"an unsigned fetch of a local post is denied (404)",
 			content.CanView(content.ContextObjectFetch, anon, localPost, none, content.Relation{}), false},
 		{"a logged-in local account sees a local post without following",
-			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: "x"}, localPost, none, content.Relation{}), true},
+			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: viewerID}, localPost, none, content.Relation{}), true},
 		{"a local post is on the local timeline",
-			content.CanView(content.ContextLocalTimeline, content.Viewer{Kind: content.ViewerLocal, AccountID: "x"}, localPost, none, content.Relation{}), true},
+			content.CanView(content.ContextLocalTimeline, content.Viewer{Kind: content.ViewerLocal, AccountID: viewerID}, localPost, none, content.Relation{}), true},
 		{"a local post is never on the federated timeline",
-			content.CanView(content.ContextFederatedTimeline, content.Viewer{Kind: content.ViewerLocal, AccountID: "author"}, localPost, none, content.Relation{}), false},
+			content.CanView(content.ContextFederatedTimeline, content.Viewer{Kind: content.ViewerLocal, AccountID: localAuthorID}, localPost, none, content.Relation{}), false},
 		{"a local post is delivered to a remote follower",
 			content.CanView(content.ContextDelivery, remoteActor, localPost, none, content.Relation{Follow: content.FollowActive}), true},
 		{"a local post is not delivered to a mentioned remote actor that does not follow",
@@ -470,12 +476,12 @@ func TestCanViewADR0017(t *testing.T) {
 		{"a signed fetch from a domain with only a mention gets 404 for a local post",
 			content.CanView(content.ContextObjectFetch, remoteActor, localPost, none, content.Relation{Mentioned: true}), false},
 		{"a block wins over following",
-			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: "x"}, localPost, none, content.Relation{Follow: content.FollowActive, BlockedBy: true}), false},
+			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: viewerID}, localPost, none, content.Relation{Follow: content.FollowActive, BlockedBy: true}), false},
 		{"suspension wins over following",
-			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: "x"}, localPost, content.AuthorRestrictions{ProfileView: true}, content.Relation{Follow: content.FollowActive}), false},
+			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: viewerID}, localPost, content.AuthorRestrictions{ProfileView: true}, content.Relation{Follow: content.FollowActive}), false},
 		{"a remote status cannot carry the local visibility",
-			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: "x"},
-				content.StatusFacts{AuthorAccountID: "r", Visibility: content.VisibilityLocal}, none, content.Relation{Follow: content.FollowActive}), false},
+			content.CanView(content.ContextStatus, content.Viewer{Kind: content.ViewerLocal, AccountID: viewerID},
+				content.StatusFacts{AuthorAccountID: remoteAuthorID, Visibility: content.VisibilityLocal}, none, content.Relation{Follow: content.FollowActive}), false},
 	}
 	for _, c := range cases {
 		if c.got != c.want {
@@ -485,8 +491,8 @@ func TestCanViewADR0017(t *testing.T) {
 }
 
 func TestCanViewFailsClosed(t *testing.T) {
-	author := content.Viewer{Kind: content.ViewerLocal, AccountID: "author"}
-	public := content.StatusFacts{AuthorAccountID: "author", AuthorIsLocal: true, Visibility: content.VisibilityPublic}
+	author := content.Viewer{Kind: content.ViewerLocal, AccountID: localAuthorID}
+	public := content.StatusFacts{AuthorAccountID: localAuthorID, AuthorIsLocal: true, Visibility: content.VisibilityPublic}
 	if content.CanView(content.ViewContext(0), author, public, content.AuthorRestrictions{}, content.Relation{}) {
 		t.Error("the zero context is allowed")
 	}

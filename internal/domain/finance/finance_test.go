@@ -137,7 +137,7 @@ func TestAmortizes(t *testing.T) {
 
 func TestPayments(t *testing.T) {
 	item := func(r Recurrence, start string, end *Date, prices ...PriceRevision) CostItem {
-		return CostItem{ID: "c", Recurrence: r, StartsOn: date(t, start), EndsOn: end, Prices: prices}
+		return CostItem{ID: testID(1), Recurrence: r, StartsOn: date(t, start), EndsOn: end, Prices: prices}
 	}
 	price := func(on string, n int64) PriceRevision { return PriceRevision{EffectiveOn: date(t, on), Price: jpy(n)} }
 	type pay struct {
@@ -327,10 +327,12 @@ func TestPeriods(t *testing.T) {
 }
 
 func TestTotals(t *testing.T) {
-	item := func(id string, r Recurrence, start string, end *Date, price Money, category Category) CostItem {
+	seq := 0
+	item := func(name string, r Recurrence, start string, end *Date, price Money, category Category) CostItem {
+		seq++
 		return CostItem{
-			ID: id, Recurrence: r, StartsOn: date(t, start), EndsOn: end, ProviderNormalized: "provider " + id,
-			Label:  Label{Name: id, Provider: "Provider " + id, Category: category},
+			ID: testID(seq), Recurrence: r, StartsOn: date(t, start), EndsOn: end, ProviderNormalized: "provider " + name,
+			Label:  Label{Name: name, Provider: "Provider " + name, Category: category},
 			Prices: []PriceRevision{{EffectiveOn: date(t, start), Price: price}},
 		}
 	}
@@ -493,12 +495,12 @@ func TestTotalsSumToThePayments(t *testing.T) {
 // sum to the period's totals; the totals do not change (ADR-0070 §5).
 func TestItemizedTotals(t *testing.T) {
 	vps := CostItem{
-		ID: "vps", Recurrence: Recurrence{ScheduleMonths, 1}, StartsOn: date(t, "2026-04-15"), ProviderNormalized: "hetzner",
+		ID: testID(2), Recurrence: Recurrence{ScheduleMonths, 1}, StartsOn: date(t, "2026-04-15"), ProviderNormalized: "hetzner",
 		Label:  Label{Name: "VPS", Provider: "Hetzner", Category: CategoryCompute, Memo: "fsn1"},
 		Prices: []PriceRevision{{EffectiveOn: date(t, "2026-04-15"), Price: jpy(1000)}},
 	}
 	backup := vps
-	backup.ID, backup.Label.Name, backup.Label.Memo = "backup", "Backup", ""
+	backup.ID, backup.Label.Name, backup.Label.Memo = testID(1), "Backup", ""
 	backup.Prices = []PriceRevision{{EffectiveOn: date(t, "2026-04-15"), Price: jpy(300)}}
 	imported := []Entry{
 		{
@@ -524,13 +526,13 @@ func TestItemizedTotals(t *testing.T) {
 	}
 	want := [][]ItemLine{
 		{
-			{Item: ItemRef{Key: "item:backup", Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
-			{Item: ItemRef{Key: "item:vps", Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
+			{Item: ItemRef{Key: "item:" + testID(1), Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
+			{Item: ItemRef{Key: "item:" + testID(2), Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
 		},
 		{
 			{Item: ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"}, Provider: "google cloud", Category: CategoryStorage, Amount: Money{Minor: 200, Currency: "USD"}},
-			{Item: ItemRef{Key: "item:backup", Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
-			{Item: ItemRef{Key: "item:vps", Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
+			{Item: ItemRef{Key: "item:" + testID(1), Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
+			{Item: ItemRef{Key: "item:" + testID(2), Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
 		},
 	}
 	for i := range want {

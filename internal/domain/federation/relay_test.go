@@ -15,14 +15,14 @@ func TestRelayStatusNext(t *testing.T) {
 	at := time.Unix(1700000000, 0).UTC()
 	const f1, f2 federation.IRI = "https://my.example/ap/activities/1", "https://my.example/ap/activities/2"
 	ev := func(k federation.RelayEventKind, follow federation.IRI) federation.RelayEvent {
-		e := federation.RelayEvent{ID: "e", RelayID: "r", Kind: k, FollowActivityURI: follow, OccurredAt: at}
+		e := federation.RelayEvent{ID: testID(2), RelayID: testID(1), Kind: k, FollowActivityURI: follow, OccurredAt: at}
 		if k == federation.RelayAcceptReceived {
 			e.RelayActorURI = "https://relay.example/actor"
 		}
 		return e
 	}
 	st := func(s federation.RelayState, follow federation.IRI) federation.RelayStatus {
-		return federation.RelayStatus{RelayID: "r", State: s, FollowActivityURI: follow}
+		return federation.RelayStatus{RelayID: testID(1), State: s, FollowActivityURI: follow}
 	}
 	cases := []struct {
 		name string
@@ -68,7 +68,7 @@ func TestRelayStatusNext(t *testing.T) {
 
 func TestRelayValidate(t *testing.T) {
 	ok := federation.Relay{
-		ID: "r", Protocol: federation.RelayMastodon, URL: "https://relay.example/inbox", InboxURL: "https://relay.example/inbox",
+		ID: testID(1), Protocol: federation.RelayMastodon, URL: "https://relay.example/inbox", InboxURL: "https://relay.example/inbox",
 		CreatedAt: time.Unix(1, 0),
 	}
 	if err := ok.Validate(); err != nil {

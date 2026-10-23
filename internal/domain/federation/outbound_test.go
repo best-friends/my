@@ -82,8 +82,8 @@ func TestInboxFor(t *testing.T) {
 
 func TestOutboundActivityValidate(t *testing.T) {
 	ok := federation.OutboundActivity{
-		ID: "o", ActivityURI: "https://social.example/ap/activities/o", Type: federation.ActivityCreate,
-		ActorAccountID: "a", ObjectKind: federation.OutboundStatus, ObjectID: "s", CreatedAt: time.Unix(1, 0),
+		ID: testID(1), ActivityURI: federation.IRI("https://social.example/ap/activities/" + testID(1)), Type: federation.ActivityCreate,
+		ActorAccountID: testID(2), ObjectKind: federation.OutboundStatus, ObjectID: testID(3), CreatedAt: time.Unix(1, 0),
 	}
 	if err := ok.Validate(); err != nil {
 		t.Errorf("Validate(valid) = %v", err)

@@ -23,9 +23,9 @@ func TestObfuscateDomain(t *testing.T) {
 }
 
 func TestPublicDomainAction(t *testing.T) {
-	a := DomainAction{ID: "d", Domain: "bad.example", Kind: DomainSuspend, PublicComment: "spam", PrivateNote: "see #12"}
+	a := DomainAction{ID: testID(20), Domain: "bad.example", Kind: DomainSuspend, PublicComment: "spam", PrivateNote: "see #12"}
 	const digest = "86bbe8ffb912a153c9a8b396246aeeae079cd324af4dd947a2bf59a698eabc62" // printf bad.example | sha256sum
-	want := PublicDomainAction{ID: "d", Domain: "bad.example", Digest: digest, Kind: DomainSuspend, Comment: "spam"}
+	want := PublicDomainAction{ID: testID(20), Domain: "bad.example", Digest: digest, Kind: DomainSuspend, Comment: "spam"}
 	if got := a.Public(); !reflect.DeepEqual(got, want) {
 		t.Errorf("Public() = %+v, want %+v", got, want)
 	}
