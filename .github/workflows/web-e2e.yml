@@ -60,13 +60,17 @@ jobs:
           fi
           echo "total=$total" >> "$GITHUB_OUTPUT"
           echo "list=$(jq -nc --argjson n "$total" '[range(1; $n + 1)]')" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions (ADR-0025).
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
       - name: Restore the Bun package cache
@@ -75,7 +79,8 @@ jobs:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .tool-versions
           cache-dependency-path: |
@@ -89,7 +94,8 @@ jobs:
       # Artifacts drop file modes, so the build travels as a tarball that keeps bin/my executable.
       - name: Pack the build
         run: tar -cf "$RUNNER_TEMP/e2e-build.tar" bin/my app/web/dist locales/en-XA/client* locales/ar-XB/client*
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: Upload the build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-build-${{ inputs.matrix }}-w${{ inputs.workers }}
           path: ${{ runner.temp }}/e2e-build.tar
@@ -112,15 +118,18 @@ jobs:
     env:
       E2E_MATRIX: ${{ inputs.matrix }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The image lacks the unzip that setup-bun extracts Bun with.
       - name: Install unzip
         run: apt-get update && apt-get install -y --no-install-recommends unzip
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
       - name: Cache Bun packages
@@ -132,7 +141,8 @@ jobs:
       - name: Install the client packages
         working-directory: app
         run: bun install --frozen-lockfile
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: Download the build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: e2e-build-${{ inputs.matrix }}-w${{ inputs.workers }}
           path: ${{ runner.temp }}
@@ -144,7 +154,8 @@ jobs:
           SHARD: ${{ matrix.shard }}/${{ needs.build.outputs.total }}
           WORKERS: ${{ inputs.workers }}
         run: bun run playwright test --shard="$SHARD" --workers="$WORKERS" --reporter=github,blob
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: Upload the blob report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: e2e-blob-${{ inputs.matrix }}-w${{ inputs.workers }}-${{ matrix.shard }}
@@ -157,11 +168,14 @@ jobs:
     if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
       - name: Restore the Bun package cache
@@ -173,7 +187,8 @@ jobs:
       - name: Install the client packages
         working-directory: app
         run: bun install --frozen-lockfile
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: Download the blob reports
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: e2e-blob-${{ inputs.matrix }}-w${{ inputs.workers }}-*
           path: ${{ runner.temp }}/blob-reports

@@ -16,7 +16,8 @@ runs:
           bin/task.sum
         key: go-task-${{ runner.os }}-${{ hashFiles('tools/go.mod', 'tools/go.sum') }}
     # Only a miss needs Go; a job that runs Go itself sets it up on its own.
-    - if: steps.cache.outputs.cache-hit != 'true'
+    - name: Set up Go
+      if: steps.cache.outputs.cache-hit != 'true'
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: .tool-versions

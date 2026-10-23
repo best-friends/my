@@ -52,7 +52,8 @@ jobs:
       # A pull request checks out its merge commit, whose first parent is the base branch. A merge group checks out
       # its head commit and compares it with its base, the main commit the group is built on; that base is fetched by
       # SHA because a group queued behind others is several commits ahead of it.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
       - name: Select the jobs
@@ -106,10 +107,14 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
-      - uses: ./.github/actions/setup-go
-      - uses: ./.github/actions/setup-bun
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
         with:
           node: "false"
       - name: Install the Bun packages
@@ -151,12 +156,16 @@ jobs:
     if: needs.changes.outputs.full == 'true' && needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
-      - uses: ./.github/actions/setup-go
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
         id: go
       # The api checks bundle the spec with Redocly and i18n:lint checks the catalogs, both on Bun.
-      - uses: ./.github/actions/setup-bun
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
       # Both db:check steps use Atlas, and the PostgreSQL one the container of db:up.
       - name: Install Atlas and start PostgreSQL
         run: scripts/task.sh db:atlas db:up
@@ -199,9 +208,12 @@ jobs:
     if: needs.changes.outputs.full == 'true' && needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
-      - uses: ./.github/actions/setup-go
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
       - name: go:test
         run: scripts/task.sh go:test
         env:
@@ -212,9 +224,12 @@ jobs:
     if: needs.changes.outputs.full == 'true' && needs.changes.outputs.client == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
-      - uses: ./.github/actions/setup-bun
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
       # The packages and the generated files every step reads, once: the steps' own generators then skip.
       - name: Generate the client files
         run: scripts/task.sh web:generate
@@ -249,9 +264,12 @@ jobs:
       matrix:
         shard: [1/2, 2/2]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
-      - uses: ./.github/actions/setup-bun
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
       - name: Generate the client files
         run: scripts/task.sh web:generate
       - parallel:
@@ -271,9 +289,12 @@ jobs:
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
-      - uses: ./.github/actions/setup-go
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
         id: go
       - parallel:
           - name: agentkit:lint
@@ -305,11 +326,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # The images take their version from `git describe`.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/setup-task
-      - if: needs.changes.outputs.arm64 == 'true'
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up QEMU
+        if: needs.changes.outputs.arm64 == 'true'
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64

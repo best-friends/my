@@ -32,8 +32,10 @@ jobs:
     # restore in a tenth of the time of the extracted tree: go extracts the ones a build needs from them, offline.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-go
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
         id: go
         with:
           restore: false
@@ -48,7 +50,8 @@ jobs:
             ~/.cache/golangci-lint
           key: ${{ steps.go.outputs.key }}
           lookup-only: true
-      - if: steps.lookup.outputs.cache-hit != 'true'
+      - name: Set up go-task
+        if: steps.lookup.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-task
       - name: Read tool versions from .tool-versions
         if: steps.lookup.outputs.cache-hit != 'true'
@@ -85,7 +88,8 @@ jobs:
     outputs:
       ui: ${{ steps.ui.outputs.missing }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Look up the Bun package cache
         id: lookup
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -105,9 +109,11 @@ jobs:
           n="$(gh cache list -R "$GITHUB_REPOSITORY" --ref refs/heads/main --key "$KEY" --json key \
             --jq "map(select(.key == \"$KEY\")) | length")"
           if [ "$n" = 0 ]; then echo missing=true; else echo missing=false; fi >> "$GITHUB_OUTPUT"
-      - if: steps.lookup.outputs.cache-hit != 'true'
+      - name: Set up go-task
+        if: steps.lookup.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-task
-      - if: steps.lookup.outputs.cache-hit != 'true'
+      - name: Set up Bun
+        if: steps.lookup.outputs.cache-hit != 'true'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
@@ -131,12 +137,15 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
       # The image lacks the unzip that setup-bun extracts Bun with.
       - name: Install unzip
         run: apt-get update && apt-get install -y --no-install-recommends unzip
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       - name: Install the client packages

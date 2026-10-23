@@ -20,10 +20,13 @@ jobs:
   postgres-contract:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-task
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
       # The Go cache that main.yml builds, without saving one.
-      - uses: ./.github/actions/setup-go
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
       # testcontainers-go starts postgres:18-alpine on the runner's Docker; TEST_POSTGRES_REQUIRED makes a missing
       # Docker fail the job instead of skipping the tests.
       - name: go:test-postgres

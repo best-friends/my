@@ -21,7 +21,8 @@ runs:
   using: composite
   steps:
     # setup-go's own cache is keyed on go.sum alone, never refreshed, and saved by any ref.
-    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+    - name: Set up Go
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: .tool-versions
         cache: false
