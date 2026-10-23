@@ -85,6 +85,14 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 				},
 			},
 			{
+				// After moderation: the terms leave out the accounts that it suspends.
+				Name: "account_search_terms", Module: "account",
+				Tables: []string{"account_search_terms"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return a.SearchTerms.Rebuild(ctx, u)
+				},
+			},
+			{
 				Name: "graph", Module: "graph",
 				Tables: []string{"follow_edges", "follow_counters", "block_edges"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {

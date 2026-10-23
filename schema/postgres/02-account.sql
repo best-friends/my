@@ -126,6 +126,23 @@ CREATE TABLE account_lifecycle_states (
 );
 CREATE INDEX account_lifecycle_states_state_deletion_due_at ON account_lifecycle_states (state, deletion_due_at);
 
+-- Projection: the words that the prefix search of accounts matches (ADR-0092 §1, FR-119, FR-306),
+-- from the handles, the profile heads, the lifecycle states, and the suspensions of the
+-- moderation module. A username row is the normalized username, and for a remote account also
+-- username@domain; a display_name row is the display name under NFKC and lowercase without its
+-- :shortcode:s, whole and word by word. Accounts that are not active, suspended, without a
+-- handle, or Application actors have no rows. term is byte-ordered (COLLATE "C"), so that the
+-- range term >= q AND term < q || U+10FFFF reads the index in order.
+CREATE TABLE account_search_terms (
+  account_id uuid NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('username', 'display_name')),
+  term text COLLATE "C" NOT NULL,
+  is_local boolean NOT NULL,
+  PRIMARY KEY (account_id, kind, term)
+);
+-- The search reads the range of a prefix in index order, at most 100 rows.
+CREATE INDEX account_search_terms_term_account_id ON account_search_terms (term, account_id);
+
 -- The cleanup of unattached uploads (content, FR-803) looks up the references to a media file.
 CREATE INDEX account_profile_revisions_avatar_media_id ON account_profile_revisions (avatar_media_id);
 CREATE INDEX account_profile_revisions_header_media_id ON account_profile_revisions (header_media_id);

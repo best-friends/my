@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: limit
+in: query
+description: The maximum number of results of a prefix search for the autocomplete (ADR-0092).
+required: false
+schema:
+  type: integer
+  minimum: 1
+  maximum: 20
+  default: 8

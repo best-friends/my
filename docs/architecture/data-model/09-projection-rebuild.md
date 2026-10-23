@@ -12,6 +12,7 @@
 | `user_roles` | `user_role_grants`, `user_role_revocations` | 同期 |
 | `user_primary_emails` | `user_email_addresses` | 同期 |
 | `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts` と `remote_account_handle_verifications`、`remote_account_snapshots` と取得の結果、`account_profile_revisions` | 同期 |
+| `account_search_terms` | `account_handles`・`account_profile_heads`・`account_lifecycle_states` と `moderation` の凍結（`account_restrictions`） | 同期（再構築は Go の `account.SearchTermProjector.Rebuild`。`moderation` の後に走る） |
 | `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
 | `status_link_cards` | `status_revisions` の本文・ソース・添付・投票、`status_deletions` | 同期（URL は Go の `content.LinkCardURL` が選ぶので、`my projection` の対象ではない） |
 | `status_quote_states` | `status_quotes`, `status_quote_events` | 同期（再構築は Go の `content.RebuildQuoteStates`） |

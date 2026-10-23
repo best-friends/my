@@ -55,6 +55,8 @@ type Options struct {
 	// RemoteProfiles reads the profile pages of remote accounts for Account.url; nil links
 	// remote accounts to their uri.
 	RemoteProfiles RemoteProfiles
+	// AccountSearch is the prefix search of accounts (searchAccounts); nil finds none.
+	AccountSearch AccountSearch
 	// Resolver fetches unknown remote accounts for lookupAccount's resolve; nil resolves none
 	// (lookups find only stored accounts).
 	Resolver AccountResolver

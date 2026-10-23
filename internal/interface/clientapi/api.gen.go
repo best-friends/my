@@ -9378,6 +9378,9 @@ type RoleKey = string
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type RuleId = Id
 
+// SearchLimit defines model for SearchLimit.
+type SearchLimit = int
+
 // SignupBlockId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -9430,6 +9433,16 @@ type LookupAccountParams struct {
 type GetRelationshipsParams struct {
 	// Id The account IDs, repeated (`?id=a&id=b`).
 	Id []Id `form:"id" json:"id"`
+}
+
+// SearchAccountsParams defines parameters for SearchAccounts.
+type SearchAccountsParams struct {
+	// Q The start of a username, a `username@domain`, or a word of a display name: 1 to 100
+	// characters after a leading `@`, which is ignored. Anything else is a 400.
+	Q string `form:"q" json:"q"`
+
+	// Limit The maximum number of results of a prefix search for the autocomplete (ADR-0092).
+	Limit *SearchLimit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListAccountFollowersParams defines parameters for ListAccountFollowers.
@@ -10245,6 +10258,9 @@ type ServerInterface interface {
 	// GetRelationships Get the viewer's relationships with accounts
 	// (GET /accounts/relationships)
 	GetRelationships(w http.ResponseWriter, r *http.Request, params GetRelationshipsParams)
+	// SearchAccounts Search accounts by prefix
+	// (GET /accounts/search)
+	SearchAccounts(w http.ResponseWriter, r *http.Request, params SearchAccountsParams)
 	// UpdateAccountCredentials Change the authenticated user's profile
 	// (PATCH /accounts/update_credentials)
 	UpdateAccountCredentials(w http.ResponseWriter, r *http.Request)
@@ -11093,6 +11109,52 @@ func (siw *ServerInterfaceWrapper) GetRelationships(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetRelationships(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SearchAccounts operation middleware
+func (siw *ServerInterfaceWrapper) SearchAccounts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchAccountsParams
+
+	// ------------- Required query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchAccounts(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -18224,6 +18286,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/passkeys/{id}", wrapper.DeletePasskey)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/search", wrapper.SearchAccounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}", wrapper.GetAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/{id}/block", wrapper.BlockAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/{id}/follow", wrapper.FollowAccount)
@@ -19059,6 +19122,68 @@ type GetRelationshipsdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetRelationshipsdefaultApplicationProblemPlusJSONResponse) VisitGetRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchAccountsRequestObject struct {
+	Params SearchAccountsParams
+}
+
+type SearchAccountsResponseObject interface {
+	VisitSearchAccountsResponse(w http.ResponseWriter) error
+}
+
+type SearchAccounts200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type SearchAccounts200JSONResponse struct {
+	Body    []Account
+	Headers SearchAccounts200ResponseHeaders
+}
+
+func (response SearchAccounts200JSONResponse) VisitSearchAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchAccountsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SearchAccountsdefaultApplicationProblemPlusJSONResponse) VisitSearchAccountsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -33307,6 +33432,9 @@ type StrictServerInterface interface {
 	// GetRelationships Get the viewer's relationships with accounts
 	// (GET /accounts/relationships)
 	GetRelationships(ctx context.Context, request GetRelationshipsRequestObject) (GetRelationshipsResponseObject, error)
+	// SearchAccounts Search accounts by prefix
+	// (GET /accounts/search)
+	SearchAccounts(ctx context.Context, request SearchAccountsRequestObject) (SearchAccountsResponseObject, error)
 	// UpdateAccountCredentials Change the authenticated user's profile
 	// (PATCH /accounts/update_credentials)
 	UpdateAccountCredentials(ctx context.Context, request UpdateAccountCredentialsRequestObject) (UpdateAccountCredentialsResponseObject, error)
@@ -34221,6 +34349,32 @@ func (sh *strictHandler) GetRelationships(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetRelationshipsResponseObject); ok {
 		if err := validResponse.VisitGetRelationshipsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SearchAccounts operation middleware
+func (sh *strictHandler) SearchAccounts(w http.ResponseWriter, r *http.Request, params SearchAccountsParams) {
+	var request SearchAccountsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchAccounts(ctx, request.(SearchAccountsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchAccounts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SearchAccountsResponseObject); ok {
+		if err := validResponse.VisitSearchAccountsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
