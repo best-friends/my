@@ -2,11 +2,9 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(make check)",
-      "Bash(make lint-docs)",
-      "Bash(make adr-index)",
-      "Bash(make adr-new:*)",
-      "Bash(scripts/adr-index.sh:*)",
+      "Bash(scripts/task.sh check)",
+      "Bash(scripts/task.sh docs:lint)",
+      "Bash(scripts/task.sh docs:adr-new:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -24,8 +22,8 @@
       "Bash(gh pr merge * --auto*)",
       "Bash(scripts/agentkit.sh:*)",
       "Bash(bin/agentkit:*)",
-      "Bash(make agentkit)",
-      "Bash(make agentkit-check)"
+      "Bash(scripts/task.sh agentkit:build)",
+      "Bash(scripts/task.sh agentkit:check)"
     ],
     "deny": [
       "Bash(git push --force:*)",
