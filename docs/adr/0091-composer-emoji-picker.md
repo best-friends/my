@@ -1,6 +1,6 @@
 # ADR-0091: 投稿フォームの絵文字ピッカー（Unicode 絵文字の全集合・カテゴリのタブ・よく使う・肌の色）
 
-- Status: Accepted
+- Status: Accepted（§2 の表示（B1 OS のフォント）を ADR-0095（絵文字を Noto Color Emoji で描く）が置き換える）
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1040
