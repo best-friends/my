@@ -1,7 +1,7 @@
 # アカウント・ドメインへの処分と通報の対応
 
 運営者・モデレーター向けの手順です。要件は FR-701〜FR-703・FR-707・FR-714・FR-718（[機能要件](../requirements/01-functional.md)）、
-テーブルは [データモデル §4.3](../architecture/data-model/04-tables.md#43-moderation)、連合への効き方は [federation.md §11](../architecture/federation.md#11-モデレーションとの連携) です。
+テーブルは [データモデル §4.3](../architecture/data-model/04-tables/03-moderation.md#43-moderation)、連合への効き方は [federation.md §11](../architecture/federation.md#11-モデレーションとの連携) です。
 
 アカウントの管理（管理 API だけ）を除き、どれも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin account action` / `my admin domain` / `my admin report` / `my admin appeal`）で行えます。
 管理 API はロールの権限を要します。アカウントの管理と処分と異議申し立ては `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。

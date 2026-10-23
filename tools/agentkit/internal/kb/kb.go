@@ -135,7 +135,8 @@ func (k *KB) Resolve(ref string) ([]store.Node, error) {
 }
 
 // section resolves file§num or file#anchor; file may be an ADR id, a path suffix, or a directory holding a
-// document split into one file per section (web-client§14.2 looks through docs/architecture/web-client/).
+// document split into one file per section (web-client§14.2 looks through docs/architecture/web-client/, and
+// data-model§4.4 through docs/architecture/data-model/ and its subdirectories).
 func (k *KB) section(file, sec string) ([]store.Node, error) {
 	var paths []string
 	if strings.HasPrefix(file, "ADR-") {
@@ -157,7 +158,7 @@ func (k *KB) section(file, sec string) ([]store.Node, error) {
 		}
 		if len(ps) > 0 {
 			paths = ps[:1]
-		} else if paths, err = k.S.DocDir(file); err != nil {
+		} else if paths, _, err = k.S.DocDir(file); err != nil {
 			return nil, err
 		}
 	}
@@ -188,15 +189,15 @@ func (k *KB) section(file, sec string) ([]store.Node, error) {
 	return nil, nil
 }
 
-// splitDoc resolves the name of a document split into one file per section (web-client, data-model/README.md,
+// splitDoc resolves the name of a document split into one file per section (web-client, data-model.md,
 // docs/architecture/web-client/) to its README.md.
 func (k *KB) splitDoc(ref string) ([]store.Node, error) {
-	ps, err := k.S.DocDir(strings.TrimSuffix(ref, ".md"))
+	ps, dir, err := k.S.DocDir(strings.TrimSuffix(ref, ".md"))
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range ps {
-		if path.Base(p) != "README.md" {
+		if p != dir+"/README.md" {
 			continue
 		}
 		ns, err := k.S.FileNodes(p)

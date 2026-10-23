@@ -10,7 +10,7 @@
 - [1. 共通規約](01-conventions.md)
 - [2. 整合性モデル](02-consistency.md)
 - [3. 概念モデル](03-concepts.md)
-- [4. モジュール別テーブル定義](04-tables.md)
+- [4. モジュール別テーブル定義](04-tables/README.md)
 - [5. 状態とポリシー](05-states-and-policies.md)
 - [6. タイムラインのクエリ](06-timeline-queries.md)
 - [7. 公開範囲と配送](07-visibility-and-delivery.md)

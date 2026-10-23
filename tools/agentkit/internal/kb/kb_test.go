@@ -20,8 +20,9 @@ func fixture(t *testing.T) *KB {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
-		"docs/architecture/data-model/README.md":                 "# データモデル\n\n## 節の一覧\n\n- [4. テーブル](04-tables.md)\n- [5. 状態](05-states-and-policies.md)\n",
-		"docs/architecture/data-model/04-tables.md":              "## 4. テーブル\n\n### 4.4 content\n\n`custom_emoji_requests` は申請を記録する。\n\n- 申請は承認されるまで出ない。\n- 投票は別の話。\n",
+		"docs/architecture/data-model/README.md":                 "# データモデル\n\n## 節の一覧\n\n- [4. テーブル](04-tables/README.md)\n- [5. 状態](05-states-and-policies.md)\n",
+		"docs/architecture/data-model/04-tables/README.md":       "## 4. テーブル\n\n- [4.4 content](04-content.md)\n\n### 4.0 所有モジュール\n\nモジュールごとの表。\n",
+		"docs/architecture/data-model/04-tables/04-content.md":   "### 4.4 content\n\n`custom_emoji_requests` は申請を記録する。\n\n- 申請は承認されるまで出ない。\n- 投票は別の話。\n",
 		"docs/architecture/data-model/05-states-and-policies.md": "## 5. 状態\n\n別の節。\n",
 		"docs/architecture/web-client/README.md":                 "# Web クライアントの設計規約\n\n## 節の一覧\n\n## 1. React の基本\n\nフックの規則。\n",
 		"docs/architecture/web-client/14-admin.md":               "## 14. 管理画面\n\n### 14.2 区分\n\nスタッフの画面は 2 つの区分に分ける。\n",
@@ -74,14 +75,16 @@ func TestResolveAndShow(t *testing.T) {
 		"SubmitRequest":               "func (s *Service) SubmitRequest",
 		"schema/sqlite.sql:2-2":       "id TEXT PRIMARY KEY",
 		// A document split into one file per section: the section number, an anchor, or the name finds the file.
-		"web-client§14.2":                           "スタッフの画面は 2 つの区分に分ける",
-		"web-client.md§1":                           "フックの規則",
-		"web-client#14-管理画面":                        "スタッフの画面は 2 つの区分に分ける",
-		"docs/architecture/data-model#5-状態":         "別の節",
-		"data-model§5":                              "別の節",
-		"web-client":                                "# Web クライアントの設計規約",
-		"data-model.md":                             "- [4. テーブル](04-tables.md)",
-		"docs/architecture/data-model/04-tables.md": "### 4.4 content",
+		"web-client§14.2":                   "スタッフの画面は 2 つの区分に分ける",
+		"web-client.md§1":                   "フックの規則",
+		"web-client#14-管理画面":                "スタッフの画面は 2 つの区分に分ける",
+		"docs/architecture/data-model#5-状態": "別の節",
+		"data-model§5":                      "別の節",
+		"web-client":                        "# Web クライアントの設計規約",
+		"data-model.md":                     "- [4. テーブル](04-tables/README.md)",
+		"docs/architecture/data-model/04-tables/04-content.md": "### 4.4 content",
+		"data-model§4":   "モジュールごとの表",
+		"data-model§4.0": "モジュールごとの表",
 	}
 	for ref, want := range cases {
 		var b bytes.Buffer
@@ -105,7 +108,7 @@ func TestFindAndFocus(t *testing.T) {
 	if err := k.Find(&b, "申請 承認", nil, "", 5); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(b.String(), "data-model/04-tables.md") {
+	if !strings.Contains(b.String(), "data-model/04-tables/04-content.md") {
 		t.Errorf("Find = %q", b.String())
 	}
 	ns, err := k.Resolve("data-model§4.4")
@@ -141,7 +144,7 @@ func TestRefs(t *testing.T) {
 	if err := k.Refs(&b, "custom_emoji_requests", 20); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(b.String(), "query:InsertCustomEmojiRequest") || !strings.Contains(b.String(), "data-model/04-tables.md") {
+	if !strings.Contains(b.String(), "query:InsertCustomEmojiRequest") || !strings.Contains(b.String(), "data-model/04-tables/04-content.md") {
 		t.Errorf("Refs = %s", b.String())
 	}
 }

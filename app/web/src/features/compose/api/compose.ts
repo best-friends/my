@@ -113,7 +113,7 @@ export function credentialsQueryOptions(api: Api) {
 
 /**
  * The account a mention names, resolved from its server when the instance does not know it yet
- * (`resolve`), as the server resolves the mentions of a post (data-model/04-tables.md §4.4). A handle that does not
+ * (`resolve`), as the server resolves the mentions of a post (data-model/04-tables/04-content.md §4.4). A handle that does not
  * resolve is a 404 and a spent fetch budget a 429: answers rather than failures to retry, and the server
  * leaves such a mention as text. Without `resolve` (while the instance takes nothing in from other servers,
  * ADR-0076, when the server refuses to resolve), only an account the instance knows is found.

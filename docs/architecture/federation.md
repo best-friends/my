@@ -291,7 +291,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   3. 返信先がローカルの投稿か、返信先の `conversation_uri` に削除されていないローカルの投稿がある
   4. 参加中のリレーが運んだ（`relay_id` の付いた）`public` の投稿（§13）
   - どれにも当てはまらない `Create` は `ErrDropActivity` で捨て、受信の記録だけが残ります（`info` のログ）。未知のリモートの Actor へのメンションは、範囲に入ると決まってから取得します。
-- 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model/04-tables.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
+- 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model/04-tables/04-content.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
 - 返信先は受信時に 1 段だけ非同期（`federation.fetch_object`、ペイロードに残りの深さ）で取得し、スレッドの祖先と返信の一覧は利用者がスレッドを開いたときに深さ 20・件数 100 まで取得します。
   - **取得した投稿**: 取得した文書が投稿で、`attributedTo` があり、そのオリジンが投稿の `id` と同じで、作者を解決でき（未知なら取得）、作者が有効なリモートのアカウントで、URI に削除（`status_deletions` の tombstone）も `remote_object_tombstones` も無いときだけ、`content.IngestRemoteStatus`（`activity_uri` は NULL）で取り込みます。取り込み範囲の判定はしません（受信した投稿の返信先・利用者が開いたスレッド・検索で解決した投稿・フォローされている人がブーストした投稿は ADR-0034 の範囲、利用者が開いたプロフィールの outbox の最初のページの公開投稿は ADR-0044 の範囲です）。`Announce` の対象・`fetch_object`・`fetch_outbox`・`Resolver` は、この取り込み（`StatusHandlers.fetched`）を共有します。`Announce` の対象と検索で解決した投稿は、受信した投稿と同じく返信先を 1 段だけ取得します。
   - **受信時**: 取り込んだ返信の親が未知（`conversation_uri` が NULL）でリモートなら、取り込みのトランザクションで `federation.fetch_object`（祖先 0）を `queue.Outbox` に投入します。取得した親の親は取得しません。
@@ -324,7 +324,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - 取り込んだ投稿は、ほかの取得した投稿と同じく保持期間（ADR-0034、`content.purge_remote_statuses`）の対象で、プロフィールのタイムラインに出ます。新しいテーブルは使いません。
   - コントラクトテストは `testkit.RemoteStatusContract` で、Mastodon・Misskey・GoToSocial の outbox のフィクスチャ（`outbox.json`・`outbox-page.json`）を取り込みます。
 - 投稿の ID は `published` から作った UUIDv7 です（[data-model §1.3](data-model/01-conventions.md#13-id-とキーセットページング)、#71）。
-- 保持期間を過ぎたリモートの投稿は `content.purge_remote_statuses` が、関係の無くなったリモートのアカウントの過去のプロフィールは `account.prune_remote_profiles` が、受信の原本・記録と配送の記録は `federation.purge` が、どこからも参照されなくなったリモートのカスタム絵文字（管理者が無効にしたものを除く）は `content.purge_remote_emojis`（1 日ごと、ADR-0051 §1）が、件数を区切って消します（ADR-0034、[data-model §4.4 のリモート投稿の保持期間](data-model/04-tables.md#リモート投稿の保持期間)、§4.2、§4.8）。
+- 保持期間を過ぎたリモートの投稿は `content.purge_remote_statuses` が、関係の無くなったリモートのアカウントの過去のプロフィールは `account.prune_remote_profiles` が、受信の原本・記録と配送の記録は `federation.purge` が、どこからも参照されなくなったリモートのカスタム絵文字（管理者が無効にしたものを除く）は `content.purge_remote_emojis`（1 日ごと、ADR-0051 §1）が、件数を区切って消します（ADR-0034、[data-model §4.4 のリモート投稿の保持期間](data-model/04-tables/04-content.md#リモート投稿の保持期間)、§4.2、§4.8）。
   保持期間で消えた投稿（`origin = retention`）は tombstone にならないので、同じ URI の `Create` や取得でまた取り込めます。コントラクトテストは `testkit.RetentionContract` です。
 
 ### 6.4 投稿の取り直し
@@ -581,7 +581,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
   - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。
   - featured は、ピン留めした投稿のうち未ログインで閲覧できるもの（`public` / `unlisted`）の `Note` を `orderedItems` に並べます。featured-tags は空の `Collection` です。
-- Authorized Fetch（FR-408、S）はインスタンス設定 `authorized_fetch`（既定 `false`、[data-model §4.9](data-model/04-tables.md#49-instance)）で有効にします。設定はリクエストごとに読むので、変更はすぐに効きます。
+- Authorized Fetch（FR-408、S）はインスタンス設定 `authorized_fetch`（既定 `false`、[data-model §4.9](data-model/04-tables/09-instance.md#49-instance)）で有効にします。設定はリクエストごとに読むので、変更はすぐに効きます。
   有効なときは、検証できる署名の無い GET（署名なし・検証できない・未ログインとして扱う署名者）に次のように答えます。
 
   | 対象 | 署名なし | 検証できる署名 |
@@ -609,7 +609,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | ドメインの `media_sensitive`（`force_sensitive`） | 受け付ける | 送る | 添付をセンシティブとして表示 |
 | アカウントの `federation`（`suspend` / `ban`） | リモートなら `Delete` / `Undo` / `Reject` 以外を捨てる | ローカルなら、下の「処分の伝播」のアクティビティ以外を送らない | ローカルの Actor の GET は、空のプロフィールに `suspended: true` を付けた Actor を返す（鍵は返す）。投稿などのオブジェクトの GET は `404` |
 
-- 判定はサブドメインにも効きます（[data-model §4.3](data-model/04-tables.md#ドメイン単位の処分)）。
+- 判定はサブドメインにも効きます（[data-model §4.3](data-model/04-tables/03-moderation.md#ドメイン単位の処分)）。
 - プロフィールを開いたときの outbox の取得（§6.3、ADR-0044）は、アカウントの `federation` の制限があれば始めず、ドメインの `federation` の制限は `Fetcher` が止めます。ドメインの `public_discovery` の制限は止めません（利用者が自分で開いたプロフィールで、取り込んだ投稿は連合タイムライン・検索に出ない）。
 - `Block` の受信は `graph` の関係として記録します（相手からのブロックで、モデレーションの処分ではありません）。
 - `Flag` の受信は `reports`（`uri` は `Flag` の `id`、`id` が無ければ受信の記録と同じ `urn:my:digest:…`。同じ `Flag` の再処理は何もしない）と `report_states`（`open`）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
@@ -636,7 +636,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | それ以外（`limit`・`restrict_posting`・`force_sensitive` など） | 送らない | — |
 
 - `suspended` は Mastodon 拡張（`toot:suspended`）で、`@context` は §7.4 の Actor と同じです。凍結中の文書は `federation.ActorDocument.Suspend` が作り、`id`・コレクション・inbox・鍵は残します。
-- 凍結とその終わりは、`moderation` が処分・解除・期限切れの行の削除のトランザクションで発行する `moderation.account_suspension_changed`（[data-model §4.3](data-model/04-tables.md#制限投影)）から、`federation.RegisterSuspensionProjectors` が同じトランザクションで `Update`（Actor）を積みます。重なった凍結の 2 つ目と、1 つが残る解除は何も送りません。
+- 凍結とその終わりは、`moderation` が処分・解除・期限切れの行の削除のトランザクションで発行する `moderation.account_suspension_changed`（[data-model §4.3](data-model/04-tables/03-moderation.md#制限投影)）から、`federation.RegisterSuspensionProjectors` が同じトランザクションで `Update`（Actor）を積みます。重なった凍結の 2 つ目と、1 つが残る解除は何も送りません。
   文書は展開の始めの時点の状態から組み立てるので（§7.4）、凍結と解除が続けて起きても、後から展開した `Update` ほど新しい状態を表します。
 - BAN の `Delete`（Actor）は、削除の予約の期日に `account.execute_deletions` がアカウントの削除（`deleted`）を記録したときに、§7.1 のアカウント削除と同じ経路で送ります。凍結中でも `Delete` は止めません。
 - リモートのアカウントの `suspend` は、凍結を始めた処分のトランザクションで `graph.SeverByModeration` が両方向のフォローを切り、その `FollowTerminated`（`reason = moderation`）から §7.1 の projector が `Reject`（そのアカウントのフォロー）と `Undo`（ローカルの利用者のフォロー）を積みます。
@@ -674,7 +674,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - 参加はインスタンス Actor の `Follow` です。`id` は `/ap/activities/{relay_events.id}`、`object` は `mastodon` なら `as:Public`、`litepub` ならリレーの Actor です。
   `relay_events`（`follow_sent`）・`relay_states`（`pending`）・`outbound_activities`（`object_type = relay`）・保存した本文・展開ジョブを 1 つのトランザクションで書きます。
 - 脱退は `Undo(Follow)`（`left`）、参加し直しは新しい `id` の `Follow`（`rejected` か `left` から）です。登録の削除は `left` か `rejected` のときだけで、`relays` と子の行を消します。
-- 状態の遷移は `federation.RelayStatus.Next` が決めます（[data-model §4.8](data-model/04-tables.md#48-federation)）。`Accept` / `Reject` は、`object` の `id` がリレーの現在の `Follow` のものだけを受け付けます。
+- 状態の遷移は `federation.RelayStatus.Next` が決めます（[data-model §4.8](data-model/04-tables/08-federation.md#48-federation)）。`Accept` / `Reject` は、`object` の `id` がリレーの現在の `Follow` のものだけを受け付けます。
   主体は、`litepub` なら登録した Actor、`mastodon` なら inbox か shared inbox が登録の inbox と一致する Actor でなければ捨てます。`accepted` で主体を `relay_actor_uri` に記録します。同じ答えをもう一度受けても何も変えません。
 - インスタンス Actor への `Follow` は、参加中のリレーの Actor からのもの（`litepub` のリレーはフォローし返す）に `Accept` を、それ以外に `Reject` を送ります。フォローとしては記録しません。
 - 監査ログは登録・参加・脱退・削除（`relay_added`・`relay_followed`・`relay_unfollowed`・`relay_removed`）と、受け取った答え（`relay_accepted`・`relay_rejected`、`actor_kind = remote`）を `target_kind = relay` で記録します。
@@ -698,7 +698,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - リレーの Actor の `Announce` は、`object` をいつもオリジンから取得し、作者の制限を確かめて、`public` なら取り込んで記録します。ブーストとしては記録しません。
 - 取り込んだ投稿は、ほかのリモートの `public` の投稿と同じく連合タイムラインとハッシュタグのタイムラインに出ます。ホームには出ず、通知も作りません。
 - 関門の結果はメトリクス `my.relay.activities`（`my.outcome` が `admitted` / `over_limit` / `restricted` / `not_receiving`）に出ます。管理画面と CLI は、直近 24 時間の時ごとの件数から、取り込んだ件数（上限まで）と上限で捨てた件数を示します。
-- `relayed_statuses` の投稿は、`content.purge_relayed_statuses` が公開から設定 `relay_status_retention`（既定 7 日）で消します（[data-model §4.4](data-model/04-tables.md#リモート投稿の保持期間)）。脱退しても、取り込んだ投稿はすぐには消しません。
+- `relayed_statuses` の投稿は、`content.purge_relayed_statuses` が公開から設定 `relay_status_retention`（既定 7 日）で消します（[data-model §4.4](data-model/04-tables/04-content.md#リモート投稿の保持期間)）。脱退しても、取り込んだ投稿はすぐには消しません。
 
 ## 14. 連合の向き
 
