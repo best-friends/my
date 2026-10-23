@@ -3,7 +3,8 @@
 # The web client and the client workspace (ADR-0025, ADR-0026; the web context of scripts/changed-contexts.sh).
 # app/ is the Bun workspace of the TypeScript clients (app/ui = @my/ui, app/web). Bun installs the packages and runs
 # their scripts; Vite runs on Node.js from .tool-versions, because the scripts' `vite` is a `#!/usr/bin/env node`
-# bin. Do not add --bun (ADR-0025).
+# bin. Do not add --bun (ADR-0025). The generated files the workspace reads are not committed (ADR-0081): every
+# task that reads them depends on web:generate, which skips the generators whose sources are unchanged.
 version: "3"
 
 vars:
@@ -25,8 +26,8 @@ tasks:
     deps: [static, lint-css, licenses, tokens, test, playwright-image-check]
 
   static:
-    desc: Run tsc, Oxlint, knip, and the Vite build with its route tree check in parallel (without web:lint-rules, which must not run beside them)
-    deps: [typecheck, oxlint, knip, routes-check]
+    desc: Run tsc, Oxlint, knip, and the Vite build in parallel (without web:lint-rules, which must not run beside them)
+    deps: [typecheck, oxlint, knip, dist]
 
   install:
     desc: Install the pinned client workspace dependencies (app/bun.lock)
@@ -35,9 +36,27 @@ tasks:
     cmds:
       - bun install --frozen-lockfile
 
+  generate:
+    desc: Generate the uncommitted files the client workspace reads (route tree, API types, i18n accessors and client pseudo-locales, theme tokens)
+    run: once
+    deps: [routes-gen, tokens-gen-ts, ":api:generate-ts", ":i18n:gen-ts"]
+
+  routes-gen:
+    desc: Generate app/web/src/routeTree.gen.ts from app/web/src/routes without Vite (app/web/scripts/routes.ts)
+    deps: [install]
+    run: once
+    sources:
+      - "app/web/src/routes/**/*"
+      - app/web/scripts/routes.ts
+      - app/bun.lock
+    generates:
+      - app/web/src/routeTree.gen.ts
+    cmds:
+      - cd app/web && node scripts/routes.ts
+
   typecheck:
     desc: Type-check app/web with tsc (incremental, node_modules/.cache/tsc)
-    deps: [install]
+    deps: [generate]
     dir: app/web
     cmds:
       - bun run typecheck
@@ -45,7 +64,7 @@ tasks:
   # web:check builds into app/web/dist only, never into internal/interface/web/dist that the Go builds embed.
   dist:
     desc: Build app/web into app/web/dist (fails when React Compiler compiled nothing or skipped a function)
-    deps: [install]
+    deps: [generate]
     run: once
     dir: app
     cmds:
@@ -58,13 +77,12 @@ tasks:
       - find {{.WEB_EMBED_DIR}} -mindepth 1 ! -name .gitkeep -delete
       - cp -R app/web/dist/. {{.WEB_EMBED_DIR}}/
 
-  routes-check:
-    desc: Fail when the committed app/web/src/routeTree.gen.ts differs from the one the build generates
-    deps: [dist]
+  dev:
+    desc: Start the Vite dev server of app/web on http://localhost:5173 (give it to `my serve -dev-vite-origin`, CONTRIBUTING.md)
+    deps: [generate]
+    dir: app/web
     cmds:
-      - >-
-        git diff --exit-code --quiet -- app/web/src/routeTree.gen.ts
-        || { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client/09-app-shell.md §9)' >&2; exit 1; }
+      - bun run dev
 
   licenses:
     desc: Fail on client npm dependency licenses incompatible with AGPL-3.0
@@ -85,14 +103,14 @@ tasks:
 
   oxlint:
     desc: Run Oxlint on the client workspace (app/.oxlintrc.json)
-    deps: [install]
+    deps: [generate]
     dir: app
     cmds:
       - bun run lint
 
   lint-rules:
     desc: Test the Oxlint restrictions and their violation fixtures (app/oxlint), which it copies into app/web/src
-    deps: [install]
+    deps: [generate]
     run: once
     dir: app
     cmds:
@@ -100,7 +118,7 @@ tasks:
 
   knip:
     desc: Find unused files, exports, and dependencies of the client workspace with knip
-    deps: [install]
+    deps: [generate]
     dir: app
     cmds:
       - bun run knip
@@ -113,28 +131,41 @@ tasks:
         || { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client/README.md D5)' >&2; exit 1; }
 
   tokens:
-    desc: Check the @my/ui design tokens, WCAG AA contrast of every token pair, no palette / arbitrary colors or token values, motion only under motion-safe, the generated token list up to date
-    deps: [install]
+    desc: Check the @my/ui design tokens, WCAG AA contrast of every token pair, no palette / arbitrary colors or token values, motion only under motion-safe, the committed Go token list up to date
+    deps: [tokens-gen-ts]
     dir: app/ui
     cmds:
       - bun run check-tokens
 
   tokens-gen:
-    desc: Regenerate the list of the tokens a server theme may override (ADR-0059) from app/ui/src/theme.css and tokens.ts
+    desc: Regenerate the list of the tokens a server theme may override (ADR-0059) from app/ui/src/theme.css and tokens.ts (commit the Go file)
     deps: [install]
-    sources:
+    run: once
+    sources: &tokens-sources
       - app/ui/src/theme.css
       - app/ui/src/tokens.ts
+      - app/ui/src/color.ts
       - app/ui/scripts/theme-tokens.ts
+      - app/ui/scripts/theme-source.ts
     generates:
       - app/ui/src/themeTokens.gen.ts
       - internal/domain/instance/theme_tokens.gen.go
     cmds:
       - cd app/ui && bun run scripts/theme-tokens.ts
 
+  tokens-gen-ts:
+    desc: Generate app/ui/src/themeTokens.gen.ts, the token list the theme editor and the @my/ui checks read
+    deps: [install]
+    run: once
+    sources: *tokens-sources
+    generates:
+      - app/ui/src/themeTokens.gen.ts
+    cmds:
+      - cd app/ui && bun run scripts/theme-tokens.ts --ts
+
   test:
     desc: Run the app/web component tests with Vitest (jsdom + MSW); SHARD=1/2 runs one of two shards
-    deps: [install]
+    deps: [generate]
     dir: app/web
     cmds:
       - bun run test{{if .SHARD}} --shard={{.SHARD}}{{end}}

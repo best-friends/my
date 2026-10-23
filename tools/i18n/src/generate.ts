@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Computes every generated file from the source catalogs, without writing anything:
-//   locales/en-XA/*.json, locales/ar-XB/*.json   pseudo-locales (FormatJS AST transforms)
+// Computes the generated files from the source catalogs, without writing anything. They come in two parts
+// (ADR-0081): the files Go reads, which are committed,
+//   locales/en-XA/*.json, locales/ar-XB/*.json   pseudo-locales of the namespaces Go formats (FormatJS AST transforms)
 //   internal/i18n/messages_gen.go                Go typed accessors
-//   tools/i18n/src/runtime/messages.gen.ts       TS typed accessors
 //   internal/i18n/testdata/golden.json           FormatJS outputs the Go parity tests compare against
-// gen.ts writes the result; check.ts compares it with the committed files.
+// and the files only the TS clients read, which are not:
+//   locales/en-XA/client*.json, locales/ar-XB/client*.json   pseudo-locales of the client namespaces
+//   tools/i18n/src/runtime/messages.gen.ts                   TS typed accessors
+// gen.ts writes the result; check.ts compares the committed part with the committed files.
 import { compile } from "@formatjs/cli-lib";
 import type { MessageFormatElement } from "@formatjs/icu-messageformat-parser";
 import { printAST } from "@formatjs/icu-messageformat-parser/printer.js";
@@ -16,6 +19,7 @@ import {
   formattingLocale,
   goPackageDir,
   goTestdataDir,
+  isClientNamespace,
   isPseudo,
   localesDir,
   type Namespace,
@@ -44,9 +48,12 @@ export function sourceMessages(catalog: Catalog): Message[] {
   return messages;
 }
 
-async function pseudoCatalogs(catalog: Catalog): Promise<Catalog> {
+/** The part of the generated files a namespace's pseudo-locales belong to. */
+export const pseudoPart = (ns: string): Part => (isClientNamespace(ns) ? "ts" : "go");
+
+async function pseudoCatalogs(catalog: Catalog, part: Part): Promise<Catalog> {
   const out: Catalog = {};
-  for (const ns of Object.keys(catalog[SOURCE]).sort()) {
+  for (const ns of Object.keys(catalog[SOURCE]).filter((ns) => pseudoPart(ns) === part).sort()) {
     const file = join(localesDir, SOURCE, `${ns}.json`);
     for (const [locale, transform] of Object.entries(PSEUDO_TRANSFORMS)) {
       // FormatJS pseudo-localizes the parsed AST, so arguments, `#` and plural keywords
@@ -196,17 +203,25 @@ function golden(catalog: Catalog): string {
   return toJSON({ catalog: catalogOut, syntax, cldr });
 }
 
-/** Returns absolute path -> expected content for every generated file. */
-export async function generate(catalog: Catalog): Promise<Map<string, string>> {
+/** The files Go reads and the repository commits ("go"), or the files only the TS clients read ("ts"). */
+export type Part = "go" | "ts";
+
+/** Returns absolute path -> expected content for every generated file of the given parts. */
+export async function generate(catalog: Catalog, parts: readonly Part[] = ["go", "ts"]): Promise<Map<string, string>> {
   const source: Catalog = Object.fromEntries(Object.entries(catalog).filter(([l]) => !isPseudo(l)));
-  const pseudo = await pseudoCatalogs(source);
-  const files = new Map<string, string>();
-  for (const [locale, namespaces] of Object.entries(pseudo)) {
-    for (const [ns, entries] of Object.entries(namespaces)) files.set(join(localesDir, locale, `${ns}.json`), toJSON(entries));
-  }
   const messages = sourceMessages(source);
-  files.set(join(goPackageDir, "messages_gen.go"), goAccessors(messages));
-  files.set(join(runtimeDir, "messages.gen.ts"), tsAccessors(messages));
-  files.set(join(goTestdataDir, "golden.json"), golden({ ...source, ...pseudo }));
+  const files = new Map<string, string>();
+  for (const part of parts) {
+    const pseudo = await pseudoCatalogs(source, part);
+    for (const [locale, namespaces] of Object.entries(pseudo)) {
+      for (const [ns, entries] of Object.entries(namespaces)) files.set(join(localesDir, locale, `${ns}.json`), toJSON(entries));
+    }
+    if (part === "go") {
+      files.set(join(goPackageDir, "messages_gen.go"), goAccessors(messages));
+      files.set(join(goTestdataDir, "golden.json"), golden({ ...source, ...pseudo }));
+    } else {
+      files.set(join(runtimeDir, "messages.gen.ts"), tsAccessors(messages));
+    }
+  }
   return files;
 }

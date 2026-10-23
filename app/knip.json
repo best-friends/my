@@ -11,9 +11,8 @@
       "project": ["src/**/*.{ts,tsx,css}", "test/**/*.ts", "scripts/**/*.ts", ".storybook/**/*.{ts,tsx}", "*.config.ts"]
     },
     "web": {
-      "entry": ["e2e/server.ts", "sw/**/*.test.ts", "vite-plugins/**/*.test.ts"],
-      "project": ["src/**/*.{ts,tsx,css}", "sw/**/*.ts", "vite-plugins/**/*.ts", "e2e/**/*.ts", "*.config.ts"],
-      "ignore": ["src/lib/api/schema.gen.ts"],
+      "entry": ["e2e/server.ts", "scripts/*.ts", "src/routeTree.gen.ts", "sw/**/*.test.ts", "vite-plugins/**/*.test.ts"],
+      "project": ["src/**/*.{ts,tsx,css}", "sw/**/*.ts", "scripts/**/*.ts", "vite-plugins/**/*.ts", "e2e/**/*.ts", "*.config.ts"],
       "ignoreDependencies": ["openapi-typescript"]
     }
   }

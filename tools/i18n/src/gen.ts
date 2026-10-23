@@ -1,21 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Regenerates pseudo-locales, typed accessors (Go and TS), and the parity golden file
 // from the source catalogs. Run after editing locales/: `scripts/task.sh i18n:gen`.
-// Generated files are committed, so building the Go server never needs Bun.
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+//
+//   bun run src/gen.ts        write every generated file
+//   bun run src/gen.ts --ts   write only the files the TS clients read (`scripts/task.sh i18n:gen-ts`)
+//
+// The files Go reads are committed, so building the Go server never needs Bun; the TS-only files are
+// not (ADR-0081). A file is written only when its content changes, through a rename, so the checks and
+// builds that read these files while a generator runs beside them never see a partial file.
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { loadCatalog, localesDir, PSEUDO_LOCALES, rel } from "./catalog";
-import { generate } from "./generate";
+import { generate, type Part, pseudoPart } from "./generate";
 
-const files = await generate(loadCatalog());
-// Pseudo-locale directories are fully generated; drop namespaces that no longer exist.
+const parts: Part[] = process.argv.includes("--ts") ? ["ts"] : ["go", "ts"];
+const files = await generate(loadCatalog(), parts);
+// Pseudo-locale directories are fully generated; drop the namespaces of these parts that no longer exist.
 for (const locale of PSEUDO_LOCALES) {
   const dir = join(localesDir, locale);
   mkdirSync(dir, { recursive: true });
-  for (const f of readdirSync(dir)) if (!files.has(join(dir, f))) rmSync(join(dir, f));
+  for (const f of readdirSync(dir)) {
+    if (f.endsWith(".json") && parts.includes(pseudoPart(f.slice(0, -".json".length))) && !files.has(join(dir, f))) {
+      rmSync(join(dir, f));
+    }
+  }
 }
 for (const [path, content] of files) {
+  if (existsSync(path) && readFileSync(path, "utf8") === content) continue;
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, content);
+  writeFileSync(`${path}.tmp`, content);
+  renameSync(`${path}.tmp`, path);
   console.log(`wrote ${rel(path)}`);
 }

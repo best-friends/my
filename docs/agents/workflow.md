@@ -108,12 +108,14 @@ EOF
   already checks the PR on top of the latest `main`.
 - When the queue drops the PR (a conflict with `main`, or a failed `check` on the merge group), merge `main` into the
   branch, regenerate the generated files instead of resolving their conflicts by hand, run the checks, and push;
-  the orchestrator or the decider queues it again:
+  the orchestrator or the decider queues it again. Only the generated files Go reads are committed (the client API
+  bundle and Go code, sqlc output, the Go side of i18n, the theme token list, the configuration reference); the ones
+  only the TypeScript clients read are not, so they never conflict ([ADR-0081](../adr/0081-generated-files-policy.md)):
 
 ```sh
 git fetch origin && git merge origin/main
 scripts/agentkit.sh regen              # runs the generators whose sources changed: api:generate, go:sqlc, i18n:gen,
-                                       # web:dist (app/web/src/routeTree.gen.ts), go:config-docs, docs:adr-index
+                                       # web:tokens-gen, go:config-docs, docs:adr-index
 scripts/agentkit.sh check
 ```
 
@@ -137,8 +139,8 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 - Keep about 4–5 agents running, capped by the load of the machine. Whenever an agent finishes and a slot frees,
   start the next issue; there is no barrier between groups of issues.
 - For each candidate issue, list the shared files it is likely to touch:
-  - the sources of generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components), `locales/`, `schema/<dialect>.sql` and the sqlc queries,
-    the web route tree (`app/web/src/routes/`), the config schema;
+  - the sources of committed generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components), `locales/`, `schema/<dialect>.sql` and the sqlc queries,
+    the config schema;
   - the indexes and tables many changes edit: the ADR index in `docs/adr/README.md`, the FR table in
     [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`. In
     `docs/architecture/web-client/` and `docs/architecture/data-model/`, each section is a file of its own: two issues
@@ -165,7 +167,7 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
   run the suite.
 - Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R best-friends/my --json mergeable`).
   CI does not start on a conflicting PR; merge `origin/main` into the branch first, as in §7.
-- Resolve conflicts in generated files by regenerating them (§7), never by hand.
+- Resolve conflicts in the committed generated files by regenerating them (§7), never by hand.
 - Once the PR is open and its CI is green, report the PR number, the CI status, and the decisions needed (nothing else) to the orchestrator and finish. Never queue or merge the PR.
 
 ### Merging (orchestrator)

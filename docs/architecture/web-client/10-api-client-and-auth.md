@@ -2,7 +2,8 @@
 
 API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱う（ADR-0029、ADR-0030）。機能はこれを作り直さない。
 
-- **型**（S9）: `scripts/task.sh api:generate` が openapi-typescript で、`api/spec/` をまとめた `api/openapi.yaml` から `lib/api/schema.gen.ts` を生成する。生成物はコミットし、`scripts/task.sh api:generate-check` が差分を検査する。
+- **型**（S9）: openapi-typescript が、`api/spec/` をまとめた `api/openapi.yaml`（`scripts/task.sh api:generate` が作る）から `lib/api/schema.gen.ts` を生成する。
+  生成物はコミットせず（ADR-0081）、型を読むタスクが先に `scripts/task.sh api:generate-ts` で作る。
   機能は API の型を自分の `features/<x>/api` から export して使う（`lib/api` を直接 import できるのは `features/*/api` と `lib/` だけ。S1）。
 - **クライアント**（`lib/api/client.ts`）: openapi-fetch のクライアントと、その上の openapi-react-query のクライアントを 1 つずつ作る（`Api` の `fetch` と `query`）。
   機能は `features/<x>/api` で `api.query.queryOptions(...)` から `queryOptions` を作る。キーは `[method, path, params]` になる。

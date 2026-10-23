@@ -7,7 +7,9 @@
 //   error: rich-text tag, number skeleton / style, or date / time argument in a namespace
 //          shared with Go (anything but client*)
 //   error: malformed locale directory, namespace, or key; two keys mapping to one accessor
-//   error: generated files (pseudo-locales, accessors, golden) differ from `scripts/task.sh i18n:gen`
+//   error: generated files Go reads (server pseudo-locales, Go accessors, golden) differ from `scripts/task.sh i18n:gen`
+// The generated files only the TS clients read (client pseudo-locales, TS accessors) are not committed and not
+// checked here (ADR-0081): i18n:gen-ts writes them before the tasks that read them, maybe while this runs.
 //   error: copy outside the tone and punctuation rules (web-client/16-look-states-and-wording.md G19, G20): an exclamation mark
 //          in any non-pseudo locale; an ASCII colon or comma in Japanese text (use "：" and "、")
 //   warn:  untranslated key (falls back to en at runtime)
@@ -27,7 +29,7 @@ import {
   repoRoot,
   SOURCE,
 } from "./catalog";
-import { generate, goName } from "./generate";
+import { generate, goName, pseudoPart } from "./generate";
 import { type Args, extractArgs, literalText, outsideSharedSubset, parseMessage, pluralCategories } from "./icu";
 
 let errors = 0;
@@ -105,6 +107,7 @@ function checkCatalog(catalog: Catalog) {
     if (locale === SOURCE) continue;
     for (const id of sourceArgs.keys()) {
       const [ns, key] = id.split(/:(.*)/s);
+      if (isPseudo(locale) && pseudoPart(ns) !== "go") continue;
       if (!namespaces[ns]?.[key]) warn(`${locale}: untranslated ${id}`);
     }
     for (const [ns, entries] of Object.entries(namespaces)) {
@@ -155,7 +158,7 @@ function checkUnused(ids: Iterable<string>) {
 }
 
 async function checkGenerated(catalog: Catalog) {
-  const files = await generate(catalog);
+  const files = await generate(catalog, ["go"]);
   for (const [path, want] of files) {
     const got = existsSync(path) ? readFileSync(path, "utf8") : undefined;
     if (got !== want) error(`${rel(path)} is ${got === undefined ? "missing" : "stale"}; run scripts/task.sh i18n:gen and commit the result`);
@@ -164,12 +167,19 @@ async function checkGenerated(catalog: Catalog) {
     const dir = join(localesDir, locale);
     if (!existsSync(dir)) continue;
     for (const f of readdirSync(dir)) {
+      if (!f.endsWith(".json") || pseudoPart(f.slice(0, -".json".length)) !== "go") continue;
       if (!files.has(join(dir, f))) error(`locales/${locale}/${f} has no source namespace; run scripts/task.sh i18n:gen`);
     }
   }
 }
 
-const catalog = loadCatalog();
+// The client pseudo-locales are generated, uncommitted files that may be missing or stale; leave them out.
+const catalog = Object.fromEntries(
+  Object.entries(loadCatalog()).map(([locale, namespaces]) => [
+    locale,
+    isPseudo(locale) ? Object.fromEntries(Object.entries(namespaces).filter(([ns]) => pseudoPart(ns) === "go")) : namespaces,
+  ]),
+);
 const sourceArgs = checkCatalog(catalog);
 if (errors === 0) {
   checkUnused(sourceArgs?.keys() ?? []);

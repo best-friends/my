@@ -9,8 +9,14 @@
 
 ```sh
 asdf install   # or: mise install
+scripts/task.sh generate   # エディタの型検査のため、コミットしない生成物を作る
 scripts/task.sh check
 ```
+
+TypeScript だけが読む生成物（`app/web/src/routeTree.gen.ts`・`app/web/src/lib/api/schema.gen.ts`・`tools/i18n/src/runtime/messages.gen.ts`・
+`app/ui/src/themeTokens.gen.ts`・`client` の疑似ロケール）はコミットしません（[ADR-0081](docs/adr/0081-generated-files-policy.md)）。
+それらを読むタスク（型検査・lint・ビルド・テスト・開発サーバー）は生成を先に回すので、clone の直後でもそのまま動きます。
+エディタはタスクを通さないので、clone のあとに一度 `scripts/task.sh generate` を回します。入力が変わっていない生成は飛びます。
 
 タスクは [go-task](https://taskfile.dev/) で、`Taskfile.yml` と `tasks/<area>.yml` に書いてあります（[ADR-0080](docs/adr/0080-task-runner-go-task.md)）。`scripts/task.sh` が `tools/go.mod` で固定した版を `bin/task` にビルドして実行します。PATH 上の `task` は使いません。タスクの一覧は `scripts/task.sh --list` で出ます。
 
@@ -34,8 +40,8 @@ scripts/task.sh check
 4. PR テンプレートに従って PR を作成する。
 5. PR の CI が緑になったら、メンテナかオーケストレーター（エージェントを束ねて PR をマージする役）が
    `gh pr merge <PR> -R best-friends/my --auto --merge` で Merge Queue に入れる。`main` には Merge Queue からだけマージする。
-6. 衝突や `check` の失敗でキューから外れたら、`main` を取り込み、生成ファイル（`scripts/task.sh generate`・
-   `scripts/task.sh web:dist` の出力）は手で衝突を解かずに作り直し、`scripts/task.sh check:changed` を通して push する（もう一度キューに入れるのは 5. と同じ人）。
+6. 衝突や `check` の失敗でキューから外れたら、`main` を取り込み、コミットする生成ファイル（Go が読むもの。`scripts/task.sh generate` の出力）は
+   手で衝突を解かずに作り直し、`scripts/task.sh check:changed` を通して push する（もう一度キューに入れるのは 5. と同じ人）。
    `main` の取り込みは、PR が衝突したときかキューから外れたときだけにする（キューが最新の `main` に重ねて検査する）。
 
 ## CI
@@ -112,7 +118,7 @@ Web クライアント（`app/web`）は Vite でビルドし、`my serve` が�
 
 ```sh
 scripts/task.sh db:apply                       # SQLite の my.db にスキーマを適用
-cd app/web && bun run dev                      # Vite の開発サーバー（http://localhost:5173 固定）
+scripts/task.sh web:dev                        # Vite の開発サーバー（http://localhost:5173 固定。生成物を先に作る）
 MY_HOST=localhost:8080 MY_DATABASE_URL=my.db MY_KEK="$(openssl rand -base64 32)" \
   go run ./cmd/my serve -dev-vite-origin http://localhost:5173   # 別の端末で。http://localhost:8080 を開く
 ```
@@ -166,5 +172,6 @@ ADR を `Accepted` にするのはメンテナです。
 ## 翻訳・メッセージ
 
 利用者向けの文言は `locales/<locale>/<namespace>.json`（FormatJS JSON 形式）に追加し、`en` と `ja` を同時に更新します（[ADR-0009](docs/adr/0009-internationalization.md)）。
-編集したら `scripts/task.sh i18n:gen` で疑似ロケール（`en-XA` / `ar-XB`）と型付きアクセサを再生成してコミットします。
+編集したら `scripts/task.sh i18n:gen` で疑似ロケール（`en-XA` / `ar-XB`）と型付きアクセサを再生成し、Go が読むもの（`server` の疑似ロケール・
+`internal/i18n/messages_gen.go`・`internal/i18n/testdata/golden.json`）をコミットします。`client` の疑似ロケールと TS のアクセサはコミットしません。
 サーバーが描画する画面を疑似ロケールで見るときは `my serve -pseudo-locales` で起動し、ブラウザの言語を `en-XA` / `ar-XB` にします（このフラグがなければ選べません）。

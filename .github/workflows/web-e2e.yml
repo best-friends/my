@@ -81,12 +81,13 @@ jobs:
             go.mod
             go.sum
       # go:bin builds app/web/dist (vite preview serves it) and bin/my with it embedded (e2e/server.ts
-      # starts it).
+      # starts it), and generates the client pseudo-locales, which the specs read and the repository does not
+      # commit (ADR-0081).
       - name: go:bin
         run: scripts/task.sh go:bin
       # Artifacts drop file modes, so the build travels as a tarball that keeps bin/my executable.
       - name: Pack the build
-        run: tar -cf "$RUNNER_TEMP/e2e-build.tar" bin/my app/web/dist
+        run: tar -cf "$RUNNER_TEMP/e2e-build.tar" bin/my app/web/dist locales/en-XA/client*.json locales/ar-XB/client*.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-build-${{ inputs.matrix }}-w${{ inputs.workers }}

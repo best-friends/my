@@ -44,9 +44,10 @@ export default defineConfig({
     fs: { allow: [searchForWorkspaceRoot(process.cwd()), localesDir] },
   },
   plugins: [
-    // File-based routes from src/routes; the generated src/routeTree.gen.ts is committed so that tsc
-    // runs before a build. Each route's components go into their own chunk. TanStack Router's docs
-    // require this plugin before the React plugin.
+    // File-based routes from src/routes into src/routeTree.gen.ts, which is not committed (ADR-0081);
+    // scripts/routes.ts generates the same tree with these options for tsc and the tests before a build.
+    // Each route's components go into their own chunk. TanStack Router's docs require this plugin before
+    // the React plugin.
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     reactCompiler(),

@@ -2,9 +2,11 @@
 // Generates the list of the design tokens a server theme may override (ADR-0059) from src/theme.css and
 // src/tokens.ts, for the Go domain that validates and renders themes and for the client's theme editor:
 //
-//   bun run scripts/theme-tokens.ts           write the generated files (`scripts/task.sh web:tokens-gen`)
+//   bun run scripts/theme-tokens.ts           write both generated files (`scripts/task.sh web:tokens-gen`)
+//   bun run scripts/theme-tokens.ts --ts      write only src/themeTokens.gen.ts (`scripts/task.sh web:tokens-gen-ts`)
 //
-// check-tokens.ts (`scripts/task.sh web:tokens`) fails when a committed file differs from what this generates.
+// The Go file is committed and the TypeScript file is not (ADR-0081): check-tokens.ts (`scripts/task.sh web:tokens`)
+// fails when the committed Go file differs from what this generates.
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { toHex } from "../src/color";
@@ -138,21 +140,19 @@ function generate(): Map<string, string> {
   ]);
 }
 
-/** Problems with the committed generated files: each one that differs from what generate() writes. */
+/** Problems with the committed Go file: it differs from what generate() writes. */
 export function checkGenerated(): string[] {
-  const problems: string[] = [];
-  for (const [path, content] of generate()) {
-    let current = "";
-    try {
-      current = readFileSync(path, "utf8");
-    } catch {
-      // Missing: reported below.
-    }
-    if (current !== content) problems.push(`${path.slice(root.length + 1)} is stale; run \`scripts/task.sh web:tokens-gen\``);
+  const content = generate().get(goPath);
+  let current = "";
+  try {
+    current = readFileSync(goPath, "utf8");
+  } catch {
+    // Missing: reported below.
   }
-  return problems;
+  return current === content ? [] : [`${goPath.slice(root.length + 1)} is stale; run \`scripts/task.sh web:tokens-gen\``];
 }
 
 if (import.meta.main) {
-  for (const [path, content] of generate()) writeFileSync(path, content);
+  const tsOnly = process.argv.includes("--ts");
+  for (const [path, content] of generate()) if (!tsOnly || path === tsPath) writeFileSync(path, content);
 }

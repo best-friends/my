@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // i18n of the web client (ADR-0009): the `client` catalogs from locales/, formatted by react-intl.
 // Message IDs are "<namespace>:<key>"; their types come
-// from the typed accessors that tools/i18n generates (scripts/task.sh i18n:gen), so an unknown ID or a missing
+// from the typed accessors that tools/i18n generates (scripts/task.sh i18n:gen-ts), so an unknown ID or a missing
 // argument is a type error.
 //
 // The page starts in the server's locale: `my serve` writes the instance's default locale into <html lang>

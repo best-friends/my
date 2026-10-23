@@ -66,6 +66,8 @@ tasks:
         vars: { CHECKS: "{{.SELECTED}}" }
         if: '[ -n "{{trim .SELECTED}}" ]'
 
+  # The generated files Go reads are committed; the ones only the TS clients read are not, and the tasks that read
+  # them generate them first (ADR-0081). Run this once after a clone for an editor's type checks.
   generate:
     desc: Run every generator whose inputs changed since its last run; the others are up to date and skip
     deps:
@@ -74,6 +76,7 @@ tasks:
       - go:config-docs
       - i18n:gen
       - web:tokens-gen
+      - web:routes-gen
 
   # --- CI jobs (ADR-0079): each job runs one of these, and the same task runs locally ------------------------------
 
@@ -110,7 +113,7 @@ tasks:
       - go:test
 
   ci:client-static:
-    desc: "CI client-static: tsc, Oxlint, knip, the Vite build and its route tree, the i18n catalogs"
+    desc: "CI client-static: tsc, Oxlint, knip, the Vite build, the i18n catalogs"
     deps:
       # web:static reads app/web/src, where web:lint-rules copies its fixtures, so it runs after the deps.
       - web:lint-rules
