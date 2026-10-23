@@ -22,7 +22,8 @@ EXCLUDED=()
 declare -A seen=() checks=()
 
 # walk TASK adds the checks TASK reaches to `checks`. `--summary` lists a task's dependencies and its commands, one
-# per " - " line, a call of another task as " - Task: <name>".
+# per " - " line, a call of another task as " - Task: <name>". NO_COLOR keeps the colour codes go-task adds in CI
+# out of the lines.
 walk() {
   local task="$1" section="" line children=() own=0 child
   [ -z "${seen[$task]:-}" ] || return 0
@@ -40,7 +41,7 @@ walk() {
         esac
         ;;
     esac
-  done < <("$root/scripts/task.sh" --summary "$task")
+  done < <(NO_COLOR=1 "$root/scripts/task.sh" --summary "$task")
   if [ "$own" = 1 ]; then
     checks[$task]=1
     return 0
