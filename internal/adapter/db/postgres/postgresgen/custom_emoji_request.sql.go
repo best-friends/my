@@ -13,9 +13,9 @@ import (
 )
 
 const countCustomEmojiUsage = `-- name: CountCustomEmojiUsage :one
-SELECT ((SELECT COUNT(*) FROM custom_emojis e WHERE e.created_by_user_id = $1::text AND e.domain = '')
+SELECT ((SELECT COUNT(*) FROM custom_emojis e WHERE e.created_by_user_id = $1::uuid AND e.domain = '')
   + (SELECT COUNT(*) FROM custom_emoji_pending_requests p
-    WHERE p.requester_user_id = $1::text AND p.reserved_shortcode IS NOT NULL))::bigint AS used
+    WHERE p.requester_user_id = $1::uuid AND p.reserved_shortcode IS NOT NULL))::bigint AS used
 `
 
 // CountCustomEmojiUsage counts what the limit of a creator counts (ADR-0070 section 4): the local emoji
@@ -40,7 +40,7 @@ func (q *Queries) CustomEmojiShortcodeReserved(ctx context.Context, shortcode st
 }
 
 const deleteCustomEmojiPendingRequest = `-- name: DeleteCustomEmojiPendingRequest :execrows
-DELETE FROM custom_emoji_pending_requests WHERE request_id = $1
+DELETE FROM custom_emoji_pending_requests WHERE request_id = $1::uuid
 `
 
 func (q *Queries) DeleteCustomEmojiPendingRequest(ctx context.Context, requestID string) (int64, error) {
@@ -53,12 +53,12 @@ func (q *Queries) DeleteCustomEmojiPendingRequest(ctx context.Context, requestID
 
 const getCustomEmojiRequest = `-- name: GetCustomEmojiRequest :one
 SELECT r.id, r.kind, r.requester_user_id, r.emoji_id, r.shortcode, r.media_id, r.created_at,
-  COALESCE(o.id, '')::text AS outcome_id, COALESCE(o.outcome, '')::text AS outcome,
-  COALESCE(o.decided_by_user_id, '')::text AS decided_by_user_id, COALESCE(o.reason, '')::text AS reason,
-  COALESCE(o.emoji_id, '')::text AS outcome_emoji_id, COALESCE(o.decided_at, r.created_at)::timestamptz AS decided_at
+  COALESCE(o.id::text, '')::text AS outcome_id, COALESCE(o.outcome, '')::text AS outcome,
+  COALESCE(o.decided_by_user_id::text, '')::text AS decided_by_user_id, COALESCE(o.reason, '')::text AS reason,
+  COALESCE(o.emoji_id::text, '')::text AS outcome_emoji_id, COALESCE(o.decided_at, r.created_at)::timestamptz AS decided_at
 FROM custom_emoji_requests r
 LEFT JOIN custom_emoji_request_outcomes o ON o.request_id = r.id
-WHERE r.id = $1
+WHERE r.id = $1::uuid
 `
 
 type GetCustomEmojiRequestRow struct {
@@ -99,7 +99,7 @@ func (q *Queries) GetCustomEmojiRequest(ctx context.Context, id string) (GetCust
 }
 
 const getPendingImageRequestOfEmoji = `-- name: GetPendingImageRequestOfEmoji :one
-SELECT request_id FROM custom_emoji_pending_requests WHERE emoji_id = $1::text
+SELECT request_id FROM custom_emoji_pending_requests WHERE emoji_id = $1::uuid
 `
 
 func (q *Queries) GetPendingImageRequestOfEmoji(ctx context.Context, emojiID string) (string, error) {
@@ -194,7 +194,7 @@ func (q *Queries) InsertCustomEmojiRequestOutcome(ctx context.Context, arg Inser
 const isMediaOfPendingCustomEmojiRequest = `-- name: IsMediaOfPendingCustomEmojiRequest :one
 SELECT EXISTS (SELECT 1 FROM custom_emoji_requests r
   JOIN custom_emoji_pending_requests p ON p.request_id = r.id
-  WHERE r.media_id = $1) AS pending
+  WHERE r.media_id = $1::uuid) AS pending
 `
 
 // IsMediaOfPendingCustomEmojiRequest reports whether a pending request uses @media_id as its
@@ -208,22 +208,22 @@ func (q *Queries) IsMediaOfPendingCustomEmojiRequest(ctx context.Context, mediaI
 
 const listCustomEmojiRequests = `-- name: ListCustomEmojiRequests :many
 SELECT r.id, r.kind, r.requester_user_id, r.emoji_id, r.shortcode, r.media_id, r.created_at,
-  COALESCE(o.id, '')::text AS outcome_id, COALESCE(o.outcome, '')::text AS outcome,
-  COALESCE(o.decided_by_user_id, '')::text AS decided_by_user_id, COALESCE(o.reason, '')::text AS reason,
-  COALESCE(o.emoji_id, '')::text AS outcome_emoji_id, COALESCE(o.decided_at, r.created_at)::timestamptz AS decided_at
+  COALESCE(o.id::text, '')::text AS outcome_id, COALESCE(o.outcome, '')::text AS outcome,
+  COALESCE(o.decided_by_user_id::text, '')::text AS decided_by_user_id, COALESCE(o.reason, '')::text AS reason,
+  COALESCE(o.emoji_id::text, '')::text AS outcome_emoji_id, COALESCE(o.decided_at, r.created_at)::timestamptz AS decided_at
 FROM custom_emoji_requests r
 LEFT JOIN custom_emoji_request_outcomes o ON o.request_id = r.id
-WHERE ($1::text = '' OR r.requester_user_id = $1::text)
+WHERE ($1::uuid IS NULL OR r.requester_user_id = $1::uuid)
   AND ($2::text = '' OR ($2::text = 'pending' AND o.id IS NULL) OR o.outcome = $2::text)
-  AND ($3::text = '' OR r.id < $3::text)
+  AND ($3::uuid IS NULL OR r.id < $3::uuid)
 ORDER BY r.id DESC
 LIMIT $4
 `
 
 type ListCustomEmojiRequestsParams struct {
-	RequesterUserID string
+	RequesterUserID *string
 	State           string
-	BeforeID        string
+	BeforeID        *string
 	RowLimit        int32
 }
 
@@ -287,12 +287,12 @@ func (q *Queries) ListCustomEmojiRequests(ctx context.Context, arg ListCustomEmo
 
 const listCustomEmojiRequestsByID = `-- name: ListCustomEmojiRequestsByID :many
 SELECT r.id, r.kind, r.requester_user_id, r.emoji_id, r.shortcode, r.media_id, r.created_at,
-  COALESCE(o.id, '')::text AS outcome_id, COALESCE(o.outcome, '')::text AS outcome,
-  COALESCE(o.decided_by_user_id, '')::text AS decided_by_user_id, COALESCE(o.reason, '')::text AS reason,
-  COALESCE(o.emoji_id, '')::text AS outcome_emoji_id, COALESCE(o.decided_at, r.created_at)::timestamptz AS decided_at
+  COALESCE(o.id::text, '')::text AS outcome_id, COALESCE(o.outcome, '')::text AS outcome,
+  COALESCE(o.decided_by_user_id::text, '')::text AS decided_by_user_id, COALESCE(o.reason, '')::text AS reason,
+  COALESCE(o.emoji_id::text, '')::text AS outcome_emoji_id, COALESCE(o.decided_at, r.created_at)::timestamptz AS decided_at
 FROM custom_emoji_requests r
 LEFT JOIN custom_emoji_request_outcomes o ON o.request_id = r.id
-WHERE r.id = ANY($1::text[])
+WHERE r.id = ANY($1::uuid[])
 ORDER BY r.id
 `
 

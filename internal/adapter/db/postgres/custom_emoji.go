@@ -207,7 +207,7 @@ func (r *CustomEmojiRepository) ListCustomEmojiRecords(ctx context.Context, q ap
 		return nil, err
 	}
 	rows, err := r.db.reader().ListAdminCustomEmojis(ctx, postgresgen.ListAdminCustomEmojisParams{
-		Locality: int32(q.Locality), Domain: q.Domain, Shortcode: q.Shortcode, CreatedBy: q.CreatedBy, BeforeID: q.Before, RowLimit: n, //nolint:gosec // a locality is 0 to 2
+		Locality: int32(q.Locality), Domain: q.Domain, Shortcode: q.Shortcode, CreatedBy: toNullString(q.CreatedBy), BeforeID: toNullString(q.Before), RowLimit: n, //nolint:gosec // a locality is 0 to 2
 	})
 	if err != nil {
 		return nil, wrap(err, "list custom emoji")
@@ -242,7 +242,7 @@ func (r *CustomEmojiRepository) ListUnreferencedRemoteEmojis(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	ids, err := r.db.reader().ListUnreferencedRemoteEmojis(ctx, postgresgen.ListUnreferencedRemoteEmojisParams{After: after, RowLimit: n})
+	ids, err := r.db.reader().ListUnreferencedRemoteEmojis(ctx, postgresgen.ListUnreferencedRemoteEmojisParams{After: toNullString(after), RowLimit: n})
 	return ids, wrap(err, "list unreferenced remote emoji")
 }
 

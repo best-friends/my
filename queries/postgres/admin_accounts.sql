@@ -19,7 +19,7 @@ WHERE NOT (a.domain = '' AND a.actor_type = 'application')
   AND (sqlc.arg(username_prefix)::text = '' OR EXISTS (
     SELECT 1 FROM account_handles h
     WHERE h.account_id = a.id AND left(h.username_normalized, length(sqlc.arg(username_prefix)::text)) = sqlc.arg(username_prefix)::text))
-  AND (sqlc.arg(before)::text = '' OR a.id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR a.id < sqlc.narg(before)::uuid)
 ORDER BY a.id DESC
 LIMIT sqlc.arg(lim);
 
@@ -27,7 +27,7 @@ LIMIT sqlc.arg(lim);
 -- the account before (empty for the first page).
 -- name: ListAccountIDsInLifecycleState :many
 SELECT account_id FROM account_lifecycle_states
-WHERE state = sqlc.arg(state)::text AND (sqlc.arg(before)::text = '' OR account_id < sqlc.arg(before)::text)
+WHERE state = sqlc.arg(state)::text AND (sqlc.narg(before)::uuid IS NULL OR account_id < sqlc.narg(before)::uuid)
 ORDER BY account_id DESC
 LIMIT sqlc.arg(lim);
 
@@ -38,7 +38,7 @@ LIMIT sqlc.arg(lim);
 -- name: ListUserIDsByEmailDomain :many
 SELECT user_id FROM user_primary_emails
 WHERE right(address_normalized, length(sqlc.arg(suffix)::text)) = sqlc.arg(suffix)::text
-  AND (sqlc.arg(before)::text = '' OR user_id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR user_id < sqlc.narg(before)::uuid)
 ORDER BY user_id DESC
 LIMIT sqlc.arg(lim);
 
@@ -50,7 +50,7 @@ SELECT u.user_id FROM (
   UNION
   SELECT r.user_id FROM registration_origins r WHERE r.ip = sqlc.arg(ip)::text
 ) AS u
-WHERE sqlc.arg(before)::text = '' OR u.user_id < sqlc.arg(before)::text
+WHERE sqlc.narg(before)::uuid IS NULL OR u.user_id < sqlc.narg(before)::uuid
 ORDER BY u.user_id DESC
 LIMIT sqlc.arg(lim);
 
@@ -58,7 +58,7 @@ LIMIT sqlc.arg(lim);
 -- first, before the user before (empty for the first page).
 -- name: ListUserIDsInRegistrationState :many
 SELECT user_id FROM user_registration_states
-WHERE state = sqlc.arg(state)::text AND (sqlc.arg(before)::text = '' OR user_id < sqlc.arg(before)::text)
+WHERE state = sqlc.arg(state)::text AND (sqlc.narg(before)::uuid IS NULL OR user_id < sqlc.narg(before)::uuid)
 ORDER BY user_id DESC
 LIMIT sqlc.arg(lim);
 
@@ -77,6 +77,6 @@ LIMIT sqlc.arg(lim);
 SELECT DISTINCT account_id FROM account_restrictions
 WHERE restriction = sqlc.arg(restriction)::text
   AND (effective_until IS NULL OR effective_until > sqlc.arg(now)::timestamptz)
-  AND (sqlc.arg(before)::text = '' OR account_id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR account_id < sqlc.narg(before)::uuid)
 ORDER BY account_id DESC
 LIMIT sqlc.arg(lim);

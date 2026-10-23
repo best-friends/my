@@ -14,14 +14,14 @@ import (
 
 const listAccountIDsInLifecycleState = `-- name: ListAccountIDsInLifecycleState :many
 SELECT account_id FROM account_lifecycle_states
-WHERE state = $1::text AND ($2::text = '' OR account_id < $2::text)
+WHERE state = $1::text AND ($2::uuid IS NULL OR account_id < $2::uuid)
 ORDER BY account_id DESC
 LIMIT $3
 `
 
 type ListAccountIDsInLifecycleStateParams struct {
 	State  string
-	Before string
+	Before *string
 	Lim    int32
 }
 
@@ -52,7 +52,7 @@ const listRestrictedAccountIDs = `-- name: ListRestrictedAccountIDs :many
 SELECT DISTINCT account_id FROM account_restrictions
 WHERE restriction = $1::text
   AND (effective_until IS NULL OR effective_until > $2::timestamptz)
-  AND ($3::text = '' OR account_id < $3::text)
+  AND ($3::uuid IS NULL OR account_id < $3::uuid)
 ORDER BY account_id DESC
 LIMIT $4
 `
@@ -60,7 +60,7 @@ LIMIT $4
 type ListRestrictedAccountIDsParams struct {
 	Restriction string
 	Now         time.Time
-	Before      string
+	Before      *string
 	Lim         int32
 }
 
@@ -135,14 +135,14 @@ const listUserIDsByEmailDomain = `-- name: ListUserIDsByEmailDomain :many
 
 SELECT user_id FROM user_primary_emails
 WHERE right(address_normalized, length($1::text)) = $1::text
-  AND ($2::text = '' OR user_id < $2::text)
+  AND ($2::uuid IS NULL OR user_id < $2::uuid)
 ORDER BY user_id DESC
 LIMIT $3
 `
 
 type ListUserIDsByEmailDomainParams struct {
 	Suffix string
-	Before string
+	Before *string
 	Lim    int32
 }
 
@@ -175,14 +175,14 @@ SELECT u.user_id FROM (
   UNION
   SELECT r.user_id FROM registration_origins r WHERE r.ip = $1::text
 ) AS u
-WHERE $2::text = '' OR u.user_id < $2::text
+WHERE $2::uuid IS NULL OR u.user_id < $2::uuid
 ORDER BY u.user_id DESC
 LIMIT $3
 `
 
 type ListUserIDsByIPParams struct {
 	Ip     string
-	Before string
+	Before *string
 	Lim    int32
 }
 
@@ -210,14 +210,14 @@ func (q *Queries) ListUserIDsByIP(ctx context.Context, arg ListUserIDsByIPParams
 
 const listUserIDsInRegistrationState = `-- name: ListUserIDsInRegistrationState :many
 SELECT user_id FROM user_registration_states
-WHERE state = $1::text AND ($2::text = '' OR user_id < $2::text)
+WHERE state = $1::text AND ($2::uuid IS NULL OR user_id < $2::uuid)
 ORDER BY user_id DESC
 LIMIT $3
 `
 
 type ListUserIDsInRegistrationStateParams struct {
 	State  string
-	Before string
+	Before *string
 	Lim    int32
 }
 
@@ -256,7 +256,7 @@ WHERE NOT (a.domain = '' AND a.actor_type = 'application')
   AND ($3::text = '' OR EXISTS (
     SELECT 1 FROM account_handles h
     WHERE h.account_id = a.id AND left(h.username_normalized, length($3::text)) = $3::text))
-  AND ($4::text = '' OR a.id < $4::text)
+  AND ($4::uuid IS NULL OR a.id < $4::uuid)
 ORDER BY a.id DESC
 LIMIT $5
 `
@@ -265,7 +265,7 @@ type SearchAccountIDsParams struct {
 	Domain         string
 	Origin         string
 	UsernamePrefix string
-	Before         string
+	Before         *string
 	Lim            int32
 }
 

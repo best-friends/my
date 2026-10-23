@@ -13,7 +13,7 @@ import (
 )
 
 const deleteLinkCardMediaFile = `-- name: DeleteLinkCardMediaFile :exec
-DELETE FROM media_files WHERE media_files.id = $1 AND media_files.origin = 'remote' AND media_files.owner_account_id = ''
+DELETE FROM media_files WHERE media_files.id = $1::uuid AND media_files.origin = 'remote' AND media_files.owner_account_id IS NULL
 `
 
 // DeleteLinkCardMediaFile deletes the media file of an image of link cards, which has no owner.
@@ -23,7 +23,7 @@ func (q *Queries) DeleteLinkCardMediaFile(ctx context.Context, mediaID string) e
 }
 
 const deleteStatusLinkCard = `-- name: DeleteStatusLinkCard :exec
-DELETE FROM status_link_cards WHERE status_id = $1
+DELETE FROM status_link_cards WHERE status_id = $1::uuid
 `
 
 func (q *Queries) DeleteStatusLinkCard(ctx context.Context, statusID string) error {
@@ -54,8 +54,8 @@ func (q *Queries) DeleteUnreferencedLinkCard(ctx context.Context, arg DeleteUnre
 
 const deleteUnreferencedLinkCardMedia = `-- name: DeleteUnreferencedLinkCardMedia :execrows
 DELETE FROM link_card_media
-WHERE link_card_media.media_id = $1
-  AND NOT EXISTS (SELECT 1 FROM link_cards c WHERE c.image_media_id = $1)
+WHERE link_card_media.media_id = $1::uuid
+  AND NOT EXISTS (SELECT 1 FROM link_cards c WHERE c.image_media_id = $1::uuid)
 `
 
 func (q *Queries) DeleteUnreferencedLinkCardMedia(ctx context.Context, mediaID string) (int64, error) {
@@ -67,7 +67,7 @@ func (q *Queries) DeleteUnreferencedLinkCardMedia(ctx context.Context, mediaID s
 }
 
 const eraseLinkCardsOfStatuses = `-- name: EraseLinkCardsOfStatuses :exec
-DELETE FROM status_link_cards WHERE status_id = ANY($1::text[])
+DELETE FROM status_link_cards WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) EraseLinkCardsOfStatuses(ctx context.Context, ids []string) error {
@@ -102,7 +102,7 @@ func (q *Queries) GetLinkCard(ctx context.Context, url string) (LinkCard, error)
 
 const getLinkCardMedia = `-- name: GetLinkCardMedia :one
 SELECT media_id, remote_url, content_type, width, height, blurhash, description
-FROM link_card_media WHERE media_id = $1
+FROM link_card_media WHERE media_id = $1::uuid
 `
 
 func (q *Queries) GetLinkCardMedia(ctx context.Context, mediaID string) (LinkCardMedium, error) {
@@ -141,7 +141,7 @@ func (q *Queries) GetLinkCardMediaByURL(ctx context.Context, remoteUrl string) (
 }
 
 const getStatusLinkCardURL = `-- name: GetStatusLinkCardURL :one
-SELECT url FROM status_link_cards WHERE status_id = $1
+SELECT url FROM status_link_cards WHERE status_id = $1::uuid
 `
 
 func (q *Queries) GetStatusLinkCardURL(ctx context.Context, statusID string) (string, error) {

@@ -53,21 +53,21 @@ func (q *Queries) InsertAuditLogEntry(ctx context.Context, arg InsertAuditLogEnt
 const listAuditLogEntries = `-- name: ListAuditLogEntries :many
 SELECT id, actor_kind, actor_user_id, action, target_kind, target_id, target_label, source_event_id, occurred_at
 FROM audit_log_entries
-WHERE ($1::text = '' OR actor_user_id = $1::text)
+WHERE ($1::uuid IS NULL OR actor_user_id = $1::uuid)
   AND ($2::text = '' OR action = $2::text)
   AND ($3::text = '' OR target_kind = $3::text)
   AND ($4::text = '' OR target_id = $4::text)
-  AND ($5::text = '' OR id < $5::text)
+  AND ($5::uuid IS NULL OR id < $5::uuid)
 ORDER BY id DESC
 LIMIT $6
 `
 
 type ListAuditLogEntriesParams struct {
-	ActorUserID string
+	ActorUserID *string
 	Action      string
 	TargetKind  string
 	TargetID    string
-	Before      string
+	Before      *string
 	Lim         int32
 }
 
@@ -111,7 +111,7 @@ func (q *Queries) ListAuditLogEntries(ctx context.Context, arg ListAuditLogEntri
 }
 
 const listExistingAppealIDs = `-- name: ListExistingAppealIDs :many
-SELECT id FROM moderation_appeals WHERE id = ANY($1::text[]) ORDER BY id
+SELECT id FROM moderation_appeals WHERE id = ANY($1::uuid[]) ORDER BY id
 `
 
 func (q *Queries) ListExistingAppealIDs(ctx context.Context, ids []string) ([]string, error) {
@@ -136,7 +136,7 @@ func (q *Queries) ListExistingAppealIDs(ctx context.Context, ids []string) ([]st
 
 const listExistingReportIDs = `-- name: ListExistingReportIDs :many
 
-SELECT id FROM reports WHERE id = ANY($1::text[]) ORDER BY id
+SELECT id FROM reports WHERE id = ANY($1::uuid[]) ORDER BY id
 `
 
 // The targets of the entries that still exist, for the audit log to tell those that are gone
@@ -163,7 +163,7 @@ func (q *Queries) ListExistingReportIDs(ctx context.Context, ids []string) ([]st
 }
 
 const listExistingSignupBlockIDs = `-- name: ListExistingSignupBlockIDs :many
-SELECT id FROM signup_blocks WHERE id = ANY($1::text[]) ORDER BY id
+SELECT id FROM signup_blocks WHERE id = ANY($1::uuid[]) ORDER BY id
 `
 
 func (q *Queries) ListExistingSignupBlockIDs(ctx context.Context, ids []string) ([]string, error) {

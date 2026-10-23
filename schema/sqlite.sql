@@ -873,7 +873,7 @@ CREATE TABLE announcement_reads (
 -- Resource: a media file, uploaded by a local account or fetched from a remote server.
 CREATE TABLE media_files (
   id TEXT NOT NULL PRIMARY KEY,
-  owner_account_id TEXT NOT NULL,
+  owner_account_id TEXT,
   origin TEXT NOT NULL CHECK (origin IN ('upload', 'remote')),
   created_at INTEGER NOT NULL
 ) STRICT;
@@ -1655,7 +1655,7 @@ CREATE INDEX link_cards_image_media_id ON link_cards (image_media_id);
 
 -- Resource (subtype of media_files): the image of link cards (ADR-0062 §3), fetched once to
 -- check its format and read its size and blurhash; the file itself is not kept. Its owner is the
--- card's URL, not an account: media_files.owner_account_id is empty. The media proxy serves it.
+-- card's URL, not an account: media_files.owner_account_id is NULL. The media proxy serves it.
 -- description is the og:image:alt, empty for none.
 CREATE TABLE link_card_media (
   media_id TEXT NOT NULL PRIMARY KEY,

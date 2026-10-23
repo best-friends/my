@@ -145,11 +145,11 @@ func (r *SupporterRepository) plans(ctx context.Context, tx uow.Tx, planID strin
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.ListSupporterPlans(ctx, planID)
+	rows, err := q.ListSupporterPlans(ctx, toNullString(planID))
 	if err != nil {
 		return nil, wrap(err, "list supporter plans")
 	}
-	heads, err := q.ListSupporterPriceHeads(ctx, planID)
+	heads, err := q.ListSupporterPriceHeads(ctx, toNullString(planID))
 	if err != nil {
 		return nil, wrap(err, "list supporter price heads")
 	}
@@ -608,7 +608,7 @@ func (r *SupporterRepository) ListSubscriptions(ctx context.Context, f supporter
 		return nil, err
 	}
 	ids, err := q.ListSupporterSubscriptionIDs(ctx, postgresgen.ListSupporterSubscriptionIDsParams{
-		PlanID: f.PlanID, State: string(f.State), Before: f.Before, Lim: lim,
+		PlanID: toNullString(f.PlanID), State: string(f.State), Before: toNullString(f.Before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list supporter subscriptions")
@@ -698,12 +698,12 @@ func (r *SupporterRepository) ListListings(ctx context.Context, f supporters.Lis
 	if err != nil {
 		return nil, err
 	}
-	params := postgresgen.ListSupporterListingsParams{PlanID: f.PlanID, Lim: lim}
+	params := postgresgen.ListSupporterListingsParams{PlanID: toNullString(f.PlanID), Lim: lim}
 	if f.After != nil {
 		if params.AfterRank, err = toInt32(f.After.Rank, "rank"); err != nil {
 			return nil, err
 		}
-		params.AfterUserID, params.AfterAt = f.After.UserID, f.After.ListedAt
+		params.AfterUserID, params.AfterAt = toNullString(f.After.UserID), f.After.ListedAt
 	}
 	rows, err := r.db.reader().ListSupporterListings(ctx, params)
 	if err != nil {

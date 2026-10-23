@@ -123,7 +123,7 @@ func (r *StatusRepository) InsertLinkCardMedia(ctx context.Context, tx uow.Tx, m
 		return false, wrap(err, "insert link card media")
 	}
 	err = q.InsertMediaFile(ctx, postgresgen.InsertMediaFileParams{
-		ID: m.MediaID, OwnerAccountID: "", Origin: string(content.MediaOriginRemote), CreatedAt: createdAt,
+		ID: m.MediaID, OwnerAccountID: nil, Origin: string(content.MediaOriginRemote), CreatedAt: createdAt,
 	})
 	return err == nil, wrap(err, "insert link card media file")
 }

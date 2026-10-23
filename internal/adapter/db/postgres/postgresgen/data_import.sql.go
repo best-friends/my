@@ -13,7 +13,7 @@ import (
 )
 
 const deleteDataImport = `-- name: DeleteDataImport :exec
-DELETE FROM data_imports WHERE id = $1
+DELETE FROM data_imports WHERE id = $1::uuid
 `
 
 func (q *Queries) DeleteDataImport(ctx context.Context, id string) error {
@@ -22,7 +22,7 @@ func (q *Queries) DeleteDataImport(ctx context.Context, id string) error {
 }
 
 const deleteDataImportItemResults = `-- name: DeleteDataImportItemResults :exec
-DELETE FROM data_import_item_results WHERE import_id = $1
+DELETE FROM data_import_item_results WHERE import_id = $1::uuid
 `
 
 func (q *Queries) DeleteDataImportItemResults(ctx context.Context, importID string) error {
@@ -31,7 +31,7 @@ func (q *Queries) DeleteDataImportItemResults(ctx context.Context, importID stri
 }
 
 const deleteDataImportItems = `-- name: DeleteDataImportItems :exec
-DELETE FROM data_import_items WHERE import_id = $1
+DELETE FROM data_import_items WHERE import_id = $1::uuid
 `
 
 func (q *Queries) DeleteDataImportItems(ctx context.Context, importID string) error {
@@ -45,7 +45,7 @@ SELECT i.id, i.user_id, i.account_id, i.kind, i.mode, i.created_at,
   (SELECT COUNT(*) FROM data_import_item_results r WHERE r.import_id = i.id) AS processed,
   (SELECT COUNT(*) FROM data_import_item_results r WHERE r.import_id = i.id AND r.outcome = 'failed') AS failed
 FROM data_imports i
-WHERE i.id = $1
+WHERE i.id = $1::uuid
 `
 
 type GetDataImportProgressRow struct {
@@ -135,7 +135,7 @@ func (q *Queries) InsertDataImportItemResult(ctx context.Context, arg InsertData
 
 const insertDataImportItems = `-- name: InsertDataImportItems :exec
 INSERT INTO data_import_items (import_id, position, action, target, show_boosts, notify, hide_notifications)
-SELECT $1::text, unnest($2::integer[]), unnest($3::text[]),
+SELECT $1::uuid, unnest($2::integer[]), unnest($3::text[]),
   unnest($4::text[]), unnest($5::boolean[]), unnest($6::boolean[]),
   unnest($7::boolean[])
 `
@@ -170,7 +170,7 @@ SELECT i.id, i.user_id, i.account_id, i.kind, i.mode, i.created_at,
   (SELECT COUNT(*) FROM data_import_item_results r WHERE r.import_id = i.id) AS processed,
   (SELECT COUNT(*) FROM data_import_item_results r WHERE r.import_id = i.id AND r.outcome = 'failed') AS failed
 FROM data_imports i
-WHERE i.user_id = $1
+WHERE i.user_id = $1::uuid
 ORDER BY i.id DESC LIMIT $2
 `
 
@@ -256,7 +256,7 @@ func (q *Queries) ListDataImportsCreatedBefore(ctx context.Context, arg ListData
 const listPendingDataImportItems = `-- name: ListPendingDataImportItems :many
 SELECT t.import_id, t.position, t.action, t.target, t.show_boosts, t.notify, t.hide_notifications
 FROM data_import_items t
-WHERE t.import_id = $1
+WHERE t.import_id = $1::uuid
   AND NOT EXISTS (SELECT 1 FROM data_import_item_results r WHERE r.import_id = t.import_id AND r.position = t.position)
 ORDER BY t.position LIMIT $2
 `

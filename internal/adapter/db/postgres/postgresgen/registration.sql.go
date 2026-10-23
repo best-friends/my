@@ -333,13 +333,13 @@ SELECT i.id, i.code, i.created_by_user_id, i.max_uses, i.expires_at, i.created_a
   (SELECT COUNT(*) FROM invite_redemptions r WHERE r.invite_id = i.id) AS uses,
   EXISTS (SELECT 1 FROM invite_revocations v WHERE v.invite_id = i.id) AS revoked
 FROM invites i
-WHERE $1::text = '' OR i.id < $1::text
+WHERE $1::uuid IS NULL OR i.id < $1::uuid
 ORDER BY i.id DESC
 LIMIT $2
 `
 
 type ListInvitesParams struct {
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 
@@ -392,15 +392,15 @@ JOIN registration_applications a ON a.user_id = s.user_id
 LEFT JOIN user_primary_emails p ON p.user_id = s.user_id
 LEFT JOIN user_email_addresses e ON e.id = p.email_address_id
 WHERE s.state = $1
-  AND (CAST($2 AS TEXT) = '' OR s.since > $3
-    OR (s.since = $3 AND s.user_id > $2))
+  AND ($2::uuid IS NULL OR s.since > $3
+    OR (s.since = $3 AND s.user_id > $2::uuid))
 ORDER BY s.since, s.user_id
 LIMIT $4
 `
 
 type ListRegistrationsInStateParams struct {
 	State       string
-	AfterUserID string
+	AfterUserID *string
 	AfterSince  time.Time
 	PageLimit   int32
 }

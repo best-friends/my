@@ -68,7 +68,7 @@ SELECT media_id, focus_x, focus_y FROM media_focus WHERE media_id = $1;
 -- status revision attaches and no custom emoji uses as its image.
 -- name: ListUnattachedUploads :many
 SELECT m.id FROM media_files m
-WHERE m.origin = 'upload' AND m.id > sqlc.arg(after_id) AND m.id < sqlc.arg(before_id)
+WHERE m.origin = 'upload' AND m.id > COALESCE(sqlc.narg(after_id)::uuid, '00000000-0000-0000-0000-000000000000') AND m.id < sqlc.arg(before_id)
   AND NOT EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = m.id)
   AND NOT EXISTS (SELECT 1 FROM custom_emoji_images c WHERE c.media_id = m.id)
 ORDER BY m.id
@@ -81,7 +81,7 @@ LIMIT sqlc.arg(row_limit);
 SELECT m.id, CAST(EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = m.id)
   OR EXISTS (SELECT 1 FROM custom_emoji_images c WHERE c.media_id = m.id) AS BOOLEAN) AS attached
 FROM media_files m
-WHERE m.owner_account_id = sqlc.arg(owner_account_id) AND m.origin = 'upload' AND m.id > sqlc.arg(after_id)
+WHERE m.owner_account_id = sqlc.arg(owner_account_id) AND m.origin = 'upload' AND m.id > COALESCE(sqlc.narg(after_id)::uuid, '00000000-0000-0000-0000-000000000000')
 ORDER BY m.id
 LIMIT sqlc.arg(row_limit);
 
@@ -107,7 +107,7 @@ FROM media_files m
 JOIN media_processing_results r ON r.id = (
   SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
 JOIN media_variants v ON v.result_id = r.id
-WHERE m.id = ANY(sqlc.arg(ids)::text[])
+WHERE m.id = ANY(sqlc.arg(ids)::uuid[])
   AND r.outcome = 'ready'
 ORDER BY m.id, v.size, v.motion;
 

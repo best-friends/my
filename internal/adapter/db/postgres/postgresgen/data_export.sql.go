@@ -13,7 +13,7 @@ import (
 )
 
 const deleteDataExport = `-- name: DeleteDataExport :exec
-DELETE FROM data_exports WHERE id = $1
+DELETE FROM data_exports WHERE id = $1::uuid
 `
 
 func (q *Queries) DeleteDataExport(ctx context.Context, id string) error {
@@ -22,7 +22,7 @@ func (q *Queries) DeleteDataExport(ctx context.Context, id string) error {
 }
 
 const deleteDataExportResult = `-- name: DeleteDataExportResult :exec
-DELETE FROM data_export_results WHERE export_id = $1
+DELETE FROM data_export_results WHERE export_id = $1::uuid
 `
 
 func (q *Queries) DeleteDataExportResult(ctx context.Context, exportID string) error {
@@ -33,7 +33,7 @@ func (q *Queries) DeleteDataExportResult(ctx context.Context, exportID string) e
 const getDataExport = `-- name: GetDataExport :one
 SELECT e.id, e.user_id, e.requested_at, r.outcome, r.blob_key, r.file_size, r.expires_at, r.completed_at
 FROM data_exports e LEFT JOIN data_export_results r ON r.export_id = e.id
-WHERE e.id = $1
+WHERE e.id = $1::uuid
 `
 
 type GetDataExportRow struct {
@@ -111,7 +111,7 @@ func (q *Queries) InsertDataExportResult(ctx context.Context, arg InsertDataExpo
 const listDataExports = `-- name: ListDataExports :many
 SELECT e.id, e.user_id, e.requested_at, r.outcome, r.blob_key, r.file_size, r.expires_at, r.completed_at
 FROM data_exports e LEFT JOIN data_export_results r ON r.export_id = e.id
-WHERE e.user_id = $1
+WHERE e.user_id = $1::uuid
 ORDER BY e.id DESC LIMIT $2
 `
 

@@ -428,7 +428,7 @@ func (r *ModerationRepository) ListReports(ctx context.Context, q appmoderation.
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.db.reader().ListReports(ctx, postgresgen.ListReportsParams{State: string(q.State), Before: q.Before, Lim: lim})
+	rows, err := r.db.reader().ListReports(ctx, postgresgen.ListReportsParams{State: string(q.State), Before: toNullString(q.Before), Lim: lim})
 	if err != nil {
 		return nil, wrap(err, "list reports")
 	}
@@ -462,7 +462,7 @@ func (r *ModerationRepository) ListReportsByReporter(ctx context.Context, report
 		return nil, err
 	}
 	rows, err := r.db.reader().ListReportsByReporter(ctx, postgresgen.ListReportsByReporterParams{
-		ReporterAccountID: reporterAccountID, Before: before, Lim: lim,
+		ReporterAccountID: reporterAccountID, Before: toNullString(before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list reports by reporter")
@@ -504,7 +504,7 @@ func (r *ModerationRepository) ListDomainActions(ctx context.Context, q appmoder
 		return nil, err
 	}
 	rows, err := r.db.reader().ListDomainModerationActions(ctx, postgresgen.ListDomainModerationActionsParams{
-		Domain: q.Domain, Kinds: domainActionKindStrings(q.Kinds), InEffectAt: q.InEffectAt, Before: q.Before, Lim: lim,
+		Domain: q.Domain, Kinds: domainActionKindStrings(q.Kinds), InEffectAt: q.InEffectAt, Before: toNullString(q.Before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list domain moderation actions")
@@ -553,7 +553,7 @@ func (r *ModerationRepository) ListActions(ctx context.Context, q appmoderation.
 		return nil, err
 	}
 	rows, err := r.db.reader().ListModerationActions(ctx, postgresgen.ListModerationActionsParams{
-		AccountID: q.AccountID, InEffectAt: q.InEffectAt, Before: q.Before, Lim: lim,
+		AccountID: toNullString(q.AccountID), InEffectAt: q.InEffectAt, Before: toNullString(q.Before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list moderation actions")

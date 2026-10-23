@@ -957,7 +957,7 @@ const listOpenSupporterCheckouts = `-- name: ListOpenSupporterCheckouts :many
 SELECT c.provider_checkout_id FROM supporter_checkouts c
 JOIN supporter_subscription_heads h ON h.subscription_id = c.subscription_id
 WHERE c.provider = $1 AND h.state = 'pending' AND c.expires_at > $2
-  AND c.id = (SELECT MAX(x.id) FROM supporter_checkouts x WHERE x.subscription_id = c.subscription_id)
+  AND c.id = (SELECT x.id FROM supporter_checkouts x WHERE x.subscription_id = c.subscription_id ORDER BY x.id DESC LIMIT 1)
 ORDER BY c.id
 `
 
@@ -994,16 +994,16 @@ JOIN supporter_live_subscriptions s ON s.user_id = l.user_id
 JOIN supporter_subscription_heads h ON h.subscription_id = s.subscription_id
 JOIN supporter_plan_heads ph ON ph.plan_id = h.plan_id
 WHERE h.state IN ('active', 'canceling', 'past_due')
-  AND ($1::text = '' OR h.plan_id = $1::text)
-  AND ($2::text = '' OR ph.rank > $3::integer
+  AND ($1::uuid IS NULL OR h.plan_id = $1::uuid)
+  AND ($2::uuid IS NULL OR ph.rank > $3::integer
     OR (ph.rank = $3::integer AND (l.created_at < $4::timestamptz
-      OR (l.created_at = $4::timestamptz AND l.user_id < $2::text))))
+      OR (l.created_at = $4::timestamptz AND l.user_id < $2::uuid))))
 ORDER BY ph.rank, l.created_at DESC, l.user_id DESC LIMIT $5
 `
 
 type ListSupporterListingsParams struct {
-	PlanID      string
-	AfterUserID string
+	PlanID      *string
+	AfterUserID *string
 	AfterRank   int32
 	AfterAt     time.Time
 	Lim         int32
@@ -1057,9 +1057,9 @@ SELECT p.id, p.role_id, p.currency, p.created_by_user_id, p.created_at,
   EXISTS (SELECT 1 FROM supporter_plan_retirements t WHERE t.plan_id = p.id) AS retired,
   rt.retired_at
 FROM supporter_plans p
-JOIN supporter_plan_revisions r ON r.id = (SELECT MAX(x.id) FROM supporter_plan_revisions x WHERE x.plan_id = p.id)
+JOIN supporter_plan_revisions r ON r.id = (SELECT x.id FROM supporter_plan_revisions x WHERE x.plan_id = p.id ORDER BY x.id DESC LIMIT 1)
 LEFT JOIN supporter_plan_retirements rt ON rt.plan_id = p.id
-WHERE $1::text = '' OR p.id = $1::text
+WHERE $1::uuid IS NULL OR p.id = $1::uuid
 ORDER BY r.rank, p.id
 `
 
@@ -1085,7 +1085,7 @@ type ListSupporterPlansRow struct {
 
 // ListSupporterPlans returns every plan, or the one of plan_id, with its newest revision and
 // its retirement (retired_at NULL for none), by rank.
-func (q *Queries) ListSupporterPlans(ctx context.Context, planID string) ([]ListSupporterPlansRow, error) {
+func (q *Queries) ListSupporterPlans(ctx context.Context, planID *string) ([]ListSupporterPlansRow, error) {
 	rows, err := q.db.Query(ctx, listSupporterPlans, planID)
 	if err != nil {
 		return nil, err
@@ -1128,7 +1128,7 @@ SELECT h.plan_id, h.interval, pr.id, pr.amount_minor, pr.currency, pr.provider, 
   EXISTS (SELECT 1 FROM supporter_plan_price_archivals a WHERE a.price_id = pr.id) AS archived
 FROM supporter_plan_price_heads h
 JOIN supporter_plan_prices pr ON pr.id = h.price_id
-WHERE $1::text = '' OR h.plan_id = $1::text
+WHERE $1::uuid IS NULL OR h.plan_id = $1::uuid
 ORDER BY h.plan_id, h.interval
 `
 
@@ -1145,7 +1145,7 @@ type ListSupporterPriceHeadsRow struct {
 }
 
 // ListSupporterPriceHeads returns the current prices of every plan, or of the one of plan_id.
-func (q *Queries) ListSupporterPriceHeads(ctx context.Context, planID string) ([]ListSupporterPriceHeadsRow, error) {
+func (q *Queries) ListSupporterPriceHeads(ctx context.Context, planID *string) ([]ListSupporterPriceHeadsRow, error) {
 	rows, err := q.db.Query(ctx, listSupporterPriceHeads, planID)
 	if err != nil {
 		return nil, err
@@ -1177,16 +1177,16 @@ func (q *Queries) ListSupporterPriceHeads(ctx context.Context, planID string) ([
 
 const listSupporterSubscriptionIDs = `-- name: ListSupporterSubscriptionIDs :many
 SELECT h.subscription_id FROM supporter_subscription_heads h
-WHERE ($1::text = '' OR h.plan_id = $1::text)
+WHERE ($1::uuid IS NULL OR h.plan_id = $1::uuid)
   AND ($2::text = '' OR h.state = $2::text)
-  AND ($3::text = '' OR h.subscription_id < $3::text)
+  AND ($3::uuid IS NULL OR h.subscription_id < $3::uuid)
 ORDER BY h.subscription_id DESC LIMIT $4
 `
 
 type ListSupporterSubscriptionIDsParams struct {
-	PlanID string
+	PlanID *string
 	State  string
-	Before string
+	Before *string
 	Lim    int32
 }
 
@@ -1219,7 +1219,7 @@ func (q *Queries) ListSupporterSubscriptionIDs(ctx context.Context, arg ListSupp
 
 const listSupporterSubscriptionUsers = `-- name: ListSupporterSubscriptionUsers :many
 SELECT id, user_id, plan_id FROM supporter_subscriptions
-WHERE id = ANY($1::text[]) ORDER BY id
+WHERE id = ANY($1::uuid[]) ORDER BY id
 `
 
 type ListSupporterSubscriptionUsersRow struct {
@@ -1283,7 +1283,7 @@ func (q *Queries) RebuildSupporterLiveSubscriptions(ctx context.Context) error {
 const rebuildSupporterPlanHeads = `-- name: RebuildSupporterPlanHeads :exec
 INSERT INTO supporter_plan_heads (plan_id, revision_id, rank, visibility)
 SELECT r.plan_id, r.id, r.rank, r.visibility FROM supporter_plan_revisions r
-WHERE r.id = (SELECT MAX(x.id) FROM supporter_plan_revisions x WHERE x.plan_id = r.plan_id)
+WHERE r.id = (SELECT x.id FROM supporter_plan_revisions x WHERE x.plan_id = r.plan_id ORDER BY x.id DESC LIMIT 1)
   AND NOT EXISTS (SELECT 1 FROM supporter_plan_retirements t WHERE t.plan_id = r.plan_id)
 `
 
@@ -1296,9 +1296,10 @@ const rebuildSupporterPriceHeads = `-- name: RebuildSupporterPriceHeads :exec
 INSERT INTO supporter_plan_price_heads (plan_id, interval, price_id)
 SELECT pr.plan_id, pr.interval, pr.id FROM supporter_plan_prices pr
 WHERE pr.id = (
-  SELECT MAX(x.id) FROM supporter_plan_prices x
+  SELECT x.id FROM supporter_plan_prices x
   WHERE x.plan_id = pr.plan_id AND x.interval = pr.interval
     AND NOT EXISTS (SELECT 1 FROM supporter_plan_price_archivals a WHERE a.price_id = x.id)
+  ORDER BY x.id DESC LIMIT 1
 )
 `
 
@@ -1312,7 +1313,7 @@ INSERT INTO supporter_subscription_heads (subscription_id, transition_id, user_i
 SELECT t.subscription_id, t.id, s.user_id, t.plan_id, t.state
 FROM supporter_subscription_transitions t
 JOIN supporter_subscriptions s ON s.id = t.subscription_id
-WHERE t.id = (SELECT MAX(x.id) FROM supporter_subscription_transitions x WHERE x.subscription_id = t.subscription_id)
+WHERE t.id = (SELECT x.id FROM supporter_subscription_transitions x WHERE x.subscription_id = t.subscription_id ORDER BY x.id DESC LIMIT 1)
 `
 
 func (q *Queries) RebuildSupporterSubscriptionHeads(ctx context.Context) error {

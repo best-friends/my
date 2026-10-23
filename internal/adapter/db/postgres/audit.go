@@ -34,8 +34,8 @@ func (r *ModerationRepository) ListAuditEntries(ctx context.Context, q appmodera
 		return nil, err
 	}
 	rows, err := r.db.reader().ListAuditLogEntries(ctx, postgresgen.ListAuditLogEntriesParams{
-		ActorUserID: q.ActorUserID, Action: string(q.Action), TargetKind: string(q.TargetKind), TargetID: q.TargetID,
-		Before: q.Before, Lim: lim,
+		ActorUserID: toNullString(q.ActorUserID), Action: string(q.Action), TargetKind: string(q.TargetKind), TargetID: q.TargetID,
+		Before: toNullString(q.Before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list audit log entries")

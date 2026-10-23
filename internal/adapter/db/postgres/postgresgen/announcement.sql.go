@@ -346,7 +346,7 @@ func (q *Queries) ListPublishedAnnouncements(ctx context.Context) ([]ListPublish
 
 const listReadAnnouncementIDs = `-- name: ListReadAnnouncementIDs :many
 SELECT announcement_id FROM announcement_reads
-WHERE user_id = $1 AND announcement_id = ANY($2::text[])
+WHERE user_id = $1 AND announcement_id = ANY($2::uuid[])
 ORDER BY announcement_id
 `
 

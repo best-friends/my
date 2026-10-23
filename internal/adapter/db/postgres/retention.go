@@ -32,7 +32,7 @@ func (r *StatusRepository) ListRemoteStatusesToPurge(ctx context.Context, tx uow
 		return nil, err
 	}
 	rows, err := q.ListRemoteStatusesToPurge(ctx, postgresgen.ListRemoteStatusesToPurgeParams{
-		After:              pq.After,
+		After:              toNullString(pq.After),
 		IDBefore:           purgeIDBound(pq),
 		AnyBefore:          pq.Before,
 		UnreferencedBefore: pq.UnreferencedBefore,
@@ -59,7 +59,7 @@ func (r *StatusRepository) ListRelayedStatusesToPurge(ctx context.Context, tx uo
 		return nil, err
 	}
 	rows, err := q.ListRelayedStatusesToPurge(ctx, postgresgen.ListRelayedStatusesToPurgeParams{
-		After: pq.After, IDBefore: kernel.UUIDv7Floor(pq.Before.Add(time.Millisecond)), RelayedBefore: pq.Before, BatchLimit: n,
+		After: toNullString(pq.After), IDBefore: kernel.UUIDv7Floor(pq.Before.Add(time.Millisecond)), RelayedBefore: pq.Before, BatchLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list relayed statuses to purge")
@@ -231,7 +231,7 @@ func (r *AccountRepository) ListRemoteAccountsWithPastProfiles(ctx context.Conte
 		return nil, err
 	}
 	ids, err := r.db.reader().ListRemoteAccountsWithPastProfiles(ctx, postgresgen.ListRemoteAccountsWithPastProfilesParams{
-		After: after, BatchLimit: batch,
+		After: toNullString(after), BatchLimit: batch,
 	})
 	return ids, wrap(err, "list remote accounts with past profiles")
 }

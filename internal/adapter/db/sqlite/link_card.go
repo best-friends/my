@@ -111,7 +111,7 @@ func (r *StatusRepository) InsertLinkCardMedia(ctx context.Context, tx uow.Tx, m
 		return false, wrap(err, "insert link card media")
 	}
 	err = q.InsertMediaFile(ctx, sqlitegen.InsertMediaFileParams{
-		ID: m.MediaID, OwnerAccountID: "", Origin: string(content.MediaOriginRemote), CreatedAt: toMillis(createdAt),
+		ID: m.MediaID, OwnerAccountID: toNullString(""), Origin: string(content.MediaOriginRemote), CreatedAt: toMillis(createdAt),
 	})
 	return err == nil, wrap(err, "insert link card media file")
 }

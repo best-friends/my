@@ -58,8 +58,12 @@ func (s *ProjectionStore) Rows(ctx context.Context, tx uow.Tx, table string, off
 			return nil, nil, wrap(err, "read "+table)
 		}
 		for i, v := range values {
-			if t, ok := v.(time.Time); ok {
-				values[i] = t.UTC()
+			switch x := v.(type) {
+			case time.Time:
+				values[i] = x.UTC()
+			case [16]byte:
+				// A uuid column; the logical type id is its 36-character lowercase form.
+				values[i] = uuidString(x)
 			}
 		}
 		out = append(out, values)
@@ -165,4 +169,17 @@ func quoteAll(names []string) string {
 		q[i] = quote(n)
 	}
 	return strings.Join(q, ", ")
+}
+
+// uuidString returns the canonical lowercase form of a uuid value.
+func uuidString(b [16]byte) string {
+	const hexDigits = "0123456789abcdef"
+	out := make([]byte, 0, 36)
+	for i, c := range b {
+		if i == 4 || i == 6 || i == 8 || i == 10 {
+			out = append(out, '-')
+		}
+		out = append(out, hexDigits[c>>4], hexDigits[c&0xf])
+	}
+	return string(out)
 }

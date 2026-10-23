@@ -108,7 +108,7 @@ func (r *FederationRepository) ListAvailabilityEvents(ctx context.Context, domai
 		return nil, err
 	}
 	rows, err := r.db.reader().ListInstanceAvailabilityEvents(ctx, postgresgen.ListInstanceAvailabilityEventsParams{
-		Domain: domain, Before: before, BatchLimit: n,
+		Domain: domain, Before: toNullString(before), BatchLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list instance availability events")

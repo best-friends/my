@@ -31,7 +31,7 @@ func (r *AccountRepository) SearchAccountIDs(ctx context.Context, q appaccount.S
 		return nil, err
 	}
 	ids, err := r.db.reader().SearchAccountIDs(ctx, postgresgen.SearchAccountIDsParams{
-		Domain: q.Domain, Origin: q.Origin, UsernamePrefix: q.UsernamePrefix, Before: q.Before, Lim: lim,
+		Domain: q.Domain, Origin: q.Origin, UsernamePrefix: q.UsernamePrefix, Before: toNullString(q.Before), Lim: lim,
 	})
 	return ids, wrap(err, "search accounts")
 }
@@ -43,7 +43,7 @@ func (r *AccountRepository) ListAccountIDsInLifecycleState(ctx context.Context, 
 		return nil, err
 	}
 	ids, err := r.db.reader().ListAccountIDsInLifecycleState(ctx, postgresgen.ListAccountIDsInLifecycleStateParams{
-		State: string(state), Before: before, Lim: lim,
+		State: string(state), Before: toNullString(before), Lim: lim,
 	})
 	return ids, wrap(err, "list accounts in a lifecycle state")
 }
@@ -55,7 +55,7 @@ func (r *IdentityRepository) ListUserIDsByEmailDomain(ctx context.Context, domai
 		return nil, err
 	}
 	ids, err := r.db.reader().ListUserIDsByEmailDomain(ctx, postgresgen.ListUserIDsByEmailDomainParams{
-		Suffix: "@" + domain, Before: before, Lim: lim,
+		Suffix: "@" + domain, Before: toNullString(before), Lim: lim,
 	})
 	return ids, wrap(err, "list users by email domain")
 }
@@ -66,7 +66,7 @@ func (r *IdentityRepository) ListUserIDsByIP(ctx context.Context, ip, before str
 	if err != nil {
 		return nil, err
 	}
-	ids, err := r.db.reader().ListUserIDsByIP(ctx, postgresgen.ListUserIDsByIPParams{Ip: ip, Before: before, Lim: lim})
+	ids, err := r.db.reader().ListUserIDsByIP(ctx, postgresgen.ListUserIDsByIPParams{Ip: ip, Before: toNullString(before), Lim: lim})
 	return ids, wrap(err, "list users by IP address")
 }
 
@@ -77,7 +77,7 @@ func (r *IdentityRepository) ListUserIDsInRegistrationState(ctx context.Context,
 		return nil, err
 	}
 	ids, err := r.db.reader().ListUserIDsInRegistrationState(ctx, postgresgen.ListUserIDsInRegistrationStateParams{
-		State: string(state), Before: before, Lim: lim,
+		State: string(state), Before: toNullString(before), Lim: lim,
 	})
 	return ids, wrap(err, "list users in a registration state")
 }
@@ -109,7 +109,7 @@ func (r *ModerationRepository) ListRestrictedAccountIDs(ctx context.Context, res
 		return nil, err
 	}
 	ids, err := r.db.reader().ListRestrictedAccountIDs(ctx, postgresgen.ListRestrictedAccountIDsParams{
-		Restriction: string(restriction), Now: now, Before: before, Lim: lim,
+		Restriction: string(restriction), Now: now, Before: toNullString(before), Lim: lim,
 	})
 	return ids, wrap(err, "list restricted accounts")
 }

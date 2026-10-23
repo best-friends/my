@@ -78,7 +78,7 @@ SELECT account_id, status_id, uri, created_at, id FROM favourites WHERE uri = $1
 
 -- name: ListFavourites :many
 SELECT account_id, status_id, uri, created_at, id FROM favourites
-WHERE account_id = sqlc.arg(account_id) AND (sqlc.arg(before)::text = '' OR id < sqlc.arg(before)::text)
+WHERE account_id = sqlc.arg(account_id) AND (sqlc.narg(before)::uuid IS NULL OR id < sqlc.narg(before)::uuid)
 ORDER BY id DESC LIMIT sqlc.arg(page_limit);
 
 -- name: InsertBookmark :execrows
@@ -93,7 +93,7 @@ SELECT account_id, status_id, created_at, id FROM bookmarks WHERE account_id = $
 
 -- name: ListBookmarks :many
 SELECT account_id, status_id, created_at, id FROM bookmarks
-WHERE account_id = sqlc.arg(account_id) AND (sqlc.arg(before)::text = '' OR id < sqlc.arg(before)::text)
+WHERE account_id = sqlc.arg(account_id) AND (sqlc.narg(before)::uuid IS NULL OR id < sqlc.narg(before)::uuid)
 ORDER BY id DESC LIMIT sqlc.arg(page_limit);
 
 -- name: InsertStatusPin :execrows
@@ -101,10 +101,10 @@ ORDER BY id DESC LIMIT sqlc.arg(page_limit);
 -- It inserts nothing when the account already pins the status, when no slot is free, or when a
 -- concurrent transaction takes the slot first.
 INSERT INTO status_pins (account_id, status_id, slot, created_at, id)
-SELECT sqlc.arg(account_id)::text, sqlc.arg(status_id)::text, c.slot, sqlc.arg(created_at)::timestamptz, sqlc.arg(id)::text
-FROM (SELECT 1 AS slot UNION ALL SELECT p.slot + 1 FROM status_pins p WHERE p.account_id = sqlc.arg(account_id)::text) c
+SELECT sqlc.arg(account_id)::uuid, sqlc.arg(status_id)::uuid, c.slot, sqlc.arg(created_at)::timestamptz, sqlc.arg(id)::uuid
+FROM (SELECT 1 AS slot UNION ALL SELECT p.slot + 1 FROM status_pins p WHERE p.account_id = sqlc.arg(account_id)::uuid) c
 WHERE c.slot <= sqlc.arg(max_slot)::integer
-  AND NOT EXISTS (SELECT 1 FROM status_pins u WHERE u.account_id = sqlc.arg(account_id)::text AND u.slot = c.slot)
+  AND NOT EXISTS (SELECT 1 FROM status_pins u WHERE u.account_id = sqlc.arg(account_id)::uuid AND u.slot = c.slot)
 ORDER BY c.slot LIMIT 1
 ON CONFLICT DO NOTHING;
 

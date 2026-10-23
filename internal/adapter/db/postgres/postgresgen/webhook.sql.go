@@ -14,7 +14,7 @@ import (
 
 const deleteWebhookAttemptsOfMessages = `-- name: DeleteWebhookAttemptsOfMessages :exec
 DELETE FROM webhook_delivery_attempts WHERE delivery_id IN (
-  SELECT d.id FROM webhook_deliveries d WHERE d.message_id = ANY($1::text[])
+  SELECT d.id FROM webhook_deliveries d WHERE d.message_id = ANY($1::uuid[])
 )
 `
 
@@ -24,7 +24,7 @@ func (q *Queries) DeleteWebhookAttemptsOfMessages(ctx context.Context, ids []str
 }
 
 const deleteWebhookDeliveriesOfMessages = `-- name: DeleteWebhookDeliveriesOfMessages :exec
-DELETE FROM webhook_deliveries WHERE message_id = ANY($1::text[])
+DELETE FROM webhook_deliveries WHERE message_id = ANY($1::uuid[])
 `
 
 func (q *Queries) DeleteWebhookDeliveriesOfMessages(ctx context.Context, ids []string) error {
@@ -42,7 +42,7 @@ func (q *Queries) DeleteWebhookEndpointFailures(ctx context.Context, endpointID 
 }
 
 const deleteWebhookMessages = `-- name: DeleteWebhookMessages :execrows
-DELETE FROM webhook_messages WHERE id = ANY($1::text[])
+DELETE FROM webhook_messages WHERE id = ANY($1::uuid[])
 `
 
 func (q *Queries) DeleteWebhookMessages(ctx context.Context, ids []string) (int64, error) {
@@ -313,7 +313,7 @@ func (q *Queries) InsertWebhookSecret(ctx context.Context, arg InsertWebhookSecr
 }
 
 const listExistingWebhookEndpointIDs = `-- name: ListExistingWebhookEndpointIDs :many
-SELECT endpoint_id FROM webhook_endpoint_heads WHERE endpoint_id = ANY($1::text[]) AND state <> 'deleted'
+SELECT endpoint_id FROM webhook_endpoint_heads WHERE endpoint_id = ANY($1::uuid[]) AND state <> 'deleted'
 ORDER BY endpoint_id
 `
 
@@ -377,19 +377,20 @@ SELECT d.id, d.message_id, d.endpoint_id, d.created_at, m.event_type,
 FROM webhook_deliveries d
 JOIN webhook_messages m ON m.id = d.message_id
 LEFT JOIN webhook_delivery_attempts la ON la.id = (
-  SELECT max(a.id) FROM webhook_delivery_attempts a WHERE a.delivery_id = d.id
+  SELECT a.id FROM webhook_delivery_attempts a WHERE a.delivery_id = d.id
+  ORDER BY a.id DESC LIMIT 1
 )
-WHERE d.endpoint_id = $1::text
-  AND ($2::text = '' OR d.id < $2::text)
-  AND ($3::text = '' OR d.id = $3::text)
+WHERE d.endpoint_id = $1::uuid
+  AND ($2::uuid IS NULL OR d.id < $2::uuid)
+  AND ($3::uuid IS NULL OR d.id = $3::uuid)
 ORDER BY d.id DESC
 LIMIT $4
 `
 
 type ListWebhookDeliveriesParams struct {
 	EndpointID string
-	Before     string
-	ID         string
+	Before     *string
+	ID         *string
 	Lim        int32
 }
 
@@ -457,10 +458,11 @@ FROM webhook_endpoint_heads h
 JOIN webhook_endpoints e ON e.id = h.endpoint_id
 JOIN webhook_endpoint_revisions r ON r.id = h.revision_id
 JOIN webhook_endpoint_state_changes c ON c.id = (
-  SELECT max(c2.id) FROM webhook_endpoint_state_changes c2 WHERE c2.endpoint_id = h.endpoint_id
+  SELECT c2.id FROM webhook_endpoint_state_changes c2 WHERE c2.endpoint_id = h.endpoint_id
+  ORDER BY c2.id DESC LIMIT 1
 )
 LEFT JOIN webhook_endpoint_failures f ON f.endpoint_id = h.endpoint_id
-WHERE h.state <> 'deleted' AND ($1::text = '' OR h.endpoint_id = $1::text)
+WHERE h.state <> 'deleted' AND ($1::uuid IS NULL OR h.endpoint_id = $1::uuid)
 ORDER BY e.id DESC
 `
 
@@ -484,7 +486,7 @@ type ListWebhookEndpointsRow struct {
 // ListWebhookEndpoints returns the endpoints that are not deleted, newest first, with their
 // current revision, last state change, and run of failures; only the endpoint id unless it is
 // empty.
-func (q *Queries) ListWebhookEndpoints(ctx context.Context, id string) ([]ListWebhookEndpointsRow, error) {
+func (q *Queries) ListWebhookEndpoints(ctx context.Context, id *string) ([]ListWebhookEndpointsRow, error) {
 	rows, err := q.db.Query(ctx, listWebhookEndpoints, id)
 	if err != nil {
 		return nil, err
@@ -550,7 +552,7 @@ func (q *Queries) ListWebhookMessagesBefore(ctx context.Context, arg ListWebhook
 
 const listWebhookRevisionEvents = `-- name: ListWebhookRevisionEvents :many
 SELECT revision_id, event_type FROM webhook_endpoint_revision_events
-WHERE revision_id = ANY($1::text[])
+WHERE revision_id = ANY($1::uuid[])
 ORDER BY revision_id, event_type
 `
 

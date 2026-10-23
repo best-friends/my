@@ -490,7 +490,7 @@ type MediaDescription struct {
 
 type MediaFile struct {
 	ID             string
-	OwnerAccountID string
+	OwnerAccountID sql.NullString
 	Origin         string
 	CreatedAt      int64
 }

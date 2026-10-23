@@ -36,9 +36,9 @@ SELECT p.id, p.role_id, p.currency, p.created_by_user_id, p.created_at,
   EXISTS (SELECT 1 FROM supporter_plan_retirements t WHERE t.plan_id = p.id) AS retired,
   rt.retired_at
 FROM supporter_plans p
-JOIN supporter_plan_revisions r ON r.id = (SELECT MAX(x.id) FROM supporter_plan_revisions x WHERE x.plan_id = p.id)
+JOIN supporter_plan_revisions r ON r.id = (SELECT x.id FROM supporter_plan_revisions x WHERE x.plan_id = p.id ORDER BY x.id DESC LIMIT 1)
 LEFT JOIN supporter_plan_retirements rt ON rt.plan_id = p.id
-WHERE sqlc.arg(plan_id)::text = '' OR p.id = sqlc.arg(plan_id)::text
+WHERE sqlc.narg(plan_id)::uuid IS NULL OR p.id = sqlc.narg(plan_id)::uuid
 ORDER BY r.rank, p.id;
 
 -- ListSupporterPriceHeads returns the current prices of every plan, or of the one of plan_id.
@@ -47,7 +47,7 @@ SELECT h.plan_id, h.interval, pr.id, pr.amount_minor, pr.currency, pr.provider, 
   EXISTS (SELECT 1 FROM supporter_plan_price_archivals a WHERE a.price_id = pr.id) AS archived
 FROM supporter_plan_price_heads h
 JOIN supporter_plan_prices pr ON pr.id = h.price_id
-WHERE sqlc.arg(plan_id)::text = '' OR h.plan_id = sqlc.arg(plan_id)::text
+WHERE sqlc.narg(plan_id)::uuid IS NULL OR h.plan_id = sqlc.narg(plan_id)::uuid
 ORDER BY h.plan_id, h.interval;
 
 -- name: InsertSupporterPrice :exec
@@ -189,7 +189,7 @@ ORDER BY provider_reversal_id;
 SELECT c.provider_checkout_id FROM supporter_checkouts c
 JOIN supporter_subscription_heads h ON h.subscription_id = c.subscription_id
 WHERE c.provider = sqlc.arg(provider) AND h.state = 'pending' AND c.expires_at > sqlc.arg(now)
-  AND c.id = (SELECT MAX(x.id) FROM supporter_checkouts x WHERE x.subscription_id = c.subscription_id)
+  AND c.id = (SELECT x.id FROM supporter_checkouts x WHERE x.subscription_id = c.subscription_id ORDER BY x.id DESC LIMIT 1)
 ORDER BY c.id;
 
 -- name: ListDueSupporterDeadlines :many
@@ -200,9 +200,9 @@ WHERE due_at <= sqlc.arg(now) ORDER BY due_at, subscription_id LIMIT sqlc.arg(li
 -- state when they are not ''.
 -- name: ListSupporterSubscriptionIDs :many
 SELECT h.subscription_id FROM supporter_subscription_heads h
-WHERE (sqlc.arg(plan_id)::text = '' OR h.plan_id = sqlc.arg(plan_id)::text)
+WHERE (sqlc.narg(plan_id)::uuid IS NULL OR h.plan_id = sqlc.narg(plan_id)::uuid)
   AND (sqlc.arg(state)::text = '' OR h.state = sqlc.arg(state)::text)
-  AND (sqlc.arg(before)::text = '' OR h.subscription_id < sqlc.arg(before)::text)
+  AND (sqlc.narg(before)::uuid IS NULL OR h.subscription_id < sqlc.narg(before)::uuid)
 ORDER BY h.subscription_id DESC LIMIT sqlc.arg(lim);
 
 -- name: ListLiveSupporterSubscriptionIDsOfPlan :many
@@ -220,7 +220,7 @@ WHERE state IN ('active', 'canceling', 'past_due') GROUP BY plan_id ORDER BY pla
 -- ListSupporterSubscriptionUsers returns the subscribers of the subscriptions among ids, a JSON array.
 -- name: ListSupporterSubscriptionUsers :many
 SELECT id, user_id, plan_id FROM supporter_subscriptions
-WHERE id = ANY(sqlc.arg(ids)::text[]) ORDER BY id;
+WHERE id = ANY(sqlc.arg(ids)::uuid[]) ORDER BY id;
 
 -- name: InsertSupporterListing :exec
 INSERT INTO supporter_listings (user_id, created_at) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING;
@@ -237,10 +237,10 @@ JOIN supporter_live_subscriptions s ON s.user_id = l.user_id
 JOIN supporter_subscription_heads h ON h.subscription_id = s.subscription_id
 JOIN supporter_plan_heads ph ON ph.plan_id = h.plan_id
 WHERE h.state IN ('active', 'canceling', 'past_due')
-  AND (sqlc.arg(plan_id)::text = '' OR h.plan_id = sqlc.arg(plan_id)::text)
-  AND (sqlc.arg(after_user_id)::text = '' OR ph.rank > sqlc.arg(after_rank)::integer
+  AND (sqlc.narg(plan_id)::uuid IS NULL OR h.plan_id = sqlc.narg(plan_id)::uuid)
+  AND (sqlc.narg(after_user_id)::uuid IS NULL OR ph.rank > sqlc.arg(after_rank)::integer
     OR (ph.rank = sqlc.arg(after_rank)::integer AND (l.created_at < sqlc.arg(after_at)::timestamptz
-      OR (l.created_at = sqlc.arg(after_at)::timestamptz AND l.user_id < sqlc.arg(after_user_id)::text))))
+      OR (l.created_at = sqlc.arg(after_at)::timestamptz AND l.user_id < sqlc.narg(after_user_id)::uuid))))
 ORDER BY ph.rank, l.created_at DESC, l.user_id DESC LIMIT sqlc.arg(lim);
 
 -- name: DeleteSupporterListing :exec
@@ -257,7 +257,7 @@ DELETE FROM supporter_plan_heads;
 -- name: RebuildSupporterPlanHeads :exec
 INSERT INTO supporter_plan_heads (plan_id, revision_id, rank, visibility)
 SELECT r.plan_id, r.id, r.rank, r.visibility FROM supporter_plan_revisions r
-WHERE r.id = (SELECT MAX(x.id) FROM supporter_plan_revisions x WHERE x.plan_id = r.plan_id)
+WHERE r.id = (SELECT x.id FROM supporter_plan_revisions x WHERE x.plan_id = r.plan_id ORDER BY x.id DESC LIMIT 1)
   AND NOT EXISTS (SELECT 1 FROM supporter_plan_retirements t WHERE t.plan_id = r.plan_id);
 
 -- name: DeleteAllSupporterPriceHeads :exec
@@ -267,9 +267,10 @@ DELETE FROM supporter_plan_price_heads;
 INSERT INTO supporter_plan_price_heads (plan_id, interval, price_id)
 SELECT pr.plan_id, pr.interval, pr.id FROM supporter_plan_prices pr
 WHERE pr.id = (
-  SELECT MAX(x.id) FROM supporter_plan_prices x
+  SELECT x.id FROM supporter_plan_prices x
   WHERE x.plan_id = pr.plan_id AND x.interval = pr.interval
     AND NOT EXISTS (SELECT 1 FROM supporter_plan_price_archivals a WHERE a.price_id = x.id)
+  ORDER BY x.id DESC LIMIT 1
 );
 
 -- name: DeleteAllSupporterSubscriptionHeads :exec
@@ -280,7 +281,7 @@ INSERT INTO supporter_subscription_heads (subscription_id, transition_id, user_i
 SELECT t.subscription_id, t.id, s.user_id, t.plan_id, t.state
 FROM supporter_subscription_transitions t
 JOIN supporter_subscriptions s ON s.id = t.subscription_id
-WHERE t.id = (SELECT MAX(x.id) FROM supporter_subscription_transitions x WHERE x.subscription_id = t.subscription_id);
+WHERE t.id = (SELECT x.id FROM supporter_subscription_transitions x WHERE x.subscription_id = t.subscription_id ORDER BY x.id DESC LIMIT 1);
 
 -- name: DeleteAllSupporterLiveSubscriptions :exec
 DELETE FROM supporter_live_subscriptions;

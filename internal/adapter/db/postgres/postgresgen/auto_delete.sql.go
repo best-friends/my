@@ -68,13 +68,13 @@ const listEnabledStatusAutoDeletePolicies = `-- name: ListEnabledStatusAutoDelet
 SELECT account_id, enabled, min_age_days, keep_pinned, keep_bookmarked, keep_favourited, keep_media,
   keep_polls, keep_min_boosts, keep_min_favourites, updated_at
 FROM status_auto_delete_policies
-WHERE enabled AND account_id > $1::text
+WHERE enabled AND account_id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000')
 ORDER BY account_id
 LIMIT $2::integer
 `
 
 type ListEnabledStatusAutoDeletePoliciesParams struct {
-	After      string
+	After      *string
 	BatchLimit int32
 }
 
@@ -140,7 +140,7 @@ const listStatusesToAutoDelete = `-- name: ListStatusesToAutoDelete :many
 SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
   s.conversation_uri, s.published_at
 FROM statuses s
-WHERE s.author_account_id = $1::text AND s.id < $2::text
+WHERE s.author_account_id = $1::uuid AND s.id < $2::uuid
   AND s.is_local AND s.published_at < $3::timestamptz
   AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
   AND NOT (s.visibility = ANY($4::text[]))

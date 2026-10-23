@@ -419,7 +419,7 @@ func (q *Queries) LastBillingImportRun(ctx context.Context, arg LastBillingImpor
 
 const listCostItemPriceRevisions = `-- name: ListCostItemPriceRevisions :many
 SELECT id, cost_item_id, effective_on, amount_minor, currency, revised_at FROM cost_item_price_revisions
-WHERE cost_item_id = ANY($1::text[])
+WHERE cost_item_id = ANY($1::uuid[])
 ORDER BY cost_item_id, id
 `
 
@@ -467,15 +467,15 @@ SELECT i.id, i.schedule, i.interval, i.starts_on, i.created_by_user_id, i.create
 FROM cost_item_heads h
 JOIN cost_items i ON i.id = h.cost_item_id
 JOIN cost_item_label_revisions l ON l.id = h.label_revision_id
-WHERE ($1::text = '' OR h.cost_item_id = $1)
-  AND ($2::text = '' OR h.cost_item_id < $2)
+WHERE ($1::uuid IS NULL OR h.cost_item_id = $1::uuid)
+  AND ($2::uuid IS NULL OR h.cost_item_id < $2::uuid)
 ORDER BY h.cost_item_id DESC
 LIMIT $3
 `
 
 type ListCostItemsParams struct {
-	ID     string
-	Before string
+	ID     *string
+	Before *string
 	Lim    int32
 }
 
@@ -587,8 +587,8 @@ SELECT m.id, m.provider, m.provider_id, m.kind, m.subscription_id, m.occurred_at
 FROM income_movements m LEFT JOIN income_movements p ON p.id = m.parent_movement_id
 WHERE m.occurred_on >= $1::date AND m.occurred_on <= $2::date
   AND ($3::text = '' OR m.kind = $3::text)
-  AND ($4::text = ''
-    OR (m.occurred_at, m.id) < (SELECT b.occurred_at, b.id FROM income_movements b WHERE b.id = $4::text))
+  AND ($4::uuid IS NULL
+    OR (m.occurred_at, m.id) < (SELECT b.occurred_at, b.id FROM income_movements b WHERE b.id = $4::uuid))
 ORDER BY m.occurred_at DESC, m.id DESC
 LIMIT $5
 `
@@ -597,7 +597,7 @@ type ListIncomeMovementsParams struct {
 	StartsOn pgtype.Date
 	EndsOn   pgtype.Date
 	Kind     string
-	Before   string
+	Before   *string
 	Lim      int32
 }
 

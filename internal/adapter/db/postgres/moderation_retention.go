@@ -61,7 +61,7 @@ func (r *ModerationRepository) RetentionHold(ctx context.Context, tx uow.Tx, id 
 
 // ListRetentionHolds implements moderation.RetentionRepository.
 func (r *ModerationRepository) ListRetentionHolds(ctx context.Context, accountID string) ([]moderation.RetentionHoldRecord, error) {
-	rows, err := r.db.reader().ListRetentionHolds(ctx, accountID)
+	rows, err := r.db.reader().ListRetentionHolds(ctx, toNullString(accountID))
 	if err != nil {
 		return nil, wrap(err, "list retention holds")
 	}

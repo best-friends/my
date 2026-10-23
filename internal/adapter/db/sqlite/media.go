@@ -34,7 +34,7 @@ func (r *MediaRepository) InsertMediaFile(ctx context.Context, tx uow.Tx, m cont
 		return err
 	}
 	return wrap(q.InsertMediaFile(ctx, sqlitegen.InsertMediaFileParams{
-		ID: m.ID, OwnerAccountID: m.OwnerAccountID, Origin: string(m.Origin), CreatedAt: toMillis(m.CreatedAt),
+		ID: m.ID, OwnerAccountID: toNullString(m.OwnerAccountID), Origin: string(m.Origin), CreatedAt: toMillis(m.CreatedAt),
 	}), "insert media file")
 }
 
@@ -121,7 +121,7 @@ func (r *MediaRepository) FindMediaFile(ctx context.Context, id string) (content
 		return content.MediaFile{}, notFound(err, appcontent.ErrNotFound, "media file "+id)
 	}
 	return content.MediaFile{
-		ID: row.ID, OwnerAccountID: row.OwnerAccountID, Origin: content.MediaOrigin(row.Origin), CreatedAt: fromMillis(row.CreatedAt),
+		ID: row.ID, OwnerAccountID: row.OwnerAccountID.String, Origin: content.MediaOrigin(row.Origin), CreatedAt: fromMillis(row.CreatedAt),
 	}, nil
 }
 
@@ -193,7 +193,7 @@ func (r *MediaRepository) ListReadyVariants(ctx context.Context, ids []string) (
 	for _, row := range rows {
 		out = append(out, appcontent.FileVariant{
 			File: content.MediaFile{
-				ID: row.ID, OwnerAccountID: row.OwnerAccountID, Origin: content.MediaOrigin(row.Origin), CreatedAt: fromMillis(row.CreatedAt),
+				ID: row.ID, OwnerAccountID: row.OwnerAccountID.String, Origin: content.MediaOrigin(row.Origin), CreatedAt: fromMillis(row.CreatedAt),
 			},
 			Variant: content.MediaVariant{
 				ResultID: row.ResultID, Size: content.MediaSize(row.Size), Motion: content.MediaMotion(row.Motion), BlobKey: row.BlobKey, ContentType: row.ContentType,
@@ -224,7 +224,7 @@ func (r *MediaRepository) ListUnattachedUploads(ctx context.Context, afterID str
 // ListOwnerUploads implements content.MediaRepository.
 func (r *MediaRepository) ListOwnerUploads(ctx context.Context, ownerAccountID, afterID string, limit int) ([]appcontent.OwnedUpload, error) {
 	rows, err := r.db.reader().ListOwnerUploads(ctx, sqlitegen.ListOwnerUploadsParams{
-		OwnerAccountID: ownerAccountID, AfterID: afterID, RowLimit: int64(limit),
+		OwnerAccountID: toNullString(ownerAccountID), AfterID: afterID, RowLimit: int64(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list owner uploads")

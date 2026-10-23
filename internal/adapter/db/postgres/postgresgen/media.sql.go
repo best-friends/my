@@ -155,7 +155,7 @@ INSERT INTO media_files (id, owner_account_id, origin, created_at) VALUES ($1, $
 
 type InsertMediaFileParams struct {
 	ID             string
-	OwnerAccountID string
+	OwnerAccountID *string
 	Origin         string
 	CreatedAt      time.Time
 }
@@ -343,14 +343,14 @@ const listOwnerUploads = `-- name: ListOwnerUploads :many
 SELECT m.id, CAST(EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = m.id)
   OR EXISTS (SELECT 1 FROM custom_emoji_images c WHERE c.media_id = m.id) AS BOOLEAN) AS attached
 FROM media_files m
-WHERE m.owner_account_id = $1 AND m.origin = 'upload' AND m.id > $2
+WHERE m.owner_account_id = $1 AND m.origin = 'upload' AND m.id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000')
 ORDER BY m.id
 LIMIT $3
 `
 
 type ListOwnerUploadsParams struct {
-	OwnerAccountID string
-	AfterID        string
+	OwnerAccountID *string
+	AfterID        *string
 	RowLimit       int32
 }
 
@@ -389,14 +389,14 @@ FROM media_files m
 JOIN media_processing_results r ON r.id = (
   SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
 JOIN media_variants v ON v.result_id = r.id
-WHERE m.id = ANY($1::text[])
+WHERE m.id = ANY($1::uuid[])
   AND r.outcome = 'ready'
 ORDER BY m.id, v.size, v.motion
 `
 
 type ListReadyMediaVariantsRow struct {
 	ID             string
-	OwnerAccountID string
+	OwnerAccountID *string
 	Origin         string
 	CreatedAt      time.Time
 	ResultID       string
@@ -446,7 +446,7 @@ func (q *Queries) ListReadyMediaVariants(ctx context.Context, ids []string) ([]L
 
 const listUnattachedUploads = `-- name: ListUnattachedUploads :many
 SELECT m.id FROM media_files m
-WHERE m.origin = 'upload' AND m.id > $1 AND m.id < $2
+WHERE m.origin = 'upload' AND m.id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000') AND m.id < $2
   AND NOT EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = m.id)
   AND NOT EXISTS (SELECT 1 FROM custom_emoji_images c WHERE c.media_id = m.id)
 ORDER BY m.id
@@ -454,7 +454,7 @@ LIMIT $3
 `
 
 type ListUnattachedUploadsParams struct {
-	AfterID  string
+	AfterID  *string
 	BeforeID string
 	RowLimit int32
 }

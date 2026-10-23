@@ -22,7 +22,7 @@ func (q *Queries) DeleteAllStatusQuoteStates(ctx context.Context) error {
 }
 
 const deleteStatusQuotePolicy = `-- name: DeleteStatusQuotePolicy :exec
-DELETE FROM status_quote_policies WHERE status_id = $1
+DELETE FROM status_quote_policies WHERE status_id = $1::uuid
 `
 
 func (q *Queries) DeleteStatusQuotePolicy(ctx context.Context, statusID string) error {
@@ -33,7 +33,7 @@ func (q *Queries) DeleteStatusQuotePolicy(ctx context.Context, statusID string) 
 const getQuoteAuthorization = `-- name: GetQuoteAuthorization :one
 SELECT a.id, a.quoting_uri, a.quoting_account_id, a.quoted_status_id, a.created_at, r.revoked_at
 FROM quote_authorizations a LEFT JOIN quote_authorization_revocations r ON r.authorization_id = a.id
-WHERE a.id = $1
+WHERE a.id = $1::uuid
 `
 
 type GetQuoteAuthorizationRow struct {
@@ -62,7 +62,7 @@ func (q *Queries) GetQuoteAuthorization(ctx context.Context, id string) (GetQuot
 const getQuoteAuthorizationFor = `-- name: GetQuoteAuthorizationFor :one
 SELECT a.id, a.quoting_uri, a.quoting_account_id, a.quoted_status_id, a.created_at, r.revoked_at
 FROM quote_authorizations a LEFT JOIN quote_authorization_revocations r ON r.authorization_id = a.id
-WHERE a.quoting_uri = $1 AND a.quoted_status_id = $2
+WHERE a.quoting_uri = $1 AND a.quoted_status_id = $2::uuid
 `
 
 type GetQuoteAuthorizationForParams struct {
@@ -94,7 +94,7 @@ func (q *Queries) GetQuoteAuthorizationFor(ctx context.Context, arg GetQuoteAuth
 }
 
 const getStatusQuote = `-- name: GetStatusQuote :one
-SELECT status_id, quoted_uri, form FROM status_quotes WHERE status_id = $1
+SELECT status_id, quoted_uri, form FROM status_quotes WHERE status_id = $1::uuid
 `
 
 func (q *Queries) GetStatusQuote(ctx context.Context, statusID string) (StatusQuote, error) {
@@ -105,7 +105,7 @@ func (q *Queries) GetStatusQuote(ctx context.Context, statusID string) (StatusQu
 }
 
 const getStatusQuotePolicy = `-- name: GetStatusQuotePolicy :one
-SELECT status_id, policy, updated_at FROM status_quote_policies WHERE status_id = $1
+SELECT status_id, policy, updated_at FROM status_quote_policies WHERE status_id = $1::uuid
 `
 
 func (q *Queries) GetStatusQuotePolicy(ctx context.Context, statusID string) (StatusQuotePolicy, error) {
@@ -116,7 +116,7 @@ func (q *Queries) GetStatusQuotePolicy(ctx context.Context, statusID string) (St
 }
 
 const getStatusQuoteState = `-- name: GetStatusQuoteState :one
-SELECT status_id, state, authorization_uri FROM status_quote_states WHERE status_id = $1
+SELECT status_id, state, authorization_uri FROM status_quote_states WHERE status_id = $1::uuid
 `
 
 func (q *Queries) GetStatusQuoteState(ctx context.Context, statusID string) (StatusQuoteState, error) {
@@ -248,7 +248,7 @@ func (q *Queries) ListAllStatusQuoteStates(ctx context.Context) ([]StatusQuoteSt
 
 const listStatusQuoteEvents = `-- name: ListStatusQuoteEvents :many
 SELECT id, status_id, kind, authorization_uri, occurred_at FROM status_quote_events
-WHERE status_id = $1 ORDER BY id
+WHERE status_id = $1::uuid ORDER BY id
 `
 
 func (q *Queries) ListStatusQuoteEvents(ctx context.Context, statusID string) ([]StatusQuoteEvent, error) {
@@ -304,11 +304,11 @@ func (q *Queries) ListStatusQuoteStatesByAuthorization(ctx context.Context, auth
 
 const listStatusQuotesAfter = `-- name: ListStatusQuotesAfter :many
 SELECT status_id, quoted_uri, form FROM status_quotes
-WHERE status_id > $1 ORDER BY status_id LIMIT $2
+WHERE status_id > COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000') ORDER BY status_id LIMIT $2
 `
 
 type ListStatusQuotesAfterParams struct {
-	After     string
+	After     *string
 	PageLimit int32
 }
 
@@ -334,13 +334,13 @@ func (q *Queries) ListStatusQuotesAfter(ctx context.Context, arg ListStatusQuote
 
 const listStatusQuotesOf = `-- name: ListStatusQuotesOf :many
 SELECT status_id, quoted_uri, form FROM status_quotes
-WHERE quoted_uri = $1 AND (CAST($2 AS TEXT) = '' OR status_id < CAST($2 AS TEXT))
+WHERE quoted_uri = $1 AND ($2::uuid IS NULL OR status_id < $2::uuid)
 ORDER BY status_id DESC LIMIT $3
 `
 
 type ListStatusQuotesOfParams struct {
 	QuotedUri string
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 
@@ -367,7 +367,7 @@ func (q *Queries) ListStatusQuotesOf(ctx context.Context, arg ListStatusQuotesOf
 
 const purgeQuoteAuthorizationRevocations = `-- name: PurgeQuoteAuthorizationRevocations :exec
 DELETE FROM quote_authorization_revocations WHERE authorization_id IN (
-  SELECT a.id FROM quote_authorizations a WHERE a.quoted_status_id = ANY($1::text[]))
+  SELECT a.id FROM quote_authorizations a WHERE a.quoted_status_id = ANY($1::uuid[]))
 `
 
 func (q *Queries) PurgeQuoteAuthorizationRevocations(ctx context.Context, ids []string) error {
@@ -376,7 +376,7 @@ func (q *Queries) PurgeQuoteAuthorizationRevocations(ctx context.Context, ids []
 }
 
 const purgeQuoteAuthorizations = `-- name: PurgeQuoteAuthorizations :exec
-DELETE FROM quote_authorizations WHERE quoted_status_id = ANY($1::text[])
+DELETE FROM quote_authorizations WHERE quoted_status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeQuoteAuthorizations(ctx context.Context, ids []string) error {
@@ -385,7 +385,7 @@ func (q *Queries) PurgeQuoteAuthorizations(ctx context.Context, ids []string) er
 }
 
 const purgeStatusQuoteEvents = `-- name: PurgeStatusQuoteEvents :exec
-DELETE FROM status_quote_events WHERE status_id = ANY($1::text[])
+DELETE FROM status_quote_events WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeStatusQuoteEvents(ctx context.Context, ids []string) error {
@@ -394,7 +394,7 @@ func (q *Queries) PurgeStatusQuoteEvents(ctx context.Context, ids []string) erro
 }
 
 const purgeStatusQuotePolicies = `-- name: PurgeStatusQuotePolicies :exec
-DELETE FROM status_quote_policies WHERE status_id = ANY($1::text[])
+DELETE FROM status_quote_policies WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeStatusQuotePolicies(ctx context.Context, ids []string) error {
@@ -403,7 +403,7 @@ func (q *Queries) PurgeStatusQuotePolicies(ctx context.Context, ids []string) er
 }
 
 const purgeStatusQuoteStates = `-- name: PurgeStatusQuoteStates :exec
-DELETE FROM status_quote_states WHERE status_id = ANY($1::text[])
+DELETE FROM status_quote_states WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeStatusQuoteStates(ctx context.Context, ids []string) error {
@@ -412,7 +412,7 @@ func (q *Queries) PurgeStatusQuoteStates(ctx context.Context, ids []string) erro
 }
 
 const purgeStatusQuotes = `-- name: PurgeStatusQuotes :exec
-DELETE FROM status_quotes WHERE status_id = ANY($1::text[])
+DELETE FROM status_quotes WHERE status_id = ANY($1::uuid[])
 `
 
 func (q *Queries) PurgeStatusQuotes(ctx context.Context, ids []string) error {

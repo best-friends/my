@@ -64,7 +64,7 @@ ON CONFLICT (user_id, announcement_id) DO NOTHING;
 
 -- name: ListReadAnnouncementIDs :many
 SELECT announcement_id FROM announcement_reads
-WHERE user_id = sqlc.arg(user_id) AND announcement_id = ANY(sqlc.arg(announcement_ids)::text[])
+WHERE user_id = sqlc.arg(user_id) AND announcement_id = ANY(sqlc.arg(announcement_ids)::uuid[])
 ORDER BY announcement_id;
 
 -- name: DeleteAnnouncementReadsOfUser :execrows

@@ -143,7 +143,7 @@ LEFT JOIN signup_block_lifts l ON l.block_id = b.id
 WHERE ($1::text = '' OR b.kind = $1::text)
   AND ($2::timestamptz IS NULL
     OR (l.block_id IS NULL AND (b.expires_at IS NULL OR b.expires_at > $2::timestamptz)))
-  AND ($3::text = '' OR b.id < $3::text)
+  AND ($3::uuid IS NULL OR b.id < $3::uuid)
 ORDER BY b.id DESC
 LIMIT $4
 `
@@ -151,7 +151,7 @@ LIMIT $4
 type ListSignupBlocksParams struct {
 	Kind       string
 	InEffectAt *time.Time
-	Before     string
+	Before     *string
 	Lim        int32
 }
 

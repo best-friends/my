@@ -79,7 +79,7 @@ func (r *StatusRepository) ListEnabledAutoDeletePolicies(ctx context.Context, af
 	}
 	q := r.db.reader()
 	rows, err := q.ListEnabledStatusAutoDeletePolicies(ctx, postgresgen.ListEnabledStatusAutoDeletePoliciesParams{
-		After: after, BatchLimit: n,
+		After: toNullString(after), BatchLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list enabled auto delete policies")

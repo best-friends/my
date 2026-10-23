@@ -8,7 +8,7 @@ VALUES (@revision_id, @activity_uri, @html_policy_version);
 
 -- name: GetRemoteStatusRevision :one
 SELECT revision_id, activity_uri, html_policy_version FROM remote_status_revisions
-WHERE revision_id = @revision_id;
+WHERE revision_id = sqlc.arg(revision_id)::uuid;
 
 -- name: InsertRemoteMedia :execrows
 INSERT INTO remote_media (
@@ -23,19 +23,19 @@ ON CONFLICT (owner_account_id, remote_url) DO NOTHING;
 -- name: GetRemoteMediaByURL :one
 SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
-FROM remote_media WHERE owner_account_id = @owner_account_id AND remote_url = @remote_url;
+FROM remote_media WHERE owner_account_id = sqlc.arg(owner_account_id)::uuid AND remote_url = @remote_url;
 
 -- name: GetRemoteMedia :one
 SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
-FROM remote_media WHERE media_id = @media_id;
+FROM remote_media WHERE media_id = sqlc.arg(media_id)::uuid;
 
 -- ListRemoteMedia returns the remote media files with an ID in @media_ids, for the images of a
 -- page of accounts.
 -- name: ListRemoteMedia :many
 SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
-FROM remote_media WHERE media_id = ANY(@media_ids::text[]) ORDER BY media_id;
+FROM remote_media WHERE media_id = ANY(sqlc.arg(media_ids)::uuid[]) ORDER BY media_id;
 
 -- name: UpsertRemoteMediaCache :exec
 INSERT INTO remote_media_cache (url, blob_key, content_type, file_size, fetched_at, expires_at, last_accessed_at)
@@ -89,7 +89,7 @@ SELECT EXISTS (
 -- IsCustomEmojiImage reports whether any revision of a custom emoji, current or not, uses the
 -- media file as its image, for the avatars policy of the remote media cache.
 -- name: IsCustomEmojiImage :one
-SELECT EXISTS (SELECT 1 FROM custom_emoji_images WHERE media_id = @media_id);
+SELECT EXISTS (SELECT 1 FROM custom_emoji_images WHERE media_id = sqlc.arg(media_id)::uuid);
 
 -- name: InsertCustomEmojiIfAbsent :exec
 INSERT INTO custom_emojis (id, shortcode, domain, uri, created_at)
@@ -101,7 +101,7 @@ SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_em
 WHERE shortcode = @shortcode AND domain = @domain;
 
 -- name: GetCustomEmoji :one
-SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis WHERE id = @id;
+SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis WHERE id = sqlc.arg(id)::uuid;
 
 -- name: InsertCustomEmojiImage :exec
 INSERT INTO custom_emoji_images (id, emoji_id, media_id, revised_at)
@@ -109,7 +109,7 @@ VALUES (@id, @emoji_id, @media_id, @revised_at);
 
 -- name: GetLatestCustomEmojiImage :one
 SELECT id, emoji_id, media_id, revised_at FROM custom_emoji_images
-WHERE emoji_id = @emoji_id ORDER BY id DESC LIMIT 1;
+WHERE emoji_id = sqlc.arg(emoji_id)::uuid ORDER BY id DESC LIMIT 1;
 
 -- GetLatestCustomEmojiImageRemoteURL returns the remote URL of the newest image of an emoji, ''
 -- when that image is not a remote media file.
@@ -117,7 +117,7 @@ WHERE emoji_id = @emoji_id ORDER BY id DESC LIMIT 1;
 SELECT CAST(COALESCE(r.remote_url, '') AS TEXT) AS remote_url
 FROM custom_emoji_images i
 LEFT JOIN remote_media r ON r.media_id = i.media_id
-WHERE i.emoji_id = @emoji_id ORDER BY i.id DESC LIMIT 1;
+WHERE i.emoji_id = sqlc.arg(emoji_id)::uuid ORDER BY i.id DESC LIMIT 1;
 
 -- name: InsertPoll :exec
 INSERT INTO polls (id, revision_id, multiple, hide_totals, closes_at) VALUES (@id, @revision_id, @multiple, @hide_totals, @closes_at);
@@ -126,10 +126,10 @@ INSERT INTO polls (id, revision_id, multiple, hide_totals, closes_at) VALUES (@i
 INSERT INTO poll_options (poll_id, position, title) VALUES (@poll_id, @position, @title);
 
 -- name: GetPollByRevision :one
-SELECT id, revision_id, multiple, hide_totals, closes_at FROM polls WHERE revision_id = @revision_id;
+SELECT id, revision_id, multiple, hide_totals, closes_at FROM polls WHERE revision_id = sqlc.arg(revision_id)::uuid;
 
 -- name: ListPollOptions :many
-SELECT poll_id, position, title FROM poll_options WHERE poll_id = @poll_id ORDER BY position;
+SELECT poll_id, position, title FROM poll_options WHERE poll_id = sqlc.arg(poll_id)::uuid ORDER BY position;
 
 -- InsertPollVote inserts a vote unless the account voted for the choice, or the vote's URI is
 -- recorded, already.
@@ -140,27 +140,27 @@ ON CONFLICT DO NOTHING;
 
 -- name: ListPollVotesOfAccount :many
 SELECT id, poll_id, account_id, position, uri, voted_at FROM poll_votes
-WHERE poll_id = @poll_id AND account_id = @account_id ORDER BY position;
+WHERE poll_id = sqlc.arg(poll_id)::uuid AND account_id = sqlc.arg(account_id)::uuid ORDER BY position;
 
 -- GetPollStatus returns the status whose revision has the poll.
 -- name: GetPollStatus :one
-SELECT r.status_id FROM polls p JOIN status_revisions r ON r.id = p.revision_id WHERE p.id = @poll_id;
+SELECT r.status_id FROM polls p JOIN status_revisions r ON r.id = p.revision_id WHERE p.id = sqlc.arg(poll_id)::uuid;
 
 -- LockPoll locks the poll until the transaction ends, so that the votes of a local poll are
 -- counted one transaction at a time.
 -- name: LockPoll :one
-SELECT id FROM polls WHERE id = @poll_id FOR UPDATE;
+SELECT id FROM polls WHERE id = sqlc.arg(poll_id)::uuid FOR UPDATE;
 
 -- name: CountPollVotes :many
-SELECT position, count(*) AS votes FROM poll_votes WHERE poll_id = @poll_id GROUP BY position ORDER BY position;
+SELECT position, count(*) AS votes FROM poll_votes WHERE poll_id = sqlc.arg(poll_id)::uuid GROUP BY position ORDER BY position;
 
 -- name: CountPollVoters :one
-SELECT count(DISTINCT account_id) FROM poll_votes WHERE poll_id = @poll_id;
+SELECT count(DISTINCT account_id) FROM poll_votes WHERE poll_id = sqlc.arg(poll_id)::uuid;
 
 -- ListPollVoterIDs returns the accounts that voted in a poll after @after, in order.
 -- name: ListPollVoterIDs :many
 SELECT DISTINCT account_id FROM poll_votes
-WHERE poll_id = @poll_id AND account_id > @after ORDER BY account_id LIMIT @lim;
+WHERE poll_id = sqlc.arg(poll_id)::uuid AND account_id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000') ORDER BY account_id LIMIT @lim;
 
 -- name: InsertPollTallyObservation :exec
 INSERT INTO poll_tally_observations (id, poll_id, voters_count, observed_at)
@@ -172,21 +172,21 @@ VALUES (@observation_id, @position, @votes);
 
 -- name: GetLatestPollTallyObservation :one
 SELECT id, poll_id, voters_count, observed_at FROM poll_tally_observations
-WHERE poll_id = @poll_id ORDER BY id DESC LIMIT 1;
+WHERE poll_id = sqlc.arg(poll_id)::uuid ORDER BY id DESC LIMIT 1;
 
 -- name: ListPollTallyObservationCounts :many
 SELECT observation_id, position, votes FROM poll_tally_observation_counts
-WHERE observation_id = @observation_id ORDER BY position;
+WHERE observation_id = sqlc.arg(observation_id)::uuid ORDER BY position;
 
 -- name: DeletePollTallies :exec
-DELETE FROM poll_tallies WHERE poll_id = @poll_id;
+DELETE FROM poll_tallies WHERE poll_id = sqlc.arg(poll_id)::uuid;
 
 -- name: InsertPollTally :exec
 INSERT INTO poll_tallies (poll_id, position, votes, voters_count)
 VALUES (@poll_id, @position, @votes, @voters_count);
 
 -- name: ListPollTallies :many
-SELECT poll_id, position, votes, voters_count FROM poll_tallies WHERE poll_id = @poll_id ORDER BY position;
+SELECT poll_id, position, votes, voters_count FROM poll_tallies WHERE poll_id = sqlc.arg(poll_id)::uuid ORDER BY position;
 
 -- ListCurrentCustomEmojiImages returns the custom emoji with an ID in @emoji_ids that have an
 -- image, each with its current (newest) image and its settings, for the emoji of a page of
@@ -200,6 +200,6 @@ SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
 FROM custom_emojis e
 JOIN custom_emoji_images i ON i.emoji_id = e.id
 LEFT JOIN custom_emoji_settings s ON s.emoji_id = e.id
-WHERE e.id = ANY(@emoji_ids::text[])
-  AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
+WHERE e.id = ANY(sqlc.arg(emoji_ids)::uuid[])
+  AND i.id = (SELECT l.id FROM custom_emoji_images l WHERE l.emoji_id = e.id ORDER BY l.id DESC LIMIT 1)
 ORDER BY e.id;

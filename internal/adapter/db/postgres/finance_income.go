@@ -115,7 +115,7 @@ func (r *FinanceRepository) ListIncome(ctx context.Context, f appfinance.IncomeF
 		return []appfinance.IncomeRecord{}, nil
 	}
 	rows, err := r.db.reader().ListIncomeMovements(ctx, postgresgen.ListIncomeMovementsParams{
-		StartsOn: toDate(f.From), EndsOn: toDate(f.To), Kind: string(f.Kind), Before: before, Lim: int32(min(limit, math.MaxInt32)),
+		StartsOn: toDate(f.From), EndsOn: toDate(f.To), Kind: string(f.Kind), Before: toNullString(before), Lim: int32(min(limit, math.MaxInt32)),
 	})
 	if err != nil {
 		return nil, wrap(err, "list income movements")

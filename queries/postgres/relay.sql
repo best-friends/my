@@ -12,14 +12,14 @@ VALUES (@id, @protocol, @url, @inbox_url, @receive, @created_by_user_id, @create
 SELECT r.id, r.protocol, r.url, r.inbox_url, r.receive, r.created_by_user_id, r.created_at,
   s.state, s.follow_activity_uri, s.relay_actor_uri, s.since
 FROM relays r LEFT JOIN relay_states s ON s.relay_id = r.id
-WHERE r.id = @id
+WHERE r.id = sqlc.arg(id)::uuid
 FOR UPDATE OF r;
 
 -- name: GetRelay :one
 SELECT r.id, r.protocol, r.url, r.inbox_url, r.receive, r.created_by_user_id, r.created_at,
   s.state, s.follow_activity_uri, s.relay_actor_uri, s.since
 FROM relays r LEFT JOIN relay_states s ON s.relay_id = r.id
-WHERE r.id = @id;
+WHERE r.id = sqlc.arg(id)::uuid;
 
 -- ListRelays returns every relay in registration order (the IDs are UUIDv7).
 -- name: ListRelays :many
@@ -64,13 +64,13 @@ ON CONFLICT (relay_id) DO UPDATE SET state = excluded.state, follow_activity_uri
   relay_actor_uri = excluded.relay_actor_uri, since = excluded.since;
 
 -- name: DeleteRelayState :exec
-DELETE FROM relay_states WHERE relay_id = @relay_id;
+DELETE FROM relay_states WHERE relay_id = sqlc.arg(relay_id)::uuid;
 
 -- name: DeleteRelayEvents :exec
-DELETE FROM relay_events WHERE relay_id = @relay_id;
+DELETE FROM relay_events WHERE relay_id = sqlc.arg(relay_id)::uuid;
 
 -- name: DeleteRelay :exec
-DELETE FROM relays WHERE id = @id;
+DELETE FROM relays WHERE id = sqlc.arg(id)::uuid;
 
 -- name: DeleteAllRelayStates :exec
 DELETE FROM relay_states;

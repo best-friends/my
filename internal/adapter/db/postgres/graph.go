@@ -377,7 +377,7 @@ func (r *GraphRepository) ListFollowers(ctx context.Context, followeeAccountID s
 		return nil, err
 	}
 	rows, err := r.db.reader().ListFollowersPage(ctx, postgresgen.ListFollowersPageParams{
-		AccountID: followeeAccountID, State: string(state), Before: before, PageLimit: n,
+		AccountID: followeeAccountID, State: string(state), Before: toNullString(before), PageLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list followers")
@@ -392,7 +392,7 @@ func (r *GraphRepository) ListFollowing(ctx context.Context, followerAccountID s
 		return nil, err
 	}
 	rows, err := r.db.reader().ListFollowingPage(ctx, postgresgen.ListFollowingPageParams{
-		AccountID: followerAccountID, State: string(state), Before: before, PageLimit: n,
+		AccountID: followerAccountID, State: string(state), Before: toNullString(before), PageLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list following")

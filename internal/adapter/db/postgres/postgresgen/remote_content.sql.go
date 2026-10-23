@@ -13,7 +13,7 @@ import (
 )
 
 const countPollVoters = `-- name: CountPollVoters :one
-SELECT count(DISTINCT account_id) FROM poll_votes WHERE poll_id = $1
+SELECT count(DISTINCT account_id) FROM poll_votes WHERE poll_id = $1::uuid
 `
 
 func (q *Queries) CountPollVoters(ctx context.Context, pollID string) (int64, error) {
@@ -24,7 +24,7 @@ func (q *Queries) CountPollVoters(ctx context.Context, pollID string) (int64, er
 }
 
 const countPollVotes = `-- name: CountPollVotes :many
-SELECT position, count(*) AS votes FROM poll_votes WHERE poll_id = $1 GROUP BY position ORDER BY position
+SELECT position, count(*) AS votes FROM poll_votes WHERE poll_id = $1::uuid GROUP BY position ORDER BY position
 `
 
 type CountPollVotesRow struct {
@@ -53,7 +53,7 @@ func (q *Queries) CountPollVotes(ctx context.Context, pollID string) ([]CountPol
 }
 
 const deletePollTallies = `-- name: DeletePollTallies :exec
-DELETE FROM poll_tallies WHERE poll_id = $1
+DELETE FROM poll_tallies WHERE poll_id = $1::uuid
 `
 
 func (q *Queries) DeletePollTallies(ctx context.Context, pollID string) error {
@@ -99,7 +99,7 @@ func (q *Queries) ExistsLocalStatusInConversation(ctx context.Context, conversat
 }
 
 const getCustomEmoji = `-- name: GetCustomEmoji :one
-SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis WHERE id = $1
+SELECT id, shortcode, domain, uri, created_by_user_id, created_at FROM custom_emojis WHERE id = $1::uuid
 `
 
 func (q *Queries) GetCustomEmoji(ctx context.Context, id string) (CustomEmoji, error) {
@@ -142,7 +142,7 @@ func (q *Queries) GetCustomEmojiByShortcode(ctx context.Context, arg GetCustomEm
 
 const getLatestCustomEmojiImage = `-- name: GetLatestCustomEmojiImage :one
 SELECT id, emoji_id, media_id, revised_at FROM custom_emoji_images
-WHERE emoji_id = $1 ORDER BY id DESC LIMIT 1
+WHERE emoji_id = $1::uuid ORDER BY id DESC LIMIT 1
 `
 
 func (q *Queries) GetLatestCustomEmojiImage(ctx context.Context, emojiID string) (CustomEmojiImage, error) {
@@ -161,7 +161,7 @@ const getLatestCustomEmojiImageRemoteURL = `-- name: GetLatestCustomEmojiImageRe
 SELECT CAST(COALESCE(r.remote_url, '') AS TEXT) AS remote_url
 FROM custom_emoji_images i
 LEFT JOIN remote_media r ON r.media_id = i.media_id
-WHERE i.emoji_id = $1 ORDER BY i.id DESC LIMIT 1
+WHERE i.emoji_id = $1::uuid ORDER BY i.id DESC LIMIT 1
 `
 
 // GetLatestCustomEmojiImageRemoteURL returns the remote URL of the newest image of an emoji, ”
@@ -175,7 +175,7 @@ func (q *Queries) GetLatestCustomEmojiImageRemoteURL(ctx context.Context, emojiI
 
 const getLatestPollTallyObservation = `-- name: GetLatestPollTallyObservation :one
 SELECT id, poll_id, voters_count, observed_at FROM poll_tally_observations
-WHERE poll_id = $1 ORDER BY id DESC LIMIT 1
+WHERE poll_id = $1::uuid ORDER BY id DESC LIMIT 1
 `
 
 func (q *Queries) GetLatestPollTallyObservation(ctx context.Context, pollID string) (PollTallyObservation, error) {
@@ -191,7 +191,7 @@ func (q *Queries) GetLatestPollTallyObservation(ctx context.Context, pollID stri
 }
 
 const getPollByRevision = `-- name: GetPollByRevision :one
-SELECT id, revision_id, multiple, hide_totals, closes_at FROM polls WHERE revision_id = $1
+SELECT id, revision_id, multiple, hide_totals, closes_at FROM polls WHERE revision_id = $1::uuid
 `
 
 func (q *Queries) GetPollByRevision(ctx context.Context, revisionID string) (Poll, error) {
@@ -208,7 +208,7 @@ func (q *Queries) GetPollByRevision(ctx context.Context, revisionID string) (Pol
 }
 
 const getPollStatus = `-- name: GetPollStatus :one
-SELECT r.status_id FROM polls p JOIN status_revisions r ON r.id = p.revision_id WHERE p.id = $1
+SELECT r.status_id FROM polls p JOIN status_revisions r ON r.id = p.revision_id WHERE p.id = $1::uuid
 `
 
 // GetPollStatus returns the status whose revision has the poll.
@@ -222,7 +222,7 @@ func (q *Queries) GetPollStatus(ctx context.Context, pollID string) (string, err
 const getRemoteMedia = `-- name: GetRemoteMedia :one
 SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
-FROM remote_media WHERE media_id = $1
+FROM remote_media WHERE media_id = $1::uuid
 `
 
 func (q *Queries) GetRemoteMedia(ctx context.Context, mediaID string) (RemoteMedium, error) {
@@ -248,7 +248,7 @@ func (q *Queries) GetRemoteMedia(ctx context.Context, mediaID string) (RemoteMed
 const getRemoteMediaByURL = `-- name: GetRemoteMediaByURL :one
 SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
-FROM remote_media WHERE owner_account_id = $1 AND remote_url = $2
+FROM remote_media WHERE owner_account_id = $1::uuid AND remote_url = $2
 `
 
 type GetRemoteMediaByURLParams struct {
@@ -298,7 +298,7 @@ func (q *Queries) GetRemoteMediaCache(ctx context.Context, url string) (RemoteMe
 
 const getRemoteStatusRevision = `-- name: GetRemoteStatusRevision :one
 SELECT revision_id, activity_uri, html_policy_version FROM remote_status_revisions
-WHERE revision_id = $1
+WHERE revision_id = $1::uuid
 `
 
 func (q *Queries) GetRemoteStatusRevision(ctx context.Context, revisionID string) (RemoteStatusRevision, error) {
@@ -553,7 +553,7 @@ func (q *Queries) InsertRemoteStatusRevision(ctx context.Context, arg InsertRemo
 }
 
 const isCustomEmojiImage = `-- name: IsCustomEmojiImage :one
-SELECT EXISTS (SELECT 1 FROM custom_emoji_images WHERE media_id = $1)
+SELECT EXISTS (SELECT 1 FROM custom_emoji_images WHERE media_id = $1::uuid)
 `
 
 // IsCustomEmojiImage reports whether any revision of a custom emoji, current or not, uses the
@@ -574,8 +574,8 @@ SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
 FROM custom_emojis e
 JOIN custom_emoji_images i ON i.emoji_id = e.id
 LEFT JOIN custom_emoji_settings s ON s.emoji_id = e.id
-WHERE e.id = ANY($1::text[])
-  AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
+WHERE e.id = ANY($1::uuid[])
+  AND i.id = (SELECT l.id FROM custom_emoji_images l WHERE l.emoji_id = e.id ORDER BY l.id DESC LIMIT 1)
 ORDER BY e.id
 `
 
@@ -705,7 +705,7 @@ func (q *Queries) ListLeastRecentlyAccessedRemoteMediaCache(ctx context.Context,
 }
 
 const listPollOptions = `-- name: ListPollOptions :many
-SELECT poll_id, position, title FROM poll_options WHERE poll_id = $1 ORDER BY position
+SELECT poll_id, position, title FROM poll_options WHERE poll_id = $1::uuid ORDER BY position
 `
 
 func (q *Queries) ListPollOptions(ctx context.Context, pollID string) ([]PollOption, error) {
@@ -729,7 +729,7 @@ func (q *Queries) ListPollOptions(ctx context.Context, pollID string) ([]PollOpt
 }
 
 const listPollTallies = `-- name: ListPollTallies :many
-SELECT poll_id, position, votes, voters_count FROM poll_tallies WHERE poll_id = $1 ORDER BY position
+SELECT poll_id, position, votes, voters_count FROM poll_tallies WHERE poll_id = $1::uuid ORDER BY position
 `
 
 func (q *Queries) ListPollTallies(ctx context.Context, pollID string) ([]PollTally, error) {
@@ -759,7 +759,7 @@ func (q *Queries) ListPollTallies(ctx context.Context, pollID string) ([]PollTal
 
 const listPollTallyObservationCounts = `-- name: ListPollTallyObservationCounts :many
 SELECT observation_id, position, votes FROM poll_tally_observation_counts
-WHERE observation_id = $1 ORDER BY position
+WHERE observation_id = $1::uuid ORDER BY position
 `
 
 func (q *Queries) ListPollTallyObservationCounts(ctx context.Context, observationID string) ([]PollTallyObservationCount, error) {
@@ -784,12 +784,12 @@ func (q *Queries) ListPollTallyObservationCounts(ctx context.Context, observatio
 
 const listPollVoterIDs = `-- name: ListPollVoterIDs :many
 SELECT DISTINCT account_id FROM poll_votes
-WHERE poll_id = $1 AND account_id > $2 ORDER BY account_id LIMIT $3
+WHERE poll_id = $1::uuid AND account_id > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000') ORDER BY account_id LIMIT $3
 `
 
 type ListPollVoterIDsParams struct {
 	PollID string
-	After  string
+	After  *string
 	Lim    int32
 }
 
@@ -816,7 +816,7 @@ func (q *Queries) ListPollVoterIDs(ctx context.Context, arg ListPollVoterIDsPara
 
 const listPollVotesOfAccount = `-- name: ListPollVotesOfAccount :many
 SELECT id, poll_id, account_id, position, uri, voted_at FROM poll_votes
-WHERE poll_id = $1 AND account_id = $2 ORDER BY position
+WHERE poll_id = $1::uuid AND account_id = $2::uuid ORDER BY position
 `
 
 type ListPollVotesOfAccountParams struct {
@@ -854,7 +854,7 @@ func (q *Queries) ListPollVotesOfAccount(ctx context.Context, arg ListPollVotesO
 const listRemoteMedia = `-- name: ListRemoteMedia :many
 SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
-FROM remote_media WHERE media_id = ANY($1::text[]) ORDER BY media_id
+FROM remote_media WHERE media_id = ANY($1::uuid[]) ORDER BY media_id
 `
 
 // ListRemoteMedia returns the remote media files with an ID in @media_ids, for the images of a
@@ -893,7 +893,7 @@ func (q *Queries) ListRemoteMedia(ctx context.Context, mediaIds []string) ([]Rem
 }
 
 const lockPoll = `-- name: LockPoll :one
-SELECT id FROM polls WHERE id = $1 FOR UPDATE
+SELECT id FROM polls WHERE id = $1::uuid FOR UPDATE
 `
 
 // LockPoll locks the poll until the transaction ends, so that the votes of a local poll are

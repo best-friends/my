@@ -127,7 +127,7 @@ func (r *FederationRepository) ListDeliveries(ctx context.Context, outboundActiv
 		return nil, err
 	}
 	rows, err := r.db.reader().ListDeliveriesOfOutboundActivity(ctx, postgresgen.ListDeliveriesOfOutboundActivityParams{
-		OutboundActivityID: outboundActivityID, AfterID: after, BatchLimit: n,
+		OutboundActivityID: outboundActivityID, AfterID: toNullString(after), BatchLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list deliveries")

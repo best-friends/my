@@ -367,7 +367,7 @@ func (r *InteractionRepository) ListFavourites(ctx context.Context, accountID, b
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.db.reader().ListFavourites(ctx, postgresgen.ListFavouritesParams{AccountID: accountID, Before: before, PageLimit: n})
+	rows, err := r.db.reader().ListFavourites(ctx, postgresgen.ListFavouritesParams{AccountID: accountID, Before: toNullString(before), PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list favourites")
 	}
@@ -384,7 +384,7 @@ func (r *InteractionRepository) ListBookmarks(ctx context.Context, accountID, be
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.db.reader().ListBookmarks(ctx, postgresgen.ListBookmarksParams{AccountID: accountID, Before: before, PageLimit: n})
+	rows, err := r.db.reader().ListBookmarks(ctx, postgresgen.ListBookmarksParams{AccountID: accountID, Before: toNullString(before), PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list bookmarks")
 	}

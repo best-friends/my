@@ -461,10 +461,10 @@ func (q *Queries) InsertFavourite(ctx context.Context, arg InsertFavouriteParams
 
 const insertStatusPin = `-- name: InsertStatusPin :execrows
 INSERT INTO status_pins (account_id, status_id, slot, created_at, id)
-SELECT $1::text, $2::text, c.slot, $3::timestamptz, $4::text
-FROM (SELECT 1 AS slot UNION ALL SELECT p.slot + 1 FROM status_pins p WHERE p.account_id = $1::text) c
+SELECT $1::uuid, $2::uuid, c.slot, $3::timestamptz, $4::uuid
+FROM (SELECT 1 AS slot UNION ALL SELECT p.slot + 1 FROM status_pins p WHERE p.account_id = $1::uuid) c
 WHERE c.slot <= $5::integer
-  AND NOT EXISTS (SELECT 1 FROM status_pins u WHERE u.account_id = $1::text AND u.slot = c.slot)
+  AND NOT EXISTS (SELECT 1 FROM status_pins u WHERE u.account_id = $1::uuid AND u.slot = c.slot)
 ORDER BY c.slot LIMIT 1
 ON CONFLICT DO NOTHING
 `
@@ -496,13 +496,13 @@ func (q *Queries) InsertStatusPin(ctx context.Context, arg InsertStatusPinParams
 
 const listBookmarks = `-- name: ListBookmarks :many
 SELECT account_id, status_id, created_at, id FROM bookmarks
-WHERE account_id = $1 AND ($2::text = '' OR id < $2::text)
+WHERE account_id = $1 AND ($2::uuid IS NULL OR id < $2::uuid)
 ORDER BY id DESC LIMIT $3
 `
 
 type ListBookmarksParams struct {
 	AccountID string
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 
@@ -557,13 +557,13 @@ func (q *Queries) ListBoostEdges(ctx context.Context) ([]BoostEdge, error) {
 
 const listFavourites = `-- name: ListFavourites :many
 SELECT account_id, status_id, uri, created_at, id FROM favourites
-WHERE account_id = $1 AND ($2::text = '' OR id < $2::text)
+WHERE account_id = $1 AND ($2::uuid IS NULL OR id < $2::uuid)
 ORDER BY id DESC LIMIT $3
 `
 
 type ListFavouritesParams struct {
 	AccountID string
-	Before    string
+	Before    *string
 	PageLimit int32
 }
 

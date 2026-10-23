@@ -48,7 +48,7 @@ func (r *MediaRepository) InsertMediaFile(ctx context.Context, tx uow.Tx, m cont
 		return err
 	}
 	return wrap(q.InsertMediaFile(ctx, postgresgen.InsertMediaFileParams{
-		ID: m.ID, OwnerAccountID: m.OwnerAccountID, Origin: string(m.Origin), CreatedAt: m.CreatedAt,
+		ID: m.ID, OwnerAccountID: toNullString(m.OwnerAccountID), Origin: string(m.Origin), CreatedAt: m.CreatedAt,
 	}), "insert media file")
 }
 
@@ -152,7 +152,7 @@ func (r *MediaRepository) FindMediaFile(ctx context.Context, id string) (content
 		return content.MediaFile{}, notFound(err, appcontent.ErrNotFound, "media file "+id)
 	}
 	return content.MediaFile{
-		ID: row.ID, OwnerAccountID: row.OwnerAccountID, Origin: content.MediaOrigin(row.Origin), CreatedAt: utc(row.CreatedAt),
+		ID: row.ID, OwnerAccountID: fromNullString(row.OwnerAccountID), Origin: content.MediaOrigin(row.Origin), CreatedAt: utc(row.CreatedAt),
 	}, nil
 }
 
@@ -220,7 +220,7 @@ func (r *MediaRepository) ListReadyVariants(ctx context.Context, ids []string) (
 	for _, row := range rows {
 		out = append(out, appcontent.FileVariant{
 			File: content.MediaFile{
-				ID: row.ID, OwnerAccountID: row.OwnerAccountID, Origin: content.MediaOrigin(row.Origin), CreatedAt: utc(row.CreatedAt),
+				ID: row.ID, OwnerAccountID: fromNullString(row.OwnerAccountID), Origin: content.MediaOrigin(row.Origin), CreatedAt: utc(row.CreatedAt),
 			},
 			Variant: content.MediaVariant{
 				ResultID: row.ResultID, Size: content.MediaSize(row.Size), Motion: content.MediaMotion(row.Motion), BlobKey: row.BlobKey, ContentType: row.ContentType,
@@ -247,7 +247,7 @@ func (r *MediaRepository) ListUnattachedUploads(ctx context.Context, afterID str
 		return nil, err
 	}
 	ids, err := r.db.reader().ListUnattachedUploads(ctx, postgresgen.ListUnattachedUploadsParams{
-		AfterID: afterID, BeforeID: kernel.UUIDv7Floor(createdBefore), RowLimit: n,
+		AfterID: toNullString(afterID), BeforeID: kernel.UUIDv7Floor(createdBefore), RowLimit: n,
 	})
 	return ids, wrap(err, "list unattached uploads")
 }
@@ -259,7 +259,7 @@ func (r *MediaRepository) ListOwnerUploads(ctx context.Context, ownerAccountID, 
 		return nil, err
 	}
 	rows, err := r.db.reader().ListOwnerUploads(ctx, postgresgen.ListOwnerUploadsParams{
-		OwnerAccountID: ownerAccountID, AfterID: afterID, RowLimit: n,
+		OwnerAccountID: toNullString(ownerAccountID), AfterID: toNullString(afterID), RowLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list owner uploads")

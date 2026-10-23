@@ -107,7 +107,7 @@ func (r *ModerationRepository) ListAppeals(ctx context.Context, q appmoderation.
 		return nil, err
 	}
 	rows, err := r.db.reader().ListModerationAppeals(ctx, postgresgen.ListModerationAppealsParams{
-		State: string(q.State), Before: q.Before, Lim: lim,
+		State: string(q.State), Before: toNullString(q.Before), Lim: lim,
 	})
 	if err != nil {
 		return nil, wrap(err, "list moderation appeals")

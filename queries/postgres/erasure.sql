@@ -12,7 +12,7 @@
 SELECT s.account_id, la.user_id FROM account_lifecycle_states s
 JOIN local_accounts la ON la.account_id = s.account_id
 WHERE s.state = 'deleted' AND s.since <= sqlc.arg(deleted_before)::timestamptz
-  AND s.account_id > sqlc.arg(after)::text
+  AND s.account_id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000')
   AND NOT EXISTS (SELECT 1 FROM account_erasures e WHERE e.account_id = s.account_id)
 ORDER BY s.account_id
 LIMIT sqlc.arg(lim);
@@ -161,7 +161,7 @@ SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_r
   s.conversation_uri, s.published_at,
   EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id) AS deleted
 FROM statuses s
-WHERE s.author_account_id = sqlc.arg(author_account_id) AND s.id > sqlc.arg(after)::text
+WHERE s.author_account_id = sqlc.arg(author_account_id) AND s.id > COALESCE(sqlc.narg(after)::uuid, '00000000-0000-0000-0000-000000000000')
 ORDER BY s.id
 LIMIT sqlc.arg(lim);
 
@@ -170,35 +170,35 @@ LIMIT sqlc.arg(lim);
 -- (with their counts), bookmarks, and pins of them.
 
 -- name: EraseLocalStatusesOfStatuses :exec
-DELETE FROM local_statuses WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM local_statuses WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseBoostEdgesOfStatuses :exec
-DELETE FROM boost_edges WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM boost_edges WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseBoostRetractionsOfStatuses :exec
 DELETE FROM boost_retractions WHERE boost_id IN (
-  SELECT b.id FROM boosts b WHERE b.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT b.id FROM boosts b WHERE b.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: EraseBoostsOfStatuses :exec
-DELETE FROM boosts WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM boosts WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFavouritesOfStatuses :exec
-DELETE FROM favourites WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM favourites WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseReactionsOfStatuses :exec
-DELETE FROM reactions WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM reactions WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseReactionCountsOfStatuses :exec
-DELETE FROM status_reaction_counts WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM status_reaction_counts WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseBookmarksOfStatuses :exec
-DELETE FROM bookmarks WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM bookmarks WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: ErasePinsOfStatuses :exec
-DELETE FROM status_pins WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM status_pins WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseCountersOfStatuses :exec
-DELETE FROM status_counters WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM status_counters WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- The account's favourites: the counts of the statuses go down first, for the same batch.
 
@@ -294,25 +294,25 @@ ORDER BY id
 LIMIT sqlc.arg(lim);
 
 -- name: EraseFollowAcceptances :exec
-DELETE FROM follow_acceptances WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM follow_acceptances WHERE follow_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFollowRejections :exec
-DELETE FROM follow_rejections WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM follow_rejections WHERE follow_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFollowTerminations :exec
-DELETE FROM follow_terminations WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM follow_terminations WHERE follow_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFollowResends :exec
-DELETE FROM follow_resends WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM follow_resends WHERE follow_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFollowPreferences :exec
-DELETE FROM follow_preferences WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM follow_preferences WHERE follow_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFollowEdgesOfFollows :exec
-DELETE FROM follow_edges WHERE follow_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM follow_edges WHERE follow_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFollows :exec
-DELETE FROM follows WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM follows WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: ListBlockIDsToErase :many
 SELECT id FROM blocks
@@ -321,13 +321,13 @@ ORDER BY id
 LIMIT sqlc.arg(lim);
 
 -- name: EraseBlockRetractions :exec
-DELETE FROM block_retractions WHERE block_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM block_retractions WHERE block_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseBlockEdgesOfBlocks :exec
-DELETE FROM block_edges WHERE block_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM block_edges WHERE block_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseBlocks :exec
-DELETE FROM blocks WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM blocks WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseMutesBy :execrows
 DELETE FROM mutes WHERE mutes.account_id = sqlc.arg(account_id) AND mutes.target_account_id IN (
@@ -356,13 +356,13 @@ ORDER BY id
 LIMIT sqlc.arg(lim);
 
 -- name: EraseFeedDirectRecipientsOfEntries :exec
-DELETE FROM feed_direct_recipients WHERE entry_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM feed_direct_recipients WHERE entry_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFeedTagEntriesOfEntries :exec
-DELETE FROM feed_tag_entries WHERE entry_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM feed_tag_entries WHERE entry_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFeedEntries :exec
-DELETE FROM feed_entries WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM feed_entries WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseFeedDirectRecipientsOf :execrows
 DELETE FROM feed_direct_recipients WHERE feed_direct_recipients.recipient_account_id = sqlc.arg(account_id) AND feed_direct_recipients.entry_id IN (
@@ -398,13 +398,13 @@ DELETE FROM feed_domain_mutes WHERE feed_domain_mutes.viewer_account_id = sqlc.a
 
 -- name: EraseNotificationDismissalsOfStatuses :exec
 DELETE FROM notification_dismissals WHERE notification_id IN (
-  SELECT n.id FROM notifications n WHERE n.status_id = ANY(sqlc.arg(ids)::text[]));
+  SELECT n.id FROM notifications n WHERE n.status_id = ANY(sqlc.arg(ids)::uuid[]));
 
 -- name: EraseNotificationsOfStatuses :exec
-DELETE FROM notifications WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM notifications WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseDeletedStatusesOfStatuses :exec
-DELETE FROM notification_deleted_statuses WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM notification_deleted_statuses WHERE status_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- ListNotificationIDsToErase returns up to @lim notifications to, from, or about the account and
 -- its user.
@@ -416,10 +416,10 @@ ORDER BY id
 LIMIT sqlc.arg(lim);
 
 -- name: EraseNotificationDismissals :exec
-DELETE FROM notification_dismissals WHERE notification_id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM notification_dismissals WHERE notification_id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseNotifications :exec
-DELETE FROM notifications WHERE id = ANY(sqlc.arg(ids)::text[]);
+DELETE FROM notifications WHERE id = ANY(sqlc.arg(ids)::uuid[]);
 
 -- name: EraseNotificationReadMarker :exec
 DELETE FROM notification_read_markers WHERE account_id = sqlc.arg(account_id);

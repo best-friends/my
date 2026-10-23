@@ -178,7 +178,7 @@ func (r *GraphRepository) ListBlocking(ctx context.Context, blockerAccountID, be
 		return nil, err
 	}
 	rows, err := r.db.reader().ListBlockingPage(ctx, postgresgen.ListBlockingPageParams{
-		AccountID: blockerAccountID, Before: before, PageLimit: n,
+		AccountID: blockerAccountID, Before: toNullString(before), PageLimit: n,
 	})
 	if err != nil {
 		return nil, wrap(err, "list blocking")
@@ -270,7 +270,7 @@ func (r *GraphRepository) ListMutes(ctx context.Context, accountID string, now t
 		return nil, err
 	}
 	rows, err := r.db.reader().ListActiveMutesPage(ctx, postgresgen.ListActiveMutesPageParams{
-		AccountID: accountID, Now: now, BeforeTargetAccountID: before.TargetAccountID,
+		AccountID: accountID, Now: now, BeforeTargetAccountID: toNullString(before.TargetAccountID),
 		BeforeCreatedAt: before.CreatedAt, PageLimit: n,
 	})
 	if err != nil {
