@@ -187,7 +187,7 @@ func TestKind(t *testing.T) {
 		"locales/en-XA/client.json":                         "",
 		"locales/ja/client.json":                            "locale",
 		"queries/sqlite/queue/jobs.sql":                     "query",
-		"docs/architecture/data-model.md":                   "md",
+		"docs/architecture/data-model/04-tables.md":         "md",
 		"internal/app/content/custom_emoji_request_test.go": "go",
 	} {
 		if got := Kind(p); got != want {

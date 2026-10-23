@@ -4,6 +4,7 @@ package store
 
 import (
 	"database/sql"
+	"path"
 	"strings"
 	"unicode/utf8"
 )
@@ -78,6 +79,34 @@ func (s *Store) Paths(suffix string) ([]string, error) {
 		out = append(out, p)
 	}
 	return out, rows.Err()
+}
+
+// DocDir returns the Markdown files directly in the shortest indexed directory whose path ends with dir (a
+// document split into one file per section, such as docs/architecture/web-client/), in path order.
+func (s *Store) DocDir(dir string) ([]string, error) {
+	dir = strings.Trim(dir, "/")
+	rows, err := s.DB.Query(`SELECT path FROM files WHERE id IN (SELECT file_id FROM view) AND (path LIKE ? OR path LIKE ?) ORDER BY path`, "%/"+dir+"/%.md", dir+"/%.md")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	byDir := map[string][]string{}
+	best := ""
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, err
+		}
+		d := path.Dir(p)
+		if d != dir && !strings.HasSuffix(d, "/"+dir) {
+			continue
+		}
+		byDir[d] = append(byDir[d], p)
+		if best == "" || len(d) < len(best) {
+			best = d
+		}
+	}
+	return byDir[best], rows.Err()
 }
 
 // Edge is an edge of the view.
