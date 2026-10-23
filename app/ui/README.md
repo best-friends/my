@@ -121,9 +121,16 @@ changes the choice and the attribute together; both use the localStorage key `my
 
 ## Typography
 
-- `font-sans` is OS fonts only: the platform UI font, then Japanese, Chinese and Korean system fonts (Hiragino, Yu Gothic UI, Meiryo,
-  PingFang, Microsoft YaHei UI, Malgun Gothic), Arabic system fonts (Geeza Pro, Segoe UI Arabic, Tahoma), the Noto families
-  of Linux and Android, and emoji. `font-mono` follows the same order.
+- `font-sans` starts with `"my Noto Color Emoji"`, the one web font, and is OS fonts after it: the platform UI font, then Japanese,
+  Chinese and Korean system fonts (Hiragino, Yu Gothic UI, Meiryo, PingFang, Microsoft YaHei UI, Malgun Gothic), Arabic system fonts
+  (Geeza Pro, Segoe UI Arabic, Tahoma), the Noto families of Linux and Android, and the OS emoji fonts. `font-mono` also starts with the
+  emoji font.
+- Unicode emoji are drawn with Noto Color Emoji everywhere ([ADR-0095](../../docs/adr/0095-noto-color-emoji.md)). `@my/ui/emoji.css`
+  holds its `@font-face` rules: one per group of `emoji-test.txt`, each with a COLRv1 and an OpenType-SVG WOFF2 of `src/fonts/emoji/`
+  that the browser picks with `tech()`, and a `unicode-range` of emoji code points only (not `#`, `*`, the digits, `©`, `®`, `™` and the
+  other symbols that body text uses), so a page loads only the splits of the emoji it shows and the OS fonts draw every other character.
+  The app and Storybook import it after `theme.css`; the server-rendered pages do not, and keep the OS emoji. `scripts/task.sh emoji:generate`
+  writes the fonts and `emoji.css`, never edit them by hand; the fonts are under the SIL Open Font License 1.1 (`src/fonts/emoji/OFL.txt`).
 - `font-serif` is `Georgia, "Noto Serif JP", serif`, for brand moments only: display headlines, page titles, `EmptyState` headings and avatar
   initials. Body text and controls stay `font-sans`.
 - Sizes are `text-xs` (0.75rem), `text-sm` (0.875rem), `text-base` (1rem), `text-lg` (1.125rem), `text-xl` (1.25rem), `text-2xl` (1.5rem)

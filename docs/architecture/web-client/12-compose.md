@@ -15,6 +15,8 @@
   ボタンはポップオーバー（APG の dialog）に `@my/ui` の `EmojiPicker` を開き、検索欄にフォーカスを移す。`EmojiPicker` は検索欄と、カテゴリごとの見出しで分けた絵文字のグリッド（React Aria の `GridList` の grid の配置。APG の grid のとおり、Tab で検索欄から入り、矢印キーで書字方向に沿って動き、Enter・Space・押下で選ぶ）で、
   検索は shortcode と別名の部分一致、各絵文字の名前は `:shortcode:` にする。選ぶと、対象の入力欄のカーソルの位置（選択していればその範囲）に `:shortcode:` を入れ（サーバーが前後に英数字とコロンのない shortcode だけを読むので、必要なら前後に空白を足す）、ポップオーバーを閉じて入力欄にフォーカスを戻す。
   最近使った絵文字は端末ごとに localStorage（`my:emoji:recent`、shortcode の配列）に 16 個まで持ち、検索していないときに「最近使った絵文字」として先頭に出す。動く絵文字は利用者の設定と `prefers-reduced-motion` に従って止める（`CustomEmoji` と同じ）。リアクション（ADR-0052）も同じ `EmojiPicker` を、Unicode 絵文字の群を足して使う（§13）。
+- **Unicode 絵文字の表示**（ADR-0095）: ピッカー・補完・リアクション・投稿の本文・名前の Unicode 絵文字は、どれも `--font-sans` の先頭の `my Noto Color Emoji`（`@my/ui/emoji.css`）で描き、OS のフォントで描けるかを canvas で判定して隠すことはしない（フォントは `EMOJI_VERSION` のすべてを描くことを生成のときに確かめる）。
+  フォントは `emoji-test.txt` のグループごとに分けてあり、画面に出た絵文字のグループの分だけを読む。読み込み中は `font-display: swap` で OS の絵文字で描き、届いたら入れ替わる。このため、字の幅に合わせて位置を測る層（ADR-0092 の強調の層）は、`document.fonts` の `loadingdone` の後にも測り直す。
 - **下書き**（`hooks/draftStore.ts`）: フォームの外のストア（`useSyncExternalStore`）に置き、シート・返信ボタンが同じ下書きを共有する。
   リロードやタブの異常終了で失わないように、アカウントごとのキー（`my:user:compose:<アカウント ID>`）で sessionStorage に保存する。このタブだけのもので、タブを閉じるかセッションが終わると消える（§10）。
   アップロードの途中のファイルは保存しない（再開できない）。アップロード済みの画像は ID と説明を保存し、リロード後はサーバーのサムネイルを表示する。

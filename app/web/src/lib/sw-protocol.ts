@@ -10,6 +10,8 @@ export const cachePrefix = "my";
 export const mediaCacheName = `${cachePrefix}-media`;
 /** The runtime cache of the instance theme's stylesheets (ADR-0059). */
 export const themeCacheName = `${cachePrefix}-theme`;
+/** The runtime cache of the Noto Color Emoji splits (ADR-0095 §3), which the precache leaves out. */
+export const emojiFontCacheName = `${cachePrefix}-emoji-font`;
 
 /**
  * The path of the generic HTML shell the worker precaches and returns for navigations it cannot fetch: a page

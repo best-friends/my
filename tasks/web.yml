@@ -189,11 +189,11 @@ tasks:
       - bun run e2e
 
   e2e-install:
-    desc: Download the Playwright browser that web:e2e uses (local runs only)
+    desc: Download the Playwright browsers that web:e2e uses, Firefox and WebKit for the emoji font spec (local runs only)
     deps: [install]
     dir: app/web
     cmds:
-      - bun run playwright install chromium
+      - bun run playwright install chromium firefox webkit
 
   playwright-image-check:
     desc: Fail if a workflow's Playwright image or a playwright package version differs from PLAYWRIGHT_IMAGE

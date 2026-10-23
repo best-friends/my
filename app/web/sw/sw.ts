@@ -12,6 +12,9 @@
 // - public images under /media/ are cache first, at most 300 entries for 30 days;
 // - the instance theme's stylesheets under /theme/ (ADR-0059), named by their revision, are cache first, at
 //   most 5 entries;
+// - the Noto Color Emoji splits of the build (ADR-0095 §3), which the precache leaves out (about 6 MB in both
+//   formats), are cache first when a page first shows one of their emoji, at most 44 entries (two builds of the
+//   splits of both formats);
 // - the client API (/api), the server-rendered pages (/auth, /oauth) and every other request are not
 //   answered by the worker at all, so nothing they return is cached;
 // - a Web Push message (FR-206) is shown as a notification (push.ts), and tapping it opens its page in an open
@@ -32,6 +35,7 @@ import {
   cachePrefix,
   cachesClearedMessage,
   clearCachesMessage,
+  emojiFontCacheName,
   isMessage,
   mediaCacheName,
   shellPath,
@@ -119,12 +123,25 @@ registerRoute(
   }),
 );
 
+const emojiFontExpiration = new ExpirationPlugin({ maxEntries: 44, purgeOnQuotaError: true });
+registerRoute(
+  (options) => handlingOf(options) === "emoji-font",
+  new CacheFirst({
+    cacheName: emojiFontCacheName,
+    plugins: [new CacheableResponsePlugin({ statuses: [200] }), emojiFontExpiration],
+  }),
+);
+
 // The precached build files, answered from the cache.
 addRoute();
 
 /** Deletes every cache, the precache included, and the expiration metadata of the runtime caches. */
 async function clearCaches(): Promise<void> {
-  await Promise.all([mediaExpiration.deleteCacheAndMetadata(), themeExpiration.deleteCacheAndMetadata()]);
+  await Promise.all([
+    mediaExpiration.deleteCacheAndMetadata(),
+    themeExpiration.deleteCacheAndMetadata(),
+    emojiFontExpiration.deleteCacheAndMetadata(),
+  ]);
   const names = await caches.keys();
   await Promise.all(names.map((name) => caches.delete(name)));
 }
