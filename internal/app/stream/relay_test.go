@@ -35,13 +35,13 @@ func TestRelayListensLazily(t *testing.T) {
 		r := stream.NewRelay(broker.Bus(), stream.RelayOptions{})
 		defer closeRelay(t, r)
 
-		r.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: "s1"})
+		r.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: entryID})
 		synctest.Wait()
 		if got := broker.Listeners(); got != 0 {
 			t.Fatalf("listeners without subscriptions = %d, want 0", got)
 		}
 
-		s, err := r.Subscribe(t.Context(), "alice")
+		s, err := r.Subscribe(t.Context(), aliceID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,7 +56,7 @@ func TestRelayListensLazily(t *testing.T) {
 		}
 
 		// A subscription within the idle timeout keeps the listener and restarts the timeout.
-		s, err = r.Subscribe(t.Context(), "bob")
+		s, err = r.Subscribe(t.Context(), bobID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -83,7 +83,7 @@ func TestRelayUnavailable(t *testing.T) {
 		defer closeRelay(t, r)
 
 		start := time.Now()
-		if _, err := r.Subscribe(t.Context(), "alice"); !errors.Is(err, stream.ErrUnavailable) {
+		if _, err := r.Subscribe(t.Context(), aliceID); !errors.Is(err, stream.ErrUnavailable) {
 			t.Fatalf("Subscribe on an unreachable broker: %v, want ErrUnavailable", err)
 		}
 		if waited := time.Since(start); waited != stream.DefaultReadyTimeout {
@@ -93,7 +93,7 @@ func TestRelayUnavailable(t *testing.T) {
 		// waiting for the unreachable broker.
 		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 		defer cancel()
-		if _, err := r.Subscribe(ctx, "alice"); !errors.Is(err, context.DeadlineExceeded) {
+		if _, err := r.Subscribe(ctx, aliceID); !errors.Is(err, context.DeadlineExceeded) {
 			t.Errorf("Subscribe with a shorter context: %v, want its error", err)
 		}
 		synctest.Wait()
@@ -105,7 +105,7 @@ func TestRelayUnavailable(t *testing.T) {
 		// start, which fails.
 		broker.SetUnreachable(false)
 		start = time.Now()
-		s, err := r.Subscribe(t.Context(), "alice")
+		s, err := r.Subscribe(t.Context(), aliceID)
 		if err != nil {
 			t.Fatalf("Subscribe on a reachable broker: %v", err)
 		}
@@ -148,7 +148,7 @@ func TestRelayDropsWhatItCannotSend(t *testing.T) {
 		go func() {
 			defer close(done)
 			for range 10 {
-				r.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: "s1"})
+				r.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: entryID})
 			}
 		}()
 		synctest.Wait()
@@ -176,7 +176,7 @@ func TestRelayDecodesOnlyKnownSignals(t *testing.T) {
 		broker := stream.NewMemoryBroker()
 		r := stream.NewRelay(broker.Bus(), stream.RelayOptions{})
 		defer closeRelay(t, r)
-		s, err := r.Subscribe(t.Context(), "alice")
+		s, err := r.Subscribe(t.Context(), aliceID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -188,14 +188,14 @@ func TestRelayDecodesOnlyKnownSignals(t *testing.T) {
 			`{"v":1,"o":"other","k":"reaction","e":"unknown kind"}`,
 			`not a signal`,
 			`{"v":1,"o":"` + r.ProcessID() + `","k":"home_entry","e":"from this process"}`,
-			`{"v":1,"o":"other","k":"home_entry","e":"s1"}`,
+			`{"v":1,"o":"other","k":"home_entry","e":"0199f0a8-0000-7000-8000-000000000001"}`,
 		} {
 			if err := other.Send(t.Context(), []byte(p)); err != nil {
 				t.Fatal(err)
 			}
 		}
 		synctest.Wait()
-		want := stream.Event{Kind: stream.KindHomeEntry, EntryID: "s1"}
+		want := stream.Event{Kind: stream.KindHomeEntry, EntryID: entryID}
 		select {
 		case e := <-s.Events():
 			if e != want {
@@ -218,22 +218,22 @@ func TestRelayCloseSendsWhatIsQueued(t *testing.T) {
 		sender := stream.NewRelay(broker.Bus(), stream.RelayOptions{})
 		receiver := stream.NewRelay(broker.Bus(), stream.RelayOptions{})
 		defer closeRelay(t, receiver)
-		s, err := receiver.Subscribe(t.Context(), "alice")
+		s, err := receiver.Subscribe(t.Context(), aliceID)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		local, err := sender.Subscribe(t.Context(), "alice")
+		local, err := sender.Subscribe(t.Context(), aliceID)
 		if err != nil {
 			t.Fatal(err)
 		}
-		e := stream.Event{Kind: stream.KindNotifications, AccountID: "alice"}
+		e := stream.Event{Kind: stream.KindNotifications, AccountID: aliceID}
 		sender.Publish(e)
 		closeRelay(t, sender)
 		if !isDone(local) {
 			t.Error("Close left a subscription open")
 		}
-		if _, err := sender.Subscribe(t.Context(), "alice"); !errors.Is(err, stream.ErrClosed) {
+		if _, err := sender.Subscribe(t.Context(), aliceID); !errors.Is(err, stream.ErrClosed) {
 			t.Errorf("Subscribe after Close: %v, want ErrClosed", err)
 		}
 		synctest.Wait()
@@ -315,7 +315,7 @@ func TestRelayWritesItsLivenessMarker(t *testing.T) {
 			t.Fatal("a process that does not listen is alive")
 		}
 
-		s, err := r.Subscribe(t.Context(), "alice")
+		s, err := r.Subscribe(t.Context(), aliceID)
 		if err != nil {
 			t.Fatal(err)
 		}

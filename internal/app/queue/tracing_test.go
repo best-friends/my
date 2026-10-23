@@ -68,7 +68,7 @@ func (r recordingSpan) End(errorType string) { r.s.ended, r.s.errorType = true, 
 func TestRunnerTracesJobRuns(t *testing.T) {
 	const tp = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
 	src := &jobsSource{emptySource: emptySource{claims: make(chan struct{}, 1)}, jobs: []queue.Job{
-		{ID: "1", Type: "ok", TraceParent: tp}, {ID: "2", Type: "flaky"}, {ID: "3", Type: "unknown.type"},
+		{ID: testID(1), Type: "ok", TraceParent: tp}, {ID: testID(2), Type: "flaky"}, {ID: testID(3), Type: "unknown.type"},
 	}}
 	reg := &queue.JobHandlerRegistry{}
 	reg.Register("ok", func(context.Context, queue.Job) queue.Result { return queue.Done() })

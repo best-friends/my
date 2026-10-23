@@ -166,7 +166,7 @@ func TestLiveRate(t *testing.T) {
 // A checkout URL off Stripe's host is refused.
 func TestCheckoutURLHost(t *testing.T) {
 	p, f, _ := newOnFake(t, scenario())
-	refs, err := p.EnsurePlan(t.Context(), supporters.PlanSpec{PlanID: "p1", Name: "P", Prices: []supporters.PriceSpec{
+	refs, err := p.EnsurePlan(t.Context(), supporters.PlanSpec{PlanID: "01890a5d-ac96-7000-8000-000000000001", Name: "P", Prices: []supporters.PriceSpec{
 		{Interval: supporters.IntervalMonth, AmountMinor: 500, Currency: "JPY"},
 	}})
 	if err != nil {
@@ -174,7 +174,7 @@ func TestCheckoutURLHost(t *testing.T) {
 	}
 	f.checkoutURL = "https://checkout.stripe.com.evil.example/c/pay/x"
 	_, err = p.StartCheckout(t.Context(), supporters.CheckoutRequest{
-		LocalID: "l1", Price: refs.Prices[0].Ref, SuccessURL: "https://my.example/ok?x=1", CancelURL: "https://my.example/", Key: "k1",
+		LocalID: "01890a5d-ac96-7000-8000-000000000002", Price: refs.Prices[0].Ref, SuccessURL: "https://my.example/ok?x=1", CancelURL: "https://my.example/", Key: "k1",
 	})
 	if !errors.Is(err, supporters.ErrInvalidPaymentResponse) {
 		t.Errorf("StartCheckout with a URL elsewhere = %v, want ErrInvalidPaymentResponse", err)
@@ -219,7 +219,7 @@ func TestPortalConfiguration(t *testing.T) {
 func TestCancelAtPeriodEndReleasesSchedule(t *testing.T) {
 	s := scenario()
 	s.Subscriptions = []supporters.SubscriptionSnapshot{{
-		Ref: "sub_1", Customer: "cus_1", LocalID: "l1", Price: "price_1", Status: supporters.StatusActive,
+		Ref: "sub_1", Customer: "cus_1", LocalID: "01890a5d-ac96-7000-8000-000000000002", Price: "price_1", Status: supporters.StatusActive,
 		PeriodStart: s.Now, PeriodEnd: s.Now.AddDate(0, 1, 0), ScheduledPrice: "price_2",
 	}}
 	p, _, _ := newOnFake(t, s)

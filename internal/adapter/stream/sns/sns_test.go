@@ -302,7 +302,7 @@ func TestListenQueue(t *testing.T) {
 		}
 
 		// Raw delivery: the payload arrives unchanged, and the received message is deleted.
-		p := `{"v":1,"o":"x","k":"home_entry","e":"s1"}`
+		p := `{"v":1,"o":"x","k":"home_entry","e":"0199f0a8-0000-7000-8000-000000000001"}`
 		if err := bus.Send(t.Context(), []byte(p)); err != nil {
 			t.Fatal(err)
 		}

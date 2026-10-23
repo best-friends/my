@@ -23,16 +23,16 @@ func TestSignalRoundTrips(t *testing.T) {
 			t.Errorf("decode %s = %q, %+v, %v; want p1, %+v", b, origin, got, err, e)
 		}
 	}
-	b, _ := encodeSignal("p1", Event{Kind: KindHomeEntry, EntryID: "s1"})
-	if want := `{"v":1,"o":"p1","k":"home_entry","e":"s1"}`; string(b) != want {
+	b, _ := encodeSignal("p1", Event{Kind: KindHomeEntry, EntryID: "0199f0a8-0000-7000-8000-000000000001"})
+	if want := `{"v":1,"o":"p1","k":"home_entry","e":"0199f0a8-0000-7000-8000-000000000001"}`; string(b) != want {
 		t.Errorf("payload = %s, want %s", b, want)
 	}
-	b, _ = encodeSignal("p1", Event{Kind: KindNotifications, AccountID: "a1"})
-	if want := `{"v":1,"o":"p1","k":"notifications","a":"a1"}`; string(b) != want {
+	b, _ = encodeSignal("p1", Event{Kind: KindNotifications, AccountID: "0199f0a8-0000-7000-8000-000000000002"})
+	if want := `{"v":1,"o":"p1","k":"notifications","a":"0199f0a8-0000-7000-8000-000000000002"}`; string(b) != want {
 		t.Errorf("payload = %s, want %s", b, want)
 	}
-	b, _ = encodeSignal("p1", Event{Kind: KindAnnouncement, AnnouncementID: "n1"})
-	if want := `{"v":1,"o":"p1","k":"announcement","n":"n1"}`; string(b) != want {
+	b, _ = encodeSignal("p1", Event{Kind: KindAnnouncement, AnnouncementID: "0199f0a8-0000-7000-8000-000000000003"})
+	if want := `{"v":1,"o":"p1","k":"announcement","n":"0199f0a8-0000-7000-8000-000000000003"}`; string(b) != want {
 		t.Errorf("payload = %s, want %s", b, want)
 	}
 }
@@ -45,12 +45,12 @@ func TestSignalSizeLimit(t *testing.T) {
 
 func TestSignalDecodeRejects(t *testing.T) {
 	for payload, want := range map[string]error{
-		`{"v":2,"o":"p1","k":"home_entry","e":"s1"}`:    errUnknownVersion,
-		`{"o":"p1","k":"home_entry","e":"s1"}`:          errUnknownVersion,
-		`{"v":1,"o":"p1","k":"home_entry"}`:             errMalformedSignal,
-		`{"v":1,"o":"p1","k":"notifications","e":"s1"}`: errMalformedSignal,
-		`{"v":1,"o":"p1","k":"reaction","e":"s1"}`:      errMalformedSignal,
-		`{"v":1,"o":"p1","k":"announcement","a":"a1"}`:  errMalformedSignal,
+		`{"v":2,"o":"p1","k":"home_entry","e":"0199f0a8-0000-7000-8000-000000000001"}`:    errUnknownVersion,
+		`{"o":"p1","k":"home_entry","e":"0199f0a8-0000-7000-8000-000000000001"}`:          errUnknownVersion,
+		`{"v":1,"o":"p1","k":"home_entry"}`:                                               errMalformedSignal,
+		`{"v":1,"o":"p1","k":"notifications","e":"0199f0a8-0000-7000-8000-000000000001"}`: errMalformedSignal,
+		`{"v":1,"o":"p1","k":"reaction","e":"0199f0a8-0000-7000-8000-000000000001"}`:      errMalformedSignal,
+		`{"v":1,"o":"p1","k":"announcement","a":"0199f0a8-0000-7000-8000-000000000002"}`:  errMalformedSignal,
 		`not json`: errMalformedSignal,
 	} {
 		if _, _, err := decodeSignal([]byte(payload)); !errors.Is(err, want) {

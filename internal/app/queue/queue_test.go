@@ -189,7 +189,7 @@ func (s *oneJobSource) Claim(ctx context.Context, w string, now time.Time, lease
 		return s.emptySource.Claim(ctx, w, now, lease)
 	}
 	s.claimed = true
-	return queue.Job{ID: "j", Type: "slow", Attempt: 1, RunAt: now}, true, nil
+	return queue.Job{ID: testID(1), Type: "slow", Attempt: 1, RunAt: now}, true, nil
 }
 
 func (s *oneJobSource) Complete(context.Context, string, queue.Job) error {

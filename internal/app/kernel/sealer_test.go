@@ -59,7 +59,7 @@ func (k *fakeKeyManager) UnwrapKey(_ context.Context, id string, wrapped, aad []
 
 var (
 	ctx    = context.Background()
-	aad    = kernel.AAD("actor-1", "private_key")
+	aad    = kernel.AAD("01890a5d-ac96-7000-8000-000000000001", "private_key")
 	secret = []byte("-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n")
 )
 
@@ -98,7 +98,7 @@ func TestSealIsRandomized(t *testing.T) {
 func TestOpenRejectsOtherAAD(t *testing.T) {
 	s := kernel.NewSealer(newFakeKeyManager(t, "a"))
 	sealed, _ := s.Seal(ctx, secret, aad)
-	for _, other := range [][]byte{nil, kernel.AAD("actor-2", "private_key"), kernel.AAD("actor-1", "other_column")} {
+	for _, other := range [][]byte{nil, kernel.AAD("01890a5d-ac96-7000-8000-000000000002", "private_key"), kernel.AAD("01890a5d-ac96-7000-8000-000000000001", "other_column")} {
 		if _, err := s.Open(ctx, sealed, other); !errors.Is(err, kernel.ErrDecrypt) {
 			t.Errorf("Open() with AAD %q: error = %v, want ErrDecrypt", other, err)
 		}
@@ -159,7 +159,7 @@ func TestRewrap(t *testing.T) {
 	if _, err := rotated.Rewrap(ctx, tampered, aad); !errors.Is(err, kernel.ErrDecrypt) {
 		t.Errorf("Rewrap() of a tampered body: error = %v, want ErrDecrypt", err)
 	}
-	if _, err := rotated.Rewrap(ctx, sealed, kernel.AAD("actor-2", "private_key")); !errors.Is(err, kernel.ErrDecrypt) {
+	if _, err := rotated.Rewrap(ctx, sealed, kernel.AAD("01890a5d-ac96-7000-8000-000000000002", "private_key")); !errors.Is(err, kernel.ErrDecrypt) {
 		t.Errorf("Rewrap() with another AAD: error = %v, want ErrDecrypt", err)
 	}
 }
