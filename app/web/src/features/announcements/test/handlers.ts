@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the announcements feature (web-client.md §7): no announcements, and marking one
+// The default MSW handlers of the announcements feature (web-client/README.md §7): no announcements, and marking one
 // read answers it read.
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";

@@ -60,7 +60,7 @@ function AccountStatus() {
       const handle = handleOf(viewer.account.acct);
       return (
         <Stack align="start" gap="2">
-          {/* The display name and handle are the user's text, in any language (web-client.md Y10). */}
+          {/* The display name and handle are the user's text, in any language (web-client/README.md Y10). */}
           <Stack as="p">
             <Text dir="auto" weight="semibold" align="matchParent">
               {viewer.account.display_name || viewer.account.username}

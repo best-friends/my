@@ -2,7 +2,7 @@
 // Tabs: React Aria's Tabs + TabList + Tab + TabPanel (WAI-ARIA APG, tabs pattern with automatic activation).
 // Left / Right follow the reading direction (in RTL, Left moves to the next tab), Home / End jump to the ends.
 //
-// The selection is controllable, so a route can keep the tab in the URL (web-client.md S3): pass the key
+// The selection is controllable, so a route can keep the tab in the URL (web-client/README.md S3): pass the key
 // from the validated search params as `selectedKey`, and navigate in `onSelectionChange`. Each Tab may
 // instead have an `href`, so that the tabs are links and the router's own navigation selects them.
 //

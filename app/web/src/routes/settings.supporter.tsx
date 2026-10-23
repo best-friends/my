@@ -14,7 +14,7 @@ import { isTauriApp } from "../lib/platform";
 import { SettingsHeading } from "./-layout/SettingsHeading";
 
 /**
- * Where the payment provider sends the browser back (ADR-0072 §6, §8, web-client.md S3): `checkout` from the hosted
+ * Where the payment provider sends the browser back (ADR-0072 §6, §8, web-client/README.md S3): `checkout` from the hosted
  * checkout, completed or left, and `portal` from the portal. Anything else is ignored.
  */
 const searchSchema = z.object({

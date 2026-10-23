@@ -3,7 +3,7 @@
 // none. Each announcement is an article with its date as heading; an unread one says so in its heading, in words
 // rather than by color alone (WCAG 1.4.1), and has a "Mark as read" button. Once marked, the button goes and focus
 // moves to the announcement's heading (useFocusHeadingAfterLift). The body is the server's sanitized HTML of the
-// administrator's Markdown (web-client.md A8), in the direction of its own text (Y10).
+// administrator's Markdown (web-client/README.md A8), in the direction of its own text (Y10).
 import { Badge, Button, Cluster, Heading, Hint, InlineError, PostContent, serverSanitizedHtml, Stack, Tag } from "@my/ui";
 import { useId, useRef } from "react";
 import { useIntl } from "react-intl";

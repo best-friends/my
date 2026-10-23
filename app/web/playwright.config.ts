@@ -15,7 +15,7 @@ import { previewOrigin, previewPort, serverPort } from "./e2e/server-origin.ts";
 const widths = [320, 390, 768, 1024, 1440] as const;
 /** The source locale, Japanese and the two pseudo-locales (ADR-0009, ADR-0015). */
 const locales = ["en", "ja", "en-XA", "ar-XB"] as const;
-/** Widths every PR runs: 320 px is where horizontal scrolling appears first (web-client.md D3). */
+/** Widths every PR runs: 320 px is where horizontal scrolling appears first (web-client/README.md D3). */
 const prWidths: ReadonlySet<number> = new Set([320, 1440]);
 
 const fullMatrix = process.env["E2E_MATRIX"] === "full";

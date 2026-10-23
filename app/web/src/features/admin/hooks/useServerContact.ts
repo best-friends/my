@@ -86,7 +86,7 @@ export function useServerContact() {
       setStatus(t("client:admin.settings.contact.saved"));
     },
     // The settings may have been saved before the alt text failed: the form compares with what is saved now, and keeps
-    // the draft to send again (web-client.md E2).
+    // the draft to send again (web-client/README.md E2).
     onError: () => cacheSavedTexts(queryClient),
   });
 

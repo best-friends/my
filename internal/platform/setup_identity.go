@@ -1,0 +1,69 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package platform
+
+import (
+	"context"
+
+	"github.com/best-friends/my/internal/app/identity"
+	domainidentity "github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/platform/config"
+)
+
+// setUpIdentity registers the identity module's projectors and builds its service, the
+// moderators' account management, and the purge of the sign-in and registration origins. It
+// comes after the moderation module, whose restrictions sign-in and registration read.
+func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error {
+	passkeys, err := newPasskeys(cfg)
+	if err != nil {
+		return err
+	}
+	identity.RegisterModerationProjectors(a.Projectors, repo, a.Accounts, a.Clock)
+	identity.RegisterLifecycleProjectors(a.Projectors, repo, a.Accounts, a.Clock)
+	a.Identity = identity.NewService(identity.Deps{
+		UnitOfWork: a.UnitOfWork, Repository: repo, Clock: a.Clock, IDs: a.IDs,
+		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
+		Logins: a.AccountPolicy, RateLimiter: a.RateLimiter,
+		// TOTP secrets are sealed like actor keys (ADR-0019 §6); sign-in challenges live in the KV store.
+		Sealer: a.Sealer, KV: a.KV,
+		// Passkeys sign in instead of the password (FR-004); their ceremonies' state is sealed too.
+		Passkeys: passkeys,
+		// nil for captcha = none; sign-in and sign-up check the CAPTCHA token otherwise (ADR-0042).
+		HumanVerifier: a.HumanVerifier, Logger: a.Logger,
+		// The default locale and the registration mode are instance settings in the database,
+		// never configuration (docs/reference/configuration.md); they are read per registration so
+		// changes apply at once.
+		DefaultLocale: a.Instance.DefaultLocale,
+		WebClient: identity.WebClient{
+			ClientID: identity.DefaultWebClientID, Name: cfg.Host, RedirectURIs: []string{cfg.WebOrigin + WebClientCallbackPath},
+		},
+		RegistrationMode: func(ctx context.Context) (domainidentity.RegistrationMode, error) {
+			mode, err := a.Instance.RegistrationMode(ctx)
+			return domainidentity.RegistrationMode(mode), err
+		},
+		// New accounts take the instance's indexable default (FR-412, ADR-0057).
+		IndexableDefault: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.IndexableDefault(), err
+		},
+		Mailer: a.Mailer,
+		// The registration page screens sign-ups against the sign-up block list (FR-719).
+		SignupBlocks: a.Moderation,
+		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).
+		RequireEmailVerification: cfg.Mail != "none",
+		// Users ask for password reset links by email only when the mailer delivers it (FR-002).
+		EmailDelivery: sendsEmail(cfg),
+		Messages:      a.Messages,
+		BaseURL:       cfg.ServerOrigin(),
+		InstanceName:  a.instanceName,
+	})
+	a.AccountAdmin = identity.NewAccountAdmin(identity.AccountAdminDeps{
+		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Restrictions: a.AccountPolicy,
+		Clock: a.Clock, IDs: a.IDs,
+	})
+	// The sign-in and registration origins are erased after their retention (ADR-0038).
+	identity.NewOriginPurger(identity.OriginPurgeDeps{
+		UnitOfWork: a.UnitOfWork, Repository: repo, Clock: a.Clock, Policy: originRetention{a},
+	}).RegisterJobs(a.Handlers, a.Scheduler)
+	return nil
+}

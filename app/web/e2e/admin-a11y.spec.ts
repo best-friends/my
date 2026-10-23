@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The accessibility regression suite of the staff's screens (ADR-0015, ADR-0027, ADR-0058, web-client.md §14):
+// The accessibility regression suite of the staff's screens (ADR-0015, ADR-0027, ADR-0058, web-client/14-admin.md §14):
 // every moderation and server administration screen passes axe without scrolling sideways in every width × locale
 // project (the nightly E2E_MATRIX=full runs them all), the list of screens follows the moderation and admin
 // routes, and a moderator handles a report with the keyboard alone — the moderation page, the queue, the report,
@@ -678,7 +678,7 @@ async function tabTo(page: Page, locator: Locator, { backward = false } = {}): P
   expect(await hasFocus(locator), `not reached with ${String(limit)} presses of ${backward ? "Shift+Tab" : "Tab"}`).toBe(true);
 }
 
-/** Asserts the new page's h1 has focus (web-client.md Y5), axe passes, and the page does not scroll sideways. */
+/** Asserts the new page's h1 has focus (web-client/README.md Y5), axe passes, and the page does not scroll sideways. */
 async function expectPageReached(page: Page, makeAxeBuilder: Parameters<typeof expectNoAxeViolations>[0]): Promise<void> {
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeFocused();
   await expectNoAxeViolations(makeAxeBuilder);

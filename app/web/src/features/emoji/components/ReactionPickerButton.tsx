@@ -13,7 +13,7 @@ export type ReactionPickerButtonProps = {
  * An icon button of a post's action bar that opens the picker of reactions in a popover (WAI-ARIA APG, dialog
  * pattern): common Unicode emoji and the custom emoji of this server (ADR-0052 §2). The search field takes focus;
  * picking an emoji closes the popover, which returns focus to the button, and reacts with it. The button is named by
- * aria-label and shows the same words as a tooltip (web-client.md G12).
+ * aria-label and shows the same words as a tooltip (web-client/16-look-states-and-wording.md G12).
  */
 export function ReactionPickerButton({ onSelect, isDisabled = false }: ReactionPickerButtonProps) {
   const t = useT();

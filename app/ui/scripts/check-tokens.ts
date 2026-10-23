@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Checks the design tokens of @my/ui (web-client.md D6, D8, Y3). Run by `scripts/task.sh web:check`.
+// Checks the design tokens of @my/ui (web-client/README.md D6, D8, Y3). Run by `scripts/task.sh web:check`.
 //
 //   bun run scripts/check-tokens.ts [<app entry stylesheet>...]
 //
@@ -138,13 +138,13 @@ const tokenOnlyRoots = /^(?:rounded(?:-[a-z]+)?|shadow|duration|ease)$/;
  */
 const spacingRoots = /^(?:p[xytrblse]?|p[bi][se]|gap(?:-[xy])?)$/;
 const spacingSteps = new Set(["0", "0.5", "1", "1.5", "2", "3", "4", "6", "8", "10"]);
-/** Utilities that animate; web-client.md D6 allows them only under motion-safe:. */
+/** Utilities that animate; web-client/README.md D6 allows them only under motion-safe:. */
 const motionRoots = new Set(["transition", "animate"]);
 /**
  * Whether a utility value names a color of Tailwind's default palette (`red-500`, `white`), which
  * theme.css removes. Other unknown values are not reported here: source text also contains words
  * that merely look like classes (a token name such as "accent-hover" in a string), and unknown
- * classes in general are the lint's job (web-client.md D9).
+ * classes in general are the lint's job (web-client/README.md D9).
  */
 function isDefaultPaletteColor(value: string): boolean {
   const [hue = "", ...rest] = value.split("-");

@@ -19,7 +19,7 @@ import { PageHeading } from "./-layout/PageHeading";
  * or anything unknown, shows the emoji.
  * `state`: the state of the listed requests; omitted, or anything unknown, shows the pending ones.
  * `origin`: the tab of the list, the emoji of other servers; omitted, or anything unknown, shows this server's.
- * `shortcode` and `domain`: the search (web-client.md S3); the domain counts for other servers only.
+ * `shortcode` and `domain`: the search (web-client/README.md S3); the domain counts for other servers only.
  */
 const searchSchema = z.object({
   tab: z.literal("requests").optional().catch(undefined),

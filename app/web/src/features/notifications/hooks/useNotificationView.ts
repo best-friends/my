@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What a notification's row shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4):
+// What a notification's row shows, as plain values for the slots of @my/ui's PostCard (web-client/README.md A4):
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
 import { type CustomEmojiImage, type ImageSources, sanitizedHtmlText, serverSanitizedHtml } from "@my/ui";
 import { useIntl } from "react-intl";
@@ -66,7 +66,7 @@ export type NotificationView = {
    * post. Empty for a row of one notification.
    */
   others: readonly NotificationActor[];
-  /** When it happened, relative to now as in the timelines (web-client.md G8). */
+  /** When it happened, relative to now as in the timelines (web-client/16-look-states-and-wording.md G8). */
   time: TimeView;
   /**
    * The post it is about, as a quote that links to the post's page: its text without markup (the quote is

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Quoting posts through the whole app (web-client.md T4, FR-114): the quote button and the form, who may quote the
+// Quoting posts through the whole app (web-client/README.md T4, FR-114): the quote button and the form, who may quote the
 // viewer's post, the posts that quote it, the revocation of an approval, and taking a quote away in an edit. The real
 // router and QueryClient, MSW for the client API.
 import { screen, within } from "@testing-library/react";

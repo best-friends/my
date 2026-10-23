@@ -2,9 +2,9 @@
 
 The shared UI kit of the web client and the Tauri app ([ADR-0026](../../docs/adr/0026-client-workspace-and-component-architecture.md)).
 It ships TypeScript source and one stylesheet, `@my/ui/theme.css`, which holds the design tokens.
-The rules for writing components are in [web-client.md](../../docs/architecture/web-client.md).
+The rules for writing components are in [web-client/README.md](../../docs/architecture/web-client/README.md).
 
-`app/web/src` writes no Tailwind ([web-client.md A4](../../docs/architecture/web-client.md)): no JSX `className`, also none passed to a component
+`app/web/src` writes no Tailwind ([web-client/README.md A4](../../docs/architecture/web-client/README.md)): no JSX `className`, also none passed to a component
 of this kit, and no import of `tailwind-variants`, `tailwind-merge` or `clsx`. Oxlint's `restrict/classes` (app/.oxlintrc.json, proved by
 `app/oxlint/restrictions.test.js`) fails `scripts/task.sh web:check` on both, in every file of `web/src` and its tests. A look or a layout the web needs is a prop
 of a component here, or a new prop or component; the one exception, a browser- or platform-specific adjustment that no component can express, disables
@@ -23,7 +23,7 @@ An app's Tailwind entry imports the theme right after Tailwind and scans the kit
 ```
 
 Components use only the semantic tokens below as Tailwind utilities (`bg-surface-raised`, `text-fg-muted`, `border-border-strong`)
-or, where a value is computed, as `var(--color-*)` in React's `style` ([D8](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)).
+or, where a value is computed, as `var(--color-*)` in React's `style` ([D8](../../docs/architecture/web-client/README.md#6-レスポンシブとスタイル)).
 `theme.css` resets `--color-*`, so Tailwind's default palette (`bg-red-500`, `text-white`) produces no CSS.
 
 ## App-wide providers
@@ -133,7 +133,7 @@ changes the choice and the attribute together; both use the localStorage key `my
 ### Type roles
 
 Text takes its size from its role, never from the screen it is on
-([web-client.md §16.2](../../docs/architecture/web-client.md#162-文字)):
+([web-client/16-look-states-and-wording.md §16.2](../../docs/architecture/web-client/16-look-states-and-wording.md#162-文字)):
 
 | Role | Classes | Used for |
 | --- | --- | --- |
@@ -153,7 +153,7 @@ A user's name gets `dir="auto"` (Y10), which also turns `text-align: start` arou
 When the `dir="auto"` element is a block (a `p`, or a `span` inside a flex or grid row), it also takes
 `align-match-parent` (`text-align: match-parent`, with the `-webkit-` value Chromium needs), so it lines up with the page's
 start like the rows around it and only the text inside it runs right to left
-([G9](../../docs/architecture/web-client.md#162-文字)). Post bodies and content warnings keep their own direction's alignment.
+([G9](../../docs/architecture/web-client/16-look-states-and-wording.md#162-文字)). Post bodies and content warnings keep their own direction's alignment.
 The utility is not named `text-*` because `tailwind-merge` would read that as a color and drop the element's color class.
 
 ## Spacing, radius, shadow
@@ -215,7 +215,7 @@ same ring from the base layer when it sets none of its own.
 
 ## Motion
 
-Transitions and animations go under `motion-safe:` only ([D6](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)),
+Transitions and animations go under `motion-safe:` only ([D6](../../docs/architecture/web-client/README.md#6-レスポンシブとスタイル)),
 for example `motion-safe:transition-colors`; `scripts/task.sh web:tokens` fails on `transition-*` / `animate-*` without it (`*-none` is allowed).
 
 - Durations: `duration-fast` (100ms), `duration-normal` (200ms), `duration-slow` (300ms). A bare `transition-*` uses 200ms.
@@ -224,7 +224,7 @@ for example `motion-safe:transition-colors`; `scripts/task.sh web:tokens` fails 
 ## Icons
 
 Icons are part of the kit, so that every screen draws the same shapes at the same sizes
-([web-client.md §16.3](../../docs/architecture/web-client.md#163-アイコン)):
+([web-client/16-look-states-and-wording.md §16.3](../../docs/architecture/web-client/16-look-states-and-wording.md#163-アイコン)):
 
 - The shapes are [Phosphor](https://phosphoricons.com/)'s, through `react-icons/pi` ([ADR-0043](../../docs/adr/0043-icon-set.md)).
   `src/Icons.tsx` is the only file that imports `react-icons`, and only `react-icons/pi` (lint enforces both). Its
@@ -265,7 +265,7 @@ avatar slots; the three spark strokes (`mango`, `logo-spark-coral`, `logo-spark-
 ## States of a region
 
 The kit gives every region of data the same four states
-([web-client.md §16.4](../../docs/architecture/web-client.md#164-空読み込み中エラーオフライン)):
+([web-client/16-look-states-and-wording.md §16.4](../../docs/architecture/web-client/16-look-states-and-wording.md#164-空読み込み中エラーオフライン)):
 
 | State | Component | Notes |
 | --- | --- | --- |
@@ -330,7 +330,7 @@ responsibility. `themeContrast` computes what the server checks, with the same f
 - the Storybook's sample theme (`.storybook/sampleTheme.ts`) fails what the server checks of a saved theme: a token that is not overridable,
   a color that is not `#rrggbb`, a length out of its bounds, or a contrast pair below AA in either theme.
 
-Other unknown class names produce no CSS; catching those is the job of the Tailwind lint rules ([D9](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)).
+Other unknown class names produce no CSS; catching those is the job of the Tailwind lint rules ([D9](../../docs/architecture/web-client/README.md#6-レスポンシブとスタイル)).
 
 ## Form controls
 
@@ -360,7 +360,7 @@ string through props or children.
   Keyboard focus shows `focus-ring`; text inputs show it on any focus. Controls are at least 24 px tall and 44 px under `pointer-coarse:`.
 - `TextArea` with `characterLimit` and `formatRemaining` (the count message for a remaining count, negative when over) shows a count
   after the control, as the [GOV.UK character count](https://design-system.service.gov.uk/components/character-count/) does:
-  - the count is counted in Unicode code points, like the server ([data-model.md](../../docs/architecture/data-model.md));
+  - the count is counted in Unicode code points, like the server ([data-model/README.md](../../docs/architecture/data-model/README.md));
   - the visible count is linked to the text area with `aria-describedby` and hidden from the reading order, so it is read with the field;
   - a visually hidden `role="status"` region announces it when typing pauses for a second, and at once when the remaining count
     reaches 50, 20 or 0 ([ADR-0027](../../docs/adr/0027-ui-quality-gates.md));
@@ -394,7 +394,7 @@ while the pointer is over the toasts or focus is in them; a toast with an action
 (`role="alertdialog"`, named by `title`, described by `description`):
 
 - the title is a question, the description says what happens and whether it can be undone, and the buttons are verbs
-  (G22 in [web-client.md](../../docs/architecture/web-client.md)); `tone` is `danger` (default) or `primary`;
+  (G22 in [web-client/README.md](../../docs/architecture/web-client/README.md)); `tone` is `danger` (default) or `primary`;
 - on open, focus moves to the first field of `children` (a `ReasonField`, a `DurationSelect`), or else to the cancel button, never to the
   destructive one ([APG dialog, initial focus](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)); Esc and cancel close it and focus
   returns to the trigger; there is no × button and a press outside does not close it;
@@ -421,7 +421,7 @@ announces only changes made after it is in the page. A failure is not a status; 
 ## Layout and text
 
 Screens and feature components write no `className`: they lay themselves out with the primitives below and set their
-text with `Heading`, `Text`, `Hint` and `InlineError` ([web-client.md §16.1, §16.2](../../docs/architecture/web-client.md#16-見た目状態文言)).
+text with `Heading`, `Text`, `Hint` and `InlineError` ([web-client/16-look-states-and-wording.md §16.1, §16.2](../../docs/architecture/web-client/16-look-states-and-wording.md#16-見た目状態文言)).
 None of these components takes `className` or `style`. Every value is a typed prop: a gap or a padding is a step of G1
 (`Space`: `"0"`, `"0.5"`, `"1"`, `"2"`, `"3"`, `"4"`, `"6"`, `"8"`, `"10"`) picked by its role under "Spacing" above, never an
 arbitrary value. A look that no prop gives is a new prop or component in the kit, not a class in the app.
@@ -569,7 +569,7 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 
 ## App shell
 
-The frame around every page ([web-client.md §9](../../docs/architecture/web-client.md#9-アプリの外枠)). The app decides what goes in each slot
+The frame around every page ([web-client/09-app-shell.md §9](../../docs/architecture/web-client/09-app-shell.md#9-アプリの外枠)). The app decides what goes in each slot
 (the items, their permissions and counts, the strings); the look is here. `AppShell` and `AppNavigation` are the kit's only components that
 answer to the viewport (`md:`, `lg:`, `xl:` and the `short:` variant of [theme.css](src/theme.css)), because they lay out the screen itself;
 so does the region of `ToastProvider` (`clearsTabBar`), which stands above the tab bar they draw (D2). The lint exempts those three files from the rule
@@ -624,7 +624,7 @@ A story's `play` function also tests behaviour in the real browser (focus trap a
 keep focus); it runs before axe and the screenshots, in every project. The overlay components' jsdom tests cover the same
 behaviour in `scripts/task.sh check`. Overlays portal into the story frame, which has layout
 containment, so a modal covers the frame and appears in its screenshots.
-The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).
+The test procedure is in [web-client/README.md §7](../../docs/architecture/web-client/README.md#7-テスト).
 
 ## Parts for the slots of PostCard and QuoteCard
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Text by its role (app/ui/README.md "Type roles", web-client.md §16.2): `Text` for any run of text with typed size,
+// Text by its role (app/ui/README.md "Type roles", web-client/16-look-states-and-wording.md §16.2): `Text` for any run of text with typed size,
 // tone, weight and wrapping; `Hint` for the secondary text of a region (G6); `InlineError` for an error in place.
 import { createElement } from "react";
 import { tv } from "tailwind-variants";
@@ -112,7 +112,7 @@ export type InlineErrorProps<E extends "p" | "span" | "div" = "p"> = Omit<TextPr
   size?: "sm" | "inherit";
   /**
    * Announces the error at once (`role="alert"`). Only for the result of the user's own action, such as a failed save;
-   * an error that came with the page is found by reading (web-client.md G16).
+   * an error that came with the page is found by reading (web-client/16-look-states-and-wording.md G16).
    */
   alert?: boolean;
 };

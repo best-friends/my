@@ -10,7 +10,7 @@ import { type Status, statusContextQueryOptions, statusQueryOptions } from "../a
  */
 export type ThreadPost = { status: Status; lineAbove: boolean; lineBelow: boolean };
 
-/** The thread around the post, which loads after the post and may fail on its own (web-client.md E1). */
+/** The thread around the post, which loads after the post and may fail on its own (web-client/README.md E1). */
 export type ThreadState =
   | { status: "loading" }
   | { status: "error"; message: string; retry: () => void }

@@ -103,7 +103,7 @@ export type RecordListProps<T> = {
 };
 
 /**
- * A list of records of an admin screen (web-client.md G3): one row per record, divided by lines, each row a
+ * A list of records of an admin screen (web-client/16-look-states-and-wording.md G3): one row per record, divided by lines, each row a
  * size container for its facts, then "show more" while there are more. An empty list shows `empty` instead.
  */
 export function RecordList<T>({ list, getId, children, empty, listRef, moreError }: RecordListProps<T>) {

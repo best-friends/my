@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The badges of the user's roles on the profile settings page through the whole app (web-client.md T4, ADR-0071):
+// The badges of the user's roles on the profile settings page through the whole app (web-client/README.md T4, ADR-0071):
 // MSW plays the server's choices, and the user's switches change them.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
@@ -57,7 +57,7 @@ describe("the badges of the profile", () => {
     const supporter = within(section).getByRole("switch", { name: "サポーター" });
     expect(staff).toBeChecked();
     expect(supporter).not.toBeChecked();
-    // The badge's name is the staff's text, drawn as user content (web-client.md Y10).
+    // The badge's name is the staff's text, drawn as user content (web-client/README.md Y10).
     expect(within(section).getByText("サポーター")).toHaveAttribute("dir", "auto");
 
     await user.click(supporter);

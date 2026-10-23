@@ -180,15 +180,15 @@ func TestOpenAPIAndTS(t *testing.T) {
 
 func TestKind(t *testing.T) {
 	for p, want := range map[string]string{
-		"internal/interface/clientapi/api.gen.go":           "",
-		"internal/adapter/db/sqlite/sqlitegen/queries.go":   "",
-		"app/web/src/routeTree.gen.ts":                      "",
-		"app/web/src/App.tsx":                               "ts",
-		"locales/en-XA/client.json":                         "",
-		"locales/ja/client.json":                            "locale",
-		"queries/sqlite/queue/jobs.sql":                     "query",
-		"docs/architecture/data-model.md":                   "md",
-		"internal/app/content/custom_emoji_request_test.go": "go",
+		"internal/interface/clientapi/api.gen.go":              "",
+		"internal/adapter/db/sqlite/sqlitegen/queries.go":      "",
+		"app/web/src/routeTree.gen.ts":                         "",
+		"app/web/src/App.tsx":                                  "ts",
+		"locales/en-XA/client.json":                            "",
+		"locales/ja/client.json":                               "locale",
+		"queries/sqlite/queue/jobs.sql":                        "query",
+		"docs/architecture/data-model/04-tables/04-content.md": "md",
+		"internal/app/content/custom_emoji_request_test.go":    "go",
 	} {
 		if got := Kind(p); got != want {
 			t.Errorf("Kind(%q) = %q, want %q", p, got, want)

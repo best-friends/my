@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Toasts: short, visible notes about something that just happened (posted, copied, failed), stacked at
 // the bottom edge. A toast never takes focus. It is announced through the Announcer's live regions
-// (web-client.md Y7), so the visible list itself is not a live region and nothing is read twice.
+// (web-client/README.md Y7), so the visible list itself is not a live region and nothing is read twice.
 // The list is a labelled region landmark, so keyboard and screen reader users can reach a toast's action.
 //
 // React Aria Components' Toast is still UNSTABLE_ (react-aria-components 1.21), so the kit keeps its own
@@ -107,7 +107,7 @@ export type ToastProviderProps = {
   /**
    * Below md the toasts stand above the app's tab bar along the bottom edge (4rem high, 3rem on short screens, with a 1px
    * border above and the safe-area inset below), which they would otherwise cover. On a page with a floating new-post
-   * button (`[data-compose-fab]` in the document) they stand above it too (web-client.md G4). From md the navigation is a
+   * button (`[data-compose-fab]` in the document) they stand above it too (web-client/16-look-states-and-wording.md G4). From md the navigation is a
    * side rail and the toasts go back to the bottom edge.
    */
   clearsTabBar?: boolean;

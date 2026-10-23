@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Everything the app keeps in the browser's storage (localStorage and sessionStorage), declared in one place
-// (web-client.md S11). Each key says where it is kept, the type of its value and how a stored value is checked,
+// (web-client/README.md S11). Each key says where it is kept, the type of its value and how a stored value is checked,
 // the version of that format, the value that stands for "nothing kept", and whether it is the user's own data,
 // which is removed when the session ends. Nothing else reads or writes the storage: Oxlint rejects
 // `localStorage` and `sessionStorage` outside this module and the tests (restrict/storage).
@@ -222,7 +222,7 @@ export function forgetUnsavedStorage(): void {
   unsaved.clear();
 }
 
-// The keys. The names are listed in web-client.md §10–§12; public/theme.js reads `my:display:theme` itself.
+// The keys. The names are listed in web-client/10-api-client-and-auth.md §10–§12; public/theme.js reads `my:display:theme` itself.
 
 /** The color theme chosen on this browser (lib/theme). Kept across sessions: it is how this browser shows the app. */
 export const themeKey = declareKey<"system" | "light" | "dark">("my:display:theme", {
@@ -286,7 +286,7 @@ export const composeKey = declareKeyFamily<StoredCompose | null>("my:user:compos
 export type StoredHomeTimeline = { loadedAt: number; items: Record<string, unknown>[]; nextCursor: string | null };
 
 /**
- * The home timeline kept for reading offline (FR-604, web-client.md §11): the user's data, removed when the
+ * The home timeline kept for reading offline (FR-604, web-client/11-pwa.md §11): the user's data, removed when the
  * session ends and replaced when another user signs in (lib/auth/userData). Its version changes with the
  * stored shape, the Status of the client API included.
  */

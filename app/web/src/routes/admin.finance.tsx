@@ -19,7 +19,7 @@ import { PageHeading } from "./-layout/PageHeading";
 
 /**
  * `granularity` and `basis` of the totals; omitted, or anything unknown, shows the months amortized. `kind`, `from`
- * and `to` (`YYYY-MM-DD`) narrow the money movements; omitted, or anything unknown, narrows nothing (web-client.md S3).
+ * and `to` (`YYYY-MM-DD`) narrow the money movements; omitted, or anything unknown, narrows nothing (web-client/README.md S3).
  */
 const searchSchema = z.object({
   granularity: z.enum(["week", "year"]).optional().catch(undefined),

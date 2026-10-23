@@ -41,7 +41,7 @@ FR-716・FR-717 と NFR-MOD-3 を実装する前に、どの処分で何を送�
 
 | 処分 | 送るもの | 宛先 |
 | --- | --- | --- |
-| ローカルの `suspend` / `ban` | `Update(Actor)`（`suspended: true`、名前・アイコン・自己紹介・プロフィール補足情報を空にした Actor） | 承認済みのリモートのフォロワーの inbox と既知の shared inbox（`Delete(Actor)` と同じ。[data-model §8](../architecture/data-model.md#8-削除と消去)） |
+| ローカルの `suspend` / `ban` | `Update(Actor)`（`suspended: true`、名前・アイコン・自己紹介・プロフィール補足情報を空にした Actor） | 承認済みのリモートのフォロワーの inbox と既知の shared inbox（`Delete(Actor)` と同じ。[data-model §8](../architecture/data-model/08-deletion-and-purge.md#8-削除と消去)） |
 | ローカルの `suspend` の解除・期限切れ | `Update(Actor)`（元のプロフィール） | 同上 |
 | ローカルの `ban` | 上の `Update` に加えて、`deletion_scheduled` の期日に `Delete(Actor)`（アカウント削除と同じ） | 同上 |
 | ローカルの投稿への `delete_statuses` | 投稿ごとの `Delete`（本人の削除と同じ） | 投稿を配送した宛先 |

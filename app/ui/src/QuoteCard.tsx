@@ -37,7 +37,7 @@ export type QuoteCardProps = Omit<ComponentPropsWithRef<"div">, "children"> & {
 /**
  * The post that a post quotes (FR-114): a box inside the quoting post with the quoted author, time, and body,
  * named as a group. A quoted post that cannot be shown leaves only the notice of why; one whose author or
- * server the reader muted is behind that notice, in the disclosure of ContentWarning (web-client.md Y8).
+ * server the reader muted is behind that notice, in the disclosure of ContentWarning (web-client/README.md Y8).
  */
 export function QuoteCard({ label, avatar, author, time, children, notice, revealLabel, className, ...props }: QuoteCardProps) {
   const slots = quoteCard();

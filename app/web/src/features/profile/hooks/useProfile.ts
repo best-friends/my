@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What a profile's header shows, as plain values for the components (web-client.md A4). The hook returns
+// What a profile's header shows, as plain values for the components (web-client/README.md A4). The hook returns
 // no JSX.
 import { type BadgeColor, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -37,7 +37,7 @@ export type ProfileView = {
 /**
  * A name inside a sentence of the UI's language. It is the user's text in any script, so it is wrapped in
  * Unicode directional isolates (FSI … PDI): a right-to-left name does not reorder the sentence around it
- * (web-client.md Y10).
+ * (web-client/README.md Y10).
  */
 export function isolate(name: string): string {
   return `⁨${name}⁩`;

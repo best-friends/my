@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the timeline feature (web-client.md §7): one page each; the home timeline
+// The default MSW handlers of the timeline feature (web-client/README.md §7): one page each; the home timeline
 // and the bookmarks need a token.
 import { http, HttpResponse } from "msw";
 import { remoteStatusFixture, statusPage, timelineStatusFixture } from "../../../test/fixtures";

@@ -27,7 +27,7 @@ export const fieldControl = tv({
 /** What a field shows when it is invalid: fixed content, or content computed from the validation. */
 export type FieldErrorMessage = ReactNode | ((validation: ValidationResult) => ReactNode);
 
-/** The label, description and error message props of every field. Text arrives only through props (web-client.md A2). */
+/** The label, description and error message props of every field. Text arrives only through props (web-client/README.md A2). */
 export interface FieldTextProps {
   /** The visible label. Without one, pass `aria-label` or `aria-labelledby`. */
   label?: ReactNode;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The emoji reactions of a post through the whole app (web-client.md T4, FR-116, ADR-0052): the counts under the
+// The emoji reactions of a post through the whole app (web-client/README.md T4, FR-116, ADR-0052): the counts under the
 // post, joining and leaving one, the picker, the Like slot shared with the favourite, and the accounts that reacted.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

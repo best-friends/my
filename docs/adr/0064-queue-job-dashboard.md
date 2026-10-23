@@ -21,7 +21,7 @@ NFR-OPS-3 は「管理画面でキューの滞留・失敗ジョブ・連合先�
 - DB キューの `jobs` は未完了のジョブだけを持ち、完了で消える。試行ごとの情報は、最後の試行の `last_error` と試行回数 `attempt` だけで、前の試行の失敗の理由は上書きされて残らない
 - ジョブの 1 回の実行の終わりに、runner は 1 行の構造化ログ（`job`、[running.md](../operations/running.md)）を標準出力に出す。ログの基盤がない Self-hosted では、管理画面から辿れない
 - ADR-0055 §4 は「出来事の数は KV にも DB にも書かない（DB の書き込みが利用量に比例して増え、scale to zero を妨げる）」と決めた。試行をすべて DB に書くと、この理由に触れる
-- 同じ形の前例として、連合の配送は試行をイベント `delivery_attempts` に記録し、30 日で消す（[federation.md](../architecture/federation.md)、[data-model.md](../architecture/data-model.md)）
+- 同じ形の前例として、連合の配送は試行をイベント `delivery_attempts` に記録し、30 日で消す（[federation.md](../architecture/federation.md)、[data-model.md](../architecture/data-model/README.md)）
 
 この ADR は、ダッシュボードのために増やすポート、試行の記録の持ち方（ADR-0020 の分類・保持期間・量の上限・個人情報）、キューのアダプタごとに取れる情報が違うときの扱いを決める。
 ポートを広げ、新しい表を足すので、Accepted の ADR が扱っていない決定として、実装の前に決める。
@@ -128,7 +128,7 @@ D を選ばない理由: ハンドラのログはリモートのアカウント�
 - 後続で必要になる作業（Issue 化する）
   - `job_attempts` の表（`schema/<dialect>.sql`）、`queue.AttemptLog` と `queue.JobInspector` のポートと `queue/db`・`queue/inline` の実装、contract test
   - 設定 `job_attempt_retention` と毎時の消去、[configuration.md](../reference/configuration.md) の再生成
-  - 管理 API（`api/openapi.yaml`）と管理画面のダッシュボード（今の失敗したジョブの画面をまとめる）、[data-model.md](../architecture/data-model.md)・[web-client.md](../architecture/web-client.md)・[running.md](../operations/running.md) の更新
+  - 管理 API（`api/openapi.yaml`）と管理画面のダッシュボード（今の失敗したジョブの画面をまとめる）、[data-model.md](../architecture/data-model/README.md)・[web-client.md](../architecture/web-client/README.md)・[running.md](../operations/running.md) の更新
 
 ## Pros and Cons of the Options（詳細比較・任意）
 

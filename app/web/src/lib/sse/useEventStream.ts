@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The one subscription of the app to the streaming API (web-client.md S10). The stream is an external
+// The one subscription of the app to the streaming API (web-client/README.md S10). The stream is an external
 // system that the app stays in sync with while a user is signed in, which is what an Effect is for
 // (react.dev, "Synchronizing with Effects"; "Lifecycle of Reactive Effects"): it connects when the session
 // is signed in, and its cleanup aborts the request when the session ends or the app unmounts. The

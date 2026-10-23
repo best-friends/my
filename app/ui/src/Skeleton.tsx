@@ -3,7 +3,7 @@ import type { ComponentPropsWithRef } from "react";
 import { tv, type VariantProps } from "tailwind-variants";
 
 const skeleton = tv({
-  // The pulse runs only when the user has not asked for reduced motion (web-client.md D6).
+  // The pulse runs only when the user has not asked for reduced motion (web-client/README.md D6).
   base: "block bg-border motion-safe:animate-pulse",
   variants: {
     shape: {
@@ -23,7 +23,7 @@ export type SkeletonProps = Omit<ComponentPropsWithRef<"span">, "children"> & Va
 /**
  * A placeholder shape for content that is loading. It is hidden from assistive technology: the
  * region it fills sets `aria-busy="true"` while loading and carries the announcement (a Spinner or
- * a VisuallyHidden label), then drops `aria-busy` when the content arrives (web-client.md E3, Y6).
+ * a VisuallyHidden label), then drops `aria-busy` when the content arrives (web-client/README.md E3, Y6).
  */
 export function Skeleton({ shape, className, ...props }: SkeletonProps) {
   return <span aria-hidden="true" {...props} className={skeleton({ shape, className })} />;

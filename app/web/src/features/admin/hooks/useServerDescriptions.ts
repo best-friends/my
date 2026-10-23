@@ -54,7 +54,7 @@ export function useServerDescriptions() {
       setStatus(t("client:admin.settings.descriptions.saved"));
     },
     // One description may have been saved before the other failed: the form compares with what is saved now, and
-    // keeps the other draft to send again (web-client.md E2).
+    // keeps the other draft to send again (web-client/README.md E2).
     onError: () => cacheSavedTexts(queryClient),
   });
 

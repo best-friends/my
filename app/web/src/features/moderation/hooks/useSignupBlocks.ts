@@ -77,7 +77,7 @@ export function useLiftSignupBlock(onLifted: (block: SignupBlock) => void): Lift
       onLifted(lifted);
       cacheLiftedSignupBlock(queryClient, lifted);
     },
-    // The block stays in effect, and its row and focus stay (web-client.md E2).
+    // The block stays in effect, and its row and focus stay (web-client/README.md E2).
     onError: (error) => {
       toast.show({ message: t("client:admin.signup_blocks.lift_failed", { reason: errorMessage(error) }), tone: "danger" });
     },

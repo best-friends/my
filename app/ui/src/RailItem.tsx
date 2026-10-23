@@ -2,7 +2,7 @@
 // One item of the app's navigation (brand kit `RailItem`): an icon, a label and an optional count. It is a link in the
 // bottom tab bar (`form="tab"`: icon over a small label), in the side rail (`row`: icon, label and the count at the
 // end) and in the signed-out top bar (`top`: text only). The current item is `aria-current="page"`. It knows no
-// viewport: AppNavigation chooses between the forms by width (web-client.md D2), through `className`.
+// viewport: AppNavigation chooses between the forms by width (web-client/README.md D2), through `className`.
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { Badge } from "./Badge";

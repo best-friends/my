@@ -7,7 +7,7 @@ import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `state`: the state filter of the list; omitted, or anything unknown, shows every server (web-client.md S3). */
+/** `state`: the state filter of the list; omitted, or anything unknown, shows every server (web-client/README.md S3). */
 const searchSchema = z.object({
   state: z.enum(instanceFilters).exclude(["all"]).optional().catch(undefined),
 });

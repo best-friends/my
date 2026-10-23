@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The audit log screen through the whole app (web-client.md T4): a signed-in operator with view_audit, MSW
+// The audit log screen through the whole app (web-client/README.md T4): a signed-in operator with view_audit, MSW
 // playing GET /admin/audit_log, and the filters and loaded pages in the URL.
 import { screen, waitFor, within } from "@testing-library/react";
 import type { RouterHistory } from "@tanstack/react-router";

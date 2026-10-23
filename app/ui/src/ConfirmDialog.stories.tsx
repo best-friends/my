@@ -11,7 +11,7 @@ import { DialogTrigger } from "./Dialog";
 import { DurationSelect } from "./DurationSelect";
 import { ReasonField } from "./ReasonField";
 
-// Stories may spell out English; apps pass react-intl messages instead (web-client.md A9).
+// Stories may spell out English; apps pass react-intl messages instead (web-client/README.md A9).
 const formatRemaining = (remaining: number) => (remaining < 0 ? `${String(-remaining)} characters too many` : `${String(remaining)} characters left`);
 const day = 86_400;
 const formatDuration = (seconds: number) => (seconds === day ? "1 day" : `${String(seconds / day)} days`);

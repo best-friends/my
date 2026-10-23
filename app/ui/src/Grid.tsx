@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Equal columns that appear as the container widens: one column in a narrow container, `columns` from the container
-// width `at` up (web-client.md D2). The facts of a record are a `DescriptionList`; this is for anything else in columns
+// width `at` up (web-client/README.md D2). The facts of a record are a `DescriptionList`; this is for anything else in columns
 // (fields of a form, short lists).
 import { createElement } from "react";
 import { tv } from "tailwind-variants";

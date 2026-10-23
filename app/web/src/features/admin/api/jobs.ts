@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the queue dashboard (ADR-0064, web-client.md S1): the state of the job queue, its
+// The queries and mutations of the queue dashboard (ADR-0064, web-client/README.md S1): the state of the job queue, its
 // jobs by state, the records of a job's runs that did not succeed, and running a dead job again. The lists follow
 // the API's keyset pagination as TanStack Query infinite queries, keyed like the client's own `[method, path]` with
-// "pages" at the end (web-client.md §10).
+// "pages" at the end (web-client/10-api-client-and-auth.md §10).
 import { infiniteQueryOptions, type QueryClient, queryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";

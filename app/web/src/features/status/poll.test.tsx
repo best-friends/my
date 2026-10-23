@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The poll of a post through the whole app (web-client.md T4, FR-112): the real router and QueryClient, MSW for
+// The poll of a post through the whole app (web-client/README.md T4, FR-112): the real router and QueryClient, MSW for
 // the client API. Time is fixed so that the end of a poll is known.
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

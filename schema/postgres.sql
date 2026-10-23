@@ -5,7 +5,7 @@
 -- `scripts/task.sh db:apply DB_DIALECT=postgres`.
 --
 -- Edit this file and schema/sqlite.sql together; never write migration SQL by hand.
--- Tables follow docs/architecture/data-model.md, mapping logical types per its §1.2:
+-- Tables follow docs/architecture/data-model/README.md, mapping logical types per its §1.2:
 -- id is uuid (ADR-0078; its byte order is time order for UUIDv7, and Go sees it as a string),
 -- except in the columns that hold a value which is not always a UUID the server generated
 -- (provider and webhook identifiers, client_id, audit target_id, emoji_key, run keys, cursors),
@@ -574,7 +574,7 @@ CREATE TABLE account_domain_mutes (
 );
 
 -- ---------------------------------------------------------------------------------------------
--- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
+-- 基盤: job queue and Transactional Outbox (data-model/04-tables/10-infrastructure.md §4.10, ADR-0004).
 -- Owned by internal/adapter/queue/db. trace_parent is the W3C traceparent of the span that
 -- enqueued the job, which its run links to (ADR-0063 §2); an attribute of the job, not a state.
 -- ---------------------------------------------------------------------------------------------
@@ -646,7 +646,7 @@ CREATE TABLE job_attempts (
 CREATE INDEX job_attempts_finished_at ON job_attempts (finished_at);
 
 -- ---------------------------------------------------------------------------------------------
--- identity: user preferences (data-model.md §4.1, FR-007, FR-208).
+-- identity: user preferences (data-model/04-tables/01-identity.md §4.1, FR-007, FR-208).
 -- ---------------------------------------------------------------------------------------------
 
 -- Current value: a user's settings. locale and default_post_language are canonical BCP 47
@@ -947,7 +947,7 @@ CREATE INDEX account_profile_revisions_avatar_media_id ON account_profile_revisi
 CREATE INDEX account_profile_revisions_header_media_id ON account_profile_revisions (header_media_id);
 
 -- ---------------------------------------------------------------------------------------------
--- identity: browser sessions of the server-rendered screens (data-model.md §4.1, ADR-0019 §4).
+-- identity: browser sessions of the server-rendered screens (data-model/04-tables/01-identity.md §4.1, ADR-0019 §4).
 -- ---------------------------------------------------------------------------------------------
 
 -- Resource: a sign-in. token_hash is the SHA-256 digest of the session cookie's value.
@@ -975,7 +975,7 @@ CREATE TABLE session_activity (
 );
 
 -- ---------------------------------------------------------------------------------------------
--- identity: OAuth 2.0 authorization server (data-model.md §4.1, ADR-0019 §4, ADR-0030).
+-- identity: OAuth 2.0 authorization server (data-model/04-tables/01-identity.md §4.1, ADR-0019 §4, ADR-0030).
 -- Every client_id column except oauth_clients.client_id refers to oauth_clients.id.
 -- ---------------------------------------------------------------------------------------------
 
@@ -1052,7 +1052,7 @@ CREATE TABLE oauth_token_revocations (
 );
 
 -- ---------------------------------------------------------------------------------------------
--- 基盤: key-value store (data-model.md §4.10). Owned by internal/adapter/kv/db.
+-- 基盤: key-value store (data-model/04-tables/10-infrastructure.md §4.10). Owned by internal/adapter/kv/db.
 -- ---------------------------------------------------------------------------------------------
 
 -- Entries of the KeyValueStore port. expires_at is NULL for entries that never expire.
@@ -1067,7 +1067,7 @@ CREATE INDEX kv_entries_expires_at ON kv_entries (expires_at);
 
 -- ---------------------------------------------------------------------------------------------
 -- identity: registration, invites, email verification, and one-time tokens
--- (data-model.md §4.1, FR-001, FR-002).
+-- (data-model/04-tables/01-identity.md §4.1, FR-001, FR-002).
 -- ---------------------------------------------------------------------------------------------
 
 -- Event: an email address was verified, at most once per address.
@@ -2300,7 +2300,7 @@ CREATE TABLE report_notes (
 CREATE INDEX report_notes_report_id_id ON report_notes (report_id, id);
 
 -- ---------------------------------------------------------------------------------------------
--- identity: where sign-ins and registrations came from (data-model.md §4.1, ADR-0038). Kept
+-- identity: where sign-ins and registrations came from (data-model/04-tables/01-identity.md §4.1, ADR-0038). Kept
 -- apart from sessions and users so that the purge erases them after their retention.
 -- ---------------------------------------------------------------------------------------------
 
@@ -2328,7 +2328,7 @@ CREATE INDEX registration_origins_ip ON registration_origins (ip);
 CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
 
 -- ---------------------------------------------------------------------------------------------
--- identity: the exports and imports of a user's data (data-model.md §4.1, FR-008).
+-- identity: the exports and imports of a user's data (data-model/04-tables/01-identity.md §4.1, FR-008).
 -- ---------------------------------------------------------------------------------------------
 
 -- Resource: a user's request for an archive of their data.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Integration tests of what the app shell reads on every page (web-client.md §9, T4): the viewer
+// Integration tests of what the app shell reads on every page (web-client/09-app-shell.md §9, web-client/README.md T4): the viewer
 // (GET /accounts/verify_credentials), the preferences (GET /preferences), the instance (GET /instance) and the
 // notification marker (GET /notifications/marker). When one of them fails, a 429 of the rate limit included, the
 // page goes on with the last value or a default, in the locale the app was last displayed in; a 429 says when

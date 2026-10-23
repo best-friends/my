@@ -20,7 +20,7 @@ export type PickerEmoji = CustomEmojiImage & {
   aliases?: readonly string[] | undefined;
 };
 
-/** The words of the picker, which the app localizes (web-client.md A2). */
+/** The words of the picker, which the app localizes (web-client/README.md A2). */
 export type EmojiPickerLabels = {
   /** The label of the search field. */
   search: string;

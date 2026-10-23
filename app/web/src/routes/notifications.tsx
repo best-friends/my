@@ -7,7 +7,7 @@ import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `filter`: the type filter of the list; omitted, or anything unknown, shows every type (web-client.md S3). */
+/** `filter`: the type filter of the list; omitted, or anything unknown, shows every type (web-client/README.md S3). */
 const searchSchema = z.object({
   filter: z.enum(notificationFilters).exclude(["all"]).optional().catch(undefined),
 });
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/notifications")({
   staticData: { title: "client:notifications.title", hideHeading: true },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { filter } }): { filter: NotificationFilter } => ({ filter: filter ?? "all" }),
-  // Notifications are the user's own, so the page needs a session (web-client.md §10).
+  // Notifications are the user's own, so the page needs a session (web-client/10-api-client-and-auth.md §10).
   beforeLoad: requireSignIn,
   // The first page and the read marker load with the page. A failure (offline, say) is the list's own, shown
   // below the page's heading with what to do (useNotifications), so the loader lets the page open.

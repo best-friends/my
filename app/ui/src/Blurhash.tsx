@@ -23,7 +23,7 @@ export function Blurhash({ hash, className, ...props }: BlurhashProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pixels = decodeBlurhash(hash, resolution, resolution);
 
-  // The canvas is a browser API outside React: draw the decoded pixels into it after each change (web-client.md R8).
+  // The canvas is a browser API outside React: draw the decoded pixels into it after each change (web-client/README.md R8).
   useEffect(() => {
     const context = canvasRef.current?.getContext("2d");
     if (pixels === null || context === null || context === undefined) return;

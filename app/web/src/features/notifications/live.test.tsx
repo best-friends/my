@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Notifications from the event stream through the whole app (web-client.md S10, T4; FR-207): they update
+// Notifications from the event stream through the whole app (web-client/README.md S10, T4; FR-207): they update
 // the unread badge of the navigation.
 import { screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

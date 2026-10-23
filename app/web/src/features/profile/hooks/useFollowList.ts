@@ -26,7 +26,7 @@ export type FollowListState = {
 /**
  * Reads the followers or the following of the account `id`, whose first page the route loader has
  * fetched, and loads the next pages on demand. The first page's failure goes to the route's error
- * boundary; a later page's failure stays here with the accounts already shown (web-client.md E1, E2).
+ * boundary; a later page's failure stays here with the accounts already shown (web-client/README.md E1, E2).
  */
 export function useFollowList(id: string, list: FollowList): FollowListState {
   const api = useApi();

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The domain block list in Mastodon's CSV through the whole app (web-client.md T4): an operator with manage_domains
+// The domain block list in Mastodon's CSV through the whole app (web-client/README.md T4): an operator with manage_domains
 // saves the actions in effect as a CSV, and imports a CSV that Mastodon exported, previewing it and clearing the
 // rows not wanted, with MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";

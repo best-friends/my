@@ -16,7 +16,7 @@ main の現状:
 - [ADR-0005](0005-blob-storage-and-media.md)（Accepted）が `MediaProcessor` の port を決め、既定のアダプタは純 Go の `media/native`（`internal/adapter/media/native`）。
   `internal/app/media/media.go` の `Processor` は `Inspect` と `Process` を持ち、`Process` は再エンコードでメタデータを落とした `Full`（面積 3840×2160 まで）と `Thumbnail`（面積 640×360 まで）と blurhash を返す。
 - 出力は JPEG（不透明）/ PNG（透過）/ GIF。純 Go に WebP のエンコーダがないので WebP は出力しない。アニメーション GIF は縮小せず全フレームを再エンコードし、サムネイルは最初のフレーム。アニメーション WebP は拒否する。
-- アイコン・ヘッダーも投稿画像と同じ `full` / `thumbnail` の 2 段で、表示には `full` を使う（[data-model.md](../architecture/data-model.md) のプロフィールの節）。タイムラインの 40 px 前後のアイコンにも 3840×2160 までの画像を配ることがある。
+- アイコン・ヘッダーも投稿画像と同じ `full` / `thumbnail` の 2 段で、表示には `full` を使う（[data-model.md](../architecture/data-model/README.md) のプロフィールの節）。タイムラインの 40 px 前後のアイコンにも 3840×2160 までの画像を配ることがある。
 - `media_variants.kind` は `full` / `thumbnail`、Blob のキーは `media/{media_id}/{kind}.{ext}`。処理は upload のあとのジョブ `media.process`（[ADR-0004](0004-job-queue-abstraction.md)）で、結果はイベント `media_processing_results` と子の `media_variants`（[ADR-0020](0020-data-modeling-principles.md)）。
 - 動画・音声のローカルの添付はない（FR-105 の S。#629 がこの ADR を待っている）。リモートの動画・音声は宣言された値を `remote_media` に記録し、メディアプロキシ（[federation.md §9](../architecture/federation.md#9-リモートメディア)）が `full` だけを中継する。プロキシは `Range` を扱わない。
 - [ADR-0019 §8](0019-security-baseline.md) が形式の許可リスト（JPEG / PNG / GIF / WebP / AVIF / MP4 / WebM / MP3 / Ogg）、サイズ（画像 16 MiB、動画・音声 100 MiB）、寸法の上限、メタデータの除去を決めている。

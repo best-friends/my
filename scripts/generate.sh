@@ -51,7 +51,7 @@ targets=(
 # The security metadata, relative to the repository root.
 security_out="internal/interface/clientapi/security.gen.go"
 
-# The web client's types, relative to the repository root (web-client.md S9).
+# The web client's types, relative to the repository root (web-client/README.md S9).
 ts_out="app/web/src/lib/api/schema.gen.ts"
 
 # generate CONFIG OUT writes the code that CONFIG generates from the spec to OUT.

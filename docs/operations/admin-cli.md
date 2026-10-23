@@ -30,7 +30,7 @@ my admin create -username alice -email alice@example.com
 
 ## ロールの付与と剥奪
 
-権限はロールが持ちます（[data-model §4.1](../architecture/data-model.md)）。組み込みのロールは `admin`（`position` 1000、すべての権限）と
+権限はロールが持ちます（[data-model §4.1](../architecture/data-model/README.md)）。組み込みのロールは `admin`（`position` 1000、すべての権限）と
 `moderator`（`position` 100、`manage_reports`・`manage_accounts`・`view_audit`）です（FR-720）。
 
 ```sh

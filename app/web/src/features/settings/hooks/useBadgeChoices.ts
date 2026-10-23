@@ -14,7 +14,7 @@ export type BadgeSwitch = {
   /** The staff's name of the badge, shown as user content. */
   label: string;
   color: BadgeColor;
-  /** Whether it is shown: the value being saved while pending (web-client.md S8), the saved one otherwise. */
+  /** Whether it is shown: the value being saved while pending (web-client/README.md S8), the saved one otherwise. */
   displayed: boolean;
   isPending: boolean;
   /** Why the last change of this badge was not saved, localized; undefined when it was. */

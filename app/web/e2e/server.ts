@@ -31,7 +31,7 @@ runMy(["instance", "set", "terms", "-"], documents.terms);
 runMy(["instance", "set", "privacy_policy", "-"], documents.privacyPolicy);
 
 // Third-party clients have no registration flow yet, so the client is written to its tables directly
-// (data-model.md §4.1): a public client limited to the read scope with one redirect URI.
+// (data-model/04-tables/01-identity.md §4.1): a public client limited to the read scope with one redirect URI.
 const seed = new DatabaseSync(database);
 const id = randomUUID();
 seed

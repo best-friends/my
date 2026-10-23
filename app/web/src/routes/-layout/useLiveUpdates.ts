@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The layout keeps the one event stream of the app open (web-client.md S10, FR-207) and routes its events
+// The layout keeps the one event stream of the app open (web-client/README.md S10, FR-207) and routes its events
 // to the features that own the cached data: new home entries wait behind the home timeline's "N new
 // posts" button (or join its cache while no page shows it), notifications update the unread badge, and a moderator's notifications of a new report or
 // registration read the Moderation entry's counts again, and the server's announcements join, change, or leave

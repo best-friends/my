@@ -7,7 +7,7 @@ import { useT } from "../../../lib/i18n";
 import { newHomeStatusesQueryOptions, showNewHomeStatuses, unseenStatuses } from "../api/newStatuses";
 import { timelineQueryOptions } from "../api/timelines";
 
-/** The new home entries that wait behind the "N new posts" button (web-client.md Y7). */
+/** The new home entries that wait behind the "N new posts" button (web-client/README.md Y7). */
 export type NewHomeStatuses = {
   /** How many new entries wait; 0 hides the button. */
   count: number;

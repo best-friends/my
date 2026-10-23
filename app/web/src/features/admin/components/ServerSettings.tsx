@@ -7,7 +7,7 @@
 // the domain where the instance is named to people; the domain stays in handles and links. The browser keeps a
 // form from being sent while a field is invalid (React Aria's native validation: the error is under its field and
 // linked to it, and focus moves to the first invalid field). What a save did stays on the page in a StatusMessage
-// next to its button; a failure stays above the button (web-client.md E2).
+// next to its button; a failure stays above the button (web-client/README.md E2).
 import {
   Button,
   Checkbox,

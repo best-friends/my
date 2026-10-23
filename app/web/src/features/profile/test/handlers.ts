@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the profile feature (web-client.md §7): GET /accounts/lookup finds Alice (the
+// The default MSW handlers of the profile feature (web-client/README.md §7): GET /accounts/lookup finds Alice (the
 // viewer) and Bob with their follow counts, and remoteAccountFixture; the viewer has no relationship with
 // anyone; each change (follow, block, mute and their removal) returns the relationship after it; an
 // account's posts are the timeline fixture (the remote account's, remoteStatusFixture) and it pinned none,

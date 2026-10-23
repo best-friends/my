@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The custom emoji screen below its heading (ADR-0051, manage_custom_emojis): the form that registers a local emoji
 // with an image file, then the emoji of this server or of other servers (tabs kept in the URL by the route,
-// web-client.md S3), newest first, with a search. A local emoji's settings change in a dialog, its image is replaced
+// web-client/README.md S3), newest first, with a search. A local emoji's settings change in a dialog, its image is replaced
 // by choosing another file, and deleting it asks first in an alert dialog (it cannot be undone); a remote emoji is
 // enabled or disabled, or copied into one of this server under a shortcode chosen in a dialog. What a change did stays above the list in a StatusMessage (role="status"), and a
 // failure stays there too (role="alert"). A second tab (kept in the URL too) holds the requests of the holders of

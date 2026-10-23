@@ -94,7 +94,7 @@ export function useAppealReview(id: string, onDecided: () => void): AppealReview
     onSuccess: async (appeal) => {
       // The decision marks the lists stale, and is done once those on screen are fetched again (the confirmation
       // stays pending until then); going back to a list fetches it again first, so it shows the appeal as it is
-      // now, not as it was (refreshAppealLists, web-client.md S7). The
+      // now, not as it was (refreshAppealLists, web-client/README.md S7). The
       // confirmation closes as the page shows the decision, and focus then moves to the region's heading.
       await storeAppeal(queryClient, api, appeal);
       setDialog((current) => current && { ...current, isOpen: false });

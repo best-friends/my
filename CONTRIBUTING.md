@@ -60,7 +60,7 @@ DB スキーマは方言ごとの目標スキーマファイルを正とし、[A
 （[ADR-0023](docs/adr/0023-declarative-schema-management.md)）。マイグレーション SQL は書きません。
 
 - `schema/sqlite.sql` と `schema/postgres.sql` を、同じ PR で一緒に編集します。
-  テーブルは [論理データモデル](docs/architecture/data-model.md) に従い、論理型は同文書の §1.2 で方言の型に対応づけます。
+  テーブルは [論理データモデル](docs/architecture/data-model/README.md) に従い、論理型は [§1.2](docs/architecture/data-model/01-conventions.md#12-論理型) で方言の型に対応づけます。
 - 拡張機能・シーケンス・ビュー・トリガーなど Atlas Community Edition が扱えないものは、目標スキーマに書きません。
   PostgreSQL の拡張機能は `schema/postgres.bootstrap.sql`（冪等な準備 SQL）に書きます。
 - Atlas は `scripts/install-atlas.sh` がバージョンとチェックサムを固定して `bin/atlas` に入れます（`scripts/task.sh db:atlas`。
@@ -100,7 +100,7 @@ scripts/task.sh api:check     # api:spec-check（ルートが api/spec のすべ
 ## Web クライアント
 
 Web クライアント（`app/web`）は Vite でビルドし、`my serve` がバイナリに埋め込んだビルドと HTML の外枠を配ります
-（[ADR-0028](docs/adr/0028-html-shell-link-previews-and-pwa.md)。設計規約は [docs/architecture/web-client.md](docs/architecture/web-client.md)）。
+（[ADR-0028](docs/adr/0028-html-shell-link-previews-and-pwa.md)。設計規約は [docs/architecture/web-client/README.md](docs/architecture/web-client/README.md)）。
 
 - `scripts/task.sh web:build` は `app/web/dist` にビルドし、`internal/interface/web/dist` にコピーします。Go はそこを `//go:embed all:dist` で埋め込みます。
   コミットするのはプレースホルダの `.gitkeep` だけなので、Go のビルドとテストに Bun は要りません（そのバイナリはスクリプトのない外枠を返します）。

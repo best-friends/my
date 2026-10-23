@@ -168,7 +168,7 @@ test.describe("a profile of another server", () => {
     const main = page.getByRole("main");
     await expect(main.getByText(`@${carol.acct}`).first()).toBeVisible();
     await expect(main.getByText(message("profile.remote.notice", host))).toBeVisible();
-    // The host inside the sentence is wrapped in directional isolates (web-client.md Y10).
+    // The host inside the sentence is wrapped in directional isolates (web-client/README.md Y10).
     await expect(main.getByRole("link", { name: message("profile.remote.original", `\u2068${host}\u2069`) })).toHaveAttribute("href", carol.url);
     const article = page.getByRole("feed").getByRole("article");
     await expect(article.getByRole("link", { name: message("status.original", host) })).toHaveAttribute("href", post.url ?? "");

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The public running costs and income through the whole app (web-client.md T4, FR-903, FR-917, ADR-0067 §8,
+// The public running costs and income through the whole app (web-client/README.md T4, FR-903, FR-917, ADR-0067 §8,
 // ADR-0073 §7): the section of the information page and the page at /about/costs show what the instance settings
 // finance_visibility and income_visibility publish, for everyone, signed in or not: of the costs, nothing, the totals
 // only, or the totals with their breakdown by provider and category; of the income, nothing, the totals, or the totals

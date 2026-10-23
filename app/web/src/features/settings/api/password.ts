@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The user's password (FR-002, FR-004): whether the user has one, changing it with the current one, setting one with a
 // passkey when the user has none, and removing it with a passkey. A change or a removal ends every other session and
-// grant and keeps this one. Resetting a forgotten password is the server's own sign-in pages (web-client.md §8).
+// grant and keeps this one. Resetting a forgotten password is the server's own sign-in pages (web-client/08-server-rendered-pages.md §8).
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
@@ -45,7 +45,7 @@ export function removePasswordMutation(api: Api) {
 }
 
 /**
- * What setting or removing the password changes (web-client.md S1, ADR-0045): whether the user has one. Resolves once
+ * What setting or removing the password changes (web-client/README.md S1, ADR-0045): whether the user has one. Resolves once
  * it is fetched again.
  */
 export async function refreshPasswordStatus(api: Api, queryClient: QueryClient): Promise<void> {
@@ -67,7 +67,7 @@ export type ConfirmationFailure =
   | "rate-limited"
   | "other";
 
-/** Classifies an error of an operation confirmed with the password or a passkey (web-client.md E2). */
+/** Classifies an error of an operation confirmed with the password or a passkey (web-client/README.md E2). */
 export function confirmationFailure(error: unknown): ConfirmationFailure {
   if (error instanceof DOMException) return passkeyPromptFailure(error) === "cancelled" ? "cancelled" : "unavailable";
   if (!(error instanceof ApiError)) return "other";

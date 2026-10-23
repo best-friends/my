@@ -1,6 +1,6 @@
 # 利用者登録（登録モード・招待・承認・メール確認）
 
-運営者向けの手順です。要件は FR-001・FR-002（[機能要件](../requirements/01-functional.md)）、テーブルは [データモデル §4.1](../architecture/data-model.md#41-identity)、
+運営者向けの手順です。要件は FR-001・FR-002（[機能要件](../requirements/01-functional.md)）、テーブルは [データモデル §4.1](../architecture/data-model/04-tables/01-identity.md#41-identity)、
 トークンとレート制限は [ADR-0019 §4・§5](../adr/0019-security-baseline.md) です。
 
 ## 登録画面

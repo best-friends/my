@@ -65,7 +65,7 @@ React は、ネット上のコードや一般的な知識に古い・誤った�
 
 ## Consequences
 
-- 書き方の規約は [Web クライアントの設計規約](../architecture/web-client.md) にまとめ、可能なものは lint で強制する。
+- 書き方の規約は [Web クライアントの設計規約](../architecture/web-client/README.md) にまとめ、可能なものは lint で強制する。
 - Node.js と Bun の 2 つの JS 実行環境を固定・保守する。
 - React Compiler がルール違反のコンポーネントを黙って最適化から外すので、関連する lint は error にする。
 

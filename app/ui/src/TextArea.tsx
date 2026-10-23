@@ -36,7 +36,7 @@ function thresholdLevel(remaining: number) {
   return thresholds.filter((threshold) => remaining <= threshold).length;
 }
 
-/** Characters as the server counts them: Unicode code points (data-model.md). */
+/** Characters as the server counts them: Unicode code points (data-model/README.md). */
 function countCharacters(text: string) {
   return Array.from(text).length;
 }

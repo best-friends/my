@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server administration screens and the staff's menus through the whole app (web-client.md T4, ADR-0058): a
+// The server administration screens and the staff's menus through the whole app (web-client/README.md T4, ADR-0058): a
 // signed-in session from the default handlers, a viewer whose roles have the screen's permission (or not), and
 // MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";

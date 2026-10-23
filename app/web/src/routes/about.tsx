@@ -16,7 +16,7 @@ export const Route = createFileRoute("/about")({
   loader: async ({ context: { queryClient, api } }) => {
     // Neither failure fails the page: the shell reads the instance too and handles its failure, and the moderated
     // domains show their own failure, or the setting that hides them, in their section. Cached data is shown at
-    // once (web-client.md S7).
+    // once (web-client/README.md S7).
     await Promise.all([
       queryClient.query({ ...instanceQueryOptions(api), staleTime: Infinity }).catch(() => undefined),
       queryClient.infiniteQuery({ ...publicDomainActionsQueryOptions(api), staleTime: Infinity }).catch(() => undefined),

@@ -169,7 +169,7 @@ const articleWith = (page: Page, text: string) => page.getByRole("feed").getByRo
 /**
  * Finds the article with `text` in a timeline that the other projects post to as well (the local one):
  * their newer posts can come first, and the feed mounts only the articles near the viewport, so the
- * keyboard moves through the feed (Page Down, web-client.md Y6) until the article is there.
+ * keyboard moves through the feed (Page Down, web-client/README.md Y6) until the article is there.
  */
 async function findInFeed(page: Page, text: string) {
   const articles = page.getByRole("feed").getByRole("article");
@@ -325,7 +325,7 @@ test.describe("the main flow", () => {
 
       await navigate(bobPage, "home");
       // The stream may deliver the post after the timeline opened: it then waits behind the "1 new post"
-      // button (web-client.md Y7) instead of being in the feed from the first render.
+      // button (web-client/README.md Y7) instead of being in the feed from the first render.
       const newPosts = bobPage.getByRole("main").getByRole("status").getByRole("button");
       await expect(articleWith(bobPage, followersOnly).or(newPosts)).toBeVisible();
       if (await newPosts.isVisible()) await newPosts.click();

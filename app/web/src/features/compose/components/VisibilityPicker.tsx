@@ -24,7 +24,7 @@ function isVisibility(value: string): value is Visibility {
  * visibilities as a radio group, each with who can see it (ADR-0017; WAI-ARIA APG radio group and dialog
  * patterns). Choosing does not close the popover, because the arrow keys choose as they move.
  * While a restriction narrows what the account can post, the wider visibilities are disabled and the
- * group says why (data-model.md §5.4).
+ * group says why (data-model/05-states-and-policies.md §5.4).
  */
 export function VisibilityPicker({ value, onChange, limits, isDisabled = false }: VisibilityPickerProps) {
   const t = useT();

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The landing page through the whole app (web-client.md T4): what the root address shows people who are not
+// The landing page through the whole app (web-client/README.md T4): what the root address shows people who are not
 // signed in, and that it sends signed-in users to their home timeline.
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

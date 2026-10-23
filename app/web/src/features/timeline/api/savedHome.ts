@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The home timeline kept on this browser for reading offline (FR-604, web-client.md §11). The Service Worker never
+// The home timeline kept on this browser for reading offline (FR-604, web-client/11-pwa.md §11). The Service Worker never
 // answers the client API (ADR-0028, ADR-0045), so the app keeps the posts itself: the newest posts of the home
 // timeline, without the followers-only and direct ones (nor boosts of them), each time its query loads or changes them while a page shows it, in lib/storage's homeTimelineKey (the
 // user's data, removed when the session ends and when another user signs in). When the home timeline cannot be

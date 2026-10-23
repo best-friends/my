@@ -11,7 +11,10 @@ import (
 	"time"
 
 	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/best-friends/my/internal/app/instance"
+	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/stream"
+	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -79,6 +82,14 @@ func (a *App) setUpStreams(ctx context.Context, cfg *config.Config, bus stream.B
 		return closeErr
 	}
 	return nil
+}
+
+// registerStreamCommitHooks registers the hooks that signal the streams of the timelines, the
+// notifications, and the instance after the commits; setUpStreams builds the broker they signal.
+func (a *App) registerStreamCommitHooks() {
+	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
+	notification.RegisterCommitHooks(a.Projectors, a.Streams)
+	instance.RegisterCommitHooks(a.Projectors, a.Streams)
 }
 
 // newStreamBus returns the Bus adapter of cfg.Stream, on the process ID of this process, and

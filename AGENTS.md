@@ -23,7 +23,7 @@ a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OS
   income (FR-910–FR-917, epic [#925](https://github.com/best-friends/my/issues/925)). Spike and ADRs come first.
 - The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md)); clients are TypeScript under `app/` with Bun.
   Cloudflare Workers is **not** a target.
-- **Web client work must follow [docs/architecture/web-client.md](docs/architecture/web-client.md).** Do not write React from memory or
+- **Web client work must follow [docs/architecture/web-client/](docs/architecture/web-client/README.md).** Do not write React from memory or
   from typical online examples; when unsure, check react.dev, the WAI-ARIA APG and the official docs of the library in use.
 - The web-client stack and libraries are fixed by Accepted ADRs (from ADR-0025; see [docs/adr/README.md](docs/adr/README.md));
   do not pick libraries outside them without a new ADR.
@@ -105,7 +105,7 @@ These come from Accepted ADRs and are binding.
 - Every external resource goes through a port; every adapter must pass that port's contract test suite.
 - Data modeling follows [ADR-0020](docs/adr/0020-data-modeling-principles.md): classify every table as resource / event / projection / current-value;
   never encode state as nullable timestamp columns; record state changes as events and derive current state in projections owned by one module;
-  no JSON for queried or constrained data. Read [docs/architecture/data-model.md](docs/architecture/data-model.md) before touching persistence.
+  no JSON for queried or constrained data. Read [docs/architecture/data-model/](docs/architecture/data-model/README.md) before touching persistence.
 - Schema changes: edit only the desired-state files `schema/<dialect>.sql` (all dialects together) and apply them with Atlas
   Community Edition; never hand-write migration SQL or rely on Atlas features that need `atlas login` ([ADR-0023](docs/adr/0023-declarative-schema-management.md)).
 - Keep DB transactions short, retryable, and free of external I/O (HTTP, queue, blob); enqueue jobs via the outbox. Make writes safe to repeat with unique constraints, upserts, idempotency keys ([ADR-0003](docs/adr/0003-database-abstraction.md)).
@@ -130,7 +130,8 @@ Use agentkit (`scripts/agentkit.sh <command>`, [tools/agentkit/README.md](tools/
   Hand subagents the pack's file (`.tmp/agentkit/ctx/<n>.md`) instead of letting them explore again.
 - Locate before you read: `find <words>`, `outline <path>`, `show <ref>` (`ADR-0070#decision`, `data-model§4.4`, `FR-915`,
   `op:<id>`, a Go name, `path:10-40`), `refs <name>`, `trace op:<id>`. Read documents by section, never whole:
-  `web-client.md` and `data-model.md` are about 90k tokens each.
+  `docs/architecture/web-client/` and `docs/architecture/data-model/` hold one file per section, listed in their `README.md`;
+  `show web-client§14` and `show data-model§4.4` find the file by the section number.
 - Run the workflow steps through it: `issue claim <n>`, `check`, `pr open`, `pr wait <pr>` in the background (instead of
   watching CI), `regen` after merging `main`, `issue block <n>`; orchestrators watch every PR with `pr watch`.
 - When you add a directory, module, adapter, or feature, add or extend its entry in `tools/agentkit/context-map.yaml` in

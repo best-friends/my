@@ -4,7 +4,7 @@
 // replacing the recovery codes and turning it off, each confirmed by a code. The recovery codes that turning it
 // on or replacing them answers are listed once. What a change did stays on the page in a StatusMessage
 // (role="status"); a wrong code is the code field's error and any other failure an alert next to its form
-// (web-client.md E2, G16).
+// (web-client/README.md E2, web-client/16-look-states-and-wording.md G16).
 import {
   Box,
   Button,

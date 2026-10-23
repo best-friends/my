@@ -80,6 +80,44 @@ func (s *Store) Paths(suffix string) ([]string, error) {
 	return out, rows.Err()
 }
 
+// DocDir returns the Markdown files in and below the shortest indexed directory whose path ends with dir (a
+// document split into one file per section, such as docs/architecture/data-model/ and its 04-tables/), in
+// path order, and that directory.
+func (s *Store) DocDir(dir string) ([]string, string, error) {
+	dir = strings.Trim(dir, "/")
+	rows, err := s.DB.Query(`SELECT path FROM files WHERE id IN (SELECT file_id FROM view) AND (path LIKE ? OR path LIKE ?) ORDER BY path`, "%/"+dir+"/%.md", dir+"/%.md")
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = rows.Close() }()
+	var all []string
+	best := ""
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, "", err
+		}
+		all = append(all, p)
+		// The directory is the part of p up to the match of dir: a/dir/b/c.md is under a/dir.
+		d := ""
+		if strings.HasPrefix(p, dir+"/") {
+			d = dir
+		} else if i := strings.Index(p, "/"+dir+"/"); i >= 0 {
+			d = p[:i+1+len(dir)]
+		}
+		if d != "" && (best == "" || len(d) < len(best)) {
+			best = d
+		}
+	}
+	var out []string
+	for _, p := range all {
+		if strings.HasPrefix(p, best+"/") {
+			out = append(out, p)
+		}
+	}
+	return out, best, rows.Err()
+}
+
 // Edge is an edge of the view.
 type Edge struct {
 	Src, Dst, Rel, Path string

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The one place where a link of the kit opens in a new tab (web-client.md Y12): every link that leaves the app
+// The one place where a link of the kit opens in a new tab (web-client/README.md Y12): every link that leaves the app
 // (another site, the server's own pages outside the app, the links of server-rendered HTML in PostContent) gets
 // target="_blank", rel="noopener noreferrer" and, for assistive technology, the app's "opens in a new tab" text.
 import { createContext, type ReactNode, use } from "react";
@@ -63,7 +63,7 @@ export function ExternalLink({ rel, icon = true, children, className, "aria-labe
     <Link
       {...props}
       {...(label !== undefined && { "aria-label": label })}
-      // eslint-disable-next-line restrict/syntax -- the one link that opens in a new tab (web-client.md Y12)
+      // eslint-disable-next-line restrict/syntax -- the one link that opens in a new tab (web-client/README.md Y12)
       target="_blank"
       rel={externalRel(rel)}
       className={composeRenderProps(className, (className) => externalLink({ icon, className }))}

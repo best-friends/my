@@ -1,7 +1,7 @@
 # アカウント・ドメインへの処分と通報の対応
 
 運営者・モデレーター向けの手順です。要件は FR-701〜FR-703・FR-707・FR-714・FR-718（[機能要件](../requirements/01-functional.md)）、
-テーブルは [データモデル §4.3](../architecture/data-model.md#43-moderation)、連合への効き方は [federation.md §11](../architecture/federation.md#11-モデレーションとの連携) です。
+テーブルは [データモデル §4.3](../architecture/data-model/04-tables/03-moderation.md#43-moderation)、連合への効き方は [federation.md §11](../architecture/federation.md#11-モデレーションとの連携) です。
 
 アカウントの管理（管理 API だけ）を除き、どれも管理 API（`/api/v1/admin/...`、スコープ `admin:read` / `admin:write`）と CLI（`my admin account action` / `my admin domain` / `my admin report` / `my admin appeal`）で行えます。
 管理 API はロールの権限を要します。アカウントの管理と処分と異議申し立ては `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
@@ -26,7 +26,7 @@ Web クライアントは、スタッフの画面を 2 つに分けます（[ADR
 
 ## アカウントへの処分
 
-処分は記録したトランザクションで制限の投影（`account_restrictions`）に反映され、次の要求から効きます（[データモデル §5.2](../architecture/data-model.md#52-処分の種類と制限能力の剥奪)）。
+処分は記録したトランザクションで制限の投影（`account_restrictions`）に反映され、次の要求から効きます（[データモデル §5.2](../architecture/data-model/05-states-and-policies.md#52-処分の種類と制限能力の剥奪)）。
 
 | 種類 | ローカルのアカウントへの効果 |
 | --- | --- |
@@ -338,7 +338,7 @@ my admin audit list -target-kind domain -target-id spam.example
 
 ## 記録の保持期間と保全
 
-モデレーションの記録は、種類ごとの保持期間を過ぎると、1 時間ごとのジョブ（`moderation.purge_records` と `identity.purge_origins`）が消します（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)、[データモデル §8](../architecture/data-model.md#8-削除と消去)）。
+モデレーションの記録は、種類ごとの保持期間を過ぎると、1 時間ごとのジョブ（`moderation.purge_records` と `identity.purge_origins`）が消します（[ADR-0038](../adr/0038-moderation-personal-data-retention.md)、[データモデル §8](../architecture/data-model/08-deletion-and-purge.md#8-削除と消去)）。
 期間はインスタンス設定で変えられますが、下限より短くはできません（[インスタンス設定](instance-settings.md)）。変えた期間は次の回から効きます。
 
 | 記録 | 設定 | 既定 | 下限 | 起点 |
@@ -371,7 +371,7 @@ my admin retention release <hold id>
   そのアカウントの BAN から作った登録の拒否も、解除・期限切れから 30 日を過ぎても消えません。
 - 1 つのアカウントに複数の保全を置けます。すべてを解除すると、期間を過ぎた記録が次の回に消えます。解除済みの保全をもう一度解除しても何も変わりません。
 - 保全とその解除は CLI だけで行い、記録の操作者は CLI です。
-- 削除したアカウント（`ban` の期日を過ぎたものと、本人が削除したもの）のデータは、削除から 7 日後に 1 時間ごとのジョブ `account.erase_deleted` が消します（[データモデル §8](../architecture/data-model.md#8-削除と消去)）。
+- 削除したアカウント（`ban` の期日を過ぎたものと、本人が削除したもの）のデータは、削除から 7 日後に 1 時間ごとのジョブ `account.erase_deleted` が消します（[データモデル §8](../architecture/data-model/08-deletion-and-purge.md#8-削除と消去)）。
   保全のあるアカウントは消しません。通報と処分が指す投稿は、その記録が消えるまで残ります。アカウントの URI・ユーザー名と処分の記録は残ります。
 
 ### 開示請求への書き出し

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The federated timeline through the whole app (web-client.md T4): its page with the loading, empty and
+// The federated timeline through the whole app (web-client/README.md T4): its page with the loading, empty and
 // error states, and its navigation item, which the instance setting federated_timeline_access turns off or keeps for signed-in users
 // (FR-202). The real router and QueryClient, MSW for the client API.
 import { screen, waitFor, within } from "@testing-library/react";

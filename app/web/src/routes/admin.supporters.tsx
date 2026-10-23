@@ -14,7 +14,7 @@ import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** The subscriptions shown: of a plan (`?plan=`) and in a state (`?state=`); omitted, or anything unknown, shows every one (web-client.md S3). */
+/** The subscriptions shown: of a plan (`?plan=`) and in a state (`?state=`); omitted, or anything unknown, shows every one (web-client/README.md S3). */
 const searchSchema = z.object({
   plan: z.string().optional().catch(undefined),
   state: z.enum(supporterSubscriptionStates).optional().catch(undefined),

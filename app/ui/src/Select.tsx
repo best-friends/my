@@ -23,7 +23,7 @@ const select = tv({
     // The closed select shows only an option's label: its description is for choosing (as React Aria's Select styles do).
     value: "truncate data-placeholder:text-fg-muted **:[[slot=description]]:hidden",
     chevron: "size-4 shrink-0 fill-none stroke-current stroke-2 text-fg-muted",
-    // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client.md §9).
+    // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client/09-app-shell.md §9).
     popover: "min-w-(--trigger-width) overflow-auto overscroll-contain rounded-lg border border-border bg-surface-raised p-1 shadow-md",
     listBox: "outline-hidden",
   },

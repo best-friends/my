@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and the mutation of the theme screen (web-client.md S1, ADR-0059): the instance theme
+// The queries and the mutation of the theme screen (web-client/README.md S1, ADR-0059): the instance theme
 // (GET /admin/theme) and replacing it (PUT /admin/theme, manage_settings). A theme that breaks a rule is a 422
 // `invalid-theme` problem whose `theme_errors` say why, one by one.
 import type { QueryClient } from "@tanstack/react-query";

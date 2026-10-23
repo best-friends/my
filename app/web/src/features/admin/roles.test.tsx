@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The roles screen through the whole app (web-client.md T4, FR-720): an administrator with manage_roles sees the
+// The roles screen through the whole app (web-client/README.md T4, FR-720): an administrator with manage_roles sees the
 // roles with their permissions by area, creates a role, changes the moderator role in a dialog and deletes a role
 // after asking; the built-in roles and the roles above the viewer offer only what the server allows, and refusals
 // stay next to their field or in the dialog. MSW plays the API.

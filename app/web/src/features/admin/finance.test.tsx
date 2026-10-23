@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The costs screen through the whole app (web-client.md T4, ADR-0067, ADR-0068): an administrator with
+// The costs screen through the whole app (web-client/README.md T4, ADR-0067, ADR-0068): an administrator with
 // manage_finance sees the totals by month amortized by default and switches to weeks, years and cash, with the rules
 // next to them; records a cost paid every few months; edits, revises, ends and cancels one; and imports a provider's
 // charges now; reads the income with its gross, fees and balance under the same tabs, the members of each plan, and the

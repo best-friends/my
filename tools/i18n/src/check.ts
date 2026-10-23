@@ -8,7 +8,7 @@
 //          shared with Go (anything but client*)
 //   error: malformed locale directory, namespace, or key; two keys mapping to one accessor
 //   error: generated files (pseudo-locales, accessors, golden) differ from `scripts/task.sh i18n:gen`
-//   error: copy outside the tone and punctuation rules (web-client.md G19, G20): an exclamation mark
+//   error: copy outside the tone and punctuation rules (web-client/16-look-states-and-wording.md G19, G20): an exclamation mark
 //          in any non-pseudo locale; an ASCII colon or comma in Japanese text (use "：" and "、")
 //   warn:  untranslated key (falls back to en at runtime)
 //   warn:  translation drops a source argument (sometimes legitimate)
@@ -64,14 +64,14 @@ function analyze(locale: string, ns: string, key: string, message: unknown): Arg
   }
 }
 
-/** Punctuation that web-client.md G19 / G20 rule out, found in the message's own text (not its ICU syntax). */
+/** Punctuation that web-client/16-look-states-and-wording.md G19 / G20 rule out, found in the message's own text (not its ICU syntax). */
 function copyStyleFindings(locale: string, text: string): string[] {
   if (isPseudo(locale)) return [];
   const out: string[] = [];
-  if (/[!！]/.test(text)) out.push("no exclamation marks in UI copy (web-client.md G19)");
+  if (/[!！]/.test(text)) out.push("no exclamation marks in UI copy (web-client/16-look-states-and-wording.md G19)");
   if (new Intl.Locale(locale).language === "ja") {
-    if (text.includes(":")) out.push("use the full-width colon \"：\" in Japanese (web-client.md G20)");
-    if (text.includes(",")) out.push("use \"、\" instead of an ASCII comma in Japanese (web-client.md G20)");
+    if (text.includes(":")) out.push("use the full-width colon \"：\" in Japanese (web-client/16-look-states-and-wording.md G20)");
+    if (text.includes(",")) out.push("use \"、\" instead of an ASCII comma in Japanese (web-client/16-look-states-and-wording.md G20)");
   }
   return out;
 }

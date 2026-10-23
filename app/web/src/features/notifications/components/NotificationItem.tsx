@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// One notification as an article of the notifications feed (web-client.md Y6): a sentence that says what
+// One notification as an article of the notifications feed (web-client/README.md Y6): a sentence that says what
 // happened ("Alice followed you") with the actor's name as a link to their profile, when, relative to now
 // as in the timelines (G8), and for the types about a post, a quote of the post that links to its page.
 // A follow offers to follow back. PostCard lays it out, so the article is named by the sentence and the

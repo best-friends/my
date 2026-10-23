@@ -4,7 +4,7 @@
 // instance settings `finance_visibility` and `income_visibility` publish and the finances page (`/finance`) shows them
 // to the holders of view_finance, with the navigation's entry to it, and the parts of the totals that the
 // administrators' costs screen (the admin feature) shows too.
-// Routes and other features use it through this file only (web-client.md A3).
+// Routes and other features use it through this file only (web-client/README.md A3).
 export {
   type CostBasis,
   type CostCategory,

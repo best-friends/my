@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The notifications page and the unread badge through the whole app (web-client.md T4): the real router
+// The notifications page and the unread badge through the whole app (web-client/README.md T4): the real router
 // and QueryClient, with MSW as the server (FR-205).
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

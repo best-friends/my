@@ -93,7 +93,7 @@ function PlanGroup({ group }: { group: SupporterGroup }) {
   const headingId = useId();
   return (
     <Stack as="section" gap="3" aria-labelledby={headingId}>
-      {/* The administrators' name of the plan, in a language the app does not know (web-client.md Y10). */}
+      {/* The administrators' name of the plan, in a language the app does not know (web-client/README.md Y10). */}
       <Heading level={2} id={headingId} dir="auto" lang="">
         {group.plan.name}
       </Heading>

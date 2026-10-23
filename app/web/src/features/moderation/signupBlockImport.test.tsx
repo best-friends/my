@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The import of a list of sign-up blocks through the whole app (web-client.md T4): a moderator with
+// The import of a list of sign-up blocks through the whole app (web-client/README.md T4): a moderator with
 // manage_accounts pastes a list or reads it from a text file, sends it with one kind, effect, duration and
 // comment, and learns how many blocks were added and which lines were skipped and why, with MSW playing the
 // admin API.

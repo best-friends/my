@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server data of the announcements (FR-726, web-client.md S1): the announcements that every local user sees
+// The server data of the announcements (FR-726, web-client/README.md S1): the announcements that every local user sees
 // now with whether the viewer has read each (GET /announcements), marking one read, and what the event stream
 // says about them (lib/sse): a published or changed announcement replaces or joins the list, and a withdrawn one
 // leaves it.

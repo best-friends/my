@@ -2,7 +2,7 @@
 // The body of the settings: where the column is wide enough (`@2xl`, 42rem), a
 // sticky menu of the sections beside one pane; narrower, the page of the settings stacks its heading, the menu and
 // what else it holds, and a section's page shows the section alone. It asks its own container, not the viewport
-// (web-client.md D2).
+// (web-client/README.md D2).
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { Card } from "./Card";

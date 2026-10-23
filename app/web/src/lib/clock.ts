@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The current time for rendering, as an external store (react.dev, useSyncExternalStore). Components stay
-// pure (web-client.md R1): they read the time from the store instead of calling Date.now() while rendering,
+// pure (web-client/README.md R1): they read the time from the store instead of calling Date.now() while rendering,
 // and every component that shows a relative time ("5 min. ago") renders again when the clock ticks.
 import { useSyncExternalStore } from "react";
 

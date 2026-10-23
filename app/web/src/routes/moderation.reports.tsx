@@ -7,7 +7,7 @@ import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `state`: the tab of the queue; omitted, or anything unknown, shows the open reports (web-client.md S3). */
+/** `state`: the tab of the queue; omitted, or anything unknown, shows the open reports (web-client/README.md S3). */
 const searchSchema = z.object({
   state: z.enum(["resolved"]).optional().catch(undefined),
 });

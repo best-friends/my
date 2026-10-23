@@ -7,7 +7,7 @@ import { isReturnPath } from "../lib/auth/signIn";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `return_to`: the path of this app to open after signing in. Anything else is dropped (web-client.md S3). */
+/** `return_to`: the path of this app to open after signing in. Anything else is dropped (web-client/README.md S3). */
 const searchSchema = z.object({
   return_to: z.string().refine(isReturnPath).optional().catch(undefined),
 });

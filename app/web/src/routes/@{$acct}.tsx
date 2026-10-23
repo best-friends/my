@@ -9,20 +9,20 @@ import { loadAccount, profileParamsSchema } from "./-profile/loadAccount";
 import { ProfileError } from "./-profile/ProfileError";
 import { ProfileNotFound } from "./-profile/ProfileNotFound";
 
-/** `tab`: the posts the profile lists; omitted, or anything unknown, is its posts without replies (web-client.md S3). */
+/** `tab`: the posts the profile lists; omitted, or anything unknown, is its posts without replies (web-client/README.md S3). */
 const searchSchema = z.object({
   tab: z.enum(accountTimelineFilters).exclude(["posts"]).optional().catch(undefined),
 });
 
 /** The profile of an account (FR-204), at the address the server's HTML shell gives it (ADR-0028). */
 export const Route = createFileRoute("/@{$acct}")({
-  // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  // A feed to add to: the shell floats the new-post button over this page (web-client/16-look-states-and-wording.md G4).
   staticData: { composeButton: true },
   params: { parse: (params) => profileParamsSchema.parse(params) },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { tab } }): { tab: AccountTimelineFilter } => ({ tab: tab ?? "posts" }),
   // The account and the first page of the selected tab load with the page; cached ones that no write has
-  // marked stale are shown at once, marked ones are fetched again first (web-client.md S7).
+  // marked stale are shown at once, marked ones are fetched again first (web-client/README.md S7).
   loader: async ({ context, params: { acct }, deps: { tab } }) => {
     const account = await loadAccount(context, acct);
     await Promise.all([
@@ -45,7 +45,7 @@ function ProfilePage() {
   const navigate = Route.useNavigate();
   return (
     <ProfileView
-      // Another account is another page: nothing of the previous one carries over (web-client.md R10).
+      // Another account is another page: nothing of the previous one carries over (web-client/README.md R10).
       key={acct}
       acct={acct}
       tab={tab}

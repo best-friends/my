@@ -2,7 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { TextArea } from "./TextArea";
 
-// Stories may spell out English; apps pass a react-intl message instead (web-client.md A9).
+// Stories may spell out English; apps pass a react-intl message instead (web-client/README.md A9).
 const formatRemaining = (remaining: number) =>
   remaining < 0 ? `${-remaining} characters too many` : `${remaining} characters left`;
 

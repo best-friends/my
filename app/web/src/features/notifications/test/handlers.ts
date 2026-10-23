@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the notifications feature (web-client.md §7): everything up to the follow is
+// The default MSW handlers of the notifications feature (web-client/README.md §7): everything up to the follow is
 // read, so the mention is unread.
 import { http, HttpResponse } from "msw";
 import { otherAccountFixture, type Schemas, statusFixture } from "../../../test/fixtures";

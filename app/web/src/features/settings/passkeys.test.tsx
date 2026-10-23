@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The passkeys page through the whole app (web-client.md T4): adding a passkey (the password, then the browser's
+// The passkeys page through the whole app (web-client/README.md T4): adding a passkey (the password, then the browser's
 // prompt, which test/webauthn plays), what a wrong password or a dismissed prompt says, a browser without passkeys,
 // and removing one after its dialog, with MSW playing the server.
 import { screen, waitFor, within } from "@testing-library/react";

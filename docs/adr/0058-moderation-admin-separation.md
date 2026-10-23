@@ -12,7 +12,7 @@
 いまの運用者の機能は、Web も API も 1 つの `/admin/*` にまとまり、ロールの権限だけで分かれている。
 
 - Web: `app/web/src/routes/admin.*.tsx` の 16 画面（連合先・ドメインへの処分・dead job・監査ログ・登録の審査・登録の拒否リスト・アカウント・通報・異議申し立て・規約とポリシー・サーバーの設定）。
-  権限の検査は `routes/-admin/adminRoute.tsx`、一覧は `features/admin/components/AdminMenu.tsx` の 1 つのリストで、ナビゲーションの「管理」（`/admin`）と設定の画面の「管理」の区画が同じリストを出す（[web-client.md §9・§14](../architecture/web-client.md)）。
+  権限の検査は `routes/-admin/adminRoute.tsx`、一覧は `features/admin/components/AdminMenu.tsx` の 1 つのリストで、ナビゲーションの「管理」（`/admin`）と設定の画面の「管理」の区画が同じリストを出す（[web-client.md §9・§14](../architecture/web-client/README.md)）。
   「管理」のバッジは、未解決の通報・承認待ちの登録・審査待ちの異議申し立て（FR-712）というモデレーションの件数を出す。
 - API: `/admin/*` の平らな一覧（`reports`・`accounts`・`account_actions`・`appeals`・`registrations`・`signup_blocks`・`domain_actions`・`instances`・`dead_jobs`・`rules`・`instance_texts`・`audit_log`・`roles`・`counts`）。
   タグは 1 つの `admin`、スコープは `admin:read` / `admin:write` で、各操作がロールの権限を検査する（[client-api.md](../architecture/client-api.md)）。
@@ -159,7 +159,7 @@ M4 では、運用者の機能がいくつも足される: インスタンス設
 - 悪い: ナビゲーションの項目が、モデレーターと管理者を兼ねる人には 1 つ増える。
 - 悪い: スコープを分けないので、`admin:*` のトークンはロールの権限の範囲で両方の区分を操作できる。第三者のツールを区分で縛れない。
 - 悪い: Web の経路（`/moderation/*`）と API の経路（`/admin/*`）が一致しない。
-- 後続: #659 がこの決定どおりに Web の経路・ナビゲーション・一覧・設定の画面の区画、OpenAPI のタグ、権限の区分、空の `internal/interface/admin` の削除、[web-client.md](../architecture/web-client.md) §9・§14 と [client-api.md](../architecture/client-api.md) と [data-model §4.1](../architecture/data-model.md) の更新を行う。
+- 後続: #659 がこの決定どおりに Web の経路・ナビゲーション・一覧・設定の画面の区画、OpenAPI のタグ、権限の区分、空の `internal/interface/admin` の削除、[web-client.md](../architecture/web-client/README.md) §9・§14 と [client-api.md](../architecture/client-api.md) と [data-model §4.1](../architecture/data-model/README.md) の更新を行う。
 - 後続: #624・#626・#641・#665 と ADR-0051・ADR-0059・ADR-0060・ADR-0061 の実装は、上の表の経路と権限に置く。#659 より先に入るものは、いまの `/admin` に置いて #659 で移すか、#659 の後に入れるかを順番で決める。
 
 ## Pros and Cons of the Options（詳細比較・任意）

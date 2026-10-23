@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Violations of the 強制 rows of docs/architecture/web-client.md that lint checks, as a feature's component:
+// Violations of the 強制 rows of docs/architecture/web-client/README.md that lint checks, as a feature's component:
 // violations.test.js copies this file to web/src/features/timeline/components/, lints it, and requires
 // exactly the reports that the `expect:` comments name on each line. React Compiler stops at the first
 // problem of a function, so each React rule gets a function of its own.

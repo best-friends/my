@@ -3,7 +3,7 @@
 // need to handle it on one page (NFR-MOD-4): the posts it points at, the target's earlier actions, the moderator
 // who handles it, the notes, and resolving or reopening it. Each operation on the report answers the report after
 // it, which replaces the cached one once the lists of reports it changes and the audit log are fetched again;
-// failures are shown in a toast and leave the page as it was (web-client.md E2).
+// failures are shown in a toast and leave the page as it was (web-client/README.md E2).
 import { useToast } from "@my/ui";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";

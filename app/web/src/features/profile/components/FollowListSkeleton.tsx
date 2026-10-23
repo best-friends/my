@@ -19,11 +19,11 @@ export type FollowListSkeletonProps = {
 /**
  * What a follow list shows while the account and its first page load: the page heading, which names the
  * account by the handle in the address until its name is known, and a busy region with the shape of a few
- * rows (hidden from assistive technology) named once by a visually hidden text (web-client.md G15).
+ * rows (hidden from assistive technology) named once by a visually hidden text (web-client/16-look-states-and-wording.md G15).
  */
 export function FollowListSkeleton({ acct, list, renderHeading }: FollowListSkeletonProps) {
   const t = useT();
-  // The handle is the user's text too, isolated from the sentence around it (FSI … PDI, web-client.md Y10).
+  // The handle is the user's text too, isolated from the sentence around it (FSI … PDI, web-client/README.md Y10).
   const handle = isolate(`@${acct}`);
   return (
     <Stack gap="4">

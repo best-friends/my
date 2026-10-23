@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the profile feature (web-client.md S1, FR-204, FR-301 to FR-303): an
+// The queries and mutations of the profile feature (web-client/README.md S1, FR-204, FR-301 to FR-303): an
 // account looked up by its handle, the viewer's relationship with it, the accounts it follows and that
 // follow it, and the changes of the relationship. Keys follow openapi-react-query's `[method, path, init]`.
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
@@ -103,7 +103,7 @@ function changesFollows(change: RelationshipChange): boolean {
 
 /**
  * Marks stale every cached query that a change of the viewer's relationship with the account `accountId`
- * changes (web-client.md S1), and resolves once those on screen are fetched again; the others are fetched again
+ * changes (web-client/README.md S1), and resolves once those on screen are fetched again; the others are fetched again
  * when their page opens (S7).
  * A change of a follow changes the follow counts on both profiles and the viewer's own account, every follow
  * list (any may list either account), and, for the viewer's own follows, the home timeline; a change of a block

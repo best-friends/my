@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a route shows instead of its page: while it loads, when it fails, and for an unknown address
-// (web-client.md E1, E3, G16). Each has the page's h1, so the layout moves focus to it and titles the document.
+// (web-client/README.md E1, E3, web-client/16-look-states-and-wording.md G16). Each has the page's h1, so the layout moves focus to it and titles the document.
 import { RegionError, RouteLoading, StandalonePage, Text } from "@my/ui";
 import { useQueryClient, useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { type ErrorComponentProps, useMatch, useRouter } from "@tanstack/react-router";
@@ -17,7 +17,7 @@ export function RoutePending() {
   return <RouteLoading label={t("client:shell.loading")} />;
 }
 
-/** What happened, for each kind of failure (web-client.md G16). */
+/** What happened, for each kind of failure (web-client/16-look-states-and-wording.md G16). */
 const errorHeadings: Readonly<Record<ErrorKind, PlainClientMessageKey>> = {
   network: "client:shell.error.network.heading",
   server: "client:shell.error.server.heading",
@@ -38,7 +38,7 @@ export type RouteErrorProps = ErrorComponentProps & {
  * The error of one page, inside the layout so that the navigation stays usable (the router's
  * defaultErrorComponent). The page keeps its h1, so the layout still focuses it and names the document after
  * the page, and the error takes the place of the page's content: what happened, why, and "Try again"
- * (web-client.md G16).
+ * (web-client/16-look-states-and-wording.md G16).
  */
 export function RouteError({ error: pageError, reset, heading }: RouteErrorProps) {
   const t = useT();
@@ -72,10 +72,10 @@ export function RouteError({ error: pageError, reset, heading }: RouteErrorProps
     reset();
     await router.invalidate();
     // The page, or its error, has taken the place of this one: focus its heading, as the layout does after a
-    // navigation (web-client.md Y5); the button that had focus is gone.
+    // navigation (web-client/README.md Y5); the button that had focus is gone.
     document.querySelector<HTMLElement>("main h1")?.focus();
   };
-  // A page that failed for the network loads again by itself when the app is back online (web-client.md G17).
+  // A page that failed for the network loads again by itself when the app is back online (web-client/16-look-states-and-wording.md G17).
   useOnReconnect(() => {
     void retry();
   }, kind === "network" && !isRetrying);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The announcements screen through the whole app (web-client.md T4, FR-726): an administrator with
+// The announcements screen through the whole app (web-client/README.md T4, FR-726): an administrator with
 // manage_announcements writes an announcement shown for a chosen time, publishes a draft, edits one in a dialog,
 // and withdraws one after an alert dialog; a viewer without the permission sees why; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";

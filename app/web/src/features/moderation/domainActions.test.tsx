@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The domain actions screen through the whole app (web-client.md T4): an operator with manage_domains lists the
+// The domain actions screen through the whole app (web-client/README.md T4): an operator with manage_domains lists the
 // actions, takes new ones (a suspension only after its confirmation), and lifts them, with MSW playing the
 // admin API. The server keeps domains in IDNA A-labels; the screen shows them with their U-labels.
 import { screen, waitFor, within } from "@testing-library/react";

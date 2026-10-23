@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The settings pages through the whole app (web-client.md T4): a signed-in session from the default
+// The settings pages through the whole app (web-client/README.md T4): a signed-in session from the default
 // handlers, MSW playing the server with the state each test needs, and the user's own interactions.
 import { screen, waitFor, within } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";

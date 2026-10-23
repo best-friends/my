@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the webhooks screens (web-client.md S1, ADR-0060, manage_webhooks): the endpoints
+// The queries and mutations of the webhooks screens (web-client/README.md S1, ADR-0060, manage_webhooks): the endpoints
 // (GET /admin/webhooks), one of them (GET /admin/webhooks/{id}) and its deliveries, newest first; setting one up,
 // changing, enabling, disabling and deleting it, giving it a new secret, sending it a test message, and sending a
 // delivery again. A webhook that breaks a rule is a 422 `invalid-webhook` problem whose `reason` names the field.

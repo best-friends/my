@@ -22,7 +22,7 @@ export type AttachmentListProps = {
 
 /**
  * The images of the draft. Every image has a description field, always shown, whatever its state
- * (web-client.md Y9): the description can be written while the file uploads.
+ * (web-client/README.md Y9): the description can be written while the file uploads.
  */
 export function AttachmentList({ items, onDescribe, onRemove, requireDescriptions, isDescriptionRequired = false, isDisabled = false }: AttachmentListProps) {
   const t = useT();

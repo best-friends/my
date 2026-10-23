@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The heading of a profile (FR-204): the header image, the overlapping avatar beside the relationship actions, the name
 // and handle, the profile text, its metadata fields, when the account joined and its counts. The header is its own size
-// container, so the fields line up in rows once it is wide (web-client.md D2). Strings and content come in as props.
+// container, so the fields line up in rows once it is wide (web-client/README.md D2). Strings and content come in as props.
 import { type ReactNode, useState } from "react";
 import { tv } from "tailwind-variants";
 import { Avatar } from "./Avatar";

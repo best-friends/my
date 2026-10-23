@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The actions on a post are in the lists that no page shows when they are made (web-client.md S1, ADR-0045):
+// The actions on a post are in the lists that no page shows when they are made (web-client/README.md S1, ADR-0045):
 // the viewer's profile opened afterwards shows the change from its first render. The server answers every list
 // slowly, as over a real network, so that a list shown from a stale cache would be seen.
 import { screen, within } from "@testing-library/react";
@@ -54,7 +54,7 @@ describe("a boost", () => {
     await user.click(within(article).getByRole("button", { name: "Boost", pressed: false }));
     expect(await screen.findByText("Boosted")).toBeInTheDocument();
 
-    // The profile is marked stale, so its route fetches it again before it shows (web-client.md S7).
+    // The profile is marked stale, so its route fetches it again before it shows (web-client/README.md S7).
     const feed = await openProfile(user);
     // The profile shows the boost from its first render, not the list from before it.
     expect(within(feed).getByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();

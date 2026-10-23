@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A post's page and the actions on posts through the whole app (web-client.md T4): the real router and
+// A post's page and the actions on posts through the whole app (web-client/README.md T4): the real router and
 // QueryClient, MSW for the client API. Time is fixed so that relative times are known.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
@@ -487,7 +487,7 @@ describe("a post of another server", () => {
       "src",
       "https://my.example/media/proxy/0192f0c4-7a8e-7000-8000-0000000003d2",
     );
-    // The badge says so to the eye (web-client.md Y9); to a screen reader it is the picture's name.
+    // The badge says so to the eye (web-client/README.md Y9); to a screen reader it is the picture's name.
     expect(within(article).getByText("No description", { selector: "span" })).toBeVisible();
   });
 

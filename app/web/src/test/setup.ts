@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Runs before every Vitest file (vitest.config.ts): jest-dom matchers, DOM cleanup and the MSW server.
-// The network is mocked only through MSW (web-client.md T3); a request that no handler matches fails the test.
+// The network is mocked only through MSW (web-client/README.md T3); a request that no handler matches fails the test.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { destroyAnnouncer } from "react-aria/private/live-announcer/LiveAnnouncer";
@@ -8,7 +8,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { forgetUnsavedStorage } from "../lib/storage";
 import { server } from "./msw/server";
 
-// findBy and waitFor give up after this long (web-client.md T7). The wait is wall-clock time, which a busy
+// findBy and waitFor give up after this long (web-client/README.md T7). The wait is wall-clock time, which a busy
 // machine stretches: Testing Library's 1 s default timed out in `scripts/task.sh check` while Go and PostgreSQL ran
 // alongside. A test that passes never waits this long; the limit only bounds how long a broken one hangs.
 // testTimeout in vitest.config.ts leaves room for several such waits.
