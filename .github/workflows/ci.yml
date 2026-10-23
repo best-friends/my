@@ -163,7 +163,8 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
         id: go
-      # The api checks bundle the spec with Redocly and i18n:lint checks the catalogs, both on Bun.
+      # The api checks bundle the spec with Redocly on Bun. i18n:lint runs once, in client-static, which every i18n change
+      # also selects.
       - name: Set up Bun
         uses: ./.github/actions/setup-bun
       # Both db:check steps use Atlas, and the PostgreSQL one the container of db:up.
@@ -193,8 +194,6 @@ jobs:
             run: scripts/task.sh api:generate-check
           - name: api:lint
             run: scripts/task.sh api:lint
-          - name: i18n:lint
-            run: scripts/task.sh i18n:lint
           - name: go:mod-check
             run: scripts/task.sh go:mod-check
           - name: api:spec-check
@@ -275,11 +274,12 @@ jobs:
       - parallel:
           - name: web:test
             run: scripts/task.sh web:test SHARD=${{ matrix.shard }}
+          # On the second shard, whose half of the web tests is the shorter one.
           - name: ui:unit-test
-            if: matrix.shard == '1/2'
+            if: matrix.shard == '2/2'
             run: scripts/task.sh ui:unit-test
           - name: i18n:test
-            if: matrix.shard == '1/2'
+            if: matrix.shard == '2/2'
             run: scripts/task.sh i18n:test
 
   repo:
