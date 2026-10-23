@@ -10,13 +10,22 @@ vars:
   REDOCLY: REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true bunx --bun @redocly/cli@{{.REDOCLY_VERSION}}
 
 tasks:
+  # bunx installs a package into one temporary directory per name and version, and two bunx processes installing the
+  # same one at once can leave one of them without the executable ("could not determine executable to run"). The
+  # tasks that run Redocly depend on this, and CI runs it once before its parallel steps.
+  warm:
+    desc: Fetch the pinned Redocly CLI once, so that the tasks that run it at the same time do not race to install it
+    run: once
+    cmds:
+      - "{{.REDOCLY}} --version"
+
   check:
     desc: Check and lint the client API spec and fail on a stale bundle or generated Go code, in parallel
     deps: [spec-check, lint, generate-check]
 
   generate:
     desc: Bundle api/spec into api/openapi.yaml and regenerate the client API code from it (scripts/generate.sh)
-    deps: [":web:install"]
+    deps: [":web:install", warm]
     run: once
     sources:
       - "api/spec/**/*"
@@ -56,6 +65,7 @@ tasks:
 
   generate-check:
     desc: Fail if the committed bundle or Go client API code is stale
+    deps: [warm]
     env:
       REDOCLY_VERSION: "{{.REDOCLY_VERSION}}"
     cmds:
@@ -63,6 +73,7 @@ tasks:
 
   lint:
     desc: Lint the split spec api/spec, including the supported OpenAPI 3.1 subset (api/redocly.yaml)
+    deps: [warm]
     cmds:
       - "{{.REDOCLY}} lint --config api/redocly.yaml api/spec/openapi.yaml"
 

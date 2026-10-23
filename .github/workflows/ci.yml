@@ -180,6 +180,10 @@ jobs:
       # compile of it has finished: build them once first.
       - name: Build the packages and the Go tools once
         run: scripts/task.sh go:warm
+      # api:lint and api:generate-check both run Redocly through bunx, which can fail when two processes install it at
+      # once: fetch it before them.
+      - name: Fetch the Redocly CLI once
+        run: scripts/task.sh api:warm
       - name: Wait for Atlas and PostgreSQL
         wait: db
       # More than 10 steps: the last ones, the short ones, start as the first ones finish.
