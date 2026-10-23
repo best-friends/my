@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The prompt for a new version of the app (ADR-0028), in the whole app (web-client.md T4). jsdom has no
+// The prompt for a new version of the app (ADR-0028), in the whole app (web-client/README.md T4). jsdom has no
 // Service Workers, so the container is a stand-in whose registration already has a waiting version.
 import { screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";

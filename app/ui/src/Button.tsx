@@ -6,7 +6,7 @@ const button = tv({
   base: [
     "inline-flex cursor-default items-center justify-center gap-2 rounded-full text-center font-extrabold select-none",
     "data-disabled:opacity-50 data-focus-visible:focus-ring data-pending:cursor-wait motion-safe:transition-[color,background-color,translate]",
-    // The button sizes a child icon, which sets no size of its own (web-client.md G11).
+    // The button sizes a child icon, which sets no size of its own (web-client/16-look-states-and-wording.md G11).
     "pointer-coarse:min-h-11 [&>svg]:shrink-0",
   ],
   variants: {
@@ -34,7 +34,7 @@ const button = tv({
       toolbar: "min-h-8 px-2 text-sm [&>svg]:size-5",
       /** Beside a button of the same height, with only an icon in it: the height of `md` with narrow sides. */
       compact: "min-h-10 px-2 text-base [&>svg]:size-5",
-      /** Only an icon, named by `aria-label`: as wide as it is tall, and a tap target on a coarse pointer (web-client.md D4). */
+      /** Only an icon, named by `aria-label`: as wide as it is tall, and a tap target on a coarse pointer (web-client/README.md D4). */
       icon: "min-h-8 w-8 px-0 text-sm pointer-coarse:w-11 [&>svg]:size-4",
     },
   },

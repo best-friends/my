@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The shared recipe of the layout primitives (Stack, Cluster, Grid): a screen lays itself out with typed props whose values
-// are the spacing steps of web-client.md §16.1 (G1) and the roles of app/ui/README.md, never with classes of its own.
+// are the spacing steps of web-client/16-look-states-and-wording.md §16.1 (G1) and the roles of app/ui/README.md, never with classes of its own.
 import type { ComponentPropsWithRef, ElementType } from "react";
 import { tv } from "tailwind-variants";
 
-/** The spacing steps a gap or a padding may take (web-client.md G1). */
+/** The spacing steps a gap or a padding may take (web-client/16-look-states-and-wording.md G1). */
 export type Space = "0" | "0.5" | "1" | "2" | "3" | "4" | "6" | "8" | "10";
 
 /** The elements a layout primitive may render, so that a screen keeps its landmarks, lists and forms without a wrapper. */
@@ -44,7 +44,7 @@ export type FlexLayoutProps = {
 
 /** Props shared by every layout primitive. */
 export type BoxProps = {
-  /** Makes the element a size container (`@container`), so the `@sm:` / `@md:` variants inside it answer to its width (web-client.md D2). */
+  /** Makes the element a size container (`@container`), so the `@sm:` / `@md:` variants inside it answer to its width (web-client/README.md D2). */
   container?: boolean;
   /** Caps the inline size: `prose` (`max-w-prose`, running text), `sm` / `xs` (`w-full max-w-sm` / `max-w-xs`, a narrow form), `full` (`w-full`). */
   width?: "prose" | "sm" | "xs" | "full";

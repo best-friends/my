@@ -3,7 +3,7 @@
 // resolved, newest first; one report with its notes and what the moderators had about its target; taking it,
 // leaving it, writing a note, resolving and reopening it; and taking a moderation action on its target account
 // (FR-703) that resolves it. The lists follow the API's keyset pagination as infinite queries whose keys end
-// with "pages" (web-client.md §10). Every operation on one report answers the report as it is after it, which
+// with "pages" (web-client/10-api-client-and-auth.md §10). Every operation on one report answers the report as it is after it, which
 // replaces the cached report.
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -84,7 +84,7 @@ export function accountActionsQueryOptions(api: Api, accountId: string) {
 }
 
 /**
- * Marks stale what a change of a report changes (web-client.md S1): the lists of reports (it may move between the
+ * Marks stale what a change of a report changes (web-client/README.md S1): the lists of reports (it may move between the
  * tabs) and the moderators' counts of open reports. Those on screen are fetched again at once; a list opened later
  * is fetched again before it shows (S7), so it never shows the report as it was: a resolved report in the open tab.
  */
@@ -119,7 +119,7 @@ export type ChangeReport = { id: string; operation: ReportOperation } | { id: st
 
 /**
  * Takes a report, leaves it, reopens it, or resolves it (POST /admin/reports/{id}/assign_to_self | unassign |
- * reopen | resolve), as the options of TanStack Query's useMutation (web-client.md §10). Returns the report after it.
+ * reopen | resolve), as the options of TanStack Query's useMutation (web-client/10-api-client-and-auth.md §10). Returns the report after it.
  */
 export function changeReportMutation(api: Api) {
   return {

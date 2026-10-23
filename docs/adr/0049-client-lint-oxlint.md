@@ -9,7 +9,7 @@
 
 クライアントのワークスペース（`app/`）の lint は、[ADR-0025](0025-web-client-stack.md) と [ADR-0027](0027-ui-quality-gates.md) が定める ESLint（flat config）と
 そのプラグイン（typescript-eslint、`eslint-plugin-react-hooks`、`@eslint-react`、TanStack Query / Router、Testing Library、boundaries、better-tailwindcss、formatjs、eslint-comments）
-で行い、[Web クライアントの設計規約](../architecture/web-client.md) の「強制」の列の多くを守っている。独自の禁止規則は `app/eslint/restrictions.js` にある。
+で行い、[Web クライアントの設計規約](../architecture/web-client/README.md) の「強制」の列の多くを守っている。独自の禁止規則は `app/eslint/restrictions.js` にある。
 
 この ESLint は 1 回に約 50 秒かかり（手元 52.8 秒、CI 50.4 秒）、`make web-lint` と CI の web ジョブで最も長い手順になっている。
 時間の大半は typescript-eslint の型情報（TypeScript 6 のコンパイラ）で、ESLint 10 の `--concurrency` は 4 CPU の CI では 1 割ほどしか縮めない。

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The password page through the whole app (web-client.md T4): changing the password with the current one, what a
+// The password page through the whole app (web-client/README.md T4): changing the password with the current one, what a
 // wrong current password and too many of them say, removing it with a passkey (which test/webauthn plays), and setting
 // one again with a passkey, with MSW playing the server.
 import { screen, within } from "@testing-library/react";

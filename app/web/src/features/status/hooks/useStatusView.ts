@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What a status card shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4): the
+// What a status card shows, as plain values for the slots of @my/ui's PostCard (web-client/README.md A4): the
 // hook decides what to show and formats it; the component only places it. It returns no JSX.
 import { type CustomEmojiImage, type ImageSources, type LinkCardImage, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useIntl } from "react-intl";

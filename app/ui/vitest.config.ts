@@ -19,7 +19,7 @@ export default mergeConfig(
     test: {
       projects: [
         // Component tests (src/**/*.test.tsx): Testing Library in jsdom, run by `make web-test`
-        // (`bun run test:unit`). Like app/web, they never use the `node` environment (web-client.md T6).
+        // (`bun run test:unit`). Like app/web, they never use the `node` environment (web-client/README.md T6).
         {
           extends: true,
           test: {
@@ -28,7 +28,7 @@ export default mergeConfig(
             include: ["src/**/*.test.{ts,tsx}"],
             setupFiles: ["./test/setup.ts"],
             restoreMocks: true,
-            // Room for several waits of asyncUtilTimeout (test/setup.ts) on a loaded machine (web-client.md T7).
+            // Room for several waits of asyncUtilTimeout (test/setup.ts) on a loaded machine (web-client/README.md T7).
             testTimeout: 30_000,
           },
         },

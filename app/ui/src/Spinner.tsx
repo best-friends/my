@@ -8,7 +8,7 @@ const spinner = tv({
     base: "inline-flex shrink-0 align-middle text-accent",
     // A decorative track and a quarter arc in the current color (accent, or the caller's text color
     // through className). With reduced motion the arc stands still and the accessible name still
-    // says that something is loading (web-client.md D6).
+    // says that something is loading (web-client/README.md D6).
     ring: "rounded-full border-border border-t-current motion-safe:animate-spin",
   },
   variants: {

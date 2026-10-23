@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The TanStack Query client: the only cache of server data (web-client.md S1). Routes reach it through
+// The TanStack Query client: the only cache of server data (web-client/README.md S1). Routes reach it through
 // the router context to load, in their loaders, what is not cached or has been marked stale (`queryClient.query`
 // with `staleTime: Infinity`, S7), with the API client and the session; components use the hooks. Writes put
 // what they know for certain into the cache and mark stale the lists they change (`invalidateQueries`, S1).
@@ -21,7 +21,7 @@ export function createQueryClient(): QueryClient {
         staleTime: 30_000,
         // Offline, a query fails at once with a NetworkError that says so, instead of pausing until the network
         // is back: a region shows that it cannot load while offline rather than a spinner that never ends, and a
-        // route's loader does not wait forever (web-client.md G17). A NetworkError is retried at once, so
+        // route's loader does not wait forever (web-client/16-look-states-and-wording.md G17). A NetworkError is retried at once, so
         // that the message is not delayed by the backoff; loaders (`queryClient.query`) do not retry at all.
         // `retry` keeps its default: setting one here would make the loaders retry too.
         networkMode: "always",
@@ -32,7 +32,7 @@ export function createQueryClient(): QueryClient {
       },
       mutations: {
         // Offline, a write fails at once instead of pausing, so that what the user sent stays in the form or
-        // the outbox to send again (G17, web-client.md §12).
+        // the outbox to send again (G17, web-client/12-compose.md §12).
         networkMode: "always",
       },
     },

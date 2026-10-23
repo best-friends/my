@@ -140,7 +140,9 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
   - the sources of generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components), `locales/`, `schema/<dialect>.sql` and the sqlc queries,
     the web route tree (`app/web/src/routes/`), the config schema;
   - the indexes and tables many changes edit: the ADR index in `docs/adr/README.md`, the FR table in
-    [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`.
+    [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`. In
+    `docs/architecture/web-client/` and `docs/architecture/data-model/`, each section is a file of its own: two issues
+    that edit different sections do not share a file.
 - Never run two issues that touch the same shared files at the same time: when the next issue in line shares files
   with a running one, start a different issue for the free slot, and start the held issue after the running one has
   opened its PR, on that PR's branch (a stacked PR: `--base <that branch>`, "Stacked on #N" at the top of the body;

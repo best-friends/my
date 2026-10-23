@@ -6,7 +6,7 @@ import { VisuallyHidden } from "./VisuallyHidden";
 
 const postCard = tv({
   slots: {
-    // The card is the size container its layout answers to (web-client.md D2).
+    // The card is the size container its layout answers to (web-client/README.md D2).
     base: "@container relative mb-3 rounded-xl border border-border bg-surface-raised p-4 shadow-card",
     context: "mb-2 flex min-w-0 items-center gap-2 text-sm font-bold wrap-anywhere text-success [&>svg]:size-4 [&>svg]:shrink-0",
     grid: "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
@@ -182,7 +182,7 @@ export type PostCardAuthorProps = {
 
 /**
  * A display name and a handle for the author slot of PostCard, each cut to one line with an ellipsis
- * (web-client.md G7). A handle is cut from its end, the domain's side. The text stays whole in the
+ * (web-client/16-look-states-and-wording.md G7). A handle is cut from its end, the domain's side. The text stays whole in the
  * DOM, so a link around it is named by the full name and handle. Below the card's `@sm` width the handle
  * is a line under the name; from it, both share the header's row with the time.
  */

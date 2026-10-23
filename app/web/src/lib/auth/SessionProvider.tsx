@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The session and the API client for components (web-client.md S6: values that rarely change). Server
+// The session and the API client for components (web-client/README.md S6: values that rarely change). Server
 // data is not in this context: the viewer's account is a query (features/session).
 import { createContext, type ReactNode, use, useSyncExternalStore } from "react";
 import type { Api } from "../api/client";

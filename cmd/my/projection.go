@@ -142,7 +142,7 @@ func projectionUsage(w io.Writer) {
   my projection rebuild [-config <file>] [<name>]
 
 Projections are tables derived from the events and resources of their module
-(docs/architecture/data-model.md §9). list shows each projection with its
+(docs/architecture/data-model/09-projection-rebuild.md §9). list shows each projection with its
 module and tables. verify derives every projection, or the one named, from its
 sources inside a transaction that it rolls back, prints the rows that differ
 from what the tables hold ("-" held but not derived, "+" derived but missing),

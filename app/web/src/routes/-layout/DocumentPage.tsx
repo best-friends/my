@@ -15,7 +15,7 @@ const documentTitles: Readonly<Record<DocumentKind, PlainClientMessageKey>> = {
 };
 
 /**
- * The loader of a document's page: the document, from the cache at once when it is there (web-client.md S7). A
+ * The loader of a document's page: the document, from the cache at once when it is there (web-client/README.md S7). A
  * document the instance has not published (404) fails the page, which shows the not-found screen.
  */
 export function documentLoader(kind: DocumentKind) {

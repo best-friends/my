@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the notifications feature (web-client.md S1, FR-205): the list, filtered
+// The queries and mutations of the notifications feature (web-client/README.md S1, FR-205): the list, filtered
 // by type and loaded a page at a time, with the posts that notifications are about embedded; and the read
 // marker with the unread count. Keys follow openapi-react-query's `[method, path, init]`, so a prefix such as
 // `["get", "/notifications"]` matches every filter of the list.

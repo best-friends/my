@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The instance's information page through the whole app (web-client.md T4, FR-718): what everyone may read about
+// The instance's information page through the whole app (web-client/README.md T4, FR-718): what everyone may read about
 // the server at /about, and the moderated domains as far as the instance's settings list them.
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

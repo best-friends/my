@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Whether the app is offline (web-client.md G17), kept in TanStack Query's onlineManager so that the query cache and
+// Whether the app is offline (web-client/16-look-states-and-wording.md G17), kept in TanStack Query's onlineManager so that the query cache and
 // the app's offline bar read one state. The app is offline when the browser says it has no network (`navigator.onLine`
 // and its `offline` / `online` events, which the onlineManager listens to) or when a request to the client API got no
 // response (a NetworkError) and no response has arrived since. Going back online refetches the queries that failed

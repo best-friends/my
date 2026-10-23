@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The Web Push subscription of the signed-in grant (FR-206, web-client.md S1): one per signed-in app, which the
+// The Web Push subscription of the signed-in grant (FR-206, web-client/README.md S1): one per signed-in app, which the
 // server sends the chosen kinds of notifications to.
 import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -41,7 +41,7 @@ export async function deletePushSubscription(api: Api): Promise<void> {
   await api.fetch.DELETE("/push/subscription");
 }
 
-/** Puts the grant's subscription as the server answered a change into the cache (web-client.md S1). */
+/** Puts the grant's subscription as the server answered a change into the cache (web-client/README.md S1). */
 export function cachePushSubscription(api: Api, queryClient: QueryClient, saved: PushSubscriptionInfo | null): void {
   queryClient.setQueryData(pushSubscriptionQueryOptions(api).queryKey, saved);
 }

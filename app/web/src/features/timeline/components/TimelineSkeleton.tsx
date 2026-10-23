@@ -8,7 +8,7 @@ const placeholders = ["first", "second", "third"] as const;
 /**
  * What a timeline shows while its first page loads: a busy region with the shape of a few posts (hidden
  * from assistive technology) and one visually hidden text that names what is loading. A skeleton and a
- * spinner never share the region (web-client.md G15).
+ * spinner never share the region (web-client/16-look-states-and-wording.md G15).
  */
 export function TimelineSkeleton() {
   const t = useT();

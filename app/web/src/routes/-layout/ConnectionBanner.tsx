@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The bar at the top of the app that says why it cannot load from the server right now: it is offline (web-client.md
+// The bar at the top of the app that says why it cannot load from the server right now: it is offline (web-client/README.md
 // G17), or the server's rate limit refuses its requests until the time Retry-After names (lib/rateLimit). Either way,
 // what failed loads again by itself, and the bar says when. Being offline comes first: no request gets through then.
 // It is the one OfflineBanner (a role="status" region in the page from the start), so that the change is announced;

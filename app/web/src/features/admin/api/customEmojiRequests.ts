@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the requests tab of the custom emoji screen (web-client.md S1, ADR-0070 §2, §6,
+// The queries and mutations of the requests tab of the custom emoji screen (web-client/README.md S1, ADR-0070 §2, §6,
 // manage_custom_emojis): the requests of the holders of create_custom_emojis in one state, newest first (GET
 // /admin/custom_emoji_requests, the pending ones by default), approving one (POST .../approve), which makes the emoji
 // or gives it the new image, and rejecting one with an optional reason (POST .../reject). A request that cannot be

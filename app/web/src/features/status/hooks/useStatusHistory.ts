@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The edit history of a post (FR-109), as plain values for the page (web-client.md A4): every revision,
+// The edit history of a post (FR-109), as plain values for the page (web-client/README.md A4): every revision,
 // newest first, with when it was made, what it changed from the one before, and its content as the cards
 // show it. The route loader has fetched the post and its history.
 import { type CustomEmojiImage, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";

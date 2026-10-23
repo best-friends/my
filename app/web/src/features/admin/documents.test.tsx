@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The terms and policies screen through the whole app (web-client.md T4): an administrator with manage_settings
+// The terms and policies screen through the whole app (web-client/README.md T4): an administrator with manage_settings
 // writes the terms of service and the privacy policy in Markdown, one text each in any language, saves and removes them,
 // and is asked before leaving with unsaved texts, with MSW playing the admin API.
 import { screen, within } from "@testing-library/react";

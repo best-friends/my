@@ -11,7 +11,7 @@ import { StaffModeEntry } from "./-layout/StaffModeEntry";
  */
 export const Route = createFileRoute("/settings/")({
   staticData: { title: "client:settings.title", hideHeading: true },
-  // Every setting is the user's own, so the page needs a session (web-client.md §10).
+  // Every setting is the user's own, so the page needs a session (web-client/10-api-client-and-auth.md §10).
   beforeLoad: requireSignIn,
   component: SettingsPage,
 });

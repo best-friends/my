@@ -67,7 +67,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
   const card =
     view.card === null ? undefined : (
       // The card is drawn from what another site declared: should it fail to render, only the card is lost
-      // (web-client.md E1).
+      // (web-client/README.md E1).
       <ErrorBoundary fallback={<Hint>{t("client:timeline.card.failed")}</Hint>}>
         <LinkCard
           href={view.card.href}

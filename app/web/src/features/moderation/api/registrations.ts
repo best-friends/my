@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queries and mutations of the review of registrations (FR-721): the sign-ups that await a moderator's
 // decision, longest waiting first, and approving or rejecting one with an optional note for the moderators.
-// The list follows the API's keyset pagination as an infinite query whose key ends with "pages" (web-client.md §10).
+// The list follows the API's keyset pagination as an infinite query whose key ends with "pages" (web-client/10-api-client-and-auth.md §10).
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
@@ -38,7 +38,7 @@ export type DecideRegistration = { userId: string; decision: RegistrationDecisio
 
 /**
  * Approves or rejects a registration (POST /admin/registrations/{user_id}/approve | reject), as the options of
- * TanStack Query's useMutation (web-client.md §10). Returns the registration after it: a registration that was
+ * TanStack Query's useMutation (web-client/10-api-client-and-auth.md §10). Returns the registration after it: a registration that was
  * decided already keeps its decision, so the state may differ from the decision sent.
  */
 export function decideRegistrationMutation(api: Api) {
@@ -63,7 +63,7 @@ function isAdminCountsQuery(queryKey: readonly unknown[]): boolean {
 }
 
 /**
- * Marks stale what a decision on a registration changes beside the list (web-client.md S1, ADR-0045): the audit
+ * Marks stale what a decision on a registration changes beside the list (web-client/README.md S1, ADR-0045): the audit
  * log, which records it, and the account searches and the account's page, which show the account's state.
  * Resolves once those on screen are fetched again.
  */

@@ -14,7 +14,7 @@
 //
 // It also exports what the server administration screens (the admin feature) share with these: the
 // permissions, the paging of the lists, and the parts of the screens.
-// Routes and other features use it through this file only (web-client.md A3).
+// Routes and other features use it through this file only (web-client/README.md A3).
 export { ownActionsQueryOptions } from "./api/actions";
 export { AccountStatus } from "./components/AccountStatus";
 // The menus and the navigation's entry.

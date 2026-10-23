@@ -35,7 +35,7 @@ function StatusHistoryPage() {
   return (
     <>
       <PageHeading>{t("client:status.history.title")}</PageHeading>
-      {/* Another post is another history: nothing of the previous one carries over (web-client.md R10). */}
+      {/* Another post is another history: nothing of the previous one carries over (web-client/README.md R10). */}
       <StatusHistory key={id} id={id} />
     </>
   );

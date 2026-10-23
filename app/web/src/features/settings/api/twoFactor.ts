@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queries and mutations of the user's two-factor authentication with an authenticator app (FR-005): where it
 // stands, a new secret to enroll (nothing is stored until a code confirms it), turning it on, replacing the
-// recovery codes, and turning it off. Signing in with the code is the server's own sign-in page (web-client.md §8).
+// recovery codes, and turning it off. Signing in with the code is the server's own sign-in page (web-client/08-server-rendered-pages.md §8).
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
@@ -71,7 +71,7 @@ export function disableTotpMutation(api: Api) {
 }
 
 /**
- * What turning two-factor authentication on or off, or replacing the recovery codes, changes (web-client.md S1,
+ * What turning two-factor authentication on or off, or replacing the recovery codes, changes (web-client/README.md S1,
  * ADR-0045): where it stands (on since when, how many codes are left). Turning it off answers the new state, which
  * goes into the cache; the others mark it stale, and this resolves once it is fetched again.
  */
@@ -93,7 +93,7 @@ const notEnabledType = "/api/v1/problems/two-factor-not-enabled";
 /** Why a code was refused, by what the user can do about it. */
 export type TwoFactorFailure = "invalid-code" | "setup-expired" | "state-changed" | "rate-limited" | "other";
 
-/** Classifies an error of a two-factor operation (web-client.md E2). */
+/** Classifies an error of a two-factor operation (web-client/README.md E2). */
 export function twoFactorFailure(error: unknown): TwoFactorFailure {
   if (!(error instanceof ApiError)) return "other";
   if (error.status === 429) return "rate-limited";

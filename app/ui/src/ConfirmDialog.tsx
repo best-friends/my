@@ -2,7 +2,7 @@
 // The confirmation that stands before an action that cannot be undone (a ban, suspending a domain, deleting
 // a post): the WAI-ARIA APG alert dialog pattern on the kit's Dialog. The title asks the question, the
 // description says what happens (role="alertdialog" names it with aria-labelledby and describes it with
-// aria-describedby), and the buttons are verbs (web-client.md G22).
+// aria-describedby), and the buttons are verbs (web-client/16-look-states-and-wording.md G22).
 //
 // Focus follows the APG dialog pattern: on open it moves to the first safe control, which is the first field
 // of `children` (a reason, a duration) or else the cancel button, never the destructive one; Esc closes the

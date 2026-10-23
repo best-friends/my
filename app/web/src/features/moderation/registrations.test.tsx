@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The registrations screen through the whole app (web-client.md T4): a moderator with manage_accounts reviews
+// The registrations screen through the whole app (web-client/README.md T4): a moderator with manage_accounts reviews
 // the sign-ups awaiting approval and approves or rejects them through their confirmation, with a note, with
 // MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";

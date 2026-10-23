@@ -8670,7 +8670,7 @@ export interface components {
             votes_count?: number;
         };
         /**
-         * @description What the account's current moderation restrictions let it post (data-model.md §5.4). The
+         * @description What the account's current moderation restrictions let it post (data-model/05-states-and-policies.md §5.4). The
          *     server applies the same policy when it posts: a status asked for with a visibility that is
          *     not in `visibilities` gets `visibility_ceiling` instead.
          */

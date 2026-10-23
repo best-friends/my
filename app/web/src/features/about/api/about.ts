@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server data of the instance's information page (web-client.md S1): the instance (its description and rules)
+// The server data of the instance's information page (web-client/README.md S1): the instance (its description and rules)
 // and the remote domains it moderates, as it lists them publicly (FR-718). The list follows the API's keyset
-// pagination as an infinite query whose key ends with "pages" (web-client.md §10).
+// pagination as an infinite query whose key ends with "pages" (web-client/10-api-client-and-auth.md §10).
 import { infiniteQueryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";

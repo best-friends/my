@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the user's custom emoji feature (web-client.md §7): no emoji and no requests, without a
+// The default MSW handlers of the user's custom emoji feature (web-client/README.md §7): no emoji and no requests, without a
 // limit; a new request is answered pending, a withdrawn one withdrawn, and a changed emoji as sent. The default
 // viewer has no permissions, so the page's tests start with `server.use(operatorHandler(["create_custom_emojis"]))`.
 import { http, HttpResponse } from "msw";

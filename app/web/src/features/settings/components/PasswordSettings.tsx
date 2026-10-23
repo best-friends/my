@@ -5,7 +5,7 @@
 // which a user without a passkey is told to add first. A user who removed the password gets the form that sets one
 // after a passkey confirms it. What a change, a setting or a removal did stays on the page in one StatusMessage
 // (role="status") at its top, which stays in place when the page turns from one kind into the other. A wrong current password is that field's error and any other failure an alert next to the form or
-// in the dialog (web-client.md E2, G16).
+// in the dialog (web-client/README.md E2, web-client/16-look-states-and-wording.md G16).
 import { Box, Button, ConfirmDialog, Heading, InlineError, Stack, StatusMessage, TextField } from "@my/ui";
 import { type ReactNode, useId, useState } from "react";
 import { useT } from "../../../lib/i18n";

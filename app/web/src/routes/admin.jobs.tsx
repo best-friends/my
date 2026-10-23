@@ -7,7 +7,7 @@ import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `state`: the state filter of the job list; omitted, or anything unknown, shows the pending jobs (web-client.md S3). */
+/** `state`: the state filter of the job list; omitted, or anything unknown, shows the pending jobs (web-client/README.md S3). */
 const searchSchema = z.object({
   state: z.enum(jobFilters).exclude(["pending"]).optional().catch(undefined),
 });

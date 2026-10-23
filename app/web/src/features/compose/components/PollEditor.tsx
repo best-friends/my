@@ -15,7 +15,7 @@ const durationLabels = {
 } as const satisfies Record<ReturnType<typeof durationParts>["unit"], ClientMessageKey>;
 
 /**
- * The poll of a new post (FR-112, web-client.md §12): a group of its options, each a text field with a button that
+ * The poll of a new post (FR-112, web-client/12-compose.md §12): a group of its options, each a text field with a button that
  * removes it while there are more than the fewest, a button that adds one up to the most, how long it takes votes,
  * and whether a vote may choose several options and whether its counts stay hidden until it ends.
  */

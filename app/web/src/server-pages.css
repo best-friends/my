@@ -6,7 +6,7 @@
  * It is a separate entry of the Vite build, so the pages load no SPA CSS, and `my serve` links it
  * from the build manifest (web.Handler.Stylesheet). The templates use only the classes below,
  * so Tailwind scans no source files (source(none)); the rules are built with @apply from the
- * same @my/ui tokens as the client (web-client.md D8).
+ * same @my/ui tokens as the client (web-client/README.md D8).
  */
 @import "tailwindcss" source(none);
 @import "@my/ui/theme.css";
@@ -147,12 +147,12 @@
     @apply flex flex-col gap-2 text-sm;
   }
 
-  /* Text that only assistive technology reads, such as "(opens in a new tab)" after a link (web-client.md Y12). */
+  /* Text that only assistive technology reads, such as "(opens in a new tab)" after a link (web-client/README.md Y12). */
   .visually-hidden {
     @apply sr-only;
   }
 
-  /* Links that stand alone get the larger target on touch screens (web-client.md D4). */
+  /* Links that stand alone get the larger target on touch screens (web-client/README.md D4). */
   .links a {
     @apply inline-flex items-center pointer-coarse:min-h-11;
   }

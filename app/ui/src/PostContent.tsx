@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The one audited component that renders HTML (web-client.md A8), and the one function that parses it
+// The one audited component that renders HTML (web-client/README.md A8), and the one function that parses it
 // (`sanitizedHtmlText`). Lint allows dangerouslySetInnerHTML and the other HTML sinks in this file only
 // (app/.oxlintrc.json). The server sanitizes every post body to its allowlist
 // before it reaches the client; this component trusts that and adds nothing of its own. The app's
@@ -80,7 +80,7 @@ export function sanitizedHtmlText(html: SanitizedHtml): string {
 }
 
 const postContent = tv({
-  // Long URLs and words wrap anywhere, so no post scrolls sideways at 320 px (web-client.md D3).
+  // Long URLs and words wrap anywhere, so no post scrolls sideways at 320 px (web-client/README.md D3).
   base: [
     "text-base leading-[1.85] wrap-anywhere text-fg",
     "[&_a]:text-accent [&_a]:underline [&_a]:underline-offset-[3px] [&_a:hover]:text-accent-hover",
@@ -154,7 +154,7 @@ function linkClickListener(onLinkClick: PostContentProps["onLinkClick"]): RefCal
 const newTabMark = "data-new-tab";
 
 /**
- * Sets how each link of the body opens (web-client.md Y12). The server writes `target="_blank"` on every link of
+ * Sets how each link of the body opens (web-client/README.md Y12). The server writes `target="_blank"` on every link of
  * the HTML it renders; a link to one of the app's own pages (`isAppLink`) loses it, so that it opens in the same
  * tab and `onLinkClick` can take it, and every other link keeps it, with `noopener noreferrer` added to the
  * server's `rel` and the "opens in a new tab" text after its content. The links are in HTML that React does not
@@ -216,7 +216,7 @@ function emojiDrawer(html: SanitizedHtml, emojis: readonly CustomEmojiImage[], a
 
 /**
  * The body of a post: server-sanitized HTML in a block whose direction follows its own text (`dir="auto"`)
- * and whose `lang` is the post's language when known (web-client.md Y10). Give it an `id` to describe a
+ * and whose `lang` is the post's language when known (web-client/README.md Y10). Give it an `id` to describe a
  * PostCard by it, `onLinkClick` to open the links of the body itself (the app opens the links to its
  * own pages through its router), and `emojis` to draw its custom emoji. The links to any other page open in a
  * new tab (`ExternalLinkContext`).

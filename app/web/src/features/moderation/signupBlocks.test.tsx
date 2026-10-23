@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The sign-up blocks screen through the whole app (web-client.md T4): a moderator with manage_accounts lists the
+// The sign-up blocks screen through the whole app (web-client/README.md T4): a moderator with manage_accounts lists the
 // blocks on sign-ups, adds blocks on an email domain, an email address or an IP range, and lifts them, with MSW
 // playing the admin API. The server keeps an email domain in IDNA A-labels; the screen shows it with its U-labels.
 import { screen, waitFor, within } from "@testing-library/react";

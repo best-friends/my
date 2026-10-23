@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The client API client (ADR-0029): openapi-fetch typed by the types that openapi-typescript generates
 // from api/openapi.yaml (schema.gen.ts, `make generate`), and openapi-react-query on top of it for the
-// `queryOptions` of features/<x>/api (web-client.md S1). Its middleware
+// `queryOptions` of features/<x>/api (web-client/README.md S1). Its middleware
 //
 // - sends the access token as a Bearer token, and after a 401 refreshes it once and sends the request again;
 // - turns every response with an error status into an ApiError and every network failure into a
 //   NetworkError, with a localized message (errors.ts);
-// - tells lib/network whether the server answered, which decides whether the app is offline (web-client.md G17).
+// - tells lib/network whether the server answered, which decides whether the app is offline (web-client/16-look-states-and-wording.md G17).
 //
 // The client sends the locale the app is displayed in as Accept-Language, so that the server localizes its
 // problems too; it reads the locale for every request, as the user can change it while the page is open.

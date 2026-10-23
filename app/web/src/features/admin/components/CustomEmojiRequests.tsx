@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The requests tab of the custom emoji screen (ADR-0070 §2, manage_custom_emojis): the requests of the holders of
 // create_custom_emojis in one state (the pending ones by default, the state kept in the URL by the route,
-// web-client.md S3), newest first. Each shows the requested image, its shortcode, what it asks for and who asked; a
+// web-client/README.md S3), newest first. Each shows the requested image, its shortcode, what it asks for and who asked; a
 // pending one is approved at once, or rejected after an alert dialog with an optional reason that the requester
 // sees. What a decision did stays above the list in a StatusMessage, and a failure (a request that cannot be decided
 // says why) stays there too (role="alert").

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A new post is in the lists that no page shows when it is posted (ADR-0045, web-client.md S1, S7): the post
+// A new post is in the lists that no page shows when it is posted (ADR-0045, web-client/README.md S1, S7): the post
 // marks them stale, and their route fetches them again, and waits, when it opens next, so the list never
 // shows what it was before the post. The server answers every list slowly, as over a real network, so that a
 // list shown from a stale cache would be seen.
@@ -61,7 +61,7 @@ describe("a new post", () => {
 
     const staleProfile = watchAppearances(() => screen.queryByText("No posts yet") !== null);
     await user.click(within(navigation()).getByRole("link", { name: "Profile" }));
-    // The home timeline stays on screen while the profile's posts are fetched again (web-client.md E4).
+    // The home timeline stays on screen while the profile's posts are fetched again (web-client/README.md E4).
     expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { level: 1, name: viewerFixture.display_name }, { timeout: latency * 5 })).toBeInTheDocument();
     // The profile shows the new post from its first render, and never the list from before it.

@@ -7,7 +7,7 @@
 // once with a copy button; the moderation actions
 // on it, each in effect with a lift that asks for an optional reason first; its reports; and the form of a new
 // action, which offers a remote account only the kinds a remote account takes. What a change did stays on the
-// page in a StatusMessage (role="status") next to what caused it (web-client.md §14). A viewer with manage_roles
+// page in a StatusMessage (role="status") next to what caused it (web-client/14-admin.md §14). A viewer with manage_roles
 // also has the account's roles, to grant and revoke (AccountRoles); one with manage_domains, the refetch of a
 // remote account's posts from its server (RefetchStatusesSection).
 import { AccountItem, Box, Button, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, DetailSection, EmptyState, Heading, Hint, Link, ReasonField, RegionError, SectionHeader, Spinner, Stack, StatusMessage, Text } from "@my/ui";
@@ -194,7 +194,7 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
       {registration?.reason !== undefined && (
         <DescriptionList>
           <DescriptionItem term={t("client:admin.account.registration.reason")}>
-            {/* Written by the applicant, in any language and direction (web-client.md Y10). */}
+            {/* Written by the applicant, in any language and direction (web-client/README.md Y10). */}
             <Text dir="auto" block align="start" wrap="anywhere" whitespace="preWrap">
               {registration.reason}
             </Text>

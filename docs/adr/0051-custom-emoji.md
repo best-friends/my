@@ -16,7 +16,7 @@ FR-111（カスタム絵文字）は、いまは受信の一部だけが実装�
 - Actor の `tag` の `Emoji`（表示名・自己紹介・補足情報の絵文字）は `Actor.Emojis` に読むが、保存していない。
 - クライアント API の Status / Account に `emojis` がなく、Web は `:shortcode:` を描画しない。サニタイザは `<img>` を落とす（[ADR-0019](0019-security-baseline.md) §2: カスタム絵文字はクライアントが DOM 要素として差し込む）。
 - ローカルの絵文字の登録・管理、送る Note / Actor の `Emoji` タグ、絵文字の一覧の API、絵文字ピッカーがない。
-  [data-model.md](../architecture/data-model.md) は `custom_emoji_settings`【現在値】を挙げているが、スキーマにはまだない。
+  [data-model.md](../architecture/data-model/README.md) は `custom_emoji_settings`【現在値】を挙げているが、スキーマにはまだない。
 
 絵文字リアクションの ADR（ADR-0052、#619）は、この ADR が決める `Emoji` タグと絵文字の参照の形を使う。そのため、形をここで固める。
 

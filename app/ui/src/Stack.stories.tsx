@@ -57,7 +57,7 @@ export const AlignStart: Story = {
   ),
 };
 
-/** A list whose rows are separated by rules and carry no gap (web-client.md G3), as a `ul` in a rounded frame. */
+/** A list whose rows are separated by rules and carry no gap (web-client/16-look-states-and-wording.md G3), as a `ul` in a rounded frame. */
 export const DividedList: Story = {
   render: () => (
     <Stack as="ul" aria-label="Domains" divided border="lg">

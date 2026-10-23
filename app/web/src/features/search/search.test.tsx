@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The account search and the follow of an account on another server through the whole app (web-client.md
+// The account search and the follow of an account on another server through the whole app (web-client/README.md
 // T4): the real router and QueryClient, with MSW as the server (FR-305, FR-301). A signed-in viewer's search
 // asks the server to resolve the account on its own server; the found profile opens, and a follow of a
 // remote account stays requested until that server accepts it.
@@ -60,7 +60,7 @@ describe("the search page", () => {
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Carol" });
     expect(router.state.location.pathname).toBe("/@carol@remote.example");
-    // The layout moves the focus to the new page's heading (web-client.md Y5).
+    // The layout moves the focus to the new page's heading (web-client/README.md Y5).
     await waitFor(() => {
       expect(heading).toHaveFocus();
     });

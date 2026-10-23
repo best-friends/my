@@ -7,7 +7,7 @@ import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";
 import { PageHeading } from "./-layout/PageHeading";
 
-/** `state`: the tab; omitted, or anything unknown, shows the appeals awaiting a decision (web-client.md S3). */
+/** `state`: the tab; omitted, or anything unknown, shows the appeals awaiting a decision (web-client/README.md S3). */
 const searchSchema = z.object({
   state: z.enum(["decided"]).optional().catch(undefined),
 });

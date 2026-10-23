@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Refetching remote posts from their servers through the whole app (web-client.md T4, FR-407): a viewer with
+// Refetching remote posts from their servers through the whole app (web-client/README.md T4, FR-407): a viewer with
 // manage_domains asks for the posts of a remote server, of a remote account, and for one reported remote post;
 // MSW plays the admin API. A viewer without manage_domains is not offered it.
 import { screen, within } from "@testing-library/react";

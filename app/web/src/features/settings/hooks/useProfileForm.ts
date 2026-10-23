@@ -82,7 +82,7 @@ export function useProfileForm() {
     ...updateProfileMutation(api),
     onSuccess: (saved) => {
       // The profile page and the author of every post of the viewer show the new profile from their first
-      // render, even those cached from before the change (web-client.md S1).
+      // render, even those cached from before the change (web-client/README.md S1).
       cacheSavedProfile(api, queryClient, saved);
       // The saved profile has the new images from now on.
       avatar.saved();

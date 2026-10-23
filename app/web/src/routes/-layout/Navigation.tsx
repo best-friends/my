@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The main navigation, one landmark for every width (web-client.md D1, D2, ADR-0039): a tab bar on the bottom
+// The main navigation, one landmark for every width (web-client/README.md D1, D2, ADR-0039): a tab bar on the bottom
 // edge of phones, a side rail of icons with short labels on tablets (md), and a sidebar with full labels on
 // desktops (lg). The link to the current section has aria-current="page".
 //
@@ -35,7 +35,7 @@
 // display name and handle) as a link to its profile. Both are outside the list, so the list's links stay the same
 // and in the same order at every width, and narrower layouts hide both.
 //
-// The items above need a session, so people who are not signed in get other ones (web-client.md §9, "signed-out
+// The items above need a session, so people who are not signed in get other ones (web-client/09-app-shell.md §9, "signed-out
 // navigation"): Local, Federated, Search, About and Sign in, the tab bar's five items, and Sign up, in the rail and
 // in the menu's sheet, while the server takes new accounts. Sign in opens the sign-in page, which comes back to the
 // page it was opened from. While the session resumes, the list has no items yet, so that neither set shows to the
@@ -229,7 +229,7 @@ export function Navigation() {
         shows: index < tabBarLimit ? "always" : "rail",
       }),
     );
-  // Offline, a session that could not be resumed is most likely still there: the user's items stay (web-client.md §11).
+  // Offline, a session that could not be resumed is most likely still there: the user's items stay (web-client/11-pwa.md §11).
   const signedOut = useSignedOut();
   let items: readonly NavigationItem[] = [];
   if (signedOut) items = signedOutItems(signInHref, signUpHref);
@@ -249,7 +249,7 @@ export function Navigation() {
   return (
     <AppNav
       label={t("client:shell.nav.label")}
-      // The wordmark and the server's name, a link to the root address (web-client.md G9).
+      // The wordmark and the server's name, a link to the root address (web-client/16-look-states-and-wording.md G9).
       header={
         <AppNavBrand>
           <ServerNameLink size="lg" />
@@ -282,7 +282,7 @@ export function Navigation() {
 
 /**
  * The sidebar's last item: the signed-in account, a link to its profile named by its display name and handle,
- * each cut to one line (web-client.md G7). The list's Profile item is the place, so this second link to it has
+ * each cut to one line (web-client/16-look-states-and-wording.md G7). The list's Profile item is the place, so this second link to it has
  * no aria-current. It shows nothing until the account has loaded, and while signed out.
  */
 function ViewerLink() {

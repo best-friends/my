@@ -4,7 +4,7 @@
 // shows each as the users see it, with its state in words. A new announcement shows for a chosen time from when it
 // is sent, or until it is withdrawn, and is published at once or kept as a draft. Editing opens a dialog with the
 // text; withdrawing cannot be undone, so it asks first (an alert dialog). What a change did stays on the page in a
-// StatusMessage above the list; a failure stays there too (role="alert", web-client.md E2).
+// StatusMessage above the list; a failure stays there too (role="alert", web-client/README.md E2).
 import { Box, Button, Checkbox, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, DurationSelect, EmptyState, Heading, Hint, InlineError, PostContent, serverSanitizedHtml, Stack, StatusMessage, TextArea } from "@my/ui";
 import { useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";

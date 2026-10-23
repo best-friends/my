@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The links to the server's terms of service and privacy policy. Their pages are routes of the app (information
-// pages, readable without signing in), so a link opens them in the same tab (web-client.md Y12).
+// pages, readable without signing in), so a link opens them in the same tab (web-client/README.md Y12).
 import { Box, Cluster, Heading, Stack } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";

@@ -12,12 +12,12 @@ const paramsSchema = z.object({ tag: z.string().min(1).max(256) });
 
 /** The timeline of one hashtag (FR-203). */
 export const Route = createFileRoute("/tags/$tag")({
-  // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  // A feed to add to: the shell floats the new-post button over this page (web-client/16-look-states-and-wording.md G4).
   staticData: { composeButton: true },
   params: { parse: (params) => paramsSchema.parse(params) },
   loader: async ({ context: { queryClient, api }, params: { tag } }) => {
     // Cached pages that no write has marked stale are shown at once (and refetched in the background once
-    // old); marked or missing ones are fetched and waited for (web-client.md S7).
+    // old); marked or missing ones are fetched and waited for (web-client/README.md S7).
     await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "tag", tag }), staleTime: Infinity });
   },
   component: TagPage,
@@ -29,7 +29,7 @@ function TagHeading({ tag, id }: { tag: string; id?: string }) {
   const t = useT();
   return (
     <PageHeading {...(id !== undefined && { id })}>
-      {/* The hashtag is the user's text, in any script (web-client.md Y10). */}
+      {/* The hashtag is the user's text, in any script (web-client/README.md Y10). */}
       <span dir="auto">{t("client:tag.title", { tag })}</span>
     </PageHeading>
   );
@@ -41,7 +41,7 @@ function TagPage() {
   return (
     <>
       <TagHeading tag={tag} id={headingId} />
-      {/* A new hashtag is a new timeline: nothing of the previous one carries over (web-client.md R10). */}
+      {/* A new hashtag is a new timeline: nothing of the previous one carries over (web-client/README.md R10). */}
       <TimelineFeed key={tag} timeline={{ kind: "tag", tag }} aria-labelledby={headingId} />
     </>
   );
@@ -57,7 +57,7 @@ function TagPending() {
   );
 }
 
-/** The page keeps its name, the hashtag, when it fails (web-client.md G16). */
+/** The page keeps its name, the hashtag, when it fails (web-client/16-look-states-and-wording.md G16). */
 function TagError(props: ErrorComponentProps) {
   const t = useT();
   const { tag } = Route.useParams();

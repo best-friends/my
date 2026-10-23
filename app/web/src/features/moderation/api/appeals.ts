@@ -2,7 +2,7 @@
 // The queries and mutations of the review of appeals (FR-707): the appeals that local users made of the
 // moderation actions on their accounts, awaiting a decision or decided, newest first; one appeal with its action;
 // and upholding or overturning it with an explanation shown to the user. The lists follow the API's keyset
-// pagination as infinite queries whose keys end with "pages" (web-client.md §10). A decision answers the appeal
+// pagination as infinite queries whose keys end with "pages" (web-client/10-api-client-and-auth.md §10). A decision answers the appeal
 // after it, with its action (lifted by an overturn), which replaces the cached appeal once the lists of appeals
 // it changes are fetched again.
 import { infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
@@ -73,7 +73,7 @@ export type DecideAppeal = { id: string; decision: AppealDecision; reason: strin
 
 /**
  * Upholds or overturns an appeal (POST /admin/appeals/{id}/uphold | overturn), as the options of TanStack
- * Query's useMutation (web-client.md §10). Returns the appeal after it, with its action.
+ * Query's useMutation (web-client/10-api-client-and-auth.md §10). Returns the appeal after it, with its action.
  */
 export function decideAppealMutation(api: Api) {
   return {
@@ -90,7 +90,7 @@ export function decideAppealMutation(api: Api) {
 }
 
 /**
- * Marks stale what a decision on an appeal of `accountId` changes (web-client.md S1): the lists of appeals (it
+ * Marks stale what a decision on an appeal of `accountId` changes (web-client/README.md S1): the lists of appeals (it
  * moves between the tabs), the moderators' counts, that account with its actions and in the searches (an
  * overturn lifts an action), and the audit log, which records the decision. Those on screen are fetched again at
  * once; a list opened later is fetched again before it shows (S7), so it never shows a decided appeal among those

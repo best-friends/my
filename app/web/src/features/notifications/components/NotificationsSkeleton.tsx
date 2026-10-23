@@ -8,7 +8,7 @@ const placeholders = ["first", "second", "third"] as const;
 /**
  * What the notifications show while their first page loads: a busy region with the shape of a few
  * notifications (hidden from assistive technology) and one visually hidden text that names what is
- * loading (web-client.md G15).
+ * loading (web-client/16-look-states-and-wording.md G15).
  */
 export function NotificationsSkeleton() {
   const t = useT();

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the supporter plans as users see them (web-client.md S1, ADR-0072 §6, §8, §18,
+// The queries and mutations of the supporter plans as users see them (web-client/README.md S1, ADR-0072 §6, §8, §18,
 // ADR-0071 §4): the plans that take subscriptions (GET /instance/supporter_plans, a 404 while the program is
 // disabled), the user's own subscription and whether they may subscribe (GET /supporter/subscription), starting a
 // subscription at the payment provider's hosted checkout (POST /supporter/checkout), the re-read when the checkout

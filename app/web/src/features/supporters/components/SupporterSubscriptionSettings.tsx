@@ -179,7 +179,7 @@ function PlanChooser({
                   })}
                 </span>
                 {p.description !== "" && (
-                  // The administrators' text, in a language the app does not know (web-client.md Y10).
+                  // The administrators' text, in a language the app does not know (web-client/README.md Y10).
                   <Text whitespace="preLine" dir="auto" lang="">
                     {p.description}
                   </Text>

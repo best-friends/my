@@ -13,7 +13,7 @@ export type OutboxProps = {
 
 /**
  * The posts on their way to the server, shown from what was sent until the server confirms them
- * (web-client.md S8), and the ones that could not be sent, with what to do about them.
+ * (web-client/README.md S8), and the ones that could not be sent, with what to do about them.
  */
 export function Outbox({ items, onRetry, onEdit, canEdit, onDiscard }: OutboxProps) {
   const t = useT();

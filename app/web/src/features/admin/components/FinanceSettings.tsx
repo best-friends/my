@@ -7,9 +7,9 @@
 // provider records (ADR-0073 §6): its totals under the same tabs, with the gross, the fees, the net, the balance and
 // the members of each plan, and its money movements, newest first, with their subscribers by username, narrowed to a
 // kind and a range of dates, which only this screen shows. The granularity, the basis and the movements' filter are
-// in the URL (web-client.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
+// in the URL (web-client/README.md S3). Amounts and dates are formatted with Intl (ADR-0067 §10); names, providers and
 // memos are the operator's words, shown with dir="auto". What a change did stays in a StatusMessage above the list;
-// a failure stays there too (role="alert", web-client.md E2).
+// a failure stays there too (role="alert", web-client/README.md E2).
 import { Box, Button, Card, Cluster, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Link, Radio, RadioGroup, Select, SelectItem, Stack, StatusMessage, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, TextArea, TextField } from "@my/ui";
 import { type ReactNode, useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";

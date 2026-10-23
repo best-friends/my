@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The report queue below its heading (FR-701, FR-710): the reports that await the moderators and those handled,
 // newest first, in the admin mode's list form: a toolbar with the state filter (kept in the URL by the route,
-// web-client.md S3), a table of one page, and previous / next. Each row's first cell links to the report's page,
+// web-client/README.md S3), a table of one page, and previous / next. Each row's first cell links to the report's page,
 // where it is handled.
 import { EmptyState, Link, ListToolbar, Select, SelectItem, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";

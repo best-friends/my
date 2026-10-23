@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The viewer's relationship with the account of a profile, and the changes to it (FR-301 to FR-303).
-// The relationship is server data read from the query cache (web-client.md S2); a change shows the
+// The relationship is server data read from the query cache (web-client/README.md S2); a change shows the
 // pending action until the server answers (S8) and then stores the relationship the server returns.
 import { useAnnouncer, useToast } from "@my/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -84,7 +84,7 @@ export function useRelationship(account: Account): RelationshipState {
     mutationFn: (action: RelationshipAction) => changeRelationship(api, account.id, action),
     onSuccess: async (relationship, action) => {
       // The change is done once what it changes is fetched again (the action stays pending until then), so that
-      // a page opened next shows it at once (web-client.md S1).
+      // a page opened next shows it at once (web-client/README.md S1).
       if (viewer.status === "signed-in") await storeRelationship(queryClient, api, relationship, action, viewer.account.id);
       announce(doneMessage(t, action, relationship, nameOf(account)));
     },

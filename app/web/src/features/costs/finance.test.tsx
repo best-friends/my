@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The finances page through the whole app (web-client.md T4, ADR-0070 §5): a user whose roles have view_finance, and
+// The finances page through the whole app (web-client/README.md T4, ADR-0070 §5): a user whose roles have view_finance, and
 // no staff permission, has Finances in the navigation and neither Moderation nor Administration, and reads the
 // totals of the costs with their breakdown always and the lines of the items as far as the server settings show them;
 // a holder of manage_finance reads every line. The income comes with the balance always, and with the members of each

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The pieces every MSW handler shares: the API base path, problem responses, the access token the default
-// handlers accept, and the OAuth responses (web-client.md §10).
+// handlers accept, and the OAuth responses (web-client/10-api-client-and-auth.md §10).
 import { http, HttpResponse } from "msw";
 import { instanceFixture, type Schemas, viewerFixture } from "../fixtures";
 

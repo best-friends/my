@@ -67,7 +67,7 @@ function ThreadReplies({ thread }: { thread: ThreadState }) {
   const t = useT();
   switch (thread.status) {
     case "loading":
-      // The section is busy meanwhile; the hidden text names what it waits for, once (web-client.md G15).
+      // The section is busy meanwhile; the hidden text names what it waits for, once (web-client/16-look-states-and-wording.md G15).
       return (
         <>
           <VisuallyHidden>{t("client:status.thread.loading")}</VisuallyHidden>

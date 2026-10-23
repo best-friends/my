@@ -51,7 +51,7 @@ export function useInstance(domain: string): InstanceView {
       await cacheMarkedAvailable(api, queryClient, domain, next);
       announce(t("client:admin.instance.marked_available", { domain }));
     },
-    // The server keeps its state; the failure is shown and the button stays (web-client.md E2).
+    // The server keeps its state; the failure is shown and the button stays (web-client/README.md E2).
     onError: (error) => {
       toast.show({ message: t("client:admin.instance.mark_failed", { reason: errorMessage(error) }), tone: "danger" });
     },

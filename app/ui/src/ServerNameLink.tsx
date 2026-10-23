@@ -19,7 +19,7 @@ const serverNameLink = tv({
 });
 
 export type ServerNameLinkProps = {
-  /** The server's name: the administrator's text, in any language (web-client.md Y10). */
+  /** The server's name: the administrator's text, in any language (web-client/README.md Y10). */
   name: string;
   /** Describes the link ("The server's top page"). */
   description: string;

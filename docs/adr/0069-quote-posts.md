@@ -82,7 +82,7 @@ FEP-e232 は Final ですが、リンク一般の仕組みです。Mastodon・Mi
 
 ### 1. 資源と状態
 
-すべて `content` モジュールが持ちます。表と列の名前は、実装の issue で [data-model.md](../architecture/data-model.md) に書きます。
+すべて `content` モジュールが持ちます。表と列の名前は、実装の issue で [data-model.md](../architecture/data-model/README.md) に書きます。
 
 - **引用**（resource）: 1 つの投稿は、引用先を 1 つだけ持ちます。
   - 持つもの: 引用元の投稿、引用先の IRI、解決できた引用先の投稿（取得前は空）、形式（`fep-044f` / `legacy`）
@@ -166,7 +166,7 @@ FEP-e232 は Final ですが、リンク一般の仕組みです。Mastodon・Mi
     - 承認の取り消し
     - 編集での引用の取り外し
   - 利用者の設定に、引用の許可の既定値を足します。
-- Web: 設計は [web-client.md](../architecture/web-client.md) に従います。
+- Web: 設計は [web-client.md](../architecture/web-client/README.md) に従います。
   - ブーストの操作の近くに「引用」を置き、投稿フォームに引用先と引用の許可を出します。
   - 投稿の中に引用先をカードとして埋め込みます。
   - 自分の投稿の引用の一覧から、承認を取り消せるようにします。

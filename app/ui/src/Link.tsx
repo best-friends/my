@@ -8,7 +8,7 @@ const link = tv({
     "data-disabled:cursor-not-allowed data-disabled:opacity-50 motion-safe:transition-colors",
   ],
   variants: {
-    // Each variant sizes the link's icon, which sets no size of its own (web-client.md G11).
+    // Each variant sizes the link's icon, which sets no size of its own (web-client/16-look-states-and-wording.md G11).
     variant: {
       /** A link inside running text: always underlined, so color is not the only cue (WCAG 1.4.1). */
       inline: "underline data-hovered:decoration-2 [&>svg]:size-4 [&>svg]:shrink-0",

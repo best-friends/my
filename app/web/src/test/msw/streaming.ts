@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // GET /streaming (operationId streamEvents, lib/sse): the default handler and the event streams of the tests
-// that send events (web-client.md §10).
+// that send events (web-client/10-api-client-and-auth.md §10).
 import { http, HttpResponse } from "msw";
 import { apiBase, authorized, unauthenticated } from "./http";
 

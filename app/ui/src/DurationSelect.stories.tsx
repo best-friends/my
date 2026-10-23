@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, waitFor } from "storybook/test";
 import { DurationSelect } from "./DurationSelect";
 
-// Stories may spell out English; apps pass react-intl messages instead (web-client.md A9).
+// Stories may spell out English; apps pass react-intl messages instead (web-client/README.md A9).
 const day = 86_400;
 const formatDuration = (seconds: number) => (seconds === day ? "1 day" : `${String(seconds / day)} days`);
 

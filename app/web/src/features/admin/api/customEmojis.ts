@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the custom emoji screen (web-client.md S1, ADR-0051 §4, manage_custom_emojis): the
+// The queries and mutations of the custom emoji screen (web-client/README.md S1, ADR-0051 §4, manage_custom_emojis): the
 // emoji, local or remote, newest first (GET /admin/custom_emojis), registering a local one with an uploaded image
 // (POST), changing its settings or enabling a remote one (PATCH), replacing its image (PUT .../image), deleting
 // it (DELETE) and copying a remote one into a local one (POST .../copy). An emoji that breaks a rule is a 422 `invalid-custom-emoji` problem whose detail says why. Every
@@ -28,7 +28,7 @@ export const shortcodePattern = "[A-Za-z0-9_]{2,30}";
 export const maxAliases = 10;
 export const categoryLimit = 64;
 
-/** Which emoji the list shows: those of this server or of others, and a search (web-client.md S3). */
+/** Which emoji the list shows: those of this server or of others, and a search (web-client/README.md S3). */
 export type CustomEmojiOrigin = "local" | "remote";
 export const customEmojiOrigins = ["local", "remote"] as const satisfies readonly CustomEmojiOrigin[];
 export type CustomEmojiFilter = { origin: CustomEmojiOrigin; shortcode?: string | undefined; domain?: string | undefined };

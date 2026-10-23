@@ -19,7 +19,7 @@ import { PageHeading } from "./-layout/PageHeading";
 const text = z.string().trim().min(1).max(adminAccountSearchLimit).optional().catch(undefined);
 
 /**
- * The search of the accounts, with the API's names (web-client.md S3); omitted, or anything unknown, keeps every
+ * The search of the accounts, with the API's names (web-client/README.md S3); omitted, or anything unknown, keeps every
  * account. Of `email`, `email_domain` and `ip`, the first given is kept: the API takes one at a time.
  */
 const searchSchema = z.object({

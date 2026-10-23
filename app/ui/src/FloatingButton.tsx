@@ -11,7 +11,7 @@ const floatingButton = tv({
 });
 
 export type FloatingButtonProps = {
-  /** The action's words: the button's text, or with `iconOnly` its accessible name and its tooltip (web-client.md G12). */
+  /** The action's words: the button's text, or with `iconOnly` its accessible name and its tooltip (web-client/16-look-states-and-wording.md G12). */
   label: string;
   /** The icon before the text, or alone with `iconOnly`. */
   icon: ReactNode;

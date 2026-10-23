@@ -2,7 +2,7 @@
 // The queries and mutations of the user's passkeys (FR-004): the list, registering one (the server checks the password
 // or another passkey and answers the options, the browser creates the passkey, and the server verifies and stores it),
 // removing one, and confirming an operation with a passkey in place of the password. Signing in with a passkey is the
-// server's own sign-in page (web-client.md §8).
+// server's own sign-in page (web-client/08-server-rendered-pages.md §8).
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -71,7 +71,7 @@ export function removePasskeyMutation(api: Api) {
 }
 
 /**
- * What registering or removing a passkey changes (web-client.md S1, ADR-0045): the list. Resolves once it is fetched
+ * What registering or removing a passkey changes (web-client/README.md S1, ADR-0045): the list. Resolves once it is fetched
  * again.
  */
 export async function refreshPasskeys(api: Api, queryClient: QueryClient): Promise<void> {
@@ -97,7 +97,7 @@ export type PasskeyFailure =
   | "rate-limited"
   | "other";
 
-/** Classifies an error of a registration (web-client.md E2). */
+/** Classifies an error of a registration (web-client/README.md E2). */
 export function passkeyFailure(error: unknown): PasskeyFailure {
   if (error instanceof DOMException) return passkeyPromptFailure(error);
   if (!(error instanceof ApiError)) return "other";

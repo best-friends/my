@@ -22,7 +22,7 @@ export function AccountLabel({ account }: { account: Account | undefined }) {
   }
   return (
     <Stack as="span" shrink>
-      {/* A name the user chose, in any language (web-client.md G9). */}
+      {/* A name the user chose, in any language (web-client/16-look-states-and-wording.md G9). */}
       <Text dir="auto" align="start" wrap="anywhere">
         {accountName(account)}
       </Text>

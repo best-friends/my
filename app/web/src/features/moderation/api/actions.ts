@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queries and the mutation of the user's own account status (FR-715, FR-707): the moderation actions on
 // the user's account, newest first, and appealing one. The lists follow the API's keyset pagination as
-// infinite queries whose keys end with "pages" (web-client.md §10).
+// infinite queries whose keys end with "pages" (web-client/10-api-client-and-auth.md §10).
 import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -50,7 +50,7 @@ export type AppealAction = { actionId: string; text: string };
 
 /**
  * Appeals an action on the user's own account (POST /moderation/actions/{id}/appeal), as the options of
- * TanStack Query's useMutation (web-client.md §10). Returns the action with the appeal.
+ * TanStack Query's useMutation (web-client/10-api-client-and-auth.md §10). Returns the action with the appeal.
  */
 export function appealActionMutation(api: Api) {
   return {
@@ -83,7 +83,7 @@ export function cacheAppealedAction(api: Api, queryClient: QueryClient, action: 
 /**
  * Marks stale both lists of the user's own actions (active and all) after an appeal that the action's state
  * refused (isStaleAppealError): the one on screen is fetched again at once, the other when the page shows it
- * (web-client.md S1, S7).
+ * (web-client/README.md S1, S7).
  */
 export function refreshOwnActions(queryClient: QueryClient): Promise<void> {
   return queryClient.invalidateQueries({ predicate: (query) => isOwnActionsQuery(query.queryKey) });

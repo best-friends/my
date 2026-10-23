@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Real-time updates in every width × locale project (FR-207, ADR-0027, web-client.md Y7): a new post from
+// Real-time updates in every width × locale project (FR-207, ADR-0027, web-client/README.md Y7): a new post from
 // GET /api/v1/streaming waits behind the "N new posts" button and is not inserted until the button is
 // pressed (or is inserted at once when the reader chose it), and a notification raises the unread badge. `vite preview` has no API, so the spec answers the
 // OAuth refresh and the client API with `page.route`; each answer to the stream is one response body

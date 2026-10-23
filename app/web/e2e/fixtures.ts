@@ -5,7 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { test as base, expect, type Locator, type Page } from "@playwright/test";
 import { previewOrigin, serverURL } from "./server-origin.ts";
 
-/** The axe rule tags for WCAG 2.2 AA (ADR-0027, web-client.md Y1). */
+/** The axe rule tags for WCAG 2.2 AA (ADR-0027, web-client/README.md Y1). */
 const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] as const;
 
 type Fixtures = {
@@ -179,7 +179,7 @@ export async function expectNoAxeViolations(makeAxeBuilder: () => AxeBuilder): P
   expect(fingerprints, "axe violations (rule and target selectors)").toEqual([]);
 }
 
-/** Asserts that the page does not scroll horizontally at the current viewport width (web-client.md D3). */
+/** Asserts that the page does not scroll horizontally at the current viewport width (web-client/README.md D3). */
 export async function expectNoHorizontalScroll(page: Page): Promise<void> {
   const { scrollWidth, clientWidth, wide } = await page.evaluate(() => {
     const clientWidth = document.documentElement.clientWidth;
@@ -242,7 +242,7 @@ export async function openFromNavigation(page: Page, path: string, hasTouch: boo
 
 /**
  * Asserts that the header of every post card in `feed` (its author and time) takes at most two lines: the
- * display name and the time, and the handle under them on a narrow card (web-client.md G7). A line is the
+ * display name and the time, and the handle under them on a narrow card (web-client/16-look-states-and-wording.md G7). A line is the
  * line height of the display name, the header's largest text; a pixel of slack covers fractional layout.
  */
 export async function expectPostHeadersInTwoLines(feed: Locator): Promise<void> {

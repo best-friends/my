@@ -109,7 +109,7 @@ M4 で投稿の詳細（FR-106 スレッド表示）とプロフィールの下�
   | `featured` | ピン留めした投稿 | 予約 |
 
 - 一覧の置き場所: Web クライアントの経路のファイル（`app/web/src/routes/@{$acct}_.*.tsx`）が実体で、
-  語を足すときは [docs/architecture/web-client.md](../architecture/web-client.md) の経路の説明に一覧を書く（#653 で節を足す）。
+  語を足すときは [docs/architecture/web-client.md](../architecture/web-client/README.md) の経路の説明に一覧を書く（#653 で節を足す）。
   Go が知るのは、サーバーが役割を持つ語（外枠の meta タグと AP のリダイレクトを返す `status`）だけで、それ以外の語は汎用の外枠を返す。
   語を足すのに ADR は要らないが、第 1 区間に可変の値を置く変更はこの ADR を置き換える ADR を要する。
 
@@ -148,7 +148,7 @@ ADR-0018 の `id` の形式、`/ap/` 名前空間、プロフィールの URL（
   - Mastodon とは URL の形が違う。Mastodon の `ResolveURLService` は取得が 404 のときだけ URL の形から `uri` を推測するので、取得が成功する新しい URL ではこの推測に頼らない。
 - 後続の作業（Issue 化する）
   - #653: `StatusURL`・外枠の経路と 301・AP の `Accept` での 302・Web クライアントの経路とリンクの生成・`statuses.url` をリモートだけにする変更、
-    docs（[docs/architecture/web-client.md](../architecture/web-client.md)、[docs/operations/link-previews.md](../operations/link-previews.md)、[docs/operations/running.md](../operations/running.md)）の更新
+    docs（[docs/architecture/web-client.md](../architecture/web-client/README.md)、[docs/operations/link-previews.md](../operations/link-previews.md)、[docs/operations/running.md](../operations/running.md)）の更新
   - 予約した語のページ（FR-204 の派生）を足すときに、web-client.md の一覧の状態を更新する
 
 ## Pros and Cons of the Options（詳細比較）

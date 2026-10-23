@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the quote of a post shows (FR-114, ADR-0069 §5): the quoted post, the post behind the notice of the
-// reader's mute, or only the notice of why it is not shown. It returns no JSX (web-client.md A4).
+// reader's mute, or only the notice of why it is not shown. It returns no JSX (web-client/README.md A4).
 import { useT } from "../../../lib/i18n";
 import type { Status, StatusQuote } from "../api/status";
 

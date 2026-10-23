@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the server administration feature (web-client.md §7): the job queue, the settings, the rules, the
+// The default MSW handlers of the server administration feature (web-client/README.md §7): the job queue, the settings, the rules, the
 // server's texts, the custom emoji, the webhooks, the announcements, the relays, the cost items and their totals, the billing imports, and the supporter program with its plans, subscriptions and payment provider, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";

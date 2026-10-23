@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The poll of a post (FR-112), as plain values for the component (web-client.md A4): the options to choose from
+// The poll of a post (FR-112), as plain values for the component (web-client/README.md A4): the options to choose from
 // while the viewer may vote, and the results once they voted, the poll has ended, or nobody is signed in. A vote
-// waits for the server, then puts its answer into every copy of the post (web-client.md S1); a refused vote is
+// waits for the server, then puts its answer into every copy of the post (web-client/README.md S1); a refused vote is
 // shown as a toast and the post is read again, since its poll may have ended or changed (E2).
 import { type CustomEmojiImage, useToast } from "@my/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

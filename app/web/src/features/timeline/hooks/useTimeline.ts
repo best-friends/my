@@ -23,7 +23,7 @@ export type TimelineState = {
 /**
  * Reads a timeline whose first page the route loader has fetched, and loads the older pages on demand.
  * The first page's failure goes to the route's error boundary; a later page's failure stays here, so the
- * statuses already shown stay on screen (web-client.md E1, E2).
+ * statuses already shown stay on screen (web-client/README.md E1, E2).
  */
 export function useTimeline(timeline: Timeline): TimelineState {
   const api = useApi();

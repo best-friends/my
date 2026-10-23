@@ -109,8 +109,9 @@ var (
 
 // Resolve turns a reference into nodes. It accepts node ids (ADR-0070, FR-915, op:x, table:x, sym:..., doc:...),
 // ADR-0070#decision (the first section of the ADR whose anchor starts with "decision"),
-// <file>§4.4 or <file>#<anchor> with any unique suffix of a Markdown path (data-model§4.4),
-// and short names (DeleteOwnAccount, custom_emojis).
+// <file>§4.4 or <file>#<anchor> with any unique suffix of a Markdown path or of a directory of section files
+// (data-model§4.4), short names (DeleteOwnAccount, custom_emojis), and the name of a directory of section files
+// (web-client), which resolves to its README.md.
 func (k *KB) Resolve(ref string) ([]store.Node, error) {
 	ref = strings.TrimSpace(ref)
 	if ns, err := k.S.Get(ref); err != nil || len(ns) > 0 {
@@ -130,10 +131,11 @@ func (k *KB) Resolve(ref string) ([]store.Node, error) {
 	if strings.HasPrefix(ref, "sym:") || strings.HasPrefix(ref, "doc:") || strings.HasPrefix(ref, "ts:") {
 		return k.S.ByIDPrefix(ref, 20)
 	}
-	return nil, nil
+	return k.splitDoc(ref)
 }
 
-// section resolves file§num or file#anchor; file may be an ADR id or a path suffix.
+// section resolves file§num or file#anchor; file may be an ADR id, a path suffix, or a directory holding a
+// document split into one file per section (web-client§14.2 looks through docs/architecture/web-client/).
 func (k *KB) section(file, sec string) ([]store.Node, error) {
 	var paths []string
 	if strings.HasPrefix(file, "ADR-") {
@@ -153,32 +155,55 @@ func (k *KB) section(file, sec string) ([]store.Node, error) {
 				return nil, err
 			}
 		}
-		paths = ps
-	}
-	if len(paths) == 0 {
-		return nil, nil
-	}
-	ns, err := k.S.FileNodes(paths[0])
-	if err != nil {
-		return nil, err
+		if len(ps) > 0 {
+			paths = ps[:1]
+		} else if paths, err = k.S.DocDir(file); err != nil {
+			return nil, err
+		}
 	}
 	sec = strings.TrimPrefix(sec, "§")
 	var prefix []store.Node
-	for _, n := range ns {
-		if !strings.HasPrefix(n.ID, "doc:") {
-			continue
+	for _, p := range paths {
+		ns, err := k.S.FileNodes(p)
+		if err != nil {
+			return nil, err
 		}
-		if n.Meta == "§"+sec || n.Name == sec {
-			return []store.Node{n}, nil
-		}
-		if strings.HasPrefix(n.Name, strings.ToLower(sec)) {
-			prefix = append(prefix, n)
+		for _, n := range ns {
+			if !strings.HasPrefix(n.ID, "doc:") {
+				continue
+			}
+			if n.Meta == "§"+sec || n.Name == sec {
+				return []store.Node{n}, nil
+			}
+			if strings.HasPrefix(n.Name, strings.ToLower(sec)) {
+				prefix = append(prefix, n)
+			}
 		}
 	}
 	if len(prefix) > 0 {
 		// The shortest anchor is the closest: decision決定 before decision-drivers判断基準.
 		sort.SliceStable(prefix, func(i, j int) bool { return len(prefix[i].Name) < len(prefix[j].Name) })
 		return prefix[:1], nil
+	}
+	return nil, nil
+}
+
+// splitDoc resolves the name of a document split into one file per section (web-client, data-model/README.md,
+// docs/architecture/web-client/) to its README.md.
+func (k *KB) splitDoc(ref string) ([]store.Node, error) {
+	ps, err := k.S.DocDir(strings.TrimSuffix(ref, ".md"))
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range ps {
+		if path.Base(p) != "README.md" {
+			continue
+		}
+		ns, err := k.S.FileNodes(p)
+		if err != nil || len(ns) == 0 {
+			return nil, err
+		}
+		return ns[:1], nil
 	}
 	return nil, nil
 }

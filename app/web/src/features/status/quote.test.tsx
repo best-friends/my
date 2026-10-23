@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The quote of a post through the whole app (web-client.md T4, FR-114): the real router and QueryClient, MSW for
+// The quote of a post through the whole app (web-client/README.md T4, FR-114): the real router and QueryClient, MSW for
 // the client API.
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The frames of what a route shows instead of its page (web-client.md E1, E3): while it loads, and the error of the
+// The frames of what a route shows instead of its page (web-client/README.md E1, E3): while it loads, and the error of the
 // app's layout itself, which is shown without the layout.
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";

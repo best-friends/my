@@ -11,7 +11,7 @@ import { RouteError } from "./-layout/RouteStates";
 
 /**
  * `granularity` and `basis` of the totals; omitted, or anything unknown, shows the months amortized (ADR-0067 §4,
- * web-client.md S3).
+ * web-client/README.md S3).
  */
 const searchSchema = z.object({
   granularity: z.enum(["week", "year"]).optional().catch(undefined),
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/about_/costs")({
   }),
   loader: async ({ context: { queryClient, api }, deps: { granularity, basis, today } }) => {
     // No failure fails the page: the shell reads the instance too, and the totals show their own failure, or the
-    // setting that publishes nothing (404), in the page. Cached data is shown at once (web-client.md S7).
+    // setting that publishes nothing (404), in the page. Cached data is shown at once (web-client/README.md S7).
     await Promise.all([
       queryClient.query({ ...instanceQueryOptions(api), staleTime: Infinity }).catch(() => undefined),
       queryClient.query({ ...publicCostTotalsQueryOptions(api, granularity, basis, today), staleTime: Infinity }).catch(() => undefined),

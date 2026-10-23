@@ -2,7 +2,7 @@
 // The user's password (FR-002, FR-004): the form that changes it with the current one, or sets one with a passkey for a
 // user who removed theirs, and removing it with a passkey. A wrong current password is that field's error, a new
 // password of the wrong length the new field's (the browser's constraint validation catches it first), a failed
-// confirmation with a passkey and any other failure an alert next to the form (web-client.md E2, G16).
+// confirmation with a passkey and any other failure an alert next to the form (web-client/README.md E2, web-client/16-look-states-and-wording.md G16).
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";

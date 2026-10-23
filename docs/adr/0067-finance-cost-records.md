@@ -16,7 +16,7 @@ AWS と Google Cloud の利用料金の自動の取り込み（FR-904）の方�
 - AWS Cost Explorer: 期間は UTC の暦の日付と暦月（"All times are in Universal Coordinated Time (UTC)"、[GetCostAndUsage](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_GetCostAndUsage.html)）。金額は USD。期間ごとに `Estimated` が付き、締めの後もクレジット・返金・サポート料で翌月の半ばまで値が変わる。
 - Google Cloud（BigQuery への請求データの export）: 請求月 `invoice.month` は米国太平洋時間（夏時間あり）で切られる（"Pacific Time to calculate the billing period for all customers"、[Understand your bills and charges](https://docs.cloud.google.com/identity/docs/how-to/understand-your-bills-and-charges)）。金額は請求先アカウントの通貨。確定の印はなく、訂正は打ち消しの行として追加される。
 
-いまのコードには費用を扱うモジュールも、日付（時刻なし）や金額の論理型もない（[data-model §1.2](../architecture/data-model.md#12-論理型)）。
+いまのコードには費用を扱うモジュールも、日付（時刻なし）や金額の論理型もない（[data-model §1.2](../architecture/data-model/01-conventions.md#12-論理型)）。
 近いものは次のとおり。
 
 - インスタンス設定は `instance` の `instance_setting_revisions`【イベント（版）】と `instance_settings`【投影】のキーと値で、変更には `manage_settings` が要る（`internal/domain/instance/setting.go`）。

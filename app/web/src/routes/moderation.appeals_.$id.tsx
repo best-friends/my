@@ -39,7 +39,7 @@ function AppealPage() {
   return (
     <>
       <AppealHeading />
-      {/* Another appeal is another page: nothing of the previous one carries over (web-client.md R10). */}
+      {/* Another appeal is another page: nothing of the previous one carries over (web-client/README.md R10). */}
       <Card>
         <AppealDetailView key={id} id={id} />
       </Card>

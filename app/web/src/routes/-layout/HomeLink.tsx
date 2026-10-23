@@ -7,7 +7,7 @@ import { useT } from "../../lib/i18n";
  * The way out of a page that has nothing to show (an address with no page, an account or a timeline that is not
  * there): the home timeline for signed-in users, and the landing page (`/`) for people who are not signed in, who
  * have no home timeline. Offline, a session that could not be resumed is most likely still there, so it keeps the
- * home timeline (web-client.md §11), as the navigation does.
+ * home timeline (web-client/11-pwa.md §11), as the navigation does.
  */
 export function HomeLink() {
   const t = useT();

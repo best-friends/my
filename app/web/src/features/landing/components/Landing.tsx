@@ -151,7 +151,7 @@ function LandingHero({ heading, landing }: { heading: ReactNode; landing: Landin
       {...(landing.thumbnail !== undefined && { media: <ServerThumbnail thumbnail={landing.thumbnail} /> })}
     >
       {landing.summary !== "" && (
-        // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
+        // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client/README.md Y10).
         <Text as="p" dir="auto" lang="" size="lg">
           {landing.summary}
         </Text>

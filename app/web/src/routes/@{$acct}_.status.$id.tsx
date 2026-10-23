@@ -42,7 +42,7 @@ function StatusPage() {
   return (
     <>
       <PageHeading>{t("client:status.title")}</PageHeading>
-      {/* Another post is another thread: nothing of the previous one carries over (web-client.md R10). */}
+      {/* Another post is another thread: nothing of the previous one carries over (web-client/README.md R10). */}
       <StatusThread key={id} id={id} onDeleted={leave} />
     </>
   );

@@ -44,7 +44,7 @@ function WebhookPage() {
   return (
     <>
       <WebhookHeading />
-      {/* Another webhook is another page: nothing of the previous one carries over (web-client.md R10). */}
+      {/* Another webhook is another page: nothing of the previous one carries over (web-client/README.md R10). */}
       <WebhookDeliveries key={id} id={id} />
     </>
   );

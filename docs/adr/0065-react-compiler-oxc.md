@@ -8,7 +8,7 @@
 ## Context（背景・課題）
 
 [ADR-0025](0025-web-client-stack.md) は、技術スタックの表の「メモ化」の行で React Compiler 1.0（`babel-plugin-react-compiler`）を全コードに適用すると決めている。
-[Web クライアントの設計規約](../architecture/web-client.md) の R4 は、コンパイラが最適化を諦めた関数があれば `vite build` を失敗させ、
+[Web クライアントの設計規約](../architecture/web-client/README.md) の R4 は、コンパイラが最適化を諦めた関数があれば `vite build` を失敗させ、
 `"use no memo"` で外した関数だけを除き、1 つも変換しなければ失敗させる（`app/web/vite-plugins/react-compiler-check.ts`）。
 `app/web` と `app/ui` はそのために `@babel/core`・`@rolldown/plugin-babel`・`babel-plugin-react-compiler` を直接の依存に持ち、
 `@vitejs/plugin-react` の `reactCompilerPreset` を Vite 8（Rolldown）の Babel プラグインとして動かす。Babel はツールチェーンの中でこのためだけにある。

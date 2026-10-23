@@ -246,7 +246,7 @@ function MediaCell({ item, revealed, count, noDescriptionLabel, onOpen }: MediaC
       // A post is at most about 40rem wide; two or more pictures share it in two columns.
       sizes={count === 1 ? "(min-width: 40rem) 40rem, 100vw" : "(min-width: 40rem) 20rem, 50vw"}
       alt={item.alt ?? noDescriptionLabel}
-      // The description is user content (web-client.md Y10); the fallback is the app's own text.
+      // The description is user content (web-client/README.md Y10); the fallback is the app's own text.
       {...(item.alt !== null && { dir: "auto", lang: item.lang })}
       loading="lazy"
       decoding="async"
@@ -283,7 +283,7 @@ function MediaCell({ item, revealed, count, noDescriptionLabel, onOpen }: MediaC
 /**
  * The pictures, videos, and audio files of a post in a 16:9 grid of one to four cells. A video plays in
  * its cell with the browser's controls under a play disc and its length, an audio file in an `AudioPlayer`, and neither starts by itself (`MediaPlayback`). An item without a description is
- * named by `noDescriptionLabel` and carries a visible badge saying so (web-client.md Y9). Sensitive media are
+ * named by `noDescriptionLabel` and carries a visible badge saying so (web-client/README.md Y9). Sensitive media are
  * concealed behind a toggle button (`aria-pressed`): while concealed, the images are neither loaded nor
  * exposed and each cell shows the blur of its picture, and the button keeps its place in the tab order and its focus when it is pressed.
  * With `viewerLabels`, each shown picture that has an `original` is a button that opens it at its original size in a

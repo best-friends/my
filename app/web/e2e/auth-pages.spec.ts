@@ -112,7 +112,7 @@ test.describe("sign-in page", () => {
 
   test("has 44 px targets on touch screens", async ({ page }) => {
     const coarse = await page.evaluate(() => matchMedia("(pointer: coarse)").matches);
-    test.skip(!coarse, "only coarse pointers get the larger targets (web-client.md D4)");
+    test.skip(!coarse, "only coarse pointers get the larger targets (web-client/README.md D4)");
     for (const target of [emailField(page), passwordField(page, "current-password"), submitButton(page)]) {
       const box = await target.boundingBox();
       expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);

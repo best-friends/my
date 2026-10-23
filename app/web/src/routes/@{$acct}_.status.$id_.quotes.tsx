@@ -37,7 +37,7 @@ function StatusQuotesPage() {
   return (
     <>
       <PageHeading id={headingId}>{t("client:status.quotes.title")}</PageHeading>
-      {/* Another post is another list: nothing of the previous one carries over (web-client.md R10). */}
+      {/* Another post is another list: nothing of the previous one carries over (web-client/README.md R10). */}
       <TimelineFeed key={id} timeline={{ kind: "quotes", id }} aria-labelledby={headingId} />
     </>
   );

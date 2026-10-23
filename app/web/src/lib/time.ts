@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// When something happened, as the lists show it (web-client.md G8): relative to now ("5 min. ago"), with
+// When something happened, as the lists show it (web-client/16-look-states-and-wording.md G8): relative to now ("5 min. ago"), with
 // the full date and time for `<time dateTime>` and its tooltip. Timelines and notifications use the same rule.
 import { type IntlShape, useIntl } from "react-intl";
 import { useNow } from "./clock";

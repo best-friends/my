@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Editing the viewer's own post and reading a post's edit history through the whole app (FR-109,
-// web-client.md T4): the real router and QueryClient, MSW for the client API. Time is fixed so that the
+// web-client/README.md T4): the real router and QueryClient, MSW for the client API. Time is fixed so that the
 // dates are known.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

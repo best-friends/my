@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The profile pages through the whole app (web-client.md T4): the real router and QueryClient, with MSW as
+// The profile pages through the whole app (web-client/README.md T4): the real router and QueryClient, with MSW as
 // the server (FR-204, FR-301 to FR-303). Each state of the viewer's relationship with the account shows its
 // own buttons; the changes go to the server and the page shows the relationship the server returns.
 import { fireEvent, isInaccessible, screen, waitFor, within } from "@testing-library/react";
@@ -53,7 +53,7 @@ describe("a profile", () => {
     await renderApp({ path: "/@bob" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Bob" })).toBeInTheDocument();
-    // The name is the user's text in any script (web-client.md Y10).
+    // The name is the user's text in any script (web-client/README.md Y10).
     expect(within(screen.getByRole("heading", { level: 1 })).getByText("Bob")).toHaveAttribute("dir", "auto");
     // The first is the header's; the posts below show it too.
     expect(within(main()).getAllByText("@bob")[0]).toHaveAttribute("dir", "ltr");
@@ -373,7 +373,7 @@ describe("a profile of another server", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Carol" })).toBeInTheDocument();
     expect(within(main()).getAllByText("@carol@remote.example")[0]).toHaveAttribute("dir", "ltr");
-    // The host inside the sentence is isolated, as names are (web-client.md Y10); the link leaves the app.
+    // The host inside the sentence is isolated, as names are (web-client/README.md Y10); the link leaves the app.
     expect(within(main()).getByRole("link", { name: newTabName("See on ⁨remote.example⁩") })).toHaveAttribute(
       "href",
       "https://remote.example/@carol",
@@ -438,7 +438,7 @@ describe("the badges of a profile", () => {
 
     const list = await screen.findByRole("list", { name: "Badges" });
     expect(within(list).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Staff", "داعم"]);
-    // The label is the staff's text in any script and no recorded language (web-client.md Y10).
+    // The label is the staff's text in any script and no recorded language (web-client/README.md Y10).
     expect(within(list).getByText("داعم")).toHaveAttribute("dir", "auto");
     expect(within(list).getByText("داعم")).toHaveAttribute("lang", "");
     const feed = await screen.findByRole("feed", { name: "Posts" });

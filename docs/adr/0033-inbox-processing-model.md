@@ -52,7 +52,7 @@
 - **順序はキューに頼らない**: ジョブには `orderingKey = inbox:<actor の URI>` を付ける（#77 の後、同じ Actor のアクティビティは直列化される）が、ハンドラはどの順で届いても同じ結果になるように書く。
   - 未知のオブジェクトへの `Delete` は tombstone（`remote_object_tombstones`）を記録し、後から届いた `Create` / `Update` を捨てる。
   - 未知のオブジェクトへの `Update` は、取り込み範囲（[ADR-0034](0034-remote-content-scope-and-retention.md)）に入るなら `Create` と同じく扱う。
-  - 版は `updated` が現在版より新しいときだけ作る（[data-model §2.2](../architecture/data-model.md#22-冪等キーと一意制約)）。
+  - 版は `updated` が現在版より新しいときだけ作る（[data-model §2.2](../architecture/data-model/02-consistency.md#22-冪等キーと一意制約)）。
   - 対象が見つからない `Undo` / `Accept` / `Reject` / `Like` / `Announce`（ローカルの投稿宛て）は何もせず完了にする。
 - **未知の型**: 対応表にないアクティビティ・オブジェクトの型は、ログとメトリクスに残して完了にする（`202` は同期の時点で返している）。
 

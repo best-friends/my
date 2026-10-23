@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The report queue and a report's page through the whole app (web-client.md T4): a moderator with
+// The report queue and a report's page through the whole app (web-client/README.md T4): a moderator with
 // manage_reports (and manage_accounts for actions) lists the reports, takes one, writes a note, and handles it
 // by an action on its target, which resolves it, or without one, with MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the costs feature (web-client.md §7): the public totals of the instance's costs, and the
+// The default MSW handlers of the costs feature (web-client/README.md §7): the public totals of the instance's costs, and the
 // totals of the finances page, and the income totals of both.
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";

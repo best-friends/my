@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the supporters screen (ADR-0072 §2, §3, §9, §10, manage_supporters, web-client.md S1):
+// The queries and mutations of the supporters screen (ADR-0072 §2, §3, §9, §10, manage_supporters, web-client/README.md S1):
 // the supporter program (GET / PUT /admin/supporter_program), every plan, retired ones too (GET /admin/supporter_plans),
 // creating, changing and retiring one, and the subscriptions (GET /admin/supporter_subscriptions, newest first, as an
 // infinite query narrowed to a plan and a state) with cancelling one at once, and the state of the payment provider

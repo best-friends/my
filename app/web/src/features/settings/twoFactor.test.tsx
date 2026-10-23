@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The two-factor authentication page through the whole app (web-client.md T4): enrolling an authenticator app
+// The two-factor authentication page through the whole app (web-client/README.md T4): enrolling an authenticator app
 // from its QR code, the recovery codes shown once, replacing them, and turning it off, with MSW playing the server.
 import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

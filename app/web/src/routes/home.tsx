@@ -19,11 +19,11 @@ import { PageHeading } from "./-layout/PageHeading";
 
 /** The home timeline (FR-201): the signed-in user's posts and those of the accounts they follow. */
 export const Route = createFileRoute("/home")({
-  // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
+  // A feed to add to: the shell floats the new-post button over this page (web-client/16-look-states-and-wording.md G4).
   staticData: { title: "client:home.title", hideHeading: true, composeButton: true },
   // The home timeline needs a session; without one the browser goes to sign in first, and comes back here
-  // (web-client.md §10). While the server cannot be reached to resume it (a page opened offline), the page opens
-  // and shows the posts kept on this browser (FR-604, web-client.md §11); once the server answers that there is
+  // (web-client/10-api-client-and-auth.md §10). While the server cannot be reached to resume it (a page opened offline), the page opens
+  // and shows the posts kept on this browser (FR-604, web-client/11-pwa.md §11); once the server answers that there is
   // no session, they are forgotten.
   beforeLoad: async (args) => {
     await args.context.session.restore();
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/home")({
     if (session.status !== "signed-in") return { saved: restoreSavedHomeTimeline(queryClient, api) };
     try {
       // Cached pages that no write has marked stale are shown at once (and refetched in the background once
-      // old); marked or missing ones are fetched and waited for (web-client.md S7).
+      // old); marked or missing ones are fetched and waited for (web-client/README.md S7).
       await queryClient.infiniteQuery({ ...timelineQueryOptions(api, { kind: "home" }), staleTime: Infinity });
     } catch (error) {
       // Offline, the posts loaded last (cached, or kept on this browser) are shown instead of the error.
@@ -56,7 +56,7 @@ function HomePage() {
   const router = useRouter();
   const { saved } = Route.useLoaderData();
   const unreachable = useSessionUnreachable();
-  // Showing the kept posts: back online, the loader resumes the session and loads the timeline again (web-client.md G17).
+  // Showing the kept posts: back online, the loader resumes the session and loads the timeline again (web-client/16-look-states-and-wording.md G17).
   useOnReconnect(() => {
     void router.invalidate();
   }, saved && unreachable);

@@ -82,7 +82,7 @@ export function useRetryJob(onRetried: (id: string) => void): RetryJob {
       const job = cacheRetriedJob(api, queryClient, id);
       announce(t("client:admin.jobs.retried", { type: job?.type ?? id }));
     },
-    // The job stays a dead job, and its row and focus stay (web-client.md E2).
+    // The job stays a dead job, and its row and focus stay (web-client/README.md E2).
     onError: (error) => {
       toast.show({ message: t("client:admin.jobs.retry_failed", { reason: errorMessage(error) }), tone: "danger" });
     },

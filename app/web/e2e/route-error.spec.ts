@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A page whose API fails, in every width × locale project (web-client.md G16): the page keeps its heading and
+// A page whose API fails, in every width × locale project (web-client/16-look-states-and-wording.md G16): the page keeps its heading and
 // document title, and its content gives way to what happened, why, and "Try again". `vite preview` has no client
 // API, so the spec answers the local timeline itself: with a server error first, then with an empty page.
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
