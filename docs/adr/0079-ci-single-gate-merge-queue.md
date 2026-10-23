@@ -83,6 +83,10 @@
 
 > 決定者の回答（チャット、原文）: 本検査の場所は「MQ に一本化」、遅い検査は「リリースを作成しようとしたら回す、とかどうですか？任意に実行するのと定時で回すのも用意はしつつ」。
 > リリースの関門の範囲（タグと GitHub Release の下書きまでを決め、成果物は M5 に残す）は「そのままで構いません」（#1053）。
+> ビルドタグの組み合わせと golangci-lint の置き場所（PR #1069 のあとの Merge Queue の実測を受けて）:
+> 「build-tags については毎度のビルドで確認する必要性を感じません。リリース前の検査で十分に思えます。」
+> 「golangci-lint については PR, main で `only-new-issues` して MQ ではスキップでもいいぐらいなのでは？(MQ 状態で項目が増えるとも思えない)」
+> PR で `only-new-issues`、Merge Queue では回さず、遅い検査で全体を回し、main では検査せずキャッシュのためだけに回す案に対して「ADR-0079 を書き換えていいです。やってください。案にも賛成です。」
 
 **B・S3・J2 を採る。**
 
@@ -92,9 +96,10 @@
 | --- | --- | --- | --- |
 | 手元 | push の前 | `task check:changed`（ADR-0080）。作者が直すためのもので、CI の代わりではない | — |
 | PR の `check`（preflight） | `pull_request` | その PR のファイルだけで結果が決まり、重ねても変わらないもの。下の表 | ○ |
-| Merge Queue の `check`（本検査） | `merge_group` | 統合した状態で、変わった文脈のコンパイル・型・lint・テスト・生成物 | ○ |
+| PR の lint | `pull_request` | golangci-lint（PR が変えた行の指摘だけ） | ○ |
+| Merge Queue の `check`（本検査） | `merge_group` | 統合した状態で、変わった文脈のコンパイル・型・vet・テスト・生成物 | ○ |
 | main への push | `push` | 検査はしない。キャッシュを作るジョブだけ（下記） | — |
-| 遅い検査 | リリースの関門・nightly・手動 | E2E（全体）・実 PostgreSQL・stream の契約・連合・arm64 と amd64 のイメージ・CodeQL | リリースでは○ |
+| 遅い検査 | リリースの関門・nightly・手動 | E2E（全体）・実 PostgreSQL・stream の契約・連合・arm64 と amd64 のイメージ・golangci-lint（全体）・ビルドタグの組み合わせ・CodeQL | リリースでは○ |
 
 PR の `check`（preflight）は 1 ジョブにまとめ、目安を 2 分以内にする:
 
@@ -106,12 +111,17 @@ PR の `check`（preflight）は 1 ジョブにまとめ、目安を 2 分以内
 | Dockerfile と `.tool-versions` の一致、Playwright の版、デザイントークン、CSS の `100vh` | 今の `docker-check`・`playwright-image-check`・`web-tokens`・CSS の検査 | ファイル単位または lockfile で決まる |
 | `@my/ui` のスクリーンショットと axe（ui の文脈が変わったときだけ、別ジョブ） | `ui-test` | 基準画像は変えた PR の中で直す必要がある（ADR-0027） |
 
+golangci-lint は、Go（`tools/agentkit` を含む）が変わった PR で、preflight とは別のジョブ（`lint`）で回す。指摘は golangci-lint-action の `only-new-issues` で PR が変えた行に絞り、PR に注釈として付ける。
+解析そのものは全パッケージに対して行うので、速さは main が作る golangci-lint のキャッシュで決まる。
+Merge Queue では回さない。2 つの PR を重ねて増える指摘は、別々の PR が同じ関数の最後の呼び出し元を 1 つずつ消すような稀な場合に限られ、ビルドは壊さない。
+その指摘も、PR が変えた行の外に出るものも、遅い検査の golangci-lint（全体）が見つける。
+
 Merge Queue の `check`（本検査）は、変わった文脈（`scripts/changed-contexts.sh`）に応じて次のジョブを組む。
 文脈が変わっていないジョブは今までどおりスキップし、`check` はスキップを成功として扱う（ADR-0047 の仕組みのまま）:
 
 | ジョブ | 中身（ジョブの中は並列） | 対象の文脈 |
 | --- | --- | --- |
-| `server-static` | `go mod tidy -diff`、`go vet`、golangci-lint（1 回）、`CGO_ENABLED=0` のビルド、ビルドタグの組み合わせ、Go が読む生成物の鮮度（ADR-0081）、`db-check`（両方言） | go・schema・api・i18n |
+| `server-static` | `go mod tidy -diff`、`go vet`、`CGO_ENABLED=0` のビルド、Go が読む生成物の鮮度（ADR-0081）、`db-check`（両方言） | go・schema・api・i18n |
 | `server-test` | `go test ./...`（pgmem、ADR-0041） | go・schema・api・i18n |
 | `client-static` | 生成（ADR-0081）→ `tsc`・Oxlint・knip・`vite build`・i18n のカタログの検査 | ui・web・api・i18n |
 | `client-test`（2 シャード） | Vitest（`app/web`・`app/ui`・`tools/i18n`）。`app/web` は `vitest --shard=<i>/2` で 2 ジョブに分ける | ui・web・api・i18n |
@@ -120,6 +130,7 @@ Merge Queue の `check`（本検査）は、変わった文脈（`scripts/change
 
 - ジョブの中身は、ADR-0080 のタスク（`task ci:<ジョブ>`）1 つにする。ワークフローは、ツールの準備とそのタスクの呼び出しだけを書く。
   同じタスクを手元でも同じに回せる。
+- ビルドタグの組み合わせ（アダプタを外したビルド）は Merge Queue で回さず、遅い検査で回す。組み合わせが壊れるのはアダプタやビルドタグを変えたときに限られ、マージのたびに確かめる必要はない。リリースの前には必ず通る。
 - `client-test` を初めから 2 つに分けるのは、今の `web-test` だけで 242 / 274 秒かかり、Merge Queue の最長のジョブになるからである。
   Vitest 5.0.5 の `--shard <index>/<count>` で分ける（`vitest --help`、2026-10-23 確認）。
 - Merge Queue で同時に組むグループは最大 2、1 回にマージするのは最大 5 のまま（`.github/rulesets/protect-main.json`）。1 グループのジョブは最大 7 なので、
@@ -138,11 +149,14 @@ Merge Queue の `check`（本検査）は、変わった文脈（`scripts/change
   Go のキャッシュは、空の `GOCACHE` から作り直して保存する（前のキャッシュを復元して足さない）。
   これでキャッシュの大きさを 1 回のビルドの分に保つ。キーは `go.sum`・`tools/go.sum`・Go の版・日付にする。保存するのは、そのキーのキャッシュがまだないときだけにする。
   Bun のキャッシュは lockfile をキーにする（今のまま）。
+- Go のキャッシュには、復元するジョブが読むものだけを、そのジョブと同じ設定（`CGO_ENABLED=0`。cgo の設定はビルドキャッシュのキーに入る）で、1 つずつ順に作る。
+  モジュール、パッケージと Go のツールのビルド、テストのバイナリ、`go vet` の結果、agentkit のビルド、golangci-lint の解析の結果である。
+  検査は回さない（golangci-lint は指摘があっても失敗させない）。ライセンスや `go mod tidy` のように何も残さない検査を回したり、検査を並列に回して CPU を取り合わせたりしない。
 - CodeQL は main への push では回さず、毎日の schedule・リリースの関門・手動で回す。
 
 ### 遅い検査: リリースの関門・nightly・手動
 
-- 遅い検査の組（E2E の全体〈`matrix: full`、8 シャード〉、`federation-live`、`postgres-contract`、`stream-contract`、amd64 と arm64 のイメージと smoke test、CodeQL）を、
+- 遅い検査の組（E2E の全体〈`matrix: full`、8 シャード〉、`federation-live`、`postgres-contract`、`stream-contract`、amd64 と arm64 のイメージと smoke test、golangci-lint の全体とビルドタグの組み合わせ、CodeQL）を、
   1 つの再利用ワークフロー `slow-suite.yml` にまとめる。
 - **リリースの関門**: リリースは `release.yml`（`workflow_dispatch`、入力は版）だけが作る。`release.yml` は、指定したコミットで `slow-suite.yml` を回す。
   すべて通ったときだけ、そのコミットにタグを打ち、GitHub Release を下書きで作る。成果物（イメージの公開・リリースノート）は M5（#30）が足す。
@@ -157,7 +171,7 @@ Merge Queue の `check`（本検査）は、変わった文脈（`scripts/change
 | 区分 | 今の runner 時間 | 見込み | 根拠 |
 | --- | --- | --- | --- |
 | PR | 52.5 h | 約 15 h | preflight は 1 ジョブ約 90 秒、`ui-test` は ui が変わったときだけ |
-| Merge Queue | 28.5 h | 約 20 h | 小さいジョブをまとめて準備を減らす。キャッシュの復元が 165 秒から数十秒になる。golangci-lint は 1 回 |
+| Merge Queue | 28.5 h | 約 20 h | 小さいジョブをまとめて準備を減らす。キャッシュの復元が 165 秒から数十秒になる。golangci-lint は PR で回す |
 | main への push | 83.6 h | 約 3 h | キャッシュを作るジョブだけ |
 | nightly・リリース | 数 h | 数 h | 今の nightly と同じ量 |
 

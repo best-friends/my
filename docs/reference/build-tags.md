@@ -40,7 +40,7 @@ db (MY_DB): "postgres" is not in this build: the build tag no_postgres left its 
 
 ## Checks
 
-`scripts/task.sh go:build-tags` (part of `scripts/task.sh go:check` and of the `check` gate of CI, [ADR-0015](../adr/0015-testing-strategy.md) Build matrix)
+`scripts/task.sh go:build-tags` (part of `scripts/task.sh go:check` and, in CI, of the slow suite that gates releases, [ADR-0079](../adr/0079-ci-single-gate-merge-queue.md); [ADR-0015](../adr/0015-testing-strategy.md) Build matrix)
 runs, for each of these representative sets of tags, `CGO_ENABLED=0 go build` and `go vet` on every package,
 and fails when `cmd/my` still depends on a package that a tag of the set leaves out:
 

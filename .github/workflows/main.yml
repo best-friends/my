@@ -27,9 +27,12 @@ jobs:
     # The Go module, build, and golangci-lint cache that .github/actions/setup-go restores in ci.yml,
     # postgres-contract.yml, and stream-contract.yml. It is built from empty directories once a day (the date is in the
     # key) and for each new Go or go.sum, so it holds one build's worth of entries instead of growing with every push.
-    # It holds what go:check builds: go:check without go:test, whose results are not cached, and the test binaries
-    # (`-exec true` builds and vets them without running them). Of the modules it holds the downloaded zips alone, which
-    # restore in a tenth of the time of the extracted tree: go extracts the ones a build needs from them, offline.
+    # It holds exactly what the jobs that restore it read, built one after another with their settings (setup-go sets
+    # CGO_ENABLED=0 in both): the modules, the builds of the packages and the Go tools (go:warm), the test binaries
+    # (server-test), go vet's results (server-static), agentkit's builds (repo), and golangci-lint's analysis (the lint
+    # job of pull requests). It checks nothing: golangci-lint does not fail on issues here. Of the modules it holds the
+    # downloaded zips alone, which restore in a tenth of the time of the extracted tree: go extracts the ones a build
+    # needs from them, offline.
     runs-on: ubuntu-latest
     steps:
       - name: Check out
@@ -53,21 +56,28 @@ jobs:
       - name: Set up go-task
         if: steps.lookup.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-task
-      - name: Read tool versions from .tool-versions
-        if: steps.lookup.outputs.cache-hit != 'true'
-        id: tools
-        run: echo "golangci-lint=$(awk '$1 == "golangci-lint" { print $2 }' .tool-versions)" >> "$GITHUB_OUTPUT"
       - name: Install golangci-lint
         if: steps.lookup.outputs.cache-hit != 'true'
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v${{ steps.tools.outputs.golangci-lint }}
+          version: v${{ steps.go.outputs.golangci-lint }}
           install-only: true
-      - name: Build the Go cache
+      - name: Build the packages and the Go tools
+        if: steps.lookup.outputs.cache-hit != 'true'
+        run: scripts/task.sh go:warm agentkit:warm
+      - name: Build the test binaries
+        if: steps.lookup.outputs.cache-hit != 'true'
+        run: go test -run '^$' ./...
+      - name: Run go vet
         if: steps.lookup.outputs.cache-hit != 'true'
         run: |
-          scripts/task.sh --parallel go:mod-check go:vet go:lint go:build go:build-tags go:licenses go:sqlc-check
-          go test -exec true ./...
+          go vet ./...
+          (cd tools/agentkit && go vet ./...)
+      - name: Run golangci-lint for its cache
+        if: steps.lookup.outputs.cache-hit != 'true'
+        run: |
+          golangci-lint run --issues-exit-code=0 ./...
+          (cd tools/agentkit && golangci-lint run --issues-exit-code=0 ./...)
       - name: Save the Go cache
         if: steps.lookup.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

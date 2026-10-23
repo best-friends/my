@@ -26,6 +26,11 @@ runs:
       with:
         go-version-file: .tool-versions
         cache: false
+    # The server builds without cgo (ADR-0010). Every job that uses this action, and main.yml that builds the cache,
+    # builds with the same setting, since it is part of each build cache entry's key.
+    - name: Build without cgo
+      shell: bash
+      run: echo CGO_ENABLED=0 >> "$GITHUB_ENV"
     # A build cache only serves the same Go, and the module cache the same go.sum files. The date makes main.yml start
     # a new cache each day, so a cache holds one build's worth of entries instead of growing with every push.
     - name: Compute the Go cache key and read the golangci-lint version
