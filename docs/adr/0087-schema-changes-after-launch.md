@@ -1,6 +1,6 @@
 # ADR-0087: 実運用開始後のスキーマ変更とデータの引き継ぎ
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1028
@@ -47,12 +47,10 @@ M5 の受け入れ基準は「メンテナのインスタンスが実運用さ�
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: 選択肢 2。** 宣言的な管理と並行の作業の構成を変えずに、実運用のデータを守れる。破壊的な変更は 2 段階に分ける手間がかかるが、
+**選択肢 2 を採る。** 宣言的な管理と並行の作業の構成を変えずに、実運用のデータを守れる。破壊的な変更は 2 段階に分ける手間がかかるが、
 その手間は破壊的な変更をするときだけで、多くの変更（表・列・索引の追加）には要らない。
 
-覆す条件: データの書き換えを伴う変更が頻繁になる（目安としてマイナー版ごとに複数）か、版を飛ばした更新を保証する必要が出たら
+見直す条件: データの書き換えを伴う変更が頻繁になる（目安としてマイナー版ごとに複数）か、版を飛ばした更新を保証する必要が出たら
 （メンテナ以外の運営者が増えるなど）、選択肢 3 に移る ADR を書く。ADR-0023 が v1 に予定している移行を前倒しすることになる。
 
 ### 1. いつから効くか
@@ -100,10 +98,11 @@ C の 2 段階:
 
 - そのため CI は、`migrate lint` の終了コードだけでなく、警告を含むすべての診断を失敗として扱う。さらに、比べる元と PR の `atlas schema inspect` を比べ、既存の列の型と `CHECK` の変化も失敗として扱う。
 - 比べる元は、PR では `main`、Merge Queue では queue の先頭の基準のコミットの目標スキーマ。SQLite と PostgreSQL の両方で行う。
-- 投影の表（B）への破壊的な差分と、contract の PR（C の 2 段階目）は、決定者の承認があるときだけ通す。承認は PR の実行で判定する。
-  PR の実行の `pull_request` の event はラベルを持つが、Merge Queue の `merge_group` の event は `head_sha`・`head_ref`・`base_sha`・`base_ref`・`head_commit` だけを持ち、PR の番号やラベルの欄を持たない
+- 投影の表（B）への破壊的な差分と、contract の PR（C の 2 段階目）は、決定者の承認があるときだけ通す。承認の印は PR のラベルで、PR の実行の検査がラベルを確かめる。
+  ラベルがなければ、破壊的な差分の検査は落ちる。
+- Merge Queue では承認を確かめ直さない。`merge_group` の event は `head_sha`・`head_ref`・`base_sha`・`base_ref`・`head_commit` だけを持ち、PR の番号やラベルの欄を持たない
   （2026-10-23 に [octokit/webhooks の `merge_group` の schema](https://github.com/octokit/webhooks/blob/aa80c24a3f55354465b8b1438d33dd5602956d0d/payload-schemas/api.github.com/merge_group/checks_requested.schema.json) で確認）。
-  Merge Queue での承認の扱いは実装の issue で決める（Open Questions）。
+  Merge Queue は、PR の実行で承認された差分を通し、後から `main` に入った変更と合わせて目標スキーマが適用できることだけを確かめる。
 - `docs/operations/database.md` の手順は、`--auto-approve` の前に `--dry-run` で流れる SQL を確かめることを勧める。
 
 ### 4. 版の間の更新
@@ -116,6 +115,8 @@ C の 2 段階:
   3. `atlas schema apply`（スキーマのイメージ。今のまま）
   4. 新しい版の `my db upgrade`: 未実行の更新の手順と、作り直しの要る投影の `my projection rebuild` を実行する
   5. サーバーを起動する。readiness は今の「スキーマが適用済み」に加え、必要な更新の手順が済んでいることを確かめる
+- `my db upgrade --check` と `my db upgrade` は、運営者が `schema apply` の前後に動かす一回限りのジョブとする（Cloud Run のジョブ、Kubernetes の Job、Compose の一回限りのサービス）。
+  `my serve` の起動時には実行しない。複数のインスタンスが同時に起動しても、更新の手順が並んで走らないようにするため。
 - Compose では 2〜4 を一回限りのサービスとして `schema` の前後に並べ、`docker compose up -d` だけで済むようにする。
 - `db reset`（作り直し）は、公開して連合しているインスタンスでは使わない手順として残す（開発・検証用）。
 
@@ -124,16 +125,18 @@ C の 2 段階:
 `v0.1.0` 以降も v0.x の間は次を許す。ただしリリースノートに書く。
 
 - 設定キーの変更・削除: 起動時の設定の検査で、消えた・名前の変わったキーを新しい名前とともにエラーにする（黙って無視しない）
-- クライアント API（自前の API）の破壊的変更: Web クライアントは同じバイナリから配るので揃う。サードパーティのアプリに API を開く場合の安定性は
-  [ADR-0090](0090-third-party-oauth-apps.md) と [ADR-0093](0093-api-client-library-mykit.md) が扱い、この ADR では決めない
 - 内部インタフェイス・ディレクトリ構成の変更: 制限しない
+
+クライアント API（`/api/v1`）の安定性は [ADR-0090](0090-third-party-oauth-apps.md) §8 が決める（M5 以降は追加を既定とし、破壊的変更は
+`Deprecation`・`Sunset` のヘッダを付けて少なくとも 1 つのマイナー版の間残す）。この ADR は API の扱いを決めない。
 
 リリースノートには、自動で作る変更の一覧（`!` の付いたコミットを含む）に加えて、次の 2 節を必ず置く: **更新の手順**（その版で要る `my db upgrade` と、通るべき版）、
 **破壊的変更**（設定キー・API・スキーマの contract）。リリースノートの形は M5 のリリースの作業（エピック #30）で揃える。
 
 ### 6. 既存の ADR との関係
 
-- この ADR が Accepted になったら、ADR-0012 を `Superseded by ADR-0087` にする。ADR-0012 のうち引き続き効く項目（連合の外部仕様と識別子は壊さない、`!` とリリースノート）は、§2・§5 に含めている。
+- この ADR は ADR-0012 の全体を置き換える（ADR-0012 は `Superseded by ADR-0087`）。ADR-0012 のうち引き続き効く項目（連合の外部仕様と識別子は壊さない、`!` とリリースノート）は、§2・§5 に含めている。
+  クライアント API の部分は ADR-0090 が引き継ぐ。
 - ADR-0023 は目標スキーマを正とする決定のまま残す。ADR-0023 の「v0 の破壊的変更」の項（データを失う差分も適用してよい、`db-reset`）は、`v0.1.0` 以降はこの ADR が置き換える。
   ADR-0023 の本文は書き換えず、この ADR への参照を追記する（ADR-0000 の「追記は可」）。
 - FR-801 の「v0 では作り直し」は、「`v0.1.0` 以降は `schema apply` と `my db upgrade` で更新する」に変わる。
@@ -150,9 +153,10 @@ C の 2 段階:
   - マイナー版を飛ばした更新は保証しない。長く更新しなかった運営者は、版を順に通る必要がある
   - `migrate lint` の検出は Atlas の解析器の範囲に限られ、型の変更と `CHECK` の追加は報告しない。そのため `schema inspect` の比較を自前で足す。意味の変わる変更（値の解釈を変えるなど）はどちらでも検出できず、レビューで見る
   - 古い版のサーバーが新しいスキーマで動く間の互換は「追加は書き込みを壊さない」という規則に頼り、検査は CI の外（レビュー）になる
-- 後続で必要になる作業（この ADR が Accepted になってから issue にする）
-  - CI: `scripts/task.sh db:lint`（両方言の `migrate lint` と `schema inspect` の比較、比べる元のスキーマの取り出し、承認の印の扱い）と、PR・Merge Queue の `check` への組み込み
-  - `my db upgrade` / `my db upgrade --check`、更新の手順の登録の仕組み、記録の表（`10-infrastructure.sql`、データモデルの文書への追加）、readiness の検査の拡張
+  - 承認は PR の実行だけで確かめるので、ラベルを付けた後に PR の差分が変わっても、Merge Queue は承認を確かめ直さない。ラベルを付けた後の差分の変化はレビューで見る
+- 後続で必要になる作業（issue にする）
+  - CI: `scripts/task.sh db:lint`（両方言の `migrate lint` と `schema inspect` の比較、比べる元のスキーマの取り出し）、承認のラベルの作成と PR の実行での確認、PR・Merge Queue の `check` への組み込み
+  - `my db upgrade` / `my db upgrade --check`（一回限りのジョブ）、更新の手順の登録の仕組み、記録の表（`10-infrastructure.sql`、データモデルの文書への追加）、readiness の検査の拡張
   - `deploy/docker/compose.yaml` の更新の順序（check → schema → upgrade → my）と `scripts/docker-smoke.sh` での前の版からの更新の検査
   - 設定の検査で、消えた・名前の変わったキーをエラーにする（今の挙動を確かめてから）
   - 文書: `docs/operations/database.md` に「更新する」節（バックアップ、上の手順、戻し方）を足し、「作り直す」を開発・検証用と明記する。
@@ -166,7 +170,7 @@ C の 2 段階:
 - 良い: 手間が一切増えない。スキーマを自由に整理できる
 - 悪い: 破壊的な差分を含む版への更新で、実運用のデータを失う。作り直すと連合先と鍵が食い違う。M5 の「実運用」と両立しない
 
-### 2. 宣言的なまま、データを失わない変更だけを許す（推奨）
+### 2. 宣言的なまま、データを失わない変更だけを許す（採用）
 
 - 良い: ADR-0023・ADR-0082 の構成を変えない。手間は破壊的な変更のときだけ。Atlas Community Edition の範囲（`login` 不要）で検出できる
 - 悪い: 破壊的な変更が 2 版にまたがる。データの書き換えのために Go の仕組みが要る。版を飛ばした更新を保証しない
@@ -190,7 +194,4 @@ C の 2 段階:
 
 ## Open Questions / 要検証
 
-- contract と投影の作り直しを通す「決定者の承認の印」の形と、Merge Queue での扱い。`merge_group` の event はラベルを持たないので、PR の実行の判定に任せるか、
-  Merge Queue でも API で PR のラベルを引くか
-- 更新の手順（`my db upgrade`）を一回限りのジョブにするか、`my serve` の起動時に実行するか（GoToSocial は起動時。Cloud Run の複数インスタンスで同時に走らない保証が要る）
 - 版を飛ばした更新を将来保証するなら、更新の手順と contract の対応から、通る版を自動で選べるか

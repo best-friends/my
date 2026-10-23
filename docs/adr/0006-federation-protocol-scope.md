@@ -1,6 +1,6 @@
 # ADR-0006: 連合プロトコルの対応範囲
 
-- Status: Accepted（一部を ADR-0032（送信の署名の順序） が置き換える。非対応のリレーと LD 署名の生成を ADR-0061（連合リレー） が置き換える。互換拡張に ADR-0052（絵文字リアクション）の `EmojiReact` と `_misskey_reaction` が、ADR-0069（引用投稿）の FEP-044f の語彙と `_misskey_quote`・`quoteUrl`・`quoteUri` が加わる）
+- Status: Accepted（一部を ADR-0032（送信の署名の順序） が置き換える。非対応のリレーと LD 署名の生成を ADR-0061（連合リレー） が置き換える。互換拡張に ADR-0052（絵文字リアクション）の `EmojiReact` と `_misskey_reaction` が、ADR-0069（引用投稿）の FEP-044f の語彙と `_misskey_quote`・`quoteUrl`・`quoteUri` が加わる。対応範囲の表の `Move` の行を ADR-0089（アカウントの移転（Move）と別名（alsoKnownAs））が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #8

@@ -1,6 +1,6 @@
 # ADR-0093: API クライアントライブラリ pkg/mykit（Go・TypeScript）
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1065
@@ -33,7 +33,7 @@ Bearer の付与・401 での更新・問題の詳細の解釈（`app/web/src/li
 
 ## Considered Options（選択肢）
 
-論点ごとに比べる。推奨は各論点の 1。
+論点ごとに比べる。採るのは各論点の 1。
 
 ### A. 置き場所とモジュール
 
@@ -55,9 +55,7 @@ Bearer の付与・401 での更新・問題の詳細の解釈（`app/web/src/li
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: A-1・B-1・C-1。** 細部は次のとおり。
+A-1・B-1・C-1 を採用する。細部は次のとおり。
 
 ### 1. 配置とモジュール
 
@@ -83,13 +81,13 @@ pkg/mykit/
 - `mykit` の `go.mod` は `github.com/mycroblog/my`（サーバーのモジュール）を require しない。これを検査する（下の §8）。
   別モジュールなので、Go の `internal` の規則は効かない。代わりにモジュールの境界が依存を止める。`mykit` は標準ライブラリと、生成物が要る依存だけを使う。生成物をビルドに含めるサードパーティのモジュールは `github.com/oapi-codegen/runtime`（Apache-2.0）・`github.com/apapsch/go-jsonmerge/v2`（MIT）・`github.com/google/uuid`（BSD-3-Clause）の 3 つで、`go.sum` は 23 行になる。runtime の `go.mod` は gin・echo・iris などのフレームワークを require するので、利用者の `go list -m all` には出るが、ビルドには入らない（2026-10-23 に runtime v1.7.0 で、別モジュールとして生成物をビルドして確認）。
 - 開発では、ルートに `go.work` を置かずに、`integration/` の試験用モジュールだけが `replace` でサーバーと `mykit` を結ぶ。`tools/go.mod` と同じく、ルートの `./...` からは外れる。
-- **TS は `pkg/mykit/ts/`** に置き、npm のパッケージ名は **`@mycroblog/mykit`**（npm の組織 `mycroblog` を取る。`app/` の私用の `@my/*` とは別の公開のスコープ）。
+- **TS は `pkg/mykit/ts/`** に置き、npm のパッケージ名は **`@mycroblog/mykit`**（`app/` の私用の `@my/*` とは別の公開のスコープ）。npm の組織 `mycroblog` は決定者が作って所有する。`@mycroblog/mykit`・`@mycroblog/mybot` はレジストリになく、スコープ `mycroblog` の公開のパッケージもない（2026-10-23 に registry.npmjs.org で確認）。組織の名前が取れなければ、そのときに別のスコープを決める。
   Bun ワークスペース（ルートは `app/`）の `workspaces` に `../pkg/mykit/ts` を足し、`app/web` は `workspace:*` で使う。Bun はルートの外のパスをワークスペースとして扱い、`app/bunfig.toml` の `linker = "isolated"` でも `../pkg/mykit/ts` の依存（openapi-fetch）を解決する。`bun.lock` には `../pkg/mykit/ts` の項が入り、`pkg/mykit/ts/node_modules` ができる（2026-10-23 に Bun 1.4.3 で、`app/` と同じ設定の最小のワークスペースを作って確認）。
 - `pkg/mybot`（ADR-0094）も同じ形（`pkg/mybot/` が Go の別モジュール、`pkg/mybot/ts/` が `@mycroblog/mybot`）にし、`mykit` だけに依存する。
 
 ### 2. ライセンス
 
-- `pkg/mykit/`・`pkg/mybot/` と、生成元の `api/spec/`・`api/openapi.yaml` を **MIT** にする。生成物は仕様から機械的に作るので、仕様が AGPL のままだと生成物の扱いが曖昧になる。仕様を同じライセンスにしてそれを避ける。
+- `pkg/mykit/`・`pkg/mybot/` と、生成元の `api/spec/` とそのバンドル `api/openapi.yaml` を **MIT** にする。生成物は仕様から機械的に作るので、仕様が AGPL のままだと生成物の扱いが曖昧になる。仕様を同じライセンスにしてそれを避ける。
   サーバーの実装（`internal/`・`cmd/`・`app/web` など）は AGPL-3.0-only のまま。MIT は AGPL-3.0 と両立するので、サーバーと Web クライアントが MIT のコードを使うことに問題はない。
 - **ADR-0011 との関係**: ADR-0011 の Decision「リポジトリ全体を AGPL-3.0 とする」の一文だけを、上の範囲について置き換える。
   ADR-0011 は Accepted のままで本文は書き換えず、Status の行にこの ADR が範囲を限って置き換えることを注記する（ADR-0066 と同じ扱い）。AGPL 第 13 条のソースの提示などその他の決定は変えない。
@@ -98,7 +96,7 @@ pkg/mykit/
 - 既存の `api/spec/` の著作者は決定者 1 人（`git shortlog` で確認）なので、決定者の判断で再ライセンスできる。Dependabot の変更は `api/spec/` に及ばない。
 - **依存のライセンスの検査**: `mykit`・`mybot` の依存は MIT・Apache-2.0・BSD・ISC など寛容なものだけにする。AGPL と両立するだけの（GPL 系の）依存は利用者に及ぶので入れない。
   Go は `go-licenses`、npm は `tools/i18n` の検査と同じ仕組みに、寛容なものだけの許可リストを渡す。
-- B-2（Apache-2.0）も条件を満たす。特許の明示の許諾を重く見るなら B-2 を選ぶ。B-1 にするのは、本文が短く、Go と npm の小さなライブラリで最も広く通るため。
+- B-2（Apache-2.0）も条件を満たすが、B-1 にする。本文が短く、Go と npm の小さなライブラリで最も広く通るため。
 
 ### 3. コード生成
 
@@ -121,12 +119,15 @@ pkg/mykit/
 ### 4. 公開する API の範囲
 
 - spec の全操作を生成し公開する。`admin` スコープの操作（`/admin/*`、ADR-0058）も同じクライアントに含める。分けるとタグごとの生成の設定が増え、権限はサーバーがスコープと権限で判定するので、ライブラリで分ける利点が小さい。
-- 安定性の印は ADR-0090 の API の安定性の区分に従う。spec の操作に安定性の区分（例: `x-stability`）が付くなら、生成物の doc コメントにそれを出す。区分そのものは ADR-0090 が決める。
+  `admin` 系のスコープはファーストパーティのクライアントにだけ与えられる（[ADR-0090](0090-third-party-oauth-apps.md) §4）ので、サードパーティのトークンでこれらの操作を呼ぶと 403 になる。生成物の doc コメントと README にそのことを書く。
+- API の安定性は ADR-0090 §8 に従う（追加を既定とし、破壊的変更は `deprecated: true` と `Deprecation`・`Sunset` のヘッダを付けて少なくとも 1 つのマイナーリリースの間残す）。
+  spec の `deprecated: true` は生成物の doc コメント（Go の `Deprecated:`、TS の `@deprecated`）に出る。ライブラリは未知のフィールドと列挙値を受け流す。
 
 ### 5. 認証
 
 - ライブラリはトークンを**保存しない**。利用者が `TokenSource`（Go は `oauth2.TokenSource` と同じ形の 1 メソッドのインターフェイス、TS は `getAccessToken()` と `refresh()` を持つオブジェクト）を渡す。
-  固定のアクセストークン（ボットの長期のトークン）を渡す最小の実装と、refresh token で更新する実装を用意する。
+  refresh token で更新する実装を主にし、更新しない固定のアクセストークンの実装はテストと短い作業のためにだけ置く。
+  ADR-0090 の登録者自身へのトークン発行も、長期のトークンではなく通常のアクセストークンと refresh token を返すので、ボットも更新する実装を使う（ADR-0094 は回転した refresh token を Store に保存する）。
 - refresh token は使うたびに新しいものに替わる（RFC 9700 §4.14 の回転）。ライブラリは更新の結果の新しい refresh token を利用者のコールバック（`onTokens`）に必ず渡し、利用者が保存する。
   同時の 401 で更新が重ならないよう、1 つの `TokenSource` の中で更新を直列にする（Web クライアントのセッションと同じ考え方）。
 - 401 のときは 1 回だけ更新して送り直す。2 回目の 401 はそのままエラーにする。
@@ -148,9 +149,10 @@ pkg/mykit/
 ### 8. 版と互換・公開・テスト・文書
 
 - **版**: ライブラリはサーバーと同じ版の番号を使い、同じリリースで出す（Go のタグ `pkg/mykit/vX.Y.Z`・`pkg/mybot/vX.Y.Z`、npm の `X.Y.Z`）。生成元の spec がサーバーの版と 1 対 1 なので、対応表が要らない。
-  v0 の間は ADR-0012 に従い破壊的変更を許す。破壊的変更はリリースノートの「mykit」の節に書き、Conventional Commits の `!` を付ける。サーバーより新しいライブラリが古いサーバーを呼ぶ互換は v0 では保証しない（README に書く）。
+  ライブラリの変更は ADR-0090 §8 の API の安定性に従う。API の破壊的変更で生成物の型や関数が消えるときは、その前のマイナーリリースで doc コメントが `Deprecated` になる。
+  手書きの層の破壊的変更は v0 の間は許すが、リリースノートの「mykit」の節に書き、Conventional Commits の `!` を付ける。サーバーより新しいライブラリが古いサーバーを呼ぶ互換は v0 では保証しない（README に書く）。
 - **公開**: #1029 のリリースの仕組みに組み込む。npm は GitHub Actions からの **trusted publishing**（OIDC。長く生きる npm のトークンを置かない）で公開し、来歴（provenance）を付ける。
-  パッケージの設定で、公開に 2FA を求めトークンを禁じる（trusted publishing は OIDC なので影響しない）。npm の組織 `mycroblog` の所有者は決定者にする。
+  公開は trusted publishing からだけにし、パッケージの設定で公開に 2FA を求めトークンを禁じる（trusted publishing は OIDC なので影響しない）。npm の組織 `mycroblog` の所有者は決定者。
   （npm Docs「Trusted publishing for npm packages」、2026-10-23 に docs.npmjs.com/trusted-publishers で確認: GitHub-hosted runner に対応し、公開のリポジトリからの公開では来歴を既定で作る。npm CLI 11.5.1 以降・Node 22.14.0 以降が要る。）
   Go はタグを打つだけで proxy.golang.org が取り込む。
 - **テスト**:
@@ -159,10 +161,9 @@ pkg/mykit/
   - CI: go-task に `mykit` の文脈（`tasks/mykit.yml`。Go の vet・lint・test・build・licenses、TS の typecheck・lint・test・licenses、`go.mod` がサーバーのモジュールを require しない検査）を足し、`check:changed` と merge queue の `check` に入れる。agentkit の `context-map.yaml` に `pkg/mykit`・`pkg/mybot` の領域を足す。
 - **文書**: 英語の README（インストール・認証・ページング・ストリーミング・エラー・再試行の例）を `pkg/mykit/README.md` に、Go の例は `example_test.go` に置く。#1031 の英語の文書の方針に従う。
 
-#### 覆す条件
+#### 見直す条件
 
 - oapi-codegen の client が spec を扱えない、または生成物が利用者に出すには使いにくいなら、Go だけ C-3（別の生成器）か、型だけ生成して手書きのクライアントにする。
-- 決定者が再ライセンスを望まないなら B-3。その場合、外部の作者にはライブラリではなく spec と例だけを示すことになり、`pkg/mybot` の価値は大きく下がる。
 
 ## Consequences（影響）
 
@@ -178,7 +179,7 @@ pkg/mykit/
   - Go のモジュールの zip に TS のソースが入る。
   - Go の生成物は約 7.6 万行・3.1 MB と大きく、`api:generate` の時間とリポジトリの差分の量が増える。
   - `pkg/mykit/ts` は `app/` の外にあるので、`app/` を前提にした道具（oxlint・knip・`web:check` の文脈）の設定に足す必要がある。
-- 後続で必要になる作業（この ADR が Accepted になってから issue にする）
+- 後続で必要になる作業（それぞれ issue にする）
   1. ライセンスの範囲の変更: `api/spec/`・`api/openapi.yaml` の SPDX を `MIT` に、生成の見出し、`README.md` のライセンスの節、ADR-0011 の Status の注記、SPDX の範囲の検査。
   2. Go の `pkg/mykit`: モジュール・生成の設定・手書きの層（認証・エラー・ページング・再試行・冪等キー・アップロード）・単体テスト。
   3. TS の `@mycroblog/mykit`: ワークスペース・生成・手書きの層・単体テスト。
@@ -187,7 +188,7 @@ pkg/mykit/
   6. `app/web` の移行（`lib/api/client.ts`・`lib/sse/` を `mykit` の上に）。
   7. 公開: npm の組織とパッケージの用意、trusted publishing、Go のタグを #1029 のリリースに組み込む。
   8. 英語の README と例（#1031 と合わせる）。
-- 要件の文案（`docs/requirements/` への追記。この ADR と同じ PR か、Accepted のあとの PR で入れる）
+- 要件（`docs/requirements/` への追記）
   - `01-functional.md`「クライアント API」: 「FR-504 | Go と TypeScript（npm）の API クライアントライブラリ `pkg/mykit` を寛容なライセンス（MIT）で公開する。型は API の仕様から生成し、認証・エラー・ページング・再試行・ストリーミングを扱う（ADR-0093） | S」
     ボット制作ライブラリは ADR-0094 が「FR-505」として足す。
   - `00-vision.md` の M5 の範囲に「API クライアントライブラリ（`pkg/mykit`）とボット制作ライブラリ（`pkg/mybot`）の公開」を足す。
@@ -214,6 +215,4 @@ pkg/mykit/
 
 ## Open Questions / 要検証
 
-- npm の組織 `mycroblog` を作れるか（要検証。`@mycroblog/mykit`・`@mycroblog/mybot` はレジストリになく、スコープ `mycroblog` の公開のパッケージもない（2026-10-23 に registry.npmjs.org で確認）。同じ名前のユーザーや非公開の組織があるかは、ログインして組織を作るまで分からない）。
-- ライセンスを MIT にするか Apache-2.0 にするか、`api/spec/` まで含めるか（決定者の判断）。
-- ライブラリの版をサーバーと揃えるか、独立の版にするか（推奨は揃える。#1029 のリリースの形に合わせて決める）。
+- なし（npm の組織の名前が取れないときは、そのときに別のスコープを決める）。

@@ -1,6 +1,6 @@
 # ADR-0011: ライセンスは AGPL-3.0 とする
 
-- Status: Accepted
+- Status: Accepted（`pkg/mykit`・`pkg/mybot`・`api/spec/` のライセンスを ADR-0093（API クライアントライブラリ pkg/mykit）が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #12

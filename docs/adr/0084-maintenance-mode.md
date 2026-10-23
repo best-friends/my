@@ -1,6 +1,6 @@
 # ADR-0084: メンテナンスモードとメンテナンス HTML の書き出し
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1023
@@ -46,9 +46,7 @@ v0 の公開（M5）の前に、運用の手順の前提として決める。
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: A1 と B1 を採り、A3 の静的な書き出しを A1 の補助として併せて用意する。**
+A1 と B1 を採り、A3 の静的な書き出しを A1 の補助として併せて用意する。
 メンテナンスモードは通常のサーバーとは別の小さな HTTP ハンドラで、設定の一部だけを読んで起動する。書き出しコマンドは同じテンプレートで静的な HTML を作る。
 
 ### 1. 切り替え
@@ -62,7 +60,7 @@ v0 の公開（M5）の前に、運用の手順の前提として決める。
 
 ### 2. 設定の読み込みと検証
 
-- メンテナンスモードで読む設定は次に限る。アダプタの選択と接続のキー（`db`・`database_url`・`queue`・`blob`・`kv`・`mailer`・`stream_broker` など）は**読まず、検証もしない**。
+- メンテナンスモードで読む設定は次に限る。アダプタの選択と接続のキー（`db`・`database_url`・`queue`・`blob`・`kv`・`mail`・`stream_broker` など）は**読まず、検証もしない**。
   作業中に DB の URL が一時的に無効でも起動できるようにするため。
   - 共通: 待ち受けのアドレス、サーバーのホストとオリジン（Web・API）、ログとテレメトリのうち外への接続が要らないもの（標準エラーへのログ）。
   - メンテナンス用（新設）:
@@ -123,7 +121,8 @@ v0 の公開（M5）の前に、運用の手順の前提として決める。
 - 文言は新しいメッセージ（`server` の名前空間、`maintenance.*`）を `locales/en` と `locales/ja` に足し、生成した型付きアクセサで整形する。
   ロケールは `Accept-Language` → `en` で選ぶ（利用者設定とインスタンスの既定ロケールは DB にあるので使わない）。ルート要素の `lang` と `dir` をロケールから設定する。
 - 終了予定の時刻: Go の側の名前空間は `date` / `time` の引数を使えない（AGENTS.md の i18n の規則）ので、`<time datetime="…">` に UTC の RFC 3339 の値を入れ、
-  表示は ISO 8601 の UTC（例 `2026-10-24 03:00 UTC`）を文字列の引数として渡す。ロケールに合わせた整形は Open Questions。
+  表示は ISO 8601 の UTC（例 `2026-10-24 03:00 UTC`）を文字列の引数として渡す。ロケールに合わせた整形はしない。
+  Go の側に CLDR の日付の整形を持つと、メンテナンスのページのためだけに整形の実装とそのテストが要るため。
 - 見た目: CSS は `<style>` にインラインで 1 つ。色・文字・余白は `theme.css` の既定のトークン（ライト / ダーク）から生成した値を使い、`prefers-color-scheme` でダークにする。CSS は論理プロパティだけを使う。
   画像は使わない（ロゴを出すなら `data:` のインライン SVG）。スクリプトは使わない。
 - CSP: `default-src 'none'; style-src 'sha256-<インライン CSS のハッシュ>'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`。
@@ -133,7 +132,8 @@ v0 の公開（M5）の前に、運用の手順の前提として決める。
 
 - 形: `my maintenance export -out <dir> [-lang en,ja] [-config <file>] [-offline]`。
 - 出力: 自己完結した HTML（インライン CSS、外部の資源なし）を、言語ごとに `<dir>/<lang>.html`、`-lang` の言語を順に並べた 1 枚を `<dir>/index.html` に書く。
-  `index.html` は `Accept-Language` で振り分けられない前段（ALB の固定応答・Cloud Storage のエラーページなど）向け、`<lang>.html` は nginx などで振り分ける前段向け。
+  `index.html` は `Accept-Language` で振り分けられない前段（CloudFront・Cloud Storage のエラーページなど）向けで、どの言語の読み手にも 1 枚で伝わるように全言語を並べる。
+  `<lang>.html` は nginx などで振り分ける前段向け。
 - 値の出所: 設定の `maintenance_*` を使う。`-offline` でなく DB に届けば（短いタイムアウト）、インスタンスの名前（設定の `maintenance_server_name` が空のとき）・
   既定ロケール（`-lang` が無いときの先頭）・テーマのトークンの上書き（ADR-0059 §2。任意の CSS は含めない）を DB から読んで焼き込む。
   届かなければ警告を出して設定と既定のテーマで書き出し、終了コードは 0 にする。
@@ -161,12 +161,12 @@ v0 の公開（M5）の前に、運用の手順の前提として決める。
 - ALB の固定応答は状態コード・`Content-Type`・最大 1,024 文字の本文だけを持ち、`Retry-After` などのヘッダを付けられない（2026-10-23 に [FixedResponseActionConfig](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_FixedResponseActionConfig.html) で確認）。
   書き出した HTML は 1,024 文字に収まらないので ALB の固定応答には置けず、短い文と 503 だけを返す例を書く。`Retry-After` を返せない前段では、連合先は §3 の自前の間隔で再試行する。
 
-**この推奨を覆す条件**: 運用者が無停止での切り替え（再デプロイなし）を強く求め、かつ全ターゲットで共有できる DB 以外の置き場（例: 設定の再読み込みをする k8s の ConfigMap、Cloud Run の再デプロイなしの環境の変更）が使えると分かった場合は A2 を足す。
+見直す条件: 運用者が無停止での切り替え（再デプロイなし）を強く求め、かつ全ターゲットで共有できる DB 以外の置き場（例: 設定の再読み込みをする k8s の ConfigMap、Cloud Run の再デプロイなしの環境の変更）が使えると分かった場合は A2 を足す。
 連合先の再試行が 503 でも短時間で尽きる（数時間のメンテナンスで配送を止められる）と分かった場合は、応答の表を見直す。
 
-### 要件の文案（FR-8xx）
+### 要件（FR-805・FR-806）
 
-ADR の決定の後、`docs/requirements/01-functional.md` の「運用」の表に足す（番号は ADR-0085 の追加と合わせて PR で決める。ここでは FR-805・FR-806 を使う）。
+`docs/requirements/01-functional.md` の「運用」の表に FR-805・FR-806 を足す。
 
 | ID | 要件 | 優先度 |
 | --- | --- | --- |
@@ -186,7 +186,7 @@ ADR の決定の後、`docs/requirements/01-functional.md` の「運用」の表
   - `/readyz` がメンテナンス中に 200 を返すので、「readiness = DB に届く」という意味がメンテナンス中だけ変わる。監視は本文を見る必要がある（ADR-0085 と揃える）。
   - 終了予定の時刻はロケールに合わせて整形されない（ISO 8601 の UTC）。
   - 長いメンテナンスでは連合先の再試行が尽き、その間の活動を受け取れない。
-- 後続で必要になる作業（ADR の決定の後に Issue 化する。決定の前には作らない）
+- 後続で必要になる作業（それぞれ Issue にする）
   1. メンテナンスモード: 設定キーと部分的な読み込み・検証（`my config check -maintenance`、`docs/reference/configuration.md` の再生成）、`platform.NewMaintenanceApp`、
      `internal/interface/maintenance` のハンドラとテンプレート、メッセージ（en / ja）、応答の表のテスト、`tools/agentkit/context-map.yaml` への追加。
   2. client API: `/api/v1/problems/maintenance` を spec の Problem の説明に足し、Web クライアントと Tauri アプリにメンテナンスの表示（トークンを捨てない）を足す。
@@ -196,7 +196,7 @@ ADR の決定の後、`docs/requirements/01-functional.md` の「運用」の表
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
-### A1: 設定キーで再起動して切り替える（推奨）
+### A1: 設定キーで再起動して切り替える（採用）
 
 - 良い: 状態の共有が要らず、複数のインスタンスでも確実に揃う。ミドルウェアに触れない。ターゲットごとの差がない。
 - 悪い: 再デプロイが要る。サーバーレスでは新しいリビジョンの起動を待つ。
@@ -212,7 +212,7 @@ ADR の決定の後、`docs/requirements/01-functional.md` の「運用」の表
 - 悪い: Cloud Run・Lambda の Function URL には前段が無い構成がある。前段によっては `Retry-After` や状態コードを選べず、ActivityPub・API に JSON で答え分けることも難しい。
   そのため単独では判断基準 2・3・4 を満たさず、A1 の補助（書き出し）として採る。
 
-### B1: 設定キーに持つ（推奨）
+### B1: 設定キーに持つ（採用）
 
 - 良い: メンテナンスモードが何にも依存しない。値を作業の直前に決められる。
 - 悪い: 管理画面の値（名前・テーマ）と二重になる。
@@ -225,5 +225,4 @@ ADR の決定の後、`docs/requirements/01-functional.md` の「運用」の表
 
 ## Open Questions / 要検証
 
-- 終了予定の時刻をロケールに合わせて整形する方法（Go の側に CLDR の日付の整形を持つか、ISO 8601 のままにするか）。
-- 書き出しの `index.html` に複数の言語を並べるか、既定ロケールの 1 言語にするか。
+- `maintenance_retry_after` の既定 600 秒と、`maintenance_message` の上限 2,000 文字は、実装後の運用で見直す。

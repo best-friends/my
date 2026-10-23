@@ -1,6 +1,6 @@
 # ADR-0012: v0 期間中は破壊的変更を全面的に許容する
 
-- Status: Accepted
+- Status: Superseded by ADR-0087（実運用開始後のスキーマ変更とデータの引き継ぎ）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: —

@@ -1,6 +1,6 @@
 # ADR-0092: 投稿フォームの補完（@ アカウント・# ハッシュタグ・: 絵文字）と入力中の強調表示
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1041
@@ -56,9 +56,7 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: A1 + B1（spike で足りなければ B2）+ C1。**
+**A1 + B1 + C1 を採用する。** B1 は React Aria の `Autocomplete` に §3 の上書きをして使い、実機の spike で上書きでは足りないと分かったときだけ B2 にする。
 理由は判断基準 1・2（IME とアクセシビリティ）を最も確実に守れるのが「ネイティブの `textarea` を保ち、その外に候補と強調を足す」形で、判断基準 4 を満たすのが拡張なしの B-tree の前方一致だからである。
 
 ### 1. サーバーの補完の API（client API、ADR-0016）
@@ -83,7 +81,7 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
 - 引数: `q`（`#` を除いた 1〜100 文字。`NormalizeTag` で正規化）、`limit`（既定 8、最大 20）。
 - 対象: `public` / `local` / `unlisted` の投稿に今付いているタグだけ（`private` / `direct` だけのタグは、名前から投稿の存在が漏れるので出さない）。
 - 並び: 完全一致 → 使われている投稿の数の多い順 → 最近使われた順。
-- 閲覧者が使ったタグを先にするのは、クライアントが端末ごとに最近使ったタグ（localStorage、`my:compose:recent-tags`、16 個まで。カスタム絵文字の最近使ったものと同じ扱い）を持ち、候補の中で先に並べることで行う。サーバーには持たせない。
+- 閲覧者が使ったタグを先にするのは、クライアントが端末ごとに最近使ったタグ（localStorage、`my:compose:recent-tags`、16 個まで。ADR-0091 の「よく使う」と同じく端末ごと）を持ち、候補の中で先に並べることで行う。サーバーには持たせない。
 
 #### データ（ADR-0020）
 
@@ -104,9 +102,9 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
 ### 2. カスタム絵文字と Unicode 絵文字の補完
 
 - `:` の後に 2 文字以上の shortcode の文字（`[A-Za-z0-9_]`）が続き、`:` の前が英数字でも `:` でもないとき（サーバーの `ScanShortcodes` と同じ条件）に開く。
-- 候補はクライアントの手元のデータから出し、サーバーに問い合わせない: `GET /custom_emojis`（ピッカーと同じ query）と、[ADR-0091](0091-composer-emoji-picker.md) が決める Unicode 絵文字のデータ（shortcode と別名）。
-- 照合は shortcode と別名の前方一致を先、部分一致を後にし、最近使った絵文字（`my:emoji:recent`）を先に並べる。最大 8 件。
-- カスタム絵文字は `:shortcode:` を、Unicode 絵文字は文字そのものを入れる。
+- 候補はクライアントの手元のデータから出し、サーバーに問い合わせない: `GET /custom_emojis`（ピッカーと同じ query）と、[ADR-0091](0091-composer-emoji-picker.md) が決める Unicode 絵文字のデータ（CLDR の名前とキーワード。表示中のロケールと `en`）。
+- 照合は、カスタム絵文字は shortcode と別名、Unicode 絵文字は CLDR の名前とキーワードに対して、前方一致を先、部分一致を後にし、[ADR-0091](0091-composer-emoji-picker.md) の「よく使う」（端末ごとの localStorage）にある絵文字を先に並べる。最大 8 件。
+- カスタム絵文字は `:shortcode:` を、Unicode 絵文字は文字そのもの（肌の色を持つ絵文字は ADR-0091 で選んだ肌の色を当てたもの）を入れる。
 
 ### 3. 補完の UI
 
@@ -122,7 +120,7 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
   - 候補の一覧がある間は上下の矢印をすべて候補に渡すので、候補を閉じたら `ListBox` を外し、本文の行の移動を妨げない。
   これらをブラウザと IME の組み合わせで確かめるのは spike で行い（Chrome・Safari・Firefox、iOS・Android の日本語入力。実機が要る）、
   上書きで足りなければ `@my/ui` に `useTextAutocomplete` を書き（B2）、React Aria の `useListBox` と仮想フォーカスを使う。どちらも ADR-0031 の許可リストの中である。部品は `@my/ui` の `TextAreaAutocomplete` にし、API を呼ぶ部分は `features/compose` が渡す。
-- **キーボード**: 開いている間、上下の矢印で候補を移り（端で止まる）、Enter と Tab で確定し、Esc で閉じる。開いたときは先頭の候補を選んだ状態にする。
+- **キーボード**: 開いている間、上下の矢印で候補を移り（端で止まる）、Enter と Tab で確定し、Esc で閉じる。IME の変換中（下の IME の項）は、どのキーでも確定しない。開いたときは先頭の候補を選んだ状態にする。
   Esc は候補を閉じるだけで、投稿のシート（`Sheet`）を閉じない（イベントの伝播を止める）。開いていないときのキーは変えない。Ctrl / Cmd + Enter の送信は開いていても送信にする。
 - **確定**: 入力中の語（`@` / `#` / `:` からカーソルまで）を候補の値（`@user` か `@user@domain`、`#Tag`、`:shortcode:`）で置き換え、後ろに空白がなければ半角空白を 1 つ足してカーソルをその後に置く。
   ローカルのアカウントは `@user`、ほかのサーバーのアカウントは `@user@domain`（Punycode でなく、`acct` のまま）にする。置き換えは、語の範囲を選んで `document.execCommand('insertText')` で入れ、取り消しの履歴に残す。`setRangeText` と `value` の代入は取り消しの履歴に残らない。`execCommand` は非推奨で標準の外だが、`textarea` の取り消しの履歴を保って文字を入れる方法がほかにないので使い、失敗（`false`）したら `setRangeText` に戻す（2026-10-23 に [MDN execCommand](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand) で確認）。
@@ -159,15 +157,15 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
 
 サーバーが読む規則がある欄にだけ、その規則の分だけ付ける。どれも `@my/ui` の同じ部品（`TextAreaAutocomplete`、強調の層を含む）に、起点の種類を渡して使う。投票の選択肢は付けない（50 文字で効果が小さい）。
 
-### 6. 機能要件と設計文書（決定のあとに同じ PR か後続の PR で直す）
+### 6. 機能要件と設計文書
 
-- `docs/requirements/01-functional.md` に足す行の案（番号は仮）:
+- `docs/requirements/01-functional.md` に次の行を足す:
   - **FR-119**（S）: 投稿フォームの補完と強調: 投稿の本文・CW・プロフィールの自己紹介と表示名で、`@` のアカウント（フォロー中を先に、ブロック・ミュートを除く）・`#` のハッシュタグ（使われた数の順）・`:` の絵文字を候補から入れられ、入力中のメンション・ハッシュタグ・URL・絵文字・上限を超えた部分を強調表示する（ADR-0092）。
   - **FR-306**（S）: アカウントとハッシュタグの前方一致の検索（ユーザー名・`user@domain`・表示名の語、ローカルとこのサーバーが知る外のアカウント）。
 - `docs/architecture/web-client/12-compose.md` に「補完と強調表示」の項を足し、§3・§4 の振る舞いを書く。`domainMentionPattern` の記述を `textTokens` に寄せる。
 - `docs/architecture/client-api.md`・`docs/architecture/data-model/` に 2 つの操作と 2 つの投影を足す。
 
-#### 覆す条件
+#### 見直す条件
 
 - spike で、ネイティブの `textarea` と層（C1）では主要なブラウザ（Chrome・Safari・Firefox、iOS・Android）で強調がずれる場面（折り返し・スクロール・ズーム）が避けられないと分かったら、C2 を改めて比べる。
 - 補完の利用の計測で、前方一致の 100 行の上限のためにフォロー中の相手が出ない苦情が多いと分かったら、閲覧者のフォロー先に限った索引（A1 の拡張）を足す。
@@ -189,7 +187,7 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
   - `account_search_terms` と `tag_usage` の 2 つの投影が増え、プロフィールの更新と投稿の書き込みが少し重くなる。
   - Enter で候補を確定するので、候補が開いている間に改行するには Esc を先に押す必要がある。
   - `indexable = false` のアカウントも、ハンドルと表示名の前方一致で補完に出る。
-- 後続で必要になる作業（ADR が Accepted になってから issue にする）
+- 後続で必要になる作業（issue にする）
   - サーバー: `account_search_terms` と `tag_usage` の投影・スキーマ（両方言）と、`GET /accounts/search`・`GET /tags/search`（spec・ハンドラ・テスト）。
   - 共通のテストベクタ: `pkg/testkit/fixtures/text/` と Go のテスト、Web の `lib/textTokens.ts` と Vitest のテスト。
   - Web の補完: `@my/ui` の `TextAreaAutocomplete`（B1 の spike の結果で B1 か B2）と、投稿フォーム・編集のダイアログ・CW・プロフィールへの組み込み。
@@ -219,6 +217,5 @@ ADR-0031（`@my/ui` の依存）、ADR-0039（320 px のシート）、ADR-0051�
 
 ## Open Questions / 要検証
 
-- 決定者が決めること: `indexable` を補完に効かせないこと（§1）、ミュートしている相手を候補から除くこと、Enter で確定すること（Tab だけにする案もある）、閲覧者のタグを端末ごとに持つこと。
 - React Aria の `Autocomplete` に §3 の上書きをした `TextArea` が、各ブラウザと日本語 IME の組み合わせ（Chrome・Safari・Firefox、iOS・Android）で変換中に開かず確定を奪わないか、`execCommand('insertText')` の取り消しが各ブラウザで 1 回で戻るか。**要検証**（実機の spike）。
 - 補完の問い合わせの回数が既存のアカウント単位のレート制限に収まるか。**要検証**（実装後の計測）。
