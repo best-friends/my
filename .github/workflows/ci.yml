@@ -48,6 +48,8 @@ jobs:
       client: ${{ steps.select.outputs.client }}
       smoke: ${{ steps.select.outputs.smoke }}
       arm64: ${{ steps.select.outputs.arm64 }}
+      lint-go: ${{ steps.select.outputs.lint-go }}
+      lint-agentkit: ${{ steps.select.outputs.lint-agentkit }}
     steps:
       # A pull request checks out its merge commit, whose first parent is the base branch. A merge group checks out
       # its head commit and compares it with its base, the main commit the group is built on; that base is fetched by
@@ -86,6 +88,13 @@ jobs:
           touches ui ui
           touches server go schema api i18n
           touches client ui web api i18n
+          touches lint-go go
+          # tools/agentkit is a Go module of its own outside the go context.
+          if grep -qE '^tools/agentkit/(.*\.go|go\.(mod|sum)|\.golangci\.yml)$' "$RUNNER_TEMP/changed"; then
+            echo lint-agentkit=true
+          else
+            echo lint-agentkit=false
+          fi >> "$GITHUB_OUTPUT"
           # Only a change to the docker context makes the linux/arm64 images differ: the Go server cross-builds with
           # CGO_ENABLED=0 (ADR-0010).
           touches arm64 docker
@@ -148,6 +157,47 @@ jobs:
     if: github.event_name == 'pull_request' && needs.changes.outputs.ui == 'true'
     uses: ./.github/workflows/ui-test.yml
 
+  lint:
+    # golangci-lint on the lines a pull request changes (ADR-0079). The merge queue does not run it: stacking two pull
+    # requests rarely adds an issue, and never breaks the build; the slow suite lints everything. The analysis covers
+    # every package either way, so its speed comes from the golangci-lint cache that main.yml builds.
+    needs: changes
+    if: >-
+      github.event_name == 'pull_request' &&
+      (needs.changes.outputs.lint-go == 'true' || needs.changes.outputs.lint-agentkit == 'true')
+    runs-on: ubuntu-latest
+    # only-new-issues reads the pull request's diff.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        id: go
+      - parallel:
+          # The action adds the issues to the pull request as annotations; its cache is the one setup-go restores.
+          - name: go:lint
+            if: needs.changes.outputs.lint-go == 'true'
+            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+            with:
+              version: v${{ steps.go.outputs.golangci-lint }}
+              only-new-issues: true
+              skip-cache: true
+              # golangci-lint runs one instance at a time: wait for the other step's instead of failing.
+              args: --allow-serial-runners
+          - name: agentkit:lint
+            if: needs.changes.outputs.lint-agentkit == 'true'
+            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+            with:
+              version: v${{ steps.go.outputs.golangci-lint }}
+              working-directory: tools/agentkit
+              only-new-issues: true
+              skip-cache: true
+              # golangci-lint runs one instance at a time: wait for the other step's instead of failing.
+              args: --allow-serial-runners
+
   # --- The full check: merge groups, and pull requests labelled ci:full -------------------------------------------
   # A job whose `if` is false is skipped, and `check` counts a skipped job as passed.
 
@@ -155,9 +205,6 @@ jobs:
     needs: changes
     if: needs.changes.outputs.full == 'true' && needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    # One cgo setting for every step, so that they share one build cache: the server builds without cgo (ADR-0010).
-    env:
-      CGO_ENABLED: "0"
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -186,16 +233,8 @@ jobs:
         run: scripts/task.sh api:warm
       - name: Wait for Atlas and PostgreSQL
         wait: db
-      # More than 10 steps: the last ones, the short ones, start as the first ones finish.
+      # golangci-lint runs on pull requests and the build tags in the slow suite (ADR-0079).
       - parallel:
-          # Its cache is the one setup-go restores; the action adds the issues to the pull request as annotations.
-          - name: go:lint
-            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-            with:
-              version: v${{ steps.go.outputs.golangci-lint }}
-              skip-cache: true
-          - name: go:build-tags
-            run: scripts/task.sh go:build-tags
           - name: go:vet
             run: scripts/task.sh go:vet
           - name: go:build
@@ -304,9 +343,6 @@ jobs:
     needs: changes
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
-    # As in server-static: one cgo setting, one build cache.
-    env:
-      CGO_ENABLED: "0"
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -318,13 +354,8 @@ jobs:
       # As in server-static: build agentkit and its test binaries once before the parallel checks.
       - name: Build agentkit once
         run: scripts/task.sh agentkit:warm
+      # agentkit:lint runs on pull requests and in the slow suite, like go:lint.
       - parallel:
-          - name: agentkit:lint
-            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-            with:
-              version: v${{ steps.go.outputs.golangci-lint }}
-              working-directory: tools/agentkit
-              skip-cache: true
           - name: agentkit:test
             run: scripts/task.sh agentkit:test
           - name: agentkit:vet
@@ -372,7 +403,7 @@ jobs:
     # reusable workflow fails when a called job fails, so a failed story test fails `check`. `always()` makes it report
     # a result even when every other job is skipped, so neither a pull request nor a merge group waits on it.
     if: always()
-    needs: [changes, preflight, ui-test, server-static, server-test, client-static, client-test, repo, docker]
+    needs: [changes, preflight, ui-test, lint, server-static, server-test, client-static, client-test, repo, docker]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if a check job failed or was cancelled

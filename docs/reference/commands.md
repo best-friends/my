@@ -15,7 +15,7 @@ Coding agents run the workflow steps through agentkit ([tools/agentkit/README.md
   check on one machine; in CI (`CI` set) the concurrency is unlimited. Each line carries its task's name.
 - The CI jobs are not tasks ([ADR-0083](../adr/0083-ci-steps-not-tasks.md)): each job of `.github/workflows/ci.yml` sets up its tools,
   generates what its checks read, and runs the checks as parallel workflow steps, each named after the one area task it runs
-  (`scripts/task.sh go:vet`; golangci-lint runs through golangci-lint-action, in the steps `go:lint` and `agentkit:lint`). To rerun a
+  (`scripts/task.sh go:vet`; golangci-lint runs through golangci-lint-action, in the steps `go:lint` and `agentkit:lint` of the pull-request `lint` job and of the slow suite). To rerun a
   failed step locally, run the task it names. `docs:ci-coverage` fails when a check of `check` runs in no step.
 - Generators declare their inputs and outputs (`sources` / `generates`) and skip when the checksums of their inputs have not changed
   since their last run (kept in `.task/`). `--force` runs a task anyway.
