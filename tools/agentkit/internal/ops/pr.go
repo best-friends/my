@@ -131,7 +131,7 @@ func Open(r *repo.Repo, o OpenOptions) (string, error) {
 	}
 	fmt.Fprintf(&b, "\n## Decisions and assumptions\n\n%s\n\n## Checklist\n\n", decisions)
 	fmt.Fprintf(&b, "- [%s] `scripts/task.sh check` passes locally\n", mark(CheckPassed(r)))
-	fmt.Fprintf(&b, "- [%s] Docs / ADR index / i18n catalogs updated where needed\n", mark(o.Confirm))
+	fmt.Fprintf(&b, "- [%s] Docs / i18n catalogs updated where needed\n", mark(o.Confirm))
 	fmt.Fprintf(&b, "- [%s] No secrets, no unrelated changes\n", mark(o.Confirm))
 	if o.Footer != "" {
 		fmt.Fprintf(&b, "\n%s\n", o.Footer)

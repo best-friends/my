@@ -16,6 +16,7 @@ Run it through `scripts/agentkit.sh <command>`, which builds `bin/agentkit` when
 | `cat` of a large document | `outline <path>`, then `show '<path>#<anchor>'`, `show 'data-model§4.4'`, `show 'ADR-0070#decision'`, `show FR-915`, `show <path>:<from>-<to>` |
 | Following a request through the layers by hand | `trace op:<operationId>` or `trace <GoName>`: handler → app → adapter → query → table |
 | Grepping for the users of a name | `refs <ref>`: what points at it (documents, code, queries, client calls) and what it points at |
+| Listing `docs/adr/` and opening every ADR | `adr list [--status Proposed]`: number, status (the first word of its `- Status:` line), and title |
 
 `show` prints the outline instead of the text when a node is bigger than `--max` tokens (default 12k).
 References: node ids (`ADR-0070`, `FR-915`, `op:<id>`, `table:<name>`, `query:<Name>`, `schema:<Name>`,

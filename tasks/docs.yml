@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
-# Documentation: markdownlint and the ADR index (the docs context of scripts/changed-contexts.sh).
+# Documentation: markdownlint and the ADR numbers (the docs context of scripts/changed-contexts.sh).
 version: "3"
 
 vars:
@@ -8,23 +8,18 @@ vars:
 
 tasks:
   check:
-    desc: Run the documentation checks, markdownlint and the ADR index, in parallel
-    deps: [lint, adr-index-check]
+    desc: Run the documentation checks, markdownlint and the ADR numbers, in parallel
+    deps: [lint, adr-numbers]
 
   lint:
     desc: Lint Markdown files
     cmds:
       - "{{.MARKDOWNLINT}}"
 
-  adr-index:
-    desc: Regenerate the ADR index in docs/adr/README.md
+  adr-numbers:
+    desc: Fail if two files in docs/adr share a number
     cmds:
-      - scripts/adr-index.sh
-
-  adr-index-check:
-    desc: Fail if the ADR index is stale
-    cmds:
-      - scripts/adr-index.sh --check
+      - scripts/adr-numbers.sh
 
   adr-new:
     desc: 'Create a new ADR: scripts/task.sh docs:adr-new TITLE="..." [SLUG=kebab-slug]'

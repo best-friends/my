@@ -25,6 +25,7 @@ Read (instead of grep / cat over the repository):
   outline <path>                                       headings / declarations with line ranges and sizes
   refs <ref> [-n 40]                                   what points at ref, and what ref points at
   trace <op:id|GoName> [--depth 6]                     handler -> app -> adapter -> query -> table
+  adr list [--status Proposed]                         number, status, and title of every ADR
 
 Workflow (instead of gh / scripts/task.sh loops):
   issue claim <n> [--plan text]                        check agent:ready, no assignee, Accepted ADRs; assign; comment
@@ -75,6 +76,8 @@ func run(args []string) error {
 		return runRegen(r, rest)
 	case "map":
 		return runMap(r, rest)
+	case "adr":
+		return runADR(r, rest)
 	}
 	s, err := store.Open(r)
 	if err != nil {

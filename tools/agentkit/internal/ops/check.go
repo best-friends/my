@@ -96,7 +96,6 @@ var generators = []struct {
 	{"locales/", "i18n:gen"},
 	{"app/web/src/routes/", "web:dist"},
 	{"internal/platform/config/", "go:config-docs"},
-	{"docs/adr/", "docs:adr-index"},
 }
 
 // Regen runs the generators the files changed since base need, in a stable order, and returns one line each.
