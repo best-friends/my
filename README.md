@@ -26,7 +26,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-- `schema` サービスが Atlas Community Edition で `schema/sqlite.sql` を名前付きボリュームの DB に適用して終了し、
+- `schema` サービスが Atlas Community Edition で `schema/sqlite/` のスキーマを名前付きボリュームの DB に適用して終了し、
   成功した後にサーバー（`role=all`）が起動します。`up` のたびに適用し直すので、更新後も同じ手順で起動します。
 - サーバーは `127.0.0.1:8080` で待ち受けます（ポートは `.env` の `MY_HTTP_PORT`）。`curl localhost:8080/readyz` が
   `{"status":"ok"}` を返せば準備完了です。

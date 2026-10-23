@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Minimal self-hosted setup (ADR-0010): one `my serve` process with role = all on a SQLite file in a named volume.
-# The `schema` service applies schema/sqlite.sql with Atlas Community Edition (ADR-0023) and exits; the server
+# The `schema` service applies schema/sqlite with Atlas Community Edition (ADR-0023) and exits; the server
 # starts only after it succeeds. Copy .env.example to .env and fill it in first (README.md, "Quick start").
 #
 #   docker compose up -d --build
@@ -19,7 +19,7 @@ services:
       - schema
       - apply
       - --url=sqlite:///data/my.db
-      - --to=file:///schema/sqlite.sql
+      - --to=file:///schema/sqlite
       - --dev-url=sqlite://dev?mode=memory
       - --auto-approve
     volumes:

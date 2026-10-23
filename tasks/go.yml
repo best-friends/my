@@ -112,8 +112,8 @@ tasks:
     sources:
       - sqlc.yaml
       - "queries/**/*.sql"
-      - schema/sqlite.sql
-      - schema/postgres.sql
+      - "schema/sqlite/*.sql"
+      - "schema/postgres/*.sql"
       - scripts/sqlc.sh
       - tools/go.mod
     generates:

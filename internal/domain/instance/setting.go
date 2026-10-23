@@ -25,7 +25,7 @@ var ErrInvalidValue = errors.New("instance: invalid value")
 type SettingKey string
 
 // Setting keys. Adding one means adding its Definition below and its value to the CHECK
-// constraint of instance_setting_revisions.key in schema/<dialect>.sql.
+// constraint of instance_setting_revisions.key in schema/<dialect>/09-instance.sql.
 const (
 	SettingRegistrationMode        SettingKey = "registration_mode"
 	SettingMaxStatusLength         SettingKey = "max_status_length"

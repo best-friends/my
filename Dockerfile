@@ -4,7 +4,7 @@
 # Container images for cmd/my (ADR-0010): multi-arch (linux/amd64, linux/arm64), static, non-root, distroless.
 #
 #   docker build -t my .                       # the server (default target "app")
-#   docker build -t my-schema --target schema . # Atlas Community Edition + schema/*.sql (ADR-0023)
+#   docker build -t my-schema --target schema . # Atlas Community Edition + schema/ (ADR-0023)
 #
 # Base images are pinned by tag and multi-arch index digest. The Go, Node.js, and Bun tags must match .tool-versions.
 
@@ -57,10 +57,12 @@ FROM ${GO_IMAGE} AS atlas
 RUN --mount=type=bind,source=scripts/install-atlas.sh,target=/install-atlas.sh \
     /install-atlas.sh /out/atlas
 
-# One-shot schema apply: `atlas schema apply` with schema/<dialect>.sql under /schema (ADR-0023).
+# One-shot schema apply: `atlas schema apply` with the directory schema/<dialect> under /schema (ADR-0023).
 FROM ${RUNTIME_IMAGE} AS schema
 COPY --from=atlas /out/atlas /usr/local/bin/atlas
 COPY schema/*.sql /schema/
+COPY schema/sqlite /schema/sqlite/
+COPY schema/postgres /schema/postgres/
 # Owned by the non-root user so that a named volume mounted here starts out writable.
 COPY --from=build --chown=nonroot:nonroot /out/data /data
 WORKDIR /data

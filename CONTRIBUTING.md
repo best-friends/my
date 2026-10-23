@@ -59,7 +59,8 @@ CI（`.github/workflows/`）は、どこで何を検査するかを次のよう�
 DB スキーマは方言ごとの目標スキーマファイルを正とし、[Atlas](https://atlasgo.io/) Community Edition で適用します
 （[ADR-0023](docs/adr/0023-declarative-schema-management.md)）。マイグレーション SQL は書きません。
 
-- `schema/sqlite.sql` と `schema/postgres.sql` を、同じ PR で一緒に編集します。
+- 目標スキーマはモジュールごとのファイル `schema/<dialect>/<NN>-<module>.sql` です（[schema/README.md](schema/README.md)）。
+  表を持つモジュールのファイルを、`schema/sqlite/` と `schema/postgres/` の両方で、同じ PR で一緒に編集します。
   テーブルは [論理データモデル](docs/architecture/data-model/README.md) に従い、論理型は [§1.2](docs/architecture/data-model/01-conventions.md#12-論理型) で方言の型に対応づけます。
 - 拡張機能・シーケンス・ビュー・トリガーなど Atlas Community Edition が扱えないものは、目標スキーマに書きません。
   PostgreSQL の拡張機能は `schema/postgres.bootstrap.sql`（冪等な準備 SQL）に書きます。
@@ -132,7 +133,7 @@ scripts/task.sh go:sqlc-check  # 生成物が最新でなければ失敗（check
 ```
 
 - DB アダプタは `pkg/testkit` のコントラクトテスト（例: `testkit.UnitOfWorkContract`）を SQLite と PostgreSQL の両方で通します。
-  テスト用の DB には目標スキーマ `schema/<dialect>.sql` を直接流します（空の DB に対する Atlas の適用と同じ SQL になります）。
+  テスト用の DB には目標スキーマ `schema/<dialect>/` のファイルを名前の順に直接流します（空の DB に対する Atlas の適用と同じ SQL になります）。
 - PostgreSQL のテストは `pkg/testkit/pgtest` でサーバーを得ます（[ADR-0041](docs/adr/0041-postgres-tests-on-pgmem.md)）。
   既定では、テストのプロセスの中で pgmem（メモリ上で動く PostgreSQL）を起動するので、Docker は要りません。
   テストのバイナリごとにサーバーを 1 つ起動し、テストごとにスキーマを当てたテンプレートのデータベースを複製します。
