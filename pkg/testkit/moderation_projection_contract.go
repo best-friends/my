@@ -69,7 +69,7 @@ func moderationProjectionEqualsRebuild(t *testing.T, e *moderationEnv) {
 				reports = append(reports, r.ID)
 			case 7:
 				if len(reports) > 0 {
-					_, err = e.svc.AssignReport(ctx, pick(reports), pick([]string{"", "u1", "u2"}), "")
+					_, err = e.svc.AssignReport(ctx, pick(reports), pick([]string{"", NamedID("u1"), NamedID("u2")}), "")
 				}
 			default:
 				if len(reports) == 0 {

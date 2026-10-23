@@ -216,7 +216,7 @@ func registrationApproval(t *testing.T, e *accountEnv) {
 		one.AccountID != bob.AccountID || one.Email != "bob@example.com" || one.State.State != identity.RegistrationPending {
 		t.Errorf("Registration(bob) = %+v, %v", one, err)
 	}
-	if _, err := r.Registration(ctx, "nobody"); !errors.Is(err, appidentity.ErrNotFound) {
+	if _, err := r.Registration(ctx, NamedID("nobody")); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("Registration(nobody) = %v, want ErrNotFound", err)
 	}
 	p := pending[0]
@@ -247,7 +247,7 @@ func registrationApproval(t *testing.T, e *accountEnv) {
 	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: bob.User.ID, Decision: identity.DecisionRejected}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: "nobody", Decision: identity.DecisionApproved}); !errors.Is(err, appidentity.ErrNotFound) {
+	if _, err := r.DecideRegistration(ctx, appidentity.DecideInput{UserID: NamedID("nobody"), Decision: identity.DecisionApproved}); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("deciding on an unknown user = %v, want ErrNotFound", err)
 	}
 	st, err := e.h.Identity.FindRegistrationState(ctx, alice.User.ID)

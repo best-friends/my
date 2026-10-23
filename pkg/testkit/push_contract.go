@@ -218,12 +218,12 @@ func pushRejects(t *testing.T, e *pushEnv) {
 		{"unknown type", appnotification.SubscribeInput{Endpoint: "https://push.example.net/1", KeyP256DH: contractPushP256DH, KeyAuth: contractPushAuth, Alerts: []notification.Type{"poke"}}, notification.ErrInvalidType},
 	}
 	for _, tc := range cases {
-		tc.in.AccountID, tc.in.TokenFamilyID = contractPushAcct, "family"
+		tc.in.AccountID, tc.in.TokenFamilyID = contractPushAcct, NamedID("family")
 		if _, err := e.svc.Subscribe(t.Context(), tc.in); !errors.Is(err, tc.want) {
 			t.Errorf("%s: Subscribe = %v, want %v", tc.name, err, tc.want)
 		}
 	}
-	if _, ok := e.ofFamily(t, "family"); ok {
+	if _, ok := e.ofFamily(t, NamedID("family")); ok {
 		t.Error("an invalid subscription was stored")
 	}
 }

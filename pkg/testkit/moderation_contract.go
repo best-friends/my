@@ -193,7 +193,7 @@ func moderationLifts(t *testing.T, e *moderationEnv) {
 	ctx := t.Context()
 	first := e.domainAction(t, "bad.example", moderation.DomainSuspend, 0)
 	second := e.domainAction(t, "bad.example", moderation.DomainSuspend, 24*time.Hour)
-	limit := e.domainAction(t, "bad.example", moderation.DomainLimit, 0)
+	e.domainAction(t, "bad.example", moderation.DomainLimit, 0)
 	if err := e.svc.LiftDomainAction(ctx, first.ID, ""); err != nil {
 		t.Fatalf("LiftDomainAction = %v", err)
 	}
@@ -210,7 +210,7 @@ func moderationLifts(t *testing.T, e *moderationEnv) {
 	if want := []moderation.Restriction{moderation.RestrictPublicDiscovery, moderation.RestrictUnsolicitedReach}; err != nil || !reflect.DeepEqual(rs, want) {
 		t.Errorf("DomainRestrictions after the lifts = %v, %v; want %v", rs, err, want)
 	}
-	if err := e.svc.LiftDomainAction(ctx, limit.Domain, ""); !errors.Is(err, appmoderation.ErrNotFound) {
+	if err := e.svc.LiftDomainAction(ctx, NamedID("unknown-domain-action"), ""); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("LiftDomainAction(unknown) = %v, want ErrNotFound", err)
 	}
 }
