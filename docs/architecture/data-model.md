@@ -1809,6 +1809,6 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 ## 11. 未決事項
 
 - [ ] 同一モジュール内の外部キーを方言別スキーマに付けるか（Aurora DSQL は対応済み、#18）
-- [ ] PostgreSQL で `id` を `uuid` 型にするか（#17 は `COLLATE "C"` の `text` か `uuid` のどちらかを推奨）
+- [ ] PostgreSQL で `id` を `uuid` 型にするか（#17 は `COLLATE "C"` の `text` か `uuid` のどちらかを推奨。推奨案は [ADR-0078](../adr/0078-postgres-uuid-columns.md)、Proposed）
 - [ ] ホームタイムラインの読み取り窓の既定値 7 日と広げ方の見直し（ADR-0013 の計測で決める）
 - [ ] 書き込み行数の増加（イベント + 投影）が従量課金 DB のコストに与える影響の計測（M2）
