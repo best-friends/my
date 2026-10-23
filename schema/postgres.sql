@@ -581,7 +581,7 @@ CREATE TABLE account_domain_mutes (
 
 -- Jobs written in a domain transaction, waiting for the relay to enqueue them.
 CREATE TABLE outbox_events (
-  id text NOT NULL PRIMARY KEY,
+  id uuid NOT NULL PRIMARY KEY,
   job_type text NOT NULL,
   payload bytea NOT NULL,
   idempotency_key text,
@@ -594,7 +594,7 @@ CREATE TABLE outbox_events (
 -- Pending and running jobs of the database queue. A job is deleted when it finishes and moved
 -- to dead_jobs when it fails for good. A claim sets locked_by and locked_until together.
 CREATE TABLE jobs (
-  id text NOT NULL PRIMARY KEY,
+  id uuid NOT NULL PRIMARY KEY,
   type text NOT NULL,
   payload bytea NOT NULL,
   idempotency_key text,
@@ -615,7 +615,7 @@ CREATE INDEX jobs_ordering_key_run_at ON jobs (ordering_key, run_at);
 
 -- Jobs that failed for good, kept for the admin screen and the CLI to requeue.
 CREATE TABLE dead_jobs (
-  id text NOT NULL PRIMARY KEY,
+  id uuid NOT NULL PRIMARY KEY,
   type text NOT NULL,
   payload bytea NOT NULL,
   idempotency_key text,
@@ -633,7 +633,7 @@ CREATE INDEX dead_jobs_failed_at ON dead_jobs (failed_at);
 -- at most 2,000 bytes; no payload and no handler log. A requeued dead job counts its attempts
 -- again, so finished_at is part of the key. Purged job_attempt_retention after finished_at.
 CREATE TABLE job_attempts (
-  job_id text NOT NULL,
+  job_id uuid NOT NULL,
   attempt integer NOT NULL CHECK (attempt >= 1),
   job_type text NOT NULL,
   outcome text NOT NULL CHECK (outcome IN ('retry', 'dead')),
@@ -2867,7 +2867,7 @@ CREATE TABLE income_movements (
   provider_id text COLLATE "C" NOT NULL CHECK (length(provider_id) BETWEEN 1 AND 255),
   kind text NOT NULL CHECK (kind IN ('payment', 'refund', 'chargeback', 'chargeback_reversal', 'fee')),
   parent_movement_id uuid,
-  subscription_id text COLLATE "C",
+  subscription_id uuid,
   occurred_at timestamptz NOT NULL,
   occurred_on date NOT NULL,
   covers_starts_on date,
