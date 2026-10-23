@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // store runs the dialect's queries inside a transaction of the dialect's UnitOfWork.

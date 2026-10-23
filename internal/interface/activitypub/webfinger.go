@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
+	appaccount "github.com/mycroblog/my/internal/app/account"
 )
 
 // WebFinger link relations (RFC 7033) that the JRD carries.

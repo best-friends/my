@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/instance"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // InstanceHarness is one database under test: an empty database with the product schema, its

@@ -18,11 +18,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/blob"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/media"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // RemoteMediaInput is a remote media file as a received document declares it.

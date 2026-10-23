@@ -23,8 +23,8 @@ import (
 
 	valkeygo "github.com/valkey-io/valkey-go"
 
-	"github.com/best-friends/my/internal/adapter/valkey"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/adapter/valkey"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Store is the Valkey key-value store. It is safe for concurrent use.

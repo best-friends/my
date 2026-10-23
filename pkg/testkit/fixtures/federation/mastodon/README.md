@@ -9,7 +9,7 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
 - `circa-2023/` is a January 2023 document of mastodon.social from the same Akkoma fixtures;
   `mastodon.social` → `mastodon.example` and the user → `alice`.
 - `4.8/` was captured from a running Mastodon 4.8 server; it is the document of
-  [peers/mastodon/actor.json](https://github.com/best-friends/my/blob/main/internal/interface/activitypub/testdata/peers/mastodon/actor.json)
+  [peers/mastodon/actor.json](https://github.com/mycroblog/my/blob/main/internal/interface/activitypub/testdata/peers/mastodon/actor.json)
   (hosts, names, and texts already replaced there) with `publicKeyPem` replaced.
 - `4.7/` was captured from Mastodon v4.7.3 by the live interoperability test
   ([deploy/docker/federation-live](../../../../../deploy/docker/federation-live/README.md)) on 2026-10-17: what Mastodon delivered to

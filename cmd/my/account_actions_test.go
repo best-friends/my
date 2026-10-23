@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/content"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	domaincontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/content"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	domaincontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 var issuedAccountAction = regexp.MustCompile(`^issued disable_login on account (\S+) \(action (\S+), never expires\)\n$`)

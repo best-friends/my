@@ -5,7 +5,7 @@ package moderation
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The reporter's use cases: a local user's own reports and whether each is resolved (FR-711).

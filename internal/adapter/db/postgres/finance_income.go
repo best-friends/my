@@ -8,10 +8,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // The income records (data-model §4.12, ADR-0073 §8).

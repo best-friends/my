@@ -6,8 +6,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/best-friends/my/tools/agentkit/internal/adr"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/adr"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
 )
 
 func runADR(r *repo.Repo, args []string) error {

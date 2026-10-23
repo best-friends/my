@@ -21,8 +21,8 @@ import (
 
 	_ "modernc.org/sqlite" // the CGO-free SQLite driver
 
-	"github.com/best-friends/my/tools/agentkit/internal/extract"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/extract"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
 )
 
 const schemaVersion = "1"

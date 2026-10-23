@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"net/http"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/notification"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // The viewer's appeals of the actions on their own account (FR-707, ADR-0038). The moderation

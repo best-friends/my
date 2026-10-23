@@ -5,8 +5,8 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpAuthPages registers the sign-in screens. They load the stylesheet the web build makes for

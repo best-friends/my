@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/interface/media"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/interface/media"
 )
 
 // fakeRemote opens the file "ok" (signature "good") and fails for everything else with err.

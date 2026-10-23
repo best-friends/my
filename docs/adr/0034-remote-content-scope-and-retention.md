@@ -17,7 +17,7 @@
 - [data-model §11](../architecture/data-model/11-open-questions.md#11-未決事項) の未決事項「古いリモート投稿の消去条件」
 - [ActivityPub 付録 B.5](https://www.w3.org/TR/activitypub/#security-recursive-objects): オブジェクトを再帰的に解決するときは深さに上限を置く
 
-主要実装の参考値（2026-10-17 にソースで確認。出典は [#232 の調査報告](https://github.com/best-friends/my/issues/232)）: Mastodon は Actor を 1 日で古いとみなして取り直し、GoToSocial は Actor を 6 時間・投稿を 2 時間で古いとみなし、スレッドの祖先と子孫を最大 1,024 回の反復で取得する。
+主要実装の参考値（2026-10-17 にソースで確認。出典は [#232 の調査報告](https://github.com/mycroblog/my/issues/232)）: Mastodon は Actor を 1 日で古いとみなして取り直し、GoToSocial は Actor を 6 時間・投稿を 2 時間で古いとみなし、スレッドの祖先と子孫を最大 1,024 回の反復で取得する。
 
 ADR-0005 はリモート **メディア** の方針（既定はキャッシュしない）を決めているが、投稿とアカウントの文書の扱いを決めた ADR はない。
 

@@ -8,8 +8,8 @@ import (
 	"net/netip"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 func prefixes(ps ...string) []netip.Prefix {

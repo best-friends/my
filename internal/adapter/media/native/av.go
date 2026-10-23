@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // InspectAV implements media.AVProcessor. It parses the whole container, which reads no

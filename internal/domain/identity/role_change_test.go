@@ -5,7 +5,7 @@ package identity_test
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 func TestCanManageRole(t *testing.T) {

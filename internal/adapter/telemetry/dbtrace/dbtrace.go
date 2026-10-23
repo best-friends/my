@@ -12,7 +12,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Attribute keys of the database spans, from the OpenTelemetry semantic conventions.

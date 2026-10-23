@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // Role badges on profiles (ADR-0071, FR-913). Account.badges is filled by the account's own

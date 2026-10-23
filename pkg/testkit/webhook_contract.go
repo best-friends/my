@@ -16,12 +16,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	appwebhook "github.com/best-friends/my/internal/app/webhook"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/webhook"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	appwebhook "github.com/mycroblog/my/internal/app/webhook"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/webhook"
 )
 
 // WebhookHarness is what WebhookRepositoryContract needs from a database adapter: its unit of

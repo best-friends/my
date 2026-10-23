@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // PushService is the fake push service that PushSenderContract gives the sender under test.

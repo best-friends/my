@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Retention of the dead jobs (FR-803) and of the records of the attempts (ADR-0064 §2).

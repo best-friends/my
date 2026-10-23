@@ -21,10 +21,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
-	billinggcp "github.com/best-friends/my/internal/adapter/billing/gcp"
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/pkg/testkit"
+	billinggcp "github.com/mycroblog/my/internal/adapter/billing/gcp"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 const (

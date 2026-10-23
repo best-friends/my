@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // This file holds the quotes of statuses (FR-114, ADR-0069): the status that a status quotes

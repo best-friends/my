@@ -5,8 +5,8 @@ package authpages
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // TestScopeDescriptions checks that the consent screen words every scope the server knows,

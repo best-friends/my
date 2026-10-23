@@ -14,11 +14,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // Jobs and schedules of the billing imports (ADR-0068 §2).

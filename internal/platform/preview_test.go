@@ -10,14 +10,14 @@ import (
 	"testing"
 	"testing/fstest"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/identity"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/account"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/platform"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/identity"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/account"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestLinkPreviews checks end to end which profile and post pages carry link preview meta

@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakeRoles keeps the roles of users with the semantics of appidentity.Service: the built-in

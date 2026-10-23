@@ -9,8 +9,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // ContinuationKey returns the idempotency key of the job that continues the reconciliation

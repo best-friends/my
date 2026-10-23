@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // ErrFederationRestricted reports something that the federation mode (FR-413, ADR-0076) does not

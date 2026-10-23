@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakeTwoFactor is the two-factor authentication of alice: code "123456" is right, setup

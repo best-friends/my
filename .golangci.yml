@@ -39,7 +39,7 @@ linters:
           files:
             - $all
           deny:
-            - pkg: github.com/best-friends/my/cmd
+            - pkg: github.com/mycroblog/my/cmd
               desc: entrypoints are leaves; move shared code into internal/platform
         domain-identity:
           list-mode: strict
@@ -47,16 +47,16 @@ linters:
             - "**/internal/domain/identity/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/identity
+            - github.com/mycroblog/my/internal/domain/identity
         app-identity:
           list-mode: strict
           files:
             - "**/internal/app/identity/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/identity
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/identity
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
             # Argon2id password hashing (ADR-0019 §3): a pure-Go algorithm, not an external resource.
             - golang.org/x/crypto/argon2
             # BCP 47 tag parsing and canonicalization for preferences (ADR-0009): pure-Go data, not an external resource.
@@ -67,32 +67,32 @@ linters:
             - "**/internal/domain/account/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/account
+            - github.com/mycroblog/my/internal/domain/account
         app-account:
           list-mode: strict
           files:
             - "**/internal/app/account/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/account
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/account
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         domain-content:
           list-mode: strict
           files:
             - "**/internal/domain/content/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/content
+            - github.com/mycroblog/my/internal/domain/content
         app-content:
           list-mode: strict
           files:
             - "**/internal/app/content/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/content
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/content
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
             # NFKC normalization of hashtags (data-model §4.4, tags.name_normalized): pure-Go Unicode data, not an external resource.
             - golang.org/x/text/unicode/norm
             # Reading the head of linked pages for link cards (ADR-0062 §2): a pure-Go HTML tokenizer and charset decoder, not an external resource.
@@ -105,64 +105,64 @@ linters:
             - "**/internal/domain/graph/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/graph
+            - github.com/mycroblog/my/internal/domain/graph
         app-graph:
           list-mode: strict
           files:
             - "**/internal/app/graph/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/graph
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/graph
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         domain-timeline:
           list-mode: strict
           files:
             - "**/internal/domain/timeline/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/timeline
+            - github.com/mycroblog/my/internal/domain/timeline
         app-timeline:
           list-mode: strict
           files:
             - "**/internal/app/timeline/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/timeline
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/timeline
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         domain-notification:
           list-mode: strict
           files:
             - "**/internal/domain/notification/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/notification
+            - github.com/mycroblog/my/internal/domain/notification
         app-notification:
           list-mode: strict
           files:
             - "**/internal/app/notification/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/notification
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/notification
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         domain-federation:
           list-mode: strict
           files:
             - "**/internal/domain/federation/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/federation
+            - github.com/mycroblog/my/internal/domain/federation
         app-federation:
           list-mode: strict
           files:
             - "**/internal/app/federation/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/federation
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/federation
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
             # IDNA 2008 A-label canonicalization of remote hosts (federation.md §1.2): pure-Go Unicode data, not an external resource.
             - golang.org/x/net/idna
         domain-moderation:
@@ -171,64 +171,64 @@ linters:
             - "**/internal/domain/moderation/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/moderation
+            - github.com/mycroblog/my/internal/domain/moderation
         app-moderation:
           list-mode: strict
           files:
             - "**/internal/app/moderation/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/moderation
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/moderation
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         domain-instance:
           list-mode: strict
           files:
             - "**/internal/domain/instance/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/instance
+            - github.com/mycroblog/my/internal/domain/instance
         app-instance:
           list-mode: strict
           files:
             - "**/internal/app/instance/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/instance
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/instance
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         domain-webhook:
           list-mode: strict
           files:
             - "**/internal/domain/webhook/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/webhook
+            - github.com/mycroblog/my/internal/domain/webhook
         app-webhook:
           list-mode: strict
           files:
             - "**/internal/app/webhook/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/webhook
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/webhook
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         domain-finance:
           list-mode: strict
           files:
             - "**/internal/domain/finance/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/finance
+            - github.com/mycroblog/my/internal/domain/finance
         app-finance:
           list-mode: strict
           files:
             - "**/internal/app/finance/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/finance
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/finance
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
             # NFKC normalization of the providers (ADR-0067 §2, cost_item_label_revisions.provider_normalized): pure-Go Unicode data, not an external resource.
             - golang.org/x/text/unicode/norm
         domain-supporters:
@@ -237,16 +237,16 @@ linters:
             - "**/internal/domain/supporters/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/supporters
+            - github.com/mycroblog/my/internal/domain/supporters
         app-supporters:
           list-mode: strict
           files:
             - "**/internal/app/supporters/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/domain/supporters
-            - github.com/best-friends/my/internal/app
-            - github.com/best-friends/my/internal/i18n
+            - github.com/mycroblog/my/internal/domain/supporters
+            - github.com/mycroblog/my/internal/app
+            - github.com/mycroblog/my/internal/i18n
         # app/kernel holds the ports and helpers shared by every module (Clock, IDGenerator, KeyManager);
         # it depends on nothing in the repository so that any module can import it.
         app-kernel:
@@ -255,7 +255,7 @@ linters:
             - "**/internal/app/kernel/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/kernel
+            - github.com/mycroblog/my/internal/app/kernel
         # app/uow holds the UnitOfWork port, its retry loop, and the synchronous projector registry
         # shared by every module and database adapter; like kernel, it depends on nothing in the repository.
         app-uow:
@@ -264,7 +264,7 @@ linters:
             - "**/internal/app/uow/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/uow
+            - github.com/mycroblog/my/internal/app/uow
         # app/queue holds the job queue ports, the handler registry, the retry policy, and the pull
         # runner shared by every module and queue adapter; it depends only on kernel and uow.
         app-queue:
@@ -273,9 +273,9 @@ linters:
             - "**/internal/app/queue/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/queue
-            - github.com/best-friends/my/internal/app/kernel
-            - github.com/best-friends/my/internal/app/uow
+            - github.com/mycroblog/my/internal/app/queue
+            - github.com/mycroblog/my/internal/app/kernel
+            - github.com/mycroblog/my/internal/app/uow
         # app/projection rebuilds and verifies the projections (data-model §9) through rebuild
         # functions that the composition root takes from the modules; it owns no tables and
         # depends only on uow and queue.
@@ -285,9 +285,9 @@ linters:
             - "**/internal/app/projection/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/projection
-            - github.com/best-friends/my/internal/app/queue
-            - github.com/best-friends/my/internal/app/uow
+            - github.com/mycroblog/my/internal/app/projection
+            - github.com/mycroblog/my/internal/app/queue
+            - github.com/mycroblog/my/internal/app/uow
         # app/stream holds the ports of the real-time updates (Publisher / Subscriber, Bus,
         # Sweeper), the in-process broker, and the cross-process Relay shared by the modules that
         # publish, the streaming endpoint, and the Bus adapters; it depends only on kernel (the
@@ -298,9 +298,9 @@ linters:
             - "**/internal/app/stream/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/stream
-            - github.com/best-friends/my/internal/app/kernel
-            - github.com/best-friends/my/internal/app/queue
+            - github.com/mycroblog/my/internal/app/stream
+            - github.com/mycroblog/my/internal/app/kernel
+            - github.com/mycroblog/my/internal/app/queue
         # app/metrics keeps the snapshot of the instance-wide gauges (ADR-0055 §4) in the
         # KeyValueStore and computes it through the queue's BacklogReader and a function that the
         # composition root takes from the modules; it depends only on kernel and queue.
@@ -310,9 +310,9 @@ linters:
             - "**/internal/app/metrics/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/metrics
-            - github.com/best-friends/my/internal/app/kernel
-            - github.com/best-friends/my/internal/app/queue
+            - github.com/mycroblog/my/internal/app/metrics
+            - github.com/mycroblog/my/internal/app/kernel
+            - github.com/mycroblog/my/internal/app/queue
         # app/blob (BlobStore) and app/media (MediaProcessor) hold ports shared by every module that
         # keeps files and by their adapters; like kernel, they depend on nothing in the repository.
         app-blob:
@@ -321,22 +321,22 @@ linters:
             - "**/internal/app/blob/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/blob
+            - github.com/mycroblog/my/internal/app/blob
         app-media:
           list-mode: strict
           files:
             - "**/internal/app/media/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/app/media
+            - github.com/mycroblog/my/internal/app/media
         i18n:
           list-mode: strict
           files:
             - "**/internal/i18n/**"
           allow:
             - $gostd
-            - github.com/best-friends/my/internal/i18n
-            - github.com/best-friends/my/locales
+            - github.com/mycroblog/my/internal/i18n
+            - github.com/mycroblog/my/locales
             - github.com/kaptinlin/messageformat-go/mf1
         # bluemonday is the remote HTML sanitizer (ADR-0019 §2); it stays inside the adapter of
         # kernel.HTMLSanitizer so that every caller goes through the port and its policy version,
@@ -401,11 +401,11 @@ linters:
             - "**/internal/interface/**"
             - "!$test"
           deny:
-            - pkg: github.com/best-friends/my/internal/adapter
+            - pkg: github.com/mycroblog/my/internal/adapter
               desc: interface code reaches adapters only through application ports
-            - pkg: github.com/best-friends/my/internal/platform
+            - pkg: github.com/mycroblog/my/internal/platform
               desc: only cmd imports the composition root
-            - pkg: github.com/best-friends/my/pkg/testkit
+            - pkg: github.com/mycroblog/my/pkg/testkit
               desc: testkit is for adapter contract tests
         interface-tests:
           # Tests may use pkg/testkit fakes (clock, IDs, fixtures); production interface code may not.
@@ -413,29 +413,29 @@ linters:
           files:
             - "**/internal/interface/**/*_test.go"
           deny:
-            - pkg: github.com/best-friends/my/internal/adapter
+            - pkg: github.com/mycroblog/my/internal/adapter
               desc: interface tests reach adapters only through application ports
-            - pkg: github.com/best-friends/my/internal/platform
+            - pkg: github.com/mycroblog/my/internal/platform
               desc: only cmd imports the composition root
         adapter:
           list-mode: lax
           files:
             - "**/internal/adapter/**"
           deny:
-            - pkg: github.com/best-friends/my/internal/interface
+            - pkg: github.com/mycroblog/my/internal/interface
               desc: adapters implement application ports and never call inbound interfaces
-            - pkg: github.com/best-friends/my/internal/platform
+            - pkg: github.com/mycroblog/my/internal/platform
               desc: only cmd imports the composition root
         testkit:
           list-mode: lax
           files:
             - "**/pkg/testkit/**"
           deny:
-            - pkg: github.com/best-friends/my/internal/interface
+            - pkg: github.com/mycroblog/my/internal/interface
               desc: testkit depends only on application ports and domain types
-            - pkg: github.com/best-friends/my/internal/adapter
+            - pkg: github.com/mycroblog/my/internal/adapter
               desc: testkit depends only on application ports and domain types
-            - pkg: github.com/best-friends/my/internal/platform
+            - pkg: github.com/mycroblog/my/internal/platform
               desc: testkit depends only on application ports and domain types
         # The live interoperability scenarios are black-box clients of running servers (federation.md §12):
         # HTTP to the client APIs and a read of this server's database (pgx), nothing of this module.
@@ -470,6 +470,6 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/best-friends/my
+        - github.com/mycroblog/my
   exclusions:
     generated: lax

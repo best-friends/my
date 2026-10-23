@@ -1,6 +1,6 @@
 ---
 name: work-on-issue
-description: Take a GitHub issue from best-friends/my through the full agent workflow — claim, branch, implement, verify with scripts/task.sh check, and open a PR. Use when asked to work on, pick up, or implement an issue.
+description: Take a GitHub issue from mycroblog/my through the full agent workflow — claim, branch, implement, verify with scripts/task.sh check, and open a PR. Use when asked to work on, pick up, or implement an issue.
 ---
 
 # Work-on-issue skill

@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // The outcomes of a job run, the my.outcome label of my.job.duration (ADR-0055 §3).

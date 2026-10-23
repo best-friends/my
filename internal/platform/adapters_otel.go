@@ -7,8 +7,8 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/otel"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/telemetry/otel"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpOTelMeter sets the Meter of metrics_exporter = prometheus or otlp.

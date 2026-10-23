@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Store is an in-memory kernel.KeyValueStore. It is safe for concurrent use.

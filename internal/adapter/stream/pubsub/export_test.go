@@ -5,7 +5,7 @@ package pubsub
 import (
 	pubsubv2 "cloud.google.com/go/pubsub/v2"
 
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // Client returns the Pub/Sub client of b, for the tests to manage topics and subscriptions.

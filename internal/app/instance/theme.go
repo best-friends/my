@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/instance"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // The instance theme (ADR-0059, FR-605): the administrator's overrides of the web client's design

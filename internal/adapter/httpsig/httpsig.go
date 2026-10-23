@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Adapter signs and verifies HTTP signatures. The zero value is ready to use and safe for

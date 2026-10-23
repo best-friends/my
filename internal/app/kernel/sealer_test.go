@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // fakeKeyManager wraps with AES-256-GCM under fixed keys. The kernel's tests cannot use the

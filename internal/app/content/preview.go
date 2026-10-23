@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/domain/content"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // This file holds the use cases behind link previews (ADR-0028): what an anonymous visitor may

@@ -6,11 +6,11 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	apptimeline "github.com/best-friends/my/internal/app/timeline"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/timeline"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	apptimeline "github.com/mycroblog/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/timeline"
 )
 
 // TimelineRepository implements timeline.Repository on SQLite.

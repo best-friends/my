@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // moderationProjectionEqualsRebuild runs random actions on accounts and domains, lifts, the

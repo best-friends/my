@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
-	"github.com/best-friends/my/internal/adapter/queue/inline"
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform/config"
+	queuedb "github.com/mycroblog/my/internal/adapter/queue/db"
+	"github.com/mycroblog/my/internal/adapter/queue/inline"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpQueue builds the job queue that cfg.Queue selects, the runner of the worker role, and the

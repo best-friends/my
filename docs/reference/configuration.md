@@ -38,7 +38,7 @@ An instance setting that has never been set reads as its default, which is defin
 | --- | --- | --- | --- | --- |
 | [`host`](#host) | `MY_HOST` | none | yes | no |
 | [`account_domain`](#account_domain) | `MY_ACCOUNT_DOMAIN` | value of `host` | no | no |
-| [`source_url`](#source_url) | `MY_SOURCE_URL` | `https://github.com/best-friends/my` | no | no |
+| [`source_url`](#source_url) | `MY_SOURCE_URL` | `https://github.com/mycroblog/my` | no | no |
 | [`web_origin`](#web_origin) | `MY_WEB_ORIGIN` | `https://{host}` | no | no |
 | [`role`](#role) | `MY_ROLE` | `all` | no | no |
 | [`listen`](#listen) | `MY_LISTEN` | `:8080` | no | no |
@@ -143,7 +143,7 @@ Domain of user handles (`@alice@{account_domain}`). Defaults to `host`. When it 
 Where users get the source code of the running server, as an `https` URL or a `mailto:` address to request it from. AGPL-3.0 section 13 (ADR-0011) requires offering the source to everyone who uses the server over the network; `GET /instance`, the information page (`/about`), the landing page, and NodeInfo (`metadata.sourceCode`, and `software.repository` for an `https` URL) publish it. Point it at your own source when you run a fork or a modified version (docs/operations/running.md).
 
 - Environment variable: `MY_SOURCE_URL`
-- Default: `https://github.com/best-friends/my`
+- Default: `https://github.com/mycroblog/my`
 - Required: no
 
 ### `web_origin`

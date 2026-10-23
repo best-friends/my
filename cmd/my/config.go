@@ -9,8 +9,8 @@ import (
 	"io"
 	"text/tabwriter"
 
-	"github.com/best-friends/my/internal/adapter/webpush"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/webpush"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // runConfig implements `my config <subcommand>`.

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // DefaultShutdownTimeout is how long Serve waits for in-flight requests and jobs after ctx

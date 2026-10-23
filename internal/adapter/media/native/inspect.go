@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/image/webp"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // inspect detects the format of data and checks it against limits using only its headers.

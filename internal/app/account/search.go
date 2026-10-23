@@ -5,7 +5,7 @@ package account
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // The account search of the moderators (FR-714): the accounts newest first, in keyset pages by

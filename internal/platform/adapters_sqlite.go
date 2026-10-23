@@ -7,11 +7,11 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
-	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
-	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite"
+	kvdb "github.com/mycroblog/my/internal/adapter/kv/db"
+	queuedb "github.com/mycroblog/my/internal/adapter/queue/db"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // openSQLite opens the SQLite database of db = sqlite and, when cfg selects them, the

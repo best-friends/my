@@ -11,17 +11,17 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/kernel"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/graph"
-	"github.com/best-friends/my/internal/domain/notification"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // RemoteFollowHarness is one database under test: an empty database with the product schema, its

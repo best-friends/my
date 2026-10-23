@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/kernel"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // RegistrationRepository is the persistence of registration, invites, email verification, and

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/web"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/web"
 )
 
 // TestLandingPreview checks that the landing page (/) previews the instance in its default

@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/kv/memory"
-	"github.com/best-friends/my/internal/adapter/system"
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/kv/memory"
+	"github.com/mycroblog/my/internal/adapter/system"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func checkMeter(t *testing.T, m *testkit.Meter) {

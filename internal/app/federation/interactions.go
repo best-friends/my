@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // Boosts, favourites, and emoji reactions across servers (federation.md §3.4, §7.1): the

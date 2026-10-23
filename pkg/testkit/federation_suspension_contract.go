@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/federation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // fedSuspensions is an AccountPolicy that suspends the accounts it holds.

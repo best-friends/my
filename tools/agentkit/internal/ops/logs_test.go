@@ -9,11 +9,11 @@ import (
 
 func TestFailures(t *testing.T) {
 	log := strings.Join([]string{
-		"go\tgo test\t2026-10-22T01:02:03.456Z ok  \tgithub.com/best-friends/my/internal/app/content\t1.2s",
+		"go\tgo test\t2026-10-22T01:02:03.456Z ok  \tgithub.com/mycroblog/my/internal/app/content\t1.2s",
 		"go\tgo test\t2026-10-22T01:02:03.456Z --- FAIL: TestSubmitRequest (0.01s)",
 		"go\tgo test\t2026-10-22T01:02:03.456Z     request_test.go:42: got 2 requests, want 1",
 		"go\tgo test\t2026-10-22T01:02:03.456Z FAIL",
-		"go\tgo test\t2026-10-22T01:02:03.456Z FAIL\tgithub.com/best-friends/my/internal/app/content\t0.3s",
+		"go\tgo test\t2026-10-22T01:02:03.456Z FAIL\tgithub.com/mycroblog/my/internal/app/content\t0.3s",
 		"unrelated noise",
 		"src/features/a.tsx(3,1): error TS2322: Type 'string' is not assignable to type 'number'.",
 		`task: Failed to run task "go:test": exit status 1`,

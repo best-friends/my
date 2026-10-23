@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The audit log (FR-704, ADR-0037, view_audit): the operations of the moderators and the

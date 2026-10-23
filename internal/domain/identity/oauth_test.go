@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 func TestKnownScopesAreSortedAndParse(t *testing.T) {

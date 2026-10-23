@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/platform"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // inboxRecorder is a kernel.HTTPClient that answers every POST with 202 and keeps it; every other

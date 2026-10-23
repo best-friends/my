@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/media"
-	"github.com/best-friends/my/internal/domain/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/media"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // MediaFiles runs the media use cases for the client API; *content.MediaService implements it.

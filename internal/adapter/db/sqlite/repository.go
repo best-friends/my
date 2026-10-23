@@ -12,9 +12,9 @@ import (
 	msqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	"github.com/mycroblog/my/internal/adapter/telemetry/dbtrace"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // queries returns the generated queries bound to the SQLite transaction behind tx.

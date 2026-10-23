@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Creates a new ADR from docs/adr/template.md. Its number is one more than the largest number of the ADRs in the
-# working tree and of the ADR files the open pull requests of best-friends/my add, so that parallel pull requests
+# working tree and of the ADR files the open pull requests of mycroblog/my add, so that parallel pull requests
 # do not pick the same number (ADR-0081). Without a working gh, it uses the working tree only and says so.
 # Usage: scripts/adr-new.sh "Title of the decision" [kebab-slug]
 set -euo pipefail
@@ -14,7 +14,7 @@ fi
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 dir="$root/docs/adr"
-repo="best-friends/my"
+repo="mycroblog/my"
 title="$1"
 # Non-ASCII titles cannot be slugified reliably; pass an explicit slug for them.
 slug="${2:-$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')}"

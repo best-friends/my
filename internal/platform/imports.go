@@ -8,15 +8,15 @@ import (
 	"fmt"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/account"
-	domgraph "github.com/best-friends/my/internal/domain/graph"
-	domidentity "github.com/best-friends/my/internal/domain/identity"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/account"
+	domgraph "github.com/mycroblog/my/internal/domain/graph"
+	domidentity "github.com/mycroblog/my/internal/domain/identity"
 )
 
 // setUpImports builds the CSV exports and imports of the users' follows, blocks, mutes,

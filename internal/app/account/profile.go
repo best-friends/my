@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"html"
 
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // ErrNotLocal reports a use case for local accounts called with a remote account or the

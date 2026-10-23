@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/identity"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/identity"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // TestFederationEndpoints checks that the composition root serves the federation endpoints

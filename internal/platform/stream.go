@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/app/timeline"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // streamsCloseTimeout bounds the close of the streams' broker in App.Close: the signals still

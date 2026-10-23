@@ -15,7 +15,7 @@ M3.5 の UI 監査（#328）で、実際のサーバーとクライアントを 
 - 「投稿を書く」の文言付きの浮かぶボタンは、320 px で画面幅の約半分を占め、タイムラインの本文と操作を隠す。検索・設定・フォローの一覧のような投稿と関係のない画面にも出る。
 - 主要な類似クライアントは下端の項目を 5 つ以下にしている（Mastodon Web: ホーム・検索・投稿・通知・メニュー、[navigation_bar.tsx](https://github.com/mastodon/mastodon/blob/main/app/javascript/mastodon/features/ui/components/navigation_bar.tsx)。Misskey: 投稿ボタンを含む 5 つ前後、[mobile-footer-menu.vue](https://github.com/misskey-dev/misskey/blob/develop/packages/frontend/src/ui/_common_/mobile-footer-menu.vue)。Elk: [NavBottom.vue](https://github.com/elk-zone/elk/blob/main/app/components/nav/NavBottom.vue)）。
 
-決定者は、ローカルと連合のタイムラインを 1 つの画面のタブにせず、別の場所に置くと指示している（[#660](https://github.com/best-friends/my/issues/660)「タイムラインをローカル・連合でタブ化しない。分離して配置。」）。
+決定者は、ローカルと連合のタイムラインを 1 つの画面のタブにせず、別の場所に置くと指示している（[#660](https://github.com/mycroblog/my/issues/660)「タイムラインをローカル・連合でタブ化しない。分離して配置。」）。
 ナビゲーションの項目は情報設計の決定で、画面ごとの修正では決まらないので、ここで決める。関連する要件は FR-201〜207（タイムライン）、NFR-A11Y-1。
 
 ## Decision Drivers（判断基準）

@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/web"
-	"github.com/best-friends/my/pkg/testkit"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/web"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // crawlerSettings returns instance settings with search_indexing and ai_usage stored.

@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // MediaRepository is the persistence port of the content module's media files (data-model

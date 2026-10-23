@@ -9,9 +9,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // The income records (ADR-0073, FR-917): the payment provider's final money movements, which

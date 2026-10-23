@@ -9,8 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/adapter/telemetry/dbtrace"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // tracerRef holds the Tracer of a DB, which SetTracer sets after the pool's QueryTracer exists.

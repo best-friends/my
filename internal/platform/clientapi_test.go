@@ -10,11 +10,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/platform"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 const webOrigin = "http://localhost:5173"

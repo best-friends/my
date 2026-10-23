@@ -7,8 +7,8 @@ package platform
 import (
 	"context"
 
-	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
-	"github.com/best-friends/my/internal/platform/config"
+	queuedb "github.com/mycroblog/my/internal/adapter/queue/db"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // openSQLite reports that the build tag no_sqlite left the SQLite adapter out.

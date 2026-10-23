@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The bulk import of the sign-up block list (manage_accounts): a moderator sends a list, such as

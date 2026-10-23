@@ -5,10 +5,10 @@ package sqlite
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // This file holds the received activities and their documents (federation.md §3.1).

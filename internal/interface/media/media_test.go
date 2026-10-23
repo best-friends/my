@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/blob"
-	"github.com/best-friends/my/internal/interface/media"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/interface/media"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 type mux struct{ *http.ServeMux }

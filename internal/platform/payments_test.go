@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/payment/fake"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/adapter/payment/fake"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // syncedSubscriptions is a supporters.Syncer that keeps the snapshots it is given.

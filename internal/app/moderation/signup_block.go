@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The sign-up block list (FR-719, data-model §4.3). Moderators add and lift blocks through the

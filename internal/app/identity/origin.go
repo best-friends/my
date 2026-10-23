@@ -8,10 +8,10 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // Retention of the sign-in and registration origins (ADR-0038, data-model §4.1, §8).

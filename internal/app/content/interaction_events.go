@@ -5,7 +5,7 @@ package content
 import (
 	"time"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // Event types of the interactions with statuses, for uow.Projectors (data-model §4.4). Each

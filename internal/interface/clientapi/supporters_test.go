@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/domain/supporters"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 const (

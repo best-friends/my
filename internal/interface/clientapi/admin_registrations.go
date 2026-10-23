@@ -11,9 +11,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The admin operations of the registration review (FR-721, manage_accounts): the sign-ups that

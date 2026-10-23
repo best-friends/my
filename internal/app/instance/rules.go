@@ -9,9 +9,9 @@ import (
 	"slices"
 	"time"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/instance"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // The instance rules (FR-705, data-model §4.9). A rule keeps its ID for life: revising its

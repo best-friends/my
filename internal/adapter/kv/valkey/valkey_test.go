@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	kvvalkey "github.com/best-friends/my/internal/adapter/kv/valkey"
-	"github.com/best-friends/my/internal/adapter/valkey"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/pkg/testkit/valkeytest"
+	kvvalkey "github.com/mycroblog/my/internal/adapter/kv/valkey"
+	"github.com/mycroblog/my/internal/adapter/valkey"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit/valkeytest"
 )
 
 // TestMain stops the Valkey container of package valkeytest after the tests.

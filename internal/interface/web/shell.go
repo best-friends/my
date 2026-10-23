@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // runtimeConfig is the per-instance configuration of the web client, in the shell's JSON data

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // defaultStreamTimeout bounds the waits of the stream contracts when the harness sets none.

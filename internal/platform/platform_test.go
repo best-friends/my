@@ -23,11 +23,11 @@ import (
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver for applying the schema
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
+	"github.com/mycroblog/my/schema"
 )
 
 // syncBuffer is a bytes.Buffer safe for the concurrent writes of a logger.

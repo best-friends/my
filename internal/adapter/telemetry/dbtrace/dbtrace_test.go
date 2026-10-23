@@ -5,7 +5,7 @@ package dbtrace_test
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
+	"github.com/mycroblog/my/internal/adapter/telemetry/dbtrace"
 )
 
 func TestOperation(t *testing.T) {

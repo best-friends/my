@@ -8,12 +8,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/best-friends/my/tools/agentkit/internal/kb"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
-	"github.com/best-friends/my/tools/agentkit/internal/store"
+	"github.com/mycroblog/my/tools/agentkit/internal/kb"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/store"
 )
 
-const usage = `agentkit — context and workflow tools for coding agents in best-friends/my
+const usage = `agentkit — context and workflow tools for coding agents in mycroblog/my
 
 Read (instead of grep / cat over the repository):
   ctx <issue> [--layer server|web] [--budget 30000]   everything an issue needs, in one pack (.tmp/agentkit/ctx/<n>.md)

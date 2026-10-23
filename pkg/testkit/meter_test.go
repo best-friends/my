@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestMeterContract(t *testing.T) {

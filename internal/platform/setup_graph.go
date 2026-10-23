@@ -3,8 +3,8 @@
 package platform
 
 import (
-	"github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpGraph registers the graph module's projectors, builds its service, and registers its jobs.

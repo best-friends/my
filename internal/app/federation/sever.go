@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // SeverDirection says which follows with remote accounts SeverFederation ends (ADR-0076, `my

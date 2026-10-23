@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // The instance theme (ADR-0059 §5): the shell and the server-rendered pages load the current

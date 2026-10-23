@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The use cases of a local account's own actions (FR-715, NFR-MOD-6): the account sees every

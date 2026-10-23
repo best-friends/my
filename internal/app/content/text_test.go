@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/content"
 )
 
 const textHost = "social.example"

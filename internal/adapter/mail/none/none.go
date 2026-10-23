@@ -10,7 +10,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Mailer logs every message at the info level.

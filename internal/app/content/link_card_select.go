@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // LinkCardURL returns the URL whose card a revision shows (ADR-0062 §1), normalized

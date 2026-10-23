@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/emf"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/telemetry/emf"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // buffer collects the written lines.

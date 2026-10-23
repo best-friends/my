@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // FakeMediaProcessor is a media.Processor for tests of the code around processing. It detects

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"slices"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // The quotes of local statuses (FR-114, ADR-0069 §3): who may quote a status, and the quote of

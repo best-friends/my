@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // mediaAVCases are the cases of MediaProcessorContract for video and audio files

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // ErrAccountUnavailable reports a valid access token whose user cannot use the app: the user

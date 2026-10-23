@@ -23,7 +23,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/best-friends/my/locales"
+	"github.com/mycroblog/my/locales"
 )
 
 // entry is one catalog message in the FormatJS JSON shape.

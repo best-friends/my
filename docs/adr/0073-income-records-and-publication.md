@@ -30,7 +30,7 @@ spike #909 の確認事項への決定者の回答（#914、原文）:
 > 3\. プランごとの人数を、いまの人数だけにするか: 推奨案で OK
 > 4\. そのほかの推奨案（O1・L1・V1・E1）: そのまま採ってよいか。 : 推奨案ままで OK
 
-事業者の事実は spike #909 の[調査報告](https://github.com/best-friends/my/issues/909#issuecomment-6326974258)（2026-10-22 に公式の文書で確認）による。
+事業者の事実は spike #909 の[調査報告](https://github.com/mycroblog/my/issues/909#issuecomment-6326974258)（2026-10-22 に公式の文書で確認）による。
 
 - Stripe: 決済・返金・dispute はそれぞれ balance transaction になり、`amount`（総額）・`fee`・`net` = `amount` − `fee` を入金の通貨（日本のアカウントなら JPY）で持つ。返金で処理の手数料は返らず、dispute は ¥1,500 の手数料が勝っても返らない。
   Billing の 0.7%・Stripe Tax・Radar の手数料は決済ごとの `fee` に入らず、別の `stripe_fee` の取引として載る。

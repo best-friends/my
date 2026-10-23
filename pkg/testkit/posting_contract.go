@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/instance"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // PostingHarness is one database under test: an empty database with the product schema, its

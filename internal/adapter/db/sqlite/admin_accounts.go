@@ -6,13 +6,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The reads of the moderators' account management (FR-714) in the account, identity, and

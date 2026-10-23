@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/webpush"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/webpush"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func b64(t *testing.T, s string) []byte {

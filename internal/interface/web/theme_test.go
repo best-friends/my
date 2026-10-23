@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/web"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/web"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 var defaultSurface, _ = instance.LookupThemeToken("color-surface")

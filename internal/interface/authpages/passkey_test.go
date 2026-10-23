@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/i18n"
-	"github.com/best-friends/my/internal/interface/authpages"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/i18n"
+	"github.com/mycroblog/my/internal/interface/authpages"
 )
 
 // fakePasskeys hands out the challenges "challenge-1", "challenge-2", …, each of which signs

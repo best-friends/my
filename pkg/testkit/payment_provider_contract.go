@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/app/supporters"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 // PaymentScenario is the provider's side that PaymentProviderContract hands a factory: what the

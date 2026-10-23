@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // A vote is the Create of a Note named after the option, in reply to the Question and addressed

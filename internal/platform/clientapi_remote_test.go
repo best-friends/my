@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/htmlsanitizer"
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/adapter/htmlsanitizer"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestClientAPIPresentsRemoteStatuses checks the client API's view of remote content on the real

@@ -5,10 +5,10 @@ package sqlite
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // InsertResend implements graph.Repository.

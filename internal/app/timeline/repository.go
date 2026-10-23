@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/timeline"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/timeline"
 )
 
 // ErrNotFound reports that no row matches a lookup.

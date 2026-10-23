@@ -21,7 +21,7 @@ import (
 // The Go runtime metrics of ADR-0056 §1 that the contrib runtime instrumentation does not
 // report: the GC cycles and the GC pauses.
 const (
-	runtimeScope       = "github.com/best-friends/my/internal/adapter/telemetry/otel/runtime"
+	runtimeScope       = "github.com/mycroblog/my/internal/adapter/telemetry/otel/runtime"
 	gcCyclesName       = "go.memory.gc.cycles"
 	gcPauseName        = "go.memory.gc.pause.duration"
 	runtimeGCCycles    = "/gc/cycles/total:gc-cycles"

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/notification"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // Web Push (FR-206): a local account's browsers subscribe through the client API, one

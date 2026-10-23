@@ -5,10 +5,10 @@ package sqlite
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 var _ appnotification.PushRepository = (*NotificationRepository)(nil)

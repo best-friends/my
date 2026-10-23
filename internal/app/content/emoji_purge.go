@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 const (

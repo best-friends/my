@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/i18n"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // Fields of the registration form.

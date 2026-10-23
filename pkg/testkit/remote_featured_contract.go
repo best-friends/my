@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // The cases of RemoteStatusContract that mirror the featured collections (the pinned posts) of

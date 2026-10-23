@@ -5,8 +5,8 @@ package postgres
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // InsertSensitivityOverride implements content.Repository.

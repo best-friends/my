@@ -6,7 +6,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // eventAfterCommit is the event type through which AfterCommit outboxes hand their jobs to the

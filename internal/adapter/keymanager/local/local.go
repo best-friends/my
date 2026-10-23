@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // KEKSize is the length in bytes of a key-encryption key.

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // Domain events of the finance module.

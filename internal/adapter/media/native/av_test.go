@@ -5,8 +5,8 @@ package native
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/app/media"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/media"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // remuxAV runs the parser of data's container without the recovery of Processor.Remux, so that

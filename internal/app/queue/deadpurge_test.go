@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // fakeDeadJobs holds dead jobs by failure time and records the cutoffs it was asked for.

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The SHA-1 test vectors of RFC 6238 Appendix B, cut to six digits.

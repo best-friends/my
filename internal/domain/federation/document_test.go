@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // The Like of a reaction carries the emoji twice, as Misskey sends it, with the Emoji tag of a

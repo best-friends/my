@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // UserPreferences reads and changes the viewer's preferences (FR-007, FR-208).

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The role badges of RoleRepositoryContract (ADR-0071).

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // TestAllows is the table of ADR-0076 (流れの分類), row by row: o passes, x does not, and r is

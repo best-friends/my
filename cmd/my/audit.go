@@ -12,10 +12,10 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/platform"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // runAdminAudit implements `my admin audit list`: the audit log (FR-704, ADR-0037). The audit

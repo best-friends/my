@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // PaymentWorld is a PaymentProvider whose side a test drives: the fake adapter

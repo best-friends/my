@@ -11,10 +11,10 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/otel"
-	"github.com/best-friends/my/internal/adapter/telemetry/otel/otlptest"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/telemetry/otel"
+	"github.com/mycroblog/my/internal/adapter/telemetry/otel/otlptest"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func newTracer(t *testing.T, ratio float64, flush string) (*otel.Tracer, *tracetest.InMemoryExporter) {

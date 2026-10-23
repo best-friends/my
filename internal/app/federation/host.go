@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/net/idna"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // ErrInvalidHost reports a host or domain that is not a valid internationalized domain name.

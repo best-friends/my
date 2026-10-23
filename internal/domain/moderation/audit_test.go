@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 func validAuditEntry() moderation.AuditEntry {

@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"net/url"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
 )
 
 // Paths of the endpoints.

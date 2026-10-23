@@ -17,11 +17,11 @@ import (
 	"sync"
 	"testing"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/media"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/pkg/testkit"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/media"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // testMaxBytes and testMaxAVBytes are the upload limits of fakeMedia for images and for video

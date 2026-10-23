@@ -13,8 +13,8 @@ import (
 
 	cavage "code.superseriousbusiness.org/httpsig"
 
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // parseCavage parses a draft-cavage Signature header. The library parses it too, but does not

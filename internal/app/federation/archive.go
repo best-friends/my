@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"io"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	apptimeline "github.com/best-friends/my/internal/app/timeline"
-	"github.com/best-friends/my/internal/domain/federation"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	apptimeline "github.com/mycroblog/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // The documents of a local account's data export (FR-008): its actor and its posts as an

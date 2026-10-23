@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakeBillingImports has the aws source, imported once and then capped, and the gcp source by

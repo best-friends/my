@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/identity"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	domainidentity "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/identity"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	domainidentity "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 var loggedLink = regexp.MustCompile(`https://example\.test(/auth/verify_email\?token=[A-Za-z0-9_%-]+)`)

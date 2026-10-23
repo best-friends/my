@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // DefaultTimeout bounds one Send: connecting, the TLS handshake, and the whole SMTP dialogue.

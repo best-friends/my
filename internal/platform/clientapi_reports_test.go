@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestReportsThroughTheAPI files a report through the client API on the real database: it

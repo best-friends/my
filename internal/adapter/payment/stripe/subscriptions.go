@@ -10,7 +10,7 @@ import (
 
 	stripe "github.com/stripe/stripe-go/v87"
 
-	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 // subscriptionExpand are the objects that a snapshot reads with the subscription: the latest

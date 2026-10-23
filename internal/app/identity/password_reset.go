@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // Resetting a forgotten password and changing the password (FR-002). A reset link carries a

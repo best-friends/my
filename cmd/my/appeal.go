@@ -11,8 +11,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // runAdminAppeal implements `my admin appeal <subcommand>`: the appeals of the actions on local

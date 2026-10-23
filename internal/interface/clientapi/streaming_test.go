@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/pkg/testkit"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // openStream opens GET /streaming with token on a real HTTP server, so that the response

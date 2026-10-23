@@ -11,8 +11,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // runJob implements `my job <subcommand>` (FR-801): list the dead jobs of the database queue,

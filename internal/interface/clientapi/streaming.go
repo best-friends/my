@@ -13,12 +13,12 @@ import (
 	"strconv"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/kernel"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/stream"
-	apptimeline "github.com/best-friends/my/internal/app/timeline"
-	"github.com/best-friends/my/internal/domain/notification"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/stream"
+	apptimeline "github.com/mycroblog/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // Defaults of the streaming endpoint.

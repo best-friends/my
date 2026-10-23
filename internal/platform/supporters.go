@@ -7,14 +7,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/supporters"
-	domainaccount "github.com/best-friends/my/internal/domain/account"
-	domaininstance "github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/supporters"
+	domainaccount "github.com/mycroblog/my/internal/domain/account"
+	domaininstance "github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpSupporters builds the supporter program (ADR-0072): the service of the plans and the

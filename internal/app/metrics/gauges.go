@@ -8,8 +8,8 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // Label keys of the snapshot gauges.

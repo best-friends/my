@@ -7,9 +7,9 @@ import (
 	"errors"
 	"net/http"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/domain/graph"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // ProblemTypeTooManyDomainMutes is the problem of muting a domain beyond graph.MaxDomainMutes.

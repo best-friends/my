@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/kv/memory"
-	"github.com/best-friends/my/internal/adapter/queue/inline"
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/blob"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/kv/memory"
+	"github.com/mycroblog/my/internal/adapter/queue/inline"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // The decorators stand in for the adapters they wrap, so each passes the contract of its port

@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/pkg/testkit"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // fakeAccountAdmin is the account management over the accounts of the test: alice is a local

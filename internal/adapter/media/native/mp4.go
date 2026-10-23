@@ -11,7 +11,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // An MP4 (ISO BMFF, QuickTime included) is remuxed into ftyp, moov, and one mdat (fast start)

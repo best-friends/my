@@ -9,14 +9,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	domidentity "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	domidentity "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestCSVExportAndImport checks the CSV files on the real database: what one user exports, in

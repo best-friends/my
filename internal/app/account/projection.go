@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // Event types of the account module, for uow.Projectors.

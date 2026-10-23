@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // recordingMeter keeps the histogram values by metric and labels. (testkit.Meter does the same,

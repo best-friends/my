@@ -11,8 +11,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 const (

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"net/http"
 
-	appwebhook "github.com/best-friends/my/internal/app/webhook"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/webhook"
+	appwebhook "github.com/mycroblog/my/internal/app/webhook"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/webhook"
 )
 
 // The instance's webhooks (ADR-0060, FR-722): the admin operations on /admin/webhooks

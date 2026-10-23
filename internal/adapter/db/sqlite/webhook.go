@@ -8,10 +8,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	"github.com/best-friends/my/internal/app/uow"
-	appwebhook "github.com/best-friends/my/internal/app/webhook"
-	"github.com/best-friends/my/internal/domain/webhook"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	"github.com/mycroblog/my/internal/app/uow"
+	appwebhook "github.com/mycroblog/my/internal/app/webhook"
+	"github.com/mycroblog/my/internal/domain/webhook"
 )
 
 // WebhookRepository implements appwebhook.Repository (data-model §4.11, ADR-0060).

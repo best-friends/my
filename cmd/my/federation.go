@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
 )
 
 // runAdminFederation implements `my admin federation <subcommand>`: the follows with remote

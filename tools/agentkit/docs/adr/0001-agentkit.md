@@ -40,7 +40,7 @@ ADR・設計文書・運用文書、GitHub の Issue、サーバー・クライ�
 
 選択肢 1。
 
-- 置き場所は `tools/agentkit`（`module github.com/best-friends/my/tools/agentkit`）。本体の `go vet ./...`・`golangci-lint`・depguard の対象外になり、本体の「バイナリは `cmd/my` だけ」という規則にも触れない
+- 置き場所は `tools/agentkit`（`module github.com/mycroblog/my/tools/agentkit`）。本体の `go vet ./...`・`golangci-lint`・depguard の対象外になり、本体の「バイナリは `cmd/my` だけ」という規則にも触れない
 - 依存は、本体の `go.sum` にすでにある版のモジュールだけに限る（`scripts/agentkit-deps-check.sh`）。ライセンスは本体の `make go-licenses` が審査済みになる。`CGO_ENABLED=0` でビルドできること
 - agentkit の決定は `tools/agentkit/docs/adr/` に置き、本体の `docs/adr/`・ADR の索引・要件の表には入れない。agentkit の作業には Issue を作らない
 - 本体の規則のうち、SPDX ヘッダ、Conventional Commits、文書は現在の状態だけを書くこと（本体の ADR-0021）は agentkit にも適用する

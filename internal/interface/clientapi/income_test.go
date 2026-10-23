@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakeIncome totals a yearly payment of 12,000 yen with a fee of 432 yen on 2026-04-10, which

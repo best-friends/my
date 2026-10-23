@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/oauth"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/oauth"
 )
 
 // fakeIdentity records what the endpoints pass on. Refresh tokens "good" work; others fail

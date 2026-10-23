@@ -6,14 +6,14 @@ import (
 	"reflect"
 	"testing"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/identity"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/notification"
-	"github.com/best-friends/my/internal/platform"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/identity"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestNotificationsAreWired checks that the composition root registers the notification

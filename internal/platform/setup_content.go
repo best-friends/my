@@ -6,9 +6,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpContent registers the content module's projectors and builds the statuses and their

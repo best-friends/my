@@ -10,10 +10,10 @@ import (
 	"slices"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/account"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // Accounts reads accounts for the client API. *appaccount.Service implements it.

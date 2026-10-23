@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/metrics"
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/metrics"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // clock is a kernel.Clock that tests move.

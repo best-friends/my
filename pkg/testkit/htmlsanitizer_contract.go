@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // HTMLSanitizerContract verifies a kernel.HTMLSanitizer adapter against the policy of

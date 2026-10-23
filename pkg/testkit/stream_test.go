@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestStreamBusContractMemoryBroker(t *testing.T) {

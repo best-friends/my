@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // record records the duration of one request until its response headers, or until it failed

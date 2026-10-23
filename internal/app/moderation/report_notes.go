@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The moderators' handling of a report beyond its assignment and resolution (FR-710): internal

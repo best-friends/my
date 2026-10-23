@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/uow"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // Source replays events of another module inside tx through emit, for RebuildExclusions.

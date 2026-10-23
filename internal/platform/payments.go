@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	paymentshttp "github.com/best-friends/my/internal/interface/payments"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	paymentshttp "github.com/mycroblog/my/internal/interface/payments"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // paymentProviderAdapters builds the PaymentProvider of each value of payments_provider whose

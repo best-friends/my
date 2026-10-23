@@ -12,8 +12,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // maxSignupBlockListInput bounds the list that `my admin signup-block import` reads: well above

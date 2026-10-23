@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 func adminCmd(args []string, out, errOut *bytes.Buffer) int {

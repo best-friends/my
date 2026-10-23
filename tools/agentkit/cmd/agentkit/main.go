@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Command agentkit gives coding agents the context of best-friends/my at a fraction of the tokens of reading
+// Command agentkit gives coding agents the context of mycroblog/my at a fraction of the tokens of reading
 // files: a knowledge graph of the documents, the code, and the GitHub issues, and wrappers for the workflow
 // steps (issues, pull requests, CI, checks). Run `agentkit help` for the commands.
 package main

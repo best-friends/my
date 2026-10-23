@@ -10,15 +10,15 @@ import (
 	"slices"
 	"strings"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	appwebhook "github.com/best-friends/my/internal/app/webhook"
-	"github.com/best-friends/my/internal/domain/notification"
-	"github.com/best-friends/my/internal/i18n"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	appwebhook "github.com/mycroblog/my/internal/app/webhook"
+	"github.com/mycroblog/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // The moderator notifications (FR-712, data-model §4.7): admin_report of the first open report

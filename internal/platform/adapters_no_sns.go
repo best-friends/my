@@ -7,8 +7,8 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // newSNSBus reports that the build tag no_sns left the SNS adapter out.

@@ -9,7 +9,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
 var (

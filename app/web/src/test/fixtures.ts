@@ -13,7 +13,7 @@ export const instanceFixture: Schemas["Instance"] = {
   domain: "my.example",
   name: "my example",
   version: "0.0.0-test",
-  source_url: "https://github.com/best-friends/my",
+  source_url: "https://github.com/mycroblog/my",
   registrations: { mode: "approval" },
   limits: { max_post_characters: 500, require_media_description: false },
   timelines: { local: "everyone", federated: "everyone" },

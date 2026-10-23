@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/best-friends/my/tools/agentkit/internal/hook"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
-	"github.com/best-friends/my/tools/agentkit/internal/stats"
+	"github.com/mycroblog/my/tools/agentkit/internal/hook"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/stats"
 )
 
 func runHook(args []string) error {

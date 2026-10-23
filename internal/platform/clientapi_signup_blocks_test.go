@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"testing"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	domainidentity "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/platform"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	domainidentity "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestSignupBlocksThroughTheAPI drives the sign-up block list on the real database (FR-719): the

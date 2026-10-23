@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
 )
 
 // The cross-implementation vector of CanonicalizerContract: testdata/jsonld/create-note.json, a

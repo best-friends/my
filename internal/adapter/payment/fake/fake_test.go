@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // newOnScenario returns a Provider whose side holds s.

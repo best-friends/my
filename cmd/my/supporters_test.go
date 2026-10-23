@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/payment/fake"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/supporters"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/payment/fake"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // TestAdminSupportersCommands enables the supporter program, lists its plans and subscriptions,

@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/blob"
 )
 
 // Directories under the store's root. A blob's content lives at objects/<key> and its media

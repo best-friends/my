@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/timeline"
+	"github.com/mycroblog/my/internal/domain/timeline"
 )
 
 func TestHomeWindows(t *testing.T) {

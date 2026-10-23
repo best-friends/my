@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/app/blob"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // KV measures the operations of the key-value store s, whose adapter is named adapter (such

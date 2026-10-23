@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Attribute keys of the client span, from the OpenTelemetry semantic conventions.

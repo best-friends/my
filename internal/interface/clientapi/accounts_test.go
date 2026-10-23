@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestGetAccount checks an anonymous profile and the localized 404 of an unknown account; the

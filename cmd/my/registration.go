@@ -13,13 +13,13 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // subcommand is the parsed command line of `my invite <sub>` or `my registration <sub>`.

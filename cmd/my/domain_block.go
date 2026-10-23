@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // maxDomainBlockCSVInput bounds the CSV that `my admin domain import` reads: well above

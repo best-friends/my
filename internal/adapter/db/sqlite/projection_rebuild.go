@@ -5,12 +5,12 @@ package sqlite
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	apptimeline "github.com/best-friends/my/internal/app/timeline"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/timeline"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	apptimeline "github.com/mycroblog/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/timeline"
 )
 
 // This file holds the sources and the emptying of the projections of moderation, identity,

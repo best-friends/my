@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // The cases of QueueContract for the queue dashboard (ADR-0064): JobInspector and AttemptLog,

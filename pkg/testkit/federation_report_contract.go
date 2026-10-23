@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // fedReports stands in for the moderation module's reports, by ID.

@@ -13,7 +13,7 @@ import (
 	"github.com/deepteams/webp"
 	"golang.org/x/image/draw"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // Encoder settings (ADR-0054 §2).

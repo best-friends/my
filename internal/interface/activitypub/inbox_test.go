@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
 )
 
 // fakeInbox records the requests it receives and answers with err: an *InboxRejection as the

@@ -11,8 +11,8 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // RSAKeyBits is the size of generated RSA keys (ADR-0019 §6).

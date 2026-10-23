@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/interface/activitypub"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/interface/activitypub"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // The instance's contact (the contact_account and contact_email settings) and its thumbnail

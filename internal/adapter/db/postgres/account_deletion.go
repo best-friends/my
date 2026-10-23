@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // ListDueDeletions implements account.Repository.

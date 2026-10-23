@@ -5,9 +5,9 @@ package timeline
 import (
 	"context"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/app/uow"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // RegisterCommitHooks signals every new home timeline entry to pub once the command that adds

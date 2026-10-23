@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/tools/agentkit/internal/ops"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/ops"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
 )
 
 func runIssue(r *repo.Repo, args []string) error {

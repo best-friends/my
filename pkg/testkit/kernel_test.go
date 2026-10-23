@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 var start = time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC)

@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // MuteDomain makes accountID mute domain and its subdomains (FR-304): their posts leave the

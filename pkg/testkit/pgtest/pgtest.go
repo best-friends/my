@@ -38,7 +38,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/schema"
 )
 
 // The environment variables that choose the server; see the package documentation.

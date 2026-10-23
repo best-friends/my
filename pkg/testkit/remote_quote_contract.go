@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/federation"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // The cases of RemoteStatusContract about the quotes of remote posts (ADR-0069): the quotes of

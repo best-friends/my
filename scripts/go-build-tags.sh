@@ -26,7 +26,7 @@ fi
 # library. The Pub/Sub client serves the broker and the budget method of the Google Cloud billing import, so only
 # no_pubsub and no_billing_gcp together leave it out.
 excluded_packages() {
-  local m=github.com/best-friends/my/internal/adapter
+  local m=github.com/mycroblog/my/internal/adapter
   case "$1" in
     no_pubsub | no_billing_gcp)
       if [[ ",$2," == *,no_pubsub,* && ",$2," == *,no_billing_gcp,* ]]; then

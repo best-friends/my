@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"testing"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 const (

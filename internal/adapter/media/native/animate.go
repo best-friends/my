@@ -14,7 +14,7 @@ import (
 	"github.com/deepteams/webp/animation"
 	"golang.org/x/image/draw"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // Frame delays of the animated WebP variants: browsers show the GIF frames shorter than

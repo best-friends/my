@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/content"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // Statuses runs the posting use cases of local statuses. *appcontent.Service implements it.

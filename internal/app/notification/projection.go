@@ -6,12 +6,12 @@ import (
 	"context"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/kernel"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/notification"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // Accounts is the part of the account module's public API that the projectors read: whether a

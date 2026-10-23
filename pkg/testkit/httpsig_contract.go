@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // HTTPSignatureContract verifies a federation.Signer and federation.Verifier pair, together

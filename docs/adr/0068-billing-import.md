@@ -14,7 +14,7 @@ FR-904 は、AWS と Google Cloud の利用料金を定期的に取り込んで�
 - 値か見込み・確定の別が変わったら新しいイベント（見込み・確定・確定後の修正）として記録し、集計には最新の値を使う。過去の行は直さない。
 - 打ち消しの行・クレジット・返金は取り込みの側で合計してから記録し、金額は負の値も持てる。10 進の金額は、記録する 1 件ごとに最近接偶数への丸めで通貨の最小単位にする（§6）。
 
-事業者の API の事実は、spike #874 の[調査報告](https://github.com/best-friends/my/issues/874#issuecomment-6321153767)（2026-10-22 に公式の文書と料金のページで確認。課金のある API は呼んでいない）による。要点は次のとおり。
+事業者の API の事実は、spike #874 の[調査報告](https://github.com/mycroblog/my/issues/874#issuecomment-6321153767)（2026-10-22 に公式の文書と料金のページで確認。課金のある API は呼んでいない）による。要点は次のとおり。
 
 - AWS には Cost Explorer `GetCostAndUsage` がある。ページ付けされた要求 1 回ごとに $0.01、期間は UTC の暦の日付と暦月、金額は USD だけ、期間ごとに `Estimated` が付く。締めの後も返金・クレジット・サポート料で値が変わり、請求書の額が最終。行の明細は Data Exports（CUR 2.0 / FOCUS 1.2）で S3 に出せる。
 - Google Cloud には実際の費用を返す API がなく、公式の経路は Cloud Billing の BigQuery への export である。請求月 `invoice.month` は米国太平洋時間で切られ、確定の印はなく、訂正は打ち消しの行として追加される。予算（Budget）の Pub/Sub 通知は予算の範囲の累計だけを見込みの値で届ける。
@@ -255,7 +255,7 @@ type CostLine struct {
 
 - B1 の良い点: サービス・費用の種類の内訳と打ち消しの行まで取れ、無料枠の範囲で $0、新しい依存がない。悪い点: export の設定を運営者がコンソールで行い、確定は日の規則で決める。予算の方法を併せ持つので adapter が 2 つの方法を持つ。
 - B2 の最も強い論点: 設定が最も軽く、データセットが要らない。悪い点: 見込みだけで内訳がなく、FR-904 の見込みと確定の区別を日の規則でしか満たせない。決定者の回答 2 に従い、B1 の中の簡易な方法として残す。
-- B3 の良い点: 公式の高水準のクライアントで、結果の型の変換が楽。悪い点: `apache/arrow` など 11 個のモジュールが増え、arrow の `LICENSE.txt` で `go-licenses check` が失敗する（[spike の commit 980950d](https://github.com/best-friends/my/commit/980950de15dc75fdb9d879ef6d0b1d1e6afaa78d)）。許可リストの見直しが要る。
+- B3 の良い点: 公式の高水準のクライアントで、結果の型の変換が楽。悪い点: `apache/arrow` など 11 個のモジュールが増え、arrow の `LICENSE.txt` で `go-licenses check` が失敗する（[spike の commit 980950d](https://github.com/mycroblog/my/commit/980950de15dc75fdb9d879ef6d0b1d1e6afaa78d)）。許可リストの見直しが要る。
 
 ### 記録: E1 変化したときの版と投影（採用）/ E2 現在値 / E3 取り込みごとの全行
 

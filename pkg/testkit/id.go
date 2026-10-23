@@ -9,7 +9,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // IDGenerator is a deterministic kernel.IDGenerator. Each ID is a valid UUIDv7 whose timestamp

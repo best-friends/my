@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func runInstanceCmd(t *testing.T, stdin string, args ...string) (code int, stdout, stderr string) {

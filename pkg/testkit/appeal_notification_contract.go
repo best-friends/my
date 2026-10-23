@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/notification"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // notificationAppeals checks the notifications of the appeals (FR-707, FR-712): an admin_appeal

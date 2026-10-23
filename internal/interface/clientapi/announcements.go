@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/instance"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // The server-wide announcements (FR-726): the users' list with their reads, and the admin

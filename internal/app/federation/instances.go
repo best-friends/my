@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // InstanceRepository is the persistence port of the remote servers this instance has seen and

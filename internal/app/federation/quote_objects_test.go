@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appfederation "github.com/best-friends/my/internal/app/federation"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
 )
 
 // fakeObjectQuotes serves the approvals in auths; the rest of NoteQuotes presents no quotes.

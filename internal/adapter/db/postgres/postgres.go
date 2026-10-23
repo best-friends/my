@@ -17,10 +17,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/adapter/telemetry/dbtrace"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/schema"
 )
 
 // DB is a PostgreSQL connection pool. It implements uow.UnitOfWork.

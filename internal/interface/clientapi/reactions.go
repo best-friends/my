@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/notification"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // The emoji reactions to statuses (FR-116, ADR-0052 §5): their counts on Status, the list of

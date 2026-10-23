@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // CircuitBreaker is the short-term, in-process circuit breaker of inbox hosts (federation.md

@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/graph"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/notification"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // SeveranceHarness is one database under test: the harness of RemoteFollowContract and the

@@ -7,8 +7,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // ErrNotFound reports that no row matches a lookup, or a notification that does not belong to

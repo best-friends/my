@@ -13,10 +13,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	streampostgres "github.com/best-friends/my/internal/adapter/stream/postgres"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/pkg/testkit/pgtest"
+	streampostgres "github.com/mycroblog/my/internal/adapter/stream/postgres"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit/pgtest"
 )
 
 // TestMain stops the PostgreSQL server of package pgtest after the tests.

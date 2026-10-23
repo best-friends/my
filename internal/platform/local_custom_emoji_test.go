@@ -13,16 +13,16 @@ import (
 	"strings"
 	"testing"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/identity"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/pkg/testkit"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/identity"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // TestLocalCustomEmoji registers a local custom emoji through the admin API, uses it in a post

@@ -11,16 +11,16 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	apptimeline "github.com/best-friends/my/internal/app/timeline"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/timeline"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	apptimeline "github.com/mycroblog/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/timeline"
 )
 
 // TimelineHarness is one database under test: an empty database with the product schema, its

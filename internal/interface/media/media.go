@@ -14,7 +14,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/best-friends/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/blob"
 )
 
 // PathPrefix is the URL path under which the public blobs are served: the blob of key

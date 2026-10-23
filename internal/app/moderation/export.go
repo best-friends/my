@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The disclosure of an account's moderation records (ADR-0038): an operator answers a request

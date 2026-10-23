@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // TestSourceURL checks that GET /instance and NodeInfo offer the source where the setting source_url says (AGPL-3.0

@@ -13,14 +13,14 @@ import (
 	"testing"
 	"testing/fstest"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/identity"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/web"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/pkg/testkit"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/identity"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/web"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // TestInstancePreviewImage checks end to end that profiles and posts without images get the

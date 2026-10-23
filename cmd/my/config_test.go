@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/webpush"
+	"github.com/mycroblog/my/internal/adapter/webpush"
 )
 
 func TestRunConfigVAPIDKey(t *testing.T) {

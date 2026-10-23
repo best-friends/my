@@ -6,7 +6,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Ids that come from a client are checked before they reach the application layer, which

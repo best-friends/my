@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/federation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // ObjectQuotes is what object fetches read of quotes (ADR-0069): what Notes present, and the

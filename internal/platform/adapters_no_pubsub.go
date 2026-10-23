@@ -7,8 +7,8 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // newPubSubBus reports that the build tag no_pubsub left the Pub/Sub adapter out.

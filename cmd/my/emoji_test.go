@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 var createdEmoji = regexp.MustCompile(`^created :blobcat: \(emoji (\S+)\)\n$`)

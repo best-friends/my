@@ -12,10 +12,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	"github.com/best-friends/my/internal/adapter/kv/db/internal/postgreskv"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/adapter/db/postgres"
+	"github.com/mycroblog/my/internal/adapter/kv/db/internal/postgreskv"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // NewPostgres returns the store kept in the PostgreSQL database d, whose entries expire by clock.

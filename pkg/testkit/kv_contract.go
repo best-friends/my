@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // KeyValueStoreFactory returns a new, empty store whose entries expire by clock. The factory

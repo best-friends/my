@@ -8,9 +8,9 @@ import (
 	"context"
 	"fmt"
 
-	billinggcp "github.com/best-friends/my/internal/adapter/billing/gcp"
-	"github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/platform/config"
+	billinggcp "github.com/mycroblog/my/internal/adapter/billing/gcp"
+	"github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 func init() { billingSourceAdapters["gcp"] = newGCPBillingSource }

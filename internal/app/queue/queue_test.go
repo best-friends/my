@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 func fixed(v float64) func() float64 { return func() float64 { return v } }

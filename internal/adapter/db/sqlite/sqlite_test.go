@@ -14,11 +14,11 @@ import (
 	msqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	"github.com/best-friends/my/internal/adapter/payment/fake"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	"github.com/mycroblog/my/internal/adapter/payment/fake"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/schema"
 )
 
 // newTestDB opens a new database file under t.TempDir() with the product schema applied

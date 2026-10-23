@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/instance"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // The instance's income (ADR-0073 §6, §7, §9, FR-916, FR-917): the public totals that the

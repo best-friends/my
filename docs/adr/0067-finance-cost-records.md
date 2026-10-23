@@ -11,7 +11,7 @@
 
 M4.1 は、サーバーの維持費用を記録し（FR-901）、週・月・年で集計し（FR-902）、公開範囲を選んで公開する（FR-903）。
 AWS と Google Cloud の利用料金の自動の取り込み（FR-904）の方法は ADR #875 が決める。この ADR は、取り込んだ費用を載せる側の形と、期間の区切りの契約を決める。
-取り込みの元になる事業者の請求期間は、spike #874 の[調査報告](https://github.com/best-friends/my/issues/874#issuecomment-6321153767)（2026-10-22 に公式の文書で確認）による。
+取り込みの元になる事業者の請求期間は、spike #874 の[調査報告](https://github.com/mycroblog/my/issues/874#issuecomment-6321153767)（2026-10-22 に公式の文書で確認）による。
 
 - AWS Cost Explorer: 期間は UTC の暦の日付と暦月（"All times are in Universal Coordinated Time (UTC)"、[GetCostAndUsage](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_GetCostAndUsage.html)）。金額は USD。期間ごとに `Estimated` が付き、締めの後もクレジット・返金・サポート料で翌月の半ばまで値が変わる。
 - Google Cloud（BigQuery への請求データの export）: 請求月 `invoice.month` は米国太平洋時間（夏時間あり）で切られる（"Pacific Time to calculate the billing period for all customers"、[Understand your bills and charges](https://docs.cloud.google.com/identity/docs/how-to/understand-your-bills-and-charges)）。金額は請求先アカウントの通貨。確定の印はなく、訂正は打ち消しの行として追加される。

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/content"
-	domain "github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/content"
+	domain "github.com/mycroblog/my/internal/domain/content"
 )
 
 func TestParseLinkCardPage(t *testing.T) {

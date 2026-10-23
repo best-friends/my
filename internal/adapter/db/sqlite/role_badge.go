@@ -8,9 +8,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // Role badges and their display on profiles (ADR-0071).

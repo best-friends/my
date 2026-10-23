@@ -6,13 +6,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	domainidentity "github.com/best-friends/my/internal/domain/identity"
-	domainnotification "github.com/best-friends/my/internal/domain/notification"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	domainidentity "github.com/mycroblog/my/internal/domain/identity"
+	domainnotification "github.com/mycroblog/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpModeratorNotifications registers the moderator notifications (FR-712): the projectors

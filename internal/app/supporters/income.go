@@ -7,7 +7,7 @@ import (
 	"errors"
 	"log/slog"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
 )
 
 // The hand-over of the provider's money movements to the finance module's income records

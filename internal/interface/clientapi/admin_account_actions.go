@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/moderation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The admin operations of the actions on accounts (FR-703, manage_accounts). The moderation

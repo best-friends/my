@@ -15,8 +15,8 @@ import (
 	rfc9421 "github.com/dadrus/httpsig"
 	"github.com/dunglas/httpsfv"
 
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // unbounded disables the library's own time checks; federation.SignatureVerifier applies the

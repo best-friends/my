@@ -7,10 +7,10 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // The requests of the holders of create_custom_emojis (ADR-0070 §2, §7), part of

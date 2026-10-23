@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // KeyManagerContract verifies that km satisfies the kernel.KeyManager contract: wrapped keys

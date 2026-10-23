@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/media"
-	"github.com/best-friends/my/internal/app/uow"
-	domain "github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/uow"
+	domain "github.com/mycroblog/my/internal/domain/content"
 )
 
 // proxyRepo is a MediaRepository that holds only remote media files.

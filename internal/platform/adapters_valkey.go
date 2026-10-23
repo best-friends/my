@@ -7,12 +7,12 @@ package platform
 import (
 	"context"
 
-	kvvalkey "github.com/best-friends/my/internal/adapter/kv/valkey"
-	valkeystream "github.com/best-friends/my/internal/adapter/stream/valkey"
-	"github.com/best-friends/my/internal/adapter/valkey"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/platform/config"
+	kvvalkey "github.com/mycroblog/my/internal/adapter/kv/valkey"
+	valkeystream "github.com/mycroblog/my/internal/adapter/stream/valkey"
+	"github.com/mycroblog/my/internal/adapter/valkey"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // valkeyConn is the valkeyServer of a valkey.Client.

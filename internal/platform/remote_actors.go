@@ -5,17 +5,17 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/htmlsanitizer"
-	"github.com/best-friends/my/internal/adapter/httpsig"
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	domainaccount "github.com/best-friends/my/internal/domain/account"
-	domaincontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/htmlsanitizer"
+	"github.com/mycroblog/my/internal/adapter/httpsig"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	domainaccount "github.com/mycroblog/my/internal/domain/account"
+	domaincontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // federationRepository is what the database adapters provide to the federation module: the

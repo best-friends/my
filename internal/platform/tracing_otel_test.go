@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/otel/otlptest"
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/adapter/telemetry/otel/otlptest"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // TestTracesFromHTTPToJobs checks ADR-0063 with traces_exporter = otlp: a request from a trusted

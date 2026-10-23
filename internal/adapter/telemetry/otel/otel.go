@@ -35,7 +35,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Exporters.
@@ -109,7 +109,7 @@ func New(ctx context.Context, opts Options) (*Meter, error) {
 		return nil, fmt.Errorf("metrics exporter %q is not an OpenTelemetry exporter", opts.Exporter)
 	}
 	m.provider = sdkmetric.NewMeterProvider(sdkmetric.WithResource(res), sdkmetric.WithReader(reader))
-	m.meter = m.provider.Meter("github.com/best-friends/my")
+	m.meter = m.provider.Meter("github.com/mycroblog/my")
 	if err := startRuntime(m.provider); err != nil {
 		_ = m.provider.Shutdown(ctx)
 		return nil, fmt.Errorf("runtime metrics: %w", err)

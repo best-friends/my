@@ -12,12 +12,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/i18n"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 var (

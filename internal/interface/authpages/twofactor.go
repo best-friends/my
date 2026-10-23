@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"strings"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/i18n"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // The second step of a sign-in for a user with two-factor authentication (FR-005). The sign-in

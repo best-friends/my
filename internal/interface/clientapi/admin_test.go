@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakePermissions grants each user the permissions listed for them.

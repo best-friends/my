@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // The methods of billing_gcp_method.

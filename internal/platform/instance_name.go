@@ -6,7 +6,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // instanceName returns the display name of the instance: the name text, the same in every

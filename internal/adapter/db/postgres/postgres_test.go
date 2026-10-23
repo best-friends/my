@@ -16,11 +16,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	"github.com/best-friends/my/internal/adapter/payment/fake"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/pkg/testkit/pgtest"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	"github.com/mycroblog/my/internal/adapter/payment/fake"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit/pgtest"
 )
 
 func TestMain(m *testing.M) {

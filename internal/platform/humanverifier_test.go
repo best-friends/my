@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // recordingHTTP answers every request with a passing siteverify answer and records it.

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 func TestParseMoney(t *testing.T) {

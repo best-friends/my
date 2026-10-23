@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // Block is graph.Block, a block as the federation module delivers it.

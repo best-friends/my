@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 // eventKinds are the types of the events that the operator enables on the webhook endpoint

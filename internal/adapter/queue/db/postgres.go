@@ -14,11 +14,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	"github.com/best-friends/my/internal/adapter/queue/db/internal/postgresqueue"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/adapter/db/postgres"
+	"github.com/mycroblog/my/internal/adapter/queue/db/internal/postgresqueue"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // NewPostgres returns the queue kept in the PostgreSQL database d.

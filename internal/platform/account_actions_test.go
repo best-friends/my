@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestClientAPIAccountActions checks the actions on a local account through the composition

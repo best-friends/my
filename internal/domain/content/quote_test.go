@@ -5,7 +5,7 @@ package content_test
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 func TestQuoteStateOf(t *testing.T) {

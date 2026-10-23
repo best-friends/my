@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/notification"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // The supporter notifications (ADR-0072 §16) tell a subscriber of their supporter subscription:

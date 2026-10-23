@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/queue/inline"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/queue/inline"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func factory(maxDelay time.Duration) testkit.QueueFactory {

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
 // Repo is the GitHub repository; AGENTKIT_REPO overrides it.
@@ -24,7 +24,7 @@ func Repo() string {
 	if r := os.Getenv("AGENTKIT_REPO"); r != "" {
 		return r
 	}
-	return "best-friends/my"
+	return "mycroblog/my"
 }
 
 // Run runs gh with args against Repo and returns its standard output.

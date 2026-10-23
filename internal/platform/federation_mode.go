@@ -5,8 +5,8 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/federation"
-	domainfederation "github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/app/federation"
+	domainfederation "github.com/mycroblog/my/internal/domain/federation"
 )
 
 // federationModes reads the federation mode (FR-413, ADR-0076) from the instance setting

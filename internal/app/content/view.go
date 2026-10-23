@@ -2,7 +2,7 @@
 
 package content
 
-import "github.com/best-friends/my/internal/domain/content"
+import "github.com/mycroblog/my/internal/domain/content"
 
 // The visibility policy of statuses (docs/architecture/visibility.md), as part of this module's
 // public API: the application layers of other modules, which do not import this module's

@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
-const modulePath = "github.com/best-friends/my/"
+const modulePath = "github.com/mycroblog/my/"
 
 // Go makes one node per top-level declaration (its doc comment included) and a file node for the package
 // clause and imports. Calls by name become name: edges, imports of the repository's packages pkg: edges.

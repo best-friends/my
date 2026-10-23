@@ -5,10 +5,10 @@ package activitypub
 import (
 	"net/http"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // emojisPrefix is the path of the ids of local custom emoji before the UUID (ADR-0051 §3).

@@ -13,15 +13,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/httpsig"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/identity"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/app/kernel"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/adapter/httpsig"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/identity"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/app/kernel"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // peerNet is the kernel.HTTPClient of the servers of TestAuthorizedFetch: it sends a request

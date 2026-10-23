@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // Creating, changing, and deleting roles (FR-720, manage_roles). The use cases keep the built-in

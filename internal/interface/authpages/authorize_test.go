@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/i18n"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/pkg/testkit"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/i18n"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 const (

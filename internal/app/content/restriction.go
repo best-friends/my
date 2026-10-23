@@ -5,7 +5,7 @@ package content
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // Restrictions are the current moderation restrictions of an account that bear on its statuses

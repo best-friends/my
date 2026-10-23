@@ -10,10 +10,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
-	"github.com/best-friends/my/internal/adapter/kv/db/internal/sqlitekv"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite"
+	"github.com/mycroblog/my/internal/adapter/kv/db/internal/sqlitekv"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // NewSQLite returns the store kept in the SQLite database d, whose entries expire by clock.

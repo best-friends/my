@@ -20,15 +20,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/httpsig"
-	"github.com/best-friends/my/internal/adapter/jsonld"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	domainaccount "github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/adapter/httpsig"
+	"github.com/mycroblog/my/internal/adapter/jsonld"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	domainaccount "github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // relayNet is a kernel.HTTPClient that serves documents by URL, answers every POST with 202, and

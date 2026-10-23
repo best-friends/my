@@ -7,13 +7,13 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
-	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
-	pgstream "github.com/best-friends/my/internal/adapter/stream/postgres"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/db/postgres"
+	kvdb "github.com/mycroblog/my/internal/adapter/kv/db"
+	queuedb "github.com/mycroblog/my/internal/adapter/queue/db"
+	pgstream "github.com/mycroblog/my/internal/adapter/stream/postgres"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // openPostgres opens the PostgreSQL database of db = postgres and, when cfg selects them, the

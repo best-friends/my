@@ -113,7 +113,7 @@ B は成り立たない（受信のみでフォローを送れない、送信の
 
 ### 相互運用の確認
 
-federation-live（2026-10-22、[#983](https://github.com/best-friends/my/issues/983#issuecomment-6337103257)）で、Mastodon 4.7・GoToSocial 0.22・Misskey 2026.10 を相手に次を確かめた。見直す条件には当たらない。
+federation-live（2026-10-22、[#983](https://github.com/mycroblog/my/issues/983#issuecomment-6337103257)）で、Mastodon 4.7・GoToSocial 0.22・Misskey 2026.10 を相手に次を確かめた。見直す条件には当たらない。
 
 - `inbound` の最小の Actor の文書（名前・アイコン・コレクションなし）からの `Follow` を、3 つとも受け付けて `Accept` を返す。
 - Mastodon と GoToSocial は、こちらの Actor を取得したあと `acct:` の WebFinger を引く。Misskey は引かない。`inbound` でも WebFinger に答える。

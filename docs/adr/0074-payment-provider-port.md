@@ -34,7 +34,7 @@ issue #913 の回答の「推奨」は次のとおり。1 = 事業者は Stripe 
 2 = 全額の返金とチャージバックはロールを外し、事業者のサブスクリプションもすぐ解約する。一部の返金ではロールを外さない。dispute に勝ってもロールは自動で戻さない。
 5 = 上げる変更はすぐ日割りで請求し、下げる変更と年払いから月払いへの変更は期間の終わりに切り替える。
 
-事業者の事実は spike #909 の[調査報告](https://github.com/best-friends/my/issues/909#issuecomment-6326974258)（2026-10-22 に Stripe の公式の文書・料金のページ・`stripe-go` のソースで確認。アカウントの作成と課金のある操作はしていない）による。要点は次のとおり。
+事業者の事実は spike #909 の[調査報告](https://github.com/mycroblog/my/issues/909#issuecomment-6326974258)（2026-10-22 に Stripe の公式の文書・料金のページ・`stripe-go` のソースで確認。アカウントの作成と課金のある操作はしていない）による。要点は次のとおり。
 
 - Checkout（`mode=subscription`）はホスト型の決済画面へのリダイレクトだけで済み、こちらの Web クライアントに Stripe のスクリプトを読み込まない。Checkout は PCI DSS の SAQ A の範囲に入る。
   `client_reference_id` と `subscription_data.metadata` にこちらの ID を入れられる。顧客ポータル（Customer Portal）は API で設定とセッションを作る。

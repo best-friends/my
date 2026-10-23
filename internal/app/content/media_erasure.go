@@ -6,9 +6,9 @@ import (
 	"context"
 	"errors"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/blob"
-	"github.com/best-friends/my/internal/app/uow"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // MediaErasureDeps are the ports of the erasure of deleted accounts' media files.

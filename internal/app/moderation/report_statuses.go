@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
 )
 
 // Evidence is the part of the content module's public API that presents the statuses of a

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/best-friends/my/internal/app/projection"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/projection"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // maxDiffRows is how many differing rows `my projection verify` prints per table.

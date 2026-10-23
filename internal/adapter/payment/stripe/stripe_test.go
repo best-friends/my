@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 const testSigningKey = "whsec_test_secret"

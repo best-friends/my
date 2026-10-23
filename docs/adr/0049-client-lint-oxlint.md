@@ -15,7 +15,7 @@
 時間の大半は typescript-eslint の型情報（TypeScript 6 のコンパイラ）で、ESLint 10 の `--concurrency` は 4 CPU の CI では 1 割ほどしか縮めない。
 決定者は ESLint が遅いことを理由に、より速い linter への乗り換えを求めている（#572）。
 
-調査（[#572 の報告](https://github.com/best-friends/my/issues/572#issuecomment-6265430885)）で、Biome、Oxlint、Oxlint と最小の ESLint の併用を、
+調査（[#572 の報告](https://github.com/mycroblog/my/issues/572#issuecomment-6265430885)）で、Biome、Oxlint、Oxlint と最小の ESLint の併用を、
 今の 278 規則と独自の禁止規則のすべてについて比べ、同じ機械で時間を測った。
 
 ## Decision Drivers（判断基準）

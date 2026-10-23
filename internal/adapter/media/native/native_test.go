@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestMediaProcessorContract(t *testing.T) {

@@ -8,12 +8,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/pkg/testkit/pgtest"
+	"github.com/mycroblog/my/internal/adapter/db/postgres"
+	kvdb "github.com/mycroblog/my/internal/adapter/kv/db"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit/pgtest"
 )
 
 // TestMain stops the PostgreSQL server of package pgtest after the tests.

@@ -18,10 +18,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 
-	"github.com/best-friends/my/internal/adapter/stream/sns"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/pkg/testkit/awstest"
+	"github.com/mycroblog/my/internal/adapter/stream/sns"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit/awstest"
 )
 
 // TestMain stops the emulator container of package awstest after the tests.

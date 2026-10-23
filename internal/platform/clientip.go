@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Forwarding headers that trusted proxies append the client IP to (config trusted_proxy_header).

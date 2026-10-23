@@ -19,12 +19,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	billinggcp "github.com/best-friends/my/internal/adapter/billing/gcp"
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/platform"
+	billinggcp "github.com/mycroblog/my/internal/adapter/billing/gcp"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestBillingImportOfABudget imports billing_gcp_method = budget from a Pub/Sub subscription on

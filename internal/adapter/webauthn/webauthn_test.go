@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/webauthn"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/webauthn"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestPasskeyCeremoniesContract(t *testing.T) {

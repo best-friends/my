@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // The send profile of ADR-0032.

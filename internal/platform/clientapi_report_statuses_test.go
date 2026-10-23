@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestReportedStatusesThroughTheAPI reads the statuses of a report as a moderator on the real

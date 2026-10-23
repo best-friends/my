@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // Options configure a Handler.

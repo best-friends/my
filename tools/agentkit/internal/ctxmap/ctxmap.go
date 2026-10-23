@@ -15,7 +15,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/best-friends/my/tools/agentkit/internal/extract"
+	"github.com/mycroblog/my/tools/agentkit/internal/extract"
 )
 
 // File is where the map lives, relative to the repository root.

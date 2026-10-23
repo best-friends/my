@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/federation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // ErrUnresolvable reports a handle or URL that does not lead to a remote actor with a confirmed

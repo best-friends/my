@@ -8,8 +8,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 func init() { paymentProviderAdapters["stripe"] = newStripePaymentProvider }

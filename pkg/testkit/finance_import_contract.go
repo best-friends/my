@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // The billing imports of FinanceRepositoryContract (ADR-0068): FinanceHarness's service imports

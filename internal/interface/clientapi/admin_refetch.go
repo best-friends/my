@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/identity"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The refetch of remote posts from their servers (FR-407, federation.md §6.4): the admin

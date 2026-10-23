@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 func date(t *testing.T, s string) finance.Date {

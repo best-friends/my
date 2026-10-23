@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // This file holds what the timelines of the client API read besides the timeline module's

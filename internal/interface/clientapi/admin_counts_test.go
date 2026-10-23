@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 type fakeCounts struct{ reports, registrations int64 }

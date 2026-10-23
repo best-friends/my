@@ -3,10 +3,10 @@
 package platform
 
 import (
-	"github.com/best-friends/my/internal/adapter/httpsig"
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/httpsig"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpInbox builds the synchronous part of the inbox (docs/architecture/federation.md §3.1):

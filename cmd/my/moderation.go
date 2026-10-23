@@ -12,12 +12,12 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/platform"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // runAdminDomain implements `my admin domain <subcommand>`: the moderation actions on domains

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 type stepClock struct{ now time.Time }

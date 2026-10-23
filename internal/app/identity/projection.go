@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // ProjectionRepository is the part of Repository that rebuilds the identity projections

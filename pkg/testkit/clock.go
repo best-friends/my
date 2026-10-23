@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Clock is a deterministic kernel.Clock. It stands still until the test moves it with

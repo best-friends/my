@@ -22,7 +22,7 @@
 決定者は「@api/openapi.yaml が1ファイルなのに巨大すぎるので分割するべきじゃないかと思えてきたんですがどうでしょうか」と提案し、「進めてください」と判断した（#868）。
 PR #869 で、方式（選択肢 2）、ADR-0016・ADR-0029 の Status の行への注記、分割したファイルを置くディレクトリ `api/spec/`、分割をすぐに行うことを承認した。
 
-スパイク（[#868 の報告](https://github.com/best-friends/my/issues/868#issuecomment-6319895238)、ブランチ `spike/868-openapi-split`）で、
+スパイク（[#868 の報告](https://github.com/mycroblog/my/issues/868#issuecomment-6319895238)、ブランチ `spike/868-openapi-split`）で、
 今の spec を `redocly split` で分け、`redocly bundle` で 1 ファイルに戻し、生成物と検査が変わらないかを確かめた（2026-10-22、`origin/main` 876396d9）。
 
 | 確かめたこと | 結果 |

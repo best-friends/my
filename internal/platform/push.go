@@ -6,12 +6,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/adapter/webpush"
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/queue"
-	domainaccount "github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/webpush"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/queue"
+	domainaccount "github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpPush builds the Web Push of the notifications (FR-206) when vapid_private_key is set:

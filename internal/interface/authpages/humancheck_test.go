@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/i18n"
-	"github.com/best-friends/my/internal/interface/authpages"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/i18n"
+	"github.com/mycroblog/my/internal/interface/authpages"
 )
 
 // The widgets as the siteverify presets fill them (ADR-0042 §Context).

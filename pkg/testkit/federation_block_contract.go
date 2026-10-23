@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/graph"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // fedBlocks stands in for the graph module's blocks, by ID.

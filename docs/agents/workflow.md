@@ -11,7 +11,7 @@ Work runs in one of two modes:
 ## 1. Pick
 
 ```sh
-gh issue list -R best-friends/my --label agent:ready --search "no:assignee" --json number,title,milestone,labels
+gh issue list -R mycroblog/my --label agent:ready --search "no:assignee" --json number,title,milestone,labels
 ```
 
 - Prefer the earliest milestone, then `priority:p0` > `p1` > `p2`.
@@ -65,8 +65,8 @@ Pull requests do not run the web E2E. In single-issue work, when the change touc
 locally, or run the workflow on the PR's branch and wait for it (in a parallel batch, see [§9](#9-parallel-batches) instead):
 
 ```sh
-gh workflow run web-e2e.yml -R best-friends/my --ref <branch>   # add -f matrix=full for the full width × locale matrix
-gh run list -R best-friends/my --workflow web-e2e.yml --branch <branch> --limit 1
+gh workflow run web-e2e.yml -R mycroblog/my --ref <branch>   # add -f matrix=full for the full width × locale matrix
+gh run list -R mycroblog/my --workflow web-e2e.yml --branch <branch> --limit 1
 ```
 
 ### What CI runs where
@@ -112,7 +112,7 @@ EOF
 `main` takes pull requests only through GitHub's merge queue. CI runs the full check on each merge group (the PR on top
 of `main` and of the PRs queued ahead of it) and the queue merges the group when its required `check` passes.
 
-- Once the PR's CI is green, the orchestrator or the decider queues it: `gh pr merge <PR> -R best-friends/my --auto --merge`.
+- Once the PR's CI is green, the orchestrator or the decider queues it: `gh pr merge <PR> -R mycroblog/my --auto --merge`.
 - Merge `main` into the branch only when the PR conflicts or the queue drops it, never just to stay current: the queue
   already checks the PR on top of the latest `main`.
 - When the queue drops the PR (a conflict with `main`, or a failed `check` on the merge group), merge `main` into the
@@ -177,14 +177,14 @@ once the milestone's implementation issues are done. Single-issue work keeps the
   local run is the one that catches compile, type, and test failures before the merge queue. Do not run the web E2E per PR (`scripts/task.sh web:e2e`
   or `web-e2e.yml`), not even the specs the change adds: write and update the E2E specs the change needs, but do not
   run the suite.
-- Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R best-friends/my --json mergeable`).
+- Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R mycroblog/my --json mergeable`).
   CI does not start on a conflicting PR; merge `origin/main` into the branch first, as in §7.
 - Resolve conflicts in the committed generated files by regenerating them (§7), never by hand.
 - Once the PR is open and its CI is green, report the PR number, the CI status, and the decisions needed (nothing else) to the orchestrator and finish. Never queue or merge the PR.
 
 ### Merging (orchestrator)
 
-- Enable auto-merge as soon as a PR is opened (`gh pr merge <PR> -R best-friends/my --auto --merge`); the merge queue
+- Enable auto-merge as soon as a PR is opened (`gh pr merge <PR> -R mycroblog/my --auto --merge`); the merge queue
   takes it when its `check` is green.
 - Watch every open PR with one watcher for three events: merged, conflicting, and CI failure: `scripts/agentkit.sh pr watch`
   under the Monitor tool prints one line per event (also opened, ci-green, and dequeued).
@@ -200,9 +200,9 @@ once the milestone's implementation issues are done. Single-issue work keeps the
 - The slow suite (the full web E2E, the real PostgreSQL and broker contracts, the live federation test, the images,
   and CodeQL) runs nightly on `main` ([ADR-0079](../adr/0079-ci-single-gate-merge-queue.md)) and does not pause the
   queue. Collect its failures from the Nightly runs as they appear
-  (`gh run list -R best-friends/my --workflow nightly.yml --status failure`); a night on which `main` did not move has no run.
+  (`gh run list -R mycroblog/my --workflow nightly.yml --status failure`); a night on which `main` did not move has no run.
 - Once the milestone's implementation issues are done, run the slow suite on `main`
-  (`gh workflow run slow-suite.yml -R best-friends/my --ref main`), group the collected failures by cause, file one
+  (`gh workflow run slow-suite.yml -R mycroblog/my --ref main`), group the collected failures by cause, file one
   issue per cause, and fix them together.
 - A release needs the slow suite green: `release.yml` tags nothing while any of it fails
   ([releasing.md](../operations/releasing.md)). Fix every failure before cutting a release.

@@ -27,7 +27,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // DefaultChannel is the notification channel when Options.Channel is empty.

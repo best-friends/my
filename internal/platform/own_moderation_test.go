@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/domain/notification"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestOwnModerationActions checks, through the composition root, what a local account learns of

@@ -3,8 +3,8 @@
 package platform
 
 import (
-	"github.com/best-friends/my/internal/interface/oauth"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/interface/oauth"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpOAuth registers the OAuth token endpoints.

@@ -47,7 +47,7 @@ MySQL 系（MySQL、TiDB Serverless、PlanetScale 等）は v0 では対象外�
   - ジョブは at-least-once なので、書き込みは引き続き一意制約 + upsert（`INSERT ... ON CONFLICT`）・冪等キーで重複に強くする。
   - カウンタ（フォロワー数・お気に入り数など）は加算 SQL（`SET n = n + 1`）を使い、定期ジョブで再集計して補正する。
 - SQL の扱い（Go）: **sqlc を方言ごとに生成**（`queries/sqlite/*.sql`, `queries/postgres/*.sql`）し、方言別アダプタがリポジトリポートを実装する。
-  方言差（FTS、JSON 関数、日付関数、プレースホルダ）はアダプタ内に閉じ込める。根拠は [#17 の調査報告](https://github.com/best-friends/my/issues/17#issuecomment-6209364365)。
+  方言差（FTS、JSON 関数、日付関数、プレースホルダ）はアダプタ内に閉じ込める。根拠は [#17 の調査報告](https://github.com/mycroblog/my/issues/17#issuecomment-6209364365)。
 - ドライバ: SQLite は `modernc.org/sqlite`（cgo 不要）、PostgreSQL は `pgx/v5`、libSQL / Turso は公式 Go クライアント（成熟度は Open Questions）。
 - トランザクションの設定:
   - SQLite は `BEGIN IMMEDIATE`（`_txlock=immediate`）+ `busy_timeout` + WAL を必須とする。遅延ロックのままだと書き込みの競合でリトライが多発する。

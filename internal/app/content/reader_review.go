@@ -7,8 +7,8 @@ import (
 	"errors"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/domain/content"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // ReviewedStatus is a status as the moderators review it as the evidence of a report.

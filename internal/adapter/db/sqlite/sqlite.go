@@ -19,10 +19,10 @@ import (
 	msqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/adapter/telemetry/dbtrace"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/schema"
 )
 
 // DefaultBusyTimeoutMillis is how long a connection waits for the database lock before a

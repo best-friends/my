@@ -78,7 +78,7 @@
 
 ## モデレーション（NFR-MOD）
 
-出典と根拠は [#327 の調査報告](https://github.com/best-friends/my/issues/327) にあります。
+出典と根拠は [#327 の調査報告](https://github.com/mycroblog/my/issues/327) にあります。
 
 | ID | 要件 |
 | --- | --- |

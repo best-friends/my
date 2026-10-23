@@ -11,11 +11,11 @@ import (
 	"net/http"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/kernel"
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/domain/supporters"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // The users' own subscriptions to the supporter plans (ADR-0072 §6, §8, §18; tag supporters,

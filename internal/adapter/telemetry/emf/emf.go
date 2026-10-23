@@ -30,7 +30,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // maxValues is the most values of one metric in one EMF document.

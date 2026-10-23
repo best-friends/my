@@ -5,17 +5,17 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/app/webhook"
-	domainaccount "github.com/best-friends/my/internal/domain/account"
-	domainmoderation "github.com/best-friends/my/internal/domain/moderation"
-	domainwebhook "github.com/best-friends/my/internal/domain/webhook"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/webhook"
+	domainaccount "github.com/mycroblog/my/internal/domain/account"
+	domainmoderation "github.com/mycroblog/my/internal/domain/moderation"
+	domainwebhook "github.com/mycroblog/my/internal/domain/webhook"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // setUpWebhooks builds the instance's webhooks (ADR-0060): the projectors of the module's own

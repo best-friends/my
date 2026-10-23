@@ -5,9 +5,9 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/identity"
-	domainidentity "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/identity"
+	domainidentity "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpIdentity registers the identity module's projectors and builds its service, the

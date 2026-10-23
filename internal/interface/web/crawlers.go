@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // This file states what the instance allows search engines and AI crawlers to do (ADR-0057):

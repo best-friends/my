@@ -6,9 +6,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 // The two ports between the supporters and the finance modules (ADR-0073 §1): the supporters

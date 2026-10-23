@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // rememberingKV is a KeyValueStore that remembers a failed fetch of every URI, so that a fetch

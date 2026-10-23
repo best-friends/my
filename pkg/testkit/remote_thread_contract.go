@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // The cases of RemoteStatusContract that fetch remote posts (federation.md §6.1, §6.3): the real

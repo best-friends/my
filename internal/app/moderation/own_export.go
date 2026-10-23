@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // OwnRecordExport is what a local account's data export (FR-008) holds of its moderation

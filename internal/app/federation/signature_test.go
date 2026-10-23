@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"testing"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
 )
 
 func TestSignatureKeyHost(t *testing.T) {

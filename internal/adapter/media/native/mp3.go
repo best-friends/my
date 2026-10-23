@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // An MP3 is remuxed by keeping only its MPEG audio Layer III frames: the ID3v2 tags in front,

@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // TestRejectionReason checks that a refusal is named from the fixed vocabulary, never with the

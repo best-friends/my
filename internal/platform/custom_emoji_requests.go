@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The ports of the custom emoji requests (ADR-0070 §2, §3, §4), which the content module reads

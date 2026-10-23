@@ -9,11 +9,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/pkg/testkit/pgtest"
+	"github.com/mycroblog/my/internal/adapter/db/postgres"
+	queuedb "github.com/mycroblog/my/internal/adapter/queue/db"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit/pgtest"
 )
 
 // TestMain stops the PostgreSQL server of package pgtest after the tests.

@@ -12,9 +12,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/domain/moderation"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // The notes and the reopenings of fakeModeration, with the semantics of the moderation module.

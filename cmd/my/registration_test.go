@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 func runCmd(t *testing.T, run func([]string, *bytes.Buffer, *bytes.Buffer) int, args ...string) (code int, stdout, stderr string) {

@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
 )
 
 // TestArchiveOutbox checks the outbox of a data export: every status of the author, of every

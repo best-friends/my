@@ -5,8 +5,8 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestAuditLogContract(t *testing.T) {

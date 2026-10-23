@@ -5,8 +5,8 @@ package httpsig_test
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/httpsig"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/httpsig"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestContract(t *testing.T) {

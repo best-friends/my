@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakePayments is a live provider that never delivered a webhook and whose last reconciliation

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // This file holds the emoji reactions of remote accounts (FR-116, ADR-0052), which the federation

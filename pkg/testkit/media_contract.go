@@ -18,7 +18,7 @@ import (
 	"github.com/deepteams/webp/animation"
 	xwebp "golang.org/x/image/webp"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // MediaProcessorContract verifies an adapter of the MediaProcessor port (ADR-0019 §8,

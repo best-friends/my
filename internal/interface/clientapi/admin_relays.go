@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"net/http"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/identity"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The relays the instance joins (ADR-0061, FR-724): the admin operations on /admin/relays

@@ -10,8 +10,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The OAuth 2.0 authorization server (ADR-0016, ADR-0019 §4, ADR-0030): the authorization code

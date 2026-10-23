@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/best-friends/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/content"
 )
 
 // RemoteMedia opens remote media files for the proxy. content.MediaProxy implements it.

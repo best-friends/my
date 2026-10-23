@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
 )
 
 // What the other modules read of the supporters through the platform (ADR-0072 §11, §12): the

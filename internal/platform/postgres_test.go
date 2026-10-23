@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/best-friends/my/pkg/testkit/pgtest"
-	"github.com/best-friends/my/pkg/testkit/valkeytest"
+	"github.com/mycroblog/my/pkg/testkit/pgtest"
+	"github.com/mycroblog/my/pkg/testkit/valkeytest"
 )
 
 func TestMain(m *testing.M) {

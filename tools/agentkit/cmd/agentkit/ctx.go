@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/best-friends/my/tools/agentkit/internal/ctxmap"
-	"github.com/best-friends/my/tools/agentkit/internal/gh"
-	"github.com/best-friends/my/tools/agentkit/internal/kb"
-	"github.com/best-friends/my/tools/agentkit/internal/pack"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
-	"github.com/best-friends/my/tools/agentkit/internal/store"
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/ctxmap"
+	"github.com/mycroblog/my/tools/agentkit/internal/gh"
+	"github.com/mycroblog/my/tools/agentkit/internal/kb"
+	"github.com/mycroblog/my/tools/agentkit/internal/pack"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/store"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
 func runCtx(r *repo.Repo, k *kb.KB, args []string) error {
