@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the server settings screen (web-client.md S1): the instance's texts (its display
+// The queries and mutations of the server settings screen (web-client/README.md S1): the instance's texts (its display
 // name and its descriptions, PUT /admin/instance_texts/{key}), one value each that every locale shows, and the
 // instance settings (GET and PATCH /admin/settings): the registration mode, the default language, the public
 // timelines, the federation and the publication of the domain actions, all for manage_settings. GET /instance

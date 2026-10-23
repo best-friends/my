@@ -2,7 +2,7 @@
 // The audit log screen below its heading (FR-704): the filters in a toolbar, then the operations of the moderators and
 // administrators, newest first, in the admin mode's table form (one page at a time, previous / next). The kind of operation and the kind of target are selects (React Aria Select, the
 // WAI-ARIA APG select-only combobox); one actor and one target are chosen from a row's links. The route keeps the
-// filters and the number of loaded pages in the address (web-client.md S3). Each row links to its target's admin
+// filters and the number of loaded pages in the address (web-client/README.md S3). Each row links to its target's admin
 // screen where that kind of target has one and the target is still there, and shows the label recorded with the
 // operation otherwise.
 import { Cluster, DescriptionItem, DescriptionList, EmptyState, Link, ListToolbar, RegionError, Select, SelectItem, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, VisuallyHidden } from "@my/ui";

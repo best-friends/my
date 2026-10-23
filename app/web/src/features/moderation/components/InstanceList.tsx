@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The remote servers screen below its heading (federation.md §7.3), in the admin mode's table form: a toolbar
-// with the state filter, kept in the URL by the route (web-client.md S3), and one page of the servers of the
+// with the state filter, kept in the URL by the route (web-client/README.md S3), and one page of the servers of the
 // selected filter at a time, previous / next, each with its state, since when, and its failures, linking to
 // the server's page with the reasons.
 import { EmptyState, Link, ListToolbar, Select, SelectItem, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader } from "@my/ui";

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Dialog stories. The play functions are the dialog's behaviour tests (they run in Chromium with
-// `make ui-test`): focus moves in on open, Tab stays inside, Esc, the close buttons and the scrim close it,
+// `scripts/task.sh ui:test`): focus moves in on open, Tab stays inside, Esc, the close buttons and the scrim close it,
 // and focus returns to the trigger.
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, waitFor } from "storybook/test";

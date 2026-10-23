@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The muted domains page through the whole app (web-client.md T4): MSW plays the server's list of muted domains.
+// The muted domains page through the whole app (web-client/README.md T4): MSW plays the server's list of muted domains.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";

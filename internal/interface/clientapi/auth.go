@@ -24,7 +24,7 @@ import (
 //     allow anonymous requests: an invalid token is a 401, never an anonymous request.
 //  2. Rate limiting takes the request from the account's limit, or from the client IP's limit
 //     when there is no valid token.
-//  3. Authorization checks the operation's security from security.gen.go, which `make generate`
+//  3. Authorization checks the operation's security from security.gen.go, which `scripts/task.sh api:generate`
 //     derives from the security requirements of api/openapi.yaml: 401 without a token when the
 //     operation needs one, 403 insufficient_scope when the token does not grant every scope.
 //  4. The request body is bounded (limitBody in media.go): a declared length over the
@@ -131,7 +131,7 @@ func bearerToken(h http.Header) (token string, present, ok bool) {
 func (s *Server) guard(pattern string, next http.Handler) http.Handler {
 	a, ok := operationSecurity[pattern]
 	if !ok {
-		panic(fmt.Sprintf("clientapi: %s has no security metadata; run make generate", pattern))
+		panic(fmt.Sprintf("clientapi: %s has no security metadata; run scripts/task.sh api:generate", pattern))
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(withLocale(r))

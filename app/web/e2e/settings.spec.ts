@@ -4,9 +4,9 @@
 // scrolling sideways. `vite preview` has no API, so each test plays a signed-in user's server with
 // page.route; names change with the locale, so elements are found by role, structure, autocomplete tokens and,
 // where a role is not unique, by their names in the project's catalog.
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
+import { readCatalog } from "./catalog.ts";
 
 /** The signed-in user's account, as GET /accounts/verify_credentials answers. */
 const viewer = {
@@ -185,11 +185,9 @@ function projectLocale(): string {
   return test.info().project.use.locale ?? "en";
 }
 
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${projectLocale()}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(projectLocale());
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${projectLocale()}`);
   return text;

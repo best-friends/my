@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The user's passkeys (FR-004): the list, the form that registers one (its name and the password that confirms it, or
 // for a user without a password another passkey, then the browser's prompt), and removing one from its row. A wrong
-// password is the password field's error; any other failure an alert next to the form (web-client.md E2, G16).
+// password is the password field's error; any other failure an alert next to the form (web-client/README.md E2, web-client/16-look-states-and-wording.md G16).
 import { useAnnouncer } from "@my/ui";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";

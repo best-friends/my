@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Documentation and the repository's bookkeeping: markdownlint, the ADR numbers, and that CI runs every check
+# (the docs context of scripts/changed-contexts.sh).
+version: "3"
+
+vars:
+  MARKDOWNLINT: bunx --bun markdownlint-cli2@0.23.2
+
+tasks:
+  check:
+    desc: Run the documentation checks, markdownlint, the ADR numbers, and the CI coverage of `check`, in parallel
+    deps: [lint, adr-numbers, ci-coverage]
+
+  lint:
+    desc: Lint Markdown files
+    cmds:
+      - "{{.MARKDOWNLINT}}"
+
+  adr-numbers:
+    desc: Fail if two files in docs/adr share a number
+    cmds:
+      - scripts/adr-numbers.sh
+
+  ci-coverage:
+    desc: Fail when a check of `check` runs in no step of .github/workflows and is not excluded with a reason (ADR-0083)
+    cmds:
+      - scripts/ci-coverage.sh
+
+  adr-new:
+    desc: 'Create a new ADR: scripts/task.sh docs:adr-new TITLE="..." [SLUG=kebab-slug]'
+    requires:
+      vars: [TITLE]
+    cmds:
+      - scripts/adr-new.sh {{shellQuote .TITLE}} {{.SLUG}}

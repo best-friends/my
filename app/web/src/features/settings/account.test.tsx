@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The account page through the whole app (web-client.md T4): asking for an archive of the user's data,
+// The account page through the whole app (web-client/README.md T4): asking for an archive of the user's data,
 // downloading it, and deleting the account with the password, with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

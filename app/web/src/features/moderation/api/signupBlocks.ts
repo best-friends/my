@@ -2,7 +2,7 @@
 // The queries and mutations of the sign-up blocks (FR-719): the blocks on sign-ups by the domain of the email
 // address, one email address (by its hash) or a range of client addresses, listed newest first, added and
 // lifted by a viewer with manage_accounts. The list follows the API's keyset pagination as a TanStack Query
-// infinite query whose key ends with "pages" (web-client.md §10).
+// infinite query whose key ends with "pages" (web-client/10-api-client-and-auth.md §10).
 import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
@@ -88,7 +88,7 @@ function isActiveSignupBlocksQuery(queryKey: readonly unknown[]): boolean {
   return isSignupBlocksQuery(queryKey) && typeof params === "object" && params !== null && "active" in params && params.active === true;
 }
 
-/** Marks stale every cached list of sign-up blocks (web-client.md S1): a new block is in each. */
+/** Marks stale every cached list of sign-up blocks (web-client/README.md S1): a new block is in each. */
 export function refreshSignupBlockLists(queryClient: QueryClient): Promise<void> {
   return queryClient.invalidateQueries({ predicate: (query) => isSignupBlocksQuery(query.queryKey) });
 }

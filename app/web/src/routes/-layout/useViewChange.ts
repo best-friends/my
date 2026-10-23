@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Route focus management, once for every page (web-client.md Y5). After the router renders a new page
+// Route focus management, once for every page (web-client/README.md Y5). After the router renders a new page
 // it names the document after the page's h1 and, when the path changed, moves focus to that h1 so that a
 // screen reader reads the new page and keyboard users continue from its start. The first page of a
 // visit keeps the browser's own focus; only its title is set. A new name of the instance renames the

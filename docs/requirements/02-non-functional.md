@@ -103,7 +103,7 @@
 
 | ID | 要件 |
 | --- | --- |
-| NFR-DEV-1 | `make check` 一発で lint・型検査・テスト・ドキュメント検査が走る |
+| NFR-DEV-1 | `task check`（`scripts/task.sh check`）一発で lint・型検査・テスト・ドキュメント検査が走る |
 | NFR-DEV-2 | 外部サービスなしでローカル完結のテストができる（SQLite / インメモリ / エミュレータ） |
 | NFR-DEV-3 | 設計判断は ADR に記録し、エージェントは Accepted な ADR に従う |
 | NFR-DEV-4 | 1 Issue = 1 PR を基本とし、Issue には受け入れ基準を必ず書く |

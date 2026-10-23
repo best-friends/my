@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Catalog checks run by `make i18n-check` (ADR-0009 §1).
+// Catalog checks run by `scripts/task.sh i18n:check` (ADR-0009 §1).
 //   error: ICU syntax error, including a plural / select without `other`
 //   error: translation argument unknown to the source, or of a different type
 //   error: plural / selectordinal category the locale's CLDR rules do not have
@@ -7,27 +7,32 @@
 //   error: rich-text tag, number skeleton / style, or date / time argument in a namespace
 //          shared with Go (anything but client*)
 //   error: malformed locale directory, namespace, or key; two keys mapping to one accessor
-//   error: generated files (pseudo-locales, accessors, golden) differ from `make i18n-gen`
-//   error: copy outside the tone and punctuation rules (web-client.md G19, G20): an exclamation mark
+//   error: catalog file outside locales/<locale>/<namespace>/<area>.json, or a key outside its area's file (ADR-0082)
+//   error: generated files Go reads (server pseudo-locales, Go accessors, golden) differ from `scripts/task.sh i18n:gen`
+// The generated files only the TS clients read (client pseudo-locales, TS accessors) are not committed and not
+// checked here (ADR-0081): i18n:gen-ts writes them before the tasks that read them, maybe while this runs.
+//   error: copy outside the tone and punctuation rules (web-client/16-look-states-and-wording.md G19, G20): an exclamation mark
 //          in any non-pseudo locale; an ASCII colon or comma in Japanese text (use "：" and "、")
 //   warn:  untranslated key (falls back to en at runtime)
 //   warn:  translation drops a source argument (sometimes legitimate)
 //   warn:  key not referenced from code
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  areaOf,
   type Catalog,
+  type CatalogFile,
+  catalogFile,
   formattingLocale,
   isClientNamespace,
   isPseudo,
   loadCatalog,
-  localesDir,
-  PSEUDO_LOCALES,
+  loadCatalogFiles,
   rel,
   repoRoot,
   SOURCE,
 } from "./catalog";
-import { generate, goName } from "./generate";
+import { generate, goName, pseudoPart } from "./generate";
 import { type Args, extractArgs, literalText, outsideSharedSubset, parseMessage, pluralCategories } from "./icu";
 
 let errors = 0;
@@ -36,10 +41,12 @@ const error = (m: string) => (errors++, console.error(`error: ${m}`));
 const warn = (m: string) => (warnings++, console.warn(`warn:  ${m}`));
 
 const NAMESPACE = /^[a-z][a-z0-9]*$/;
+/** "locales/<locale>/<namespace>/<area>.json <key>", where a finding about a key points. */
+const at = (locale: string, ns: string, key: string): string => `${rel(catalogFile(locale, ns, key))} ${key}`;
 const KEY = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 
 function analyze(locale: string, ns: string, key: string, message: unknown): Args | undefined {
-  const where = `locales/${locale}/${ns}.json ${key}`;
+  const where = at(locale, ns, key);
   if (typeof message !== "string") return void error(`${where}: defaultMessage must be a string`);
   try {
     const ast = parseMessage(message);
@@ -64,14 +71,14 @@ function analyze(locale: string, ns: string, key: string, message: unknown): Arg
   }
 }
 
-/** Punctuation that web-client.md G19 / G20 rule out, found in the message's own text (not its ICU syntax). */
+/** Punctuation that web-client/16-look-states-and-wording.md G19 / G20 rule out, found in the message's own text (not its ICU syntax). */
 function copyStyleFindings(locale: string, text: string): string[] {
   if (isPseudo(locale)) return [];
   const out: string[] = [];
-  if (/[!！]/.test(text)) out.push("no exclamation marks in UI copy (web-client.md G19)");
+  if (/[!！]/.test(text)) out.push("no exclamation marks in UI copy (web-client/16-look-states-and-wording.md G19)");
   if (new Intl.Locale(locale).language === "ja") {
-    if (text.includes(":")) out.push("use the full-width colon \"：\" in Japanese (web-client.md G20)");
-    if (text.includes(",")) out.push("use \"、\" instead of an ASCII comma in Japanese (web-client.md G20)");
+    if (text.includes(":")) out.push("use the full-width colon \"：\" in Japanese (web-client/16-look-states-and-wording.md G20)");
+    if (text.includes(",")) out.push("use \"、\" instead of an ASCII comma in Japanese (web-client/16-look-states-and-wording.md G20)");
   }
   return out;
 }
@@ -89,11 +96,11 @@ function checkCatalog(catalog: Catalog) {
   const sourceArgs = new Map<string, Args | undefined>();
   const accessors = new Map<string, string>();
   for (const [ns, entries] of Object.entries(catalog[SOURCE])) {
-    if (!NAMESPACE.test(ns)) error(`locales/${SOURCE}/${ns}.json: namespace must match ${NAMESPACE}`);
+    if (!NAMESPACE.test(ns)) error(`locales/${SOURCE}/${ns}/: namespace must match ${NAMESPACE}`);
     for (const [key, e] of Object.entries(entries)) {
       const id = `${ns}:${key}`;
-      if (!KEY.test(key)) error(`locales/${SOURCE}/${ns}.json ${key}: key must match ${KEY}`);
-      if (!e.description) warn(`locales/${SOURCE}/${ns}.json ${key}: no description for translators`);
+      if (!KEY.test(key)) error(`${at(SOURCE, ns, key)}: key must match ${KEY}`);
+      if (!e.description) warn(`${at(SOURCE, ns, key)}: no description for translators`);
       const name = goName(id);
       if (accessors.has(name)) error(`${id} and ${accessors.get(name)} both map to the accessor ${name}`);
       accessors.set(name, id);
@@ -105,13 +112,14 @@ function checkCatalog(catalog: Catalog) {
     if (locale === SOURCE) continue;
     for (const id of sourceArgs.keys()) {
       const [ns, key] = id.split(/:(.*)/s);
+      if (isPseudo(locale) && pseudoPart(ns) !== "go") continue;
       if (!namespaces[ns]?.[key]) warn(`${locale}: untranslated ${id}`);
     }
     for (const [ns, entries] of Object.entries(namespaces)) {
       for (const [key, e] of Object.entries(entries)) {
         const id = `${ns}:${key}`;
         if (!sourceArgs.has(id)) {
-          error(`locales/${locale}/${ns}.json ${key}: not in the source locale (obsolete)`);
+          error(`${at(locale, ns, key)}: not in the source locale (obsolete)`);
           continue;
         }
         const want = sourceArgs.get(id);
@@ -119,11 +127,11 @@ function checkCatalog(catalog: Catalog) {
         if (!want || !got) continue;
         for (const [name, t] of got) {
           const w = want.get(name);
-          if (!w) error(`locales/${locale}/${ns}.json ${key}: unknown argument {${name}}`);
-          else if (w.kind !== t.kind) error(`locales/${locale}/${ns}.json ${key}: {${name}} is ${t.kind}, the source has ${w.kind}`);
+          if (!w) error(`${at(locale, ns, key)}: unknown argument {${name}}`);
+          else if (w.kind !== t.kind) error(`${at(locale, ns, key)}: {${name}} is ${t.kind}, the source has ${w.kind}`);
         }
         for (const name of want.keys()) {
-          if (!got.has(name) && !isPseudo(locale)) warn(`locales/${locale}/${ns}.json ${key}: drops argument {${name}}`);
+          if (!got.has(name) && !isPseudo(locale)) warn(`${at(locale, ns, key)}: drops argument {${name}}`);
         }
       }
     }
@@ -154,26 +162,38 @@ function checkUnused(ids: Iterable<string>) {
   }
 }
 
-async function checkGenerated(catalog: Catalog) {
-  const files = await generate(catalog);
-  for (const [path, want] of files) {
-    const got = existsSync(path) ? readFileSync(path, "utf8") : undefined;
-    if (got !== want) error(`${rel(path)} is ${got === undefined ? "missing" : "stale"}; run make i18n-gen and commit the result`);
-  }
-  for (const locale of PSEUDO_LOCALES) {
-    const dir = join(localesDir, locale);
-    if (!existsSync(dir)) continue;
-    for (const f of readdirSync(dir)) {
-      if (!files.has(join(dir, f))) error(`locales/${locale}/${f} has no source namespace; run make i18n-gen`);
+/** Every catalog file is locales/<locale>/<namespace>/<area>.json and holds only the keys of its area (ADR-0082). */
+function checkLayout(files: CatalogFile[]) {
+  for (const { path, locale, ns, area, entries } of files) {
+    if (!ns) {
+      error(`${rel(path)}: catalogs are locales/<locale>/<namespace>/<area>.json; split it by area`);
+      continue;
+    }
+    for (const key of Object.keys(entries)) {
+      if (areaOf(key) !== area) error(`${rel(path)} ${key}: belongs in ${rel(catalogFile(locale, ns, key))}`);
     }
   }
 }
 
-const catalog = loadCatalog();
+async function checkGenerated(catalog: Catalog, files: CatalogFile[]) {
+  const generated = await generate(catalog, ["go"]);
+  for (const [path, want] of generated) {
+    const got = existsSync(path) ? readFileSync(path, "utf8") : undefined;
+    if (got !== want) error(`${rel(path)} is ${got === undefined ? "missing" : "stale"}; run scripts/task.sh i18n:gen and commit the result`);
+  }
+  for (const { path } of files.filter((f) => isPseudo(f.locale))) {
+    if (!generated.has(path)) error(`${rel(path)} has no source; run scripts/task.sh i18n:gen`);
+  }
+}
+
+// The client pseudo-locales are generated, uncommitted files that may be missing or stale; leave them out.
+const files = loadCatalogFiles().filter((f) => !isPseudo(f.locale) || (f.ns !== "" && pseudoPart(f.ns) === "go"));
+const catalog = loadCatalog(files);
+checkLayout(files);
 const sourceArgs = checkCatalog(catalog);
 if (errors === 0) {
   checkUnused(sourceArgs?.keys() ?? []);
-  await checkGenerated(catalog);
+  await checkGenerated(catalog, files);
 }
 console.log(`i18n: ${errors} error(s), ${warnings} warning(s)`);
 if (errors > 0) process.exit(1);

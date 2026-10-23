@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The horizontal layout of a screen: buttons, tags and short facts side by side, wrapping onto the next line when the
-// row is full, with gaps from the spacing steps (web-client.md G1). It renders the element the content needs (`as`).
+// row is full, with gaps from the spacing steps (web-client/16-look-states-and-wording.md G1). It renders the element the content needs (`as`).
 import { createElement } from "react";
 import { tv } from "tailwind-variants";
 import { columnGaps, flex, type FlexLayoutProps, type LayoutElement, type PolymorphicProps, rowGaps, type Space, splitBox } from "./layout";

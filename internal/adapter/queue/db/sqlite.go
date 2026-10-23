@@ -29,7 +29,7 @@ func NewSQLiteOutbox(d *sqlite.DB, opts Options) *Outbox {
 	return &Outbox{db: d, st: sqliteStore{}, opts: opts}
 }
 
-// sqliteStore stores timestamps as Unix milliseconds (data-model.md §1.2).
+// sqliteStore stores timestamps as Unix milliseconds (data-model/01-conventions.md §1.2).
 type sqliteStore struct{}
 
 var _ store = sqliteStore{}

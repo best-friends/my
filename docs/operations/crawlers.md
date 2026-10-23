@@ -84,8 +84,8 @@ tdm-reservation: 1
 一覧は [ai-robots-txt/ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt)（MIT）の `robots.json` から作り、
 `internal/interface/web/ai_crawlers.gen.go` に同梱します。実行時には取得しません。月に 1 度程度、次の手順で更新の PR を作ります。
 
-1. `Makefile` の `AI_ROBOTS_COMMIT` を新しいコミットに、`AI_ROBOTS_SHA256` をそのコミットの `robots.json` の SHA-256 に変えます。
-2. `make ai-crawlers` を実行します。
+1. `tasks/go.yml` の `AI_ROBOTS_COMMIT` を新しいコミットに、`AI_ROBOTS_SHA256` をそのコミットの `robots.json` の SHA-256 に変えます。
+2. `scripts/task.sh go:ai-crawlers` を実行します。
 3. 差分を確かめます。分類（学習 / AI での利用）は `robots.json` の `function` の文から決めるので、新しく入ったクローラーの分類が誤っていれば、
    `scripts/ai-crawlers/main.go` の `overrides` で直します。リンクプレビューの取得者と汎用の検索エンジンは `excluded` で一覧から外します。
 

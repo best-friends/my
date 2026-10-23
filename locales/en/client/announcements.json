@@ -1,0 +1,30 @@
+{
+  "announcements.heading": {
+    "defaultMessage": "Announcement of {date}",
+    "description": "Heading of one announcement of the server. {date} is the day it started to show, formatted."
+  },
+  "announcements.mark_read": {
+    "defaultMessage": "Mark as read",
+    "description": "Button that marks an announcement read."
+  },
+  "announcements.mark_read_failed": {
+    "defaultMessage": "The announcement could not be marked as read: {reason}",
+    "description": "Error after marking an announcement read failed. {reason} is why."
+  },
+  "announcements.title": {
+    "defaultMessage": "Announcements",
+    "description": "Heading of the server's announcements above the home timeline."
+  },
+  "announcements.unread": {
+    "defaultMessage": "Unread",
+    "description": "Marker of an announcement that the user has not read, next to its heading."
+  },
+  "announcements.unread_count": {
+    "defaultMessage": "{count, plural, one {# unread} other {# unread}}",
+    "description": "The number of unread announcements on the badge next to the heading of the announcements, for example '2 unread'."
+  },
+  "announcements.until": {
+    "defaultMessage": "Shown until {date}",
+    "description": "When an announcement stops showing. {date} is the date and time, formatted."
+  }
+}

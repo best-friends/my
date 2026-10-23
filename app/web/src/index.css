@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 @import "tailwindcss";
-/* Semantic design tokens; the only colors components may use (web-client.md D8). */
+/* Semantic design tokens; the only colors components may use (web-client/README.md D8). */
 @import "@my/ui/theme.css";
 
 /* @my/ui ships source only, so scan it for the utilities its components use (ADR-0026). */
@@ -16,7 +16,7 @@
     touch-action: pan-x pan-y pinch-zoom;
   }
   /* Below md the navigation is a tab bar fixed to the bottom edge: scroll focused elements clear of it
-     (web-client.md Y4). Its height is the min-h-16 of its links (min-h-12 on short screens) plus the
+     (web-client/README.md Y4). Its height is the min-h-16 of its links (min-h-12 on short screens) plus the
      safe-area inset. On pages with the floating new-post button (data-compose-fab on the main of @my/ui AppShell)
      they also clear the button: 3rem above the tab bar with a 1rem gap (0.5rem on short screens), or in the
      corner from md. From xl the form is a side panel and nothing floats. */

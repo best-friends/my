@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The automatic deletion of old posts through the whole app (web-client.md T4): the policy the server has, editing
+// The automatic deletion of old posts through the whole app (web-client/README.md T4): the policy the server has, editing
 // it and saving it as a whole, a failed save, and leaving with unsaved changes, with MSW playing the server.
 import { screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

@@ -67,7 +67,7 @@ Remote servers ──AP──►│                               │
 - モジュール間はアプリケーション層の公開 API（ユースケース / イベント）経由でのみ参照する。テーブルの直接参照は禁止。
 - インターフェイス層（Client API / AP）はアプリケーション層のユースケースを呼ぶだけで、ドメインロジックを持たない。
 - **公開範囲の判定（`canView(viewer, status)`）はドメイン層の 1 箇所に集約**（NFR-SEC-4、[公開範囲の閲覧判定](visibility.md)）。公開範囲は `public` / `local` / `unlisted` / `private` / `direct`（[ADR-0017](../adr/0017-visibility-local.md)）。
-- import の方向は golangci-lint の depguard（`.golangci.yml`）で `make check` と CI が検査する。§6 の各ディレクトリについて:
+- import の方向は golangci-lint の depguard（`.golangci.yml`）で `scripts/task.sh check` と CI が検査する。§6 の各ディレクトリについて:
 
   | パッケージ | import してよいもの |
   | --- | --- |
@@ -156,7 +156,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 
 ### 4.4 リアルタイム更新（SSE）
 
-1. コマンドのトランザクションがコミットされると、`uow.Projectors` に登録したコミットフックが、そのトランザクションで発行したイベントを受け取る（[data-model §2.1](data-model.md#21-トランザクションの規律)）
+1. コマンドのトランザクションがコミットされると、`uow.Projectors` に登録したコミットフックが、そのトランザクションで発行したイベントを受け取る（[data-model §2.1](data-model/02-consistency.md#21-トランザクションの規律)）
 2. `timeline` のフックは新しい投稿・ブーストの ID を、`notification` のフックは通知を受け取りうるアカウントを、`stream.Publisher` に知らせる。知らせるのは「何が変わったか」だけで、内容は載せない
 3. `GET /api/v1/streaming` の各接続は `stream.Subscriber` で自分のアカウントを購読し、知らせを受けるたびにユースケースで読み直す。
    ホームに載るかは `timeline.Service.HomeEntry`（ホームのタイムラインと同じ条件と `CanView`）、通知は前回送ったものより新しい通知の一覧で決める
@@ -189,7 +189,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 
 ## 5. データ設計の原則
 
-テーブル・カラム・制約・インデックスの詳細は [論理データモデル](data-model.md) を参照してください。
+テーブル・カラム・制約・インデックスの詳細は [論理データモデル](data-model/README.md) を参照してください。
 モデリングの規約（リソース・イベント・投影の分離、状態の直交分解、正規化）は [ADR-0020](../adr/0020-data-modeling-principles.md) です。
 
 - ID は時系列ソート可能な **UUIDv7**（文字列表現）。API ではそのまま文字列で返す。
@@ -254,7 +254,7 @@ pkg/
   testkit/           # コントラクトテスト・フィクスチャ・決定的なフェイク（独自アダプタ作者向けに公開）
     pgtest/          # テスト用の PostgreSQL（既定は pgmem、テンプレートの複製。ADR-0041）
 api/                 # spec/（クライアント API の正。パス・components の項目ごとのファイル）、そのバンドル openapi.yaml（生成物）と lint 設定 redocly.yaml。規約は client-api.md
-schema/              # 目標スキーマ sqlite.sql / postgres.sql（Atlas で宣言的に適用）と準備 SQL postgres.bootstrap.sql（ADR-0023）
+schema/              # 目標スキーマ sqlite/・postgres/（モジュールごとのファイル。Atlas で宣言的に適用）と準備 SQL postgres.bootstrap.sql（ADR-0023・ADR-0082）
 queries/             # sqlc 用クエリ（方言別。設定は sqlc.yaml、生成先は internal/adapter/db/<dialect>/。queue/ は internal/adapter/queue/db 用）
 locales/             # ICU MessageFormat カタログ（en がソース。Go と TS で共有。en-XA / ar-XB は生成物）
 tools/               # 開発ツール（Go ツールの go.mod、i18n の生成器・検査を持つ Bun パッケージ tools/i18n）

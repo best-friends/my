@@ -1,7 +1,7 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 --
 -- Queries of the database job queue and the outbox (internal/adapter/queue/db) for SQLite.
--- Timestamps are Unix milliseconds (see docs/architecture/data-model.md, section 1.2).
+-- Timestamps are Unix milliseconds (see docs/architecture/data-model/README.md, section 1.2).
 
 -- name: InsertJob :exec
 INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, created_at)

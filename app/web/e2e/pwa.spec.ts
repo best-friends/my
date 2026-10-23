@@ -102,7 +102,7 @@ test("starts the app from the offline shell, but not the server's own pages", as
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation")).toBeVisible();
   // The page says why it cannot load instead of a skeleton that never ends, under the offline bar
-  // (web-client.md G17).
+  // (web-client/16-look-states-and-wording.md G17).
   await expect(page.getByRole("status").filter({ hasText: "You are offline." })).toBeVisible();
   await expect(page.getByRole("main").getByText("You are offline, so the server cannot be reached.", { exact: false })).toBeVisible();
   await expect(page.getByRole("main").getByRole("progressbar")).toHaveCount(0);

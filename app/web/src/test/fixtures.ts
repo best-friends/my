@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The fixtures that more than one feature's tests and MSW handlers use: the instance, the accounts and the
-// posts. They take their types from the TypeScript types generated from api/openapi.yaml (web-client.md S9);
+// posts. They take their types from the TypeScript types generated from api/openapi.yaml (web-client/README.md S9);
 // API types are never written by hand here. A fixture that only one feature uses lives in that feature's
 // test/handlers.ts.
 import type { components } from "../lib/api/schema.gen";
@@ -89,7 +89,7 @@ function namedAccountFixture(n: number, username: string, displayName: string, d
 }
 
 /**
- * Accounts whose names test the layout of a post's header at 320 px (web-client.md G7, G9): a local account
+ * Accounts whose names test the layout of a post's header at 320 px (web-client/16-look-states-and-wording.md G7, G9): a local account
  * with a 30-character display name, an account of another server with an Arabic (right-to-left) display
  * name, and one on a long domain whose handle does not fit the card.
  */

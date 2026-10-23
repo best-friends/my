@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // "A new version is available" (ADR-0028): a toast with an Update action that stays until it is used or
 // dismissed. The new version takes over only when the user presses Update, so a draft is never lost to a
-// reload the user did not ask for. The toast is announced politely and never takes focus (web-client.md Y7).
+// reload the user did not ask for. The toast is announced politely and never takes focus (web-client/README.md Y7).
 import { useToast } from "@my/ui";
 import { useEffect, useEffectEvent } from "react";
 import { type PendingUpdate, usePendingUpdate } from "./lib/pwa";
@@ -23,7 +23,7 @@ export function UpdatePrompt() {
   const dismiss = useEffectEvent((id: number) => {
     toast.dismiss(id);
   });
-  // Syncs the toast with the worker's state, an external system (web-client.md R8).
+  // Syncs the toast with the worker's state, an external system (web-client/README.md R8).
   useEffect(() => {
     if (update === null) return;
     const id = show(update);

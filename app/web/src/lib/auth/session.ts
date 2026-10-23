@@ -130,7 +130,7 @@ export class Session {
   /**
    * Whether resuming the session failed because the server could not be reached (a page opened offline):
    * the tab acts signed out, but the session may still be there, so the next restore() tries again. A page
-   * may show the user's data saved on this browser meanwhile (the home timeline, web-client.md §11).
+   * may show the user's data saved on this browser meanwhile (the home timeline, web-client/11-pwa.md §11).
    */
   get unreachable(): boolean {
     return this.#unreachable;

@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Prints the check contexts that the changes since BASE touch, one per line, including the contexts that
-# depend on them. `make check-changed` runs the matching `<context>-check` targets and CI's `changes` job
-# skips the jobs of the other contexts.
+# depend on them. `scripts/task.sh check:changed` runs the matching `<context>:check` tasks, and the `changes` job of
+# .github/workflows/ci.yml picks from them the jobs of the full check (server-static, client-test, docker, ...).
 #
 #   scripts/changed-contexts.sh BASE          changes from the merge base of BASE and HEAD to the working tree,
 #                                             plus untracked files (local use)
@@ -11,19 +11,19 @@
 #   scripts/changed-contexts.sh --files FILE  the paths listed in FILE, one per line (CI and tests)
 #
 # Contexts:
-#   docs    Markdown lint and the ADR index                     (make docs-check)
-#   go      the Go module, sqlc, and the Go tests                (make go-check)
-#   i18n    the catalogs and their generated accessors           (make i18n-check)
-#   api     the OpenAPI spec and the code generated from it      (make api-check)
-#   ui      app/ui (@my/ui)                                      (make ui-check, the story tests)
-#   web     app/web and the workspace-wide client checks         (make web-check)
-#   docker  the Dockerfile and the deployments                   (make docker-check, the Docker smoke test)
-#   shell   the shell scripts                                    (make lint-shell)
-#   schema  the desired-state schema files                       (make db-check)
-#   agentkit tools/agentkit and its context map, which covers every path (make agentkit-check)
+#   docs    Markdown lint and the ADR numbers                   (docs:check)
+#   go      the Go module, sqlc, and the Go tests                (go:check)
+#   i18n    the catalogs and their generated accessors           (i18n:check)
+#   api     the OpenAPI spec and the code generated from it      (api:check)
+#   ui      app/ui (@my/ui)                                      (ui:check, the story tests)
+#   web     app/web and the workspace-wide client checks         (web:check)
+#   docker  the Dockerfile and the deployments                   (docker:check, the Docker smoke test)
+#   shell   the shell scripts                                    (shell:check)
+#   schema  the desired-state schema files                       (db:check-all)
+#   agentkit tools/agentkit and its context map, which covers every path (agentkit:check)
 #
-# A change to shared configuration (the Makefile, .tool-versions, the workflows, the Go or Bun lockfiles,
-# api/, locales/, tools/i18n/) selects every context, and so does any path no rule below knows:
+# A change to shared configuration (Taskfile.yml and tasks/, .tool-versions, the workflows and their actions, the Go or
+# Bun lockfiles, api/, locales/, tools/i18n/) selects every context, and so does any path no rule below knows:
 # a new kind of file runs everything until a rule is added for it.
 set -euo pipefail
 
@@ -72,7 +72,7 @@ classify() {
   select_contexts agentkit
   case "$path" in
     # Shared configuration: everything.
-    Makefile | .tool-versions | .github/workflows/* | scripts/changed-contexts.sh | \
+    Taskfile.yml | tasks/* | scripts/task.sh | .tool-versions | .github/workflows/* | .github/actions/* | scripts/changed-contexts.sh | \
       go.mod | go.sum | tools/go.mod | tools/go.sum | \
       app/bun.lock | app/bunfig.toml | app/package.json | api/* | locales/* | tools/i18n/*)
       select_contexts "${ALL[@]}"
@@ -94,13 +94,13 @@ classify() {
       ;;
   esac
   case "$path" in
-    *.md | .markdownlint-cli2.jsonc | docs/* | scripts/adr-index.sh | scripts/adr-new.sh)
+    *.md | .markdownlint-cli2.jsonc | docs/* | scripts/adr-new.sh | scripts/adr-numbers.sh)
       select_contexts docs
       known=1
       ;;
   esac
   case "$path" in
-    # go test fails when the generated configuration reference is stale (make config-docs).
+    # go test fails when the generated configuration reference is stale (go:config-docs).
     *.go | cmd/* | internal/* | pkg/* | queries/* | sqlc.yaml | .golangci.yml | scripts/sqlc.sh | scripts/go-build-tags.sh | \
       docs/reference/configuration.md)
       select_contexts go
@@ -132,7 +132,7 @@ classify() {
       ;;
   esac
   case "$path" in
-    # make web-tokens fails when the token list generated from app/ui/src/theme.css is stale.
+    # web:tokens fails when the token list generated from app/ui/src/theme.css is stale.
     app/* | scripts/playwright-image-check.sh | scripts/web-icons.sh | internal/domain/instance/theme_tokens.gen.go)
       select_contexts web
       known=1

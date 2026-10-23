@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The account search form's logic (web-client.md A4): the typed text, sending it, and why the last search
+// The account search form's logic (web-client/README.md A4): the typed text, sending it, and why the last search
 // found nothing. The hook returns no JSX.
 import { useAnnouncer } from "@my/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,7 @@ import { type Translate, useT } from "../../../lib/i18n";
 import { accountSearchMutationKey, lookupAccount, storeFoundAccount } from "../api/lookup";
 
 export type AccountSearchOptions = {
-  /** The text the field starts with: the search in the page's address (web-client.md S3). */
+  /** The text the field starts with: the search in the page's address (web-client/README.md S3). */
   initialQuery: string;
   /** Called with the found account's `acct` and the text that found it, to open its profile. */
   onFound: (acct: string, query: string) => void;
@@ -38,7 +38,7 @@ export type AccountSearchState = {
 /** Why the search finds only the accounts this server knows, if it does. */
 type Scope = "all" | "signed-out" | "known-only";
 
-/** The localized reason a search failed. 404 and 429 come from the client's catalog (web-client.md E2). */
+/** The localized reason a search failed. 404 and 429 come from the client's catalog (web-client/README.md E2). */
 function failureOf(t: Translate, error: unknown, scope: Scope): string {
   if (error instanceof ApiError && error.status === 404) {
     switch (scope) {

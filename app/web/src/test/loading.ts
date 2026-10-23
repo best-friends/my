@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The loading state of a region, as web-client.md G15 has it: the region is aria-busy, one visually hidden
+// The loading state of a region, as web-client/16-look-states-and-wording.md G15 has it: the region is aria-busy, one visually hidden
 // text names what it waits for, and no spinner shares the region with its skeleton.
 import { screen, within } from "@testing-library/react";
 import { expect } from "vitest";

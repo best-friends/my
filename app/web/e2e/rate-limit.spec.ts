@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server's rate limit in every width × locale project (web-client.md §9 "外枠の読み込み" and "レート制限", ADR-0027):
+// The server's rate limit in every width × locale project (web-client/09-app-shell.md §9 "外枠の読み込み" and "レート制限", ADR-0027):
 // when what the shell reads on every page is refused with 429, a reloaded page stays in the user's locale, says in the
 // top bar when it loads again (Retry-After), and loads again by itself then. `vite preview` has no API, so the spec
 // answers the OAuth refresh and the client API with `page.route`. Texts come from the project's catalog.
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { readCatalog } from "./catalog.ts";
 
 type Schemas = components["schemas"];
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The project's locale, which the fixture writes into <html lang> as the instance's. */
 function projectLocale(): string {
   return test.info().project.use.locale ?? "en";
@@ -18,7 +16,7 @@ function projectLocale(): string {
 
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${projectLocale()}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(projectLocale());
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${projectLocale()}`);
   return text;

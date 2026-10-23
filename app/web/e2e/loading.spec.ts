@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The loading state of a list in every width × locale project (web-client.md G15): while the first page is
+// The loading state of a list in every width × locale project (web-client/16-look-states-and-wording.md G15): while the first page is
 // on its way, the region is aria-busy, a skeleton fills it without a spinner, and one visually hidden text
 // names what is loading. `vite preview` has no client API, so the spec answers it with `page.route` and
 // holds the list's response back until it has looked at the page. Names change with the locale, so the

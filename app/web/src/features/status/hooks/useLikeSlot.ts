@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The viewer's Like slot of a post (ADR-0052 §1): a favourite or one emoji reaction, never both. Favouriting,
 // reacting, changing the emoji and taking either back all change the one slot, optimistically in every cached copy
-// of the post (web-client.md S8), one change at a time per post in the order pressed, so that the last press wins.
+// of the post (web-client/README.md S8), one change at a time per post in the order pressed, so that the last press wins.
 import { useAnnouncer, useToast } from "@my/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";

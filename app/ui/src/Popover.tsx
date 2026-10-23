@@ -14,7 +14,7 @@ const popover = tv({
       "max-w-[min(24rem,calc(100vw-2rem))] rounded-xl border border-border bg-surface-raised text-fg shadow-lg outline-none",
       "motion-safe:transition motion-safe:duration-fast data-entering:opacity-0 data-exiting:opacity-0",
     ],
-    // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client.md §9).
+    // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client/09-app-shell.md §9).
     dialog: "flex max-h-[inherit] flex-col gap-2 overflow-y-auto overscroll-contain p-4 outline-none",
     title: "text-base font-extrabold",
   },

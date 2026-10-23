@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The task runner of the repository (ADR-0080). Run it with scripts/task.sh, never with a `task` on PATH;
+# `scripts/task.sh --list` lists the tasks. Each area keeps its tasks in tasks/<area>.yml under its own namespace:
+# a new area is a new file there and one line under `includes`. This file holds only the includes, the checks across
+# areas (check, check:changed), and the generators (generate). The CI jobs are workflow steps that each call one of the
+# area tasks (ADR-0083); scripts/ci-coverage.sh fails when a check of `check` runs in no step.
+#
+# Pass variables as arguments (`scripts/task.sh go:bin VERSION=v1.2.3`) or in the environment.
+version: "3"
+
+# Each line carries its task's name.
+output: prefixed
+
+vars:
+  # Licenses compatible with AGPL-3.0-only (ADR-0011). Anything else, including unknown, fails.
+  GO_ALLOWED_LICENSES: 0BSD,AGPL-3.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,BSL-1.0,CC0-1.0,ISC,MIT,MPL-2.0,Unlicense,Zlib
+  # npm dependencies of tools/i18n and of the client workspace app/ must satisfy the same allowlist, plus the
+  # permissive BlueOak-1.0.0 and MIT-0 (no attribution clause), which jsdom's dependencies use.
+  NPM_ALLOWED_LICENSES: "{{.GO_ALLOWED_LICENSES}},BlueOak-1.0.0,MIT-0"
+  # Comma-separated build tags of go:bin and docker:build that leave adapters out of the server
+  # (docs/reference/build-tags.md); empty builds every adapter.
+  GO_TAGS: '{{.GO_TAGS | default ""}}'
+  # The official Playwright image every browser job runs in, pinned by digest. Its version must match the
+  # playwright packages in app/; web:playwright-image-check also keeps the workflows on this exact reference.
+  PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+  # The contexts of `check` (scripts/changed-contexts.sh), each with a `<context>:check` task.
+  CHECKS: '{{.CHECKS | default "docs go i18n api ui web docker agentkit"}}'
+
+includes:
+  agentkit: ./tasks/agentkit.yml
+  api: ./tasks/api.yml
+  db: ./tasks/db.yml
+  docker: ./tasks/docker.yml
+  docs: ./tasks/docs.yml
+  go: ./tasks/go.yml
+  i18n: ./tasks/i18n.yml
+  shell: ./tasks/shell.yml
+  ui: ./tasks/ui.yml
+  web: ./tasks/web.yml
+
+tasks:
+  check:
+    desc: Run every offline check, the contexts and the checks inside each in parallel (CHECKS="go web" for some)
+    deps:
+      - for: { var: CHECKS }
+        task: "{{.ITEM}}:check"
+
+  check:changed:
+    desc: Run the checks of the contexts changed since BASE (default origin/main) and of their dependents
+    vars:
+      # The changes since the merge base of BASE and HEAD, uncommitted and untracked files included.
+      BASE: '{{.BASE | default "origin/main"}}'
+      CONTEXTS:
+        sh: scripts/changed-contexts.sh '{{.BASE}}' | tr '\n' ' '
+      SELECTED:
+        sh: for c in {{.CONTEXTS}}; do case " {{.CHECKS}} " in *" $c "*) printf '%s ' "$c";; esac; done
+    cmds:
+      - "echo 'contexts changed since {{.BASE}}: {{.CONTEXTS}}'"
+      - cmd: echo 'also run `scripts/task.sh shell:check` (shellcheck; CI runs it)'
+        if: case " {{.CONTEXTS}} " in *" shell "*) true;; *) false;; esac
+      - cmd: echo 'also run `scripts/task.sh db:check-all` for both dialects (needs Docker; CI runs it)'
+        if: case " {{.CONTEXTS}} " in *" schema "*) true;; *) false;; esac
+      - cmd: echo 'no check covers these changes'
+        if: '[ -z "{{trim .SELECTED}}" ]'
+      - task: check
+        vars: { CHECKS: "{{.SELECTED}}" }
+        if: '[ -n "{{trim .SELECTED}}" ]'
+
+  # The generated files Go reads are committed; the ones only the TS clients read are not, and the tasks that read
+  # them generate them first (ADR-0081). Run this once after a clone for an editor's type checks.
+  generate:
+    desc: Run every generator whose inputs changed since its last run; the others are up to date and skip
+    deps:
+      - api:generate
+      - go:sqlc
+      - go:config-docs
+      - i18n:gen
+      - web:tokens-gen
+      - web:routes-gen

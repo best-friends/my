@@ -12,7 +12,7 @@ const emptyState = tv({
   },
 });
 
-/** Heading levels an empty state can take; the page title is the only h1 (web-client.md Y5). */
+/** Heading levels an empty state can take; the page title is the only h1 (web-client/README.md Y5). */
 export type HeadingLevel = 2 | 3 | 4 | 5 | 6;
 
 export type EmptyStateProps = Omit<ComponentPropsWithRef<"div">, "children" | "title"> & {

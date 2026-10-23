@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The app's single place for screen reader announcements (web-client.md Y7): one polite live region
+// The app's single place for screen reader announcements (web-client/README.md Y7): one polite live region
 // (role="status") and one assertive live region (role="alert"), rendered once near the root and present
 // from the first render, because a live region only announces changes made after it is in the page.
 // Announcing never moves focus.

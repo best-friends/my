@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An ARIA snapshot for the jsdom component tests of @my/ui: the accessibility tree under an element in
-// the YAML shape of Playwright's toMatchAriaSnapshot (web-client.md Y6), so a test can pin the structure
+// the YAML shape of Playwright's toMatchAriaSnapshot (web-client/README.md Y6), so a test can pin the structure
 // a screen reader meets (roles, names, descriptions and states) without a browser.
 //
 //   - feed "Home" [busy]:

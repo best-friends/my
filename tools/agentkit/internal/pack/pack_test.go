@@ -19,11 +19,13 @@ import (
 func TestBuild(t *testing.T) {
 	root := t.TempDir()
 	files := map[string]string{
-		"docs/requirements/01-functional.md": "# 機能要件\n\n| ID | 要件 | 優先度 |\n| --- | --- | --- |\n| FR-915 | 絵文字の作成の権限 | S |\n",
-		"docs/adr/0070-split.md":             "# ADR-0070: 分割\n\n- Status: Accepted\n\n## Decision（決定）\n\n申請を別のリソースにする。\n",
-		"docs/adr/0071-later.md":             "# ADR-0071: 後で\n\n- Status: Proposed\n\n## Decision（決定）\n\n未定。\n",
-		"docs/architecture/data-model.md":    "# データモデル\n\n### 4.4 content\n\n#### 申請\n\n`custom_emoji_requests` は申請。\n",
-		"schema/sqlite.sql":                  "CREATE TABLE custom_emoji_requests (\n  id TEXT PRIMARY KEY\n);\n",
+		"docs/requirements/01-functional.md":                   "# 機能要件\n\n| ID | 要件 | 優先度 |\n| --- | --- | --- |\n| FR-915 | 絵文字の作成の権限 | S |\n",
+		"docs/adr/0070-split.md":                               "# ADR-0070: 分割\n\n- Status: Accepted\n\n## Decision（決定）\n\n申請を別のリソースにする。\n",
+		"docs/adr/0071-later.md":                               "# ADR-0071: 後で\n\n- Status: Proposed\n\n## Decision（決定）\n\n未定。\n",
+		"docs/architecture/data-model/README.md":               "# データモデル\n\n## 節の一覧\n\n- [4. テーブル](04-tables/README.md)\n",
+		"docs/architecture/data-model/04-tables/README.md":     "## 4. テーブル\n\n- [4.4 content](04-content.md)\n",
+		"docs/architecture/data-model/04-tables/04-content.md": "### 4.4 content\n\n#### 申請\n\n`custom_emoji_requests` は申請。\n",
+		"schema/sqlite/04-content.sql":                         "CREATE TABLE custom_emoji_requests (\n  id TEXT PRIMARY KEY\n);\n",
 	}
 	for p, c := range files {
 		full := filepath.Join(root, p)
@@ -47,7 +49,7 @@ func TestBuild(t *testing.T) {
 	}
 	defer func() { _ = s.Close() }()
 	m := &ctxmap.Map{Entries: []ctxmap.Entry{{
-		Name: "schema", Paths: []string{"schema/**"}, Docs: []string{"docs/architecture/data-model.md#44-content"},
+		Name: "schema", Paths: []string{"schema/**"}, Docs: []string{"docs/architecture/data-model/04-tables/04-content.md#44-content"},
 		Checks: []string{"schema", "go"}, Shared: true, Notes: []string{"Edit every dialect together."},
 	}}}
 	is := &gh.Issue{
@@ -68,7 +70,7 @@ func TestBuild(t *testing.T) {
 		"**schema** [shared",
 		"Edit every dialect together.",
 		"table:custom_emoji_requests",
-		"`make db-check` for both dialects",
+		"`scripts/task.sh db:check-all` for both dialects",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("pack lacks %q:\n%s", want, out)

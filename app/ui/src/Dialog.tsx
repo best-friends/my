@@ -13,7 +13,7 @@ export { DialogTrigger };
 export type { DialogTriggerProps } from "react-aria-components";
 
 /**
- * The overlay is its own size container, so the panel answers to the space it can use (web-client.md D2)
+ * The overlay is its own size container, so the panel answers to the space it can use (web-client/README.md D2)
  * wherever it is portalled. Its height follows the visual viewport, which shrinks under an on-screen keyboard.
  */
 const modal = tv({
@@ -33,7 +33,7 @@ const modal = tv({
       "data-hovered:bg-surface-sunken data-hovered:text-fg data-focus-visible:focus-ring pointer-coarse:size-11 [&>svg]:size-5",
     ],
     // React Aria cannot set overscroll-behavior on iOS WebKit under the shell's CSP, so each overlay's
-    // scrollable surface sets it, and its scroll never chains to the page (web-client.md §9).
+    // scrollable surface sets it, and its scroll never chains to the page (web-client/09-app-shell.md §9).
     body: "min-h-0 overflow-y-auto overscroll-contain px-4 pb-4",
   },
   variants: {

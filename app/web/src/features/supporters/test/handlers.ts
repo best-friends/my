@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the supporters feature (web-client.md §7): the plans, the user's subscription and
+// The default MSW handlers of the supporters feature (web-client/README.md §7): the plans, the user's subscription and
 // its changes, the checkout and the portal, the supporter list and the user's choice to be on it. By default no plan
 // takes subscriptions, the user has no subscription and may subscribe, and nobody is listed; the default instance
 // has the program disabled and the list unpublished, so nothing of it shows until a test turns it on.

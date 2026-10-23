@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # sqlc configuration (ADR-0003). The sqlc version is pinned in tools/go.mod. Regenerate with
-# `make sqlc`; `make sqlc-check` (part of `make check`) fails when the committed code is stale.
+# `scripts/task.sh go:sqlc`; `scripts/task.sh go:sqlc-check` (part of `scripts/task.sh check`) fails when the committed code is stale.
 #
-# Product queries live in queries/<dialect>/*.sql, read schema/<dialect>.sql, and generate into
+# Product queries live in queries/<dialect>/*.sql, read the files of schema/<dialect>/, and generate into
 # internal/adapter/db/<dialect>/<dialect>gen. Comments above a query become the doc comment of
 # its generated method.
 #
@@ -16,7 +16,7 @@ version: "2"
 sql:
   - name: sqlite
     engine: sqlite
-    schema: schema/sqlite.sql
+    schema: schema/sqlite
     queries: queries/sqlite
     gen:
       go:
@@ -26,7 +26,7 @@ sql:
         omit_unused_structs: true
   - name: postgres
     engine: postgresql
-    schema: schema/postgres.sql
+    schema: schema/postgres
     queries: queries/postgres
     gen:
       go:
@@ -53,7 +53,7 @@ sql:
               pointer: true
   - name: sqlite-queue
     engine: sqlite
-    schema: schema/sqlite.sql
+    schema: schema/sqlite
     queries: queries/sqlite/queue
     gen:
       go:
@@ -63,7 +63,7 @@ sql:
         omit_unused_structs: true
   - name: postgres-queue
     engine: postgresql
-    schema: schema/postgres.sql
+    schema: schema/postgres
     queries: queries/postgres/queue
     gen:
       go:
@@ -85,7 +85,7 @@ sql:
             go_type: time.Time
   - name: sqlite-kv
     engine: sqlite
-    schema: schema/sqlite.sql
+    schema: schema/sqlite
     queries: queries/sqlite/kv
     gen:
       go:
@@ -95,7 +95,7 @@ sql:
         omit_unused_structs: true
   - name: postgres-kv
     engine: postgresql
-    schema: schema/postgres.sql
+    schema: schema/postgres
     queries: queries/postgres/kv
     gen:
       go:

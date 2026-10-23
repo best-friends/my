@@ -39,7 +39,7 @@ function ReportPage() {
   return (
     <>
       <ReportHeading />
-      {/* Another report is another page: nothing of the previous one carries over (web-client.md R10). */}
+      {/* Another report is another page: nothing of the previous one carries over (web-client/README.md R10). */}
       <Card>
         <ReportDetailView key={id} id={id} />
       </Card>

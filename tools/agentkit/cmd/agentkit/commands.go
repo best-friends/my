@@ -25,8 +25,9 @@ Read (instead of grep / cat over the repository):
   outline <path>                                       headings / declarations with line ranges and sizes
   refs <ref> [-n 40]                                   what points at ref, and what ref points at
   trace <op:id|GoName> [--depth 6]                     handler -> app -> adapter -> query -> table
+  adr list [--status Proposed]                         number, status, and title of every ADR
 
-Workflow (instead of gh / make loops):
+Workflow (instead of gh / scripts/task.sh loops):
   issue claim <n> [--plan text]                        check agent:ready, no assignee, Accepted ADRs; assign; comment
   issue block <n> --reason text|--reason-file f        comment and add agent:blocked
   pr open [--issue n] [--base b] [--summary-file f] [--decisions text] [--draft]
@@ -35,7 +36,8 @@ Workflow (instead of gh / make loops):
                                                        (run it in the background; exit 3 on a conflict)
   pr watch [<pr>...] [--interval 60s]                  one line per event: merged, closed, conflicting, ci-failed,
                                                        ci-green, dequeued (for the Monitor tool)
-  check [--base origin/main]                           make check-changed with a summary and the failing lines
+  check [--base origin/main]                           scripts/task.sh check:changed with a summary and the
+                                                       failing lines
   regen [--base origin/main] [--dry-run]               run the generators the changed sources need
   gh sync                                              refresh the local cache of issues and pull requests
 
@@ -74,6 +76,8 @@ func run(args []string) error {
 		return runRegen(r, rest)
 	case "map":
 		return runMap(r, rest)
+	case "adr":
+		return runADR(r, rest)
 	}
 	s, err := store.Open(r)
 	if err != nil {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A content warning as a WAI-ARIA disclosure (web-client.md Y8): a button with aria-expanded and
+// A content warning as a WAI-ARIA disclosure (web-client/README.md Y8): a button with aria-expanded and
 // aria-controls, and a panel that is `hidden` while closed, so nothing in it is read or focusable.
 //
 // React Aria's DisclosurePanel is not used: it hides the panel with hidden="until-found", which lets the

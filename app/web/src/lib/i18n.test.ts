@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from "vitest";
+import en from "virtual:locales/en/client";
 import { applyDocumentLocale, direction, fallbackChain, loadI18n, resolveLocale, supportedLocales } from "./i18n";
-import en from "../../../../locales/en/client.json";
 
 describe("locales", () => {
   test("has a catalog for the source locale, Japanese and the pseudo-locales", () => {
@@ -54,7 +54,7 @@ describe("loadI18n", () => {
   test("uses the source locale for an unsupported locale", async () => {
     const { locale, messages } = await loadI18n("fr-FR");
     expect(locale).toBe("en");
-    expect(messages["client:shell.nav.home"]).toBe(en["shell.nav.home"].defaultMessage);
+    expect(messages["client:shell.nav.home"]).toBe(en["shell.nav.home"]?.defaultMessage);
   });
 });
 

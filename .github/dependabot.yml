@@ -37,7 +37,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
-  # The Go, Node.js, and Bun image tags in the Dockerfile must match .tool-versions (make docker-check).
+  # The Go, Node.js, and Bun image tags in the Dockerfile must match .tool-versions (scripts/task.sh docker:dockerfile-check).
   - package-ecosystem: docker
     directory: /
     schedule:

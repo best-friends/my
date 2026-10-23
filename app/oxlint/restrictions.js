@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The Oxlint JS plugin `restrict` (ADR-0049): reports every node that matches one of the esquery selectors
 // given as the rule's options, with that selector's message, like ESLint's no-restricted-syntax (which
-// Oxlint lacks). The selectors are the project-specific restrictions of docs/architecture/web-client.md,
+// Oxlint lacks). The selectors are the project-specific restrictions of docs/architecture/web-client/README.md,
 // written in app/.oxlintrc.json per path; restrictions.test.js proves that each one rejects a violation
 // and accepts the intended alternative.
 //

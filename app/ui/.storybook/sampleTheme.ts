@@ -2,7 +2,7 @@
 // A sample server theme (ADR-0059) for the Storybook preview: token overrides in the shape the admin API
 // takes, rendered the way the server renders a theme's stylesheet (internal/domain/instance, Stylesheet).
 // The `Instance theme` toolbar of .storybook/preview.tsx applies it, and the story tests run every story
-// with it too (vitest.config.ts). `make web-tokens` (scripts/check-tokens.ts) checks it as the server
+// with it too (vitest.config.ts). `scripts/task.sh web:tokens` (scripts/check-tokens.ts) checks it as the server
 // would check a saved theme: known tokens, values of their kinds, and AA contrast of every color pair.
 
 /** One token override: a color per theme as `#rrggbb[aa]`, or the value of a non-color token. */

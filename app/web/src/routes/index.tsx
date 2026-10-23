@@ -8,20 +8,20 @@ import { RouteError } from "./-layout/RouteStates";
 
 /**
  * The root address: the landing page for people who are not signed in, and the home timeline for signed-in users,
- * whom it sends there (the timelines are named by their own paths, web-client.md S3). The server's shell of this
+ * whom it sends there (the timelines are named by their own paths, web-client/README.md S3). The server's shell of this
  * address carries the instance's link preview (ADR-0028).
  */
 export const Route = createFileRoute("/")({
   loader: async ({ context: { queryClient, api, session } }) => {
     await session.restore();
     // While the server cannot be reached to resume the session (a page opened offline), the home timeline shows
-    // the posts kept on this browser (web-client.md §11).
+    // the posts kept on this browser (web-client/11-pwa.md §11).
     if (session.status === "signed-in" || session.unreachable) {
       // eslint-disable-next-line typescript/only-throw-error -- TanStack Router's redirects are thrown objects.
       throw redirect({ to: "/home", replace: true });
     }
     // The instance tells what to show; the page still offers to sign in without it, so its failure does not fail
-    // the page (the shell, which reads the same query, handles it). Cached data is shown at once (web-client.md S7).
+    // the page (the shell, which reads the same query, handles it). Cached data is shown at once (web-client/README.md S7).
     await queryClient.query({ ...instanceQueryOptions(api), staleTime: Infinity }).catch(() => undefined);
   },
   staticData: { wideMain: true },

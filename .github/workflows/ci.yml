@@ -1,12 +1,25 @@
 name: CI
 
-# The entry of the pull request and merge queue checks (ADR-0047): `changes` selects the contexts of `make check` the
-# change touches, one job per context calls that context's reusable workflow (ctx-<context>.yml), and `check`
-# collects their results into the single required status check. The workflow has no path filter, so it always runs
-# and `check` always reports. Pushes to main run main.yml instead.
+# The pull request and merge queue checks (ADR-0079). One workflow and one required status check, `check`, whose jobs
+# depend on the event:
+#
+# - pull_request: `preflight`, the checks a pull request's own files decide, and the @my/ui story tests (ui-test.yml)
+#   when the ui context changes.
+# - merge_group: the full check of the contexts the group changes (scripts/changed-contexts.sh): server-static,
+#   server-test, client-static, client-test (2 shards), repo, and docker, at most 7 jobs.
+# - pull_request labelled `ci:full`: both.
+#
+# Each job sets up its tools and generates what its checks read, then runs the checks as parallel steps (ADR-0083),
+# each named after the one task it runs (`scripts/task.sh go:vet`), so that each check keeps its own log and time.
+# Locally `scripts/task.sh check` runs the same tasks; scripts/ci-coverage.sh (docs:ci-coverage, in the repo job) fails
+# when a check of `check` runs in no step. The workflow has no path filter, so it always runs and `check` always
+# reports. Pushes to main run main.yml instead.
 
 on:
+  # labeled / unlabeled rerun the checks when `ci:full` is added or removed, and the concurrency group cancels the
+  # older run, so no result of the other set of jobs is left on the pull request.
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   # The merge queue of main runs the same required `check` on each merge group before it merges the group.
   merge_group:
     types: [checks_requested]
@@ -16,150 +29,350 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A new push to a PR replaces its run. Each merge group has a ref of its own (gh-readonly-queue/main/...) and is
-  # never cancelled here: the merge queue replaces the groups it rebuilds.
+  # A new push or label change replaces a PR's run. Each merge group has a ref of its own (gh-readonly-queue/main/...)
+  # and is never cancelled here: the merge queue replaces the groups it rebuilds.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
+  GOTOOLCHAIN: local
+
 jobs:
-  # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request or
-  # the merge group touches that context or one it depends on. A change to shared configuration runs them all.
+  # Selects the jobs: whether the full check runs, and the contexts of scripts/changed-contexts.sh the change touches.
   changes:
     runs-on: ubuntu-latest
     outputs:
-      docs: ${{ steps.contexts.outputs.docs }}
-      go: ${{ steps.contexts.outputs.go }}
-      i18n: ${{ steps.contexts.outputs.i18n }}
-      api: ${{ steps.contexts.outputs.api }}
-      ui: ${{ steps.contexts.outputs.ui }}
-      web: ${{ steps.contexts.outputs.web }}
-      docker: ${{ steps.contexts.outputs.docker }}
-      shell: ${{ steps.contexts.outputs.shell }}
-      schema: ${{ steps.contexts.outputs.schema }}
-      agentkit: ${{ steps.contexts.outputs.agentkit }}
-      smoke: ${{ steps.contexts.outputs.smoke }}
-      # The input `scope` of the ctx-*.yml: `queue` in the merge queue, `pr` on pull requests.
-      scope: ${{ github.event_name == 'merge_group' && 'queue' || 'pr' }}
+      full: ${{ steps.select.outputs.full }}
+      ui: ${{ steps.select.outputs.ui }}
+      server: ${{ steps.select.outputs.server }}
+      client: ${{ steps.select.outputs.client }}
+      smoke: ${{ steps.select.outputs.smoke }}
+      arm64: ${{ steps.select.outputs.arm64 }}
     steps:
       # A pull request checks out its merge commit, whose first parent is the base branch. A merge group checks out
       # its head commit and compares it with its base, the main commit the group is built on; that base is fetched by
       # SHA because a group queued behind others is several commits ahead of it.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
-      - name: Select the contexts the change touches
-        id: contexts
+      - name: Select the jobs
+        id: select
         env:
           EVENT: ${{ github.event_name }}
+          # The merge queue, or a pull request labelled `ci:full`.
+          FULL: ${{ github.event_name == 'merge_group' || contains(github.event.pull_request.labels.*.name, 'ci:full') }}
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
           MERGE_GROUP_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
         run: |
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed"
-            contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
           else
             git fetch --no-tags --depth=1 origin "$MERGE_GROUP_BASE_SHA"
             git diff --name-only "$MERGE_GROUP_BASE_SHA" "$MERGE_GROUP_HEAD_SHA" > "$RUNNER_TEMP/changed"
-            contexts="$(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed")"
           fi
-          echo "contexts: ${contexts//$'\n'/ }"
-          for c in docs go i18n api ui web docker shell schema agentkit; do
-            if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
-          done
-          # The Docker smoke test runs on a change to the docker context and on one to cmd/ or internal/platform/,
-          # which load the configuration and assemble the server the images start (ADR-0047). changed-contexts.sh
-          # puts those two in the go context, so their paths are matched here.
-          if grep -qx docker <<< "$contexts" || grep -qE '^(cmd|internal/platform)/' "$RUNNER_TEMP/changed"; then
+          contexts=" $(scripts/changed-contexts.sh --files "$RUNNER_TEMP/changed" | tr '\n' ' ')"
+          echo "full: $FULL, contexts:$contexts"
+          # touches JOB CONTEXT... sets the output JOB to whether the change touches one of the contexts.
+          touches() {
+            local job="$1" c value=false
+            shift
+            for c in "$@"; do
+              case "$contexts" in *" $c "*) value=true ;; esac
+            done
+            echo "$job=$value" >> "$GITHUB_OUTPUT"
+          }
+          echo "full=$FULL" >> "$GITHUB_OUTPUT"
+          touches ui ui
+          touches server go schema api i18n
+          touches client ui web api i18n
+          # Only a change to the docker context makes the linux/arm64 images differ: the Go server cross-builds with
+          # CGO_ENABLED=0 (ADR-0010).
+          touches arm64 docker
+          # The Docker smoke test also runs on a change to cmd/ or internal/platform/, which load the configuration
+          # and assemble the server the images start. changed-contexts.sh puts those two in the go context, so their
+          # paths are matched here.
+          if [[ "$contexts" == *" docker "* ]] || grep -qE '^(cmd|internal/platform)/' "$RUNNER_TEMP/changed"; then
             echo smoke=true
           else
             echo smoke=false
           fi >> "$GITHUB_OUTPUT"
 
-  # One job per context, each calling the context's reusable workflow. A job whose `if` is false is skipped, and
-  # `check` counts a skipped job as passed. Inside a called workflow `github` is this workflow's context (so
-  # github.event_name is this run's event), but this workflow's `env` does not reach it: the ctx-*.yml set their own.
-  docs:
-    needs: changes
-    if: needs.changes.outputs.docs == 'true'
-    uses: ./.github/workflows/ctx-docs.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
+  # --- Pull requests --------------------------------------------------------------------------------------------
 
-  go:
-    needs: changes
-    if: needs.changes.outputs.go == 'true'
-    uses: ./.github/workflows/ctx-go.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
+  preflight:
+    # Markdown, shellcheck, gofmt, the Go and npm licenses, the Dockerfile and Playwright image versions, the design
+    # tokens, and the CSS 100vh check. A pull request's own files or lockfiles decide each of them, so stacking pull
+    # requests in the merge queue cannot break them and the queue does not run them again.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
+        with:
+          node: "false"
+      - name: Install the Bun packages
+        run: scripts/task.sh web:install i18n:install
+      - parallel:
+          - name: docs:lint
+            run: scripts/task.sh docs:lint
+          - name: shell:lint
+            run: scripts/task.sh shell:lint
+          - name: go:fmt-check
+            run: scripts/task.sh go:fmt-check
+          - name: go:licenses
+            run: scripts/task.sh go:licenses
+          - name: web:licenses
+            run: scripts/task.sh web:licenses
+          - name: i18n:licenses
+            run: scripts/task.sh i18n:licenses
+          - name: docker:dockerfile-check
+            run: scripts/task.sh docker:dockerfile-check
+          - name: web:playwright-image-check
+            run: scripts/task.sh web:playwright-image-check
+          - name: web:tokens
+            run: scripts/task.sh web:tokens
+          - name: web:lint-css
+            run: scripts/task.sh web:lint-css
 
-  i18n:
+  ui-test:
+    # The @my/ui story tests (ADR-0027), on pull requests alone: a pull request that changes a screenshot fixes its
+    # baselines itself, and a change from stacking two of them is rare.
     needs: changes
-    if: needs.changes.outputs.i18n == 'true'
-    uses: ./.github/workflows/ctx-i18n.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
+    if: github.event_name == 'pull_request' && needs.changes.outputs.ui == 'true'
+    uses: ./.github/workflows/ui-test.yml
 
-  api:
-    needs: changes
-    if: needs.changes.outputs.api == 'true'
-    uses: ./.github/workflows/ctx-api.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
+  # --- The full check: merge groups, and pull requests labelled ci:full -------------------------------------------
+  # A job whose `if` is false is skipped, and `check` counts a skipped job as passed.
 
-  web:
-    # The ui context (ui-check and the ui-test story tests) and the web context (web-check).
+  server-static:
     needs: changes
-    if: needs.changes.outputs.ui == 'true' || needs.changes.outputs.web == 'true'
-    uses: ./.github/workflows/ctx-web.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
-      ui: ${{ needs.changes.outputs.ui == 'true' }}
-      web: ${{ needs.changes.outputs.web == 'true' }}
+    if: needs.changes.outputs.full == 'true' && needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    # One cgo setting for every step, so that they share one build cache: the server builds without cgo (ADR-0010).
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        id: go
+      # The api checks bundle the spec with Redocly on Bun. i18n:lint runs once, in client-static, which every i18n change
+      # also selects.
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
+      # Both db:check steps use Atlas, and the PostgreSQL one the container of db:up. Mostly waiting on the container,
+      # so it runs in the background while go:warm builds.
+      - name: Install Atlas and start PostgreSQL
+        id: db
+        run: scripts/task.sh db:atlas db:up
+        background: true
+      # Parallel steps would each compile the same packages, since the build cache only holds a package once a
+      # compile of it has finished: build them once first.
+      - name: Build the packages and the Go tools once
+        run: scripts/task.sh go:warm
+      # api:lint and api:generate-check both run Redocly through bunx, which can fail when two processes install it at
+      # once: fetch it before them.
+      - name: Fetch the Redocly CLI once
+        run: scripts/task.sh api:warm
+      - name: Wait for Atlas and PostgreSQL
+        wait: db
+      # More than 10 steps: the last ones, the short ones, start as the first ones finish.
+      - parallel:
+          # Its cache is the one setup-go restores; the action adds the issues to the pull request as annotations.
+          - name: go:lint
+            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+            with:
+              version: v${{ steps.go.outputs.golangci-lint }}
+              skip-cache: true
+          - name: go:build-tags
+            run: scripts/task.sh go:build-tags
+          - name: go:vet
+            run: scripts/task.sh go:vet
+          - name: go:build
+            run: scripts/task.sh go:build
+          - name: db:check (postgres)
+            run: scripts/task.sh db:check DB_DIALECT=postgres
+          - name: db:check (sqlite)
+            run: scripts/task.sh db:check DB_DIALECT=sqlite
+          - name: go:sqlc-check
+            run: scripts/task.sh go:sqlc-check
+          - name: api:generate-check
+            run: scripts/task.sh api:generate-check
+          - name: api:lint
+            run: scripts/task.sh api:lint
+          - name: go:mod-check
+            run: scripts/task.sh go:mod-check
+          - name: api:spec-check
+            run: scripts/task.sh api:spec-check
 
-  schema:
+  server-test:
+    # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); the slow suite runs them
+    # on a real postgres container. The Valkey tests start valkey/valkey on the runner's Docker; TEST_VALKEY_REQUIRED
+    # makes a missing Docker fail the job instead of skipping them.
     needs: changes
-    if: needs.changes.outputs.schema == 'true'
-    uses: ./.github/workflows/ctx-schema.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
+    if: needs.changes.outputs.full == 'true' && needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+      - name: go:test
+        run: scripts/task.sh go:test
+        env:
+          TEST_VALKEY_REQUIRED: "1"
+
+  client-static:
+    needs: changes
+    if: needs.changes.outputs.full == 'true' && needs.changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
+      # The packages and the generated files every step reads, once: the steps' own generators then skip.
+      - name: Generate the client files
+        run: scripts/task.sh web:generate
+      # web:lint-rules copies its fixtures into app/web/src, so the steps that read app/web/src run after it.
+      - parallel:
+          - name: web:lint-rules
+            run: scripts/task.sh web:lint-rules
+          - name: ui:typecheck
+            run: scripts/task.sh ui:typecheck
+          - name: i18n:lint
+            run: scripts/task.sh i18n:lint
+          - name: i18n:typecheck
+            run: scripts/task.sh i18n:typecheck
+      - parallel:
+          - name: web:typecheck
+            run: scripts/task.sh web:typecheck
+          - name: web:oxlint
+            run: scripts/task.sh web:oxlint
+          - name: web:knip
+            run: scripts/task.sh web:knip
+          - name: web:dist
+            run: scripts/task.sh web:dist
+
+  client-test:
+    # Vitest of app/web in two shards, the longest job otherwise; the first shard also runs app/ui and tools/i18n.
+    name: client-test (${{ matrix.shard }})
+    needs: changes
+    if: needs.changes.outputs.full == 'true' && needs.changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/2, 2/2]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
+      - name: Generate the client files
+        run: scripts/task.sh web:generate
+      - parallel:
+          - name: web:test
+            run: scripts/task.sh web:test SHARD=${{ matrix.shard }}
+          # On the second shard, whose half of the web tests is the shorter one.
+          - name: ui:unit-test
+            if: matrix.shard == '2/2'
+            run: scripts/task.sh ui:unit-test
+          - name: i18n:test
+            if: matrix.shard == '2/2'
+            run: scripts/task.sh i18n:test
+
+  repo:
+    # agentkit and its context map, which must cover every path, the ADR numbers, and that every check of
+    # `scripts/task.sh check` runs in a job: any change can break them.
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    # As in server-static: one cgo setting, one build cache.
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        id: go
+      # As in server-static: build agentkit and its test binaries once before the parallel checks.
+      - name: Build agentkit once
+        run: scripts/task.sh agentkit:warm
+      - parallel:
+          - name: agentkit:lint
+            uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+            with:
+              version: v${{ steps.go.outputs.golangci-lint }}
+              working-directory: tools/agentkit
+              skip-cache: true
+          - name: agentkit:test
+            run: scripts/task.sh agentkit:test
+          - name: agentkit:vet
+            run: scripts/task.sh agentkit:vet
+          - name: agentkit:map-check
+            run: scripts/task.sh agentkit:map-check
+          - name: agentkit:mod-check
+            run: scripts/task.sh agentkit:mod-check
+          - name: agentkit:deps-check
+            run: scripts/task.sh agentkit:deps-check
+          - name: docs:adr-numbers
+            run: scripts/task.sh docs:adr-numbers
+          - name: docs:ci-coverage
+            run: scripts/task.sh docs:ci-coverage
 
   docker:
-    # docker-check and the linux/arm64 image builds on a change to the docker context, and on pull requests the
-    # Docker smoke test on a change to the docker context, cmd/, or internal/platform/ (ADR-0047). The merge queue
-    # runs only docker-check (ctx-docker.yml), so there the job runs only on a change to the docker context.
+    # The Docker Compose smoke test (linux/amd64), and on a change to the docker context the linux/arm64 image builds
+    # under QEMU.
     needs: changes
-    if: >-
-      needs.changes.outputs.docker == 'true' ||
-      (needs.changes.outputs.scope == 'pr' && needs.changes.outputs.smoke == 'true')
-    uses: ./.github/workflows/ctx-docker.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
-      check: ${{ needs.changes.outputs.docker == 'true' }}
-      smoke: ${{ needs.changes.outputs.smoke == 'true' }}
-      arm64: ${{ needs.changes.outputs.docker == 'true' }}
-
-  shell:
-    # shellcheck is a pull request check only (ctx-shell.yml); the merge queue does not call the workflow at all.
-    needs: changes
-    if: needs.changes.outputs.shell == 'true' && needs.changes.outputs.scope == 'pr'
-    uses: ./.github/workflows/ctx-shell.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
-
-  agentkit:
-    needs: changes
-    if: needs.changes.outputs.agentkit == 'true'
-    uses: ./.github/workflows/ctx-agentkit.yml
-    with:
-      scope: ${{ needs.changes.outputs.scope }}
+    if: needs.changes.outputs.full == 'true' && needs.changes.outputs.smoke == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # The images take their version from `git describe`.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up QEMU
+        if: needs.changes.outputs.arm64 == 'true'
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+      - parallel:
+          - name: docker:smoke
+            run: scripts/task.sh docker:smoke
+          - name: docker:build-arm64
+            if: needs.changes.outputs.arm64 == 'true'
+            run: scripts/task.sh docker:build-arm64
 
   check:
     # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when
-    # every context job above passed, or was skipped because the change does not touch its context. A job that calls
-    # a reusable workflow fails when one of the called jobs fails, so a failed schema, ui-test, docker-smoke, or
-    # docker-arm64 job fails `check`. `always()` makes it report a result even when every other job is skipped, so
-    # neither a pull request nor a merge group waits on it.
+    # every job above passed, or was skipped because the event or the change does not need it. A job that calls a
+    # reusable workflow fails when a called job fails, so a failed story test fails `check`. `always()` makes it report
+    # a result even when every other job is skipped, so neither a pull request nor a merge group waits on it.
     if: always()
-    needs: [changes, docs, go, i18n, api, web, schema, docker, shell, agentkit]
+    needs: [changes, preflight, ui-test, server-static, server-test, client-static, client-test, repo, docker]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if a check job failed or was cancelled

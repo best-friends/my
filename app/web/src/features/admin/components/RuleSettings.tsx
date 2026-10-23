@@ -4,7 +4,7 @@
 // report form show them as they are in every language. "Move up" and "Move down" reorder the rules with the keyboard
 // as well as the pointer (no dragging); focus then moves to the moved rule's heading. Editing opens a dialog with the
 // text and the hint; retiring cannot be undone, so it asks first (an alert dialog). What a change did stays on the
-// page in a StatusMessage above the list; a failure stays there too (role="alert", web-client.md E2).
+// page in a StatusMessage above the list; a failure stays there too (role="alert", web-client/README.md E2).
 import { Box, Button, Cluster, ConfirmDialog, Dialog, DialogTrigger, EmptyState, Heading, Hint, InlineError, Stack, StatusMessage, Text, TextArea, TextField } from "@my/ui";
 import { useRef, useState } from "react";
 import { useT } from "../../../lib/i18n";

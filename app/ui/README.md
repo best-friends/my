@@ -2,11 +2,11 @@
 
 The shared UI kit of the web client and the Tauri app ([ADR-0026](../../docs/adr/0026-client-workspace-and-component-architecture.md)).
 It ships TypeScript source and one stylesheet, `@my/ui/theme.css`, which holds the design tokens.
-The rules for writing components are in [web-client.md](../../docs/architecture/web-client.md).
+The rules for writing components are in [web-client/README.md](../../docs/architecture/web-client/README.md).
 
-`app/web/src` writes no Tailwind ([web-client.md A4](../../docs/architecture/web-client.md)): no JSX `className`, also none passed to a component
+`app/web/src` writes no Tailwind ([web-client/README.md A4](../../docs/architecture/web-client/README.md)): no JSX `className`, also none passed to a component
 of this kit, and no import of `tailwind-variants`, `tailwind-merge` or `clsx`. Oxlint's `restrict/classes` (app/.oxlintrc.json, proved by
-`app/oxlint/restrictions.test.js`) fails `make web-check` on both, in every file of `web/src` and its tests. A look or a layout the web needs is a prop
+`app/oxlint/restrictions.test.js`) fails `scripts/task.sh web:check` on both, in every file of `web/src` and its tests. A look or a layout the web needs is a prop
 of a component here, or a new prop or component; the one exception, a browser- or platform-specific adjustment that no component can express, disables
 the rule on its line with the reason. The layout components take no `className` or `style` at all. Components built on React Aria Components keep
 the `className` of its props, merged into their root, for use inside this package only.
@@ -23,7 +23,7 @@ An app's Tailwind entry imports the theme right after Tailwind and scans the kit
 ```
 
 Components use only the semantic tokens below as Tailwind utilities (`bg-surface-raised`, `text-fg-muted`, `border-border-strong`)
-or, where a value is computed, as `var(--color-*)` in React's `style` ([D8](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)).
+or, where a value is computed, as `var(--color-*)` in React's `style` ([D8](../../docs/architecture/web-client/README.md#6-レスポンシブとスタイル)).
 `theme.css` resets `--color-*`, so Tailwind's default palette (`bg-red-500`, `text-white`) produces no CSS.
 
 ## App-wide providers
@@ -80,7 +80,7 @@ Colors have two layers in [src/theme.css](src/theme.css):
 
 ### Contrast pairs
 
-[src/tokens.ts](src/tokens.ts) lists every foreground / background pair the kit may draw, and `make web-check` (`make web-tokens`)
+[src/tokens.ts](src/tokens.ts) lists every foreground / background pair the kit may draw, and `scripts/task.sh web:check` (`scripts/task.sh web:tokens`)
 verifies each against WCAG 2.2 AA in both themes: 4.5:1 for text, 3:1 for control boundaries and the focus ring.
 
 - On each of `surface`, `surface-raised`, `surface-sunken`:
@@ -133,7 +133,7 @@ changes the choice and the attribute together; both use the localStorage key `my
 ### Type roles
 
 Text takes its size from its role, never from the screen it is on
-([web-client.md §16.2](../../docs/architecture/web-client.md#162-文字)):
+([web-client/16-look-states-and-wording.md §16.2](../../docs/architecture/web-client/16-look-states-and-wording.md#162-文字)):
 
 | Role | Classes | Used for |
 | --- | --- | --- |
@@ -153,7 +153,7 @@ A user's name gets `dir="auto"` (Y10), which also turns `text-align: start` arou
 When the `dir="auto"` element is a block (a `p`, or a `span` inside a flex or grid row), it also takes
 `align-match-parent` (`text-align: match-parent`, with the `-webkit-` value Chromium needs), so it lines up with the page's
 start like the rows around it and only the text inside it runs right to left
-([G9](../../docs/architecture/web-client.md#162-文字)). Post bodies and content warnings keep their own direction's alignment.
+([G9](../../docs/architecture/web-client/16-look-states-and-wording.md#162-文字)). Post bodies and content warnings keep their own direction's alignment.
 The utility is not named `text-*` because `tailwind-merge` would read that as a color and drop the element's color class.
 
 ## Spacing, radius, shadow
@@ -215,8 +215,8 @@ same ring from the base layer when it sets none of its own.
 
 ## Motion
 
-Transitions and animations go under `motion-safe:` only ([D6](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)),
-for example `motion-safe:transition-colors`; `make web-tokens` fails on `transition-*` / `animate-*` without it (`*-none` is allowed).
+Transitions and animations go under `motion-safe:` only ([D6](../../docs/architecture/web-client/README.md#6-レスポンシブとスタイル)),
+for example `motion-safe:transition-colors`; `scripts/task.sh web:tokens` fails on `transition-*` / `animate-*` without it (`*-none` is allowed).
 
 - Durations: `duration-fast` (100ms), `duration-normal` (200ms), `duration-slow` (300ms). A bare `transition-*` uses 200ms.
 - Easing: `ease-standard` (the default), `ease-enter` (things appearing), `ease-exit` (things leaving).
@@ -224,7 +224,7 @@ for example `motion-safe:transition-colors`; `make web-tokens` fails on `transit
 ## Icons
 
 Icons are part of the kit, so that every screen draws the same shapes at the same sizes
-([web-client.md §16.3](../../docs/architecture/web-client.md#163-アイコン)):
+([web-client/16-look-states-and-wording.md §16.3](../../docs/architecture/web-client/16-look-states-and-wording.md#163-アイコン)):
 
 - The shapes are [Phosphor](https://phosphoricons.com/)'s, through `react-icons/pi` ([ADR-0043](../../docs/adr/0043-icon-set.md)).
   `src/Icons.tsx` is the only file that imports `react-icons`, and only `react-icons/pi` (lint enforces both). Its
@@ -265,7 +265,7 @@ avatar slots; the three spark strokes (`mango`, `logo-spark-coral`, `logo-spark-
 ## States of a region
 
 The kit gives every region of data the same four states
-([web-client.md §16.4](../../docs/architecture/web-client.md#164-空読み込み中エラーオフライン)):
+([web-client/16-look-states-and-wording.md §16.4](../../docs/architecture/web-client/16-look-states-and-wording.md#164-空読み込み中エラーオフライン)):
 
 | State | Component | Notes |
 | --- | --- | --- |
@@ -295,10 +295,11 @@ The server serves them as one stylesheet at `/theme/{revision}.css`: a `:root` r
 any cascade layer, so they win over the `@layer theme` that Tailwind emits the defaults into and over the utilities. That works only while
 the utilities refer to the variables, so no token is declared in `@theme inline`.
 
-[scripts/theme-tokens.ts](scripts/theme-tokens.ts) (`make web-tokens-gen`) generates the list of the overridable tokens from `theme.css`, with
+[scripts/theme-tokens.ts](scripts/theme-tokens.ts) (`scripts/task.sh web:tokens-gen`) generates the list of the overridable tokens from `theme.css`, with
 each token's kind, defaults (colors resolved to `#rrggbb` per theme), and bounds from `tokenRules` in [src/tokens.ts](src/tokens.ts), and the
 contrast pairs whose two colors are overridable (`themeColorPairs`): `src/themeTokens.gen.ts` for the theme editor and `internal/domain/instance/theme_tokens.gen.go` for the server, which checks
-every theme against them. A token that matches no rule (and is not in `fixedTokens`) fails the generator.
+every theme against them. A token that matches no rule (and is not in `fixedTokens`) fails the generator. Only the Go file is committed (ADR-0081):
+the tasks that read `src/themeTokens.gen.ts` (type checks, tests, builds, Storybook) generate it first with `scripts/task.sh web:tokens-gen-ts`.
 
 | Tokens | Kind | Override |
 | --- | --- | --- |
@@ -318,19 +319,19 @@ responsibility. `themeContrast` computes what the server checks, with the same f
 
 ## The token check
 
-`make web-tokens` runs [scripts/check-tokens.ts](scripts/check-tokens.ts). It fails when:
+`scripts/task.sh web:tokens` runs [scripts/check-tokens.ts](scripts/check-tokens.ts). It fails when:
 
 - a pair in `tokens.ts` is below AA in either theme, a background in a pair is translucent, or a semantic color is in no pair and not decorative;
 - a palette color is outside the sRGB gamut, or a semantic color is not `oklch()`, hex, a `var(--palette-*)` or `light-dark()` of those;
 - a source file Tailwind scans for `src/storybook.css` or `app/web/src/index.css` uses a default-palette color (`text-gray-500`),
   an arbitrary color (`bg-[#fff]`, `text-(--palette-gray-50)`, `[color:red]`), motion outside `motion-safe:`, an arbitrary radius, shadow,
   duration, or easing (`rounded-[3px]`), or a padding or gap step outside the list under "Spacing, radius, shadow";
-- the generated list of the overridable tokens (`src/themeTokens.gen.ts`, `internal/domain/instance/theme_tokens.gen.go`) differs from what
-  `make web-tokens-gen` writes from `theme.css` and `tokens.ts`, or `theme.css` uses `@theme inline`;
+- the committed list of the overridable tokens (`internal/domain/instance/theme_tokens.gen.go`) differs from what
+  `scripts/task.sh web:tokens-gen` writes from `theme.css` and `tokens.ts`, or `theme.css` uses `@theme inline`;
 - the Storybook's sample theme (`.storybook/sampleTheme.ts`) fails what the server checks of a saved theme: a token that is not overridable,
   a color that is not `#rrggbb`, a length out of its bounds, or a contrast pair below AA in either theme.
 
-Other unknown class names produce no CSS; catching those is the job of the Tailwind lint rules ([D9](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)).
+Other unknown class names produce no CSS; catching those is the job of the Tailwind lint rules ([D9](../../docs/architecture/web-client/README.md#6-レスポンシブとスタイル)).
 
 ## Form controls
 
@@ -360,7 +361,7 @@ string through props or children.
   Keyboard focus shows `focus-ring`; text inputs show it on any focus. Controls are at least 24 px tall and 44 px under `pointer-coarse:`.
 - `TextArea` with `characterLimit` and `formatRemaining` (the count message for a remaining count, negative when over) shows a count
   after the control, as the [GOV.UK character count](https://design-system.service.gov.uk/components/character-count/) does:
-  - the count is counted in Unicode code points, like the server ([data-model.md](../../docs/architecture/data-model.md));
+  - the count is counted in Unicode code points, like the server ([data-model/README.md](../../docs/architecture/data-model/README.md));
   - the visible count is linked to the text area with `aria-describedby` and hidden from the reading order, so it is read with the field;
   - a visually hidden `role="status"` region announces it when typing pauses for a second, and at once when the remaining count
     reaches 50, 20 or 0 ([ADR-0027](../../docs/adr/0027-ui-quality-gates.md));
@@ -394,7 +395,7 @@ while the pointer is over the toasts or focus is in them; a toast with an action
 (`role="alertdialog"`, named by `title`, described by `description`):
 
 - the title is a question, the description says what happens and whether it can be undone, and the buttons are verbs
-  (G22 in [web-client.md](../../docs/architecture/web-client.md)); `tone` is `danger` (default) or `primary`;
+  (G22 in [web-client/README.md](../../docs/architecture/web-client/README.md)); `tone` is `danger` (default) or `primary`;
 - on open, focus moves to the first field of `children` (a `ReasonField`, a `DurationSelect`), or else to the cancel button, never to the
   destructive one ([APG dialog, initial focus](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)); Esc and cancel close it and focus
   returns to the trigger; there is no × button and a press outside does not close it;
@@ -421,7 +422,7 @@ announces only changes made after it is in the page. A failure is not a status; 
 ## Layout and text
 
 Screens and feature components write no `className`: they lay themselves out with the primitives below and set their
-text with `Heading`, `Text`, `Hint` and `InlineError` ([web-client.md §16.1, §16.2](../../docs/architecture/web-client.md#16-見た目状態文言)).
+text with `Heading`, `Text`, `Hint` and `InlineError` ([web-client/16-look-states-and-wording.md §16.1, §16.2](../../docs/architecture/web-client/16-look-states-and-wording.md#16-見た目状態文言)).
 None of these components takes `className` or `style`. Every value is a typed prop: a gap or a padding is a step of G1
 (`Space`: `"0"`, `"0.5"`, `"1"`, `"2"`, `"3"`, `"4"`, `"6"`, `"8"`, `"10"`) picked by its role under "Spacing" above, never an
 arbitrary value. A look that no prop gives is a new prop or component in the kit, not a class in the app.
@@ -569,7 +570,7 @@ a time side by side as inline text) is a `Box`, not a `Stack`.
 
 ## App shell
 
-The frame around every page ([web-client.md §9](../../docs/architecture/web-client.md#9-アプリの外枠)). The app decides what goes in each slot
+The frame around every page ([web-client/09-app-shell.md §9](../../docs/architecture/web-client/09-app-shell.md#9-アプリの外枠)). The app decides what goes in each slot
 (the items, their permissions and counts, the strings); the look is here. `AppShell` and `AppNavigation` are the kit's only components that
 answer to the viewport (`md:`, `lg:`, `xl:` and the `short:` variant of [theme.css](src/theme.css)), because they lay out the screen itself;
 so does the region of `ToastProvider` (`clearsTabBar`), which stands above the tab bar they draw (D2). The lint exempts those three files from the rule
@@ -597,11 +598,11 @@ against viewport breakpoints.
 
 Each component has Testing Library tests next to it (`src/<Component>.test.tsx`) that find elements by role and drive them with
 `user-event`: keyboard operation and the label / description / error association. They run in jsdom in the `unit` project of
-[vitest.config.ts](vitest.config.ts) (`bun run test:unit`), which `make web-test` (part of `make check`) runs.
+[vitest.config.ts](vitest.config.ts) (`bun run test:unit`), which `scripts/task.sh ui:unit-test` (part of `scripts/task.sh check`) runs.
 
 ## Stories
 
-Every component has a story next to it (`src/<Component>.stories.tsx`, CSF 3). `make storybook` opens Storybook 10 on port 6006;
+Every component has a story next to it (`src/<Component>.stories.tsx`, CSF 3). `scripts/task.sh ui:storybook` opens Storybook 10 on port 6006;
 its toolbar switches the locale (`lang` / `dir` on `<html>` and React Aria's `I18nProvider`), the theme (`data-theme`), and the instance
 theme: the default tokens, or the sample server theme of [.storybook/sampleTheme.ts](.storybook/sampleTheme.ts) (teal accents on warm
 surfaces, a looser spacing step, and rounder corners). The preview renders the sample's overrides as the server renders a theme's stylesheet
@@ -612,19 +613,19 @@ component that stops following the overrides; every other story is tested with t
 [src/Tokens.stories.tsx](src/Tokens.stories.tsx) shows the color pairs, the type scale in English, Japanese and Arabic, radius,
 shadow and the focus ring. [src/storybook.css](src/storybook.css) is the Storybook preview stylesheet.
 
-Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `make ui-test` runs each story in Chromium in
+Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `scripts/task.sh ui:test` runs each story in Chromium in
 `en` and `ar-XB`, light and dark (four projects); a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
 1024 px container widths. A story of the app shell sets a viewport instead (`globals: atViewport("phone")` with
 `parameters: shellParameters`, [src/storyViewports.ts](src/storyViewports.ts)), since the shell answers to the viewport, and is captured
 once at it; its content stays within the viewport's height. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
 anything in it still animates then; stories render and run their `play` functions (which find elements by role, with
 `storybook/test`) without it. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
-them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
+them with `scripts/task.sh ui:snapshots-update`, and compare like CI with `scripts/task.sh ui:test-docker` (both need Docker).
 A story's `play` function also tests behaviour in the real browser (focus trap and return, Esc, arrow keys in RTL, announcements that
 keep focus); it runs before axe and the screenshots, in every project. The overlay components' jsdom tests cover the same
-behaviour in `make check`. Overlays portal into the story frame, which has layout
+behaviour in `scripts/task.sh check`. Overlays portal into the story frame, which has layout
 containment, so a modal covers the frame and appears in its screenshots.
-The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).
+The test procedure is in [web-client/README.md §7](../../docs/architecture/web-client/README.md#7-テスト).
 
 ## Parts for the slots of PostCard and QuoteCard
 

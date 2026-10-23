@@ -20,7 +20,7 @@ linters:
   settings:
     gosec:
       excludes:
-        - G204 # agentkit runs git, gh and make with arguments it builds on purpose
+        - G204 # agentkit runs git, gh and scripts/task.sh with arguments it builds on purpose
         - G304 # agentkit reads the repository's files by path on purpose
         - G306 # files under .tmp are the user's own scratch files
     nolintlint:

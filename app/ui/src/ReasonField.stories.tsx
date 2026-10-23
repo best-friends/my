@@ -2,7 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ReasonField } from "./ReasonField";
 
-// Stories may spell out English; apps pass a react-intl message instead (web-client.md A9).
+// Stories may spell out English; apps pass a react-intl message instead (web-client/README.md A9).
 const formatRemaining = (remaining: number) => (remaining < 0 ? `${String(-remaining)} characters too many` : `${String(remaining)} characters left`);
 
 const meta = {

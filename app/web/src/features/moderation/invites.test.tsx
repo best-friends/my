@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The invites screen through the whole app (web-client.md T4): a moderator with manage_invites creates an invite
+// The invites screen through the whole app (web-client/README.md T4): a moderator with manage_invites creates an invite
 // with a limit and an expiry or without them, reads its code and link, copies a link and revokes an invite (focus
 // moves to its heading); the screen says when the registration mode does not take invites; a viewer without the
 // permission sees why; with MSW playing the API.

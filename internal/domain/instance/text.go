@@ -15,7 +15,7 @@ import (
 type TextKey string
 
 // Text keys. Adding one means adding its definition below and its value to the CHECK
-// constraint of instance_text_revisions.key in schema/<dialect>.sql.
+// constraint of instance_text_revisions.key in schema/<dialect>/09-instance.sql.
 const (
 	TextName             TextKey = "name"
 	TextShortDescription TextKey = "short_description"

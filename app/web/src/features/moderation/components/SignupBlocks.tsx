@@ -3,7 +3,7 @@
 // (SignupBlockImport), then the blocks, in effect or all, newest first. The form follows the browser's constraint validation (React Aria's native validation); a
 // block takes effect at once and is lifted as easily, so neither asks first. What adding or lifting did stays on
 // the page in a StatusMessage (role="status") next to what caused it. The list is in the admin mode's
-// table form: a toolbar with the filter (kept in the URL by the route, web-client.md S3), one page of the table
+// table form: a toolbar with the filter (kept in the URL by the route, web-client/README.md S3), one page of the table
 // at a time, previous / next.
 import {
   Box,

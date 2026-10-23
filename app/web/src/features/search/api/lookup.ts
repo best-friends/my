@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The account search (web-client.md S1, FR-305): a handle (`@username@domain`) or the URL of an actor or
+// The account search (web-client/README.md S1, FR-305): a handle (`@username@domain`) or the URL of an actor or
 // a profile, looked up among the accounts the instance knows and, for a signed-in viewer, fetched from its
 // server when the instance does not know it yet (GET /accounts/lookup?resolve=true). Resolving reaches
 // another server and is rate limited, so it is a mutation the viewer sends, not a query a page load runs.

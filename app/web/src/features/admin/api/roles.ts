@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the roles screen (web-client.md S1, FR-720, manage_roles): the roles of the instance
+// The queries and mutations of the roles screen (web-client/README.md S1, FR-720, manage_roles): the roles of the instance
 // (GET /admin/roles, shared with an account's roles region), creating one (POST /admin/roles), changing its position,
 // permissions and badge (PATCH /admin/roles/{role}, ADR-0071) and deleting it (DELETE). The server keeps the built-in
 // roles (admin changes only its badge; neither admin nor moderator is deleted), refuses a role above the viewer's highest one (403) and

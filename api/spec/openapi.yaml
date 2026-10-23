@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # The client API (ADR-0007, ADR-0016), split into one file per path item and per component (ADR-0066).
-# api/spec/ is the source of truth: `make generate` bundles it into api/openapi.yaml, generates the Go
+# api/spec/ is the source of truth: `scripts/task.sh api:generate` bundles it into api/openapi.yaml, generates the Go
 # server interface in internal/interface/clientapi and the web client's types from the bundle, and
-# `make api-lint` enforces the OpenAPI 3.1 subset that the generators support (ADR-0029).
+# `scripts/task.sh api:lint` enforces the OpenAPI 3.1 subset that the generators support (ADR-0029).
 # docs/architecture/client-api.md explains how to add an endpoint.
 openapi: 3.1.0
 info:

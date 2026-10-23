@@ -121,7 +121,7 @@ export function useRevokeInvite(onRevoked: (invite: Invite) => void): RevokeInvi
       onRevoked(revoked);
       cacheRevokedInvite(queryClient, revoked);
     },
-    // The invite still works, and its row and focus stay (web-client.md E2).
+    // The invite still works, and its row and focus stay (web-client/README.md E2).
     onError: (error) => {
       toast.show({ message: t("client:admin.invites.revoke_failed", { reason: errorMessage(error) }), tone: "danger" });
     },

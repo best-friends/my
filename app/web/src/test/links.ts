@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The names of the links that open in a new tab (web-client.md Y12) for tests in English.
+// The names of the links that open in a new tab (web-client/README.md Y12) for tests in English.
 
 /**
  * The name of a link followed by its hidden "(opens in a new tab)". jsdom lays nothing out, so the name it computes

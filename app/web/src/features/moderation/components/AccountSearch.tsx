@@ -2,7 +2,7 @@
 // The account search below its heading (FR-714): a form of the conditions, then the accounts that match, newest
 // first. The selects are React Aria Selects (the WAI-ARIA APG select-only combobox) and the fields React Aria
 // TextFields, checked by the browser's constraint validation before the search runs. The route keeps the search
-// in the address (web-client.md S3). A local account can be searched by its email address, its email domain or
+// in the address (web-client/README.md S3). A local account can be searched by its email address, its email domain or
 // an IP address it used, one of them at a time; the results never show them (the account's page does, when asked).
 import { AccountItem, Box, Button, Card, DetailSection, EmptyState, Grid, RegionError, Select, SelectItem, Spinner, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text, TextField } from "@my/ui";
 import { useIntl } from "react-intl";
@@ -58,7 +58,7 @@ function AccountSearchView({ search, onSearch }: AccountSearchProps) {
     <Stack gap="6">
       <Card>
         <DetailSection title={t("client:admin.accounts.search.title")}>
-          {/* Another search in the address (back, forward, a link) starts the form from it (web-client.md R10). */}
+          {/* Another search in the address (back, forward, a link) starts the form from it (web-client/README.md R10). */}
           <SearchForm key={JSON.stringify(search)} search={search} onSearch={onSearch} />
         </DetailSection>
       </Card>

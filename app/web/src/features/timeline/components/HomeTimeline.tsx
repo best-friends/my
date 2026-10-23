@@ -52,7 +52,7 @@ export function HomeTimeline({ "aria-labelledby": labelledBy, saved = false }: H
 }
 
 /**
- * The feed with the "N new posts" button over its top (web-client.md Y7, ADR-0077). By default the stream's new entries
+ * The feed with the "N new posts" button over its top (web-client/README.md Y7, ADR-0077). By default the stream's new entries
  * wait until the reader presses it; with the reader's auto-insert setting they are inserted at once, the post being read
  * stays in place, and the button counts what came in since the reader left the top. Its region has no height, so neither
  * its appearance nor its count moves the posts being read; the button floats over the feed's top while the reader scrolls
@@ -67,7 +67,7 @@ function SignedInHomeTimeline({ "aria-labelledby": labelledBy }: HomeTimelinePro
   const offline = useIsOffline();
   const feedRef = useRef<HTMLDivElement>(null);
   const { count, buttonAtTop, press, feed } = useHomeNewPosts(feedRef, labelledBy);
-  // Synchronizes the browser's storage with the query cache, two stores outside React (web-client.md R8).
+  // Synchronizes the browser's storage with the query cache, two stores outside React (web-client/README.md R8).
   useEffect(() => keepHomeTimelineSaved(queryClient, api), [queryClient, api]);
   return (
     <Stack>
@@ -82,7 +82,7 @@ function SignedInHomeTimeline({ "aria-labelledby": labelledBy }: HomeTimelinePro
 
 /**
  * Says, above the posts, that they are the ones loaded last and when. The shell's offline bar announces the
- * change itself (web-client.md §9), so this is plain text in the reading order, not another live region.
+ * change itself (web-client/09-app-shell.md §9), so this is plain text in the reading order, not another live region.
  */
 function OfflineNotice() {
   const t = useT();

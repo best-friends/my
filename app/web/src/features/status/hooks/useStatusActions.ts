@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The viewer's actions on a post (FR-106 to FR-109, FR-113, FR-116): boost, favourite, bookmark and the emoji
 // reaction (which shares the Like slot with the favourite, useLikeSlot) are turned on and off optimistically in every cached copy of the post and restored when the server refuses
-// (web-client.md S8); delete waits for the server, then drops the post from every list, and a pin (FR-403)
+// (web-client/README.md S8); delete waits for the server, then drops the post from every list, and a pin (FR-403)
 // waits for it, then marks the post and reads the viewer's pinned posts again. Each result is
 // announced (Y7) and a failure is also shown as a toast, because the restored button alone tells a
 // sighted user nothing (E2).

@@ -1,0 +1,150 @@
+{
+  "admin.invites.copied": {
+    "defaultMessage": "Copied the link of the invite {code}.",
+    "description": "Toast after an invite's link was copied. {code} is its code."
+  },
+  "admin.invites.copy": {
+    "defaultMessage": "Copy link",
+    "description": "Button that copies an invite's sign-up link."
+  },
+  "admin.invites.copy_failed": {
+    "defaultMessage": "Could not copy the link.",
+    "description": "Toast when copying an invite's link failed."
+  },
+  "admin.invites.copy_invite": {
+    "defaultMessage": "Copy the link of the invite {code}",
+    "description": "Accessible name of the copy button of an invite. {code} is its code."
+  },
+  "admin.invites.create": {
+    "defaultMessage": "Create the invite",
+    "description": "Button that creates an invite."
+  },
+  "admin.invites.create_failed": {
+    "defaultMessage": "Could not create the invite: {reason}",
+    "description": "Error when creating an invite failed. {reason} is why."
+  },
+  "admin.invites.created": {
+    "defaultMessage": "Created the invite {code}.",
+    "description": "Status after an invite was created. {code} is its code."
+  },
+  "admin.invites.created_at": {
+    "defaultMessage": "Created",
+    "description": "Term of when an invite was created."
+  },
+  "admin.invites.duration.minutes": {
+    "defaultMessage": "{count, plural, one {# minute} other {# minutes}}",
+    "description": "An option of how long an invite works, in minutes."
+  },
+  "admin.invites.empty": {
+    "defaultMessage": "No invites yet",
+    "description": "Heading of the empty list of invites."
+  },
+  "admin.invites.empty.description": {
+    "defaultMessage": "Create one with the form above.",
+    "description": "Description of the empty list of invites."
+  },
+  "admin.invites.expires_at": {
+    "defaultMessage": "Expires",
+    "description": "Term of when an invite expires."
+  },
+  "admin.invites.expires_in": {
+    "defaultMessage": "Expires after",
+    "description": "Label of the select of how long an invite works."
+  },
+  "admin.invites.link": {
+    "defaultMessage": "Send this link to the people you invite:",
+    "description": "Text before the sign-up link of a new invite."
+  },
+  "admin.invites.list.title": {
+    "defaultMessage": "Invites",
+    "description": "Heading of the list of invites."
+  },
+  "admin.invites.max_uses": {
+    "defaultMessage": "Number of sign-ups",
+    "description": "Label of the select of how many sign-ups an invite allows."
+  },
+  "admin.invites.max_uses.description": {
+    "defaultMessage": "How many people may sign up with the code.",
+    "description": "Help of the number of sign-ups of an invite."
+  },
+  "admin.invites.mode_notice": {
+    "defaultMessage": "The server does not take sign-ups with an invite now, so invites let nobody sign up. An administrator changes who may sign up in the server settings.",
+    "description": "Notice on the invites screen when the registration mode is not invite."
+  },
+  "admin.invites.never": {
+    "defaultMessage": "Never",
+    "description": "An invite that never expires: an option and a value."
+  },
+  "admin.invites.new.title": {
+    "defaultMessage": "Create an invite",
+    "description": "Heading of the form of a new invite."
+  },
+  "admin.invites.revoke": {
+    "defaultMessage": "Revoke",
+    "description": "Button that revokes an invite."
+  },
+  "admin.invites.revoke_failed": {
+    "defaultMessage": "Could not revoke the invite: {reason}",
+    "description": "Toast when revoking an invite failed. {reason} is why."
+  },
+  "admin.invites.revoke_invite": {
+    "defaultMessage": "Revoke the invite {code}, created {date}",
+    "description": "Accessible name of the revoke button of an invite. {code} is its code; {date} when it was created, formatted."
+  },
+  "admin.invites.revoked": {
+    "defaultMessage": "Revoked the invite {code}. Nobody can sign up with it anymore.",
+    "description": "Status after an invite was revoked. {code} is its code."
+  },
+  "admin.invites.state": {
+    "defaultMessage": "State",
+    "description": "Term of an invite's state."
+  },
+  "admin.invites.state.exhausted": {
+    "defaultMessage": "Used up",
+    "description": "State of an invite used as many times as it allows."
+  },
+  "admin.invites.state.expired": {
+    "defaultMessage": "Expired",
+    "description": "State of an expired invite."
+  },
+  "admin.invites.state.revoked": {
+    "defaultMessage": "Revoked",
+    "description": "State of a revoked invite."
+  },
+  "admin.invites.state.usable": {
+    "defaultMessage": "Usable",
+    "description": "State of an invite that people may sign up with."
+  },
+  "admin.invites.summary": {
+    "defaultMessage": "Codes that let people sign up when the server takes invites.",
+    "description": "Description of the invites screen in the moderation menu."
+  },
+  "admin.invites.title": {
+    "defaultMessage": "Invites",
+    "description": "Title of the invites screen, in the moderation menu and as its heading."
+  },
+  "admin.invites.unlimited": {
+    "defaultMessage": "No limit",
+    "description": "Option of an invite that any number of people may use."
+  },
+  "admin.invites.used": {
+    "defaultMessage": "Sign-ups",
+    "description": "Term of how many people signed up with an invite."
+  },
+  "admin.invites.used.limited": {
+    "defaultMessage": "{uses, number} of {max, number}",
+    "description": "How many people signed up with an invite, and how many it allows."
+  },
+  "admin.invites.used.unlimited": {
+    "defaultMessage": "{uses, number} (no limit)",
+    "description": "How many people signed up with an invite without a limit. {uses} is the number."
+  },
+  "admin.invites.uses": {
+    "defaultMessage": "{count, plural, one {# person} other {# people}}",
+    "description": "An option of the number of sign-ups of an invite."
+  },
+  "admin.invites.column.invite": {
+    "defaultMessage": "Invite code",
+    "description": "Header of the column of the invites table that holds the invite's code."
+  }
+}

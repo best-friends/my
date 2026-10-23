@@ -4,7 +4,7 @@
 // and its moderation actions), the moderator who handles it, the moderators' notes, and handling it: a
 // moderation action on the target that resolves it, resolving it without one, or reopening it. What a change
 // did stays on the page in a StatusMessage (role="status") next to what caused it; failures are toasts, and a
-// failed note stays under its field (web-client.md E2).
+// failed note stays under its field (web-client/README.md E2).
 import { AccountItem, Box, Button, Cluster, DescriptionItem, DescriptionList, DetailSection, EmptyState, Heading, Hint, Link, ReasonField, RegionError, Spinner, Stack, StatusMessage, Text } from "@my/ui";
 import { useRef, useState } from "react";
 import { useIntl } from "react-intl";

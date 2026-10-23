@@ -26,7 +26,7 @@ function prefersReducedMotion(): boolean {
 
 /**
  * New posts of the home timeline, by the reader's setting (ADR-0077). Off: they wait behind the button until it is
- * pressed (web-client.md Y7). On: they are inserted at once, and the feed keeps the post being read in place, unless
+ * pressed (web-client/README.md Y7). On: they are inserted at once, and the feed keeps the post being read in place, unless
  * the reader is in the feed (focus or a selection: paused, they wait behind the button as when off) or they may not join
  * the loaded ones (a gap: the first page is loaded again at the top, otherwise on pressing the button). While the reader
  * is away from the top, the button counts what was inserted since they left it.

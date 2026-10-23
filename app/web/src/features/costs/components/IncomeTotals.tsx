@@ -112,7 +112,7 @@ function PlanMembers({ plans, headingLevel }: { plans: readonly IncomePlanCount[
         <Stack as="ul" gap="1">
           {plans.map((plan) => (
             <Cluster as="li" gap="2" rowGap="0" key={plan.plan_id}>
-              {/* The administrator's words, in a language the app does not know (web-client.md Y10). */}
+              {/* The administrator's words, in a language the app does not know (web-client/README.md Y10). */}
               <Text wrap="anywhere" dir="auto" lang="">
                 {plan.name}
               </Text>

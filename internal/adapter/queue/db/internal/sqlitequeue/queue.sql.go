@@ -328,7 +328,7 @@ type InsertJobParams struct {
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 // Queries of the database job queue and the outbox (internal/adapter/queue/db) for SQLite.
-// Timestamps are Unix milliseconds (see docs/architecture/data-model.md, section 1.2).
+// Timestamps are Unix milliseconds (see docs/architecture/data-model/README.md, section 1.2).
 func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 	_, err := q.db.ExecContext(ctx, insertJob,
 		arg.ID,

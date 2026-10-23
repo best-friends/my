@@ -2,7 +2,7 @@
 
 > 前提にしている ADR: [ADR-0002](../adr/0002-modular-monolith-hexagonal.md)、[ADR-0003](../adr/0003-database-abstraction.md)、[ADR-0004](../adr/0004-job-queue-abstraction.md)、[ADR-0005](../adr/0005-blob-storage-and-media.md)、[ADR-0006](../adr/0006-federation-protocol-scope.md)、[ADR-0017](../adr/0017-visibility-local.md)、[ADR-0018](../adr/0018-federated-uris.md)、[ADR-0019](../adr/0019-security-baseline.md)、[ADR-0020](../adr/0020-data-modeling-principles.md)。
 > 署名は [ADR-0032](../adr/0032-http-signature-profile.md)、受信処理は [ADR-0033](../adr/0033-inbox-processing-model.md)、取り込み範囲と保持は [ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、`local` 投稿のメンションは [ADR-0035](../adr/0035-local-visibility-mention-tags.md)、リレーは [ADR-0061](../adr/0061-federation-relays.md) に従います。
-> 要件: FR-305、FR-401〜411、FR-701〜702、FR-709、FR-713、FR-716〜717、NFR-MOD-3、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model.md) §4.8 ほかにあります。
+> 要件: FR-305、FR-401〜411、FR-701〜702、FR-709、FR-713、FR-716〜717、NFR-MOD-3、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model/README.md) §4.8 ほかにあります。
 
 ## 1. 構成
 
@@ -20,7 +20,7 @@
 | `internal/interface/media` | メディアプロキシ `/media/proxy/…`（§9） |
 
 - 受け入れのポリシー（必須の対象・時間窓・鍵と `actor` の一致）は `internal/app/federation` に書き、暗号処理と署名ベースの組み立てだけをアダプタに任せます（ADR-0006）。
-- テーブルの所有者はモジュール単位です（ADR-0002）。`federation` が書くのは §4.8 のテーブルだけで、リモートのアカウント・投稿・フォローなどは、それぞれのモジュールのアプリケーション層の公開 API を **同じトランザクションの中で** 呼んで書きます（利用者登録と同じ形。[data-model §2.1](data-model.md#21-トランザクションの規律)）。
+- テーブルの所有者はモジュール単位です（ADR-0002）。`federation` が書くのは §4.8 のテーブルだけで、リモートのアカウント・投稿・フォローなどは、それぞれのモジュールのアプリケーション層の公開 API を **同じトランザクションの中で** 呼んで書きます（利用者登録と同じ形。[data-model §2.1](data-model/02-consistency.md#21-トランザクションの規律)）。
 
 | 受信した内容 | 呼ぶ公開 API（書くモジュール） |
 | --- | --- |
@@ -113,7 +113,7 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
   - 鍵の持ち主が `actor` でない、または署名が合わないときは `401` で拒否します（FEP-8b32 は `proof` を HTTP 署名より優先する）。保存した鍵で合わなければ、HTTP 署名と同じく `keyId` ごとに 5 分に 1 回まで鍵を取り直して 1 回だけ再検証します。拒否の理由は `integrity proof does not verify` です。
   - 検証は `proof` を除き、FEP-8b32 のとおり LD 署名（`signature`）も除いた文書に対して行います。`proof` に `@context` があれば、文書の `@context` がそれで始まることを確かめ、文書の `@context` をそれに置き換えて正規化します（vc-di-eddsa §3.3.2）。
   - 署名者と `actor` が違う（`trust = refetch`）アクティビティの `proof` は検証しません。どのみちオブジェクトをオリジンから取り直すからです。`proof` が通ったときに取り直しや HTTP 署名を省くことはしません（省くなら ADR-0033 の改定が要る）。
-- `id` の無いアクティビティは、`actor`・改行・受け取った本文をつないだ SHA-256 の 16 進表記から `urn:my:digest:<hex>` を合成して重複排除のキーにします（[data-model §2.2](data-model.md#22-冪等キーと一意制約)）。
+- `id` の無いアクティビティは、`actor`・改行・受け取った本文をつないだ SHA-256 の 16 進表記から `urn:my:digest:<hex>` を合成して重複排除のキーにします（[data-model §2.2](data-model/02-consistency.md#22-冪等キーと一意制約)）。
 - `id` のホストが `actor` のホストと異なるアクティビティと、鍵の持ち主（`owner`）が `keyId` のホストに無いアクティビティは、`trust = refetch` にします。
 - 鍵の取得はトランザクションの外で行います（ADR-0003）。取得した Actor の書き込みは、受信の記録とは別の短いトランザクションです。
 - 手順 1・2 と、個人の inbox の宛先の確認（404）は `internal/interface/activitypub` が、手順 3〜14 は `federation.Inbox.Receive` が行います。拒否は `Received.Rejection` の `InboxRejection`（`Status`、`429` の `Retry-After`、`401` の `Accept-Signature`）で、想定外の失敗（500）とは別の戻り値で返します。拒否のログには、ヘッダーの値を引用するエラーではなく、決まった語彙の理由（`InboxRejection.Reason`）だけを出します（ADR-0019）。レート制限のストアが使えないときは、制限を掛けずに通します。
@@ -222,7 +222,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | 返信の一覧 | 投稿の `replies` はコレクションへの参照（IRI か埋め込み）として読む。`Collection` / `OrderedCollection` / `CollectionPage` / `OrderedCollectionPage` は、`items`（順序付きなら `orderedItems`）を 100 件まで、`first` と `next` をページへの参照として読む（Mastodon は最初のページを埋め込む） |
 | 方言 | Misskey の `_misskey_content`（MFM の原文）・`_misskey_summary` は使わず、`content` / `summary` を使う。引用（FR-114、[ADR-0069](../adr/0069-quote-posts.md) §2）は、FEP-044f の `quote`・`_misskey_quote`・`quoteUrl`・`quoteURL`・`quoteUri`・`rel` が `_misskey_quote` の IRI の FEP-e232 の `Link`（`mediaType` が AS2 の JSON-LD）の順に最初の 1 つを読む。`quote` なら形式は `fep_044f` で `quoteAuthorization` も読み、それ以外は `legacy`。`QuoteAuthorization` の文書は `attributedTo`・`interactingObject`・`interactionTarget` を読む。本文の `quote-inline` のフォールバックはそのまま残す。投稿の `interactionPolicy.canQuote` は `automaticApproval` と `manualApproval` を合わせて、`Public` があれば `public`、作者の followers があれば `followers`、それ以外は `nobody` として読み、無ければ方針なしとする。`isCat` などの未知のプロパティは無視する |
 | 未知のプロパティ | 無視する（[AS2 Core §5](https://www.w3.org/TR/activitystreams-core/#extensibility)）。原本は `received_activity_documents` に短期間残る |
-| 文字列 | 文書を読むとき、すべての文字列（キーを含む）のヌル文字（`\u0000`）を `U+FFFD` に置き換える。不正な UTF-8 と対になっていないサロゲートも JSON の復号で `U+FFFD` になるので、以降の値はどれもそのまま両方の方言の文字列の列に書ける（[data-model §1.2](data-model.md#12-論理型)）。取り除かずに置き換えるのは、前後の文字列がつながって別の値（`java\u0000script:` → `javascript:`）にならないようにするため。IRI では `%EF%BF%BD` になる |
+| 文字列 | 文書を読むとき、すべての文字列（キーを含む）のヌル文字（`\u0000`）を `U+FFFD` に置き換える。不正な UTF-8 と対になっていないサロゲートも JSON の復号で `U+FFFD` になるので、以降の値はどれもそのまま両方の方言の文字列の列に書ける（[data-model §1.2](data-model/01-conventions.md#12-論理型)）。取り除かずに置き換えるのは、前後の文字列がつながって別の値（`java\u0000script:` → `javascript:`）にならないようにするため。IRI では `%EF%BF%BD` になる |
 | 上限 | 文書のネストの深さ 16、`tag` 100 件、`to` / `cc` 合わせて 1,000 件、本文 HTML 100 KiB。超えたら、その文書を正規化できないものとして扱う |
 
 ## 5. リモート HTML のサニタイズ
@@ -237,7 +237,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - `a` には `rel="nofollow noopener noreferrer"` と `target="_blank"` を付ける
   - `h1`〜`h6` は `<p><strong>…</strong></p>` に、許可外のブロック要素は `p` に変える。`<math>` は TeX の注釈があればそのテキストにする
 - ローカルの投稿の HTML は、サーバーがプレーンテキストから生成します（`internal/app/content` の `text.go`）。生成する要素と属性はこの許可リストの部分集合です。
-- **Web クライアントの Trusted Types ポリシー `my-server-sanitized-html`（`@my/ui` の `PostContent`）に渡る HTML は、ローカルで生成したものか、このサニタイザを通したものだけです**（[web-client.md](web-client.md)）。
+- **Web クライアントの Trusted Types ポリシー `my-server-sanitized-html`（`@my/ui` の `PostContent`）に渡る HTML は、ローカルで生成したものか、このサニタイザを通したものだけです**（[web-client/README.md](web-client/README.md)）。
   クライアント API は、本文・プロフィール・補足情報の HTML を保存したサニタイズ済みの値からだけ返し、受信した文書の値をそのまま返す経路を持ちません。表示名・ユーザー名・投票の選択肢・代替テキストはプレーンテキストとして返します（タグを除く）。
 - カスタム絵文字の `:shortcode:` は HTML に `img` として埋め込まず、クライアントが絵文字の一覧から DOM 要素を差し込みます（ADR-0019 §2）。
 
@@ -291,7 +291,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   3. 返信先がローカルの投稿か、返信先の `conversation_uri` に削除されていないローカルの投稿がある
   4. 参加中のリレーが運んだ（`relay_id` の付いた）`public` の投稿（§13）
   - どれにも当てはまらない `Create` は `ErrDropActivity` で捨て、受信の記録だけが残ります（`info` のログ）。未知のリモートの Actor へのメンションは、範囲に入ると決まってから取得します。
-- 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
+- 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model/04-tables/04-content.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
 - 返信先は受信時に 1 段だけ非同期（`federation.fetch_object`、ペイロードに残りの深さ）で取得し、スレッドの祖先と返信の一覧は利用者がスレッドを開いたときに深さ 20・件数 100 まで取得します。
   - **取得した投稿**: 取得した文書が投稿で、`attributedTo` があり、そのオリジンが投稿の `id` と同じで、作者を解決でき（未知なら取得）、作者が有効なリモートのアカウントで、URI に削除（`status_deletions` の tombstone）も `remote_object_tombstones` も無いときだけ、`content.IngestRemoteStatus`（`activity_uri` は NULL）で取り込みます。取り込み範囲の判定はしません（受信した投稿の返信先・利用者が開いたスレッド・検索で解決した投稿・フォローされている人がブーストした投稿は ADR-0034 の範囲、利用者が開いたプロフィールの outbox の最初のページの公開投稿は ADR-0044 の範囲です）。`Announce` の対象・`fetch_object`・`fetch_outbox`・`Resolver` は、この取り込み（`StatusHandlers.fetched`）を共有します。`Announce` の対象と検索で解決した投稿は、受信した投稿と同じく返信先を 1 段だけ取得します。
   - **受信時**: 取り込んだ返信の親が未知（`conversation_uri` が NULL）でリモートなら、取り込みのトランザクションで `federation.fetch_object`（祖先 0）を `queue.Outbox` に投入します。取得した親の親は取得しません。
@@ -323,8 +323,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - **件数の上限**: 1 回の取得の文書は、outbox・ページ・投稿 20 件の合わせて 22 件までです（`OutboxMaxDocuments`）。取得の失敗と取り込まない文書は `info` のログを残して次の投稿に進み、outbox やページが取得できなければジョブを完了にします。ストアの失敗は `Retry` です。
   - 取り込んだ投稿は、ほかの取得した投稿と同じく保持期間（ADR-0034、`content.purge_remote_statuses`）の対象で、プロフィールのタイムラインに出ます。新しいテーブルは使いません。
   - コントラクトテストは `testkit.RemoteStatusContract` で、Mastodon・Misskey・GoToSocial の outbox のフィクスチャ（`outbox.json`・`outbox-page.json`）を取り込みます。
-- 投稿の ID は `published` から作った UUIDv7 です（[data-model §1.3](data-model.md#13-id-とキーセットページング)、#71）。
-- 保持期間を過ぎたリモートの投稿は `content.purge_remote_statuses` が、関係の無くなったリモートのアカウントの過去のプロフィールは `account.prune_remote_profiles` が、受信の原本・記録と配送の記録は `federation.purge` が、どこからも参照されなくなったリモートのカスタム絵文字（管理者が無効にしたものを除く）は `content.purge_remote_emojis`（1 日ごと、ADR-0051 §1）が、件数を区切って消します（ADR-0034、[data-model §4.4 のリモート投稿の保持期間](data-model.md#リモート投稿の保持期間)、§4.2、§4.8）。
+- 投稿の ID は `published` から作った UUIDv7 です（[data-model §1.3](data-model/01-conventions.md#13-id-とキーセットページング)、#71）。
+- 保持期間を過ぎたリモートの投稿は `content.purge_remote_statuses` が、関係の無くなったリモートのアカウントの過去のプロフィールは `account.prune_remote_profiles` が、受信の原本・記録と配送の記録は `federation.purge` が、どこからも参照されなくなったリモートのカスタム絵文字（管理者が無効にしたものを除く）は `content.purge_remote_emojis`（1 日ごと、ADR-0051 §1）が、件数を区切って消します（ADR-0034、[data-model §4.4 のリモート投稿の保持期間](data-model/04-tables/04-content.md#リモート投稿の保持期間)、§4.2、§4.8）。
   保持期間で消えた投稿（`origin = retention`）は tombstone にならないので、同じ URI の `Create` や取得でまた取り込めます。コントラクトテストは `testkit.RetentionContract` です。
 
 ### 6.4 投稿の取り直し
@@ -351,7 +351,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | ドメインイベント | アクティビティ | 宛先 |
 | --- | --- | --- |
 | `content.status_created` | `Create` | §7.2 の公開範囲ごとの宛先 |
-| `content.status_revised` | `Update` | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー。[data-model §7](data-model.md#7-公開範囲と配送)） |
+| `content.status_revised` | `Update` | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー。[data-model §7](data-model/07-visibility-and-delivery.md#7-公開範囲と配送)） |
 | `content.status_deleted`（アカウントの消去による `origin = account_deletion` を除く。`Delete`（Actor）が代わりを務める） | `Delete`（`Tombstone`） | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー） |
 | `content.boosted` / `content.boost_retracted`（`Federates` のときだけ） | `Announce` / `Undo Announce` | ブーストした人のリモートフォロワー + 元投稿の作者（リモートなら） |
 | `content.favourited` / `content.unfavourited`（リモートの投稿だけ） | `Like` / `Undo Like`（本文は projector がイベントから組み立てて保存する。Mastodon と同じく宛先を持たない） | 投稿の作者の inbox |
@@ -365,7 +365,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `graph.follow_terminated`（`removed_by_followee`、フォローした人がリモート） | `Reject` | フォローした人の inbox |
 | `graph.blocked` / `graph.unblocked`（相手がリモート） | `Block` / `Undo Block` | 相手の inbox |
 | `account.profile_revised`（ローカルのプロフィールの 2 版目以降。最初の版はアカウントの作成で、まだだれもフォローしていない） | `Update`（Actor の文書） | リモートフォロワーの inbox |
-| `account.lifecycle_event_recorded`（ローカルのアカウントの `deleted`） | `Delete`（Actor の `id`） | リモートフォロワーの inbox + 既知の shared inbox（[data-model §8](data-model.md#8-削除と消去)） |
+| `account.lifecycle_event_recorded`（ローカルのアカウントの `deleted`） | `Delete`（Actor の `id`） | リモートフォロワーの inbox + 既知の shared inbox（[data-model §8](data-model/08-deletion-and-purge.md#8-削除と消去)） |
 | `moderation.account_suspension_changed`（ローカルのアカウントの凍結と、その終わり。§11.1） | `Update`（Actor の文書） | リモートフォロワーの inbox + 既知の shared inbox |
 | `moderation.report_filed`（`forwarded` の通報だけ。§11） | `Flag`（主体はインスタンス Actor） | 通報されたアカウントの inbox |
 | `content.quote_recorded`（ローカルの投稿の、引用の許可を宣言したリモートの投稿の `fep_044f` の引用。ADR-0069 §3） | `QuoteRequest`（`id` は `{引用元の IRI}/quote_request`、`object` は引用先、`instrument` は引用元。本文は projector が組み立てて保存する） | 引用先の作者の inbox |
@@ -581,7 +581,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
   - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。
   - featured は、ピン留めした投稿のうち未ログインで閲覧できるもの（`public` / `unlisted`）の `Note` を `orderedItems` に並べます。featured-tags は空の `Collection` です。
-- Authorized Fetch（FR-408、S）はインスタンス設定 `authorized_fetch`（既定 `false`、[data-model §4.9](data-model.md#49-instance)）で有効にします。設定はリクエストごとに読むので、変更はすぐに効きます。
+- Authorized Fetch（FR-408、S）はインスタンス設定 `authorized_fetch`（既定 `false`、[data-model §4.9](data-model/04-tables/09-instance.md#49-instance)）で有効にします。設定はリクエストごとに読むので、変更はすぐに効きます。
   有効なときは、検証できる署名の無い GET（署名なし・検証できない・未ログインとして扱う署名者）に次のように答えます。
 
   | 対象 | 署名なし | 検証できる署名 |
@@ -598,7 +598,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 ## 11. モデレーションとの連携
 
-`moderation` の投影（`account_restrictions`・`domain_restrictions`、[data-model §5.2](data-model.md#52-処分の種類と制限能力の剥奪)）を、`moderation` の公開 API（`moderation.FederationPolicy`）から読みます。`federation` はテーブルを直接見ません。
+`moderation` の投影（`account_restrictions`・`domain_restrictions`、[data-model §5.2](data-model/05-states-and-policies.md#52-処分の種類と制限能力の剥奪)）を、`moderation` の公開 API（`moderation.FederationPolicy`）から読みます。`federation` はテーブルを直接見ません。
 
 | 制限 | 受信 | 送信 | 取得・表示 |
 | --- | --- | --- | --- |
@@ -609,7 +609,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | ドメインの `media_sensitive`（`force_sensitive`） | 受け付ける | 送る | 添付をセンシティブとして表示 |
 | アカウントの `federation`（`suspend` / `ban`） | リモートなら `Delete` / `Undo` / `Reject` 以外を捨てる | ローカルなら、下の「処分の伝播」のアクティビティ以外を送らない | ローカルの Actor の GET は、空のプロフィールに `suspended: true` を付けた Actor を返す（鍵は返す）。投稿などのオブジェクトの GET は `404` |
 
-- 判定はサブドメインにも効きます（[data-model §4.3](data-model.md#ドメイン単位の処分)）。
+- 判定はサブドメインにも効きます（[data-model §4.3](data-model/04-tables/03-moderation.md#ドメイン単位の処分)）。
 - プロフィールを開いたときの outbox の取得（§6.3、ADR-0044）は、アカウントの `federation` の制限があれば始めず、ドメインの `federation` の制限は `Fetcher` が止めます。ドメインの `public_discovery` の制限は止めません（利用者が自分で開いたプロフィールで、取り込んだ投稿は連合タイムライン・検索に出ない）。
 - `Block` の受信は `graph` の関係として記録します（相手からのブロックで、モデレーションの処分ではありません）。
 - `Flag` の受信は `reports`（`uri` は `Flag` の `id`、`id` が無ければ受信の記録と同じ `urn:my:digest:…`。同じ `Flag` の再処理は何もしない）と `report_states`（`open`）になり、モデレーターの通報一覧に入ります（FR-701）。コメントは 5,000 文字で切ります。
@@ -636,7 +636,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | それ以外（`limit`・`restrict_posting`・`force_sensitive` など） | 送らない | — |
 
 - `suspended` は Mastodon 拡張（`toot:suspended`）で、`@context` は §7.4 の Actor と同じです。凍結中の文書は `federation.ActorDocument.Suspend` が作り、`id`・コレクション・inbox・鍵は残します。
-- 凍結とその終わりは、`moderation` が処分・解除・期限切れの行の削除のトランザクションで発行する `moderation.account_suspension_changed`（[data-model §4.3](data-model.md#制限投影)）から、`federation.RegisterSuspensionProjectors` が同じトランザクションで `Update`（Actor）を積みます。重なった凍結の 2 つ目と、1 つが残る解除は何も送りません。
+- 凍結とその終わりは、`moderation` が処分・解除・期限切れの行の削除のトランザクションで発行する `moderation.account_suspension_changed`（[data-model §4.3](data-model/04-tables/03-moderation.md#制限投影)）から、`federation.RegisterSuspensionProjectors` が同じトランザクションで `Update`（Actor）を積みます。重なった凍結の 2 つ目と、1 つが残る解除は何も送りません。
   文書は展開の始めの時点の状態から組み立てるので（§7.4）、凍結と解除が続けて起きても、後から展開した `Update` ほど新しい状態を表します。
 - BAN の `Delete`（Actor）は、削除の予約の期日に `account.execute_deletions` がアカウントの削除（`deleted`）を記録したときに、§7.1 のアカウント削除と同じ経路で送ります。凍結中でも `Delete` は止めません。
 - リモートのアカウントの `suspend` は、凍結を始めた処分のトランザクションで `graph.SeverByModeration` が両方向のフォローを切り、その `FollowTerminated`（`reason = moderation`）から §7.1 の projector が `Reject`（そのアカウントのフォロー）と `Undo`（ローカルの利用者のフォロー）を積みます。
@@ -648,16 +648,16 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 | 種類 | 内容 | 実行 |
 | --- | --- | --- |
-| リレー | `testkit.RelayContract`（登録・イベントと状態・照合・削除・再構築）、`testkit.RetentionContract` の `PurgesRelayedStatuses`、`testkit.CanonicalizerContract`（`internal/adapter/jsonld` の jsonld.js と同じ正規化と署名。`pkg/testkit/testdata/jsonld/sign.mjs` で作ったベクタ）、`internal/platform` の `TestRelays`（参加・`Accept`・送信と LD 署名・中継の取り直し・上限・LitePub の `Announce`・脱退・削除・監査ログ） | `make check`（毎 PR） |
-| フィクスチャの回帰テスト | 実サーバー（Mastodon・Misskey・GoToSocial・Akkoma）から採取したアクティビティ・Actor・オブジェクトの JSON（`pkg/testkit/fixtures/federation/<実装>/<版>/…`）を正規化・ハンドラに通し、結果（正規化した値・書いた行）を golden ファイルと比べる。送信する文書は主要実装の形と比べる（既存の `internal/interface/activitypub/testdata/peers`） | `make check`（毎 PR） |
-| 署名のテストベクタ | RFC 9421 付録 B のテストベクタ、Mastodon と同じ形式の draft-cavage の署名、クエリ文字列・ダイジェストの改ざん | `make check` |
-| 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト（`testkit.InboxProcessingContract` の `OrderAndDuplicates`。ケースは `inboxOrderCases` で、ハンドラを足すときにケースも足す） | `make check` |
-| SSRF ガード | `testkit.HTTPClientContract`（ADR-0019 §1） | `make check` |
-| ライブの相互運用 | docker compose で Mastodon（secure mode）・GoToSocial・Misskey とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、WebFinger・Actor の署名付き取得・フォロー（承認・解除）・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先（ADR-0035 の `local` のメンション先を含む）と、ADR-0032 の署名の各方式（プロキシが 401 を返して RFC 9421 への切り替えを起こす）を往復させ、ローカルのアカウントの凍結とその解除が Mastodon に表示されること（#44、§11.1）と、Activity-Relay のリレーを介して公開投稿が Mastodon と往復すること（Mastodon が LD 署名を検証する。§13）を確かめる。構成・シナリオ・実装ごとの互換性の差異は `deploy/docker/federation-live/`（README.md） | nightly / 手動（CI ジョブ `federation-live`、`make federation-live`） |
+| リレー | `testkit.RelayContract`（登録・イベントと状態・照合・削除・再構築）、`testkit.RetentionContract` の `PurgesRelayedStatuses`、`testkit.CanonicalizerContract`（`internal/adapter/jsonld` の jsonld.js と同じ正規化と署名。`pkg/testkit/testdata/jsonld/sign.mjs` で作ったベクタ）、`internal/platform` の `TestRelays`（参加・`Accept`・送信と LD 署名・中継の取り直し・上限・LitePub の `Announce`・脱退・削除・監査ログ） | `scripts/task.sh check`（毎 PR） |
+| フィクスチャの回帰テスト | 実サーバー（Mastodon・Misskey・GoToSocial・Akkoma）から採取したアクティビティ・Actor・オブジェクトの JSON（`pkg/testkit/fixtures/federation/<実装>/<版>/…`）を正規化・ハンドラに通し、結果（正規化した値・書いた行）を golden ファイルと比べる。送信する文書は主要実装の形と比べる（既存の `internal/interface/activitypub/testdata/peers`） | `scripts/task.sh check`（毎 PR） |
+| 署名のテストベクタ | RFC 9421 付録 B のテストベクタ、Mastodon と同じ形式の draft-cavage の署名、クエリ文字列・ダイジェストの改ざん | `scripts/task.sh check` |
+| 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト（`testkit.InboxProcessingContract` の `OrderAndDuplicates`。ケースは `inboxOrderCases` で、ハンドラを足すときにケースも足す） | `scripts/task.sh check` |
+| SSRF ガード | `testkit.HTTPClientContract`（ADR-0019 §1） | `scripts/task.sh check` |
+| ライブの相互運用 | docker compose で Mastodon（secure mode）・GoToSocial・Misskey とこのサーバーを、私設 CA の TLS とコンテナのネットワークの DNS で立て、WebFinger・Actor の署名付き取得・フォロー（承認・解除）・投稿・返信・ブースト・お気に入り・削除・編集・公開範囲ごとの配送先（ADR-0035 の `local` のメンション先を含む）と、ADR-0032 の署名の各方式（プロキシが 401 を返して RFC 9421 への切り替えを起こす）を往復させ、ローカルのアカウントの凍結とその解除が Mastodon に表示されること（#44、§11.1）と、Activity-Relay のリレーを介して公開投稿が Mastodon と往復すること（Mastodon が LD 署名を検証する。§13）を確かめる。構成・シナリオ・実装ごとの互換性の差異は `deploy/docker/federation-live/`（README.md） | 遅い検査（リリースの関門・nightly）/ 手動（CI ジョブ `federation-live`、`scripts/task.sh docker:federation-live`） |
 
 - フィクスチャは採取したときのホスト・名前・本文・鍵を例の値に置き換えて保存し、実装と版をディレクトリ名に残します。新しい不具合を直すときは、その文書をフィクスチャに足します（ADR-0006）。
 - 置き換えと追加の手順は [pkg/testkit/README.md](../../pkg/testkit/README.md#federation-fixtures)、各ファイルの出典とライセンスは `pkg/testkit/fixtures/federation/<実装>/README.md` にあります。正規化の golden は `pkg/testkit/testdata/golden/normalize/` にあり、`go test ./pkg/testkit -update` で書き直します。
-- `make check` のテストはネットワークを使わず、`HTTPClient` をホスト名で振り分けるインメモリの実装に差し替えます（ADR-0015）。
+- `scripts/task.sh check` のテストはネットワークを使わず、`HTTPClient` をホスト名で振り分けるインメモリの実装に差し替えます（ADR-0015）。
 - ライブの相互運用テストは、このサーバーが受信したアクティビティを保存したとおりに成果物へ書き出します。フィクスチャの採取元にする手順は [deploy/docker/federation-live/README.md](../../deploy/docker/federation-live/README.md#adding-a-captured-activity-as-a-fixture) にあります。
 
 ## 13. リレー
@@ -674,7 +674,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - 参加はインスタンス Actor の `Follow` です。`id` は `/ap/activities/{relay_events.id}`、`object` は `mastodon` なら `as:Public`、`litepub` ならリレーの Actor です。
   `relay_events`（`follow_sent`）・`relay_states`（`pending`）・`outbound_activities`（`object_type = relay`）・保存した本文・展開ジョブを 1 つのトランザクションで書きます。
 - 脱退は `Undo(Follow)`（`left`）、参加し直しは新しい `id` の `Follow`（`rejected` か `left` から）です。登録の削除は `left` か `rejected` のときだけで、`relays` と子の行を消します。
-- 状態の遷移は `federation.RelayStatus.Next` が決めます（[data-model §4.8](data-model.md#48-federation)）。`Accept` / `Reject` は、`object` の `id` がリレーの現在の `Follow` のものだけを受け付けます。
+- 状態の遷移は `federation.RelayStatus.Next` が決めます（[data-model §4.8](data-model/04-tables/08-federation.md#48-federation)）。`Accept` / `Reject` は、`object` の `id` がリレーの現在の `Follow` のものだけを受け付けます。
   主体は、`litepub` なら登録した Actor、`mastodon` なら inbox か shared inbox が登録の inbox と一致する Actor でなければ捨てます。`accepted` で主体を `relay_actor_uri` に記録します。同じ答えをもう一度受けても何も変えません。
 - インスタンス Actor への `Follow` は、参加中のリレーの Actor からのもの（`litepub` のリレーはフォローし返す）に `Accept` を、それ以外に `Reject` を送ります。フォローとしては記録しません。
 - 監査ログは登録・参加・脱退・削除（`relay_added`・`relay_followed`・`relay_unfollowed`・`relay_removed`）と、受け取った答え（`relay_accepted`・`relay_rejected`、`actor_kind = remote`）を `target_kind = relay` で記録します。
@@ -698,7 +698,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - リレーの Actor の `Announce` は、`object` をいつもオリジンから取得し、作者の制限を確かめて、`public` なら取り込んで記録します。ブーストとしては記録しません。
 - 取り込んだ投稿は、ほかのリモートの `public` の投稿と同じく連合タイムラインとハッシュタグのタイムラインに出ます。ホームには出ず、通知も作りません。
 - 関門の結果はメトリクス `my.relay.activities`（`my.outcome` が `admitted` / `over_limit` / `restricted` / `not_receiving`）に出ます。管理画面と CLI は、直近 24 時間の時ごとの件数から、取り込んだ件数（上限まで）と上限で捨てた件数を示します。
-- `relayed_statuses` の投稿は、`content.purge_relayed_statuses` が公開から設定 `relay_status_retention`（既定 7 日）で消します（[data-model §4.4](data-model.md#リモート投稿の保持期間)）。脱退しても、取り込んだ投稿はすぐには消しません。
+- `relayed_statuses` の投稿は、`content.purge_relayed_statuses` が公開から設定 `relay_status_retention`（既定 7 日）で消します（[data-model §4.4](data-model/04-tables/04-content.md#リモート投稿の保持期間)）。脱退しても、取り込んだ投稿はすぐには消しません。
 
 ## 14. 連合の向き
 
@@ -718,7 +718,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 | `protect` | 保護のための手続き（`Block` / `Undo Block` と `Flag` の送受信、外の Actor の自分自身の `Update` / `Delete` の受信） | × | ○ | ○ | ○ |
 | `identify` | 署名の検証のための鍵の取得と提供（外の Actor の取得、ローカルの Actor・インスタンス Actor の GET、WebFinger・host-meta・NodeInfo） | × | ○ | ○ | ○ |
 
-- `inbound` の `follow_in` の「断る」は、受けた `Follow` に `Reject` を返すことです。承認待ちを作りません。この `Reject` は対応するフォローの行が無いので、`outbound_activities.object_type = 'refusal'` として記録して配送します（[data-model §4.9](data-model.md)）。
+- `inbound` の `follow_in` の「断る」は、受けた `Follow` に `Reject` を返すことです。承認待ちを作りません。この `Reject` は対応するフォローの行が無いので、`outbound_activities.object_type = 'refusal'` として記録して配送します（[data-model §4.9](data-model/README.md)）。
 - `retract` は、`inbound` に狭めたあとも、それまでに外へ出したものを消せるように通します。宛先は元の配送（`deliveries`）とその時点のフォロワーだけで、共有 inbox やリレーのフェーズは付けません。
 - ドメインの処分（§11）はモードと独立に効きます。モードが通しても、処分が止めるものは止まります。
 

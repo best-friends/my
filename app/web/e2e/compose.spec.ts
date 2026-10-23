@@ -5,17 +5,15 @@
 // the origin of the page (fixtures.ts); the answers carry CORS headers all the same, as a separate API
 // origin needs them (ADR-0016). Names come from the
 // project's catalog, so the spec finds the same elements in every locale.
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { createIntl } from "react-intl";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
-
-type Catalog = Record<string, { defaultMessage: string }>;
+import { readCatalog } from "./catalog.ts";
 
 /** The client message `key` in the project's locale, with its `{name}` arguments replaced. */
 function message(key: string, values: Record<string, string> = {}): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text.replaceAll(/\{(\w+)\}/g, (_, name: string) => values[name] ?? `{${name}}`);
@@ -332,7 +330,7 @@ async function boxOf(locator: ReturnType<Page["getByRole"]>): Promise<Box> {
   return box;
 }
 
-test.describe("the floating new-post button (web-client.md G4)", () => {
+test.describe("the floating new-post button (web-client/16-look-states-and-wording.md G4)", () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) >= 768, "from md the rail has the button and nothing floats");
 
   test.beforeEach(async ({ page }) => {

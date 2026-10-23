@@ -9,7 +9,7 @@
 
 モデレーションは個人データを扱う。通報（通報者・対象・コメント・投稿）、処分（理由・非公開のメモ）、監査ログ（ADR-0037）、
 ログイン元と登録元の IP アドレス（いまは `sessions.ip` に期限なく残る）、登録の拒否リスト（FR-719）がそれにあたる。
-[data-model §8](../architecture/data-model.md#8-削除と消去) はアカウントを削除しても処分の記録を残すとしているが、いつまで残すかは決めていない。
+[data-model §8](../architecture/data-model/08-deletion-and-purge.md#8-削除と消去) はアカウントを削除しても処分の記録を残すとしているが、いつまで残すかは決めていない。
 異議申し立て（FR-707）の期間、通報者の身元を誰に見せるか、本人の開示請求に何を渡すかも決まっていない。
 関連する要件: FR-008, FR-701, FR-707, FR-714, FR-719, NFR-MOD-5。
 
@@ -73,7 +73,7 @@
 
 - 良い影響: 既定値のまま運用すれば、プライバシーポリシーに書く保持期間が決まる。IP を 180 日で消すので、漏洩したときの影響が小さい。
 - 悪い影響: 365 日より前の処分は再犯の判断に使えない。発信者情報開示の請求が投稿から 180 日を過ぎて届くと、ログイン元の IP は残っていない。
-- `sessions.ip` / `user_agent` は消去の単位を分けるため別の表（`session_origins`）に移し、登録元の IP の表（`registration_origins`）を足す（[data-model §4.1](../architecture/data-model.md#41-identity)）。
+- `sessions.ip` / `user_agent` は消去の単位を分けるため別の表（`session_origins`）に移し、登録元の IP の表（`registration_origins`）を足す（[data-model §4.1](../architecture/data-model/04-tables/01-identity.md#41-identity)）。
 - 運営者向けに、記録の種類・目的・保持期間・提供先（連合先）を書いたプライバシーポリシーと処理の記録（GDPR 30 条）のひな形を `docs/operations/` に置く。
 - 後続の作業: 保持期間の設定キーと消去ジョブ、保全、開示の書き出しの CLI、IP の表の分離。
 

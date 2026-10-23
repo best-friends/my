@@ -6,7 +6,7 @@ import { cleanup, configure } from "@testing-library/react";
 import { destroyAnnouncer } from "react-aria/private/live-announcer/LiveAnnouncer";
 import { afterEach } from "vitest";
 
-// findBy and waitFor give up after this long, as in app/web/src/test/setup.ts (web-client.md T7): the wait
+// findBy and waitFor give up after this long, as in app/web/src/test/setup.ts (web-client/README.md T7): the wait
 // is wall-clock time, which a busy machine stretches well past Testing Library's 1 s default.
 configure({ asyncUtilTimeout: 10_000 });
 

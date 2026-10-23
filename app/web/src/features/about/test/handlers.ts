@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the about feature (web-client.md §7): the instance's public list of moderated domains.
+// The default MSW handlers of the about feature (web-client/README.md §7): the instance's public list of moderated domains.
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";
 import { apiBase } from "../../../test/msw/http";

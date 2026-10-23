@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Checks the design tokens of @my/ui (web-client.md D6, D8, Y3). Run by `make web-check`.
+// Checks the design tokens of @my/ui (web-client/README.md D6, D8, Y3). Run by `scripts/task.sh web:check`.
 //
 //   bun run scripts/check-tokens.ts [<app entry stylesheet>...]
 //
@@ -11,8 +11,8 @@
 //    (`text-[#333]`, `bg-(--palette-gray-50)`), a transition / animation outside `motion-safe:`, an
 //    arbitrary radius, shadow, duration, or easing (`rounded-[3px]`), or a padding or gap step
 //    that app/ui/README.md does not list.
-// 3. Generated files: fails when the overridable token list generated from theme.css and tokens.ts
-//    (scripts/theme-tokens.ts) differs from the committed one.
+// 3. Generated file: fails when the Go list of the overridable tokens generated from theme.css and
+//    tokens.ts (scripts/theme-tokens.ts) differs from the committed one.
 // 4. Sample theme: checks the Storybook's sample server theme (.storybook/sampleTheme.ts) as the server
 //    checks a saved theme: every token is overridable, colors and lengths have their kind's form and
 //    bounds, and every pair in src/tokens.ts meets AA with the overrides over the defaults.
@@ -138,13 +138,13 @@ const tokenOnlyRoots = /^(?:rounded(?:-[a-z]+)?|shadow|duration|ease)$/;
  */
 const spacingRoots = /^(?:p[xytrblse]?|p[bi][se]|gap(?:-[xy])?)$/;
 const spacingSteps = new Set(["0", "0.5", "1", "1.5", "2", "3", "4", "6", "8", "10"]);
-/** Utilities that animate; web-client.md D6 allows them only under motion-safe:. */
+/** Utilities that animate; web-client/README.md D6 allows them only under motion-safe:. */
 const motionRoots = new Set(["transition", "animate"]);
 /**
  * Whether a utility value names a color of Tailwind's default palette (`red-500`, `white`), which
  * theme.css removes. Other unknown values are not reported here: source text also contains words
  * that merely look like classes (a token name such as "accent-hover" in a string), and unknown
- * classes in general are the lint's job (web-client.md D9).
+ * classes in general are the lint's job (web-client/README.md D9).
  */
 function isDefaultPaletteColor(value: string): boolean {
   const [hue = "", ...rest] = value.split("-");

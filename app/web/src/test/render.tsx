@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Render helpers for tests (web-client.md T2, T4). They render inside the app's real providers and set
+// Render helpers for tests (web-client/README.md T2, T4). They render inside the app's real providers and set
 // up user-event before rendering, as the user-event docs recommend.
 import { type AnyRouter, createMemoryHistory, type RouterHistory } from "@tanstack/react-router";
 import { render, type RenderOptions } from "@testing-library/react";

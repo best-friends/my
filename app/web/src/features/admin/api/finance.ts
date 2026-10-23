@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the costs screen (ADR-0067 §9, ADR-0068 §9, manage_finance, web-client.md S1): the
+// The queries and mutations of the costs screen (ADR-0067 §9, ADR-0068 §9, manage_finance, web-client/README.md S1): the
 // cost items (GET /admin/cost_items, newest first, as an infinite query), the totals of a range of weeks, months or
 // years under a basis (GET /admin/cost_totals), the state of the billing imports (GET /admin/billing_imports),
 // recording, relabeling, revising, ending and canceling an item, and importing a provider's charges now. Every change

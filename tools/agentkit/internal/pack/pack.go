@@ -354,9 +354,9 @@ func Build(k *kb.KB, cache *gh.Cache, m *ctxmap.Map, is *gh.Issue, o Options) (s
 	if len(checks) == 0 {
 		checks["go"] = true
 	}
-	w.addf("## Verify\n\n- `agentkit check` (make check-changed; contexts of these areas: %s)\n", strings.Join(text.SortedKeys(checks), ", "))
+	w.addf("## Verify\n\n- `agentkit check` (scripts/task.sh check:changed; contexts of these areas: %s)\n", strings.Join(text.SortedKeys(checks), ", "))
 	if checks["schema"] {
-		w.add("- `make db-check` for both dialects (schema change)\n")
+		w.add("- `scripts/task.sh db:check-all` for both dialects (schema change)\n")
 	}
 	w.add("- `agentkit pr open` then `agentkit pr wait <pr>` in the background\n")
 	w.addf("\n<!-- agentkit ctx: ~%s tokens of a %s budget -->\n", text.Ktok(w.used), text.Ktok(w.budget))

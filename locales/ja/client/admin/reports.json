@@ -1,0 +1,62 @@
+{
+  "admin.reports.column.report": {
+    "defaultMessage": "通報",
+    "description": "Header of the column of the reports table that names the reported account and links to the report."
+  },
+  "admin.reports.category.legal": {
+    "defaultMessage": "違法な内容",
+    "description": "Category of a report, and of the reason of an account action: content against the law."
+  },
+  "admin.reports.category.other": {
+    "defaultMessage": "その他",
+    "description": "Category of a report, and of the reason of an account action: other."
+  },
+  "admin.reports.category.spam": {
+    "defaultMessage": "スパム",
+    "description": "Category of a report, and of the reason of an account action: spam."
+  },
+  "admin.reports.category.violation": {
+    "defaultMessage": "サーバーのルール違反",
+    "description": "Category of a report, and of the reason of an account action: a rule violation."
+  },
+  "admin.reports.empty.open": {
+    "defaultMessage": "未解決の通報はありません",
+    "description": "Empty state of the open reports."
+  },
+  "admin.reports.empty.open.description": {
+    "defaultMessage": "このサーバーの利用者とほかのサーバーからの通報がここに表示されます。",
+    "description": "Description of the empty state of the open reports."
+  },
+  "admin.reports.empty.resolved": {
+    "defaultMessage": "解決済みの通報はありません",
+    "description": "Empty state of the resolved reports."
+  },
+  "admin.reports.filter.label": {
+    "defaultMessage": "通報",
+    "description": "Accessible name of the tabs of the report queue."
+  },
+  "admin.reports.filter.open": {
+    "defaultMessage": "未解決",
+    "description": "Tab of the reports that await the moderators, and that state of a report."
+  },
+  "admin.reports.filter.resolved": {
+    "defaultMessage": "解決済み",
+    "description": "Tab of the handled reports, and that state of a report."
+  },
+  "admin.reports.outcome.actioned": {
+    "defaultMessage": "処分した",
+    "description": "Outcome of a report: a moderator took an action on the target."
+  },
+  "admin.reports.outcome.dismissed": {
+    "defaultMessage": "処分しない",
+    "description": "Outcome of a report: there was nothing to act on."
+  },
+  "admin.reports.summary": {
+    "defaultMessage": "アカウントと投稿についてモデレーターに届いた通報と、その対応です。",
+    "description": "Description of the report queue in the administration menu of the settings."
+  },
+  "admin.reports.title": {
+    "defaultMessage": "通報",
+    "description": "Heading and title of the report queue."
+  }
+}

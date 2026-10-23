@@ -1,0 +1,430 @@
+{
+  "status.action.bookmark": {
+    "defaultMessage": "ブックマーク",
+    "description": "Toggle button under a post that bookmarks it or removes the bookmark. Bookmarks are private. The same text is used in both states."
+  },
+  "status.action.boost": {
+    "defaultMessage": "ブースト",
+    "description": "Toggle button under a post that shares (boosts) it with the user's followers, or retracts the boost. The same text is used in both states."
+  },
+  "status.action.copy_link": {
+    "defaultMessage": "リンクをコピー",
+    "description": "Menu item that copies the address of a post to the clipboard."
+  },
+  "status.action.delete": {
+    "defaultMessage": "削除",
+    "description": "Menu item, on the user's own post, that asks to delete it."
+  },
+  "status.action.edit": {
+    "defaultMessage": "編集",
+    "description": "Item of a post's More actions menu, for the user's own posts: opens the dialog that edits the post."
+  },
+  "status.action.failed": {
+    "defaultMessage": "変更を保存できませんでした：{reason}",
+    "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
+  },
+  "status.action.favourite": {
+    "defaultMessage": "お気に入り",
+    "description": "Toggle button under a post that adds it to or removes it from the user's favourites. The same text is used in both states."
+  },
+  "status.action.more": {
+    "defaultMessage": "その他の操作",
+    "description": "Button under a post that opens a menu with more actions on it, and the name of that menu."
+  },
+  "status.action.reply": {
+    "defaultMessage": "返信",
+    "description": "Button under a post that starts a reply to it."
+  },
+  "status.bookmark.off": {
+    "defaultMessage": "ブックマークを外しました",
+    "description": "Read out by screen readers after the user removed the bookmark of a post."
+  },
+  "status.bookmark.on": {
+    "defaultMessage": "ブックマークしました",
+    "description": "Read out by screen readers after the user bookmarked a post."
+  },
+  "status.boost.off": {
+    "defaultMessage": "ブーストを取り消しました",
+    "description": "Read out by screen readers after the user retracted the boost of a post."
+  },
+  "status.boost.on": {
+    "defaultMessage": "ブーストしました",
+    "description": "Read out by screen readers after the user boosted a post."
+  },
+  "status.delete.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button in the delete confirmation dialog that keeps the post."
+  },
+  "status.delete.confirm": {
+    "defaultMessage": "削除する",
+    "description": "Button in the delete confirmation dialog that deletes the post."
+  },
+  "status.delete.description": {
+    "defaultMessage": "すべての人から見えなくなり、ブーストとお気に入りも消えます。元に戻すことはできません。",
+    "description": "Text of the dialog that asks the user to confirm deleting their post."
+  },
+  "status.delete.done": {
+    "defaultMessage": "投稿を削除しました",
+    "description": "Toast after the user's post was deleted."
+  },
+  "status.delete.failed": {
+    "defaultMessage": "投稿を削除できませんでした：{reason}",
+    "description": "Toast when deleting the user's post failed. {reason} is the error message, a full sentence."
+  },
+  "status.delete.title": {
+    "defaultMessage": "この投稿を削除しますか？",
+    "description": "Heading of the dialog that asks the user to confirm deleting their post."
+  },
+  "status.edit.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of the dialog that edits the user's post: closes it without saving."
+  },
+  "status.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close (x) button of the dialog that edits the user's post."
+  },
+  "status.edit.done": {
+    "defaultMessage": "投稿を編集しました",
+    "description": "Toast after the user's post was edited and saved."
+  },
+  "status.edit.failed": {
+    "defaultMessage": "編集を保存できませんでした：{reason}",
+    "description": "Shown in the dialog that edits the user's post when saving failed. {reason} is the error message, a full sentence."
+  },
+  "status.edit.fixed": {
+    "defaultMessage": "公開範囲と返信先は変わりません。",
+    "description": "Note in the dialog that edits the user's post: an edit cannot change these."
+  },
+  "status.edit.load_failed": {
+    "defaultMessage": "編集する投稿を読み込めませんでした：{reason}",
+    "description": "Shown in the dialog that edits the user's post when its text failed to load. {reason} is the error message, a full sentence."
+  },
+  "status.edit.loading": {
+    "defaultMessage": "投稿を読み込んでいます",
+    "description": "Accessible name of the spinner while the dialog that edits the user's post loads its text."
+  },
+  "status.edit.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the post to edit again after it failed."
+  },
+  "status.edit.save": {
+    "defaultMessage": "保存する",
+    "description": "Submit button of the dialog that edits the user's post."
+  },
+  "status.edit.title": {
+    "defaultMessage": "投稿を編集",
+    "description": "Heading of the dialog that edits the user's post, and the name of its form."
+  },
+  "status.edited": {
+    "defaultMessage": "編集済み",
+    "description": "Link under an edited post to its edit history."
+  },
+  "status.federation.stays_local": {
+    "defaultMessage": "連合先には届きません",
+    "description": "Short note at the end of the action bar of a post of another server while this server sends nothing to other servers (federation direction 'Receive only' or 'Off', ADR-0076): replies, boosts, favourites and reactions are recorded on this server but do not reach the post's server. It also describes those buttons."
+  },
+  "status.favourite.off": {
+    "defaultMessage": "お気に入りから外しました",
+    "description": "Read out by screen readers after the user removed a post from their favourites."
+  },
+  "status.favourite.on": {
+    "defaultMessage": "お気に入りに追加しました",
+    "description": "Read out by screen readers after the user favourited a post."
+  },
+  "status.focused.boosts": {
+    "defaultMessage": "{count, plural, other {ブースト # 件}}",
+    "description": "Under the body of the post a page is about: how many times it was boosted. Shown only when it was."
+  },
+  "status.focused.favourites": {
+    "defaultMessage": "{count, plural, other {お気に入り # 件}}",
+    "description": "Under the body of the post a page is about: how many people favourited it. Shown only when someone did."
+  },
+  "status.focused.label": {
+    "defaultMessage": "開いている投稿",
+    "description": "Not shown: read out by screen readers before the author and time of the post a page is about, to tell it apart from the posts of its thread."
+  },
+  "status.history.back": {
+    "defaultMessage": "投稿に戻る",
+    "description": "Link from a post's edit history to the post's page."
+  },
+  "status.history.change.media": {
+    "defaultMessage": "添付",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the attached media or their descriptions."
+  },
+  "status.history.change.sensitive": {
+    "defaultMessage": "センシティブの指定",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: whether the media are marked sensitive."
+  },
+  "status.history.change.text": {
+    "defaultMessage": "本文",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the text of the post."
+  },
+  "status.history.change.warning": {
+    "defaultMessage": "CW",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the content warning."
+  },
+  "status.history.changes": {
+    "defaultMessage": "変更：{changes}",
+    "description": "What a revision of a post changed from the one before. {changes} is a list of the changes, like text, content warning."
+  },
+  "status.history.current": {
+    "defaultMessage": "現在の版",
+    "description": "Label of the revision that is the post's content now, in the edit history."
+  },
+  "status.history.list": {
+    "defaultMessage": "版の一覧",
+    "description": "Accessible name of the list of the revisions of a post."
+  },
+  "status.history.original": {
+    "defaultMessage": "最初の投稿",
+    "description": "Label of the revision that is the post as first written, in the edit history."
+  },
+  "status.history.title": {
+    "defaultMessage": "編集履歴",
+    "description": "Heading and title of the page that lists the revisions of a post."
+  },
+  "status.link.copied": {
+    "defaultMessage": "リンクをコピーしました",
+    "description": "Toast after the address of a post was copied to the clipboard."
+  },
+  "status.link.failed": {
+    "defaultMessage": "リンクをコピーできませんでした。",
+    "description": "Toast when the browser refused to copy the address of a post to the clipboard."
+  },
+  "status.not_found.body": {
+    "defaultMessage": "この投稿は存在しないか、閲覧できません。",
+    "description": "Text under the heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.not_found.title": {
+    "defaultMessage": "投稿が見つかりません",
+    "description": "Heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.original": {
+    "defaultMessage": "{host} で元の投稿を開く",
+    "description": "Accessible name of the link on a post of another server to its page on that server; the link shows only {host}, that server's host name, for example 'mastodon.social'."
+  },
+  "status.pin.action": {
+    "defaultMessage": "プロフィールに固定",
+    "description": "Menu item, on the user's own post, that pins it to the top of their profile."
+  },
+  "status.pin.done": {
+    "defaultMessage": "投稿をプロフィールに固定しました",
+    "description": "Toast after the user pinned their post to their profile."
+  },
+  "status.pin.failed": {
+    "defaultMessage": "投稿を固定できませんでした：{reason}",
+    "description": "Toast when pinning the user's post failed, for example because they already pinned as many posts as allowed. {reason} is the error message, a full sentence."
+  },
+  "status.pin.label": {
+    "defaultMessage": "固定された投稿",
+    "description": "Line above a post at the top of a profile that the account pinned there."
+  },
+  "status.poll.choose_many": {
+    "defaultMessage": "1 つ以上選んでください。",
+    "description": "Hint above the options of a poll that lets the user choose several of them."
+  },
+  "status.poll.choose_one": {
+    "defaultMessage": "1 つ選んでください。",
+    "description": "Hint under the options of a poll that lets the user choose one of them."
+  },
+  "status.poll.closed": {
+    "defaultMessage": "締め切りました",
+    "description": "Under a poll whose end has passed: it takes no more votes and shows its results."
+  },
+  "status.poll.ends": {
+    "defaultMessage": "{time}に締め切り",
+    "description": "Under a poll: when it ends. {time} is a relative time ahead, such as \"in 3 hr.\" or \"in 2 days\"."
+  },
+  "status.poll.hidden": {
+    "defaultMessage": "選択肢ごとの票数は締め切り後に表示されます。",
+    "description": "Under a poll whose author hides the votes of each option until it ends, in place of the shares of the votes."
+  },
+  "status.poll.label": {
+    "defaultMessage": "投票",
+    "description": "Accessible name of the poll of a post: its options or results and how many voted."
+  },
+  "status.poll.options": {
+    "defaultMessage": "投票の選択肢",
+    "description": "Accessible name of the group of radio buttons or checkboxes the user chooses from to vote in a poll."
+  },
+  "status.poll.own_vote": {
+    "defaultMessage": "あなたの回答",
+    "description": "After an option in the results of a poll that the user voted for."
+  },
+  "status.poll.remote_counts": {
+    "defaultMessage": "{host} が最後に送った集計です",
+    "description": "Under the results of a poll of a post from another server: the counts are those that server sent last, and a vote of the user shows in them once it sends them again. {host} is that server's host name."
+  },
+  "status.poll.results": {
+    "defaultMessage": "投票の結果",
+    "description": "Accessible name of the list of the options of a poll with their share of the votes."
+  },
+  "status.poll.vote": {
+    "defaultMessage": "回答する",
+    "description": "Button under the options of a poll that sends the user's choice."
+  },
+  "status.poll.vote_failed": {
+    "defaultMessage": "回答できませんでした：{reason}",
+    "description": "Toast when the user's vote in a poll failed, for example because the poll has ended. {reason} is the error message, a full sentence."
+  },
+  "status.poll.voted": {
+    "defaultMessage": "回答を送りました",
+    "description": "Toast after the user voted in a poll."
+  },
+  "status.poll.voters": {
+    "defaultMessage": "{count, plural, other {# 人}}",
+    "description": "Under a poll: how many accounts voted."
+  },
+  "status.poll.votes": {
+    "defaultMessage": "{count, plural, other {# 票}}",
+    "description": "Under a poll whose number of voters is unknown: how many votes it has, one per chosen option."
+  },
+  "status.unpin.action": {
+    "defaultMessage": "プロフィールへの固定を外す",
+    "description": "Menu item, on the user's own pinned post, that removes it from the top of their profile."
+  },
+  "status.unpin.done": {
+    "defaultMessage": "投稿の固定を外しました",
+    "description": "Toast after the user unpinned their post from their profile."
+  },
+  "status.unpin.failed": {
+    "defaultMessage": "投稿の固定を外せませんでした：{reason}",
+    "description": "Toast when unpinning the user's post failed. {reason} is the error message, a full sentence."
+  },
+  "status.thread.ancestors": {
+    "defaultMessage": "スレッドの前の投稿",
+    "description": "Heading above the posts that the post of the page replies to, oldest first."
+  },
+  "status.thread.failed": {
+    "defaultMessage": "返信を読み込めませんでした：{reason}",
+    "description": "Shown under the post of the page when its thread failed to load. {reason} is the error message, a full sentence."
+  },
+  "status.thread.loading": {
+    "defaultMessage": "返信を読み込んでいます",
+    "description": "Visually hidden text that names the busy replies section while the thread around a post loads."
+  },
+  "status.thread.no_replies": {
+    "defaultMessage": "まだ返信はありません。",
+    "description": "Shown under the Replies heading when the post has no replies."
+  },
+  "status.thread.replies": {
+    "defaultMessage": "返信",
+    "description": "Heading above the replies to the post of the page."
+  },
+  "status.thread.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the thread around a post again after a failure."
+  },
+  "status.title": {
+    "defaultMessage": "投稿",
+    "description": "Heading of the page of one post and the thread around it."
+  },
+  "status.reaction.on": {
+    "defaultMessage": "{emoji} でリアクションしました",
+    "description": "Read out by screen readers after the user reacted to a post with an emoji. {emoji} is the emoji itself or its :shortcode:."
+  },
+  "status.reaction.off": {
+    "defaultMessage": "リアクションを取り消しました",
+    "description": "Read out by screen readers after the user took back their emoji reaction to a post."
+  },
+  "status.quote.label": {
+    "defaultMessage": "引用された投稿",
+    "description": "Accessible name of the box in a post that shows the post it quotes."
+  },
+  "status.quote.pending": {
+    "defaultMessage": "引用された投稿はまだ表示できません。",
+    "description": "Shown in place of a quoted post whose author has not approved the quote yet, or that this server has not received yet."
+  },
+  "status.quote.rejected": {
+    "defaultMessage": "引用された投稿の作者は、この引用を許可していません。",
+    "description": "Shown in place of a quoted post whose author refused the quote."
+  },
+  "status.quote.revoked": {
+    "defaultMessage": "引用された投稿の作者が、この引用への掲載を取り消しました。",
+    "description": "Shown in place of a quoted post whose author withdrew the approval of the quote."
+  },
+  "status.quote.deleted": {
+    "defaultMessage": "引用された投稿は削除されました。",
+    "description": "Shown in place of a quoted post that was deleted."
+  },
+  "status.quote.unauthorized": {
+    "defaultMessage": "引用された投稿は表示できません。",
+    "description": "Shown in place of a quoted post that the viewer is not allowed to see, such as a followers-only post."
+  },
+  "status.quote.blocked_account": {
+    "defaultMessage": "ブロックしているため、引用された投稿を表示しません。",
+    "description": "Shown in place of a quoted post whose author the viewer blocks, or who blocks the viewer."
+  },
+  "status.quote.muted_account": {
+    "defaultMessage": "引用された投稿の作者をミュートしています。",
+    "description": "Shown in place of a quoted post whose author the viewer muted; a button next to it shows the post."
+  },
+  "status.quote.blocked_domain": {
+    "defaultMessage": "引用された投稿のサーバーをミュートしています。",
+    "description": "Shown in place of a quoted post from a server that the viewer muted; a button next to it shows the post."
+  },
+  "status.quote.reveal": {
+    "defaultMessage": "引用された投稿を表示",
+    "description": "Button next to the notice of a muted author or server, in place of a quoted post, that shows the post."
+  },
+  "status.action.quote": {
+    "defaultMessage": "引用",
+    "description": "Accessible name of the button in a post's action bar that starts a new post quoting it."
+  },
+  "status.quote_policy.action": {
+    "defaultMessage": "引用できる人を変更",
+    "description": "Item of the menu of the user's own post that opens the dialog choosing who may quote it."
+  },
+  "status.quote_policy.title": {
+    "defaultMessage": "この投稿を引用できる人",
+    "description": "Title of the dialog that chooses who may quote one of the user's posts."
+  },
+  "status.quote_policy.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close button of the dialog that chooses who may quote a post."
+  },
+  "status.quote_policy.label": {
+    "defaultMessage": "引用できる人",
+    "description": "Label of the choices of who may quote a post, in its dialog."
+  },
+  "status.quote_policy.description": {
+    "defaultMessage": "承認済みの引用はそのまま残ります。引用から自分の投稿を外すときは、引用した投稿のメニューから行います。",
+    "description": "Description of the choices of who may quote a post."
+  },
+  "status.quote_policy.done": {
+    "defaultMessage": "引用できる人を変更しました",
+    "description": "Toast after the user changed who may quote one of their posts."
+  },
+  "status.quote_policy.failed": {
+    "defaultMessage": "引用できる人を変更できませんでした：{reason}",
+    "description": "Toast when the change of who may quote a post failed. {reason} is the server's reason."
+  },
+  "status.quotes.action": {
+    "defaultMessage": "この投稿の引用",
+    "description": "Item of the menu of the user's own post that opens the list of the posts that quote it."
+  },
+  "status.quotes.title": {
+    "defaultMessage": "投稿の引用",
+    "description": "Title of the page that lists the posts that quote one of the user's posts."
+  },
+  "status.quote.revoke.action": {
+    "defaultMessage": "この引用から自分の投稿を外す",
+    "description": "Item of the menu of a post that quotes one of the user's posts; it withdraws the approval of the quote."
+  },
+  "status.quote.revoke.done": {
+    "defaultMessage": "引用から自分の投稿を外しました",
+    "description": "Toast after the user withdrew the approval of a quote of their post."
+  },
+  "status.quote.revoke.failed": {
+    "defaultMessage": "引用から自分の投稿を外せませんでした：{reason}",
+    "description": "Toast when the withdrawal of the approval of a quote failed. {reason} is the server's reason."
+  },
+  "status.edit.remove_quote": {
+    "defaultMessage": "引用を外す",
+    "description": "Checkbox of the edit dialog of a post that quotes another: the edit takes the quote away."
+  },
+  "status.edit.remove_quote.description": {
+    "defaultMessage": "外した引用は元に戻せません。",
+    "description": "Description of the checkbox that removes the quote of a post in its edit dialog."
+  }
+}

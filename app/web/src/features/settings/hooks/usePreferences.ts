@@ -20,7 +20,7 @@ type PreferenceKey =
 
 /** One preference as a control shows it: it is saved as soon as it changes. */
 export type PreferenceControl<T> = {
-  /** The value being saved while `isPending`, the saved one otherwise (web-client.md S8). */
+  /** The value being saved while `isPending`, the saved one otherwise (web-client/README.md S8). */
   value: T;
   onChange: (value: T) => void;
   isPending: boolean;

@@ -50,7 +50,7 @@ export type UnmuteDomain = {
 /**
  * Unmuting a domain: the row leaves the list once the posts and notifications on screen are fetched again (the row stays
  * pending until then), then the caller moves focus to the next row and the result is announced. A failure keeps the row and its focus,
- * and says why (web-client.md E2).
+ * and says why (web-client/README.md E2).
  */
 export function useUnmuteDomain(): UnmuteDomain {
   const api = useApi();

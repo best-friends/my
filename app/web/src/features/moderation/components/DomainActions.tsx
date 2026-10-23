@@ -3,7 +3,7 @@
 // or all, newest first. The form follows the browser's constraint validation (React Aria's native validation);
 // a suspension asks first in an alert dialog (ConfirmDialog, NFR-MOD-7), the other kinds take effect at once.
 // What an action or a lift did stays on the page in a StatusMessage (role="status") next to what caused it.
-// The list is in the admin mode's table form: a toolbar with the filter (kept in the URL by the route, web-client.md
+// The list is in the admin mode's table form: a toolbar with the filter (kept in the URL by the route, web-client/README.md
 // S3), one page of the table at a time, previous / next. Last, the list in Mastodon's CSV (DomainBlockCsv).
 import {
   Box,
@@ -102,7 +102,7 @@ export function DomainActions(props: DomainActionsProps) {
     <RequirePermission permission="manage_domains">
       <Stack gap="8">
         <DetailSection title={t("client:admin.domain_actions.new.title")}>
-          {/* Another domain from the URL starts another form (web-client.md R10). */}
+          {/* Another domain from the URL starts another form (web-client/README.md R10). */}
           <NewDomainActionForm key={props.domain ?? ""} initialDomain={props.domain ?? ""} />
         </DetailSection>
         <DomainActionTabs {...props} />

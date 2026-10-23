@@ -1,0 +1,182 @@
+{
+  "admin.announcements.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that leaves a dialog of the announcements screen without changing anything."
+  },
+  "admin.announcements.change_failed": {
+    "defaultMessage": "The announcement could not be changed: {reason}",
+    "description": "Error after a change of an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_draft": {
+    "defaultMessage": "Save as a draft",
+    "description": "Button that writes a new announcement as a draft."
+  },
+  "admin.announcements.create_failed": {
+    "defaultMessage": "The announcement could not be written: {reason}",
+    "description": "Error after writing an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_published": {
+    "defaultMessage": "Publish the announcement",
+    "description": "Button that writes a new announcement and publishes it."
+  },
+  "admin.announcements.description": {
+    "defaultMessage": "Announcements show above the home timeline of everyone on this server, who can mark them as read. The audit log records every change.",
+    "description": "Explanation at the top of the announcements screen."
+  },
+  "admin.announcements.drafted": {
+    "defaultMessage": "Saved the announcement as a draft. The audit log records the change.",
+    "description": "Status after a new announcement was saved as a draft."
+  },
+  "admin.announcements.duration": {
+    "defaultMessage": "Show for",
+    "description": "Label of how long a new announcement shows."
+  },
+  "admin.announcements.duration.description": {
+    "defaultMessage": "From when you write it. It stops showing after that.",
+    "description": "Description of how long a new announcement shows."
+  },
+  "admin.announcements.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that opens the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the button that closes the dialog that edits an announcement."
+  },
+  "admin.announcements.edit.title": {
+    "defaultMessage": "Edit the announcement",
+    "description": "Title of the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit_one": {
+    "defaultMessage": "Edit: {announcement}",
+    "description": "Accessible name of the button that edits an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.empty": {
+    "defaultMessage": "No announcements",
+    "description": "Heading of the list of announcements when there are none."
+  },
+  "admin.announcements.empty.description": {
+    "defaultMessage": "Announcements you write appear here.",
+    "description": "Description of the list of announcements when there are none."
+  },
+  "admin.announcements.ends_at": {
+    "defaultMessage": "Shows until",
+    "description": "Term of when an announcement stops showing."
+  },
+  "admin.announcements.heading": {
+    "defaultMessage": "{announcement} ({state})",
+    "description": "Heading of an announcement in the list. {announcement} is the first line of its text; {state} its state (draft, published, withdrawn)."
+  },
+  "admin.announcements.list.title": {
+    "defaultMessage": "All announcements",
+    "description": "Heading of the list of announcements, newest first."
+  },
+  "admin.announcements.new.title": {
+    "defaultMessage": "Write an announcement",
+    "description": "Heading of the form of a new announcement."
+  },
+  "admin.announcements.publish": {
+    "defaultMessage": "Publish",
+    "description": "Button that publishes a draft announcement."
+  },
+  "admin.announcements.publish_now": {
+    "defaultMessage": "Publish now",
+    "description": "Checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_now.description": {
+    "defaultMessage": "Without it, the announcement stays a draft that only the administrators see.",
+    "description": "Description of the checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_one": {
+    "defaultMessage": "Publish: {announcement}",
+    "description": "Accessible name of the button that publishes an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.published": {
+    "defaultMessage": "Published the announcement. The audit log records the change.",
+    "description": "Status after a new announcement was published."
+  },
+  "admin.announcements.published_at": {
+    "defaultMessage": "Published",
+    "description": "Term of when an announcement was published."
+  },
+  "admin.announcements.published_one": {
+    "defaultMessage": "Published {announcement}. The audit log records the change.",
+    "description": "Status after a draft announcement was published. {announcement} is the first line of its text."
+  },
+  "admin.announcements.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the text of an announcement."
+  },
+  "admin.announcements.starts_at": {
+    "defaultMessage": "Shows from",
+    "description": "Term of when an announcement starts to show."
+  },
+  "admin.announcements.state": {
+    "defaultMessage": "State",
+    "description": "Term of the state of an announcement."
+  },
+  "admin.announcements.state.draft": {
+    "defaultMessage": "Draft",
+    "description": "State of an announcement that no user sees yet."
+  },
+  "admin.announcements.state.published": {
+    "defaultMessage": "Published",
+    "description": "State of an announcement that the users see."
+  },
+  "admin.announcements.state.withdrawn": {
+    "defaultMessage": "Withdrawn",
+    "description": "State of an announcement taken down for good."
+  },
+  "admin.announcements.summary": {
+    "defaultMessage": "Tell everyone on this server about maintenance and changes.",
+    "description": "Description of the announcements screen in the administration menu."
+  },
+  "admin.announcements.text": {
+    "defaultMessage": "Text",
+    "description": "Label of the text of an announcement."
+  },
+  "admin.announcements.text.description": {
+    "defaultMessage": "Markdown: paragraphs, emphasis, lists, quotes, code and links. Raw HTML is removed.",
+    "description": "Description of the text field of an announcement: which Markdown it takes."
+  },
+  "admin.announcements.text_required": {
+    "defaultMessage": "Write the announcement.",
+    "description": "Error of an announcement without text."
+  },
+  "admin.announcements.title": {
+    "defaultMessage": "Announcements",
+    "description": "Title of the announcements screen, in the administration menu and as its heading."
+  },
+  "admin.announcements.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of the text of an announcement longer than its limit. {max} is the limit."
+  },
+  "admin.announcements.until_withdrawn": {
+    "defaultMessage": "Until withdrawn",
+    "description": "Choice of an announcement that shows until it is withdrawn, and the end of such an announcement."
+  },
+  "admin.announcements.updated": {
+    "defaultMessage": "Changed {announcement}. The audit log records the change.",
+    "description": "Status after the text of an announcement was changed. {announcement} is the first line of its new text."
+  },
+  "admin.announcements.withdraw": {
+    "defaultMessage": "Withdraw",
+    "description": "Button that withdraws an announcement, and the confirming button of its dialog."
+  },
+  "admin.announcements.withdraw.description": {
+    "defaultMessage": "Nobody sees the announcement again, and it cannot be published or changed any more.",
+    "description": "Description of the dialog that confirms withdrawing an announcement."
+  },
+  "admin.announcements.withdraw.title": {
+    "defaultMessage": "Withdraw {announcement}?",
+    "description": "Title of the dialog that confirms withdrawing an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdraw_one": {
+    "defaultMessage": "Withdraw: {announcement}",
+    "description": "Accessible name of the button that withdraws an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdrawn": {
+    "defaultMessage": "Withdrew {announcement}. The audit log records the change.",
+    "description": "Status after an announcement was withdrawn. {announcement} is the first line of its text."
+  }
+}

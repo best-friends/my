@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The frame of the admin and moderation mode at the layouts of the design: the menu beside the page from md, the top bar
-// and the sheet below it. The shell answers to the viewport (web-client.md D2), so each story sets one (storyViewports.ts).
+// and the sheet below it. The shell answers to the viewport (web-client/README.md D2), so each story sets one (storyViewports.ts).
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, within, waitFor } from "storybook/test";

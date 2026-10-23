@@ -4,7 +4,7 @@
 # Container images for cmd/my (ADR-0010): multi-arch (linux/amd64, linux/arm64), static, non-root, distroless.
 #
 #   docker build -t my .                       # the server (default target "app")
-#   docker build -t my-schema --target schema . # Atlas Community Edition + schema/*.sql (ADR-0023)
+#   docker build -t my-schema --target schema . # Atlas Community Edition + schema/ (ADR-0023)
 #
 # Base images are pinned by tag and multi-arch index digest. The Go, Node.js, and Bun tags must match .tool-versions.
 
@@ -16,20 +16,27 @@ ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666ba
 # The bun binary for the web stage, which runs on the build host's platform.
 FROM --platform=$BUILDPLATFORM ${BUN_IMAGE} AS bun
 
-# The web client (app/web), built as `make web-build` does: Bun installs the packages and runs the
-# script, Vite runs on Node.js (ADR-0025). The output is the same for every platform, so it is built
-# once on the build host's platform.
+# The web client (app/web), built as `scripts/task.sh web:build` does: Bun installs the packages and runs the
+# scripts, Vite runs on Node.js (ADR-0025). The output is the same for every platform, so it is built
+# once on the build host's platform. The build reads generated files that are not committed (ADR-0081):
+# the client pseudo-locales from tools/i18n and the theme token list of @my/ui are generated first, and
+# the Vite plugin generates the route tree.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS web
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /src
 COPY app/package.json app/bun.lock app/bunfig.toml app/
 COPY app/ui/package.json app/ui/
 COPY app/web/package.json app/web/
+COPY tools/i18n/package.json tools/i18n/bun.lock tools/i18n/bunfig.toml tools/i18n/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
-    cd app && bun install --frozen-lockfile
+    cd app && bun install --frozen-lockfile \
+    && cd ../tools/i18n && bun install --frozen-lockfile
 COPY locales/ locales/
+COPY tools/i18n/ tools/i18n/
 COPY app/ app/
-RUN cd app && bun run build
+RUN cd tools/i18n && bun run src/gen.ts --ts \
+    && cd ../../app/ui && bun run scripts/theme-tokens.ts --ts \
+    && cd .. && bun run build
 
 # Cross-compiles on the build host's platform; Go needs no emulation for the target architecture.
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS build
@@ -57,10 +64,12 @@ FROM ${GO_IMAGE} AS atlas
 RUN --mount=type=bind,source=scripts/install-atlas.sh,target=/install-atlas.sh \
     /install-atlas.sh /out/atlas
 
-# One-shot schema apply: `atlas schema apply` with schema/<dialect>.sql under /schema (ADR-0023).
+# One-shot schema apply: `atlas schema apply` with the directory schema/<dialect> under /schema (ADR-0023).
 FROM ${RUNTIME_IMAGE} AS schema
 COPY --from=atlas /out/atlas /usr/local/bin/atlas
 COPY schema/*.sql /schema/
+COPY schema/sqlite /schema/sqlite/
+COPY schema/postgres /schema/postgres/
 # Owned by the non-root user so that a named volume mounted here starts out writable.
 COPY --from=build --chown=nonroot:nonroot /out/data /data
 WORKDIR /data

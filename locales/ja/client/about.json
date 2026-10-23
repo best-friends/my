@@ -1,0 +1,150 @@
+{
+  "about.contact.account": {
+    "defaultMessage": "アカウント",
+    "description": "Term before the account of this server to contact about the server, on the server's information page."
+  },
+  "about.contact.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Term before the email address to contact about the server, on the server's information page."
+  },
+  "about.contact.title": {
+    "defaultMessage": "連絡先",
+    "description": "Heading of the section of the server's information page with how to reach the server's operators."
+  },
+  "about.description.title": {
+    "defaultMessage": "説明",
+    "description": "Heading of the section of the server's information page with the server's description."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "制限しているサーバーはありません",
+    "description": "Shown in place of the list of moderated servers when there are none."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "制限しているサーバーを読み込めませんでした",
+    "description": "Heading shown in place of the list of moderated servers when it could not be loaded."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "このサーバーは、次のサーバーとの連合を制限または停止しています。",
+    "description": "Explanation under the heading of the list of moderated servers on the server's information page."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "制限：投稿を公開のタイムラインに出さない",
+    "description": "Next to a server in the list of moderated servers: its posts stay off the public timelines and its accounts reach only their followers."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "停止：一切連合しない",
+    "description": "Next to a server in the list of moderated servers: this server does not federate with it at all."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "制限しているサーバーを読み込んでいます",
+    "description": "Accessible name of the progress indicator while the list of moderated servers loads."
+  },
+  "about.domains.more": {
+    "defaultMessage": "さらに表示",
+    "description": "Button under the list of moderated servers that loads more of them."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "続きを読み込めませんでした",
+    "description": "Shown under the list of moderated servers when its next page could not be loaded."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "一部のサーバーの名前は * で伏せています。",
+    "description": "Note above the list of moderated servers when the moderators hid part of some servers' names."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that tries again to load the list of moderated servers after a failure."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Link after the note that only signed-in users can see the list of moderated servers; it opens the sign-in screen."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "この一覧は、ログインした利用者だけが見られます。",
+    "description": "Shown in place of the list of moderated servers to a visitor who is not signed in, when the server shows it to signed-in users only."
+  },
+  "about.domains.title": {
+    "defaultMessage": "制限しているサーバー",
+    "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
+  },
+  "about.crawlers.title": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the section of the server's information page that says what the server states to search engines and AI crawlers."
+  },
+  "about.crawlers.search": {
+    "defaultMessage": "{setting, select, allow {検索エンジンは、許可したアカウントのプロフィールと公開投稿を索引に載せられます。} other {このサーバーは、すべてのページを検索エンジンの索引に載せないよう求めています。}}",
+    "description": "What the server states to search engines, by the server setting search_indexing (allow or deny)."
+  },
+  "about.crawlers.ai": {
+    "defaultMessage": "{setting, select, allow {このサーバーは AI に対して何も留保していません。拒否したアカウントのページを除き、AI はページを学習にも利用にも使えます。} deny_training {このサーバーは、ページを AI のモデルの学習に使うことを拒否しています。拒否したアカウントのページを除き、AI の検索やアシスタントによる利用は拒否していません。} other {このサーバーは、ページを AI のモデルの学習に使うことと、AI の検索・アシスタント・エージェントで利用することを拒否しています。}}",
+    "description": "What the server states to AI crawlers, by the server setting ai_usage (allow, deny_training, or deny)."
+  },
+  "about.crawlers.how": {
+    "defaultMessage": "このサーバーは、この表明を robots.txt（既知の AI クローラーの一覧を含む）、ページの robots の meta タグと X-Robots-Tag・Content-Usage・tdm-reservation のヘッダー、/.well-known/tdmrep.json で示します。これらは要請です。主要なクローラーの多くは一部に従うとしていますが、従わないクローラーを技術的に止めるものではありません。",
+    "description": "How the server states its search and AI settings: the machine-readable means it uses."
+  },
+  "about.crawlers.accounts": {
+    "defaultMessage": "アカウントごとに、このサーバーにある自分のページについて、検索エンジンへの掲載や AI を拒否することもできます。サーバーが拒否しているものを、アカウントが許可することはできません。メディアのファイルと、ほかのサーバーにある投稿の写しには、アカウントの選択は及びません。",
+    "description": "That each account can narrow the server's statement for its own pages, but never widen it."
+  },
+  "about.crawlers.legal": {
+    "defaultMessage": "この表明が法的にどう扱われるかは国によって異なります。EU では、デジタル単一市場における著作権指令 4 条 3 項にいうテキストとデータのマイニングに対する機械可読な権利の留保として示しています。日本では、著作権法 30 条の 4 が情報解析のための多くの利用を許諾なしに認めているため、この表明は法的な拒否として扱われない場合があります。それでも多くの事業者は、こうした表明に自主的に従っています。このページは法的な助言ではありません。",
+    "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
+  },
+  "about.costs.title": {
+    "defaultMessage": "運営の費用",
+    "description": "Heading of the section of the server's information page about what running the server costs, shown when the server publishes its costs."
+  },
+  "about.costs.description": {
+    "defaultMessage": "{visibility, select, breakdown {このサーバーは、運営にかかる費用を週・月・年ごとに、事業者と区分の内訳とともに公開しています。項目の名前・メモ・個々の支払いは公開しません。} other {このサーバーは、運営にかかる費用の合計を週・月・年ごとに公開しています。内訳・項目の名前・個々の支払いは公開しません。}}",
+    "description": "What the server publishes of its running costs, by the server setting finance_visibility (totals or breakdown)."
+  },
+  "about.income.description": {
+    "defaultMessage": "{visibility, select, plans {このサーバーは、サポーターからの収入を決済の事業者の手数料と返金を引いて週・月・年ごとに公開し、いまのプランごとの加入者の数も公開しています。誰がいくら払ったかは公開しません。} other {このサーバーは、サポーターからの収入の合計を決済の事業者の手数料と返金を引いて週・月・年ごとに公開しています。誰がいくら払ったかは公開しません。}}",
+    "description": "What the server publishes of its income from the supporter plans, by the server setting income_visibility (totals or plans)."
+  },
+  "about.income.balance": {
+    "defaultMessage": "収入から費用を引いた収支も公開しています。",
+    "description": "Note on the server's information page that the balance (income less costs) is published, shown when both the costs and the income are published."
+  },
+  "about.costs.link": {
+    "defaultMessage": "{shown, select, both {運営の費用と収入を見る} income {収入を見る} other {運営の費用を見る}}",
+    "description": "Link from the server's information page to the page of the server's running costs and income, by what the server publishes: both, the income only, or the costs only."
+  },
+  "about.commerce.title": {
+    "defaultMessage": "特定商取引法に基づく表記",
+    "description": "Heading of the section of the information page that links to the server's page of the commerce disclosures of its supporter plans (ADR-0072 §13)."
+  },
+  "about.commerce.link": {
+    "defaultMessage": "特定商取引法に基づく表記を見る",
+    "description": "Link from the information page to the server's page of the commerce disclosures of its supporter plans."
+  },
+  "about.rules.title": {
+    "defaultMessage": "ルール",
+    "description": "Heading of the section of the server's information page with the server's rules."
+  },
+  "about.source.title": {
+    "defaultMessage": "ソースコード",
+    "description": "Heading of the section of the server's information page that tells where to get the source code of the server's software."
+  },
+  "about.source.license": {
+    "defaultMessage": "このサーバーは、GNU Affero General Public License 第 3 版（AGPL-3.0）のもとで公開されている自由ソフトウェアで動いています。サーバーを使う人は誰でも、動いているソースコードを入手できます。",
+    "description": "Paragraph in the source code section of the server's information page: the license of the server's software and the right of its users to get the source code."
+  },
+  "about.source.view": {
+    "defaultMessage": "ソースコードを見る",
+    "description": "Link to the web page where the source code of the server's software is published, on the server's information page and the landing page. The link leaves the app."
+  },
+  "about.source.request": {
+    "defaultMessage": "ソースコードをメールで請求する",
+    "description": "Link that writes an email to the address where the server's operators take requests for the source code of the server's software, on the server's information page and the landing page."
+  },
+  "about.source.address": {
+    "defaultMessage": "請求先のメールアドレス",
+    "description": "Term before the email address that takes requests for the source code, in the source code section of the server's information page."
+  },
+  "about.title": {
+    "defaultMessage": "{instance} について",
+    "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
+  }
+}

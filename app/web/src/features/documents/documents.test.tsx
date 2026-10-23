@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The links to the server's terms of service and privacy policy through the whole app (web-client.md T4, #489):
+// The links to the server's terms of service and privacy policy through the whole app (web-client/README.md T4, #489):
 // on the sign-in page, in the settings, and in the phones' menu sheet, only for the documents the server
 // publishes (GET /instance); a link opens the document's information page in the same tab (#1037).
 import { screen, waitFor, within } from "@testing-library/react";

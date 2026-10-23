@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The timelines through the whole app (web-client.md T4): the real router and QueryClient, MSW for the
+// The timelines through the whole app (web-client/README.md T4): the real router and QueryClient, MSW for the
 // client API. Time is fixed so that relative times are known.
 import { isInaccessible, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

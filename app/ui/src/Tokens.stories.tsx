@@ -2,7 +2,7 @@
 // The design token sheet for Storybook (CSF 3). Like every story, it is also an axe and a visual
 // snapshot test (vitest.config.ts).
 // Swatches read the semantic colors with var() (theme.css emits them all) instead of building
-// class names, which web-client.md D9 forbids.
+// class names, which web-client/README.md D9 forbids.
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { colorPairs, decorativeColors, surfaces } from "./tokens";
 

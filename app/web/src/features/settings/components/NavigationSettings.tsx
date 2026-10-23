@@ -16,7 +16,7 @@ import { navigationEntryIcons } from "./navigationEntryIcons";
 const timelineOf: Partial<Record<NavigationEntryId, "local" | "federated">> = { local: "local", public: "federated" };
 
 /**
- * The items of the navigation: which ones show and in which order (web-client.md §9). Each item is a row with a
+ * The items of the navigation: which ones show and in which order (web-client/09-app-shell.md §9). Each item is a row with a
  * checkbox that shows or hides it and two buttons that move it one place up or down. This is the model of the
  * WAI-ARIA APG's rearrangeable list (Up and Down buttons, a confirmation in a live region, the focus staying with
  * the moved item) with native tab stops instead of a listbox, so that every control is a plain button or checkbox.
@@ -82,7 +82,7 @@ export function NavigationSettings() {
                   <IconLabel icon={navigationEntryIcons[entry.id]}>{name}</IconLabel>
                 </Checkbox>
               </Box>
-              {/* Icon-only buttons are named by aria-label and show the same words as a tooltip (web-client.md G12). */}
+              {/* Icon-only buttons are named by aria-label and show the same words as a tooltip (web-client/16-look-states-and-wording.md G12). */}
               <TooltipTrigger>
                 <Button
                   id={buttonId(entry.id, -1)}

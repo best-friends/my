@@ -2,12 +2,12 @@ name: Stream contract
 
 # The stream.Bus contracts of internal/adapter/stream on broker containers (the valkey/valkey container of
 # pkg/testkit/valkeytest, the Floci AWS emulator of pkg/testkit/awstest, the Pub/Sub emulator) instead of the in-process
-# fakes (miniredis, the SNS / SQS fake of pkg/testkit/awstest, pstest) that pull requests and merge groups run in
-# ctx-go.yml's go-test job (ADR-0050 §5). Called by main.yml on the pushes to main that touch a path they depend on
-# and by nightly.yml.
+# fakes (miniredis, the SNS / SQS fake of pkg/testkit/awstest, pstest) that pull requests and merge groups run
+# (ADR-0050 §5). Part of the slow suite (slow-suite.yml, ADR-0079) and runnable by hand on any branch.
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,23 +20,14 @@ jobs:
   stream-contract:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      # The go-test cache that main.yml saves, without saving one.
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-test-${{ runner.os }}-
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      # The Go cache that main.yml builds, without saving one.
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
       # testcontainers-go starts the brokers on the runner's Docker; the target makes a missing Docker fail the job
       # instead of skipping the tests.
-      - name: make go-test-stream
-        run: make go-test-stream
+      - name: go:test-stream
+        run: scripts/task.sh go:test-stream

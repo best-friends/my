@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Violations of the 強制 rows of docs/architecture/web-client.md that lint checks in tests, copied next to
+// Violations of the 強制 rows of docs/architecture/web-client/README.md that lint checks in tests, copied next to
 // LintViolations.tsx by violations.test.js (see there).
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";

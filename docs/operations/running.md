@@ -249,9 +249,9 @@ my job delete <id> [<id>...] # 実行せずに消す
 - readiness が満たされないときは 503 と RFC 9457 の `application/problem+json`（[ADR-0016](../adr/0016-client-api-style.md)）を返す。
   `title` は `Accept-Language` に合わせて翻訳され、内部の詳細は含めない。原因（接続エラー、足りないテーブル名）はログに出る。
 - 1 回の readiness 判定は 3 秒で打ち切る。
-- **スキーマが適用済み** とは、`schema/<dialect>.sql` が `CREATE TABLE` で宣言するテーブルがすべて存在すること
-  （SQLite は `sqlite_schema`、PostgreSQL は接続の `current_schema()` で調べる）。Atlas はファイル全体を適用するので、
-  テーブルが欠けていれば未適用か、バイナリより古いスキーマである。列や索引の差分までは見ない。差分の検出は `make db-check` の役割。
+- **スキーマが適用済み** とは、`schema/<dialect>/` のファイルが `CREATE TABLE` で宣言するテーブルがすべて存在すること
+  （SQLite は `sqlite_schema`、PostgreSQL は接続の `current_schema()` で調べる）。Atlas はスキーマ全体を適用するので、
+  テーブルが欠けていれば未適用か、バイナリより古いスキーマである。列や索引の差分までは見ない。差分の検出は `scripts/task.sh db:check` の役割。
 
 ## セキュリティヘッダ
 
@@ -278,7 +278,7 @@ Trusted Types を必須にし（`require-trusted-types-for 'script'`）、作れ
 - 外枠は ActivityPub のコンテントネゴシエーションの後に返す。ActivityPub の `Accept` で外枠のパスを取ると 404 になる（投稿のページは下記のリダイレクト）。
   外枠には常に `Vary: Accept` が付く。CDN を前に置くときは `Accept` の種類（ActivityPub か HTML か）をキャッシュキーに含めるか、
   外枠と `/ap/*`、`/@*` をキャッシュ対象から外す。CDN から配るのは `/assets/*` だけにする。
-- Web クライアントを含めずにビルドしたバイナリ（`make build` を通さない `go build`）は、起動時に警告を出し、スクリプトのない外枠を返す。
+- Web クライアントを含めずにビルドしたバイナリ（`scripts/task.sh go:bin` を通さない `go build`）は、起動時に警告を出し、スクリプトのない外枠を返す。
 
 ## 連合のエンドポイント（FR-401〜403）
 

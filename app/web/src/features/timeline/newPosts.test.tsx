@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Real-time updates of the home timeline through the whole app (web-client.md S10, Y7, T4; FR-207): the
+// Real-time updates of the home timeline through the whole app (web-client/README.md S10, Y7, T4; FR-207): the
 // layout's event stream, MSW as the server's GET /streaming, and the "N new posts" button.
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

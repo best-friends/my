@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The supporters screen through the whole app (web-client.md T4, ADR-0072): an administrator with manage_supporters
+// The supporters screen through the whole app (web-client/README.md T4, ADR-0072): an administrator with manage_supporters
 // sees the program, the plans and the subscriptions; enables the program or sees why the server refuses; creates a
 // plan or sees the field the server refuses; retires a plan and ends a subscription after asking; narrows the
 // subscriptions by state in the URL; sees the payment provider's state with how to fix its failure and its warnings,

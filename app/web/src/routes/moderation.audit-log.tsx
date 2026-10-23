@@ -8,7 +8,7 @@ import { AdminError, loadWithPermission } from "./-admin/adminRoute";
 import { PageHeading } from "./-layout/PageHeading";
 
 /**
- * The filter of the audit log and how many pages of it are loaded (web-client.md S3). `actor`: an account's ID;
+ * The filter of the audit log and how many pages of it are loaded (web-client/README.md S3). `actor`: an account's ID;
  * `action` and `target_kind`: kinds of the API; `target`: one target of `target_kind`, ignored without it; `pages`:
  * the pages to read from the newest, omitted for one. Anything unknown or out of range is dropped.
  */

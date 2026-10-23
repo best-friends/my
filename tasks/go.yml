@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The Go server module (the go context of scripts/changed-contexts.sh): its checks, the sqlc code, the generated
+# tables, and bin/my. `./...` covers the root module only; the nested tools/ and tools/agentkit modules are excluded.
+version: "3"
+
+vars:
+  # Go tools (go-licenses, sqlc, oapi-codegen, go-task) are pinned with `tool` directives in tools/go.mod,
+  # kept apart from the product module so their dependencies never affect ours.
+  GO_TOOL: go tool -modfile=tools/go.mod
+  # The packages whose tests use PostgreSQL through pkg/testkit/pgtest.
+  POSTGRES_TEST_PACKAGES: ./internal/adapter/db/postgres/ ./internal/adapter/kv/db/ ./internal/adapter/queue/db/ ./internal/adapter/stream/postgres/ ./internal/platform/
+  # The Unicode emoji that emoji reactions accept and normalize (ADR-0052 §1). To move to a new
+  # Unicode version, change both and run go:emoji-table.
+  EMOJI_VERSION: 18.0.0
+  EMOJI_TEST_SHA256: 8f3735cda1f92a779d78af67cf86066bb1f07143dc22f2ac29394d9bc57ab21a
+  # The AI crawlers that /robots.txt names (ADR-0057), from ai-robots-txt/ai.robots.txt (MIT). To
+  # update the list, change both to a newer commit, run go:ai-crawlers, and review the diff.
+  AI_ROBOTS_COMMIT: a446ec974c221a133cb21cb96f30c4585b208998
+  AI_ROBOTS_SHA256: b9dc1b13171c3440cd41a51ab9ac3f998b00e30b5987c4bdbecad4f8a21bc99e
+
+tasks:
+  check:
+    desc: Run all offline Go checks in parallel
+    deps: [mod-check, vet, lint, test, build, build-tags, licenses, sqlc-check]
+
+  mod-check:
+    desc: Fail if go.mod/go.sum (and tools/go.mod/go.sum) are not tidy
+    cmds:
+      - go mod tidy -diff
+      - cd tools && go mod tidy -diff
+
+  fmt-check:
+    desc: Fail if a Go file of the server module is not gofmt-formatted
+    cmds:
+      - |
+        files="$(git ls-files -co --exclude-standard -- '*.go' ':!:tools/**' | xargs -r gofmt -l)"
+        if [ -n "$files" ]; then printf 'not gofmt-formatted (run gofmt -w):\n%s\n' "$files" >&2; exit 1; fi
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint (includes the depguard architecture boundaries)
+    cmds:
+      # golangci-lint holds a lock while it runs: wait for it rather than fail beside go:lint or agentkit:lint.
+      - golangci-lint run --allow-serial-runners ./...
+
+  test:
+    desc: Run Go tests (PostgreSQL tests on pgmem, ADR-0041)
+    cmds:
+      - go test ./...
+
+  test-postgres:
+    desc: Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI in the slow suite)
+    env:
+      TEST_POSTGRES: container
+      TEST_POSTGRES_REQUIRED: "1"
+    cmds:
+      - go test -count=1 {{.POSTGRES_TEST_PACKAGES}}
+
+  test-stream:
+    desc: Run the stream.Bus contracts on broker containers instead of the in-process fakes (Valkey; Floci for SNS / SQS; the Pub/Sub emulator) (needs Docker; CI in the slow suite)
+    env:
+      TEST_STREAM: container
+      TEST_VALKEY_REQUIRED: "1"
+      TEST_AWS: container
+      TEST_AWS_REQUIRED: "1"
+      TEST_PUBSUB_REQUIRED: "1"
+    cmds:
+      - go test -count=1 ./internal/adapter/stream/...
+
+  warm:
+    desc: Download the modules and build the packages and the Go tools once, so that the Go checks a CI job runs in parallel read the build cache instead of each compiling the same packages
+    cmds:
+      - go mod download
+      - go build ./...
+      - go build -modfile=tools/go.mod tool
+
+  build:
+    desc: Build all packages statically (CGO_ENABLED=0)
+    env:
+      CGO_ENABLED: "0"
+    cmds:
+      - go build ./...
+
+  build-tags:
+    desc: Build (CGO_ENABLED=0) and vet with the representative sets of the build tags that leave adapters out, and fail when cmd/my still links one (docs/reference/build-tags.md)
+    cmds:
+      - scripts/go-build-tags.sh
+
+  licenses:
+    desc: Fail on dependency licenses incompatible with AGPL-3.0
+    cmds:
+      - "{{.GO_TOOL}} go-licenses check --allowed_licenses={{.GO_ALLOWED_LICENSES}} ./..."
+
+  bin:
+    desc: Build bin/my with the web client embedded and the version from git (VERSION=v1.2.3 overrides; GO_TAGS=no_postgres,no_valkey leaves adapters out)
+    deps: [":web:build"]
+    vars:
+      VERSION:
+        sh: '{{if .VERSION}}echo {{shellQuote .VERSION}}{{else}}git describe --tags --always --dirty 2>/dev/null || echo dev{{end}}'
+    env:
+      CGO_ENABLED: "0"
+    cmds:
+      - go build -trimpath -tags "{{.GO_TAGS}}" -ldflags "-X main.version={{.VERSION}}" -o bin/my ./cmd/my
+
+  config-docs:
+    desc: Regenerate docs/reference/configuration.md from the config schema (go:test fails when it is stale)
+    sources: ["internal/platform/config/**/*.go"]
+    generates: [docs/reference/configuration.md]
+    cmds:
+      - go test ./internal/platform/config -run '^TestReferenceUpToDate$' -update
+
+  sqlc:
+    desc: Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
+    sources:
+      - sqlc.yaml
+      - "queries/**/*.sql"
+      - "schema/sqlite/*.sql"
+      - "schema/postgres/*.sql"
+      - scripts/sqlc.sh
+      - tools/go.mod
+    generates:
+      - internal/adapter/db/sqlite/sqlitegen/*.go
+      - internal/adapter/db/postgres/postgresgen/*.go
+      - internal/adapter/queue/db/internal/sqlitequeue/*.go
+      - internal/adapter/queue/db/internal/postgresqueue/*.go
+      - internal/adapter/kv/db/internal/sqlitekv/*.go
+      - internal/adapter/kv/db/internal/postgreskv/*.go
+    cmds:
+      - scripts/sqlc.sh
+
+  sqlc-check:
+    desc: Fail if the committed sqlc-generated code is stale
+    cmds:
+      - scripts/sqlc.sh --check
+
+  emoji-table:
+    desc: Regenerate internal/domain/content/emoji_table.gen.go from Unicode's emoji-test.txt (EMOJI_VERSION)
+    vars:
+      FILE: .tmp/emoji-test-{{.EMOJI_VERSION}}.txt
+    cmds:
+      - mkdir -p .tmp
+      - curl -fsSL -o {{.FILE}} https://www.unicode.org/Public/{{.EMOJI_VERSION}}/emoji/emoji-test.txt
+      - echo "{{.EMOJI_TEST_SHA256}}  {{.FILE}}" | sha256sum -c -
+      - go run ./scripts/emoji-table -in {{.FILE}} -version {{.EMOJI_VERSION}} -out internal/domain/content/emoji_table.gen.go
+
+  ai-crawlers:
+    desc: Regenerate internal/interface/web/ai_crawlers.gen.go from ai.robots.txt's robots.json (AI_ROBOTS_COMMIT)
+    vars:
+      FILE: .tmp/ai-robots-{{.AI_ROBOTS_COMMIT}}.json
+    cmds:
+      - mkdir -p .tmp
+      - curl -fsSL -o {{.FILE}} https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/{{.AI_ROBOTS_COMMIT}}/robots.json
+      - echo "{{.AI_ROBOTS_SHA256}}  {{.FILE}}" | sha256sum -c -
+      - go run ./scripts/ai-crawlers -in {{.FILE}} -commit {{.AI_ROBOTS_COMMIT}} -out internal/interface/web/ai_crawlers.gen.go

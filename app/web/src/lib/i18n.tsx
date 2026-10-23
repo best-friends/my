@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // i18n of the web client (ADR-0009): the `client` catalogs from locales/, formatted by react-intl.
 // Message IDs are "<namespace>:<key>"; their types come
-// from the typed accessors that tools/i18n generates (make i18n-gen), so an unknown ID or a missing
+// from the typed accessors that tools/i18n generates (scripts/task.sh i18n:gen-ts), so an unknown ID or a missing
 // argument is a type error.
 //
 // The page starts in the server's locale: `my serve` writes the instance's default locale into <html lang>
 // of the shell (ADR-0028). The signed-in user's own locale replaces it while the page is open (lib/locale).
 import type { ReactNode } from "react";
 import { createIntl, IntlProvider, useIntl } from "react-intl";
+import catalogs from "virtual:locales";
 import type { MessageArgs, MessageKey } from "../../../../tools/i18n/src/runtime/messages.gen";
 
 /** The IDs of the client's messages; other namespaces are formatted by the server. */
@@ -26,14 +27,12 @@ declare global {
 /** The locale every catalog is written in, and the last fallback (ADR-0009). */
 const sourceLocale = "en";
 
-/** One locales/<locale>/client.json file (the FormatJS JSON catalog shape). */
+/** A locale's client catalog in the FormatJS JSON catalog shape, merged from its area files (ADR-0082). */
 type Catalog = Record<string, { defaultMessage: string }>;
 
-/** A loader per locale that has a client catalog; each catalog is its own chunk of the build. */
+/** A loader per locale that has a client catalog; each catalog is its own chunk of the build (vite-plugins/client-catalogs.ts). */
 const catalogLoaders: ReadonlyMap<string, () => Promise<Catalog>> = new Map(
-  Object.entries(import.meta.glob<Catalog>("../../../../locales/*/client.json", { import: "default" })).map(
-    ([path, load]) => [path.split("/").at(-2) ?? "", load],
-  ),
+  Object.entries(catalogs).map(([locale, load]) => [locale, async () => (await load()).default]),
 );
 
 /** The locales the client has catalogs for. */
@@ -97,7 +96,7 @@ export async function loadI18n(requested: string): Promise<I18n> {
   const loaders = fallbackChain(locale).flatMap((l) => catalogLoaders.get(l) ?? []);
   const catalogs = await Promise.all(loaders.map((load) => load()));
   // The source locale comes last in the chain, so it is applied first and the requested locale wins.
-  // The source catalog has every key (make i18n-check), so the result does too.
+  // The source catalog has every key (scripts/task.sh i18n:check), so the result does too.
   const messages: Record<string, string> = {};
   for (const catalog of catalogs.toReversed()) {
     for (const [key, entry] of Object.entries(catalog)) messages[`client:${key}`] = entry.defaultMessage;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The appeals screen below its heading (FR-707): the appeals that await a decision and those decided, newest
 // first, in the admin mode's list form: a toolbar with the state filter (kept in the URL by the route,
-// web-client.md S3), a table of one page, and previous / next. Each row's first cell links to the appeal's page,
+// web-client/README.md S3), a table of one page, and previous / next. Each row's first cell links to the appeal's page,
 // where it is decided.
 import { EmptyState, Link, ListToolbar, Select, SelectItem, Stack, TableCell, TableColumnHeader, TableRow, TableRowHeader, Text } from "@my/ui";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";

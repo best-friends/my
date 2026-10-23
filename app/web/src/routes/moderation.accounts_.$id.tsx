@@ -39,7 +39,7 @@ function AccountPage() {
   return (
     <>
       <AccountHeading />
-      {/* Another account is another page: nothing of the previous one carries over, its private data least of all (web-client.md R10). */}
+      {/* Another account is another page: nothing of the previous one carries over, its private data least of all (web-client/README.md R10). */}
       <Card>
         <AccountDetailView key={id} id={id} />
       </Card>

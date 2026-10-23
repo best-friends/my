@@ -10,18 +10,18 @@
 ## 設計
 
 - [アーキテクチャ概要（基礎設計）](architecture/overview.md)
-- [論理データモデル](architecture/data-model.md)
+- [論理データモデル](architecture/data-model/README.md)
 - [公開範囲の閲覧判定（canView）](architecture/visibility.md)
 - [連合の設計（ActivityPub S2S）](architecture/federation.md)
 - [デプロイターゲットと低コスト構成](architecture/deployment-targets.md)
-- [Web クライアントの設計規約](architecture/web-client.md)
+- [Web クライアントの設計規約](architecture/web-client/README.md)
 - [ADR 一覧](adr/README.md)
 
 ## リファレンス
 
 - [設定リファレンス](reference/configuration.md)（設定スキーマから生成）
 - [ビルドタグ](reference/build-tags.md)（アダプタをバイナリから外すタグと、その検査）
-- [コマンド](reference/commands.md)（make のターゲットと、固定しているツールチェーン）
+- [コマンド](reference/commands.md)（go-task のタスクと、固定しているツールチェーン）
 - [webhook リファレンス](reference/webhooks.md)（受け手が受け取るヘッダ・署名・イベント・本文）
 
 ## 運用
@@ -38,6 +38,7 @@
 - [検索エンジンと AI クローラー（robots.txt・noindex・AI の拒否の表明）](operations/crawlers.md)
 - [サーバー単位の webhook](operations/webhooks.md)
 - [連合リレー](operations/relays.md)
+- [リリースの手順](operations/releasing.md)
 - [クラウドの利用料金の取り込み（AWS Cost Explorer、Google Cloud の BigQuery への export）](operations/billing-import.md)
 - [サポーターの決済（Stripe）](operations/payments-stripe.md)
 - [サポーター（課金のプラン）](operations/supporters.md)

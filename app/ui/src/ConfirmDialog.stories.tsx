@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// ConfirmDialog stories. The play functions are the alert dialog's behaviour tests (`make ui-test`): focus moves
+// ConfirmDialog stories. The play functions are the alert dialog's behaviour tests (`scripts/task.sh ui:test`): focus moves
 // to the first safe control on open (cancel, or the first field), Esc closes it, focus returns to the trigger,
 // and confirming waits for the fields to be valid.
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -11,7 +11,7 @@ import { DialogTrigger } from "./Dialog";
 import { DurationSelect } from "./DurationSelect";
 import { ReasonField } from "./ReasonField";
 
-// Stories may spell out English; apps pass react-intl messages instead (web-client.md A9).
+// Stories may spell out English; apps pass react-intl messages instead (web-client/README.md A9).
 const formatRemaining = (remaining: number) => (remaining < 0 ? `${String(-remaining)} characters too many` : `${String(remaining)} characters left`);
 const day = 86_400;
 const formatDuration = (seconds: number) => (seconds === day ? "1 day" : `${String(seconds / day)} days`);

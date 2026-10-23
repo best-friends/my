@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The head of a region or a row: its heading and the actions on it. In a narrow container the actions go under the
-// heading; from @md they sit at the inline end of the same line (web-client.md D2).
+// heading; from @md they sit at the inline end of the same line (web-client/README.md D2).
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 

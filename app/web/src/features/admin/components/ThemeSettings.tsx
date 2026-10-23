@@ -2,7 +2,7 @@
 // The theme screen below its heading (manage_settings, ADR-0059): the color tokens in each theme, the contrast of
 // their pairs as they are typed, the other tokens (type, spacing, radius, elevation, motion), the custom CSS with
 // what the server does not check, and a preview of the overrides. An empty input keeps the default, which its
-// description names. The reasons the server refuses a theme stay above the button (role="alert", web-client.md
+// description names. The reasons the server refuses a theme stay above the button (role="alert", web-client/README.md
 // E2); what a save did stays on the page in a StatusMessage.
 import { Button, Grid, Hint, InlineError, Stack, StatusMessage, Text, TextArea, TextField, ThemePreview } from "@my/ui";
 import { useT } from "../../../lib/i18n";

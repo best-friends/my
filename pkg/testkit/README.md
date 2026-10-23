@@ -8,7 +8,7 @@ repository's own tests ([ADR-0015](../../docs/adr/0015-testing-strategy.md)).
 `pgtest.NewDatabase(t)` (package `pkg/testkit/pgtest`) returns the URL of a new database with the product schema, copied
 from a template database on one server per test binary ([ADR-0041](../../docs/adr/0041-postgres-tests-on-pgmem.md)).
 The server is pgmem, PostgreSQL in memory inside the test process, unless `TEST_POSTGRES_URL` names an existing server
-or `TEST_POSTGRES=container` starts a container with testcontainers-go (`make go-test-postgres`). The package's `TestMain`
+or `TEST_POSTGRES=container` starts a container with testcontainers-go (`scripts/task.sh go:test-postgres`). The package's `TestMain`
 calls `os.Exit(pgtest.Main(m))` so that the server stops after the tests.
 
 ## Valkey test servers
@@ -27,7 +27,7 @@ message delivery, the visibility timeout, the retention, the long polls, and the
 name can be used again; `SetUnreachable` makes every call wait for its context. Every test run uses it.
 
 `awstest.Emulator(t)` returns the `aws.Config` of the AWS emulator [Floci](https://github.com/floci-io/floci): a
-`floci/floci` container started with testcontainers-go when `TEST_AWS=container` (`make go-test-stream`, CI on main and
+`floci/floci` container started with testcontainers-go when `TEST_AWS=container` (`scripts/task.sh go:test-stream`, CI on main and
 nightly), or a running emulator at `TEST_AWS_ENDPOINT`; otherwise the test is skipped. `TEST_AWS_REQUIRED` makes a
 missing Docker fail the tests. The package's `TestMain` calls `os.Exit(awstest.Main(m))`.
 

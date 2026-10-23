@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The facts of a record (a server's state, a job's keys, an account's history): a description list whose
-// terms sit above their values and whose items flow into columns as the container widens (web-client.md D2).
+// terms sit above their values and whose items flow into columns as the container widens (web-client/README.md D2).
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 

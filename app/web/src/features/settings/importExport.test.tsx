@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The import and export page through the whole app (web-client.md T4): downloading the CSV files, checking a file and
+// The import and export page through the whole app (web-client/README.md T4): downloading the CSV files, checking a file and
 // importing it, and the progress of the imports, with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";

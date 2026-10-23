@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /*
- * Design tokens of @my/ui (web-client.md D8). Apps import this file right after Tailwind:
+ * Design tokens of @my/ui (web-client/README.md D8). Apps import this file right after Tailwind:
  *
  *   @import "tailwindcss";
  *   @import "@my/ui/theme.css";
@@ -11,14 +11,14 @@
  *   2. --color-*    semantic colors, the only colors with utilities (bg-surface, text-fg-muted ...).
  *                   Each one is light-dark(<light>, <dark>), resolved by the used color-scheme.
  *
- * The contrast check (scripts/check-tokens.ts, run by `make web-check`) reads this file, so keep
+ * The contrast check (scripts/check-tokens.ts, run by `scripts/task.sh web:check`) reads this file, so keep
  * every color as oklch() or hex, in the sRGB gamut, and every semantic color as a var(--palette-*)
  * or light-dark() of them. The fg / bg pairs it verifies are listed in src/tokens.ts.
  *
  * Server themes (ADR-0059) override the tokens other than the palette with an unlayered :root rule,
  * which wins over the @layer theme that Tailwind emits these into. That works only while utilities
  * refer to the variables, so never declare a token in `@theme inline`. scripts/theme-tokens.ts
- * generates the list of overridable tokens from this file (`make web-tokens-gen`); src/tokens.ts
+ * generates the list of overridable tokens from this file (`scripts/task.sh web:tokens-gen`); src/tokens.ts
  * says how each one is checked.
  */
 
@@ -280,7 +280,7 @@
   --shadow-md: var(--elevation-md);
   --shadow-lg: var(--elevation-lg);
 
-  /* --- Motion (only ever applied under motion-safe:, web-client.md D6) ----------------------- */
+  /* --- Motion (only ever applied under motion-safe:, web-client/README.md D6) ----------------------- */
   --ease-*: initial;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-enter: cubic-bezier(0, 0, 0, 1);
@@ -306,10 +306,10 @@
 
 /* A short screen below md, such as a phone in landscape or a 320 × 225 viewport at 400% zoom: the tab bar
    and the floating new-post button shrink so that the fixed elements stay within half the screen's height.
-   The app shell only (AppShell, AppNavigation, OfflineBanner; web-client.md D2). */
+   The app shell only (AppShell, AppNavigation, OfflineBanner; web-client/README.md D2). */
 @custom-variant short (@media (width < 48rem) and (height <= 32rem));
 /* While the page floats the new-post button (data-compose-fab on main, AppShell's floatingVisible), for
-   the other elements fixed to the bottom edge that must stand clear of it (web-client.md G4). */
+   the other elements fixed to the bottom edge that must stand clear of it (web-client/16-look-states-and-wording.md G4). */
 @custom-variant with-compose-fab (:root:has([data-compose-fab]) &);
 
 /* A visible focus indicator. Use it as `focus-visible:focus-ring` (or `data-focus-visible:focus-ring`
@@ -319,7 +319,7 @@
   outline-offset: 2px;
 }
 
-/* Lines a `dir="auto"` block up with its parent's direction (web-client.md G9): a right-to-left name in a
+/* Lines a `dir="auto"` block up with its parent's direction (web-client/16-look-states-and-wording.md G9): a right-to-left name in a
    left-to-right row starts where the other rows start, and the other way round. Chromium knows only the
    prefixed value and drops the standard one; Firefox takes the standard one. Not `text-*`, which
    tailwind-merge reads as a color and so drops the element's color class. */

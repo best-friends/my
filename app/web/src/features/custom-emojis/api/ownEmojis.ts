@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the user's page of their custom emoji (web-client.md S1, ADR-0070 §2, §3, §6,
+// The queries and mutations of the user's page of their custom emoji (web-client/README.md S1, ADR-0070 §2, §3, §6,
 // create_custom_emojis): the emoji the user made with what they used of their limit (GET /custom_emojis/mine), their
 // requests (GET /custom_emoji_requests), requesting a new emoji or a new image of one with an uploaded image (POST
 // /custom_emoji_requests), withdrawing a pending request (POST .../withdraw), and changing (PATCH) and deleting

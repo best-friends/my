@@ -36,7 +36,7 @@ export type RoleChange = { accountId: string; role: string; kind: RoleChangeKind
 
 /**
  * Grants a role to a local account (PUT /admin/accounts/{id}/roles/{role}) or revokes it (DELETE), as the options
- * of TanStack Query's useMutation (web-client.md §10). Answers the roles that the user holds afterwards.
+ * of TanStack Query's useMutation (web-client/10-api-client-and-auth.md §10). Answers the roles that the user holds afterwards.
  */
 export function changeRoleMutation(api: Api) {
   return {
@@ -53,7 +53,7 @@ export function changeRoleMutation(api: Api) {
 }
 
 /**
- * What a change of the roles of account `accountId` changes (web-client.md S1, ADR-0045): its page shows its role
+ * What a change of the roles of account `accountId` changes (web-client/README.md S1, ADR-0045): its page shows its role
  * keys (the searches show none) and the audit log records the change: both are marked stale, and this waits for
  * those on screen to be fetched again (the log is fetched again when it opens); then the roles as the server
  * answered go into the cache. A change of the viewer's own

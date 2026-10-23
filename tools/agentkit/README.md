@@ -13,21 +13,25 @@ Run it through `scripts/agentkit.sh <command>`, which builds `bin/agentkit` when
 | --- | --- |
 | Reading the issue, then every ADR, requirement, and document section it names | `ctx <issue> [--layer server\|web]`: one pack within a token budget (default 30k), also saved to `.tmp/agentkit/ctx/<n>.md` for subagents |
 | `grep -rn` over the repository | `find <words> [--kind adr,section,go,ts,op,table,query,...] [--under <path>]`: ranked locations with sizes |
-| `cat` of a 90k-token document | `outline <path>`, then `show '<path>#<anchor>'`, `show 'data-model§4.4'`, `show 'ADR-0070#decision'`, `show FR-915`, `show <path>:<from>-<to>` |
+| `cat` of a large document | `outline <path>`, then `show '<path>#<anchor>'`, `show 'data-model§4.4'`, `show 'ADR-0070#decision'`, `show FR-915`, `show <path>:<from>-<to>` |
 | Following a request through the layers by hand | `trace op:<operationId>` or `trace <GoName>`: handler → app → adapter → query → table |
 | Grepping for the users of a name | `refs <ref>`: what points at it (documents, code, queries, client calls) and what it points at |
+| Listing `docs/adr/` and opening every ADR | `adr list [--status Proposed]`: number, status (the first word of its `- Status:` line), and title |
 
 `show` prints the outline instead of the text when a node is bigger than `--max` tokens (default 12k).
 References: node ids (`ADR-0070`, `FR-915`, `op:<id>`, `table:<name>`, `query:<Name>`, `schema:<Name>`,
 `sym:<dir>.<Recv>.<Name>`, `ts:<path>:<Name>`), short names (`SubmitRequest`, `custom_emojis`), sections by number or
 anchor of any unique path suffix (`data-model§4.4`, `web-client#5-アクセシビリティ`), and line ranges.
+A document split into one file per section (`docs/architecture/web-client/`, `docs/architecture/data-model/`) is
+looked up by its directory: `web-client§14` finds the section in whichever file holds it, and `show web-client`
+prints the directory's `README.md`.
 
 ## Workflow
 
 | Step | Run |
 | --- | --- |
 | Take an issue (§1) | `issue claim <n> --plan "<one line>"`: refuses when the issue is not `agent:ready`, needs a decision, is assigned to someone else, depends on a non-Accepted ADR, or waits for an open issue |
-| Verify (§5) | `check`: `make check-changed` with the contexts, their results, and only the failing lines |
+| Verify (§5) | `check`: `scripts/task.sh check:changed` with the contexts it checks and only the failing lines |
 | Open the PR (§6) | `pr open [--summary-file f] [--decisions text] [--confirm] [--footer text] [--base <branch>]` |
 | Wait for CI (§6) | `pr wait <pr>` **in the background**: one line when CI passes; the failing lines of the failed jobs otherwise; exit 3 on a conflict |
 | Resolve a conflict (§7) | `git merge origin/main`, `regen`, `check`, push |
@@ -39,7 +43,7 @@ anchor of any unique path suffix (`data-model§4.4`, `web-client#5-アクセシ�
 [context-map.yaml](context-map.yaml) maps paths to the document sections that govern them, their check contexts,
 whether parallel work treats them as shared files, and short notes. `ctx` uses it to pick the rules of the areas an
 issue touches. When you add a directory, module, adapter, or feature, add or extend its entry in the same change:
-`make agentkit-check` (and CI, on every change) fails when a file is not covered, when a directory under a `strict`
+`scripts/task.sh agentkit:check` (and CI, on every change) fails when a file is not covered, when a directory under a `strict`
 pattern has no entry naming it, or when a document reference does not resolve ([ADR-0003](docs/adr/0003-context-map.md)).
 `map show <path>` prints the entries of a path.
 
@@ -72,6 +76,6 @@ a change to see what it saved.
 
 ## Developing
 
-`make agentkit-check` runs `go mod tidy -diff`, `go vet`, golangci-lint (`.golangci.yml` here), the tests, the
-dependency check (only module versions the server's `go.sum` has, so `make go-licenses` covers their licenses), and
+`scripts/task.sh agentkit:check` runs `go mod tidy -diff`, `go vet`, golangci-lint (`.golangci.yml` here), the tests, the
+dependency check (only module versions the server's `go.sum` has, so `scripts/task.sh go:licenses` covers their licenses), and
 `map check`. Bump `extract.Version` when an extractor's output changes, so that indexes are rebuilt.

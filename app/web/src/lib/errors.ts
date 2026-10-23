@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The errors of the API client. Every failed response becomes an ApiError that carries its RFC 9457
 // problem document; a request that never got a response becomes a NetworkError. Both have a localized
-// `message` that the UI can show as it is (web-client.md E2): the server localizes `title` and `detail`
+// `message` that the UI can show as it is (web-client/README.md E2): the server localizes `title` and `detail`
 // from the Accept-Language the client sends, and the client's own catalog covers the rest.
 import type { Translate } from "./i18n";
 import type { components } from "./api/schema.gen";
@@ -79,7 +79,7 @@ export class NetworkError extends Error {
 }
 
 /**
- * What kind of failure an error is, for the words that describe it (web-client.md G16): no response
+ * What kind of failure an error is, for the words that describe it (web-client/16-look-states-and-wording.md G16): no response
  * (`network`), the server refused the viewer (`forbidden`, 403) or found nothing (`not-found`, 404), the
  * server failed otherwise (`server`), or the error did not come from the API at all (`unexpected`).
  */

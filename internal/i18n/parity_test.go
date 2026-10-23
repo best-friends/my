@@ -10,7 +10,7 @@ import (
 )
 
 // testdata/golden.json holds FormatJS (intl-messageformat) outputs for the inputs in
-// testdata/cases.json and for CLDR probes; tools/i18n regenerates it and `make i18n-check`
+// testdata/cases.json and for CLDR probes; tools/i18n regenerates it and `scripts/task.sh i18n:check`
 // fails when it is stale. These tests require the Go engine to produce identical strings,
 // so the server and the TypeScript clients format shared messages the same way.
 
@@ -90,7 +90,7 @@ func TestParityCatalogWithFormatJS(t *testing.T) {
 	for locale, want := range golden.Catalog {
 		l := b.Localizer(locale)
 		if len(want) != len(cases.Catalog) {
-			t.Fatalf("%s: golden has %d outputs for %d cases; run make i18n-gen", locale, len(want), len(cases.Catalog))
+			t.Fatalf("%s: golden has %d outputs for %d cases; run scripts/task.sh i18n:gen", locale, len(want), len(cases.Catalog))
 		}
 		for i, c := range cases.Catalog {
 			if _, ok := b.messages[locale][c.Key]; !ok {
@@ -110,7 +110,7 @@ func TestParitySyntaxWithFormatJS(t *testing.T) {
 	readJSON(t, "cases.json", &cases)
 	readJSON(t, "golden.json", &golden)
 	if len(golden.Syntax) != len(cases.Syntax) {
-		t.Fatalf("golden has %d syntax outputs for %d cases; run make i18n-gen", len(golden.Syntax), len(cases.Syntax))
+		t.Fatalf("golden has %d syntax outputs for %d cases; run scripts/task.sh i18n:gen", len(golden.Syntax), len(cases.Syntax))
 	}
 	for i, c := range cases.Syntax {
 		got, err := formatOnce(t, c.Locale, c.Message, intArgs(c.Args))

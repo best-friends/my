@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The appeals screens through the whole app (web-client.md T4): a moderator with manage_accounts lists the
+// The appeals screens through the whole app (web-client/README.md T4): a moderator with manage_accounts lists the
 // appeals awaiting review and those reviewed, opens one next to its action, and upholds or overturns it through
 // its confirmation with an explanation to the user, with MSW playing the admin API.
 import { screen, waitFor, within } from "@testing-library/react";

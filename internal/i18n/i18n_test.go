@@ -123,11 +123,12 @@ func TestDirection(t *testing.T) {
 func TestNewBundleRejectsBrokenCatalogs(t *testing.T) {
 	en := `{"a": {"defaultMessage": "{n, plural, one {#} other {#}}"}}`
 	tests := map[string]fstest.MapFS{
-		"syntax error":      {"en/x.json": {Data: []byte(`{"a": {"defaultMessage": "{n, plural, one {#}"}}`)}},
-		"plural category":   {"en/x.json": {Data: []byte(en)}, "ja/x.json": {Data: []byte(en)}},
-		"invalid json":      {"en/x.json": {Data: []byte(`{`)}},
-		"non-canonical dir": {"en/x.json": {Data: []byte(en)}, "ja_JP/x.json": {Data: []byte(en)}},
-		"no source locale":  {"ja/x.json": {Data: []byte(`{}`)}},
+		"syntax error":      {"en/x/a.json": {Data: []byte(`{"a": {"defaultMessage": "{n, plural, one {#}"}}`)}},
+		"plural category":   {"en/x/a.json": {Data: []byte(en)}, "ja/x/a.json": {Data: []byte(en)}},
+		"invalid json":      {"en/x/a.json": {Data: []byte(`{`)}},
+		"non-canonical dir": {"en/x/a.json": {Data: []byte(en)}, "ja_JP/x/a.json": {Data: []byte(en)}},
+		"no source locale":  {"ja/x/a.json": {Data: []byte(`{}`)}},
+		"no namespace dir":  {"en/x.json": {Data: []byte(en)}},
 	}
 	for name, fsys := range tests {
 		if _, err := NewBundle(fsys); err == nil {
@@ -138,8 +139,9 @@ func TestNewBundleRejectsBrokenCatalogs(t *testing.T) {
 
 func TestFormatFallsBack(t *testing.T) {
 	fsys := fstest.MapFS{
-		"en/x.json": {Data: []byte(`{"only_en": {"defaultMessage": "en {v}"}, "both": {"defaultMessage": "en both"}}`)},
-		"ja/x.json": {Data: []byte(`{"both": {"defaultMessage": "ja {missing}"}}`)},
+		"en/x/only_en.json": {Data: []byte(`{"only_en": {"defaultMessage": "en {v}"}}`)},
+		"en/x/both.json":    {Data: []byte(`{"both": {"defaultMessage": "en both"}}`)},
+		"ja/x/both.json":    {Data: []byte(`{"both": {"defaultMessage": "ja {missing}"}}`)},
 	}
 	b, err := NewBundle(fsys)
 	if err != nil {

@@ -1,7 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: AGPL-3.0-only
 # First-start initialization of the live interoperability database (compose.yaml): the role and databases of
-# this server, each prepared with schema/postgres.bootstrap.sql as `make db-up` does. Mastodon creates its own
+# this server, each prepared with schema/postgres.bootstrap.sql as `scripts/task.sh db:up` does. Mastodon creates its own
 # database as the superuser; Misskey gets a role and an empty database, which it migrates when it starts.
 set -eu
 

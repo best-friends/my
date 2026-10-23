@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the compose feature (web-client.md §7, §12): the preferences, posting and
+// The default MSW handlers of the compose feature (web-client/README.md §7, web-client/12-compose.md §12): the preferences, posting and
 // the media uploads.
 import { http, HttpResponse } from "msw";
 import { mediaFixture, preferencesFixture, type Schemas, viewerStatusFixture } from "../../../test/fixtures";

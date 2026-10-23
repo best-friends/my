@@ -9,20 +9,18 @@
 // passkey. The server's host is localhost, which browsers treat as a secure context, so WebAuthn runs over plain
 // HTTP with the relying party ID "localhost".
 import { randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
 import type { CDPSession, Page } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 import { ownsServer, runMy } from "./server-cli.ts";
 import { serverURL } from "./server-origin.ts";
+import { readCatalog } from "./catalog.ts";
 
 test.use({ baseURL: serverURL });
-
-type Catalog = Record<string, { defaultMessage: string }>;
 
 /** The message `key` of the catalog `namespace` in the project's locale, with its `{name}` arguments replaced. */
 function message(namespace: "client" | "server", key: string, values: Record<string, string> = {}): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/${namespace}.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale, namespace);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${namespace}:${key} in ${locale}`);
   return text.replaceAll(/\{(\w+)\}/g, (_, name: string) => values[name] ?? `{${name}}`);

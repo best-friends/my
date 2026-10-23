@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The layout around every page (ADR-0026). Mobile first (web-client.md D1): one column with the
+// The layout around every page (ADR-0026). Mobile first (web-client/README.md D1): one column with the
 // navigation as a bottom tab bar; from md a side rail and the page; from xl a third column about the
 // server; the admin and moderation screens have a frame of their own (AdminLayout). Its look is @my/ui's AppShell; this file decides what goes in it.
 import { AppShell } from "@my/ui";
@@ -57,7 +57,7 @@ export function AppLayout() {
   }
   return (
     <ComposeProvider>
-      {/* The one bar for being offline or rate-limited (web-client.md G17), in the page from the start so that the
+      {/* The one bar for being offline or rate-limited (web-client/16-look-states-and-wording.md G17), in the page from the start so that the
           change is announced. It pads for the top safe-area inset itself, so it comes before the shell, which pads for it. */}
       <ConnectionBanner />
       <AppShell
@@ -73,7 +73,7 @@ export function AppLayout() {
         floating={<ComposeEntry trigger={showButton ? "icon" : "none"} />}
         {...(wide && {
           aside: (
-            // Independent sections: if one breaks, the page goes on without it (web-client.md E1).
+            // Independent sections: if one breaks, the page goes on without it (web-client/README.md E1).
             <ErrorBoundary fallback={null}>
               <ServerInfo />
             </ErrorBoundary>

@@ -2,7 +2,7 @@
 // The frame of the admin and moderation mode: a
 // mode of its own, apart from the app, with its own side menu and never the app's rail. From md a 15rem menu beside the
 // page; below md a small top bar with the menu button, which opens the same menu in a sheet. Like AppShell it answers to
-// the viewport, not to a container (web-client.md D2): the menu is as tall as the screen and the top bar is fixed to
+// the viewport, not to a container (web-client/README.md D2): the menu is as tall as the screen and the top bar is fixed to
 // the screen's top edge.
 import { type ReactNode, type Ref, useId } from "react";
 import { tv } from "tailwind-variants";

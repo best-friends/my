@@ -34,6 +34,7 @@
     "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",
+    "@tanstack/router-generator": "1.167.40",
     "@tanstack/router-plugin": "1.168.42",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",

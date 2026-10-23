@@ -62,7 +62,7 @@ function ComposeSheet({ controller, trigger }: { controller: ComposeController; 
   return (
     <>
       {trigger === "icon" && (
-        // An icon-only button is named by aria-label and shows the same words as a tooltip (web-client.md G12).
+        // An icon-only button is named by aria-label and shows the same words as a tooltip (web-client/16-look-states-and-wording.md G12).
         <FloatingButton
           label={t("client:compose.open")}
           icon={<PlusIcon />}

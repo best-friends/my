@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Command ai-crawlers generates the table of AI crawlers that /robots.txt names (ADR-0057), from
-// the robots.json of ai-robots-txt/ai.robots.txt (MIT) at a commit. make ai-crawlers downloads
+// the robots.json of ai-robots-txt/ai.robots.txt (MIT) at a commit. `scripts/task.sh go:ai-crawlers` downloads
 // the file and runs it:
 //
 //	go run ./scripts/ai-crawlers -in robots.json -commit <sha> -out internal/interface/web/ai_crawlers.gen.go

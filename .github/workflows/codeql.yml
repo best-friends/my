@@ -1,25 +1,20 @@
 name: CodeQL
 
 # CodeQL code scanning (advanced setup): follows untrusted values to SQL, HTML, paths, redirects, and the like, which
-# the pattern checks of gosec (golangci-lint) do not. It is one of the post-merge suites of ADR-0047: it runs on pushes
-# to main, weekly, and by hand, never on pull requests or merge groups, and it is not part of the required `check`.
+# the pattern checks of gosec (golangci-lint) do not. It is part of the slow suite of ADR-0079: slow-suite.yml calls it
+# for the release gate and the nightly run (which makes it daily while main moves), and it runs by hand on any branch;
+# never on pull requests, merge groups, or pushes to main, and it is not part of the required `check`. A caller grants
+# the job's permissions below, security-events: write included. It sets no concurrency: a workflow-level group would be
+# the caller's, and a release run and a nightly run would cancel each other's analysis.
 # The results go to the repository's Security tab, one category per language. It runs the default query suite: the
 # security-extended suite mostly adds log-injection alerts on slog calls, whose handlers already quote the values.
 
 on:
-  push:
-    branches: [main]
-  schedule:
-    - cron: "0 21 * * 0" # Monday 06:00 JST, clear of nightly.yml (03:00 JST)
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-# A newer push to main supersedes the analysis of the previous one.
-concurrency:
-  group: codeql-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -35,7 +30,7 @@ jobs:
       matrix:
         include:
           # Go is analyzed from the CGO_ENABLED=0 build of the main module (manual build mode; Go has no `none` mode,
-          # and autobuild would run the Makefile's default target first).
+          # and autobuild would guess the build instead of building the main module alone).
           - language: go
             build-mode: manual
           # Read without building: app/ (the Bun workspace) and tools/i18n, as configured in the config file.
@@ -46,13 +41,16 @@ jobs:
           - language: actions
             build-mode: none
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - if: matrix.language == 'go'
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        if: matrix.language == 'go'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .tool-versions
           cache: false
-      - uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
@@ -64,6 +62,7 @@ jobs:
           GOTOOLCHAIN: local
           CGO_ENABLED: "0"
         run: go build ./...
-      - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+      - name: Analyze with CodeQL
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
           category: /language:${{ matrix.language }}

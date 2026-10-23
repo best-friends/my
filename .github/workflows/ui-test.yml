@@ -1,8 +1,8 @@
 name: UI story tests
 
 # The @my/ui story tests (ADR-0027): axe on every story and the screenshots at 3 container widths × light / dark
-# × LTR / RTL, in the pinned Playwright image. Called by ctx-web.yml when a pull request touches the ui context and
-# by main.yml when a push to main does (ADR-0047).
+# × LTR / RTL, in the pinned Playwright image. Called by ci.yml when a pull request touches the ui context
+# (ADR-0079).
 
 on:
   workflow_call:
@@ -12,32 +12,38 @@ permissions:
 
 jobs:
   ui-test:
-    # The baselines were generated in this same image (`make ui-snapshots-update`).
+    # The baselines were generated in this same image (`scripts/task.sh ui:snapshots-update`).
     runs-on: ubuntu-latest
-    # Must equal PLAYWRIGHT_IMAGE in the Makefile (`make playwright-image-check`).
+    # Must equal PLAYWRIGHT_IMAGE in Taskfile.yml (`scripts/task.sh web:playwright-image-check`).
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # The image has neither make nor the unzip that setup-bun extracts Bun with.
-      - name: Install make and unzip
-        run: apt-get update && apt-get install -y --no-install-recommends make unzip
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      # The image lacks the unzip that setup-bun extracts Bun with.
+      - name: Install unzip
+        run: apt-get update && apt-get install -y --no-install-recommends unzip
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # main.yml's bun-ui-cache job builds it in the same image.
+      - name: Restore the Bun package cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.bun/install/cache
           key: bun-ui-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
           restore-keys: bun-ui-${{ runner.os }}-
-      - name: make ui-test
-        run: make ui-test
+      - name: ui:test
+        run: scripts/task.sh ui:test
       # On a visual difference, the actual and diff images are under app/ui/.vitest/attachments/.
       - name: Upload the screenshot diffs
         if: failure()

@@ -4,19 +4,17 @@
 // a list of revisions named by their dates, and an edit saved from the dialog shows on the post with the
 // mark that leads to the history. `vite preview` has no API, so the spec answers the token refresh and the
 // client API with `page.route`, as a signed-in user's server would.
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { readCatalog } from "./catalog.ts";
 
 type Status = components["schemas"]["Status"];
 type StatusEdit = components["schemas"]["StatusEdit"];
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

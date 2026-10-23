@@ -3,7 +3,7 @@
 // a QR code and as text, confirmed by the app's first code), and, once it is on, replacing the recovery codes and
 // turning it off, each confirmed by a code of the app or a recovery code. The recovery codes are shown once, as
 // the server answers them; they stay on the page until it is left. A wrong code is the code field's error; any
-// other failure is an alert next to the form (web-client.md E2, G16).
+// other failure is an alert next to the form (web-client/README.md E2, web-client/16-look-states-and-wording.md G16).
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";

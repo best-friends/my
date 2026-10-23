@@ -6,18 +6,16 @@
 // passes axe without scrolling sideways. The user's page asks for no admin data. `vite preview` has no API, so the test
 // plays the server with page.route; names change with the locale, so the elements are found by role, by address and by
 // the names in the project's locale catalog.
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, servedImage, test } from "./fixtures";
+import { readCatalog } from "./catalog.ts";
 
 type Schemas = components["schemas"];
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The client message `key` in the project's locale, with `{name}` arguments replaced by `values`. */
 function message(key: string, values: Record<string, string> = {}): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return Object.entries(values).reduce((out, [name, value]) => out.replaceAll(`{${name}}`, value), text);

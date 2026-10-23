@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server data of the landing page (web-client.md S1): the instance (its description, rules and how people sign
+// The server data of the landing page (web-client/README.md S1): the instance (its description, rules and how people sign
 // up) and a few of the newest posts of the local timeline as a sample of the server.
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";

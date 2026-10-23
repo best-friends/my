@@ -2,7 +2,7 @@
 
 // Command emoji-table generates the table of fully-qualified emoji that the content module
 // normalizes emoji reactions with (ADR-0052 §1), from the emoji-test.txt of a Unicode version.
-// make emoji-table downloads the file, checks its digest, and runs it:
+// `scripts/task.sh go:emoji-table` downloads the file, checks its digest, and runs it:
 //
 //	go run ./scripts/emoji-table -in emoji-test.txt -version 18.0.0 -out internal/domain/content/emoji_table.gen.go
 package main

@@ -1,0 +1,138 @@
+{
+  "admin.rules.add": {
+    "defaultMessage": "ルールを追加する",
+    "description": "Button that adds a new rule after the others."
+  },
+  "admin.rules.add_failed": {
+    "defaultMessage": "ルールを追加できませんでした：{reason}",
+    "description": "Error when adding a rule failed. {reason} is why."
+  },
+  "admin.rules.added": {
+    "defaultMessage": "ルールを最後に追加しました。変更は監査ログに記録されます。",
+    "description": "Status after a rule was added."
+  },
+  "admin.rules.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes a dialog of the rules without changing anything."
+  },
+  "admin.rules.change_failed": {
+    "defaultMessage": "ルールを変更できませんでした：{reason}",
+    "description": "Error when changing, moving or retiring a rule failed. {reason} is why."
+  },
+  "admin.rules.description": {
+    "defaultMessage": "このサーバーについてのページと通報のフォームにルールを表示します。ルールは 1 行の文と任意の補足を持ちます。どの言語で書いてもよく、アプリの言語にかかわらず全員にそのまま表示されます。廃止したルールは一覧から消え、そのルールを引用する通報には残ります。",
+    "description": "Description of the rules screen."
+  },
+  "admin.rules.edit": {
+    "defaultMessage": "編集",
+    "description": "Button that opens the dialog of a rule's texts."
+  },
+  "admin.rules.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close button of the dialog of a rule's texts."
+  },
+  "admin.rules.edit.title": {
+    "defaultMessage": "ルールを編集",
+    "description": "Title of the dialog of a rule's texts."
+  },
+  "admin.rules.edit_rule": {
+    "defaultMessage": "編集：{rule}",
+    "description": "Accessible name of the edit button of a rule. {rule} is its text."
+  },
+  "admin.rules.empty": {
+    "defaultMessage": "ルールはまだありません",
+    "description": "Heading of the empty list of rules."
+  },
+  "admin.rules.empty.description": {
+    "defaultMessage": "利用者が守るルールを、上のフォームから追加してください。",
+    "description": "Description of the empty list of rules."
+  },
+  "admin.rules.heading": {
+    "defaultMessage": "ルール {place}：{rule}",
+    "description": "Heading of a rule in the list. {place} is its place, from 1; {rule} its text."
+  },
+  "admin.rules.hint": {
+    "defaultMessage": "補足",
+    "description": "Label of the optional hint of a rule."
+  },
+  "admin.rules.list.title": {
+    "defaultMessage": "有効なルール",
+    "description": "Heading of the list of the rules in effect."
+  },
+  "admin.rules.move_down": {
+    "defaultMessage": "下へ",
+    "description": "Button that moves a rule one place down."
+  },
+  "admin.rules.move_down_rule": {
+    "defaultMessage": "下へ：{rule}",
+    "description": "Accessible name of the button that moves a rule down. {rule} is its text."
+  },
+  "admin.rules.move_up": {
+    "defaultMessage": "上へ",
+    "description": "Button that moves a rule one place up."
+  },
+  "admin.rules.move_up_rule": {
+    "defaultMessage": "上へ：{rule}",
+    "description": "Accessible name of the button that moves a rule up. {rule} is its text."
+  },
+  "admin.rules.moved": {
+    "defaultMessage": "「{rule}」を {position} 番目に移しました。",
+    "description": "Status after a rule was moved. {rule} is its text; {position} its new place, from 1."
+  },
+  "admin.rules.new.title": {
+    "defaultMessage": "ルールを追加する",
+    "description": "Heading of the form of a new rule."
+  },
+  "admin.rules.no_text": {
+    "defaultMessage": "ルールを入れてください。",
+    "description": "Error of a rule's text left empty or blank."
+  },
+  "admin.rules.retire": {
+    "defaultMessage": "廃止",
+    "description": "Button that retires a rule, and the confirm button of its dialog."
+  },
+  "admin.rules.retire.description": {
+    "defaultMessage": "ルールは一覧から消え、元に戻せません。このルールを引用する通報には残ります。",
+    "description": "Description of the dialog that confirms retiring a rule."
+  },
+  "admin.rules.retire.title": {
+    "defaultMessage": "「{rule}」を廃止しますか？",
+    "description": "Question of the dialog that confirms retiring a rule. {rule} is its text."
+  },
+  "admin.rules.retire_rule": {
+    "defaultMessage": "廃止：{rule}",
+    "description": "Accessible name of the retire button of a rule. {rule} is its text."
+  },
+  "admin.rules.retired": {
+    "defaultMessage": "「{rule}」を廃止しました。",
+    "description": "Status after a rule was retired. {rule} is its text."
+  },
+  "admin.rules.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves a rule's texts in its dialog."
+  },
+  "admin.rules.summary": {
+    "defaultMessage": "利用者が守り、通報が引用するルール。",
+    "description": "Description of the rules screen in the administration menu."
+  },
+  "admin.rules.text": {
+    "defaultMessage": "ルール",
+    "description": "Label of the text of a rule."
+  },
+  "admin.rules.text.description": {
+    "defaultMessage": "{max} 文字以内の 1 行。",
+    "description": "Help of the text of a rule. {max} is the limit."
+  },
+  "admin.rules.title": {
+    "defaultMessage": "ルール",
+    "description": "Title of the rules screen, in the administration menu and as its heading."
+  },
+  "admin.rules.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of a text or hint of a rule longer than its limit. {max} is the limit."
+  },
+  "admin.rules.updated": {
+    "defaultMessage": "「{rule}」を保存しました。変更は監査ログに記録されます。",
+    "description": "Status after a rule's texts were saved. {rule} is its text."
+  }
+}

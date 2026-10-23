@@ -31,7 +31,7 @@ export function refetchMutation(api: Api) {
 }
 
 /**
- * What requesting a refetch changes on screen (web-client.md S1): the audit log, which records the request. The
+ * What requesting a refetch changes on screen (web-client/README.md S1): the audit log, which records the request. The
  * posts change later, when the queued fetches run, so no list of posts is marked.
  */
 export function cacheRefetchRequested(queryClient: QueryClient): Promise<void> {

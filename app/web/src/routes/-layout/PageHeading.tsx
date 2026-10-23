@@ -21,7 +21,7 @@ export type PageHeadingProps = {
  * The page's only level-one heading. After a navigation the layout moves focus to it and names the
  * document after its text (useViewChange), so it is focusable by script but not in the tab order.
  * On a page whose heading only says where the user is, which the navigation already shows (a timeline,
- * the notifications), it is visually hidden but stays in the accessibility tree (web-client.md Y5).
+ * the notifications), it is visually hidden but stays in the accessibility tree (web-client/README.md Y5).
  */
 export function PageHeading({ children, id, visuallyHidden, spark }: PageHeadingProps) {
   // The heading renders inside its route's match, as do the route's pending and error components.

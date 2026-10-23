@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The navigation's items as the user arranges them (web-client.md §9): their order and the ones they hid, kept on
+// The navigation's items as the user arranges them (web-client/09-app-shell.md §9): their order and the ones they hid, kept on
 // this browser (lib/storage's navigationKey) like the theme, so that it applies at once and outlives the session.
 // The stored value is checked against the items that exist: an unknown ID is dropped, a missing item takes its
 // place in the default order, and Settings is never hidden, so that the user can always come back to undo a change.

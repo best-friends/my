@@ -1,0 +1,150 @@
+{
+  "about.contact.account": {
+    "defaultMessage": "Account",
+    "description": "Term before the account of this server to contact about the server, on the server's information page."
+  },
+  "about.contact.email": {
+    "defaultMessage": "Email",
+    "description": "Term before the email address to contact about the server, on the server's information page."
+  },
+  "about.contact.title": {
+    "defaultMessage": "Contact",
+    "description": "Heading of the section of the server's information page with how to reach the server's operators."
+  },
+  "about.description.title": {
+    "defaultMessage": "Description",
+    "description": "Heading of the section of the server's information page with the server's description."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "No servers are moderated",
+    "description": "Shown in place of the list of moderated servers when there are none."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "Couldn't load the moderated servers",
+    "description": "Heading shown in place of the list of moderated servers when it could not be loaded."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "This server limits or suspends federation with these servers.",
+    "description": "Explanation under the heading of the list of moderated servers on the server's information page."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "Limited: its posts stay off the public timelines",
+    "description": "Next to a server in the list of moderated servers: its posts stay off the public timelines and its accounts reach only their followers."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "Suspended: no federation at all",
+    "description": "Next to a server in the list of moderated servers: this server does not federate with it at all."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "Loading the moderated servers",
+    "description": "Accessible name of the progress indicator while the list of moderated servers loads."
+  },
+  "about.domains.more": {
+    "defaultMessage": "Show more",
+    "description": "Button under the list of moderated servers that loads more of them."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "Couldn't load more servers",
+    "description": "Shown under the list of moderated servers when its next page could not be loaded."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "Some server names are partly hidden with *.",
+    "description": "Note above the list of moderated servers when the moderators hid part of some servers' names."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that tries again to load the list of moderated servers after a failure."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Link after the note that only signed-in users can see the list of moderated servers; it opens the sign-in screen."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "Only signed-in users can see this list.",
+    "description": "Shown in place of the list of moderated servers to a visitor who is not signed in, when the server shows it to signed-in users only."
+  },
+  "about.domains.title": {
+    "defaultMessage": "Moderated servers",
+    "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
+  },
+  "about.crawlers.title": {
+    "defaultMessage": "Search engines and AI",
+    "description": "Heading of the section of the server's information page that says what the server states to search engines and AI crawlers."
+  },
+  "about.crawlers.search": {
+    "defaultMessage": "{setting, select, allow {Search engines may index the profiles and public posts of the accounts that allow it.} other {This server asks search engines not to index any of its pages.}}",
+    "description": "What the server states to search engines, by the server setting search_indexing (allow or deny)."
+  },
+  "about.crawlers.ai": {
+    "defaultMessage": "{setting, select, allow {This server reserves nothing against AI: AI may train on and use its pages, except those of the accounts that opt out.} deny_training {This server reserves its pages against the training of AI models. AI search and assistants may still use them, except the pages of the accounts that opt out.} other {This server reserves its pages against the training of AI models and against their use by AI search, assistants and agents.}}",
+    "description": "What the server states to AI crawlers, by the server setting ai_usage (allow, deny_training, or deny)."
+  },
+  "about.crawlers.how": {
+    "defaultMessage": "The server states this in its robots.txt (with a list of known AI crawlers), in the robots meta tag and the X-Robots-Tag, Content-Usage and tdm-reservation headers of its pages, and in /.well-known/tdmrep.json. These are requests: well-known crawlers say they follow some of them, but nothing technically stops a crawler that does not.",
+    "description": "How the server states its search and AI settings: the machine-readable means it uses."
+  },
+  "about.crawlers.accounts": {
+    "defaultMessage": "Each account can also keep its profile and posts out of search engines, or deny AI, for its own pages on this server. An account cannot allow what the server denies. Media files and copies of posts on other servers do not carry an account's choice.",
+    "description": "That each account can narrow the server's statement for its own pages, but never widen it."
+  },
+  "about.crawlers.legal": {
+    "defaultMessage": "What such a statement means in law depends on the country. In the EU, it is meant as a machine-readable reservation of rights against text and data mining under Article 4(3) of the Directive on Copyright in the Digital Single Market. In Japan, Article 30-4 of the Copyright Act allows many uses for data analysis without permission, so the statement may not bind them legally; many operators still follow such statements voluntarily. This page is not legal advice.",
+    "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
+  },
+  "about.costs.title": {
+    "defaultMessage": "Running costs",
+    "description": "Heading of the section of the server's information page about what running the server costs, shown when the server publishes its costs."
+  },
+  "about.costs.description": {
+    "defaultMessage": "{visibility, select, breakdown {This server publishes what it costs to run by week, month, and year, with a breakdown by provider and category. The names of the items, their notes, and the individual payments are not published.} other {This server publishes the totals of what it costs to run by week, month, and year. What they are spent on, the names of the items, and the individual payments are not published.}}",
+    "description": "What the server publishes of its running costs, by the server setting finance_visibility (totals or breakdown)."
+  },
+  "about.income.description": {
+    "defaultMessage": "{visibility, select, plans {This server publishes its income from its supporters by week, month, and year, after the payment provider's fees and refunds, and how many members each plan has now. Who paid and how much each paid are not published.} other {This server publishes the totals of its income from its supporters by week, month, and year, after the payment provider's fees and refunds. Who paid and how much each paid are not published.}}",
+    "description": "What the server publishes of its income from the supporter plans, by the server setting income_visibility (totals or plans)."
+  },
+  "about.income.balance": {
+    "defaultMessage": "It also publishes the balance: the income less the costs.",
+    "description": "Note on the server's information page that the balance (income less costs) is published, shown when both the costs and the income are published."
+  },
+  "about.costs.link": {
+    "defaultMessage": "{shown, select, both {See the running costs and income} income {See the income} other {See the running costs}}",
+    "description": "Link from the server's information page to the page of the server's running costs and income, by what the server publishes: both, the income only, or the costs only."
+  },
+  "about.commerce.title": {
+    "defaultMessage": "Commerce disclosures",
+    "description": "Heading of the section of the information page that links to the server's page of the commerce disclosures of its supporter plans (ADR-0072 §13)."
+  },
+  "about.commerce.link": {
+    "defaultMessage": "Read the commerce disclosures",
+    "description": "Link from the information page to the server's page of the commerce disclosures of its supporter plans."
+  },
+  "about.rules.title": {
+    "defaultMessage": "Rules",
+    "description": "Heading of the section of the server's information page with the server's rules."
+  },
+  "about.source.title": {
+    "defaultMessage": "Source code",
+    "description": "Heading of the section of the server's information page that tells where to get the source code of the server's software."
+  },
+  "about.source.license": {
+    "defaultMessage": "This server runs free software under the GNU Affero General Public License, version 3 (AGPL-3.0). Everyone who uses the server may get the source code that it runs.",
+    "description": "Paragraph in the source code section of the server's information page: the license of the server's software and the right of its users to get the source code."
+  },
+  "about.source.view": {
+    "defaultMessage": "View the source code",
+    "description": "Link to the web page where the source code of the server's software is published, on the server's information page and the landing page. The link leaves the app."
+  },
+  "about.source.request": {
+    "defaultMessage": "Request the source code by email",
+    "description": "Link that writes an email to the address where the server's operators take requests for the source code of the server's software, on the server's information page and the landing page."
+  },
+  "about.source.address": {
+    "defaultMessage": "Email address for requests",
+    "description": "Term before the email address that takes requests for the source code, in the source code section of the server's information page."
+  },
+  "about.title": {
+    "defaultMessage": "About {instance}",
+    "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
+  }
+}

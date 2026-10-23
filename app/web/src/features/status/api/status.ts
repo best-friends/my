@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the status feature (web-client.md S1, FR-106 to FR-109, FR-113): one post,
+// The queries and mutations of the status feature (web-client/README.md S1, FR-106 to FR-109, FR-113): one post,
 // the thread around it, its edit history, and the viewer's actions on it (editing their own post among them). Keys follow openapi-react-query's
 // `[method, path, init]`, so the post's key is the one the compose and notifications features use too.
 import { infiniteQueryOptions, type QueryClient, type QueryKey } from "@tanstack/react-query";
@@ -79,7 +79,7 @@ export async function editStatus(api: Api, id: string, body: EditStatusRequest):
 }
 
 /**
- * Puts the server's answer to an edit into the cache (web-client.md S1, ADR-0045): every cached copy of the
+ * Puts the server's answer to an edit into the cache (web-client/README.md S1, ADR-0045): every cached copy of the
  * post, in a list or inside a boost, becomes the edited post, where it is, so that no list on screen moves
  * (Y7). The history has one more revision: it is marked stale, and fetched again if it is on screen.
  */
@@ -111,7 +111,7 @@ export async function setRelation(api: Api, relation: Relation, id: string, on: 
 
 /**
  * Turns the viewer's `relation` to post `id` to `on` in every cached copy of the post before the server answers
- * (web-client.md S8), after cancelling a refetch of the post that would overwrite it with the old state.
+ * (web-client/README.md S8), after cancelling a refetch of the post that would overwrite it with the old state.
  */
 export async function cacheRelationPending(api: Api, queryClient: QueryClient, id: string, relation: Relation, on: boolean): Promise<void> {
   await queryClient.cancelQueries({ queryKey: statusQueryOptions(api, id).queryKey });
@@ -156,7 +156,7 @@ export function setLikeSlot(api: Api, id: string, slot: LikeSlot, previous: Like
 
 /**
  * Fills the viewer's Like slot of post `id` (a favourite, a reaction, or nothing) in every cached copy of the post
- * before the server answers (web-client.md S8), after cancelling a refetch of the post that would overwrite it.
+ * before the server answers (web-client/README.md S8), after cancelling a refetch of the post that would overwrite it.
  */
 export async function cacheLikeSlotPending(api: Api, queryClient: QueryClient, id: string, slot: LikeSlot): Promise<void> {
   await queryClient.cancelQueries({ queryKey: statusQueryOptions(api, id).queryKey });
@@ -183,7 +183,7 @@ const reactorsPageSize = 40;
 
 /**
  * The reactions to post `id`, newest first, each with the account that reacted (GET /statuses/{id}/reactions),
- * page by page. The key ends in "pages" so that it never meets a plain query of the operation (web-client.md §10).
+ * page by page. The key ends in "pages" so that it never meets a plain query of the operation (web-client/10-api-client-and-auth.md §10).
  */
 export function reactorsQueryOptions(api: Api, id: string) {
   return infiniteQueryOptions({
@@ -210,7 +210,7 @@ function isAccountStatusesQuery(queryKey: QueryKey, accountId: string): boolean 
 
 /**
  * Puts the server's answer to a press of the viewer `viewerId`'s `relation` to post `id` into the cache
- * (web-client.md S1, ADR-0045). The server's count includes others' actions, so it is taken only from the
+ * (web-client/README.md S1, ADR-0045). The server's count includes others' actions, so it is taken only from the
  * `last` press: an answer to an earlier press does not undo a later one still on its way. A boost is also an
  * entry of the viewer's home timeline and of their own posts, which it joins or leaves: those lists are marked,
  * and only marked stale: a list on screen keeps its top (Y7), and a list opened next is fetched again before it shows (S7).
@@ -255,7 +255,7 @@ export async function setPin(api: Api, id: string, on: boolean): Promise<Status>
 }
 
 /**
- * Puts the server's answer to a pin or unpin of the viewer `viewerId`'s post `id` into the cache (web-client.md
+ * Puts the server's answer to a pin or unpin of the viewer `viewerId`'s post `id` into the cache (web-client/README.md
  * S1): every copy of the post takes its `pinned`, and the viewer's pinned posts, a list that changes, are read
  * again. Resolves once the list on screen has been read again, so that the success shows with it.
  */
@@ -280,7 +280,7 @@ export async function votePoll(api: Api, id: string, pollId: string, choices: re
 }
 
 /**
- * Puts the server's answer to a vote in the poll of post `id` into the cache (web-client.md S1): every copy of the
+ * Puts the server's answer to a vote in the poll of post `id` into the cache (web-client/README.md S1): every copy of the
  * post takes the poll of the answer, with the viewer's vote, where it is.
  */
 export function cacheVoteAnswer(queryClient: QueryClient, id: string, answer: Status): void {
@@ -304,7 +304,7 @@ export async function deleteStatus(api: Api, id: string): Promise<void> {
 }
 
 /**
- * Takes the deleted post `post` out of the cache (web-client.md S1, ADR-0045): its own query and thread go,
+ * Takes the deleted post `post` out of the cache (web-client/README.md S1, ADR-0045): its own query and thread go,
  * every list drops it and the boosts of it, and its parent has one reply less.
  */
 export function cacheDeletedStatus(api: Api, queryClient: QueryClient, post: Status): void {

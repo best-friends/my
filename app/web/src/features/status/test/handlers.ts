@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the status feature (web-client.md §7, §13): any post (GET /statuses/{id}), as
+// The default MSW handlers of the status feature (web-client/README.md §7, web-client/13-status-detail-and-actions.md §13): any post (GET /statuses/{id}), as
 // Bob's post `statusFixture`; the thread around it (GET /statuses/{id}/context): no ancestors and no
 // replies; its source (GET /statuses/{id}/source): the plain text of that post; its history
 // (GET /statuses/{id}/history): the one revision of a post never edited; and the actions on it (boost,

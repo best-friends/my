@@ -1,12 +1,13 @@
 name: PostgreSQL contract
 
 # The PostgreSQL tests (the repository contracts of internal/adapter/db/postgres, the kv and queue adapters, and the
-# dual-dialect tests of internal/platform) on a real postgres container instead of pgmem (ADR-0041). Called by main.yml
-# on the pushes to main that touch a path they depend on and by nightly.yml; pull requests and merge groups run the
-# same tests on pgmem in ctx-go.yml's go-test job.
+# dual-dialect tests of internal/platform) on a real postgres container instead of pgmem (ADR-0041). Part of the slow
+# suite (slow-suite.yml, ADR-0079) and runnable by hand on any branch; pull requests and merge groups run the same
+# tests on pgmem.
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,23 +20,14 @@ jobs:
   postgres-contract:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: .tool-versions
-          cache: false
-      # The go-test cache that main.yml saves, without saving one.
-      - name: Restore the Go module and build cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
-          restore-keys: |
-            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
-            go-test-${{ runner.os }}-
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      # The Go cache that main.yml builds, without saving one.
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
       # testcontainers-go starts postgres:18-alpine on the runner's Docker; TEST_POSTGRES_REQUIRED makes a missing
       # Docker fail the job instead of skipping the tests.
-      - name: make go-test-postgres
-        run: make go-test-postgres
+      - name: go:test-postgres
+        run: scripts/task.sh go:test-postgres

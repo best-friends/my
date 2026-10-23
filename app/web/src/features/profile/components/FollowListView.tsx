@@ -23,7 +23,7 @@ export function FollowListView({ acct, list, renderHeading }: FollowListViewProp
   const t = useT();
   const profile = useProfile(acct);
   const { items, hasMore, isLoadingMore, loadMore, loadMoreError } = useFollowList(profile.account.id, list);
-  // The name is the user's text, isolated from the sentence around it (FSI … PDI, web-client.md Y10).
+  // The name is the user's text, isolated from the sentence around it (FSI … PDI, web-client/README.md Y10).
   const isolated = isolate(profile.name);
 
   return (
@@ -43,7 +43,7 @@ export function FollowListView({ acct, list, renderHeading }: FollowListViewProp
         <Stack as="ul" divided border="y">
           {items.map((item) => (
             <Box as="li" key={item.id}>
-              {/* A right-to-left name lines up with the other rows; only its text runs right to left (web-client.md G9). */}
+              {/* A right-to-left name lines up with the other rows; only its text runs right to left (web-client/16-look-states-and-wording.md G9). */}
               <AccountItem name={item.name} avatarSeed={item.id} handle={item.handle} href={item.href} layout="padded" />
             </Box>
           ))}

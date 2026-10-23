@@ -4,7 +4,7 @@
 // of the media, their descriptions and the language. The visibility and the reply target never change
 // (api/openapi.yaml, editStatus), and the media stay as they are. Saving waits for the server; the answer
 // replaces every cached copy of the post (cacheEditedStatus), and a failure stays in the dialog with the
-// form as typed (web-client.md E2).
+// form as typed (web-client/README.md E2).
 import { useToast } from "@my/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -110,7 +110,7 @@ function requestBody(post: Status, draft: EditDraft): EditStatusRequest {
 }
 
 /**
- * The form that edits the viewer's post `post`, starting from `source` (web-client.md A4). The dialog mounts
+ * The form that edits the viewer's post `post`, starting from `source` (web-client/README.md A4). The dialog mounts
  * it once the source has arrived, so the draft starts from it and is the dialog's own: closing the dialog
  * drops it, and the compose form's draft is never touched.
  */

@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A new post is on the viewer's profile from the moment the profile opens again, from the navigation or back in
-// the history (ADR-0045, web-client.md S1, S7), against a real `my serve` on SQLite (e2e/server.ts) in every
+// the history (ADR-0045, web-client/README.md S1, S7), against a real `my serve` on SQLite (e2e/server.ts) in every
 // width × locale project. The post marks stale the lists that no page shows; the profile's route fetches its
 // marked list again and the router waits for it (defaultStaleReloadMode "blocking"), so the profile never
 // renders the posts from before. Every GET of the client API takes 800 ms more, as over a real network, so
 // that a stale list replaced only when a refetch ended would be seen.
 // The user is new to the test (a random name), created with `my admin create` (e2e/server-cli.ts).
 import { randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, openFromNavigation, test } from "./fixtures";
 import { ownsServer, runMy } from "./server-cli.ts";
 import { serverURL } from "./server-origin.ts";
+import { readCatalog } from "./catalog.ts";
 
 test.use({ baseURL: serverURL, reducedMotion: "reduce" });
-
-type Catalog = Record<string, { defaultMessage: string }>;
 
 /** The project's locale. */
 function projectLocale(): string {
@@ -25,7 +23,7 @@ function projectLocale(): string {
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = projectLocale();
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;
@@ -178,7 +176,7 @@ test("a change of the timeline languages is on the local timeline from the momen
   await slowDown(page);
 
   // The local timeline has the user's post in English, and its list is cached. The post names its language: one
-  // of undetermined language is on every timeline whatever the timeline languages (data-model.md, FR-208).
+  // of undetermined language is on every timeline whatever the timeline languages (data-model/README.md, FR-208).
   const text = `in English ${username}`;
   const authorized = nextAuthorization(page);
   await openFromNavigation(page, "/profile", touch);

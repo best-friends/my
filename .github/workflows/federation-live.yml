@@ -1,8 +1,9 @@
 name: Federation live
 
 # Live interoperability test (ADR-0006, ADR-0015, docs/architecture/federation.md §12): this server federating with
-# Mastodon, GoToSocial, and Misskey in deploy/docker/federation-live, called by nightly.yml and runnable by hand.
-# Not part of `make check`. The logs of every server and the captured activities are kept as artifacts.
+# Mastodon, GoToSocial, and Misskey in deploy/docker/federation-live, part of the slow suite
+# (slow-suite.yml, ADR-0079) and runnable by hand on any branch.
+# Not part of `scripts/task.sh check`. The logs of every server and the captured activities are kept as artifacts.
 
 on:
   workflow_call:
@@ -22,17 +23,21 @@ jobs:
     env:
       FEDERATION_LIVE_OUT: ${{ github.workspace }}/.tmp/federation-live-out
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: .tool-versions
           cache-dependency-path: |
             go.mod
             go.sum
       - name: Run the live interoperability scenarios
-        run: make federation-live
+        run: scripts/task.sh docker:federation-live
       - name: Upload the logs and captured activities
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

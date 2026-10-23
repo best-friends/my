@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The icon set of the kit (web-client.md §16.3, G10–G13; ADR-0043). The shapes are Phosphor's, through
+// The icon set of the kit (web-client/16-look-states-and-wording.md §16.3, G10–G13; ADR-0043). The shapes are Phosphor's, through
 // react-icons/pi; this file is the only one that imports them. `iconTable` maps each meaningful name
 // (`ReplyIcon`) to its Phosphor icon off and on and to whether it has a direction, and every export below
 // renders one row of it. The Regular weight is the base; a toggle that is on uses the Fill weight when its

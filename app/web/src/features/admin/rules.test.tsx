@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The rules screen through the whole app (web-client.md T4): an administrator with manage_rules adds a rule (one text
+// The rules screen through the whole app (web-client/README.md T4): an administrator with manage_rules adds a rule (one text
 // and an optional hint, written in any language), edits it in a dialog, moves rules up and down with the keyboard-reachable buttons (focus follows the
 // moved rule), and retires one after an alert dialog; a viewer without the permission sees why; with MSW playing
 // the API.

@@ -4,7 +4,7 @@ This server, Mastodon, GoToSocial, and Misskey federating with each other over H
 between this server and Mastodon, for the live test of
 [federation.md §12](../../../docs/architecture/federation.md#12-テスト) ([ADR-0006](../../../docs/adr/0006-federation-protocol-scope.md),
 [ADR-0015](../../../docs/adr/0015-testing-strategy.md)). CI runs it nightly (job `federation-live` in
-`.github/workflows/nightly.yml`); it is not part of `make check`.
+`.github/workflows/nightly.yml`); it is not part of `scripts/task.sh check`.
 
 | File | What it is |
 | --- | --- |
@@ -61,9 +61,9 @@ between this server and Mastodon, for the live test of
 ## Running it
 
 ```sh
-make federation-live                                    # every scenario
-make federation-live FEDERATION_LIVE_FLAGS='-run TestFollowFromPeer'
-FEDERATION_LIVE_KEEP=1 make federation-live             # keep the stack running afterwards
+scripts/task.sh docker:federation-live                         # every scenario
+scripts/task.sh docker:federation-live FEDERATION_LIVE_FLAGS='-run TestFollowFromPeer'
+FEDERATION_LIVE_KEEP=1 scripts/task.sh docker:federation-live  # keep the stack running afterwards
 ```
 
 It needs Docker with Compose, Go, curl, jq, and openssl. The proxy publishes port 18443 and PostgreSQL port 15432 on
@@ -158,4 +158,4 @@ included; reformat it (`jq --indent 2 .`) before saving it as a fixture.
 
 The images are pinned by tag and digest in `compose.yaml`. To move to a new Mastodon, GoToSocial, or Misskey release, take a tag
 at least two weeks old, put its multi-arch digest (`docker buildx imagetools inspect <image>:<tag>`) next to it, and
-run `make federation-live` to see what changed.
+run `scripts/task.sh docker:federation-live` to see what changed.

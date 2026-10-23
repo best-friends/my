@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The app's main navigation, one landmark for every width (web-client.md D1, D2, ADR-0039): a tab bar on the bottom
+// The app's main navigation, one landmark for every width (web-client/README.md D1, D2, ADR-0039): a tab bar on the bottom
 // edge of phones, a side rail of icons with short labels from md, and a sidebar with full labels from lg. Like
 // AppShell, it answers to the viewport (the shell is the one place for viewport breakpoints, D2).
 //
@@ -317,7 +317,7 @@ export type AppNavAccountProps = {
 
 /**
  * The sidebar's last item (lg only): the signed-in account, a link to its profile named by its display name and
- * handle, a line each and cut to one line (web-client.md G7). The list's own profile item is the place, so this second
+ * handle, a line each and cut to one line (web-client/16-look-states-and-wording.md G7). The list's own profile item is the place, so this second
  * link to it has no `aria-current`.
  */
 export function AppNavAccount({ href, avatar, name, handle, description }: AppNavAccountProps) {

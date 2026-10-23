@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The viewports of the stories of the app shell (AppShell, AppNavigation). The shell answers to the viewport, not to a
-// container (web-client.md D2), so its stories set the viewport (Storybook's viewport global, which
+// container (web-client/README.md D2), so its stories set the viewport (Storybook's viewport global, which
 // @storybook/addon-vitest applies to the test page) instead of the frame's width, and the screenshot of such a story is
 // taken once, at its viewport (.storybook/vitest.setup.ts). A story at a viewport keeps its content within the
 // viewport's height: the shell is as tall as the screen, and the test page paints only what fits it.

@@ -4,7 +4,9 @@ package platform
 
 import (
 	"context"
+	"fmt"
 
+	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/finance"
@@ -17,6 +19,7 @@ import (
 	"github.com/best-friends/my/internal/app/supporters"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/webhook"
+	"github.com/best-friends/my/internal/platform/config"
 )
 
 // The adapters that need a client library, a driver, or a cloud SDK are wired in files of
@@ -50,6 +53,20 @@ type repositories struct {
 	supporters   supporters.Repository
 	retention    retentionRepositories
 	projections  projection.Store
+}
+
+// openDatabase connects the database that cfg.DB selects and returns its repositories. With
+// queue = db and kv = db it also sets the queue and the key-value store on the database.
+func (a *App) openDatabase(ctx context.Context, cfg *config.Config) (*repositories, error) {
+	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs, Tracer: a.Tracer}
+	switch cfg.DB {
+	case "sqlite":
+		return a.openSQLite(ctx, cfg, queueOpts)
+	case "postgres":
+		return a.openPostgres(ctx, cfg, queueOpts)
+	default:
+		return nil, fmt.Errorf("db %q is not implemented yet", cfg.DB)
+	}
 }
 
 // valkeyServer is the connection to valkey_url that the adapters configured with it share.

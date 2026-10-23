@@ -3,7 +3,7 @@
 // its email address and IP addresses only when the moderator asks (each time is recorded in the audit log, ADR-0038),
 // removing its two-factor authentication, issuing a password reset link for its user (shown once), and lifting the
 // moderation actions on it. Failures of what the moderator does are toasts or stay in the
-// confirmation; a failure to load the results stays in their region (web-client.md E2, G16).
+// confirmation; a failure to load the results stays in their region (web-client/README.md E2, web-client/16-look-states-and-wording.md G16).
 import { useToast } from "@my/ui";
 import { useInfiniteQuery, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
@@ -146,7 +146,7 @@ export type AccountSearchForm = {
 
 /**
  * The search form, starting from `search` (the URL's). `onSearch(next)` runs the search; the route puts it into
- * the URL, and a new search there gives the form a new key (web-client.md R10).
+ * the URL, and a new search there gives the form a new key (web-client/README.md R10).
  */
 export function useAccountSearchForm(search: AdminAccountSearch, onSearch: (search: AdminAccountSearch) => void): AccountSearchForm {
   const [draft, setDraft] = useState(() => draftOf(search));

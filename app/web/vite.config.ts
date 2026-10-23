@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Vite 8 build of the web client (ADR-0025). React Compiler runs through oxc-transform-react in a plugin of
-// our own, which also fails the build on the functions the compiler skips (ADR-0065, web-client.md R4).
+// our own, which also fails the build on the functions the compiler skips (ADR-0065, web-client/README.md R4).
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig, searchForWorkspaceRoot } from "vite";
+import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { clientCatalogs } from "./vite-plugins/client-catalogs.ts";
 import { reactCompiler } from "./vite-plugins/react-compiler.ts";
 
 /** The shared message catalogs at the repository root (ADR-0009). */
@@ -40,16 +41,16 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     origin: "http://localhost:5173",
-    // Catalogs are imported from locales/, outside the workspace root.
-    fs: { allow: [searchForWorkspaceRoot(process.cwd()), localesDir] },
   },
   plugins: [
-    // File-based routes from src/routes; the generated src/routeTree.gen.ts is committed so that tsc
-    // runs before a build. Each route's components go into their own chunk. TanStack Router's docs
-    // require this plugin before the React plugin.
+    // File-based routes from src/routes into src/routeTree.gen.ts, which is not committed (ADR-0081);
+    // scripts/routes.ts generates the same tree with these options for tsc and the tests before a build.
+    // Each route's components go into their own chunk. TanStack Router's docs require this plugin before
+    // the React plugin.
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     reactCompiler(),
+    clientCatalogs(localesDir),
     tailwindcss(),
     // The Service Worker (ADR-0028): sw/sw.ts with the precache manifest injected, built into dist/sw.js
     // (https://vite-pwa-org.netlify.app/guide/inject-manifest.html). Go generates the Web App Manifest and

@@ -27,7 +27,7 @@ M4.2（Supporters、epic #925）で、課金のプランに結び付いたロー
 > 4. バッジの色: 9色に限る
 > 5. 一覧のページ: 常に noindex
 
-いまのロール（[data-model §4.1](../architecture/data-model.md)、`internal/domain/identity/role.go`）は、`roles`（`key`・`position`）・`role_permissions`・`user_role_grants` / `user_role_revocations`・投影 `user_roles` で、表示名も色も持たない。
+いまのロール（[data-model §4.1](../architecture/data-model/README.md)、`internal/domain/identity/role.go`）は、`roles`（`key`・`position`）・`role_permissions`・`user_role_grants` / `user_role_revocations`・投影 `user_roles` で、表示名も色も持たない。
 ロールは権限の束で、利用者には見えない（`CredentialAccount.permissions` が本人の権限を返すだけ）。
 
 プランとロールの連動（加入・解約・猶予でロールを付け外しする仕組みと、プランの資源）は ADR-A（#912）が決める。この ADR はバッジと一覧を決め、プランについては一覧が必要とする契約だけを決める。
@@ -177,14 +177,14 @@ M4.2（Supporters、epic #925）で、課金のプランに結び付いたロー
 - 悪い: 投稿の作者の表示にバッジが無いので、サポーターであることはプロフィールを開かないと分からない。
 - 悪い: 一覧はいつも `noindex` で、サーバーが検索を許していても検索エンジンに載らない。
 - 後続 #917（ロールのバッジ）:
-  - schema の `role_badges`・`user_role_badge_displays`（全方言）、[data-model §4.1](../architecture/data-model.md) の表と規則（剥奪とバッジの削除で選択を消す）
+  - schema の `role_badges`・`user_role_badge_displays`（全方言）、[data-model §4.1](../architecture/data-model/README.md) の表と規則（剥奪とバッジの削除で選択を消す）
   - `internal/domain/identity` のバッジの型と色の enum、`identity.Service` の設定・選択・読み出しと、剥奪と付与を 1 つにして選択を移す操作
   - OpenAPI: `Account.badges`、`AdminRole.badge`、`PATCH /admin/roles/{role}` の `badge`、`GET /preferences/badges`・`PUT /preferences/badges/{role_id}`
   - `@my/ui` のバッジの部品とトークン `badge-<色>` / `badge-<色>-fg`（`make web-tokens` の組）、プロフィールの見出し、`/settings/profile` の区画、`/admin/roles` の欄
   - `locales/en`・`locales/ja` の文言（バッジの見出し、設定の説明、色の名前）
   - テスト: 出すと選んだ本人のプロフィールにだけ出る、一覧の `Account` は空、Actor の JSON-LD に入らない
 - 後続 #922（参加者の一覧の部分）:
-  - インスタンス設定 `supporter_list_visibility`（`instance_setting_revisions` の enum、[data-model](../architecture/data-model.md)、サーバーの設定の画面）と `GET /instance` の項目
+  - インスタンス設定 `supporter_list_visibility`（`instance_setting_revisions` の enum、[data-model](../architecture/data-model/README.md)、サーバーの設定の画面）と `GET /instance` の項目
   - `supporter_listings`（#912 のモジュール、全方言）と、加入が終わる処理で消すこと
   - `GET /instance/supporters`・`GET/PUT /preferences/supporter_listing`、[client-api.md](../architecture/client-api.md) の公開の API の表
   - Web の `/about/supporters`・`/about` の導線・設定の画面の掲載の区画、外枠の `noindex, noarchive`（ADR-0057 の表に行を足す）

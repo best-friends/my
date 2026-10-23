@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The client API (ADR-0016, ADR-0029, ADR-0066; the api context of scripts/changed-contexts.sh). The split spec in
+# api/spec/ is the source of truth and api/openapi.yaml is its bundle; oapi-codegen is pinned in tools/go.mod and
+# the Redocly CLI here. The bundle and the Go code are committed; the web client's TypeScript types are not (ADR-0081).
+version: "3"
+
+vars:
+  REDOCLY_VERSION: 2.57.0
+  REDOCLY: REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true bunx --bun @redocly/cli@{{.REDOCLY_VERSION}}
+
+tasks:
+  # bunx installs a package into one temporary directory per name and version, and two bunx processes installing the
+  # same one at once can leave one of them without the executable ("could not determine executable to run"). The
+  # tasks that run Redocly depend on this, and CI runs it once before its parallel steps.
+  warm:
+    desc: Fetch the pinned Redocly CLI once, so that the tasks that run it at the same time do not race to install it
+    run: once
+    cmds:
+      - "{{.REDOCLY}} --version"
+
+  check:
+    desc: Check and lint the client API spec and fail on a stale bundle or generated Go code, in parallel
+    deps: [spec-check, lint, generate-check]
+
+  generate:
+    desc: Bundle api/spec into api/openapi.yaml and regenerate the client API code from it (scripts/generate.sh)
+    deps: [":web:install", warm]
+    run: once
+    sources:
+      - "api/spec/**/*"
+      - api/redocly.yaml
+      - scripts/generate.sh
+      - internal/interface/clientapi/oapi-codegen.yaml
+      - "internal/interface/clientapi/internal/securitygen/**/*.go"
+      - tools/go.mod
+      - app/bun.lock
+      - tasks/api.yml
+    generates:
+      - api/openapi.yaml
+      - internal/interface/clientapi/api.gen.go
+      - internal/interface/clientapi/security.gen.go
+      - app/web/src/lib/api/schema.gen.ts
+    env:
+      REDOCLY_VERSION: "{{.REDOCLY_VERSION}}"
+    cmds:
+      - scripts/generate.sh
+
+  # The tasks of tasks/web.yml that read the types depend on this. It reads the committed bundle, so a change
+  # to api/spec reaches the types after api:generate.
+  generate-ts:
+    desc: Generate the web client's TypeScript types from the committed bundle api/openapi.yaml
+    deps: [":web:install"]
+    run: once
+    sources:
+      - api/openapi.yaml
+      - scripts/generate.sh
+      - app/bun.lock
+    generates:
+      - app/web/src/lib/api/schema.gen.ts
+    env:
+      REDOCLY_VERSION: "{{.REDOCLY_VERSION}}"
+    cmds:
+      - scripts/generate.sh --ts
+
+  generate-check:
+    desc: Fail if the committed bundle or Go client API code is stale
+    deps: [warm]
+    env:
+      REDOCLY_VERSION: "{{.REDOCLY_VERSION}}"
+    cmds:
+      - scripts/generate.sh --check
+
+  lint:
+    desc: Lint the split spec api/spec, including the supported OpenAPI 3.1 subset (api/redocly.yaml)
+    deps: [warm]
+    cmds:
+      - "{{.REDOCLY}} lint --config api/redocly.yaml api/spec/openapi.yaml"
+
+  spec-check:
+    desc: Fail if api/spec/openapi.yaml does not list every file of api/spec (scripts/api-spec-check.sh)
+    cmds:
+      - scripts/api-spec-check.sh

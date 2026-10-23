@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The webhooks screens through the whole app (web-client.md T4, ADR-0060): an administrator with manage_webhooks sets
+// The webhooks screens through the whole app (web-client/README.md T4, ADR-0060): an administrator with manage_webhooks sets
 // up a webhook and sees its secret once, sees why the server refused one, disables, rotates and deletes it, and sends
 // a delivery again from its page; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";

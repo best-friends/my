@@ -1,25 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Going offline and back in every width × locale project (web-client.md G17, ADR-0027): the app's one offline bar
+// Going offline and back in every width × locale project (web-client/16-look-states-and-wording.md G17, ADR-0027): the app's one offline bar
 // comes and goes as a polite live region, a page opened offline says why it cannot load instead of loading
 // forever, and back online it loads by itself; the home timeline says offline that it shows the posts loaded last
 // (FR-604). `vite preview` has no API, so the spec answers GET /instance and
 // the timelines with `page.route`. `context.setOffline` takes the network away; a route still answers then, so the
 // spec's routes fail their requests while offline, as the network would.
 // Texts come from the project's catalog, so the spec finds the same elements in every locale.
-import { readFileSync } from "node:fs";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, openFromNavigation as openFromNavigationItem, test } from "./fixtures";
+import { readCatalog } from "./catalog.ts";
 
 type Instance = components["schemas"]["Instance"];
 type Status = components["schemas"]["Status"];
 type StatusPage = components["schemas"]["StatusPage"];
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

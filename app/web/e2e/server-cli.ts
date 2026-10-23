@@ -9,7 +9,7 @@ import { serverDir, serverKEK, serverPort } from "./server-origin.ts";
 
 const root = resolve(import.meta.dirname, "../../..");
 
-/** The binary `make build` writes; E2E_MY_BIN overrides it. */
+/** The binary `scripts/task.sh go:bin` writes; E2E_MY_BIN overrides it. */
 export const myBin = process.env["E2E_MY_BIN"] ?? join(root, "bin/my");
 
 /** The SQLite database of the server. */

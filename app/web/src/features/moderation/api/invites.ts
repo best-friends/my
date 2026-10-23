@@ -2,7 +2,7 @@
 // The queries and mutations of the invites (FR-001, manage_invites): the codes that let people sign up while the
 // registration mode is `invite`, listed newest first with how they were used, created and revoked. The list
 // follows the API's keyset pagination as a TanStack Query infinite query whose key ends with "pages"
-// (web-client.md §10).
+// (web-client/10-api-client-and-auth.md §10).
 import { type InfiniteData, infiniteQueryOptions, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -56,7 +56,7 @@ export function revokeInviteMutation(api: Api) {
   };
 }
 
-/** Marks the list of invites stale (web-client.md S1): a new invite is at its top. */
+/** Marks the list of invites stale (web-client/README.md S1): a new invite is at its top. */
 export function refreshInvites(queryClient: QueryClient): Promise<void> {
   return queryClient.invalidateQueries({ queryKey: ["get", "/admin/invites"] });
 }

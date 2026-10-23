@@ -27,11 +27,11 @@ function offered(access: TimelineAccess, signedOut: boolean): boolean {
  * The local timeline is part of every instance's navigation, so it is offered until the instance says who may read
  * it. The federated timeline is offered only once the instance says so, so that an instance that turned it off never
  * shows it, not even while GET /instance loads or after it failed. Offline, a session that could not be resumed is
- * most likely still there, so it counts as signed in (web-client.md §11), as the navigation does.
+ * most likely still there, so it counts as signed in (web-client/11-pwa.md §11), as the navigation does.
  *
  * The last answer is kept in localStorage (lib/storage's timelinesKey: an instance setting, the same for every user of the origin), so
  * that a page opened or reloaded offline, where GET /instance fails, offers the same timelines as before
- * (web-client.md G17). It is read once when the navigation mounts and gives way to the server's answer.
+ * (web-client/16-look-states-and-wording.md G17). It is read once when the navigation mounts and gives way to the server's answer.
  */
 export function useTimelineAvailability(): TimelineAvailability {
   const api = useApi();

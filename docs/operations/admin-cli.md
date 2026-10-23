@@ -5,7 +5,7 @@
 ## 前提
 
 - 設定（`host`・`db`・`database_url`・`kek` など）が [設定リファレンス](../reference/configuration.md) どおりに与えられている。`my config check` で確かめられる。
-- DB にスキーマが適用済み（Atlas で `schema/<dialect>.sql` を適用する。[DB の初期化と作り直し](database.md)）。
+- DB にスキーマが適用済み（Atlas で `schema/<dialect>/` を適用する。[DB の初期化と作り直し](database.md)）。
 
 ## 作る
 
@@ -30,7 +30,7 @@ my admin create -username alice -email alice@example.com
 
 ## ロールの付与と剥奪
 
-権限はロールが持ちます（[data-model §4.1](../architecture/data-model.md)）。組み込みのロールは `admin`（`position` 1000、すべての権限）と
+権限はロールが持ちます（[data-model §4.1](../architecture/data-model/README.md)）。組み込みのロールは `admin`（`position` 1000、すべての権限）と
 `moderator`（`position` 100、`manage_reports`・`manage_accounts`・`view_audit`）です（FR-720）。
 
 ```sh

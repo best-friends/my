@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server settings screen through the whole app (web-client.md T4): an administrator with manage_settings
+// The server settings screen through the whole app (web-client/README.md T4): an administrator with manage_settings
 // names the server once, in any language, the app then calls the server by that name instead of its domain, and
 // a name that the server would refuse is caught in the form; the descriptions are saved one by one, and the
 // policies (registration, language, timelines, federation, domain actions) together; with MSW playing the API.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The new-post form through the whole app (web-client.md T4): the real router and QueryClient, MSW for the
+// The new-post form through the whole app (web-client/README.md T4): the real router and QueryClient, MSW for the
 // server. jsdom has no matchMedia, so the layout is the phone's (a button that opens a sheet) unless a
 // test stubs it; it has no createImageBitmap / OffscreenCanvas either, so the image tests stub those
 // browser APIs and check what the client did with them.
@@ -750,7 +750,7 @@ describe("replies", () => {
   });
 });
 
-describe("the new-post buttons (web-client.md G4)", () => {
+describe("the new-post buttons (web-client/16-look-states-and-wording.md G4)", () => {
   /** Matches the given media queries only, as a viewport of that width would. */
   function stubViewport(...matching: string[]) {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: matching.includes(query), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
