@@ -46,6 +46,15 @@ func (a *App) setUpSupporters(ctx context.Context, cfg *config.Config, repo supp
 	return prov, nil
 }
 
+// supporterSync returns what applies the payment provider's facts to the subscriptions:
+// AppOptions.SupporterSync, or the supporters core.
+func (a *App) supporterSync(opts AppOptions) supporters.Syncer {
+	if opts.SupporterSync != nil {
+		return opts.SupporterSync
+	}
+	return a.Supporters
+}
+
 // setUpSupporterNotifications registers the supporter notifications (ADR-0072 §16): the
 // projectors that create them from the subscriptions' transitions and the plans' retirements,
 // and, unless mail = none, the job that sends them by email. push enqueues their Web Push
