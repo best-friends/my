@@ -166,17 +166,22 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
         id: go
-      # Parallel steps would each compile the same packages, since the build cache only holds a package once a
-      # compile of it has finished: build them once first.
-      - name: Build the packages and the Go tools once
-        run: scripts/task.sh go:warm
       # The api checks bundle the spec with Redocly on Bun. i18n:lint runs once, in client-static, which every i18n change
       # also selects.
       - name: Set up Bun
         uses: ./.github/actions/setup-bun
-      # Both db:check steps use Atlas, and the PostgreSQL one the container of db:up.
+      # Both db:check steps use Atlas, and the PostgreSQL one the container of db:up. Mostly waiting on the container,
+      # so it runs in the background while go:warm builds.
       - name: Install Atlas and start PostgreSQL
+        id: db
         run: scripts/task.sh db:atlas db:up
+        background: true
+      # Parallel steps would each compile the same packages, since the build cache only holds a package once a
+      # compile of it has finished: build them once first.
+      - name: Build the packages and the Go tools once
+        run: scripts/task.sh go:warm
+      - name: Wait for Atlas and PostgreSQL
+        wait: db
       # More than 10 steps: the last ones, the short ones, start as the first ones finish.
       - parallel:
           # Its cache is the one setup-go restores; the action adds the issues to the pull request as annotations.
