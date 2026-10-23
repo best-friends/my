@@ -87,6 +87,8 @@
 > 「build-tags については毎度のビルドで確認する必要性を感じません。リリース前の検査で十分に思えます。」
 > 「golangci-lint については PR, main で `only-new-issues` して MQ ではスキップでもいいぐらいなのでは？(MQ 状態で項目が増えるとも思えない)」
 > PR で `only-new-issues`、Merge Queue では回さず、遅い検査で全体を回し、main では検査せずキャッシュのためだけに回す案に対して「ADR-0079 を書き換えていいです。やってください。案にも賛成です。」
+> Docker の smoke test について「docker-smoke と docker-amd64 って何を保証してます？MQ での実行や PR での実行必要ですか？ go build との本質的な違いがわかりません」。
+> smoke test を Docker の文脈が変わった PR だけにし、Merge Queue から外し、arm64 を遅い検査だけにする案に対して「すでに MQ 入れてマージまでされたので修正は別の PR でお願いします」。
 
 **B・S3・J2 を採る。**
 
@@ -97,6 +99,7 @@
 | 手元 | push の前 | `task check:changed`（ADR-0080）。作者が直すためのもので、CI の代わりではない | — |
 | PR の `check`（preflight） | `pull_request` | その PR のファイルだけで結果が決まり、重ねても変わらないもの。下の表 | ○ |
 | PR の lint | `pull_request` | golangci-lint（PR が変えた行の指摘だけ） | ○ |
+| PR の Docker | `pull_request`（Docker の文脈が変わったとき） | Docker Compose の smoke test（amd64） | ○ |
 | Merge Queue の `check`（本検査） | `merge_group` | 統合した状態で、変わった文脈のコンパイル・型・vet・テスト・生成物 | ○ |
 | main への push | `push` | 検査はしない。キャッシュを作るジョブだけ（下記） | — |
 | 遅い検査 | リリースの関門・nightly・手動 | E2E（全体）・実 PostgreSQL・stream の契約・連合・arm64 と amd64 のイメージ・golangci-lint（全体）・ビルドタグの組み合わせ・CodeQL | リリースでは○ |
@@ -116,6 +119,12 @@ golangci-lint は、Go（`tools/agentkit` を含む）が変わった PR で、p
 Merge Queue では回さない。2 つの PR を重ねて増える指摘は、別々の PR が同じ関数の最後の呼び出し元を 1 つずつ消すような稀な場合に限られ、ビルドは壊さない。
 その指摘も、PR が変えた行の外に出るものも、遅い検査の golangci-lint（全体）が見つける。
 
+Docker Compose の smoke test（amd64）は、Docker の文脈（`Dockerfile`・`.dockerignore`・`deploy/`・`scripts/docker-smoke.sh`）が変わった PR で、別のジョブ（`docker-smoke`）で回す。
+守るのは、イメージでしか分からないものである。Dockerfile の各段がビルドできること、`.dockerignore` がイメージに要るファイルを落とさないこと、`deploy/docker/compose.yaml` の配線（環境変数による設定、スキーマの適用と起動の順序、ボリューム）、実行用のイメージ（nonroot・`/data` の権限・CLI）である。
+サーバーの組み立てと起動、WebFinger・Actor・NodeInfo、両方言へのスキーマの適用は、Go のテストと `db-check` がすでに確かめる。そのため、`cmd/` や `internal/platform/` を変えただけの PR では回さない。
+結果は PR の Docker の構成のファイルでほぼ決まるので、Merge Queue では回さない。イメージに要る新しいファイルを別の PR が足すといった稀な重なりは、リリースの前に遅い検査が見つける。
+arm64 のイメージは、Go を `CGO_ENABLED=0` でクロスコンパイルするので、amd64 との違いはベースのイメージとプラットフォームの指定だけである。遅い検査でだけビルドする。
+
 Merge Queue の `check`（本検査）は、変わった文脈（`scripts/changed-contexts.sh`）に応じて次のジョブを組む。
 文脈が変わっていないジョブは今までどおりスキップし、`check` はスキップを成功として扱う（ADR-0047 の仕組みのまま）:
 
@@ -126,15 +135,14 @@ Merge Queue の `check`（本検査）は、変わった文脈（`scripts/change
 | `client-static` | 生成（ADR-0081）→ `tsc`・Oxlint・knip・`vite build`・i18n のカタログの検査 | ui・web・api・i18n |
 | `client-test`（2 シャード） | Vitest（`app/web`・`app/ui`・`tools/i18n`）。`app/web` は `vitest --shard=<i>/2` で 2 ジョブに分ける | ui・web・api・i18n |
 | `repo` | agentkit の検査と文脈の地図、ADR の番号の重複（ADR-0081） | 常に |
-| `docker` | Compose の smoke test（amd64）。Docker の文脈が変わったときは arm64 のイメージのビルドも | docker・`cmd/`・`internal/platform/` |
 
 - ジョブの中身は、ADR-0080 のタスク（`task ci:<ジョブ>`）1 つにする。ワークフローは、ツールの準備とそのタスクの呼び出しだけを書く。
   同じタスクを手元でも同じに回せる。
 - ビルドタグの組み合わせ（アダプタを外したビルド）は Merge Queue で回さず、遅い検査で回す。組み合わせが壊れるのはアダプタやビルドタグを変えたときに限られ、マージのたびに確かめる必要はない。リリースの前には必ず通る。
 - `client-test` を初めから 2 つに分けるのは、今の `web-test` だけで 242 / 274 秒かかり、Merge Queue の最長のジョブになるからである。
   Vitest 5.0.5 の `--shard <index>/<count>` で分ける（`vitest --help`、2026-10-23 確認）。
-- Merge Queue で同時に組むグループは最大 2、1 回にマージするのは最大 5 のまま（`.github/rulesets/protect-main.json`）。1 グループのジョブは最大 7 なので、
-  Merge Queue が同時 20 ジョブのうち 14 を超えて使うことはない。
+- Merge Queue で同時に組むグループは最大 2、1 回にマージするのは最大 5 のまま（`.github/rulesets/protect-main.json`）。1 グループのジョブは最大 6 なので、
+  Merge Queue が同時 20 ジョブのうち 12 を超えて使うことはない。
 - PR の `check` を本検査にしたいとき（外の貢献者の PR を早めに確かめる、Merge Queue で落ちた原因を PR で調べる）は、
   PR に `ci:full` のラベルを付ける。そのときだけ、PR でも Merge Queue と同じジョブを回す。
 - 必須チェックは今までどおり `check` の 1 つにし、`pull_request` と `merge_group` で中身を変える。ワークフローにパスのフィルタは付けない（ADR-0047 の理由のまま）。

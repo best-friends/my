@@ -3,10 +3,11 @@ name: CI
 # The pull request and merge queue checks (ADR-0079). One workflow and one required status check, `check`, whose jobs
 # depend on the event:
 #
-# - pull_request: `preflight`, the checks a pull request's own files decide, and the @my/ui story tests (ui-test.yml)
-#   when the ui context changes.
+# - pull_request: `preflight`, the checks a pull request's own files decide; the @my/ui story tests (ui-test.yml) when
+#   the ui context changes; golangci-lint (`lint`) when Go changes; the Docker Compose smoke test (`docker-smoke`) when
+#   the docker context changes.
 # - merge_group: the full check of the contexts the group changes (scripts/changed-contexts.sh): server-static,
-#   server-test, client-static, client-test (2 shards), repo, and docker, at most 7 jobs.
+#   server-test, client-static, client-test (2 shards), and repo, at most 6 jobs.
 # - pull_request labelled `ci:full`: both.
 #
 # Each job sets up its tools and generates what its checks read, then runs the checks as parallel steps (ADR-0083),
@@ -46,8 +47,7 @@ jobs:
       ui: ${{ steps.select.outputs.ui }}
       server: ${{ steps.select.outputs.server }}
       client: ${{ steps.select.outputs.client }}
-      smoke: ${{ steps.select.outputs.smoke }}
-      arm64: ${{ steps.select.outputs.arm64 }}
+      docker: ${{ steps.select.outputs.docker }}
       lint-go: ${{ steps.select.outputs.lint-go }}
       lint-agentkit: ${{ steps.select.outputs.lint-agentkit }}
     steps:
@@ -95,17 +95,7 @@ jobs:
           else
             echo lint-agentkit=false
           fi >> "$GITHUB_OUTPUT"
-          # Only a change to the docker context makes the linux/arm64 images differ: the Go server cross-builds with
-          # CGO_ENABLED=0 (ADR-0010).
-          touches arm64 docker
-          # The Docker smoke test also runs on a change to cmd/ or internal/platform/, which load the configuration
-          # and assemble the server the images start. changed-contexts.sh puts those two in the go context, so their
-          # paths are matched here.
-          if [[ "$contexts" == *" docker "* ]] || grep -qE '^(cmd|internal/platform)/' "$RUNNER_TEMP/changed"; then
-            echo smoke=true
-          else
-            echo smoke=false
-          fi >> "$GITHUB_OUTPUT"
+          touches docker docker
 
   # --- Pull requests --------------------------------------------------------------------------------------------
 
@@ -197,6 +187,25 @@ jobs:
               skip-cache: true
               # golangci-lint runs one instance at a time: wait for the other step's instead of failing.
               args: --allow-serial-runners
+
+  docker-smoke:
+    # The Docker Compose smoke test (linux/amd64, ADR-0079): what only the images show, beyond the Go tests that already
+    # assemble and start the server: that the Dockerfile builds, that .dockerignore keeps what the images need, the
+    # wiring of deploy/docker/compose.yaml, and the runtime image. A pull request's own docker files decide it, so the
+    # merge queue does not run it again; the slow suite runs it with the linux/arm64 builds.
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # The images take their version from `git describe`.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Set up go-task
+        uses: ./.github/actions/setup-task
+      - name: docker:smoke
+        run: scripts/task.sh docker:smoke
 
   # --- The full check: merge groups, and pull requests labelled ci:full -------------------------------------------
   # A job whose `if` is false is skipped, and `check` counts a skipped job as passed.
@@ -371,39 +380,13 @@ jobs:
           - name: docs:ci-coverage
             run: scripts/task.sh docs:ci-coverage
 
-  docker:
-    # The Docker Compose smoke test (linux/amd64), and on a change to the docker context the linux/arm64 image builds
-    # under QEMU.
-    needs: changes
-    if: needs.changes.outputs.full == 'true' && needs.changes.outputs.smoke == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      # The images take their version from `git describe`.
-      - name: Check out
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - name: Set up go-task
-        uses: ./.github/actions/setup-task
-      - name: Set up QEMU
-        if: needs.changes.outputs.arm64 == 'true'
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-        with:
-          platforms: arm64
-      - parallel:
-          - name: docker:smoke
-            run: scripts/task.sh docker:smoke
-          - name: docker:build-arm64
-            if: needs.changes.outputs.arm64 == 'true'
-            run: scripts/task.sh docker:build-arm64
-
   check:
     # The required status check of the protect-main ruleset, on pull requests and merge groups: it passes only when
     # every job above passed, or was skipped because the event or the change does not need it. A job that calls a
     # reusable workflow fails when a called job fails, so a failed story test fails `check`. `always()` makes it report
     # a result even when every other job is skipped, so neither a pull request nor a merge group waits on it.
     if: always()
-    needs: [changes, preflight, ui-test, lint, server-static, server-test, client-static, client-test, repo, docker]
+    needs: [changes, preflight, ui-test, lint, docker-smoke, server-static, server-test, client-static, client-test, repo]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if a check job failed or was cancelled
