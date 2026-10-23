@@ -90,4 +90,8 @@
 | [0076](0076-federation-direction.md) | 連合の向きをインスタンス設定で選ぶ（オフ / 受信のみ / 送信のみ / 送受信） | Accepted |
 | [0077](0077-timeline-auto-insert.md) | タイムラインの新着をユーザーの設定で自動で差し込む | Accepted |
 | [0078](0078-postgres-uuid-columns.md) | PostgreSQL の ID の列を uuid 型にする | Accepted |
+| [0079](0079-ci-single-gate-merge-queue.md) | CI の検査を Merge Queue に一本化する | Proposed |
+| [0080](0080-task-runner-go-task.md) | タスクの実行を Make から go-task に移す | Proposed |
+| [0081](0081-generated-files-policy.md) | Go が読む生成物だけをコミットする | Proposed |
+| [0082](0082-conflict-free-file-layout.md) | 並列の作業で衝突しないファイルの構成 | Proposed |
 <!-- adr-index:end -->
