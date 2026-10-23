@@ -1,0 +1,72 @@
+name: Slow suite
+
+# The checks too slow for the merge queue (ADR-0079): the web E2E over the full width × locale matrix on 8 shards, the
+# live interoperability test with Mastodon, GoToSocial, and Misskey, the PostgreSQL tests on a real postgres container
+# (ADR-0041), the stream.Bus contracts on broker containers (ADR-0050), the Docker Compose smoke test (linux/amd64)
+# with the linux/arm64 image builds, and CodeQL. release.yml calls it as the release gate, nightly.yml every night,
+# and it runs by hand on any branch: `gh workflow run slow-suite.yml --ref <branch>`. Every job checks out the commit
+# of the run (github.sha), so a caller tests the commit it was started on.
+#
+# No concurrency group: in a called workflow the group would be evaluated in the caller's context, and a release and
+# a nightly run on the same commit must not cancel each other. The callers set their own groups.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web-e2e:
+    uses: ./.github/workflows/web-e2e.yml
+    with:
+      matrix: full
+      shards: 8
+
+  federation-live:
+    uses: ./.github/workflows/federation-live.yml
+
+  postgres-contract:
+    uses: ./.github/workflows/postgres-contract.yml
+
+  stream-contract:
+    uses: ./.github/workflows/stream-contract.yml
+
+  docker:
+    uses: ./.github/workflows/ctx-docker.yml
+    with:
+      check: false
+      smoke: true
+      arm64: true
+
+  codeql:
+    uses: ./.github/workflows/codeql.yml
+    # The analysis uploads its results to the Security tab. A caller grants the same permissions to the job that calls
+    # this workflow.
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+  # The one result of the suite: fails when any job above failed or was cancelled, so that a caller can depend on it.
+  result:
+    if: always()
+    needs: [web-e2e, federation-live, postgres-contract, stream-contract, docker, codeql]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarise the results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          failed=0
+          {
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          while IFS=$'\t' read -r job result; do
+            echo "| $job | $result |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$job: $result"
+            if [ "$result" != success ]; then failed=1; fi
+          done < <(jq -r 'to_entries[] | [.key, .value.result] | @tsv' <<< "$RESULTS")
+          exit "$failed"

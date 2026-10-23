@@ -54,7 +54,7 @@ tasks:
       - go test ./...
 
   test-postgres:
-    desc: Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI after the merge and nightly)
+    desc: Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI in the slow suite)
     env:
       TEST_POSTGRES: container
       TEST_POSTGRES_REQUIRED: "1"
@@ -62,7 +62,7 @@ tasks:
       - go test -count=1 {{.POSTGRES_TEST_PACKAGES}}
 
   test-stream:
-    desc: Run the stream.Bus contracts on broker containers instead of the in-process fakes (Valkey; Floci for SNS / SQS; the Pub/Sub emulator) (needs Docker; CI after the merge and nightly)
+    desc: Run the stream.Bus contracts on broker containers instead of the in-process fakes (Valkey; Floci for SNS / SQS; the Pub/Sub emulator) (needs Docker; CI in the slow suite)
     env:
       TEST_STREAM: container
       TEST_VALKEY_REQUIRED: "1"
