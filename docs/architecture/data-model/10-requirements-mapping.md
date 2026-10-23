@@ -31,6 +31,7 @@
 | FR-303 ブロック・ミュート | M | `blocks`, `block_retractions`, `block_edges`, `mutes` |
 | FR-304 ドメインミュート | C | `account_domain_mutes`, `feed_domain_mutes`, `notification_domain_exclusions` |
 | FR-305 リモートアカウント検索 | M | `account_handles`, `accounts.uri` |
+| FR-306 アカウントの前方一致の検索（FR-119 の `@` の補完） | S | `account_search_terms` |
 | FR-401〜404 WebFinger・NodeInfo・Actor・署名 | M | `account_handles`, `account_keys`, `local_account_private_keys`, `follow_edges`, `feed_entries` |
 | FR-405 受信アクティビティ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones` |
 | FR-406 配送・リトライ・一時停止 | M | `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `instance_availability_events`, `instance_health`, `jobs` |

@@ -155,6 +155,17 @@ type Repository interface {
 	ListDomainMutes(ctx context.Context, accountID, after string, limit int) ([]graph.DomainMute, error)
 	// MutesAnyDomain reports whether accountID mutes one of domains.
 	MutesAnyDomain(ctx context.Context, accountID string, domains []string) (bool, error)
+	// RelationsAmong returns the relations of accountID with the accounts among ids, with the
+	// mutes that have not expired at now.
+	RelationsAmong(ctx context.Context, accountID string, ids []string, now time.Time) (RelationsAmong, error)
+}
+
+// RelationsAmong are the relations of one account with some others, each list in ID order: the
+// accounts it blocks, those that block it, those it mutes, those it actively follows, and the
+// counters of those that have them.
+type RelationsAmong struct {
+	Blocked, BlockedBy, Muted, Following []string
+	Counters                             []graph.Counters
 }
 
 // MuteCursor is the position of a mute in a list of mutes: its creation and target account.

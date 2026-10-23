@@ -96,6 +96,13 @@ type AccountRestriction struct {
 	EffectiveUntil *time.Time
 }
 
+type AccountSearchTerm struct {
+	AccountID string
+	Kind      string
+	Term      string
+	IsLocal   bool
+}
+
 type AnnouncementHead struct {
 	AnnouncementID string
 	RevisionID     string

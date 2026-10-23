@@ -172,6 +172,8 @@ paths:
     $ref: ./paths/accounts_lookup.yaml
   /accounts/relationships:
     $ref: ./paths/accounts_relationships.yaml
+  /accounts/search:
+    $ref: ./paths/accounts_search.yaml
   /accounts/{id}:
     $ref: ./paths/accounts_{id}.yaml
   /accounts/{id}/block:
@@ -589,6 +591,8 @@ components:
       $ref: ./components/parameters/RoleKey.yaml
     RuleId:
       $ref: ./components/parameters/RuleId.yaml
+    SearchLimit:
+      $ref: ./components/parameters/SearchLimit.yaml
     SignupBlockId:
       $ref: ./components/parameters/SignupBlockId.yaml
     StatusId:

@@ -2,6 +2,7 @@
 // The rules of a new post that the client applies before the server does: the visibilities and their
 // order (ADR-0017), the default of a reply, the account's visibility ceiling, the mentions a reply starts
 // with and the remote ones a post names, and the character count.
+import { textTokens } from "../../../lib/textTokens";
 import type { PostingLimits, Status, Visibility } from "../api/compose";
 
 /** The visibilities from the widest to the narrowest (ADR-0017). */
@@ -43,18 +44,14 @@ export function replyMentions(replyTo: Status, viewerId: string): string {
 }
 
 /**
- * `@username@domain`, as the server parses a mention with a domain (ParseText in
- * internal/app/content/text.go): the `@` follows no letter, digit, mark, `_`, `/` or `=`, and the domain
- * ends in a letter or digit.
- */
-const domainMentionPattern = /(?<![\p{L}\p{N}\p{M}_/=])@([A-Za-z0-9_]+)@([A-Za-z0-9.-]*[A-Za-z0-9])/gu;
-
-/**
  * The handles (`username@domain`, lowercase, each once) of the mentions in `text` that name a domain:
- * those that can be accounts of other servers. A mention without a domain is a local account.
+ * those that can be accounts of other servers. A mention without a domain is a local account. Mentions are
+ * found as the server finds them (textTokens), so e-mail addresses and URLs hold none.
  */
 export function domainMentions(text: string): string[] {
-  const handles = Array.from(text.matchAll(domainMentionPattern), (m) => `${m[1] ?? ""}@${m[2] ?? ""}`.toLowerCase());
+  const handles = textTokens(text)
+    .filter((t) => t.kind === "mention" && t.text.includes("@", 1))
+    .map((t) => t.text.slice(1).toLowerCase());
   return [...new Set(handles)];
 }
 

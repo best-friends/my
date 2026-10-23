@@ -141,6 +141,7 @@ type Repository interface {
 
 	RemoteRepository
 	SearchRepository
+	SearchTermRepository
 }
 
 // TxReads are the reads of Repository that run in a transaction tx, with what tx has written, for the

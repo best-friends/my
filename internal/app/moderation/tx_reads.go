@@ -75,3 +75,15 @@ func (p *FederationPolicy) RejectsMediaTx(ctx context.Context, tx uow.Tx, domain
 	rs, err := p.repo.DomainRestrictionsInEffectTx(ctx, tx, domains, p.clock.Now())
 	return slices.Contains(rs, moderation.RestrictMediaFetch), err
 }
+
+// SuspendedTx reports whether an account's own actions suspend it at the policy's now (the
+// federation restriction of suspend and ban, moderation.FederationSuspended), read in tx: the
+// account module's search terms leave out a suspended account and follow
+// EventAccountSuspensionChanged (ADR-0092 §1).
+func (p *AccountPolicy) SuspendedTx(ctx context.Context, tx uow.Tx, accountID string) (bool, error) {
+	rows, err := p.repo.AccountRestrictionRows(ctx, tx, accountID)
+	if err != nil {
+		return false, err
+	}
+	return moderation.FederationSuspended(rows, p.clock.Now()), nil
+}

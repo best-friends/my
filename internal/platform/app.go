@@ -102,7 +102,11 @@ type App struct {
 	HumanCheckWidget *kernel.HumanCheckWidget
 
 	Accounts *account.Service
-	Identity *identity.Service
+	// SearchTerms keeps the account_search_terms projection, and AccountSearch searches it
+	// (ADR-0092 §1).
+	SearchTerms   *account.SearchTermProjector
+	AccountSearch *account.PrefixSearch
+	Identity      *identity.Service
 	// AccountAdmin is the moderators' account management (FR-714).
 	AccountAdmin *identity.AccountAdmin
 	// Exports builds the archives of the users' data (FR-008).
