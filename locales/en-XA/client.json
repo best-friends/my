@@ -6043,20 +6043,44 @@
     "defaultMessage": "[Ẇħǿǿ ḿȧȧẏ řḗḗȧȧḓ ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ŀīşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.timelines.access.everyone": {
+    "defaultMessage": "[Ḗṽḗḗřẏǿǿƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.everyone.description": {
+    "defaultMessage": "[Ṽīşīŧǿǿřş ẇħǿǿ ȧȧřḗḗ ƞǿǿŧ şīɠƞḗḗḓ īƞ ƈȧȧƞ řḗḗȧȧḓ īŧ ŧǿǿǿǿ, ȧȧƞḓ ŧħḗḗ ŀȧȧƞḓīƞɠ ƥȧȧɠḗḗ şħǿǿẇş ȧȧ şȧȧḿƥŀḗḗ ǿǿƒ ŧħḗḗ ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.logged_in": {
+    "defaultMessage": "[Şīɠƞḗḗḓ-īƞ ŭŭşḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.logged_in.description": {
+    "defaultMessage": "[Ǿƞŀẏ ŭŭşḗḗřş şīɠƞḗḗḓ īƞ ŧǿǿ ŧħīş şḗḗřṽḗḗř ƈȧȧƞ řḗḗȧȧḓ īŧ. Ṽīşīŧǿǿřş ȧȧřḗḗ ȧȧşķḗḗḓ ŧǿǿ şīɠƞ īƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.off": {
+    "defaultMessage": "[Ƞǿǿƀǿǿḓẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.off.description": {
+    "defaultMessage": "[Ŧħḗḗ ŧīḿḗḗŀīƞḗḗ īş ǿǿƒƒ ȧȧƞḓ īş ƞǿǿŧ ǿǿƒƒḗḗřḗḗḓ ŧǿǿ ȧȧƞẏǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.settings.timelines.federated": {
-    "defaultMessage": "[Ǿƒƒḗḗř ŧħḗḗ ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ]",
+    "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.federated.description": {
-    "defaultMessage": "[Ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ŧħȧȧŧ řḗḗȧȧƈħ ŧħīş şḗḗřṽḗḗř, ƒřǿǿḿ ǿǿŧħḗḗř şḗḗřṽḗḗřş ŧǿǿǿǿ.]",
+    "defaultMessage": "[Ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ŧħȧȧŧ řḗḗȧȧƈħ ŧħīş şḗḗřṽḗḗř, ƒřǿǿḿ ǿǿŧħḗḗř şḗḗřṽḗḗřş ŧǿǿǿǿ. Ẇħǿǿ ḿȧȧẏ řḗḗȧȧḓ īŧ?]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.local": {
-    "defaultMessage": "[Ǿƒƒḗḗř ŧħḗḗ ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ]",
+    "defaultMessage": "[Ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.local.description": {
-    "defaultMessage": "[Ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ŧħīş şḗḗřṽḗḗř'ş ȧȧƈƈǿǿŭŭƞŧş.]",
+    "defaultMessage": "[Ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ŧħīş şḗḗřṽḗḗř'ş ȧȧƈƈǿǿŭŭƞŧş. Ẇħǿǿ ḿȧȧẏ řḗḗȧȧḓ īŧ?]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.title": {
@@ -8687,6 +8711,14 @@
     "defaultMessage": "[Ŧħḗḗ ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ īş ǿǿƒƒ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "local.sign_in_required.body": {
+    "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ řḗḗȧȧḓ ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ŧħīş şḗḗřṽḗḗř'ş ȧȧƈƈǿǿŭŭƞŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "local.sign_in_required.title": {
+    "defaultMessage": "[Ŧħḗḗ ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ īş ƒǿǿř şīɠƞḗḗḓ-īƞ ŭŭşḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "local.title": {
     "defaultMessage": "[Ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -9281,6 +9313,14 @@
   },
   "public.disabled.title": {
     "defaultMessage": "[Ŧħḗḗ ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ īş ǿǿƒƒ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.sign_in_required.body": {
+    "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ řḗḗȧȧḓ ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ŧħȧȧŧ řḗḗȧȧƈħ ŧħīş şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.sign_in_required.title": {
+    "defaultMessage": "[Ŧħḗḗ ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ īş ƒǿǿř şīɠƞḗḗḓ-īƞ ŭŭşḗḗřş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "public.title": {
@@ -11173,6 +11213,10 @@
   },
   "shell.rate_limited": {
     "defaultMessage": "[Ŧǿǿǿǿ ḿȧȧƞẏ řḗḗɋŭŭḗḗşŧş ẇḗḗřḗḗ şḗḗƞŧ ŧǿǿ ŧħḗḗ şḗḗřṽḗḗř. Ẇħȧȧŧ ƒȧȧīŀḗḗḓ ŧǿǿ ŀǿǿȧȧḓ ŀǿǿȧȧḓş ȧȧɠȧȧīƞ ȧȧŧ {time}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.sign_in_required.sign_in": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.skip_to_main": {

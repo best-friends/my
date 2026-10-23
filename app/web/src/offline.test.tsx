@@ -172,7 +172,7 @@ describe("offline", () => {
     expect(within(navigation).queryByRole("link", { name: "Federated" })).not.toBeInTheDocument();
     expect(within(navigation).getByRole("link", { name: "Local" })).toBeInTheDocument();
     // The instance fixture serves both; the navigation does not guess.
-    expect(instanceFixture.timelines.federated).toBe(true);
+    expect(instanceFixture.timelines.federated).toBe("everyone");
   });
 });
 

@@ -3024,13 +3024,25 @@ export interface MessageArgs {
   "client:admin.settings.supporter_list.title": {};
   /** Who may read the supporter list */
   "client:admin.settings.supporter_list.visibility": {};
-  /** Offer the federated timeline */
+  /** Everyone */
+  "client:admin.settings.timelines.access.everyone": {};
+  /** Visitors who are not signed in can read it too, and the landing page shows a sample of the local timeline. */
+  "client:admin.settings.timelines.access.everyone.description": {};
+  /** Signed-in users */
+  "client:admin.settings.timelines.access.logged_in": {};
+  /** Only users signed in to this server can read it. Visitors are asked to sign in. */
+  "client:admin.settings.timelines.access.logged_in.description": {};
+  /** Nobody */
+  "client:admin.settings.timelines.access.off": {};
+  /** The timeline is off and is not offered to anyone. */
+  "client:admin.settings.timelines.access.off.description": {};
+  /** Federated timeline */
   "client:admin.settings.timelines.federated": {};
-  /** The public posts that reach this server, from other servers too. */
+  /** The public posts that reach this server, from other servers too. Who may read it? */
   "client:admin.settings.timelines.federated.description": {};
-  /** Offer the local timeline */
+  /** Local timeline */
   "client:admin.settings.timelines.local": {};
-  /** The public posts of this server's accounts. */
+  /** The public posts of this server's accounts. Who may read it? */
   "client:admin.settings.timelines.local.description": {};
   /** Timelines */
   "client:admin.settings.timelines.title": {};
@@ -4346,6 +4358,10 @@ export interface MessageArgs {
   "client:local.disabled.body": {};
   /** The local timeline is off */
   "client:local.disabled.title": {};
+  /** Sign in to read the public posts of this server's accounts. */
+  "client:local.sign_in_required.body": {};
+  /** The local timeline is for signed-in users */
+  "client:local.sign_in_required.title": {};
   /** Local timeline */
   "client:local.title": {};
   /** Sign in to {instance} to post, follow people and read your home timeline. */
@@ -4644,6 +4660,10 @@ export interface MessageArgs {
   "client:public.disabled.body": {};
   /** The federated timeline is off */
   "client:public.disabled.title": {};
+  /** Sign in to read the public posts that reach this server. */
+  "client:public.sign_in_required.body": {};
+  /** The federated timeline is for signed-in users */
+  "client:public.sign_in_required.title": {};
   /** Federated timeline */
   "client:public.title": {};
   /** Close */
@@ -5590,6 +5610,8 @@ export interface MessageArgs {
   "client:shell.offline": {};
   /** Too many requests were sent to the server. What failed to load loads again at {time}. */
   "client:shell.rate_limited": { time: string };
+  /** Sign in */
+  "client:shell.sign_in_required.sign_in": {};
   /** Skip to main content */
   "client:shell.skip_to_main": {};
   /** The server sent settings the app cannot read. Reload the page; if this keeps happening, tell the server's administrator. */

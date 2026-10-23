@@ -70,7 +70,7 @@ const instance: Instance = {
   source_url: "https://github.com/best-friends/my",
   registrations: { mode: "open" },
   limits: { max_post_characters: 500, require_media_description: false },
-  timelines: { local: true, federated: true },
+  timelines: { local: "everyone", federated: "everyone" },
   federation: { mode: "both" },
   sends_email: false,
   search_indexing: "deny",

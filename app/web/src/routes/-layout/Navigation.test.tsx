@@ -13,7 +13,7 @@ import { navigationKey, themeKey } from "../../lib/storage";
 import { renderApp } from "../../test/render";
 
 /** GET /instance with the given public timelines turned on or off. */
-function instanceWith(timelines: { local: boolean; federated: boolean }) {
+function instanceWith(timelines: (typeof instanceFixture)["timelines"]) {
   return http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, timelines }));
 }
 
@@ -53,6 +53,27 @@ describe("while signed out", () => {
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
     expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Sign up", "my example", "More about this server"]);
     expect(within(sheet).getByRole("radiogroup", { name: "Theme" })).toBeInTheDocument();
+  });
+
+  test("leaves out a timeline kept for signed-in users, and asks to sign in at its address", async () => {
+    server.use(
+      instanceWith({ local: "logged_in", federated: "everyone" }),
+      http.get(`${apiBase}/timelines/local`, () => problem(401, "/api/v1/problems/unauthenticated", "Unauthenticated")),
+    );
+    await renderApp({ path: "/local" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "The local timeline is for signed-in users" })).toBeInTheDocument();
+    expect(screen.getByText("Sign in to read the public posts of this server's accounts.")).toBeInTheDocument();
+    // The page's own link and the navigation's both sign in and come back here.
+    expect(screen.getAllByRole("link", { name: "Sign in" }).map((link) => link.getAttribute("href"))).toEqual([
+      "/login?return_to=%2Flocal",
+      "/login?return_to=%2Flocal",
+    ]);
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(navigation()).queryByRole("link", { name: "Local" })).not.toBeInTheDocument();
+    });
+    expect(within(navigation()).getByRole("link", { name: "Federated" })).toBeInTheDocument();
   });
 
   test("signs in from the page it is on, and comes back there", async () => {
@@ -131,7 +152,7 @@ describe("the timelines' items", () => {
   });
 
   test("leave out both timelines when the server serves neither", async () => {
-    server.use(instanceWith({ local: false, federated: false }));
+    server.use(instanceWith({ local: "off", federated: "off" }));
     await renderApp({ path: "/home" });
     await screen.findByRole("heading", { level: 1, name: "Home" });
     await waitFor(() => {
@@ -148,9 +169,18 @@ describe("the timelines' items", () => {
     ]);
   });
 
+  test("offer the timelines kept for signed-in users", async () => {
+    server.use(instanceWith({ local: "logged_in", federated: "logged_in" }));
+    await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+
+    expect(await within(navigation()).findByRole("link", { name: "Federated" })).toHaveAttribute("href", "/public");
+    expect(within(navigation()).getByRole("link", { name: "Local" })).toHaveAttribute("href", "/local");
+  });
+
   test("say that the local timeline is off when its address is a 404", async () => {
     server.use(
-      instanceWith({ local: false, federated: false }),
+      instanceWith({ local: "off", federated: "off" }),
       http.get(`${apiBase}/timelines/local`, () => problem(404, "about:blank", "Not Found")),
     );
     await renderApp({ path: "/local" });
@@ -161,6 +191,8 @@ describe("the timelines' items", () => {
   });
 
   test("are in Japanese in the ja locale", async () => {
+    // The signed-in user's preferences decide the locale once they load: they are in Japanese too.
+    server.use(http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, locale: "ja" })));
     await renderApp({ path: "/home", locale: "ja" });
     await screen.findByRole("heading", { level: 1, name: "ホーム" });
     const nav = screen.getByRole("navigation", { name: "メイン" });
@@ -195,7 +227,7 @@ describe("the user's arrangement", () => {
   });
 
   test("keeps the place of a timeline the server does not offer among the first five", async () => {
-    server.use(instanceWith({ local: false, federated: true }));
+    server.use(instanceWith({ local: "off", federated: "everyone" }));
     navigationKey.write({ order: ["local", "home", "public", "notifications", "search", "profile", "bookmarks", "settings"], hidden: [] });
     const { user } = await renderApp({ path: "/home" });
     await screen.findByRole("heading", { level: 1, name: "Home" });

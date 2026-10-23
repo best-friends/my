@@ -217,10 +217,12 @@ describe("the server's policies", () => {
     const registration = await screen.findByRole("region", { name: "Registration" });
     expect(within(registration).getByRole("radio", { name: "With approval" })).toBeChecked();
     const timelines = screen.getByRole("region", { name: "Timelines" });
-    expect(within(timelines).getByRole("checkbox", { name: "Offer the local timeline" })).toBeChecked();
+    const local = within(timelines).getByRole("radiogroup", { name: "Local timeline" });
+    expect(within(local).getByRole("radio", { name: "Everyone" })).toBeChecked();
+    expect(within(timelines).getByRole("radiogroup", { name: "Federated timeline" })).toBeInTheDocument();
 
     await user.click(within(registration).getByRole("radio", { name: "With an invite" }));
-    await user.click(within(timelines).getByRole("checkbox", { name: "Offer the local timeline" }));
+    await user.click(within(local).getByRole("radio", { name: "Signed-in users" }));
     await user.click(within(screen.getByRole("region", { name: "Federation" })).getByRole("checkbox", { name: "Require signed requests (authorized fetch)" }));
     const domainActions = screen.getByRole("radiogroup", { name: "Who may read the list" });
     await user.click(within(domainActions).getByRole("radio", { name: "Signed-in users" }));
@@ -229,7 +231,7 @@ describe("the server's policies", () => {
 
     expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
     expect(settings.patches).toEqual([
-      { values: { registration_mode: "invite", local_timeline_enabled: "false", authorized_fetch: "true", domain_actions_visibility: "users" } },
+      { values: { registration_mode: "invite", local_timeline_access: "logged_in", authorized_fetch: "true", domain_actions_visibility: "users" } },
     ]);
     // The navigation's timelines and the registration mode come from GET /instance, read again before the status.
     expect(settings.instanceReads()).toBeGreaterThan(reads);

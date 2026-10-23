@@ -142,12 +142,27 @@ describe("the landing page", () => {
   });
 
   test("leaves out the recent posts when the server does not serve the local timeline, and its empty sections", async () => {
-    serveInstance({ timelines: { local: false, federated: true } });
+    serveInstance({ timelines: { local: "off", federated: "everyone" } });
     await renderApp({ path: "/" });
     await screen.findByRole("link", { name: "Apply for an account" });
     expect(screen.queryByRole("region", { name: "Recent posts" })).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "About this server" })).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Rules" })).not.toBeInTheDocument();
+  });
+
+  test("does not ask for the recent posts when the local timeline is only for signed-in users", async () => {
+    let asked = false;
+    serveInstance({ timelines: { local: "logged_in", federated: "everyone" } });
+    server.use(
+      http.get(`${apiBase}/timelines/local`, () => {
+        asked = true;
+        return problem(401, "/api/v1/problems/unauthenticated", "Unauthenticated");
+      }),
+    );
+    await renderApp({ path: "/" });
+    await screen.findByRole("link", { name: "Apply for an account" });
+    expect(screen.queryByRole("region", { name: "Recent posts" })).not.toBeInTheDocument();
+    expect(asked).toBe(false);
   });
 
   test("leaves the section to its heading and link when the hero shows every recent post", async () => {

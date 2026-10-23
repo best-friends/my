@@ -58,15 +58,15 @@ function paragraphs(text: string | undefined): string[] {
 
 /**
  * What the landing page shows people who are not signed in: the instance from GET /instance (which the shell reads
- * on every page and the route's loader has asked for), and a sample of the local timeline when the instance serves
- * it. A failure of the instance leaves the page with the name and the way to sign in; a failure of the sample shows
+ * on every page and the route's loader has asked for), and a sample of the local timeline when the instance lets
+ * everyone read it. A failure of the instance leaves the page with the name and the way to sign in; a failure of the sample shows
  * in its own section.
  */
 export function useLanding(): Landing {
   const api = useApi();
   const { apiOrigin } = useConfig();
   const { data: instance } = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader });
-  const localOn = instance?.timelines.local === true;
+  const localOn = instance?.timelines.local === "everyone";
   const posts = useQuery({ ...recentPostsQueryOptions(api), enabled: localOn });
 
   let recentPosts: RecentPosts;

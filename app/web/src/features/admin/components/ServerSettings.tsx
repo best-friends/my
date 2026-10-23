@@ -213,6 +213,13 @@ function ContactForm() {
   );
 }
 
+/** Who may read a public timeline (FR-202), the choices of both timelines' settings. */
+const timelineAccessChoices = [
+    { value: "everyone", label: "client:admin.settings.timelines.access.everyone", description: "client:admin.settings.timelines.access.everyone.description" },
+    { value: "logged_in", label: "client:admin.settings.timelines.access.logged_in", description: "client:admin.settings.timelines.access.logged_in.description" },
+    { value: "off", label: "client:admin.settings.timelines.access.off", description: "client:admin.settings.timelines.access.off.description" },
+  ] as const satisfies readonly { value: string; label: ClientMessageKey; description: ClientMessageKey }[];
+
 /** The words and the description of each choice of the settings chosen with radio buttons. */
 const choices = {
   registration_mode: [
@@ -256,6 +263,8 @@ const choices = {
     { value: "totals", label: "client:admin.settings.income.totals", description: "client:admin.settings.income.totals.description" },
     { value: "plans", label: "client:admin.settings.income.plans", description: "client:admin.settings.income.plans.description" },
   ],
+  local_timeline_access: timelineAccessChoices,
+  federated_timeline_access: timelineAccessChoices,
   supporter_list_visibility: [
     { value: "off", label: "client:admin.settings.supporter_list.off", description: "client:admin.settings.supporter_list.off.description" },
     { value: "public", label: "client:admin.settings.supporter_list.public", description: "client:admin.settings.supporter_list.public.description" },
@@ -334,15 +343,15 @@ function PoliciesForm() {
         </Select>
       </DetailSection>
       <DetailSection title={t("client:admin.settings.timelines.title")}>
-        <PolicyCheckbox
+        <PolicyRadios
           form={form}
-          setting="local_timeline_enabled"
+          setting="local_timeline_access"
           label={t("client:admin.settings.timelines.local")}
           description={t("client:admin.settings.timelines.local.description")}
         />
-        <PolicyCheckbox
+        <PolicyRadios
           form={form}
-          setting="federated_timeline_enabled"
+          setting="federated_timeline_access"
           label={t("client:admin.settings.timelines.federated")}
           description={t("client:admin.settings.timelines.federated.description")}
         />

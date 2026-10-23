@@ -329,7 +329,7 @@ describe("navigation", () => {
 
   test("says which timeline this server does not offer", async () => {
     preferencesServer();
-    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, timelines: { local: true, federated: false } })));
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, timelines: { local: "everyone", federated: "off" } })));
     await renderApp({ path: "/settings/preferences" });
     const section = await screen.findByRole("region", { name: "Navigation" });
     await waitFor(() => {

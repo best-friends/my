@@ -52,8 +52,8 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
   const items = [
     { key: "registration_mode", kind: "enum", default: "approval", choices: ["open", "approval", "invite", "closed"] },
     { key: "default_locale", kind: "locale", default: "en" },
-    { key: "local_timeline_enabled", kind: "bool", default: "true" },
-    { key: "federated_timeline_enabled", kind: "bool", default: "true" },
+    { key: "local_timeline_access", kind: "enum", default: "everyone", choices: ["off", "logged_in", "everyone"] },
+    { key: "federated_timeline_access", kind: "enum", default: "everyone", choices: ["off", "logged_in", "everyone"] },
     { key: "require_media_description", kind: "bool", default: "false" },
     { key: "remote_media_policy", kind: "enum", default: "none", choices: ["none", "avatars", "all"] },
     { key: "remote_media_cache_ttl", kind: "int", default: "86400", minimum: 60, maximum: 31536000 },
@@ -99,7 +99,7 @@ async function administratorServer(page: Page) {
         source_url: "https://github.com/best-friends/my",
         registrations: { mode: "approval" },
         limits: { max_post_characters: 500, require_media_description: false },
-        timelines: { local: true, federated: true },
+        timelines: { local: "everyone", federated: "everyone" },
         federation: { mode: settings["federation_mode"] ?? "both" },
         rules: [],
       });

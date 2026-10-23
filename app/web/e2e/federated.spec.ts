@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The federated timeline in every width × locale project (FR-202, ADR-0027): its navigation item, which
-// the instance setting federated_timeline_enabled takes away, and its feed of posts of this server and of
+// the instance setting federated_timeline_access takes away, and its feed of posts of this server and of
 // another one. `vite preview` has no client API, so the spec answers GET /instance and the timeline with
 // `page.route`, shaped like api/openapi.yaml. Names change with the locale, so the navigation item is
 // found by its address and the feed by the page heading.
@@ -60,7 +60,7 @@ function status(n: number, author: Account): Status {
   };
 }
 
-function instance(federated: boolean): Instance {
+function instance(federated: Instance["timelines"]["federated"]): Instance {
   return {
     domain: "my.example",
     name: "my example",
@@ -68,7 +68,7 @@ function instance(federated: boolean): Instance {
     source_url: "https://github.com/best-friends/my",
     registrations: { mode: "open" },
     limits: { max_post_characters: 500, require_media_description: false },
-    timelines: { local: true, federated },
+    timelines: { local: "everyone", federated },
     federation: { mode: "both" },
     sends_email: false,
     search_indexing: "deny",
@@ -90,7 +90,7 @@ async function serveApi(page: Page, federated: boolean): Promise<void> {
     route.fulfill({ status: statusCode, contentType: statusCode < 400 ? "application/json" : "application/problem+json", body: JSON.stringify(body) });
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 }));
   await page.route("**/api/v1/timelines/home*", (route) => json(route, { items: [] } satisfies StatusPage));
-  await page.route("**/api/v1/instance", (route) => json(route, instance(federated)));
+  await page.route("**/api/v1/instance", (route) => json(route, instance(federated ? "everyone" : "off")));
   // The local timeline, which phones open first: its page has the federated timeline as its other tab.
   await page.route("**/api/v1/timelines/local*", (route) => json(route, { items: [status(1, bob)] } satisfies StatusPage));
   await page.route("**/api/v1/timelines/public*", (route) =>
@@ -210,6 +210,31 @@ test.describe("the federated timeline while the server has turned it off", () =>
     await page.goto("/public");
     await expect(page.getByRole("main").getByRole("link")).toHaveAttribute("href", "/home");
     await expect(page.getByRole("feed")).toHaveCount(0);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("the federated timeline while the server keeps it for signed-in users", () => {
+  test.beforeEach(async ({ page }) => {
+    // A visitor: no session to resume, and the timeline is a 401 without one.
+    const json = (route: Route, body: unknown, statusCode = 200) =>
+      route.fulfill({ status: statusCode, contentType: statusCode < 400 ? "application/json" : "application/problem+json", body: JSON.stringify(body) });
+    await page.route("**/api/v1/instance", (route) => json(route, instance("logged_in")));
+    await page.route("**/api/v1/timelines/local*", (route) => json(route, { items: [status(1, bob)] } satisfies StatusPage));
+    await page.route("**/api/v1/timelines/public*", (route) =>
+      json(route, { type: "/api/v1/problems/unauthenticated", title: "Unauthenticated", status: 401 }, 401),
+    );
+  });
+
+  test("is not in a visitor's navigation, and its address asks to sign in, without axe violations", async ({ page, makeAxeBuilder }) => {
+    const answered = page.waitForResponse("**/api/v1/instance");
+    await page.goto("/public");
+    await answered;
+    await expect(page.getByRole("main").locator('a[href="/login?return_to=%2Fpublic"]')).toBeVisible();
+    await expect(page.getByRole("feed")).toHaveCount(0);
+    await expect(page.getByRole("navigation").locator('a[href="/local"]').filter({ visible: true })).toBeVisible();
+    await expect(federatedLink(page)).toHaveCount(0);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

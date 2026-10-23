@@ -7,9 +7,9 @@ import { autoplayKey, clearUserStorage, composeKey, localeKey, signInKey, themeK
 
 describe("storage", () => {
   test("keeps a value with the version of its format, and removes the key for the default", () => {
-    timelinesKey.write({ local: true, federated: false });
-    expect(localStorage.getItem("my:instance:timelines")).toBe('{"v":1,"value":{"local":true,"federated":false}}');
-    expect(timelinesKey.read()).toEqual({ local: true, federated: false });
+    timelinesKey.write({ local: "everyone", federated: "off" });
+    expect(localStorage.getItem("my:instance:timelines")).toBe('{"v":2,"value":{"local":"everyone","federated":"off"}}');
+    expect(timelinesKey.read()).toEqual({ local: "everyone", federated: "off" });
 
     autoplayKey.write(false);
     expect(autoplayKey.read()).toBe(false);
@@ -19,7 +19,7 @@ describe("storage", () => {
   });
 
   test("returns the same value while the stored text is the same (a stable snapshot)", () => {
-    timelinesKey.write({ local: false, federated: true });
+    timelinesKey.write({ local: "off", federated: "logged_in" });
     expect(timelinesKey.read()).toBe(timelinesKey.read());
   });
 

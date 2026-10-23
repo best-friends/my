@@ -4908,20 +4908,44 @@
     "description": "Description of the server settings screen in the administration menu."
   },
   "admin.settings.timelines.federated": {
-    "defaultMessage": "Offer the federated timeline",
-    "description": "Checkbox that turns the federated timeline on."
+    "defaultMessage": "Federated timeline",
+    "description": "Label of the radio group that chooses who may read the federated timeline."
   },
   "admin.settings.timelines.federated.description": {
-    "defaultMessage": "The public posts that reach this server, from other servers too.",
-    "description": "Description of the federated timeline checkbox."
+    "defaultMessage": "The public posts that reach this server, from other servers too. Who may read it?",
+    "description": "Description of the radio group that chooses who may read the federated timeline."
+  },
+  "admin.settings.timelines.access.everyone": {
+    "defaultMessage": "Everyone",
+    "description": "Choice of who may read a public timeline: everyone, visitors who are not signed in included."
+  },
+  "admin.settings.timelines.access.everyone.description": {
+    "defaultMessage": "Visitors who are not signed in can read it too, and the landing page shows a sample of the local timeline.",
+    "description": "Description of the choice that lets everyone read a public timeline."
+  },
+  "admin.settings.timelines.access.logged_in": {
+    "defaultMessage": "Signed-in users",
+    "description": "Choice of who may read a public timeline: only the users signed in to this server."
+  },
+  "admin.settings.timelines.access.logged_in.description": {
+    "defaultMessage": "Only users signed in to this server can read it. Visitors are asked to sign in.",
+    "description": "Description of the choice that lets only signed-in users read a public timeline."
+  },
+  "admin.settings.timelines.access.off": {
+    "defaultMessage": "Nobody",
+    "description": "Choice of who may read a public timeline: nobody, the timeline is off."
+  },
+  "admin.settings.timelines.access.off.description": {
+    "defaultMessage": "The timeline is off and is not offered to anyone.",
+    "description": "Description of the choice that turns a public timeline off."
   },
   "admin.settings.timelines.local": {
-    "defaultMessage": "Offer the local timeline",
-    "description": "Checkbox that turns the local timeline on."
+    "defaultMessage": "Local timeline",
+    "description": "Label of the radio group that chooses who may read the local timeline."
   },
   "admin.settings.timelines.local.description": {
-    "defaultMessage": "The public posts of this server's accounts.",
-    "description": "Description of the local timeline checkbox."
+    "defaultMessage": "The public posts of this server's accounts. Who may read it?",
+    "description": "Description of the radio group that chooses who may read the local timeline."
   },
   "admin.settings.timelines.title": {
     "defaultMessage": "Timelines",
@@ -6203,6 +6227,14 @@
     "defaultMessage": "The local timeline is off",
     "description": "Heading and document title of the local timeline's page when the server's operators have turned that timeline off."
   },
+  "local.sign_in_required.body": {
+    "defaultMessage": "Sign in to read the public posts of this server's accounts.",
+    "description": "Text below the heading of the local timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
+  },
+  "local.sign_in_required.title": {
+    "defaultMessage": "The local timeline is for signed-in users",
+    "description": "Heading and document title of the local timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
+  },
   "landing.title": {
     "defaultMessage": "Welcome to {instance}",
     "description": "Heading and document title of the landing page that people who are not signed in see at the root address. {instance} is the name of this server."
@@ -6890,6 +6922,14 @@
   "public.disabled.title": {
     "defaultMessage": "The federated timeline is off",
     "description": "Heading and document title of the federated timeline's page when the server's operators have turned that timeline off."
+  },
+  "public.sign_in_required.body": {
+    "defaultMessage": "Sign in to read the public posts that reach this server.",
+    "description": "Text below the heading of the federated timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
+  },
+  "public.sign_in_required.title": {
+    "defaultMessage": "The federated timeline is for signed-in users",
+    "description": "Heading and document title of the federated timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
   },
   "public.title": {
     "defaultMessage": "Federated timeline",
@@ -8890,6 +8930,10 @@
   "shell.not_found.landing": {
     "defaultMessage": "Go to the top page",
     "description": "Link, for a visitor who is not signed in, on a page with nothing to show (an address with no page, an account that is not there, a timeline the server turned off) that opens the server's landing page at the root address."
+  },
+  "shell.sign_in_required.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Link, on a page that only signed-in users may read (a timeline the server keeps for them), that opens the sign-in page and comes back to that page afterwards."
   },
   "shell.not_found.title": {
     "defaultMessage": "Page not found",
