@@ -279,8 +279,19 @@ func (r *TimelineRepository) EraseFeedsOf(ctx context.Context, tx uow.Tx, accoun
 	most := int64(len(entries))
 	if len(entries) > 0 {
 		ids := entries
+		used, err := q.CountUsedFeedTagsOfEntries(ctx, ids)
+		if err != nil {
+			return 0, wrap(err, "count the counted tags of feed entries")
+		}
 		if err := runSteps(ctx, ids, "erase feed entries",
 			q.EraseFeedDirectRecipientsOfEntries, q.EraseFeedTagEntriesOfEntries, q.EraseFeedEntries); err != nil {
+			return 0, err
+		}
+		deltas := make(map[string]int64, len(used))
+		for _, u := range used {
+			deltas[u.TagID] = -u.N
+		}
+		if err := applyTagUsage(ctx, q, deltas); err != nil {
 			return 0, err
 		}
 	}

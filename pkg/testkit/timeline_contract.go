@@ -46,7 +46,8 @@ type TimelineFactory func(t *testing.T, opts uow.Options) TimelineHarness
 // profile timeline (the visibilities each relation
 // allows), blocks and mutes (with expiry) everywhere, domain mutes (off the timelines other than
 // home, with the boosts of their posts off home), the language filter, keyset paging,
-// deletions of statuses and of accounts (local and remote), and the property that incrementally updated projections equal a rebuild from the
+// deletions of statuses and of accounts (local and remote), the tag_usage projection and the prefix
+// search of hashtags over it (ADR-0092 §1), and the property that incrementally updated projections equal a rebuild from the
 // events the content and graph modules replay.
 func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 	t.Helper()
@@ -69,6 +70,8 @@ func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 		{"PagesByKeyset", timelinePaging},
 		{"ForgetsDeletedStatuses", timelineDeletes},
 		{"HidesDeletedAuthors", timelineHidesDeletedAuthors},
+		{"CountsTagUsage", timelineTagUsage},
+		{"SearchesTagsByPrefix", timelineTagSearch},
 		{"IncrementalProjectionEqualsRebuild", timelineProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -195,7 +198,7 @@ func (e *timelineEnv) tag(t *testing.T, name string) string {
 	var tag content.Tag
 	err := e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
 		var err error
-		tag, err = e.h.Statuses.EnsureTag(t.Context(), tx, content.Tag{ID: e.ids.NewID(), Name: name, NameNormalized: name, CreatedAt: e.clock.Now()})
+		tag, err = e.h.Statuses.EnsureTag(t.Context(), tx, content.Tag{ID: e.ids.NewID(), Name: name, NameNormalized: appcontent.NormalizeTag(name), CreatedAt: e.clock.Now()})
 		return err
 	})
 	if err != nil {
@@ -727,7 +730,7 @@ func timelineDeletes(t *testing.T, e *timelineEnv) {
 	if err != nil {
 		t.Fatalf("Snapshot: %v", err)
 	}
-	if len(snap.Entries)+len(snap.DirectRecipients)+len(snap.TagEntries) != 0 {
+	if len(snap.Entries)+len(snap.DirectRecipients)+len(snap.TagEntries)+len(snap.TagUsage) != 0 {
 		t.Errorf("Snapshot after deleting every status = %+v, want no entries", snap)
 	}
 	// A late revision of a deleted status changes nothing.
@@ -882,7 +885,7 @@ func timelineProjectionEqualsRebuild(t *testing.T, e *timelineEnv) {
 		t.Fatalf("Snapshot: %v", err)
 	}
 	if len(incremental.Entries) == 0 || len(incremental.FollowEdges) == 0 || len(incremental.Exclusions) == 0 ||
-		len(incremental.TagEntries) == 0 || len(incremental.DirectRecipients) == 0 {
+		len(incremental.TagEntries) == 0 || len(incremental.TagUsage) == 0 || len(incremental.DirectRecipients) == 0 {
 		t.Fatalf("the random history left some projection empty: %+v", incremental)
 	}
 	sources := []apptimeline.Source{

@@ -5,6 +5,9 @@ package sqlite
 import (
 	"context"
 	"encoding/json"
+	"maps"
+	"slices"
+	"time"
 
 	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
 	appcontent "github.com/mycroblog/my/internal/app/content"
@@ -96,7 +99,42 @@ func deleteEntryChildren(ctx context.Context, q *sqlitegen.Queries, entryID stri
 	if err := q.DeleteFeedDirectRecipients(ctx, entryID); err != nil {
 		return wrap(err, "delete feed direct recipients")
 	}
-	return wrap(q.DeleteFeedTagEntries(ctx, entryID), "delete feed tag entries")
+	used, err := q.ListCountedFeedTagIDs(ctx, entryID)
+	if err != nil {
+		return wrap(err, "list the counted tags of a feed entry")
+	}
+	if err := q.DeleteFeedTagEntries(ctx, entryID); err != nil {
+		return wrap(err, "delete feed tag entries")
+	}
+	deltas := make(map[string]int64, len(used))
+	for _, id := range used {
+		deltas[id]--
+	}
+	return applyTagUsage(ctx, q, deltas)
+}
+
+// applyTagUsage adds deltas[tag] posts to the usage of each tag, in tag order, after
+// feed_tag_entries has changed, and reads its last_used_at again (tag_usage, ADR-0092 §1). A
+// tag's usage that drops to zero is deleted.
+func applyTagUsage(ctx context.Context, q *sqlitegen.Queries, deltas map[string]int64) error {
+	for _, id := range slices.Sorted(maps.Keys(deltas)) {
+		d := deltas[id]
+		var err error
+		switch {
+		case d > 0:
+			err = q.AddTagUsage(ctx, sqlitegen.AddTagUsageParams{TagID: id, N: d})
+		case d < 0:
+			if err = q.DeleteDrainedTagUsage(ctx, sqlitegen.DeleteDrainedTagUsageParams{TagID: id, N: -d}); err == nil {
+				err = q.AdjustTagUsage(ctx, sqlitegen.AdjustTagUsageParams{TagID: id, Delta: d})
+			}
+		default:
+			err = q.AdjustTagUsage(ctx, sqlitegen.AdjustTagUsageParams{TagID: id})
+		}
+		if err != nil {
+			return wrap(err, "update tag usage")
+		}
+	}
+	return nil
 }
 
 // ReplaceDirectRecipients implements timeline.Repository.
@@ -117,23 +155,38 @@ func (r *TimelineRepository) ReplaceDirectRecipients(ctx context.Context, tx uow
 }
 
 // ReplaceTags implements timeline.Repository.
-func (r *TimelineRepository) ReplaceTags(ctx context.Context, tx uow.Tx, e apptimeline.Entry, tagIDs []string) error {
+func (r *TimelineRepository) ReplaceTags(ctx context.Context, tx uow.Tx, e apptimeline.Entry, tagIDs []string, revisedAt time.Time) error {
 	q, err := queries(tx)
 	if err != nil {
 		return err
 	}
+	used, err := q.ListCountedFeedTagIDs(ctx, e.ID)
+	if err != nil {
+		return wrap(err, "list the counted tags of a feed entry")
+	}
 	if err := q.DeleteFeedTagEntries(ctx, e.ID); err != nil {
 		return wrap(err, "delete feed tag entries")
 	}
+	deltas := map[string]int64{}
+	for _, id := range used {
+		deltas[id]--
+	}
+	counts := apptimeline.CountsTagUsage(e.Visibility)
+	added := map[string]bool{}
 	for _, id := range tagIDs {
 		err := q.InsertFeedTagEntry(ctx, sqlitegen.InsertFeedTagEntryParams{
 			TagID: id, EntryID: e.ID, AuthorAccountID: e.AuthorAccountID, Visibility: string(e.Visibility), IsLocal: boolToInt(e.IsLocal),
+			RevisedAt: toMillis(revisedAt),
 		})
 		if err != nil {
 			return wrap(err, "insert feed tag entry")
 		}
+		if counts && !added[id] { // a tag listed twice counts once
+			added[id] = true
+			deltas[id]++
+		}
 	}
-	return nil
+	return applyTagUsage(ctx, q, deltas)
 }
 
 // UpsertFollowEdge implements timeline.Repository.
@@ -253,7 +306,7 @@ func (r *TimelineRepository) DeleteProjection(ctx context.Context, tx uow.Tx) er
 		return err
 	}
 	for _, del := range []func(context.Context) error{
-		q.DeleteAllFeedEntries, q.DeleteAllFeedDirectRecipients, q.DeleteAllFeedTagEntries,
+		q.DeleteAllFeedEntries, q.DeleteAllFeedDirectRecipients, q.DeleteAllFeedTagEntries, q.DeleteAllTagUsage,
 		q.DeleteAllFeedFollowEdges, q.DeleteAllFeedExclusions, q.DeleteAllFeedDomainMutes,
 	} {
 		if err := del(ctx); err != nil {
@@ -425,9 +478,14 @@ func (r *TimelineRepository) Snapshot(ctx context.Context) (apptimeline.Projecti
 	for _, row := range tags {
 		p.TagEntries = append(p.TagEntries, apptimeline.TagEntry{
 			TagID: row.TagID, EntryID: row.EntryID, AuthorAccountID: row.AuthorAccountID,
-			Visibility: appcontent.Visibility(row.Visibility), IsLocal: row.IsLocal == 1,
+			Visibility: appcontent.Visibility(row.Visibility), IsLocal: row.IsLocal == 1, RevisedAt: fromMillis(row.RevisedAt),
 		})
 	}
+	usage, err := q.ListAllTagUsage(ctx)
+	if err != nil {
+		return p, wrap(err, "list tag usage")
+	}
+	p.TagUsage = tagUsageFrom(usage)
 	edges, err := q.ListAllFeedFollowEdges(ctx)
 	if err != nil {
 		return p, wrap(err, "list feed follow edges")
@@ -497,4 +555,24 @@ func jsonList(s []string) (string, error) {
 		return "", wrap(err, "encode a list argument")
 	}
 	return string(b), nil
+}
+
+// TagUsageOf implements timeline.Repository.
+func (r *TimelineRepository) TagUsageOf(ctx context.Context, tagIDs []string) ([]apptimeline.TagUsage, error) {
+	if len(tagIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := r.db.reader().ListTagUsageOf(ctx, tagIDs)
+	if err != nil {
+		return nil, wrap(err, "list tag usage")
+	}
+	return tagUsageFrom(rows), nil
+}
+
+func tagUsageFrom(rows []sqlitegen.TagUsage) []apptimeline.TagUsage {
+	var out []apptimeline.TagUsage
+	for _, row := range rows {
+		out = append(out, apptimeline.TagUsage{TagID: row.TagID, StatusesCount: row.StatusesCount, LastUsedAt: fromMillis(row.LastUsedAt)})
+	}
+	return out
 }

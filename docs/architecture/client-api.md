@@ -116,8 +116,10 @@ oapi-codegen は分割したファイルを直接読めないので、バンド�
   | `GET /instance/supporters` | `supporter_list_visibility`（ADR-0071 §4） | `off` / `signed_in` / `public` | `public` は同上、`signed_in` は `private, no-store` |
 
   サポーターの一覧（`GET /instance/supporters`）の応答は、問題の応答も含め、`search_indexing` に関わらずいつも `X-Robots-Tag: noindex, noarchive` です（`platform` の `noArchivePaths`、ADR-0057）。
-- 投稿フォームの補完の前方一致の検索（`GET /accounts/search`、ADR-0092）はトークン必須で、結果が閲覧者のブロック・ミュート・フォローで変わり、同じ接頭辞を打ち直すと同じ問い合わせが続くので、`Cache-Control: private, max-age=30` を付けます。
+- 投稿フォームの補完の前方一致の検索（`GET /accounts/search`・`GET /tags/search`、ADR-0092）はトークン必須で、アカウントの結果が閲覧者のブロック・ミュート・フォローで変わり、同じ接頭辞を打ち直すと同じ問い合わせが続くので、`Cache-Control: private, max-age=30` を付けます。
   `searchAccounts` は `q`（先頭の `@` を除いて 1〜100 文字）のユーザー名・`username@domain`・表示名の語の前方一致で、`account` の `PrefixSearch` が `account_search_terms` から選んだアカウントを返し、`presentable` でもう一度確かめます。`limit` は既定 8・最大 20 で、ページングも解決（`resolve`）もしません。
+  `searchTags`（スコープ `read:statuses`）は `q`（先頭の `#` を除いて 1〜100 文字）を `NormalizeTag`（NFKC + 小文字化）にした前方一致で、`timeline` の `TagSearch` が `tags.name_normalized` の範囲から最大 100 件を読み、`tag_usage` に行のあるタグ（`public` / `local` / `unlisted` の投稿に今付いているもの）だけを、完全一致 → 投稿の数の多い順 → 最近使われた順に返します。
+  応答はタグの名前（最初に使われた表記）と投稿の数（`TagSuggestion`）です。`limit` は `searchAccounts` と同じ `SearchLimit`（既定 8・最大 20）で、ページングはしません。
 - `/api/v1` のすべての応答はローカライズされうるので、`Vary: Accept-Language` を付けます（`localize`）。
   `Vary` は spec の応答ヘッダに書きません（生成コードが `Set` で上書きし、CORS の `Vary: Origin` を消すため）。
 - 匿名でも使える操作の応答はトークンの有無で変わるので、`guard` がすべての操作の応答に `Vary: Authorization` を付けます（匿名の応答をキャッシュがログイン中の要求に返さないため）。

@@ -121,6 +121,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/statuses/{id}/source":                                    {Operation: "getStatusSource", Scopes: []string{"read:statuses"}},
 	"GET /api/v1/streaming":                                               {Operation: "streamEvents", Scopes: []string{"read:notifications", "read:statuses"}},
 	"GET /api/v1/supporter/subscription":                                  {Operation: "getOwnSupporterSubscription", Scopes: []string{"read:supporters"}},
+	"GET /api/v1/tags/search":                                             {Operation: "searchTags", Scopes: []string{"read:statuses"}},
 	"GET /api/v1/timelines/home":                                          {Operation: "getHomeTimeline", Scopes: []string{"read:statuses"}},
 	"GET /api/v1/timelines/local":                                         {Operation: "getLocalTimeline", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/timelines/public":                                        {Operation: "getPublicTimeline", Anonymous: true, Scopes: []string{"read:statuses"}},

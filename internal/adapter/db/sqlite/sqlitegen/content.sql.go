@@ -1265,6 +1265,49 @@ func (q *Queries) ListStatusRevisions(ctx context.Context, statusID string) ([]S
 	return items, nil
 }
 
+const listTagsByPrefix = `-- name: ListTagsByPrefix :many
+SELECT id, name, name_normalized, created_at FROM tags
+WHERE name_normalized >= CAST(?1 AS TEXT) AND name_normalized < CAST(?2 AS TEXT)
+ORDER BY name_normalized
+LIMIT ?3
+`
+
+type ListTagsByPrefixParams struct {
+	Low  string
+	High string
+	Lim  int64
+}
+
+// ListTagsByPrefix returns up to lim tags whose name_normalized is in [low, high), in that order,
+// for the prefix search of hashtags (ADR-0092 section 1).
+func (q *Queries) ListTagsByPrefix(ctx context.Context, arg ListTagsByPrefixParams) ([]Tag, error) {
+	rows, err := q.db.QueryContext(ctx, listTagsByPrefix, arg.Low, arg.High, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Tag{}
+	for rows.Next() {
+		var i Tag
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.NameNormalized,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const rebuildAccountPostCounters = `-- name: RebuildAccountPostCounters :exec
 INSERT INTO account_post_counters (account_id, statuses_count, last_status_at)
 SELECT s.author_account_id, COUNT(*), MAX(s.published_at)

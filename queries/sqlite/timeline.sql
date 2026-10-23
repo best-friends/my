@@ -35,7 +35,7 @@ ON CONFLICT DO NOTHING;
 DELETE FROM feed_direct_recipients WHERE entry_id = ?;
 
 -- name: InsertFeedTagEntry :exec
-INSERT INTO feed_tag_entries (tag_id, entry_id, author_account_id, visibility, is_local) VALUES (?, ?, ?, ?, ?)
+INSERT INTO feed_tag_entries (tag_id, entry_id, author_account_id, visibility, is_local, revised_at) VALUES (?, ?, ?, ?, ?, ?)
 ON CONFLICT DO NOTHING;
 
 -- name: DeleteFeedTagEntries :exec
@@ -87,6 +87,9 @@ DELETE FROM feed_direct_recipients;
 -- name: DeleteAllFeedTagEntries :exec
 DELETE FROM feed_tag_entries;
 
+-- name: DeleteAllTagUsage :exec
+DELETE FROM tag_usage;
+
 -- name: DeleteAllFeedFollowEdges :exec
 DELETE FROM feed_follow_edges;
 
@@ -107,7 +110,10 @@ FROM feed_entries ORDER BY id;
 SELECT entry_id, recipient_account_id FROM feed_direct_recipients ORDER BY entry_id, recipient_account_id;
 
 -- name: ListAllFeedTagEntries :many
-SELECT tag_id, entry_id, author_account_id, visibility, is_local FROM feed_tag_entries ORDER BY tag_id, entry_id;
+SELECT tag_id, entry_id, author_account_id, visibility, is_local, revised_at FROM feed_tag_entries ORDER BY tag_id, entry_id;
+
+-- name: ListAllTagUsage :many
+SELECT tag_id, statuses_count, last_used_at FROM tag_usage ORDER BY tag_id;
 
 -- name: ListAllFeedFollowEdges :many
 SELECT follower_account_id, followee_account_id, show_boosts FROM feed_follow_edges
@@ -324,3 +330,30 @@ WHERE (effective_until IS NULL OR effective_until > CAST(sqlc.arg(now) AS INTEGE
 -- name: ListFeedDirectEntriesAmong :many
 SELECT entry_id FROM feed_direct_recipients
 WHERE recipient_account_id = sqlc.arg(viewer) AND entry_id IN (SELECT value FROM json_each(CAST(sqlc.arg(entry_ids) AS TEXT)));
+
+-- tag_usage (ADR-0092 section 1): the posts of visibility public, local, and unlisted count; the
+-- statements run after feed_tag_entries has changed, and last_used_at is read back from it.
+
+-- ListCountedFeedTagIDs returns the tags of an entry that tag_usage counts.
+-- name: ListCountedFeedTagIDs :many
+SELECT tag_id FROM feed_tag_entries WHERE entry_id = ? AND visibility IN ('public', 'local', 'unlisted') ORDER BY tag_id;
+
+-- AddTagUsage adds n posts to the usage of a tag, which a post that counts carries.
+-- name: AddTagUsage :exec
+INSERT INTO tag_usage (tag_id, statuses_count, last_used_at)
+VALUES (CAST(sqlc.arg(tag_id) AS TEXT), CAST(sqlc.arg(n) AS INTEGER), (SELECT max(f.revised_at) FROM feed_tag_entries f WHERE f.tag_id = CAST(sqlc.arg(tag_id) AS TEXT) AND f.visibility IN ('public', 'local', 'unlisted')))
+ON CONFLICT (tag_id) DO UPDATE SET statuses_count = tag_usage.statuses_count + excluded.statuses_count, last_used_at = excluded.last_used_at;
+
+-- DeleteDrainedTagUsage deletes the usage of a tag that n posts fewer would leave at zero.
+-- name: DeleteDrainedTagUsage :exec
+DELETE FROM tag_usage WHERE tag_id = CAST(sqlc.arg(tag_id) AS TEXT) AND statuses_count <= CAST(sqlc.arg(n) AS INTEGER);
+
+-- AdjustTagUsage adds delta (which may be zero or negative) posts to the usage of a tag that has
+-- a row and that a post that counts still carries, and reads its last_used_at again.
+-- name: AdjustTagUsage :exec
+UPDATE tag_usage SET statuses_count = statuses_count + CAST(sqlc.arg(delta) AS INTEGER), last_used_at = (SELECT max(f.revised_at) FROM feed_tag_entries f WHERE f.tag_id = CAST(sqlc.arg(tag_id) AS TEXT) AND f.visibility IN ('public', 'local', 'unlisted'))
+WHERE tag_id = CAST(sqlc.arg(tag_id) AS TEXT);
+
+-- ListTagUsageOf returns the usage of the tags among ids that have a row.
+-- name: ListTagUsageOf :many
+SELECT tag_id, statuses_count, last_used_at FROM tag_usage WHERE tag_id IN (sqlc.slice(ids)) ORDER BY tag_id;

@@ -129,6 +129,8 @@ type App struct {
 	AutoDelete *content.AutoDelete
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
+	// TagSearch is the prefix search of hashtags (ADR-0092 §1).
+	TagSearch *timeline.TagSearch
 	// Moderation records the actions on domains and accounts and the reports received from
 	// other servers; ModerationPolicy reads the restrictions they impose for federation and the
 	// media proxy (docs/architecture/federation.md §11), and AccountPolicy those that the
@@ -370,7 +372,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (_ *App, e
 	}
 	a.setUpGraph(cfg, repos.follows)
 	a.setUpContent(cfg, repos.statuses, repos.quotes, repos.interactions, repos.medias)
-	a.setUpTimeline(repos.feeds)
+	a.setUpTimeline(repos.feeds, repos.statuses)
 	if err := a.setUpNotification(cfg, repos.notifs, repos.pushes); err != nil {
 		return nil, err
 	}

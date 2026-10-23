@@ -23,6 +23,9 @@ type (
 	Boost = content.Boost
 	// Favourite is content.Favourite.
 	Favourite = content.Favourite
+	// Tag is content.Tag, which the timeline module's prefix search of hashtags reads
+	// (ADR-0092 §1).
+	Tag = content.Tag
 )
 
 // ErrNotBoostable is content.ErrNotBoostable: a status the account may not boost.

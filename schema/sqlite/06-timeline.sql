@@ -40,16 +40,30 @@ CREATE TABLE feed_direct_recipients (
 ) STRICT;
 CREATE INDEX feed_direct_recipients_entry_id ON feed_direct_recipients (entry_id);
 
--- Projection: the current hashtags of a post, with its immutable author and visibility.
+-- Projection: the current hashtags of a post, with its immutable author and visibility and the
+-- time of its current revision.
 CREATE TABLE feed_tag_entries (
   tag_id TEXT NOT NULL,
   entry_id TEXT NOT NULL,
   author_account_id TEXT NOT NULL,
   visibility TEXT NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
   is_local INTEGER NOT NULL CHECK (is_local IN (0, 1)),
+  revised_at INTEGER NOT NULL,
   PRIMARY KEY (tag_id, entry_id)
 ) STRICT;
 CREATE INDEX feed_tag_entries_entry_id ON feed_tag_entries (entry_id);
+-- tag_usage.last_used_at is the latest revised_at of the posts that tag_usage counts.
+CREATE INDEX feed_tag_entries_usage ON feed_tag_entries (tag_id, revised_at) WHERE visibility IN ('public', 'local', 'unlisted');
+
+-- Projection: how many posts of visibility public, local, or unlisted carry each hashtag now,
+-- and the latest time one of them was revised with it, for the prefix search of hashtags
+-- (ADR-0092 §1, FR-119, FR-306). The same projector updates it with feed_tag_entries; a tag that
+-- no such post carries has no row, so that a tag of private and direct posts only never shows.
+CREATE TABLE tag_usage (
+  tag_id TEXT NOT NULL PRIMARY KEY,
+  statuses_count INTEGER NOT NULL CHECK (statuses_count >= 1),
+  last_used_at INTEGER NOT NULL
+) STRICT;
 
 -- Projection: the active follows, with the follower's show_boosts preference.
 CREATE TABLE feed_follow_edges (

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	appaccount "github.com/mycroblog/my/internal/app/account"
 	appcontent "github.com/mycroblog/my/internal/app/content"
@@ -27,7 +28,8 @@ var errEntryExists = errors.New("timeline: the feed entry already exists")
 //   - feed_entries holds a post entry for each status that is not deleted, with the language of
 //     its current revision, and a boost entry for each live boost of such a status;
 //   - feed_direct_recipients holds the current mentions of each direct post;
-//   - feed_tag_entries holds the current tags of each post;
+//   - feed_tag_entries holds the current tags of each post, and tag_usage counts those of the
+//     posts that CountsTagUsage (ADR-0092 §1);
 //   - feed_follow_edges holds each active follow with its show_boosts preference;
 //   - feed_exclusions holds both directions of each block in force and each mute;
 //   - feed_domain_mutes holds each domain mute;
@@ -56,7 +58,7 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 		if err := insertEntry(ctx, tx, repo, entry); err != nil {
 			return err
 		}
-		return projectRevision(ctx, tx, repo, entry, rev.MentionedAccountIDs, rev.TagIDs)
+		return projectRevision(ctx, tx, repo, entry, rev.MentionedAccountIDs, rev.TagIDs, rev.RevisedAt)
 	})
 	r.Register(appcontent.EventStatusRevised, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		rev := e.(appcontent.StatusRevised).Revision
@@ -70,7 +72,7 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 		if err := repo.UpdateRevision(ctx, tx, rev.StatusID, language(rev.Language), rev.Seq); err != nil {
 			return err
 		}
-		return projectRevision(ctx, tx, repo, entry, rev.MentionedAccountIDs, rev.TagIDs)
+		return projectRevision(ctx, tx, repo, entry, rev.MentionedAccountIDs, rev.TagIDs, rev.RevisedAt)
 	})
 	r.Register(appcontent.EventStatusDeleted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		return repo.DeleteStatusEntries(ctx, tx, e.(appcontent.StatusDeleted).Status.ID)
@@ -192,15 +194,15 @@ func insertEntry(ctx context.Context, tx uow.Tx, repo Repository, e Entry) error
 	return nil
 }
 
-// projectRevision makes the mentions and tags of a post's current revision its direct recipients
-// (for a direct post) and its tags.
-func projectRevision(ctx context.Context, tx uow.Tx, repo Repository, post Entry, mentions, tags []string) error {
+// projectRevision makes the mentions and tags of a post's current revision, from revisedAt, its
+// direct recipients (for a direct post) and its tags.
+func projectRevision(ctx context.Context, tx uow.Tx, repo Repository, post Entry, mentions, tags []string, revisedAt time.Time) error {
 	if post.Visibility == appcontent.VisibilityDirect {
 		if err := repo.ReplaceDirectRecipients(ctx, tx, post.ID, mentions); err != nil {
 			return err
 		}
 	}
-	return repo.ReplaceTags(ctx, tx, post, tags)
+	return repo.ReplaceTags(ctx, tx, post, tags, revisedAt)
 }
 
 // blockExclusions are the exclusions of a block: the blocker excludes the blocked account, and

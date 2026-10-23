@@ -45,13 +45,34 @@ type DirectRecipient struct {
 	RecipientAccountID string
 }
 
-// TagEntry is a hashtag of a post's current revision (feed_tag_entries).
+// TagEntry is a hashtag of a post's current revision (feed_tag_entries); RevisedAt is the time
+// of that revision.
 type TagEntry struct {
 	TagID           string
 	EntryID         string
 	AuthorAccountID string
 	Visibility      appcontent.Visibility
 	IsLocal         bool
+	RevisedAt       time.Time
+}
+
+// TagUsage is how many posts that CountsTagUsage carry a hashtag now, and the latest RevisedAt
+// of their tag entries (tag_usage, ADR-0092 §1). A tag that no such post carries has none.
+type TagUsage struct {
+	TagID         string
+	StatusesCount int64
+	LastUsedAt    time.Time
+}
+
+// CountsTagUsage reports whether the tags of a post of visibility v count in tag_usage: those of
+// public, local, and unlisted posts do, while a tag of private or direct posts only would
+// reveal that such a post exists (ADR-0092 §1).
+func CountsTagUsage(v appcontent.Visibility) bool {
+	switch v {
+	case appcontent.VisibilityPublic, appcontent.VisibilityLocal, appcontent.VisibilityUnlisted:
+		return true
+	}
+	return false
 }
 
 // FollowEdge is an active follow (feed_follow_edges).
@@ -98,6 +119,7 @@ type Projection struct {
 	Entries          []Entry
 	DirectRecipients []DirectRecipient
 	TagEntries       []TagEntry
+	TagUsage         []TagUsage
 	FollowEdges      []FollowEdge
 	Exclusions       []Exclusion
 	DomainMutes      []DomainMute
@@ -196,15 +218,19 @@ type Repository interface {
 	// UpdateRevision gives the entries of a status (its post and its boosts) the language and
 	// seq of a revision, unless they already have that seq or a later one.
 	UpdateRevision(ctx context.Context, tx uow.Tx, statusID, language string, seq int) error
-	// DeleteEntry deletes an entry with its direct recipients and tags.
+	// DeleteEntry deletes an entry with its direct recipients and tags, taking the tags out of
+	// tag_usage.
 	DeleteEntry(ctx context.Context, tx uow.Tx, id string) error
 	// DeleteStatusEntries deletes the entries of a status (its post and its boosts) with their
-	// direct recipients and tags.
+	// direct recipients and tags, taking the tags out of tag_usage.
 	DeleteStatusEntries(ctx context.Context, tx uow.Tx, statusID string) error
 	// ReplaceDirectRecipients makes accountIDs the direct recipients of an entry.
 	ReplaceDirectRecipients(ctx context.Context, tx uow.Tx, entryID string, accountIDs []string) error
-	// ReplaceTags makes tagIDs the tags of entry e.
-	ReplaceTags(ctx context.Context, tx uow.Tx, e Entry, tagIDs []string) error
+	// ReplaceTags makes tagIDs the tags of entry e, whose current revision is from revisedAt,
+	// and, when CountsTagUsage(e.Visibility), adds the new tags to tag_usage, takes the removed
+	// ones out (deleting a row that drops to zero), and reads LastUsedAt of every tag of both
+	// again from the tag entries.
+	ReplaceTags(ctx context.Context, tx uow.Tx, e Entry, tagIDs []string, revisedAt time.Time) error
 	// UpsertFollowEdge stores e, replacing the pair's edge.
 	UpsertFollowEdge(ctx context.Context, tx uow.Tx, e FollowEdge) error
 	DeleteFollowEdge(ctx context.Context, tx uow.Tx, followerAccountID, followeeAccountID string) error
@@ -238,6 +264,8 @@ type Repository interface {
 	ListProfile(ctx context.Context, q ProfileQuery) ([]Entry, error)
 	// Facts returns what holds between a viewer and the accounts, domains, and entries of q.
 	Facts(ctx context.Context, q FactsQuery) (Facts, error)
+	// TagUsageOf returns the usage of the tags among tagIDs that have one, ordered by tag ID.
+	TagUsageOf(ctx context.Context, tagIDs []string) ([]TagUsage, error)
 
 	// Snapshot returns the content of the projections, for verifying them.
 	Snapshot(ctx context.Context) (Projection, error)

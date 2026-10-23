@@ -323,6 +323,7 @@ type FeedTagEntry struct {
 	AuthorAccountID string
 	Visibility      string
 	IsLocal         bool
+	RevisedAt       time.Time
 }
 
 type Follow struct {
@@ -1078,6 +1079,12 @@ type Tag struct {
 	Name           string
 	NameNormalized string
 	CreatedAt      time.Time
+}
+
+type TagUsage struct {
+	TagID         string
+	StatusesCount int64
+	LastUsedAt    time.Time
 }
 
 type UploadedMedium struct {

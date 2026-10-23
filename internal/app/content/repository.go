@@ -141,6 +141,9 @@ type Repository interface {
 	FindDeletionByURI(ctx context.Context, uri string) (content.Deletion, error)
 	FindTagByName(ctx context.Context, nameNormalized string) (content.Tag, error)
 	FindTag(ctx context.Context, id string) (content.Tag, error)
+	// ListTagsByPrefix returns up to limit tags whose NameNormalized is at least low and less
+	// than high, compared byte by byte, in that order (the prefix search of hashtags, ADR-0092 §1).
+	ListTagsByPrefix(ctx context.Context, low, high string, limit int) ([]content.Tag, error)
 	// ListReplies returns the statuses that reply to uri and are not deleted, ordered by ID.
 	ListReplies(ctx context.Context, uri string) ([]content.Status, error)
 	// ListLiveRemoteStatusIDs returns up to limit remote statuses of an author that are not

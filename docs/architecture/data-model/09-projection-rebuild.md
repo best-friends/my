@@ -17,7 +17,7 @@
 | `status_link_cards` | `status_revisions` の本文・ソース・添付・投票、`status_deletions` | 同期（URL は Go の `content.LinkCardURL` が選ぶので、`my projection` の対象ではない） |
 | `status_quote_states` | `status_quotes`, `status_quote_events` | 同期（再構築は Go の `content.RebuildQuoteStates`） |
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
-| `feed_*` | `content` と `graph` の `ReplayEvents` が現在の状態から再生するイベント（下記） | 同期 |
+| `feed_*` / `tag_usage` | `content` と `graph` の `ReplayEvents` が現在の状態から再生するイベント（下記） | 同期 |
 | `feed_author_restrictions` / `feed_domain_restrictions` | `moderation.ReplayEvents` と `account.ReplayDeletions` が再生するイベント（下記） | 同期 |
 | `poll_tallies` | `poll_tally_observations`, `poll_tally_observation_counts` | 同期 |
 | `notification_exclusions` / `notification_domain_exclusions` | `blocks` と取り消し（`block_edges`）、`mutes`、`account_domain_mutes` | 同期 |
@@ -65,7 +65,7 @@
 - 他のモジュールのイベントから作る投影（`feed_*`）は、元のモジュールのテーブルを読まずに再構築します。
   `content.ReplayEvents` は削除されていない投稿ごとに現在版つきの `content.status_created` を、有効なブーストごとに `content.boosted` を、
   `graph.ReplayEvents` は有効なフォローごとに `graph.followed`（承認待ちなら `graph.follow_requested`）を、有効なブロックごとに `graph.blocked` を、ミュートごとに `graph.muted` を、ドメインのミュートごとに `graph.domain_muted` を、
-  再構築のトランザクションの中で発行します。`timeline.RebuildProjections` は `feed_*`（制限の 2 表を除く）を空にして、これらに自分の projector を適用します。
+  再構築のトランザクションの中で発行します。`timeline.RebuildProjections` は `feed_*`（制限の 2 表を除く）と `tag_usage` を空にして、これらに自分の projector を適用します。
 - 制限の 2 表は `timeline.RebuildRestrictions` が作ります。`moderation.ReplayEvents` は解除されていない処分のあるアカウントごとに `moderation.account_restrictions_changed` を、
   ドメインごとに `moderation.domain_restrictions_changed` を、その時点で効いている制限を載せて発行し、`account.ReplayDeletions` はアカウントを削除したライフサイクルのイベントごとに
   `account.lifecycle_event_recorded` を発行します。`timeline` の projector は処分と解除のたびにしか行を置き換えないので、期限の来た行が次の処分か解除まで残ります。

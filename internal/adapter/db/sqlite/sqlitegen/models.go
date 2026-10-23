@@ -321,6 +321,7 @@ type FeedTagEntry struct {
 	AuthorAccountID string
 	Visibility      string
 	IsLocal         int64
+	RevisedAt       int64
 }
 
 type Follow struct {
@@ -1076,6 +1077,12 @@ type Tag struct {
 	Name           string
 	NameNormalized string
 	CreatedAt      int64
+}
+
+type TagUsage struct {
+	TagID         string
+	StatusesCount int64
+	LastUsedAt    int64
 }
 
 type UploadedMedium struct {

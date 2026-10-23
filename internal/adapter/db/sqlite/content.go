@@ -610,6 +610,19 @@ func (r *StatusRepository) FindTagByName(ctx context.Context, nameNormalized str
 	return tagFrom(row), nil
 }
 
+// ListTagsByPrefix implements content.Repository.
+func (r *StatusRepository) ListTagsByPrefix(ctx context.Context, low, high string, limit int) ([]content.Tag, error) {
+	rows, err := r.db.reader().ListTagsByPrefix(ctx, sqlitegen.ListTagsByPrefixParams{Low: low, High: high, Lim: int64(limit)})
+	if err != nil {
+		return nil, wrap(err, "list tags by prefix")
+	}
+	out := make([]content.Tag, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, tagFrom(row))
+	}
+	return out, nil
+}
+
 // FindTag implements content.Repository.
 func (r *StatusRepository) FindTag(ctx context.Context, id string) (content.Tag, error) {
 	row, err := r.db.reader().GetTag(ctx, id)
