@@ -1,8 +1,8 @@
 name: UI story tests
 
 # The @my/ui story tests (ADR-0027): axe on every story and the screenshots at 3 container widths × light / dark
-# × LTR / RTL, in the pinned Playwright image. Called by ctx-web.yml when a pull request touches the ui context
-# (ADR-0047).
+# × LTR / RTL, in the pinned Playwright image. Called by ci.yml when a pull request touches the ui context
+# (ADR-0079).
 
 on:
   workflow_call:
@@ -31,8 +31,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
-      - name: Cache Bun packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # main.yml's bun-ui-cache job builds it in the same image.
+      - name: Restore the Bun package cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.bun/install/cache
           key: bun-ui-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}

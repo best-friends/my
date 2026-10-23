@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Prints the check contexts that the changes since BASE touch, one per line, including the contexts that
-# depend on them. `scripts/task.sh check:changed` runs the matching `<context>:check` tasks and CI's `changes` job
-# skips the jobs of the other contexts.
+# depend on them. `scripts/task.sh check:changed` runs the matching `<context>:check` tasks, and the `changes` job of
+# .github/workflows/ci.yml picks from them the jobs of the full check (server-static, client-test, docker, ...).
 #
 #   scripts/changed-contexts.sh BASE          changes from the merge base of BASE and HEAD to the working tree,
 #                                             plus untracked files (local use)

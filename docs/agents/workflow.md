@@ -55,7 +55,10 @@ scripts/task.sh go:check       # or one context: docs:check, go:check, i18n:chec
 scripts/task.sh check          # every context, when the change touches shared configuration
 ```
 
-Must pass. CI runs every affected context again and its `check` gate decides the merge.
+Must pass. The pull request's `check` runs only the preflight (formatting, licenses, image versions, tokens); the
+compile, type, lint, and test checks of the changed contexts run in the merge queue, so the local run is what keeps a
+broken PR out of the queue. To run the full check on the PR itself (to look into a failure in the queue, or to check
+an outside contributor's PR early), add the label `ci:full`.
 If a check is wrong or flaky, fix it in a separate commit and explain in the PR.
 
 Pull requests do not run the web E2E. In single-issue work, when the change touches the web client, run `scripts/task.sh web:e2e`
@@ -68,18 +71,19 @@ gh run list -R best-friends/my --workflow web-e2e.yml --branch <branch> --limit 
 
 ### What CI runs where
 
-The layout of [ADR-0047](../adr/0047-ci-protection-layers.md) (`.github/workflows/`):
+The layout of [ADR-0079](../adr/0079-ci-single-gate-merge-queue.md) (`.github/workflows/`). Each job of `ci.yml` sets up its tools
+and runs one `scripts/task.sh ci:<job>`, which runs the same locally:
 
 | When | Workflow | What runs |
 | --- | --- | --- |
-| Pull request | `ci.yml` | The `ctx-<context>.yml` of every context the change touches and of its dependents (`scripts/changed-contexts.sh`), the same checks as `scripts/task.sh check`, with the PostgreSQL tests on pgmem; the `@my/ui` story tests (`ui-test.yml`) when `app/ui` changes; the linux/arm64 image builds when the docker context changes; the Docker Compose smoke test when the docker context, `cmd/`, or `internal/platform/` changes. The required `check` collects the results |
-| Merge queue | `ci.yml` | The same contexts again on the merge group (the PR on top of `main` and the PRs queued ahead of it), without the checks decided file by file (markdownlint, Go and npm licenses, shellcheck, the CSS `100vh` check, design tokens, the Playwright image version) and without the story tests, the smoke test, and the arm64 builds. The queue merges the group when `check` passes |
+| Pull request | `ci.yml` | `preflight` (`ci:preflight`), the checks a PR's own files or lockfiles decide, so stacking PRs cannot break them: markdownlint, shellcheck, gofmt, the Go and npm licenses, the Dockerfile and `.tool-versions` versions, the Playwright image version, the design tokens, and the CSS `100vh` check; and the `@my/ui` story tests (`ui-test.yml`) when the ui context changes. The required `check` collects the results. A PR labelled `ci:full` also runs the merge queue's jobs; adding or removing the label reruns the checks |
+| Merge queue | `ci.yml` | The full check on the merge group (the PR on top of `main` and of the PRs queued ahead of it), one job per kind of check, each only when the group changes its contexts (`scripts/changed-contexts.sh`): `server-static` (tidy, vet, golangci-lint, the builds, the generated code Go reads, the schema of both dialects) and `server-test` (the Go tests, PostgreSQL on pgmem) for go, schema, api, and i18n; `client-static` (tsc, Oxlint, knip, the Vite build, the i18n catalogs) and `client-test` (Vitest in 2 shards) for ui, web, api, and i18n; `repo` (agentkit, its context map, the ADR numbers) always; `docker` (the Docker Compose smoke test) for the docker context, `cmd/`, and `internal/platform/`, with the linux/arm64 image builds for the docker context. At most 7 jobs; a skipped job counts as passed. The queue merges the group when `check` passes |
 | Push to `main` | `main.yml` | No checks: only the caches that pull requests and the queue restore ([ADR-0079](../adr/0079-ci-single-gate-merge-queue.md)). The Go cache (modules, builds, golangci-lint) is built from empty directories, keyed on the Go version, `go.sum`, `tools/go.sum`, and the date; the Bun caches are keyed on the lockfiles. Each is built only when no cache of its key exists yet |
-| Release gate, nightly, by hand | `slow-suite.yml` | The slow suite of [ADR-0079](../adr/0079-ci-single-gate-merge-queue.md): the full web E2E matrix on 8 shards (`web-e2e.yml`), the live interoperability test (`federation-live.yml`), the PostgreSQL tests on a real container (`postgres-contract.yml`), the `stream.Bus` contracts on broker containers (`stream-contract.yml`), the smoke test and the arm64 builds (`ctx-docker.yml`), and CodeQL code scanning (`codeql.yml`; the results go to the Security tab). Its last job, `result`, fails when any of them failed. Never on pull requests or merge groups, and not part of `check` |
+| Release gate, nightly, by hand | `slow-suite.yml` | The slow suite of [ADR-0079](../adr/0079-ci-single-gate-merge-queue.md): the full web E2E matrix on 8 shards (`web-e2e.yml`), the live interoperability test (`federation-live.yml`), the PostgreSQL tests on a real container (`postgres-contract.yml`), the `stream.Bus` contracts on broker containers (`stream-contract.yml`), the smoke test and the arm64 builds (`ci:docker ARM64=true`), and CodeQL code scanning (`codeql.yml`; the results go to the Security tab). Its last job, `result`, fails when any of them failed. Never on pull requests or merge groups, and not part of `check` |
 | Release (by hand) | `release.yml` | The slow suite on the dispatched commit; only when it passes, the tag and a draft GitHub Release ([releasing.md](../operations/releasing.md)) |
 | Nightly (03:00 JST) | `nightly.yml` | The slow suite on the head of `main`, skipped when `main` has not moved since the last successful Nightly run |
 
-`ctx-<context>.yml`, `slow-suite.yml`, `nightly.yml`, `web-e2e.yml`, `federation-live.yml`, `postgres-contract.yml`, `stream-contract.yml`,
+`slow-suite.yml`, `nightly.yml`, `web-e2e.yml`, `federation-live.yml`, `postgres-contract.yml`, `stream-contract.yml`,
 and `codeql.yml` also run by hand on any branch (`gh workflow run <file> --ref <branch>`). The web E2E subset (`web-e2e.yml` with
 `matrix: pr`, the default) runs only by hand.
 
@@ -103,8 +107,8 @@ EOF
 
 ## 7. Merge through the merge queue
 
-`main` takes pull requests only through GitHub's merge queue. CI runs again on each merge group (the PR on top of
-`main` and of the PRs queued ahead of it) and the queue merges the group when its required `check` passes.
+`main` takes pull requests only through GitHub's merge queue. CI runs the full check on each merge group (the PR on top
+of `main` and of the PRs queued ahead of it) and the queue merges the group when its required `check` passes.
 
 - Once the PR's CI is green, the orchestrator or the decider queues it: `gh pr merge <PR> -R best-friends/my --auto --merge`.
 - Merge `main` into the branch only when the PR conflicts or the queue drops it, never just to stay current: the queue
@@ -167,7 +171,8 @@ once the milestone's implementation issues are done. Single-issue work keeps the
 
 ### Agents in the queue
 
-- The PR gate is `scripts/task.sh check:changed` locally and the PR's `check` CI. Do not run the web E2E per PR (`scripts/task.sh web:e2e`
+- The PR gate is `scripts/task.sh check:changed` locally and the PR's `check` CI, which runs only the preflight: the
+  local run is the one that catches compile, type, and test failures before the merge queue. Do not run the web E2E per PR (`scripts/task.sh web:e2e`
   or `web-e2e.yml`), not even the specs the change adds: write and update the E2E specs the change needs, but do not
   run the suite.
 - Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R best-friends/my --json mergeable`).

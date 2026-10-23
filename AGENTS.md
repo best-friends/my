@@ -54,14 +54,16 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 1. Only take issues labeled **`agent:ready`** with no assignee. Never take `status:needs-decision`.
 2. Branch `<type>/<issue>-<slug>`; never push to `main`.
 3. Before every commit, run the checks of the contexts you touched (`scripts/task.sh go:check`, `scripts/task.sh web:check`, ...) or
-   `scripts/task.sh check:changed`; the CI `check` gate runs every affected context and must pass. Run the full `scripts/task.sh check`
+   `scripts/task.sh check:changed`; the PR's CI runs only a preflight, and the compile, type, lint, and test checks run in the
+   merge queue, so this local run keeps a broken PR out of the queue. Run the full `scripts/task.sh check`
    when the change touches shared configuration.
 4. Open a PR using the template, with `Closes #N` and the acceptance criteria checked, and wait for its CI to pass.
-   Pull requests run the `check` gate ([ADR-0047](docs/adr/0047-ci-protection-layers.md)) but not the web E2E: in single-issue work, for a
+   Pull requests run the `check` gate as a preflight of under 2 minutes ([ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md);
+   the label `ci:full` runs the merge queue's full check on the PR too) but not the web E2E: in single-issue work, for a
    change to the web client, run `scripts/task.sh web:e2e` or `gh workflow run web-e2e.yml --ref <branch>`. In a parallel batch run by an orchestrator,
    follow [workflow.md §9](docs/agents/workflow.md#9-parallel-batches) instead (no per-PR web E2E; failures of the nightly web E2E are fixed together at the end of the milestone).
    Do not merge or queue the PR yourself: the orchestrator or the decider queues it with `gh pr merge --auto`, and the merge queue
-   runs `check` again on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
+   runs the full `check` of the changed contexts on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
    queue drops it. Pushes to `main` check nothing and only build the caches that PRs and the queue restore. The slower
    suites and CodeQL (`slow-suite.yml`) run as the release gate (`release.yml`), nightly, and by hand, never on PRs
    ([ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)); the table of what runs where is in the workflow.

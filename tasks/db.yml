@@ -36,11 +36,14 @@ tasks:
   check-all:
     desc: Run db:check for SQLite and, on the db:up container, PostgreSQL (needs Docker)
     # In processes of their own: the dialect's variables (DB_URL, ...) derive from DB_DIALECT, and variables passed to
-    # a task do not reach its dependencies.
+    # a task do not reach its dependencies. The container's variables are passed on, so the PostgreSQL check runs on
+    # the container db:up started.
     cmds:
       - DB_DIALECT=sqlite scripts/task.sh db:check
       - task: up
-      - DB_DIALECT=postgres scripts/task.sh db:check
+      - >-
+        DB_DIALECT=postgres PG_CONTAINER={{shellQuote .PG_CONTAINER}} PG_PORT={{shellQuote .PG_PORT}}
+        PG_IMAGE={{shellQuote .PG_IMAGE}} scripts/task.sh db:check
 
   atlas:
     desc: Install the pinned Atlas Community Edition into bin/atlas

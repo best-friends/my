@@ -61,7 +61,7 @@ curl -H 'Accept: application/activity+json' http://localhost:8080/ap/actors/<Web
 - リバースプロキシの背後では `.env` に `MY_TRUSTED_PROXIES` を設定し、ログインなどのレート制限を利用者の IP ごとにします
   （値の決め方は [デプロイターゲット](docs/architecture/deployment-targets.md#信頼するプロキシとクライアント-ip)）。
 - `docker compose down` で止めます。`down -v` はデータのボリュームも消します。
-- CI は同じ手順を `scripts/docker-smoke.sh`（`scripts/task.sh docker:smoke`）で、Docker の構成・`cmd/`・`internal/platform/` を変える PR と nightly で実行します。
+- CI は同じ手順を `scripts/docker-smoke.sh`（`scripts/task.sh docker:smoke`）で、Docker の構成・`cmd/`・`internal/platform/` を変えるマージグループ（Merge Queue）と遅い検査（リリースの関門・nightly）で実行します。
 
 設定項目は [設定リファレンス](docs/reference/configuration.md)、運用は [サーバーの起動・停止](docs/operations/running.md) を参照してください。
 

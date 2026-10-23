@@ -46,20 +46,24 @@ TypeScript だけが読む生成物（`app/web/src/routeTree.gen.ts`・`app/web/
 
 ## CI
 
-CI（`.github/workflows/`）は、どこで何を検査するかを次のように分けています（[ADR-0047](docs/adr/0047-ci-protection-layers.md)）。
+CI（`.github/workflows/`）は、どこで何を検査するかを次のように分けています（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。
+`ci.yml` の各ジョブはツールを準備して `scripts/task.sh ci:<job>` を 1 つ呼ぶだけなので、同じ検査を手元でも回せます。
 
 | いつ | ワークフロー | 回すもの |
 | --- | --- | --- |
-| PR | `ci.yml` | 変更したコンテキストとその依存先の `ctx-<context>.yml`（`scripts/task.sh check` と同じ検査。Go のテストは pgmem の上で動く）。`app/ui` を変えたら `@my/ui` のストーリーテスト（`ui-test.yml`）、Docker の構成を変えたら linux/arm64 のイメージのビルド、Docker の構成・`cmd/`・`internal/platform/` を変えたら Docker Compose のスモークテストも回す。必須チェック `check` が結果を集める |
-| Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で、変更したコンテキストの検査をもう一度回す。ファイルごとに決まる検査（markdownlint・Go と npm の依存ライセンス・shellcheck・CSS の `100vh`・デザイントークン・Playwright のイメージの版）と、ストーリーテスト・スモークテスト・arm64 のビルドは飛ばす。`check` が通ればキューがマージする |
+| PR | `ci.yml` | `preflight`（`ci:preflight`）。その PR のファイルや lockfile だけで結果が決まる検査で、markdownlint・shellcheck・gofmt・Go と npm の依存ライセンス・Dockerfile と `.tool-versions` の版・Playwright のイメージの版・デザイントークン・CSS の `100vh`。ui の文脈を変えたら `@my/ui` のストーリーテスト（`ui-test.yml`）も回す。必須チェック `check` が結果を集める。ラベル `ci:full` を付けた PR では Merge Queue と同じジョブも回す（ラベルの付け外しで回し直す） |
+| Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で本検査を回す。変えた文脈（`scripts/changed-contexts.sh`）に応じて、go・schema・api・i18n なら `server-static`（tidy・vet・golangci-lint・ビルド・Go が読む生成物・両方言のスキーマ）と `server-test`（Go のテスト。PostgreSQL は pgmem）、ui・web・api・i18n なら `client-static`（tsc・Oxlint・knip・Vite のビルド・i18n のカタログ）と `client-test`（Vitest を 2 シャード）、常に `repo`（agentkit・文脈の地図・ADR の番号）、Docker の構成・`cmd/`・`internal/platform/` なら `docker`（Docker Compose のスモークテスト。Docker の構成なら linux/arm64 のイメージのビルドも）。最大 7 ジョブで、スキップしたジョブは成功として数える。`check` が通ればキューがマージする |
 | `main` への push | `main.yml` | 検査はせず、PR と Merge Queue が復元するキャッシュだけを作る（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。Go のキャッシュ（モジュール・ビルド・golangci-lint）は、Go の版・`go.sum`・`tools/go.sum`・日付をキーに空から作り直し、Bun のキャッシュは lockfile をキーにする。どちらもそのキーのキャッシュがまだないときだけ作る |
 | リリースの関門・nightly・手動 | `slow-suite.yml` | 遅い検査（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。Web の E2E の全マトリクス（8 シャード）、ライブの相互運用テスト（`federation-live.yml`）、本物の PostgreSQL でのテスト、`stream.Bus` の契約のブローカーのコンテナでのテスト、スモークテストと linux/arm64 のイメージのビルド、CodeQL のコードスキャン（`codeql.yml`。結果は Security タブに出る）。PR と Merge Queue では回さず、`check` にも入らない |
 | リリース（手動） | `release.yml` | 指定したコミットで遅い検査を回し、通ったときだけタグと GitHub Release の下書きを作る |
 | nightly（03:00 JST） | `nightly.yml` | `main` の先頭で遅い検査を回す。前に成功した nightly から `main` が動いていなければ飛ばす |
 
+- PR の CI はコンパイル・型・テストを回しません。push の前に手元で `scripts/task.sh check:changed` を通してください。
+  Merge Queue で落ちた原因を PR で調べるときや、外からの貢献の PR を早めに確かめるときは、PR にラベル `ci:full` を付けます。
 - PR では Web の E2E は自動では回りません。Web クライアントに触れる PR は、手元で `scripts/task.sh web:e2e` を回すか、PR のブランチに対して
   `gh workflow run web-e2e.yml -R best-friends/my --ref <branch>`（全マトリクスは `-f matrix=full` を足す。Actions タブからも実行できる）で回します。
-- `ctx-<context>.yml`・`slow-suite.yml`・`nightly.yml`・`federation-live.yml`・`codeql.yml` も `workflow_dispatch` で手で回せます。
+- `slow-suite.yml`・`nightly.yml`・`web-e2e.yml`・`federation-live.yml`・`postgres-contract.yml`・`stream-contract.yml`・`codeql.yml` も
+  `workflow_dispatch` で手で回せます。
 
 ## スキーマの変更
 
