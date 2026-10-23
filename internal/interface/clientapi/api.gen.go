@@ -1754,7 +1754,7 @@ const (
 	InstanceSettingKeyDefaultLocale                    InstanceSettingKey = "default_locale"
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
-	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
+	InstanceSettingKeyFederatedTimelineAccess          InstanceSettingKey = "federated_timeline_access"
 	InstanceSettingKeyFederationMode                   InstanceSettingKey = "federation_mode"
 	InstanceSettingKeyFinanceViewerIncome              InstanceSettingKey = "finance_viewer_income"
 	InstanceSettingKeyFinanceViewerItemMemos           InstanceSettingKey = "finance_viewer_item_memos"
@@ -1763,7 +1763,7 @@ const (
 	InstanceSettingKeyIncomeVisibility                 InstanceSettingKey = "income_visibility"
 	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
 	InstanceSettingKeyLinkCardsEnabled                 InstanceSettingKey = "link_cards_enabled"
-	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
+	InstanceSettingKeyLocalTimelineAccess              InstanceSettingKey = "local_timeline_access"
 	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
 	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
 	InstanceSettingKeyRegistrationMode                 InstanceSettingKey = "registration_mode"
@@ -1800,7 +1800,7 @@ func (e InstanceSettingKey) Valid() bool {
 		return true
 	case InstanceSettingKeyDomainActionsVisibility:
 		return true
-	case InstanceSettingKeyFederatedTimelineEnabled:
+	case InstanceSettingKeyFederatedTimelineAccess:
 		return true
 	case InstanceSettingKeyFederationMode:
 		return true
@@ -1818,7 +1818,7 @@ func (e InstanceSettingKey) Valid() bool {
 		return true
 	case InstanceSettingKeyLinkCardsEnabled:
 		return true
-	case InstanceSettingKeyLocalTimelineEnabled:
+	case InstanceSettingKeyLocalTimelineAccess:
 		return true
 	case InstanceSettingKeyMaxStatusLength:
 		return true
@@ -2833,6 +2833,27 @@ func (e ThemeErrorScheme) Valid() bool {
 	case ThemeErrorSchemeDark:
 		return true
 	case ThemeErrorSchemeLight:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TimelineAccess.
+const (
+	TimelineAccessEveryone TimelineAccess = "everyone"
+	TimelineAccessLoggedIn TimelineAccess = "logged_in"
+	TimelineAccessOff      TimelineAccess = "off"
+)
+
+// Valid indicates whether the value is a known member of the TimelineAccess enum.
+func (e TimelineAccess) Valid() bool {
+	switch e {
+	case TimelineAccessEveryone:
+		return true
+	case TimelineAccessLoggedIn:
+		return true
+	case TimelineAccessOff:
 		return true
 	default:
 		return false
@@ -6583,8 +6604,10 @@ type Instance struct {
 	// variant of the media file. Omitted when there is none, or while the file is processing.
 	Thumbnail *InstanceThumbnail `json:"thumbnail,omitempty"`
 
-	// Timelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
-	// clients do not offer it.
+	// Timelines Who may read the public timelines the instance serves (FR-202): `local` is the instance
+	// setting `local_timeline_access` of `GET /timelines/local`, and `federated` the instance
+	// setting `federated_timeline_access` of `GET /timelines/public`. Clients do not offer a
+	// timeline that is `off`, nor one that is `logged_in` to a visitor who is not logged in.
 	Timelines InstanceTimelines `json:"timelines"`
 
 	// Version The server version.
@@ -6772,14 +6795,22 @@ type InstanceThumbnail struct {
 	Width  int     `json:"width"`
 }
 
-// InstanceTimelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
-// clients do not offer it.
+// InstanceTimelines Who may read the public timelines the instance serves (FR-202): `local` is the instance
+// setting `local_timeline_access` of `GET /timelines/local`, and `federated` the instance
+// setting `federated_timeline_access` of `GET /timelines/public`. Clients do not offer a
+// timeline that is `off`, nor one that is `logged_in` to a visitor who is not logged in.
 type InstanceTimelines struct {
-	// Federated Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`).
-	Federated bool `json:"federated"`
+	// Federated Who may read a public timeline (the instance settings `local_timeline_access` and
+	// `federated_timeline_access`, FR-202): `off`, nobody, and the timeline is a 404;
+	// `logged_in`, the users logged in to this server, and an anonymous request is a 401;
+	// `everyone`, everyone, anonymous visitors included.
+	Federated TimelineAccess `json:"federated"`
 
-	// Local Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`).
-	Local bool `json:"local"`
+	// Local Who may read a public timeline (the instance settings `local_timeline_access` and
+	// `federated_timeline_access`, FR-202): `off`, nobody, and the timeline is a 404;
+	// `logged_in`, the users logged in to this server, and an anonymous request is a 401;
+	// `everyone`, everyone, anonymous visitors included.
+	Local TimelineAccess `json:"local"`
 }
 
 // LiftAccountActionRequest Why an action on an account is lifted.
@@ -8899,6 +8930,12 @@ type ThemeTokenValue struct {
 	Token string  `json:"token"`
 	Value *string `json:"value,omitempty"`
 }
+
+// TimelineAccess Who may read a public timeline (the instance settings `local_timeline_access` and
+// `federated_timeline_access`, FR-202): `off`, nobody, and the timeline is a 404;
+// `logged_in`, the users logged in to this server, and an anonymous request is a 401;
+// `everyone`, everyone, anonymous visitors included.
+type TimelineAccess string
 
 // TotpSetup A new TOTP secret to add to an authenticator app.
 type TotpSetup struct {

@@ -51,7 +51,7 @@ func TestServe(t *testing.T) {
 			_, _ = w.Write([]byte(body))
 		})
 	}
-	const instance = `{"domain":"a.example","name":"A","version":"1","source_url":"https://a.example/src","registrations":{"mode":"open"},"limits":{"max_post_characters":500,"require_media_description":false},"timelines":{"local":true,"federated":true},"federation":{"mode":"both"},"sends_email":false,"rules":[],"search_indexing":"deny","ai_usage":"deny","finance_visibility":"private","income_visibility":"private","supporters_enabled":false,"supporter_list_visibility":"off"}`
+	const instance = `{"domain":"a.example","name":"A","version":"1","source_url":"https://a.example/src","registrations":{"mode":"open"},"limits":{"max_post_characters":500,"require_media_description":false},"timelines":{"local":"everyone","federated":"everyone"},"federation":{"mode":"both"},"sends_email":false,"rules":[],"search_indexing":"deny","ai_usage":"deny","finance_visibility":"private","income_visibility":"private","supporters_enabled":false,"supporter_list_visibility":"off"}`
 	tests := []struct {
 		name     string
 		path     string
@@ -61,7 +61,7 @@ func TestServe(t *testing.T) {
 		{name: "conforming response", path: "/api/v1/instance", handler: respond(http.StatusOK, "application/json", instance)},
 		{name: "conforming problem", path: "/api/v1/instance", handler: respond(http.StatusNotFound, "application/problem+json", `{"type":"about:blank","title":"Not found","status":404}`)},
 		{name: "missing required property", path: "/api/v1/instance", handler: respond(http.StatusOK, "application/json", `{"domain":"a.example"}`), wantFail: true},
-		{name: "wrong property type", path: "/api/v1/instance", handler: respond(http.StatusOK, "application/json", `{"domain":"a.example","name":"A","version":"1","source_url":"https://a.example/src","registrations":{"mode":"open"},"limits":{"max_post_characters":"500"},"timelines":{"local":true,"federated":true},"sends_email":false,"rules":[]}`), wantFail: true},
+		{name: "wrong property type", path: "/api/v1/instance", handler: respond(http.StatusOK, "application/json", `{"domain":"a.example","name":"A","version":"1","source_url":"https://a.example/src","registrations":{"mode":"open"},"limits":{"max_post_characters":"500"},"timelines":{"local":"everyone","federated":"everyone"},"sends_email":false,"rules":[]}`), wantFail: true},
 		{name: "undocumented content type", path: "/api/v1/instance", handler: respond(http.StatusOK, "text/plain", "hello"), wantFail: true},
 		{name: "error that is not a problem", path: "/api/v1/instance", handler: respond(http.StatusInternalServerError, "text/plain", "boom"), wantFail: true},
 		{name: "path outside the spec", path: "/api/v1/nope", handler: respond(http.StatusOK, "application/json", "{}"), wantFail: true},

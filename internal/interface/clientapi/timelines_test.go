@@ -370,18 +370,23 @@ func TestPublicTimeline(t *testing.T) {
 	}
 }
 
-func TestPublicTimelineCanBeDisabled(t *testing.T) {
+// timelineAccessEnv is a timeline environment whose instance settings are settings.
+func timelineAccessEnv(t *testing.T, settings ...instance.CurrentSetting) *timelineEnv {
 	te := &timelineEnv{timelines: &fakeTimelines{}, views: &fakeViews{}}
 	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
 		o.Timelines, o.TimelineReader = te.timelines, te.views
-		o.Instance = &fakeInstance{settings: []instance.CurrentSetting{
-			{Key: instance.SettingFederatedTimelineEnabled, RevisionID: "r1", Value: "false"},
-		}}
+		o.Instance = &fakeInstance{settings: settings}
+		o.TimelineLanguages = func(context.Context, string) ([]string, error) { return []string{"ja"}, nil }
 	})
-	for _, auth := range []map[string]string{{"Accept-Language": "ja"}, {"Authorization": "Bearer read"}} {
+	return te
+}
+
+func TestPublicTimelineCanBeTurnedOff(t *testing.T) {
+	te := timelineAccessEnv(t, instance.CurrentSetting{Key: instance.SettingFederatedTimelineAccess, RevisionID: "r1", Value: "off"})
+	for _, auth := range []map[string]string{{"Accept-Language": "ja"}, {"Accept-Language": "ja", "Authorization": "Bearer read"}} {
 		res := te.get(t, "/timelines/public", auth)
 		if res.StatusCode != http.StatusNotFound {
-			t.Fatalf("disabled federated timeline = %d, want 404", res.StatusCode)
+			t.Fatalf("federated timeline turned off = %d, want 404", res.StatusCode)
 		}
 		if p := decodeProblem(t, res); p.Type != clientapi.ProblemTypeBlank || p.Title != "指定されたリソースが見つかりません。" {
 			t.Errorf("problem = %+v", p)
@@ -394,21 +399,66 @@ func TestPublicTimelineCanBeDisabled(t *testing.T) {
 	decodePage(t, te.get(t, "/timelines/local", nil))
 }
 
-func TestLocalTimelineCanBeDisabled(t *testing.T) {
-	te := &timelineEnv{timelines: &fakeTimelines{}, views: &fakeViews{}}
-	te.authEnv = newAuthEnv(t, func(o *clientapi.Options) {
-		o.Timelines, o.TimelineReader = te.timelines, te.views
-		o.Instance = &fakeInstance{settings: []instance.CurrentSetting{
-			{Key: instance.SettingLocalTimelineEnabled, RevisionID: "r1", Value: "false"},
-		}}
-	})
-	if res := te.get(t, "/timelines/local", nil); res.StatusCode != http.StatusNotFound {
-		t.Errorf("disabled local timeline = %d, want 404", res.StatusCode)
+func TestLocalTimelineCanBeTurnedOff(t *testing.T) {
+	te := timelineAccessEnv(t, instance.CurrentSetting{Key: instance.SettingLocalTimelineAccess, RevisionID: "r1", Value: "off"})
+	for _, auth := range []map[string]string{nil, {"Authorization": "Bearer read"}} {
+		if res := te.get(t, "/timelines/local", auth); res.StatusCode != http.StatusNotFound {
+			t.Errorf("local timeline turned off = %d, want 404", res.StatusCode)
+		}
 	}
 	if len(te.timelines.calls) != 0 {
 		t.Errorf("calls = %+v, want none", te.timelines.calls)
 	}
 	decodePage(t, te.get(t, "/timelines/public", nil))
+}
+
+// TestTimelinesForLoggedInUsers checks the timelines whose access is logged_in: an anonymous
+// request is a 401 that no shared cache keeps, and a logged-in user gets the same page as ever.
+func TestTimelinesForLoggedInUsers(t *testing.T) {
+	for _, tc := range []struct {
+		path, timeline string
+		key            instance.SettingKey
+	}{
+		{"/timelines/local", "local", instance.SettingLocalTimelineAccess},
+		{"/timelines/public", "public", instance.SettingFederatedTimelineAccess},
+	} {
+		t.Run(tc.timeline, func(t *testing.T) {
+			te := timelineAccessEnv(t, instance.CurrentSetting{Key: tc.key, RevisionID: "r1", Value: "logged_in"})
+			res := te.get(t, tc.path, map[string]string{"Accept-Language": "ja"})
+			if res.StatusCode != http.StatusUnauthorized {
+				t.Fatalf("anonymous request = %d, want 401", res.StatusCode)
+			}
+			if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
+				t.Errorf("anonymous Cache-Control = %q, want no-store", cc)
+			}
+			if !slices.Contains(res.Header.Values("Vary"), "Authorization") {
+				t.Errorf("Vary = %q, want Authorization", res.Header.Values("Vary"))
+			}
+			if res.Header.Get("WWW-Authenticate") == "" {
+				t.Error("WWW-Authenticate is missing")
+			}
+			if p := decodeProblem(t, res); p.Type != clientapi.ProblemTypeUnauthenticated {
+				t.Errorf("problem = %+v, want unauthenticated", p)
+			}
+			if len(te.timelines.calls) != 0 {
+				t.Errorf("calls = %+v, want none", te.timelines.calls)
+			}
+
+			res = te.get(t, tc.path, map[string]string{"Authorization": "Bearer read"})
+			decodePage(t, res)
+			want := []timelineCall{{
+				timeline: tc.timeline,
+				viewer:   appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: aliceAccountID},
+				query:    apptimeline.Query{Languages: []string{"ja"}},
+			}}
+			if !slices.EqualFunc(te.timelines.calls, want, equalCall) {
+				t.Errorf("logged-in calls = %+v, want %+v", te.timelines.calls, want)
+			}
+			if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
+				t.Errorf("logged-in Cache-Control = %q, want no-store", cc)
+			}
+		})
+	}
 }
 
 func TestHashtagTimeline(t *testing.T) {

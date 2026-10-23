@@ -252,14 +252,17 @@ export const autoplayKey = declareKey<boolean>("my:display:autoplay", {
 });
 
 /** Which public timelines the instance served when GET /instance last answered (features/timeline). */
-export type StoredTimelines = { local: boolean; federated: boolean };
+/** Who may read a public timeline (the instance settings `local_timeline_access` and `federated_timeline_access`). */
+const timelineAccess = z.enum(["off", "logged_in", "everyone"]);
+
+export type StoredTimelines = { local: z.infer<typeof timelineAccess>; federated: z.infer<typeof timelineAccess> };
 
 /** The instance's public timelines, kept for a start without the network; an instance setting, not the user's data. */
 export const timelinesKey = declareKey<StoredTimelines | null>("my:instance:timelines", {
   area: "local",
-  version: 1,
+  version: 2,
   defaultValue: null,
-  parse: schemaParser(z.object({ local: z.boolean(), federated: z.boolean() })),
+  parse: schemaParser(z.object({ local: timelineAccess, federated: timelineAccess })),
   userData: false,
 });
 

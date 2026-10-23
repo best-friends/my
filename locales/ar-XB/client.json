@@ -6043,20 +6043,44 @@
     "defaultMessage": "‮Mɥo ɯɐʎ ɹǝɐp ʇɥǝ snddoɹʇǝɹ ʅısʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.timelines.access.everyone": {
+    "defaultMessage": "‮Ǝʌǝɹʎouǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.everyone.description": {
+    "defaultMessage": "‮Ʌısıʇoɹs ʍɥo ɐɹǝ uoʇ sıƃuǝp ıu ɔɐu ɹǝɐp ıʇ ʇoo, ɐup ʇɥǝ ʅɐupıuƃ dɐƃǝ sɥoʍs ɐ sɐɯdʅǝ oɟ ʇɥǝ ʅoɔɐʅ ʇıɯǝʅıuǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.logged_in": {
+    "defaultMessage": "‮Sıƃuǝp-ıu nsǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.logged_in.description": {
+    "defaultMessage": "‮Ouʅʎ nsǝɹs sıƃuǝp ıu ʇo ʇɥıs sǝɹʌǝɹ ɔɐu ɹǝɐp ıʇ. Ʌısıʇoɹs ɐɹǝ ɐsʞǝp ʇo sıƃu ıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.off": {
+    "defaultMessage": "‮Noqopʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.timelines.access.off.description": {
+    "defaultMessage": "‮⊥ɥǝ ʇıɯǝʅıuǝ ıs oɟɟ ɐup ıs uoʇ oɟɟǝɹǝp ʇo ɐuʎouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.settings.timelines.federated": {
-    "defaultMessage": "‮Oɟɟǝɹ ʇɥǝ ɟǝpǝɹɐʇǝp ʇıɯǝʅıuǝ‬",
+    "defaultMessage": "‮Ⅎǝpǝɹɐʇǝp ʇıɯǝʅıuǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.federated.description": {
-    "defaultMessage": "‮⊥ɥǝ dnqʅıɔ dosʇs ʇɥɐʇ ɹǝɐɔɥ ʇɥıs sǝɹʌǝɹ, ɟɹoɯ oʇɥǝɹ sǝɹʌǝɹs ʇoo.‬",
+    "defaultMessage": "‮⊥ɥǝ dnqʅıɔ dosʇs ʇɥɐʇ ɹǝɐɔɥ ʇɥıs sǝɹʌǝɹ, ɟɹoɯ oʇɥǝɹ sǝɹʌǝɹs ʇoo. Mɥo ɯɐʎ ɹǝɐp ıʇ?‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.local": {
-    "defaultMessage": "‮Oɟɟǝɹ ʇɥǝ ʅoɔɐʅ ʇıɯǝʅıuǝ‬",
+    "defaultMessage": "‮⅂oɔɐʅ ʇıɯǝʅıuǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.local.description": {
-    "defaultMessage": "‮⊥ɥǝ dnqʅıɔ dosʇs oɟ ʇɥıs sǝɹʌǝɹ's ɐɔɔonuʇs.‬",
+    "defaultMessage": "‮⊥ɥǝ dnqʅıɔ dosʇs oɟ ʇɥıs sǝɹʌǝɹ's ɐɔɔonuʇs. Mɥo ɯɐʎ ɹǝɐp ıʇ?‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.timelines.title": {
@@ -8687,6 +8711,14 @@
     "defaultMessage": "‮⊥ɥǝ ʅoɔɐʅ ʇıɯǝʅıuǝ ıs oɟɟ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "local.sign_in_required.body": {
+    "defaultMessage": "‮Sıƃu ıu ʇo ɹǝɐp ʇɥǝ dnqʅıɔ dosʇs oɟ ʇɥıs sǝɹʌǝɹ's ɐɔɔonuʇs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "local.sign_in_required.title": {
+    "defaultMessage": "‮⊥ɥǝ ʅoɔɐʅ ʇıɯǝʅıuǝ ıs ɟoɹ sıƃuǝp-ıu nsǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "local.title": {
     "defaultMessage": "‮⅂oɔɐʅ ʇıɯǝʅıuǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -9281,6 +9313,14 @@
   },
   "public.disabled.title": {
     "defaultMessage": "‮⊥ɥǝ ɟǝpǝɹɐʇǝp ʇıɯǝʅıuǝ ıs oɟɟ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.sign_in_required.body": {
+    "defaultMessage": "‮Sıƃu ıu ʇo ɹǝɐp ʇɥǝ dnqʅıɔ dosʇs ʇɥɐʇ ɹǝɐɔɥ ʇɥıs sǝɹʌǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "public.sign_in_required.title": {
+    "defaultMessage": "‮⊥ɥǝ ɟǝpǝɹɐʇǝp ʇıɯǝʅıuǝ ıs ɟoɹ sıƃuǝp-ıu nsǝɹs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "public.title": {
@@ -11173,6 +11213,10 @@
   },
   "shell.rate_limited": {
     "defaultMessage": "‮⊥oo ɯɐuʎ ɹǝbnǝsʇs ʍǝɹǝ sǝuʇ ʇo ʇɥǝ sǝɹʌǝɹ. Mɥɐʇ ɟɐıʅǝp ʇo ʅoɐp ʅoɐps ɐƃɐıu ɐʇ {time}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.sign_in_required.sign_in": {
+    "defaultMessage": "‮Sıƃu ıu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.skip_to_main": {

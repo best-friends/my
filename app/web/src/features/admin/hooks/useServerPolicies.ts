@@ -19,8 +19,8 @@ import { languageName, selectableLocales } from "./languages";
 const policyKeys = [
   "registration_mode",
   "default_locale",
-  "local_timeline_enabled",
-  "federated_timeline_enabled",
+  "local_timeline_access",
+  "federated_timeline_access",
   "require_media_description",
   "federation_mode",
   "authorized_fetch",

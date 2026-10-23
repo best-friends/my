@@ -27,12 +27,12 @@ type SettingKey string
 // Setting keys. Adding one means adding its Definition below and its value to the CHECK
 // constraint of instance_setting_revisions.key in schema/<dialect>.sql.
 const (
-	SettingRegistrationMode         SettingKey = "registration_mode"
-	SettingMaxStatusLength          SettingKey = "max_status_length"
-	SettingDefaultLocale            SettingKey = "default_locale"
-	SettingLocalTimelineEnabled     SettingKey = "local_timeline_enabled"
-	SettingFederatedTimelineEnabled SettingKey = "federated_timeline_enabled"
-	SettingPreviewImage             SettingKey = "preview_image"
+	SettingRegistrationMode        SettingKey = "registration_mode"
+	SettingMaxStatusLength         SettingKey = "max_status_length"
+	SettingDefaultLocale           SettingKey = "default_locale"
+	SettingLocalTimelineAccess     SettingKey = "local_timeline_access"
+	SettingFederatedTimelineAccess SettingKey = "federated_timeline_access"
+	SettingPreviewImage            SettingKey = "preview_image"
 	// SettingContactAccount and SettingContactEmail are how people reach the instance's operators,
 	// and SettingThumbnail is the image that represents the instance (its alt text is
 	// TextThumbnailAlt): the about page, GET /instance, and NodeInfo publish them.
@@ -102,6 +102,19 @@ const (
 	RegistrationInvite   RegistrationMode = "invite"   // sign-up needs an invite
 	RegistrationClosed   RegistrationMode = "closed"   // nobody may sign up
 )
+
+// TimelineAccess is the value of SettingLocalTimelineAccess and SettingFederatedTimelineAccess
+// (FR-202): who may read the timeline.
+type TimelineAccess string
+
+// Timeline access values.
+const (
+	TimelineOff      TimelineAccess = "off"       // nobody: the API is a 404
+	TimelineLoggedIn TimelineAccess = "logged_in" // the instance's logged-in users
+	TimelineEveryone TimelineAccess = "everyone"  // everyone, anonymous visitors included
+)
+
+var timelineAccessChoices = []string{string(TimelineOff), string(TimelineLoggedIn), string(TimelineEveryone)}
 
 // FederationMode is the value of SettingFederationMode (FR-413, ADR-0076). Its values are those
 // of the federation module's mode (federation.Mode), which decides what each one lets through.
@@ -299,12 +312,12 @@ var definitions = []Definition{
 		Doc: "Initial UI locale of new users, and the locale for visitors whose preferences match no catalog (ADR-0009).",
 	},
 	{
-		Key: SettingLocalTimelineEnabled, Kind: KindBool, Default: "true",
-		Doc: "Whether the local timeline is available (FR-202).",
+		Key: SettingLocalTimelineAccess, Kind: KindEnum, Default: string(TimelineEveryone), Choices: timelineAccessChoices,
+		Doc: "Who may read the local timeline: nobody, logged-in users, or everyone (FR-202).",
 	},
 	{
-		Key: SettingFederatedTimelineEnabled, Kind: KindBool, Default: "true",
-		Doc: "Whether the federated timeline is available (FR-202).",
+		Key: SettingFederatedTimelineAccess, Kind: KindEnum, Default: string(TimelineEveryone), Choices: timelineAccessChoices,
+		Doc: "Who may read the federated timeline: nobody, logged-in users, or everyone (FR-202).",
 	},
 	{
 		Key: SettingPreviewImage, Kind: KindMedia, Default: "",
@@ -690,12 +703,16 @@ func (s Settings) DefaultLocale() string {
 	return v
 }
 
-// LocalTimelineEnabled returns the value of SettingLocalTimelineEnabled.
-func (s Settings) LocalTimelineEnabled() bool { return s.boolValue(SettingLocalTimelineEnabled) }
+// LocalTimelineAccess returns the value of SettingLocalTimelineAccess.
+func (s Settings) LocalTimelineAccess() TimelineAccess {
+	v, _ := s.Value(SettingLocalTimelineAccess)
+	return TimelineAccess(v)
+}
 
-// FederatedTimelineEnabled returns the value of SettingFederatedTimelineEnabled.
-func (s Settings) FederatedTimelineEnabled() bool {
-	return s.boolValue(SettingFederatedTimelineEnabled)
+// FederatedTimelineAccess returns the value of SettingFederatedTimelineAccess.
+func (s Settings) FederatedTimelineAccess() TimelineAccess {
+	v, _ := s.Value(SettingFederatedTimelineAccess)
+	return TimelineAccess(v)
 }
 
 // PreviewImageMediaID returns the value of SettingPreviewImage, "" when unset.

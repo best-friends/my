@@ -300,8 +300,8 @@ const instanceSettings: Schemas["AdminSettingList"] = {
   items: [
     { key: "registration_mode", kind: "enum", value: "approval", default: "approval", stored: false, choices: ["open", "approval", "invite", "closed"] },
     { key: "default_locale", kind: "locale", value: "en", default: "en", stored: false },
-    { key: "local_timeline_enabled", kind: "bool", value: "true", default: "true", stored: false },
-    { key: "federated_timeline_enabled", kind: "bool", value: "true", default: "true", stored: false },
+    { key: "local_timeline_access", kind: "enum", value: "everyone", default: "everyone", stored: false, choices: ["off", "logged_in", "everyone"] },
+    { key: "federated_timeline_access", kind: "enum", value: "everyone", default: "everyone", stored: false, choices: ["off", "logged_in", "everyone"] },
     { key: "remote_media_policy", kind: "enum", value: "none", default: "none", stored: false, choices: ["none", "avatars", "all"] },
     { key: "remote_media_cache_ttl", kind: "int", value: "86400", default: "86400", stored: false, minimum: 60, maximum: 31536000 },
     { key: "authorized_fetch", kind: "bool", value: "false", default: "false", stored: false },
@@ -365,7 +365,7 @@ async function moderatorServer(page: Page) {
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     const key = `${request.method()} ${path}`;
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: "everyone", federated: "everyone" }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials" || key === `GET /accounts/${moderator.id}`) return json(route, moderator);
     if (key === `GET /accounts/${target.id}`) return json(route, target);

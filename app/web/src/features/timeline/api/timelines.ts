@@ -13,6 +13,9 @@ import type { components } from "../../../lib/api/schema.gen";
 /** A status (post or boost), as the client API returns it. */
 export type Status = components["schemas"]["Status"];
 
+/** Who may read a public timeline: nobody (it is a 404), the signed-in users (a 401 for visitors), or everyone (FR-202). */
+export type TimelineAccess = components["schemas"]["TimelineAccess"];
+
 /** A page of a timeline. */
 export type StatusPage = components["schemas"]["StatusPage"];
 

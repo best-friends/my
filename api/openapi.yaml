@@ -2917,7 +2917,8 @@ paths:
       description: |
         The public posts of the instance's accounts, newest first, and their local posts for a
         logged-in viewer, in the viewer's timeline languages. The instance setting
-        `local_timeline_enabled` turns it off; it is then a 404.
+        `local_timeline_access` decides who may read it: while it is `off` it is a 404, and while it
+        is `logged_in` an anonymous request is a 401.
       tags:
         - timelines
       security:
@@ -2940,7 +2941,8 @@ paths:
         The public posts of the instance's accounts and of the remote accounts whose posts the
         instance holds, newest first, in the viewer's timeline languages (FR-202). Posts of other
         visibilities, `local` ones included, and boosts never appear on it. The instance setting
-        `federated_timeline_enabled` turns it off; it is then a 404.
+        `federated_timeline_access` decides who may read it: while it is `off` it is a 404, and while it
+        is `logged_in` an anonymous request is a 401.
       tags:
         - timelines
       security:
@@ -12395,8 +12397,8 @@ components:
         - registration_mode
         - max_status_length
         - default_locale
-        - local_timeline_enabled
-        - federated_timeline_enabled
+        - local_timeline_access
+        - federated_timeline_access
         - preview_image
         - contact_account
         - contact_email
@@ -12504,19 +12506,19 @@ components:
           type: string
     InstanceTimelines:
       description: |
-        Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
-        clients do not offer it.
+        Who may read the public timelines the instance serves (FR-202): `local` is the instance
+        setting `local_timeline_access` of `GET /timelines/local`, and `federated` the instance
+        setting `federated_timeline_access` of `GET /timelines/public`. Clients do not offer a
+        timeline that is `off`, nor one that is `logged_in` to a visitor who is not logged in.
       type: object
       required:
         - local
         - federated
       properties:
         local:
-          description: Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`).
-          type: boolean
+          $ref: '#/components/schemas/TimelineAccess'
         federated:
-          description: Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`).
-          type: boolean
+          $ref: '#/components/schemas/TimelineAccess'
     LiftAccountActionRequest:
       description: Why an action on an account is lifted.
       type: object
@@ -15201,6 +15203,17 @@ components:
           type: string
         value:
           type: string
+    TimelineAccess:
+      description: |
+        Who may read a public timeline (the instance settings `local_timeline_access` and
+        `federated_timeline_access`, FR-202): `off`, nobody, and the timeline is a 404;
+        `logged_in`, the users logged in to this server, and an anonymous request is a 401;
+        `everyone`, everyone, anonymous visitors included.
+      type: string
+      enum:
+        - 'off'
+        - logged_in
+        - everyone
     TotpSetup:
       description: A new TOTP secret to add to an authenticator app.
       type: object

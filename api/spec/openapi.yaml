@@ -1365,6 +1365,8 @@ components:
       $ref: ./components/schemas/ThemeProblem.yaml
     ThemeTokenValue:
       $ref: ./components/schemas/ThemeTokenValue.yaml
+    TimelineAccess:
+      $ref: ./components/schemas/TimelineAccess.yaml
     TotpSetup:
       $ref: ./components/schemas/TotpSetup.yaml
     TwoFactor:

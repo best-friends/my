@@ -4908,20 +4908,44 @@
     "description": "Description of the server settings screen in the administration menu."
   },
   "admin.settings.timelines.federated": {
-    "defaultMessage": "連合タイムラインを提供する",
-    "description": "Checkbox that turns the federated timeline on."
+    "defaultMessage": "連合タイムライン",
+    "description": "Label of the radio group that chooses who may read the federated timeline."
   },
   "admin.settings.timelines.federated.description": {
-    "defaultMessage": "ほかのサーバーのものを含め、このサーバーに届いた公開の投稿です。",
-    "description": "Description of the federated timeline checkbox."
+    "defaultMessage": "ほかのサーバーのものを含め、このサーバーに届いた公開の投稿です。誰に見せるかを選びます。",
+    "description": "Description of the radio group that chooses who may read the federated timeline."
+  },
+  "admin.settings.timelines.access.everyone": {
+    "defaultMessage": "誰にでも",
+    "description": "Choice of who may read a public timeline: everyone, visitors who are not signed in included."
+  },
+  "admin.settings.timelines.access.everyone.description": {
+    "defaultMessage": "ログインしていない訪問者も見られます。ローカルタイムラインなら、ランディングページに見本の投稿が出ます。",
+    "description": "Description of the choice that lets everyone read a public timeline."
+  },
+  "admin.settings.timelines.access.logged_in": {
+    "defaultMessage": "ログインした利用者に",
+    "description": "Choice of who may read a public timeline: only the users signed in to this server."
+  },
+  "admin.settings.timelines.access.logged_in.description": {
+    "defaultMessage": "このサーバーにログインした利用者だけが見られます。訪問者にはログインを促します。",
+    "description": "Description of the choice that lets only signed-in users read a public timeline."
+  },
+  "admin.settings.timelines.access.off": {
+    "defaultMessage": "誰にも",
+    "description": "Choice of who may read a public timeline: nobody, the timeline is off."
+  },
+  "admin.settings.timelines.access.off.description": {
+    "defaultMessage": "タイムラインを止め、誰にも出しません。",
+    "description": "Description of the choice that turns a public timeline off."
   },
   "admin.settings.timelines.local": {
-    "defaultMessage": "ローカルタイムラインを提供する",
-    "description": "Checkbox that turns the local timeline on."
+    "defaultMessage": "ローカルタイムライン",
+    "description": "Label of the radio group that chooses who may read the local timeline."
   },
   "admin.settings.timelines.local.description": {
-    "defaultMessage": "このサーバーのアカウントの公開の投稿です。",
-    "description": "Description of the local timeline checkbox."
+    "defaultMessage": "このサーバーのアカウントの公開の投稿です。誰に見せるかを選びます。",
+    "description": "Description of the radio group that chooses who may read the local timeline."
   },
   "admin.settings.timelines.title": {
     "defaultMessage": "タイムライン",
@@ -6203,6 +6227,14 @@
     "defaultMessage": "ローカルタイムラインは提供されていません",
     "description": "Heading and document title of the local timeline's page when the server's operators have turned that timeline off."
   },
+  "local.sign_in_required.body": {
+    "defaultMessage": "このサーバーのアカウントの公開投稿を見るには、ログインしてください。",
+    "description": "Text below the heading of the local timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
+  },
+  "local.sign_in_required.title": {
+    "defaultMessage": "ローカルタイムラインはログインした利用者向けです",
+    "description": "Heading and document title of the local timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
+  },
   "landing.title": {
     "defaultMessage": "{instance} へようこそ",
     "description": "Heading and document title of the landing page that people who are not signed in see at the root address. {instance} is the name of this server."
@@ -6890,6 +6922,14 @@
   "public.disabled.title": {
     "defaultMessage": "連合タイムラインは提供されていません",
     "description": "Heading and document title of the federated timeline's page when the server's operators have turned that timeline off."
+  },
+  "public.sign_in_required.body": {
+    "defaultMessage": "このサーバーに届いた公開投稿を見るには、ログインしてください。",
+    "description": "Text below the heading of the federated timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
+  },
+  "public.sign_in_required.title": {
+    "defaultMessage": "連合タイムラインはログインした利用者向けです",
+    "description": "Heading and document title of the federated timeline's page for visitors who are not signed in, when the server shows that timeline only to signed-in users."
   },
   "public.title": {
     "defaultMessage": "連合タイムライン",
@@ -8890,6 +8930,10 @@
   "shell.not_found.landing": {
     "defaultMessage": "トップページへ",
     "description": "Link, for a visitor who is not signed in, on a page with nothing to show (an address with no page, an account that is not there, a timeline the server turned off) that opens the server's landing page at the root address."
+  },
+  "shell.sign_in_required.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Link, on a page that only signed-in users may read (a timeline the server keeps for them), that opens the sign-in page and comes back to that page afterwards."
   },
   "shell.not_found.title": {
     "defaultMessage": "ページが見つかりません",

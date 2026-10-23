@@ -7,6 +7,7 @@ import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
 import { HomeLink } from "./-layout/HomeLink";
+import { SignInLink } from "./-layout/SignInLink";
 
 /**
  * The federated timeline (FR-202): the public posts of this server's accounts and of the accounts of other
@@ -48,11 +49,21 @@ function PublicPending() {
 }
 
 /**
- * A 404 is the instance setting that turns the federated timeline off (api/openapi.yaml,
- * getPublicTimeline), reached from an old link or bookmark: it says so instead of offering to try again.
+ * A 404 is the instance setting that turns the federated timeline off, and a 401 the one that keeps it for
+ * signed-in users (api/openapi.yaml, getPublicTimeline), reached from an old link, a bookmark, or a shared address: it says
+ * so, with the way to sign in for the latter, instead of offering to try again.
  */
 function PublicError(props: ErrorComponentProps) {
   const t = useT();
+  if (props.error instanceof ApiError && props.error.status === 401) {
+    return (
+      <>
+        <PageHeading visuallyHidden={false}>{t("client:public.sign_in_required.title")}</PageHeading>
+        <p>{t("client:public.sign_in_required.body")}</p>
+        <SignInLink returnTo="/public" />
+      </>
+    );
+  }
   if (!(props.error instanceof ApiError && props.error.status === 404)) return <RouteError {...props} />;
   return (
     <>
