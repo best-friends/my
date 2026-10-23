@@ -8,10 +8,14 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { clientCatalogs } from "./vite-plugins/client-catalogs.ts";
+import { bundledLicenses } from "./vite-plugins/licenses.ts";
 import { reactCompiler } from "./vite-plugins/react-compiler.ts";
 
 /** The shared message catalogs at the repository root (ADR-0009). */
 const localesDir = fileURLToPath(new URL("../../locales", import.meta.url));
+
+/** The license notices of bundled data that are not npm dependencies, copied into dist/licenses/. */
+const licenseFiles = [fileURLToPath(new URL("src/features/emoji/unicode/LICENSE-Unicode.txt", import.meta.url))];
 
 export default defineConfig({
   // Go serves the HTML and builds its <script> / <link> tags from the manifest (ADR-0028).
@@ -51,6 +55,7 @@ export default defineConfig({
     react(),
     reactCompiler(),
     clientCatalogs(localesDir),
+    bundledLicenses(licenseFiles),
     tailwindcss(),
     // The Service Worker (ADR-0028): sw/sw.ts with the precache manifest injected, built into dist/sw.js
     // (https://vite-pwa-org.netlify.app/guide/inject-manifest.html). Go generates the Web App Manifest and

@@ -170,7 +170,7 @@
 
 - 絵文字リアクション（FR-116、ADR-0052）は、お気に入りとは別の資源です。1 人が 1 投稿に絵文字ごとに 1 つ付けられ、取り消すと行を消して `content.unreacted` を発行します（取り消した後の付け直しは新しい行）。
 - `status_reaction_counts` は削除されていない投稿のリアクションを絵文字ごとに数え、`reactions` の行を実際に挿入・削除したときだけ増減します。件数が 0 になった行は消し、投稿の削除イベントでその投稿の行を消します。再構築は、削除されていない投稿の `reactions` を絵文字ごとに数えます。
-- Unicode 絵文字は、Unicode の `emoji-test.txt`（`scripts/task.sh go:emoji-table` が生成する `internal/domain/content/emoji_table.gen.go`）の fully-qualified の形に正規化してから `emoji_key` にします。異体字セレクタ（U+FE0F）の有無が違う同じ絵文字は、同じ件数に数えます。
+- Unicode 絵文字は、Unicode の `emoji-test.txt`（`scripts/task.sh emoji:generate` が生成する `internal/domain/content/emoji_table.gen.go`）の fully-qualified の形に正規化してから `emoji_key` にします。異体字セレクタ（U+FE0F）の有無が違う同じ絵文字は、同じ件数に数えます。
 - **リモートのリアクション**: 受信した `EmojiReact` と、絵文字の付いた `Like`（[federation.md §3.4](../../federation.md#34-アクティビティごとのハンドラ)）を、`content` の公開 API（`RecordRemoteReaction` / `RemoveRemoteReaction`）で記録します。リモートのアカウントがリアクションできるのは、お気に入りと同じく閲覧できる（`ContextObjectFetch`）ローカルの投稿だけで、交流の禁止（`interact`）の制限があれば記録しません。リアクションの `id` は活動の `published`（無い・未来なら受信時刻）の UUIDv7 です。
   - カスタム絵文字は、投稿のカスタム絵文字と同じく `custom_emojis` と `custom_emoji_images` に取り込み、画像はリアクションした人のリモートのメディアです。ドメインは `Emoji` の `id` のホスト（`id` が無ければリアクションした人のドメイン）で、第三のサーバーの絵文字はそのサーバーの絵文字になります。
   - `Undo` は、`reactions (uri)`、`favourites (uri)` の順に引き、どちらにも無ければ埋め込みの活動の投稿と絵文字で主体のリアクション（またはお気に入り）を消します。

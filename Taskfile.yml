@@ -33,6 +33,7 @@ includes:
   db: ./tasks/db.yml
   docker: ./tasks/docker.yml
   docs: ./tasks/docs.yml
+  emoji: ./tasks/emoji.yml
   go: ./tasks/go.yml
   i18n: ./tasks/i18n.yml
   shell: ./tasks/shell.yml
