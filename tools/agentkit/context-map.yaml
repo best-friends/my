@@ -44,12 +44,12 @@ entries:
     checks: [docs]
   - name: build-and-ci
     paths: ["Taskfile.yml", "tasks/**", ".github/**", "scripts/**", ".claude/**"]
-    docs: ["docs/agents/workflow.md#what-ci-runs-where", "docs/adr/0079-ci-single-gate-merge-queue.md", "docs/adr/0080-task-runner-go-task.md", "docs/operations/releasing.md"]
+    docs: ["docs/agents/workflow.md#what-ci-runs-where", "docs/adr/0079-ci-single-gate-merge-queue.md", "docs/adr/0080-task-runner-go-task.md", "docs/adr/0083-ci-steps-not-tasks.md", "docs/operations/releasing.md"]
     checks: [docs, go, i18n, api, ui, web, docker, agentkit]
     shared: true
     notes:
       - "Taskfile.yml, tasks/, workflows and scripts/changed-contexts.sh select every check context: run `scripts/task.sh check`."
-      - "Each job of .github/workflows/ci.yml runs one `scripts/task.sh ci:<job>`: change what a job checks in Taskfile.yml, and run that task locally."
+      - "Each job of .github/workflows/ci.yml runs its checks as parallel steps, each calling one area task (ADR-0083): a new check in a `<context>:check` task also needs a step, or `docs:ci-coverage` fails."
 
   # --- Documents --------------------------------------------------------------------------------------
   - name: adr
