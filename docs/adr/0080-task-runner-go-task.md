@@ -1,6 +1,6 @@
 # ADR-0080: タスクの実行を Make から go-task に移す
 
-- Status: Accepted
+- Status: Accepted（CI のジョブを `task ci:<job>` で組む部分と CI の出力の設定を ADR-0083（CI のジョブはワークフローのステップで組み、go-task は手元の入口にする） が置き換える）
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1052

@@ -1,6 +1,6 @@
 # ADR-0083: CI のジョブはワークフローのステップで組み、go-task は手元の入口にする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-23
 - Deciders: @rosylilly
 - Issue: #1064
@@ -24,6 +24,10 @@ GitHub Actions は、1 つのジョブの中でステップを並列に動かせ
 並列のステップは、それぞれのログと実行を持つ。1 つのジョブで同時に動く background のステップは 10 まで。composite action の中では使えない
 （[changelog](https://github.blog/changelog/2026-06-25-actions-steps-can-now-be-run-in-parallel)、[Workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)、2026-10-23 確認）。
 
+決定者の決定（チャット、原文）:
+
+> Accepted
+
 ## Decision Drivers（判断基準）
 
 1. CI の画面で、検査ごとの所要時間・ログ・失敗の場所が分かる
@@ -39,9 +43,7 @@ GitHub Actions は、1 つのジョブの中でステップを並列に動かせ
 
 ## Decision（決定）
 
-> 推奨案。
-
-**選択肢 2 を推奨する。**
+**選択肢 2 を採る。**
 
 - go-task は、各検査のコマンドの唯一の定義と、手元の入口（`check`・`check:changed`・領域ごとの `*:check`・生成・開発の起動）に徹する。
 - CI のジョブは、ワークフローで組む。準備のステップ（checkout・`setup-go`・`setup-bun`・`setup-task`・生成）の後に、互いに依存しない検査を `parallel` のステップにする。
