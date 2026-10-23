@@ -251,7 +251,7 @@ func newAdminEnvWithQueue(t *testing.T) (*authEnv, *fakeHealth, *fakeDeadJobs, *
 			StartedAt: failed, FinishedAt: failed},
 	}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.InstanceHealth = health
 		o.DeadJobs = dead
 		o.Queue = clientapi.QueueDashboard{Adapter: "db", Inspector: inspector, Attempts: attempts, Clock: fixedClock(adminNow)}
@@ -444,7 +444,7 @@ func TestGetAdminQueue(t *testing.T) {
 // SQS): no counts, empty pages of pending jobs, while the dead jobs are still listed.
 func TestAdminQueueWithoutListing(t *testing.T) {
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.DeadJobs = &fakeDeadJobs{dead: []queue.DeadJob{{ID: deadJobA, Type: "kv.cleanup", Payload: json.RawMessage(`null`), Attempt: 3, LastError: "db down", CreatedAt: adminNow, FailedAt: adminNow}}}
 		o.Queue = clientapi.QueueDashboard{Adapter: "sqs"}
 	})

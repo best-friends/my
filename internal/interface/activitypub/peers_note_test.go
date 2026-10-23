@@ -16,6 +16,7 @@ import (
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/interface/activitypub"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 const (
@@ -52,12 +53,12 @@ func newNoteWorld() *noteWorld {
 			AuthorAccountID: aliceID, IsLocal: true, Visibility: appcontent.VisibilityPublic, PublishedAt: published,
 		},
 		rev: appcontent.Revision{
-			ID: noteStatusID + "-r", StatusID: noteStatusID, Seq: 1, SpoilerText: "a content warning", Language: "en", RevisedAt: published,
+			ID: testkit.NamedID("note-revision"), StatusID: noteStatusID, Seq: 1, SpoilerText: "a content warning", Language: "en", RevisedAt: published,
 			Bodies: []content.Body{{Language: "en", ContentHTML: body}}, MentionedAccountIDs: []string{bobID},
 		},
 		parts: appcontent.RevisionParts{
 			Mentions: []appaccount.Actor{bob},
-			Tags:     []content.Tag{{ID: "t1", Name: "fediverse", NameNormalized: "fediverse"}},
+			Tags:     []content.Tag{{ID: testkit.NamedID("tag-fediverse"), Name: "fediverse", NameNormalized: "fediverse"}},
 			Attachments: []appcontent.MediaView{{
 				Media: appcontent.Media{
 					Result: &content.MediaProcessingResult{

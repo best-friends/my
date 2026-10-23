@@ -19,6 +19,7 @@ import (
 	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/notification"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // fakeFiledReports keeps the reports of every reporter, ascending by ID.
@@ -62,7 +63,7 @@ func newFiledReportsEnv(t *testing.T, ns ...notification.Notification) *authEnv 
 	filed := &fakeFiledReports{recs: []moderation.ReportRecord{rec(1, aliceAccountID), rec(2, aliceAccountID), rec(3, aliceAccountID), rec(4, bobAccountID)}}
 	filed.recs[1].Status = moderation.ReportStatus{
 		ReportID: filedReportID(2), State: moderation.ReportResolved, Outcome: moderation.OutcomeActioned,
-		AssigneeUserID: "moderator-user", Since: at.Add(time.Hour),
+		AssigneeUserID: testkit.NamedID("moderator-user"), Since: at.Add(time.Hour),
 	}
 	return newAuthEnv(t, func(o *clientapi.Options) {
 		accounts := fakeAccounts{}
@@ -87,7 +88,7 @@ func readResolutionFree(t *testing.T, res *http.Response) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, leak := range []string{"actioned", "moderator-user", "outcome", "assignee"} {
+	for _, leak := range []string{"actioned", testkit.NamedID("moderator-user"), "outcome", "assignee"} {
 		if strings.Contains(string(raw), leak) {
 			t.Errorf("the response has %q: %s", leak, raw)
 		}

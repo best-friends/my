@@ -13,6 +13,7 @@ import (
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // fakeImports reads files with the domain's parser; each account has one block, and an import
@@ -35,7 +36,7 @@ func (f *fakeImports) PreviewImport(_ context.Context, in appidentity.ImportInpu
 	}
 	p := appidentity.ImportPreview{Entries: entries, Skipped: skipped}
 	if in.Mode == identity.ImportOverwrite {
-		p.Removals = []appidentity.ImportTarget{{ID: "1"}}
+		p.Removals = []appidentity.ImportTarget{{ID: testkit.NamedID("removal")}}
 	}
 	return p, nil
 }
@@ -125,7 +126,7 @@ func TestDataImports(t *testing.T) {
 		started.Kind != clientapi.DataImportKindBlocks || started.Mode != clientapi.DataImportModeOverwrite || !started.CreatedAt.Equal(f.now) {
 		t.Errorf("start = %d %+v, want 202 in progress", res.StatusCode, started)
 	}
-	if len(f.started) != 1 || f.started[0].UserID != "user-"+aliceAccountID || f.started[0].AccountID != aliceAccountID {
+	if len(f.started) != 1 || f.started[0].UserID != userOf(aliceAccountID) || f.started[0].AccountID != aliceAccountID {
 		t.Errorf("started = %+v, want alice's import", f.started)
 	}
 	res = e.sendJSON(t, http.MethodPost, "/imports", "write", file)

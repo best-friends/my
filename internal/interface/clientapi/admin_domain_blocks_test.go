@@ -144,7 +144,7 @@ func TestPreviewAndImportDomainBlocks(t *testing.T) {
 		len(got.Skipped) != 1 || got.Skipped[0].Reason != clientapi.DomainBlockImportStatusNoAction {
 		t.Fatalf("import = %d %+v", res.StatusCode, got)
 	}
-	if in := f.issued[0]; in.IssuedByUserID != "user-"+aliceAccountID || in.PrivateNote != "from mastodon.example" || !in.Obfuscate || in.PublicComment != "spam" {
+	if in := f.issued[0]; in.IssuedByUserID != userOf(aliceAccountID) || in.PrivateNote != "from mastodon.example" || !in.Obfuscate || in.PublicComment != "spam" {
 		t.Errorf("issued = %+v", in)
 	}
 }

@@ -14,13 +14,14 @@ import (
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/interface/web"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // crawlerSettings returns instance settings with search_indexing and ai_usage stored.
 func crawlerSettings(search, ai string, more ...instance.CurrentSetting) func(context.Context) (instance.Settings, error) {
 	current := append([]instance.CurrentSetting{
-		{Key: instance.SettingSearchIndexing, RevisionID: "r1", Value: search},
-		{Key: instance.SettingAIUsage, RevisionID: "r2", Value: ai},
+		{Key: instance.SettingSearchIndexing, RevisionID: testkit.NamedID("revision-1"), Value: search},
+		{Key: instance.SettingAIUsage, RevisionID: testkit.NamedID("revision-2"), Value: ai},
 	}, more...)
 	return func(context.Context) (instance.Settings, error) { return instance.NewSettings(current), nil }
 }
@@ -205,7 +206,7 @@ func TestSecurityTxt(t *testing.T) {
 	now := time.Date(2026, 10, 21, 9, 0, 0, 0, time.UTC)
 	_, mux = newHandler(t, web.Options{
 		Settings: crawlerSettings("deny", "deny",
-			instance.CurrentSetting{Key: instance.SettingSecurityContact, RevisionID: "r3", Value: "mailto:security@social.example"}),
+			instance.CurrentSetting{Key: instance.SettingSecurityContact, RevisionID: testkit.NamedID("revision-3"), Value: "mailto:security@social.example"}),
 		DefaultLocale: locale("ja"),
 		Now:           func() time.Time { return now },
 	})

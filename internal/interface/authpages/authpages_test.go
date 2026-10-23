@@ -18,10 +18,11 @@ import (
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/authpages"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // fakeIdentity signs alice@example.com in with "correct horse" and keeps the live tokens. Every
-// session belongs to the user "u1" unless SignUp made it; access holds each user's Access
+// session belongs to the user alice unless SignUp made it; access holds each user's Access
 // (allowed when absent).
 type fakeIdentity struct {
 	live    map[string]bool
@@ -49,6 +50,13 @@ func newFakeIdentity() *fakeIdentity {
 	}
 }
 
+// The users and accounts the fakes know.
+var (
+	userAlice    = testkit.NamedID("user-alice")
+	userBob      = testkit.NamedID("user-bob")
+	accountAlice = testkit.NamedID("account-alice")
+)
+
 func (f *fakeIdentity) newToken(userID string) string {
 	f.n++
 	token := "my_ses_token" + strconv.Itoa(f.n)
@@ -69,8 +77,8 @@ func (f *fakeIdentity) SignIn(_ context.Context, in appidentity.SignInInput) (ap
 		return appidentity.SignedIn{}, appidentity.ErrInvalidCredentials
 	}
 	delete(f.live, in.CurrentToken)
-	token := f.newToken("u1")
-	return appidentity.SignedIn{Token: token, Session: identity.Session{UserID: "u1", ExpiresAt: time.Now().Add(time.Hour)}}, nil
+	token := f.newToken(userAlice)
+	return appidentity.SignedIn{Token: token, Session: identity.Session{UserID: userAlice, ExpiresAt: time.Now().Add(time.Hour)}}, nil
 }
 
 func (f *fakeIdentity) Authenticate(_ context.Context, token string) (identity.Session, error) {
@@ -90,7 +98,7 @@ func (f *fakeIdentity) SignUp(_ context.Context, in appidentity.SignUpInput) (ap
 	if f.signUpErr != nil {
 		return appidentity.SignedUp{}, f.signUpErr
 	}
-	userID := "new" + strconv.Itoa(len(f.signUps))
+	userID := testkit.NamedID("new-user-" + strconv.Itoa(len(f.signUps)))
 	delete(f.live, in.CurrentToken)
 	token := f.newToken(userID)
 	f.access[userID] = appidentity.Access{
@@ -119,7 +127,7 @@ func (f *fakeIdentity) VerifyEmail(_ context.Context, token string) (string, err
 		return "", appidentity.ErrInvalidToken
 	}
 	f.verified[token] = true
-	return "u1", nil
+	return userAlice, nil
 }
 
 func (f *fakeIdentity) ResendVerificationEmail(context.Context, string) error {

@@ -155,11 +155,11 @@ func (f *fakeModeration) ResolveReport(_ context.Context, id string, outcome mod
 	return f.reports[i], nil
 }
 
-// fakeUserAccounts maps the users of newAuthEnv ("user-" + account ID) to their accounts.
+// fakeUserAccounts maps the users of newAuthEnv (userOf(account ID)) to their accounts.
 type fakeUserAccounts struct{}
 
 func (fakeUserAccounts) LocalAccountOfUser(_ context.Context, userID string) (account.LocalAccount, error) {
-	id, ok := strings.CutPrefix(userID, "user-")
+	id, ok := accountOfUser(userID)
 	if !ok {
 		return account.LocalAccount{}, appaccount.ErrNotFound
 	}
@@ -196,7 +196,7 @@ func newModerationEnvWith(t *testing.T, change func(*clientapi.Options)) (*authE
 		f.reports = append(f.reports, moderation.ReportRecord{Report: r, Status: moderation.ReportStatus{ReportID: id, State: moderation.ReportOpen, Since: r.FiledAt}})
 	}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.Moderation = f
 		o.UserAccounts = fakeUserAccounts{}
 		accounts := o.Accounts.(fakeAccounts)
@@ -257,7 +257,7 @@ func TestCreateAndLiftDomainAction(t *testing.T) {
 		got.ExpiresAt == nil || !got.ExpiresAt.Equal(adminNow.Add(time.Hour)) || got.LiftedAt != nil {
 		t.Errorf("created = %+v", got)
 	}
-	if in := f.issued[0]; in.IssuedByUserID != "user-"+aliceAccountID || in.Duration != time.Hour {
+	if in := f.issued[0]; in.IssuedByUserID != userOf(aliceAccountID) || in.Duration != time.Hour {
 		t.Errorf("issued = %+v, want by alice for an hour", in)
 	}
 	// A U-label domain is stored as its A-labels.
@@ -271,7 +271,7 @@ func TestCreateAndLiftDomainAction(t *testing.T) {
 	if res.StatusCode != http.StatusOK || lifted.State != clientapi.AdminDomainActionStateLifted || lifted.LiftedAt == nil {
 		t.Errorf("lift = %d %+v", res.StatusCode, lifted)
 	}
-	if l := f.actions[0].Lift; l == nil || l.LiftedByUserID != "user-"+aliceAccountID {
+	if l := f.actions[0].Lift; l == nil || l.LiftedByUserID != userOf(aliceAccountID) {
 		t.Errorf("lift = %+v, want by alice", l)
 	}
 	res = e.sendJSON(t, http.MethodGet, "/admin/domain_actions/"+got.Id, "admin-read", "")

@@ -17,6 +17,7 @@ import (
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/interface/clientapi/apitest"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 func newServer(t *testing.T) (*clientapi.Server, http.Handler) {
@@ -100,10 +101,10 @@ func (f *fakeInstance) Text(_ context.Context, key instance.TextKey) (instance.T
 func TestGetInstanceFromSettings(t *testing.T) {
 	fake := &fakeInstance{
 		settings: []instance.CurrentSetting{
-			{Key: instance.SettingMaxStatusLength, RevisionID: "r1", Value: "1200"},
-			{Key: instance.SettingRegistrationMode, RevisionID: "r2", Value: "invite"},
-			{Key: instance.SettingFederatedTimelineAccess, RevisionID: "r3", Value: "logged_in"},
-			{Key: instance.SettingFederationMode, RevisionID: "r4", Value: "inbound"},
+			{Key: instance.SettingMaxStatusLength, RevisionID: testkit.NamedID("revision-1"), Value: "1200"},
+			{Key: instance.SettingRegistrationMode, RevisionID: testkit.NamedID("revision-2"), Value: "invite"},
+			{Key: instance.SettingFederatedTimelineAccess, RevisionID: testkit.NamedID("revision-3"), Value: "logged_in"},
+			{Key: instance.SettingFederationMode, RevisionID: testkit.NamedID("revision-4"), Value: "inbound"},
 		},
 		texts: map[instance.TextKey]string{
 			instance.TextName:             "例のソーシャル",
@@ -157,8 +158,8 @@ func TestGetInstanceFromSettings(t *testing.T) {
 // a contact account that does not exist.
 func TestGetInstanceContactAndThumbnail(t *testing.T) {
 	fake := &fakeInstance{settings: []instance.CurrentSetting{
-		{Key: instance.SettingContactAccount, RevisionID: "r1", Value: "alice"},
-		{Key: instance.SettingContactEmail, RevisionID: "r2", Value: "admin@social.example"},
+		{Key: instance.SettingContactAccount, RevisionID: testkit.NamedID("revision-1"), Value: "alice"},
+		{Key: instance.SettingContactEmail, RevisionID: testkit.NamedID("revision-2"), Value: "admin@social.example"},
 	}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Instance = fake
@@ -188,7 +189,7 @@ func TestGetInstanceContactAndThumbnail(t *testing.T) {
 		t.Errorf("thumbnail = %+v, want %+v", got.Thumbnail, want)
 	}
 
-	fake.settings = []instance.CurrentSetting{{Key: instance.SettingContactAccount, RevisionID: "r3", Value: "nobody"}}
+	fake.settings = []instance.CurrentSetting{{Key: instance.SettingContactAccount, RevisionID: testkit.NamedID("revision-3"), Value: "nobody"}}
 	if got := get(t); got.Contact != nil {
 		t.Errorf("contact of an unknown account = %+v, want none", got.Contact)
 	}

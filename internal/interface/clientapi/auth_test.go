@@ -105,7 +105,7 @@ type authEnv struct {
 var createdAt = time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 
 func bearer(scope identity.Scope, accountID string) appidentity.Bearer {
-	return appidentity.Bearer{TokenID: "tok-" + string(scope), FamilyID: "fam-" + string(scope), ClientID: "client-1", UserID: "user-" + accountID, AccountID: accountID, Scope: scope}
+	return appidentity.Bearer{TokenID: testkit.NamedID("tok-" + string(scope)), FamilyID: testkit.NamedID("fam-" + string(scope)), ClientID: "client-1", UserID: userOf(accountID), AccountID: accountID, Scope: scope}
 }
 
 func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
@@ -134,7 +134,7 @@ func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
 		Authenticator: e.auth,
 		Accounts: fakeAccounts{aliceAccountID: {
 			Account:   account.Account{ID: aliceAccountID, URI: "https://social.example/ap/actors/" + aliceAccountID, CreatedAt: createdAt},
-			Local:     &account.LocalAccount{AccountID: aliceAccountID, UserID: "user-" + aliceAccountID, Username: "alice"},
+			Local:     &account.LocalAccount{AccountID: aliceAccountID, UserID: userOf(aliceAccountID), Username: "alice"},
 			Profile:   &account.ProfileRevision{DisplayName: "Alice", NoteHTML: "<p>hi</p>", Locked: true},
 			Lifecycle: account.InitialLifecycleState(aliceAccountID),
 		}},

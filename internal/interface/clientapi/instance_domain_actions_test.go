@@ -12,6 +12,7 @@ import (
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // newPublicDomainActionsEnv is newAuthEnv with domain actions of every kind and state and the
@@ -19,8 +20,8 @@ import (
 func newPublicDomainActionsEnv(t *testing.T, visibility, rationale instance.Audience) *authEnv {
 	t.Helper()
 	fake := &fakeInstance{settings: []instance.CurrentSetting{
-		{Key: instance.SettingDomainActionsVisibility, RevisionID: "r1", Value: string(visibility)},
-		{Key: instance.SettingDomainActionsRationaleVisibility, RevisionID: "r2", Value: string(rationale)},
+		{Key: instance.SettingDomainActionsVisibility, RevisionID: testkit.NamedID("revision-1"), Value: string(visibility)},
+		{Key: instance.SettingDomainActionsRationaleVisibility, RevisionID: testkit.NamedID("revision-2"), Value: string(rationale)},
 	}}
 	f := &fakeModeration{now: adminNow}
 	e := newAuthEnv(t, func(o *clientapi.Options) {

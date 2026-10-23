@@ -20,6 +20,7 @@ import (
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/interface/web"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 const (
@@ -52,7 +53,7 @@ func alice(displayName, note string) appcontent.ProfilePreview {
 		Actor: appaccount.Actor{
 			Account: account.Account{ID: aliceID, URI: "https://social.example/ap/actors/" + aliceID},
 			Local:   &account.LocalAccount{AccountID: aliceID, Username: "alice"},
-			Profile: &account.ProfileRevision{ID: "rev-1", DisplayName: displayName, NoteHTML: note, Indexable: true},
+			Profile: &account.ProfileRevision{ID: testkit.NamedID("rev-1"), DisplayName: displayName, NoteHTML: note, Indexable: true},
 		},
 		Language: "ja",
 	}
@@ -66,7 +67,7 @@ func status(author appcontent.ProfilePreview, vis content.Visibility, bodyHTML s
 				Visibility: vis, PublishedAt: time.Date(2026, 10, 16, 12, 34, 56, 789, time.UTC),
 			},
 			Revision: content.Revision{
-				ID: "status-rev-1", StatusID: statusID, Seq: 1, Language: "en",
+				ID: testkit.NamedID("status-rev-1"), StatusID: statusID, Seq: 1, Language: "en",
 				Bodies: []content.Body{{Language: "en", ContentHTML: bodyHTML}},
 			},
 		},
@@ -431,10 +432,10 @@ func TestPreviewETag(t *testing.T) {
 	}
 	seen := map[string]string{tag: "original"}
 	for name, change := range map[string]func(*appcontent.StatusPreview){
-		"revision":   func(s *appcontent.StatusPreview) { s.Post.Revision.ID = "status-rev-2" },
+		"revision":   func(s *appcontent.StatusPreview) { s.Post.Revision.ID = testkit.NamedID("status-rev-2") },
 		"visibility": func(s *appcontent.StatusPreview) { s.Visibility = content.VisibilityUnlisted },
 		"language":   func(s *appcontent.StatusPreview) { s.Language = "ja" },
-		"profile":    func(s *appcontent.StatusPreview) { s.Author.Actor.Profile.ID = "rev-2" },
+		"profile":    func(s *appcontent.StatusPreview) { s.Author.Actor.Profile.ID = testkit.NamedID("rev-2") },
 	} {
 		changed := s
 		changed.Author.Actor.Profile = new(*s.Author.Actor.Profile)

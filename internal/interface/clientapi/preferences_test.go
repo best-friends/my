@@ -62,9 +62,9 @@ func (f *fakePreferences) UpdatePreferences(ctx context.Context, userID string, 
 
 func newPreferencesEnv(t *testing.T) (*authEnv, *fakePreferences) {
 	t.Helper()
-	prefs := &fakePreferences{userID: "user-" + aliceAccountID, p: appidentity.UserPreferences{
+	prefs := &fakePreferences{userID: userOf(aliceAccountID), p: appidentity.UserPreferences{
 		Preferences: identity.Preferences{
-			UserID: "user-" + aliceAccountID, Locale: "ja", TimeZone: "Asia/Tokyo", TimeZoneChosen: true,
+			UserID: userOf(aliceAccountID), Locale: "ja", TimeZone: "Asia/Tokyo", TimeZoneChosen: true,
 			DefaultVisibility: identity.Visibility("unlisted"), DefaultQuotePolicy: identity.QuotePolicyPublic, DefaultPostLanguage: "ja",
 		},
 	}}

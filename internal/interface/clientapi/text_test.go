@@ -18,8 +18,8 @@ func TestBodyTextIsCheckedBeforeTheHandler(t *testing.T) {
 		return appcontent.Post{}, nil
 	}})
 	for body, field := range map[string]string{
-		`{"text":"hi","visibility":"public","in_reply_to_id":"\u0000"}`:                                 "in_reply_to_id",
-		`{"text":"hi","visibility":"public","media":[{"id":"m1"},{"id":"m2","description":"a\u0000"}]}`: "media[1].description",
+		`{"text":"hi","visibility":"public","in_reply_to_id":"\u0000"}`: "in_reply_to_id",
+		`{"text":"hi","visibility":"public","media":[{"id":"01890a5d-ac96-774b-bcce-b302099a8301"},{"id":"01890a5d-ac96-774b-bcce-b302099a8302","description":"a\u0000"}]}`: "media[1].description",
 	} {
 		res := e.send(t, http.MethodPost, "/statuses", "write", body)
 		p := decodeProblem(t, res)

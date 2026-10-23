@@ -31,8 +31,8 @@ func (f *fakeIdentity) CompleteSignIn(_ context.Context, in appidentity.SecondFa
 	}
 	f.challengeUsed = true
 	delete(f.live, in.CurrentToken)
-	token := f.newToken("u2")
-	return appidentity.SignedIn{Token: token, Session: identity.Session{UserID: "u2", ExpiresAt: time.Now().Add(time.Hour)}}, nil
+	token := f.newToken(userBob)
+	return appidentity.SignedIn{Token: token, Session: identity.Session{UserID: userBob, ExpiresAt: time.Now().Add(time.Hour)}}, nil
 }
 
 func TestTwoFactorSignIn(t *testing.T) {

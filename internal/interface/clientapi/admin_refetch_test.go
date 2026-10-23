@@ -60,8 +60,8 @@ func TestRefetchRemoteStatuses(t *testing.T) {
 	refetches := &fakeRefetches{}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{
-			"user-" + aliceAccountID: {identity.PermManageDomains},
-			"user-" + bobAccountID:   {identity.PermManageReports},
+			userOf(aliceAccountID): {identity.PermManageDomains},
+			userOf(bobAccountID):   {identity.PermManageReports},
 		}
 		o.Refetches = refetches
 	})
@@ -97,7 +97,7 @@ func TestRefetchRemoteStatuses(t *testing.T) {
 			}
 		}
 	}
-	user := "user-" + aliceAccountID
+	user := userOf(aliceAccountID)
 	want := []string{"status " + refetchRemoteStatusID + " by " + user, "account " + bobAccountID + " by " + user, "domain remote.example by " + user}
 	if fmt.Sprint(refetches.requested) != fmt.Sprint(want) {
 		t.Errorf("requested = %v, want %v", refetches.requested, want)

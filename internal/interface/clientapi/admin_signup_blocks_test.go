@@ -108,7 +108,7 @@ func newSignupBlocksEnv(t *testing.T, perms ...identity.Permission) (*authEnv, *
 	t.Helper()
 	blocks := &fakeSignupBlocks{}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: perms}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): perms}
 		o.SignupBlocks = blocks
 	})
 	e.auth.tokens["admin-read"] = bearer("admin:read", aliceAccountID)
@@ -128,7 +128,7 @@ func TestSignupBlocksAPI(t *testing.T) {
 		b.Comment == nil || *b.Comment != "wave" || b.ExpiresAt == nil || b.State != clientapi.AdminSignupBlockStateActive || b.LiftedAt != nil {
 		t.Errorf("created block = %+v", b)
 	}
-	if len(blocks.added) != 1 || blocks.added[0].CreatedByUserID != "user-"+aliceAccountID || blocks.added[0].Duration != time.Minute {
+	if len(blocks.added) != 1 || blocks.added[0].CreatedByUserID != userOf(aliceAccountID) || blocks.added[0].Duration != time.Minute {
 		t.Errorf("added = %+v, want one by alice for a minute", blocks.added)
 	}
 	res = e.adminBody(t, http.MethodPost, "/admin/signup_blocks", "admin-write", `{"kind":"ip_range","value":"192.0.2.0/24","severity":"require_approval"}`)
@@ -168,7 +168,7 @@ func TestSignupBlocksAPI(t *testing.T) {
 	if lifted := decodeJSON[clientapi.AdminSignupBlock](t, res); res.StatusCode != http.StatusOK || lifted.State != clientapi.AdminSignupBlockStateLifted || lifted.LiftedAt == nil {
 		t.Errorf("lift = %d %+v", res.StatusCode, lifted)
 	}
-	if len(blocks.lifted) != 1 || blocks.lifted[0] != "user-"+aliceAccountID {
+	if len(blocks.lifted) != 1 || blocks.lifted[0] != userOf(aliceAccountID) {
 		t.Errorf("lifted by %v, want alice", blocks.lifted)
 	}
 	if res := e.admin(t, http.MethodGet, "/admin/signup_blocks/"+b.Id, "admin-read", nil); res.StatusCode != http.StatusOK {
@@ -197,7 +197,7 @@ func TestImportSignupBlocksAPI(t *testing.T) {
 	if got.Added != 2 || !slices.Equal(got.Skipped, want) {
 		t.Errorf("import = %+v, want 2 added and line 3 invalid", got)
 	}
-	if len(blocks.imported) != 1 || blocks.imported[0].CreatedByUserID != "user-"+aliceAccountID || blocks.imported[0].Duration != time.Hour ||
+	if len(blocks.imported) != 1 || blocks.imported[0].CreatedByUserID != userOf(aliceAccountID) || blocks.imported[0].Duration != time.Hour ||
 		blocks.imported[0].Comment != "disposable" || blocks.imported[0].Severity != moderation.SignupReject {
 		t.Errorf("imported = %+v, want one by alice for an hour", blocks.imported)
 	}

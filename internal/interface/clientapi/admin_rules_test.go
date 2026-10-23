@@ -141,7 +141,7 @@ func newRulesEnv(t *testing.T) (*authEnv, *fakeRules) {
 	t.Helper()
 	f := &fakeRules{now: adminNow}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.Rules = f
 	})
 	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)
@@ -188,7 +188,7 @@ func TestManageInstanceRules(t *testing.T) {
 	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
 		t.Errorf("Cache-Control = %q, want no-store", cc)
 	}
-	if r := f.rules[0]; r.Revision.RevisedByUserID != "user-"+aliceAccountID {
+	if r := f.rules[0]; r.Revision.RevisedByUserID != userOf(aliceAccountID) {
 		t.Errorf("created by %q, want alice's user", r.Revision.RevisedByUserID)
 	}
 	spam := decodeJSON[clientapi.AdminRule](t, e.sendJSON(t, http.MethodPost, "/admin/rules", "admin", `{"text":"No spam"}`))

@@ -50,8 +50,8 @@ func TestBillingImports(t *testing.T) {
 	imports := &fakeBillingImports{}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{
-			"user-" + aliceAccountID: {identity.PermManageFinance},
-			"user-" + bobAccountID:   {identity.PermManageSettings},
+			userOf(aliceAccountID): {identity.PermManageFinance},
+			userOf(bobAccountID):   {identity.PermManageSettings},
 		}
 		o.BillingImports = imports
 	})
@@ -99,7 +99,7 @@ func TestBillingImports(t *testing.T) {
 			t.Errorf("%s %s with %s = %d, want %d", tc.method, tc.path, tc.token, res.StatusCode, tc.status)
 		}
 	}
-	if want := "aws by user-" + aliceAccountID; len(imports.requested) != 1 || imports.requested[0] != want {
+	if want := "aws by " + userOf(aliceAccountID); len(imports.requested) != 1 || imports.requested[0] != want {
 		t.Errorf("requested = %v, want %s", imports.requested, want)
 	}
 }

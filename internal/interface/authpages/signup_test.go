@@ -245,7 +245,7 @@ func TestSignInLinksToSignUpUnlessClosed(t *testing.T) {
 
 func TestSignInOfAPendingUserShowsTheStatus(t *testing.T) {
 	id := newFakeIdentity()
-	id.access["u1"] = appidentity.Access{Registration: identity.RegistrationRejected, Email: "alice@example.com", EmailVerificationRequired: true}
+	id.access[userAlice] = appidentity.Access{Registration: identity.RegistrationRejected, Email: "alice@example.com", EmailVerificationRequired: true}
 	b := newBrowser(t, newServer(t, id))
 	page := b.do(http.MethodGet, authpages.PathSignIn, nil, nil)
 	w := b.do(http.MethodPost, authpages.PathSignIn, b.form(page, "email", "alice@example.com", "password", "correct horse", "return_to", "/oauth/authorize"), nil)
@@ -283,7 +283,7 @@ func TestVerifyEmail(t *testing.T) {
 
 func TestResendVerification(t *testing.T) {
 	id := newFakeIdentity()
-	id.access["u1"] = appidentity.Access{Registration: identity.RegistrationApproved, Email: "alice@example.com", EmailVerificationRequired: true}
+	id.access[userAlice] = appidentity.Access{Registration: identity.RegistrationApproved, Email: "alice@example.com", EmailVerificationRequired: true}
 	b := newBrowser(t, newServer(t, id))
 	page := b.do(http.MethodGet, authpages.PathSignIn, nil, nil)
 	b.do(http.MethodPost, authpages.PathSignIn, b.form(page, "email", "alice@example.com", "password", "correct horse"), nil)

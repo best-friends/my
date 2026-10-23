@@ -76,7 +76,7 @@ func TestReportNotes(t *testing.T) {
 		got.Notes[0].AuthorAccountId == nil || *got.Notes[0].AuthorAccountId != aliceAccountID || !got.Notes[0].CreatedAt.Equal(adminNow) {
 		t.Fatalf("add note = %d %+v", res.StatusCode, got)
 	}
-	if f.notes[0].AuthorUserID != "user-"+aliceAccountID {
+	if f.notes[0].AuthorUserID != userOf(aliceAccountID) {
 		t.Errorf("note = %+v, want by alice", f.notes[0])
 	}
 	// A note from the command line has no author.

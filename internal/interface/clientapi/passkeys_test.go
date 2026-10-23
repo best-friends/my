@@ -151,7 +151,7 @@ func TestPasskeyRegistration(t *testing.T) {
 	if list := decodeJSON[clientapi.PasskeyList](t, res); len(list.Items) != 1 || list.Items[0].Id != "019a0000-0000-7000-8000-0000000000a1" {
 		t.Errorf("list after registering = %+v", list)
 	}
-	if want := "begin user-" + aliceAccountID + " phone"; !slices.Contains(f.calls, want) {
+	if want := "begin " + userOf(aliceAccountID) + " phone"; !slices.Contains(f.calls, want) {
 		t.Errorf("calls = %v, want %q", f.calls, want)
 	}
 
@@ -184,7 +184,7 @@ func TestPasskeyConfirmation(t *testing.T) {
 		!c.ExpiresAt.Equal(passkeyCreatedAt) || res.Header.Get("Cache-Control") != "no-store" {
 		t.Errorf("confirmation = %d %+v", res.StatusCode, c)
 	}
-	if want := "confirm user-" + aliceAccountID; !slices.Contains(f.calls, want) {
+	if want := "confirm " + userOf(aliceAccountID); !slices.Contains(f.calls, want) {
 		t.Errorf("calls = %v, want %q", f.calls, want)
 	}
 	res = e.send(t, http.MethodPost, "/passkeys/registration", "write", `{"name":"phone","passkey":{"confirmation_token":"conf-1","credential":{"id":"ok"}}}`)
