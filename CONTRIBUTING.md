@@ -53,12 +53,13 @@ CI（`.github/workflows/`）は、どこで何を検査するかを次のよう�
 | PR | `ci.yml` | 変更したコンテキストとその依存先の `ctx-<context>.yml`（`scripts/task.sh check` と同じ検査。Go のテストは pgmem の上で動く）。`app/ui` を変えたら `@my/ui` のストーリーテスト（`ui-test.yml`）、Docker の構成を変えたら linux/arm64 のイメージのビルド、Docker の構成・`cmd/`・`internal/platform/` を変えたら Docker Compose のスモークテストも回す。必須チェック `check` が結果を集める |
 | Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で、変更したコンテキストの検査をもう一度回す。ファイルごとに決まる検査（markdownlint・Go と npm の依存ライセンス・shellcheck・CSS の `100vh`・デザイントークン・Playwright のイメージの版）と、ストーリーテスト・スモークテスト・arm64 のビルドは飛ばす。`check` が通ればキューがマージする |
 | `main` への push | `main.yml` | 検査はせず、PR と Merge Queue が復元するキャッシュだけを作る（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。Go のキャッシュ（モジュール・ビルド・golangci-lint）は、Go の版・`go.sum`・`tools/go.sum`・日付をキーに空から作り直し、Bun のキャッシュは lockfile をキーにする。どちらもそのキーのキャッシュがまだないときだけ作る |
-| nightly（03:00 JST） | `nightly.yml` | Web の E2E の全マトリクス（8 シャード）、ライブの相互運用テスト（`federation-live.yml`）、本物の PostgreSQL でのテスト、スモークテストと linux/arm64 のイメージのビルド |
-| 毎日（06:00 JST） | `codeql.yml` | CodeQL のコードスキャン（Go・JavaScript / TypeScript・GitHub Actions）。外から来た値が SQL・HTML・パス・リダイレクト先などに届く流れを追い、結果は Security タブに出る。遅い検査の 1 つで（ADR-0079）、PR・Merge Queue・`main` への push では回さず、`check` にも入らない |
+| リリースの関門・nightly・手動 | `slow-suite.yml` | 遅い検査（[ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)）。Web の E2E の全マトリクス（8 シャード）、ライブの相互運用テスト（`federation-live.yml`）、本物の PostgreSQL でのテスト、`stream.Bus` の契約のブローカーのコンテナでのテスト、スモークテストと linux/arm64 のイメージのビルド、CodeQL のコードスキャン（`codeql.yml`。結果は Security タブに出る）。PR と Merge Queue では回さず、`check` にも入らない |
+| リリース（手動） | `release.yml` | 指定したコミットで遅い検査を回し、通ったときだけタグと GitHub Release の下書きを作る |
+| nightly（03:00 JST） | `nightly.yml` | `main` の先頭で遅い検査を回す。前に成功した nightly から `main` が動いていなければ飛ばす |
 
 - PR では Web の E2E は自動では回りません。Web クライアントに触れる PR は、手元で `scripts/task.sh web:e2e` を回すか、PR のブランチに対して
   `gh workflow run web-e2e.yml -R best-friends/my --ref <branch>`（全マトリクスは `-f matrix=full` を足す。Actions タブからも実行できる）で回します。
-- `ctx-<context>.yml`・`nightly.yml`・`federation-live.yml`・`codeql.yml` も `workflow_dispatch` で手で回せます。
+- `ctx-<context>.yml`・`slow-suite.yml`・`nightly.yml`・`federation-live.yml`・`codeql.yml` も `workflow_dispatch` で手で回せます。
 
 ## スキーマの変更
 

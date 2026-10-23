@@ -61,7 +61,7 @@ jobs:
     # Build the images and run deploy/docker/compose.yaml end to end: schema apply, server start, admin creation,
     # then WebFinger, Actor, and NodeInfo (scripts/docker-smoke.sh dumps the logs on failure and always tears down).
     # The merge queue skips it: a change that breaks the images is stopped on its pull request, and the rare break
-    # from stacking two of them is found nightly (ADR-0047).
+    # from stacking two of them is found by the slow suite (ADR-0079).
     if: inputs.smoke && inputs.scope == 'pr'
     runs-on: ubuntu-latest
     steps:
