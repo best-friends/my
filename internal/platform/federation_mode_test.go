@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/httpsig"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/graph"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/adapter/httpsig"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // inboxCode POSTs activity to the shared inbox signed by signer and returns the status.

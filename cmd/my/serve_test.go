@@ -20,7 +20,7 @@ import (
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver for applying the schema
 
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/schema"
 )
 
 func TestServeArguments(t *testing.T) {

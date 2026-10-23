@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/domain/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // remoteSlotSwitchOrder switches the Like slot of two local accounts on a remote post between

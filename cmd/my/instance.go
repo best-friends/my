@@ -14,11 +14,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // maxTextInput bounds what `my instance set <key> -` reads from stdin; it is above the longest

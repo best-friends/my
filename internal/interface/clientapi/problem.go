@@ -11,7 +11,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // ContentTypeProblem is the media type of RFC 9457 problem documents.

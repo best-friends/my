@@ -15,10 +15,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestAnnouncements writes, publishes, revises, and withdraws an announcement through the admin

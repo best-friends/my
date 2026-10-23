@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"net/netip"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/none"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/telemetry/none"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpTracer builds the Tracer that cfg.TracesExporter selects (ADR-0063 §5) and makes the

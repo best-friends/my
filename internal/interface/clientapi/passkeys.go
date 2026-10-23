@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"net/http"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The viewer's passkeys (FR-004): registering one after the password or another passkey,

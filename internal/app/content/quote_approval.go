@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // The approvals that this server gives to quotes of local statuses (FEP-044f, ADR-0069 §2, §3):

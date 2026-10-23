@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // The CAPTCHA widget of the sign-in, registration, and password reset forms (ADR-0042 §5). With

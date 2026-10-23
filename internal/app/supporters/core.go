@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // The subscription core (ADR-0072 §7, T1, G1): every signal (a webhook, the return from the

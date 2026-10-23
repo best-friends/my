@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // Authentication and authorization of the client API (ADR-0019 §4, docs/architecture/client-api.md §4).

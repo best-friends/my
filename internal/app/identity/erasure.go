@@ -5,8 +5,8 @@ package identity
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // ErasureRepository is the part of the identity module's persistence that the erasure of

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // mastodonExport is a domain block CSV as Mastodon 4 exports it.

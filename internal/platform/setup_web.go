@@ -8,9 +8,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/best-friends/my/internal/app/instance"
-	domaininstance "github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/web"
+	"github.com/mycroblog/my/internal/app/instance"
+	domaininstance "github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/web"
 )
 
 // setUpWeb builds the web client's handler (ADR-0028), registers its assets and manifest, and

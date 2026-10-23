@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/best-friends/my/internal/app/blob"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/app/blob"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The viewer's own account: its password (FR-002) and its removal (FR-004), its deletion, and

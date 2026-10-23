@@ -10,10 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // AccountRepository implements account.Repository on PostgreSQL.

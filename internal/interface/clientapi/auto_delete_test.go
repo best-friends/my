@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakeAutoDeletes holds the policies by account, validating them as the content module does.

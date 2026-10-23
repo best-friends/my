@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Label keys of the connection pool metrics, from the OpenTelemetry semantic conventions.

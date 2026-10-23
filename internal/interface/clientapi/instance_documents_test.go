@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // fakeDocuments holds rendered documents by key.

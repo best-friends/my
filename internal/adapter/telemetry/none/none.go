@@ -6,7 +6,7 @@
 // Tracer still gives the log lines the trace ID of a trusted proxy's traceparent (ADR-0063 §6).
 package none
 
-import "github.com/best-friends/my/internal/app/kernel"
+import "github.com/mycroblog/my/internal/app/kernel"
 
 // New returns the Meter that records nothing.
 func New() kernel.Meter { return kernel.NopMeter{} }

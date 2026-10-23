@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/identity"
-	domain "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/interface/oauth"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/identity"
+	domain "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/interface/oauth"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestOAuthWebClientFlow drives the web client's authorization code flow with PKCE, the

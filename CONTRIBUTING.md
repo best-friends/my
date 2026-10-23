@@ -39,7 +39,7 @@ TypeScript だけが読む生成物（`app/web/src/routeTree.gen.ts`・`app/web/
 3. 触れたコンテキストの check（`scripts/task.sh go:check` など）か `scripts/task.sh check:changed` を通してコミット（Conventional Commits、英語）。共有の設定を変えたときは `scripts/task.sh check`。
 4. PR テンプレートに従って PR を作成する。
 5. PR の CI が緑になったら、メンテナかオーケストレーター（エージェントを束ねて PR をマージする役）が
-   `gh pr merge <PR> -R best-friends/my --auto --merge` で Merge Queue に入れる。`main` には Merge Queue からだけマージする。
+   `gh pr merge <PR> -R mycroblog/my --auto --merge` で Merge Queue に入れる。`main` には Merge Queue からだけマージする。
 6. 衝突や `check` の失敗でキューから外れたら、`main` を取り込み、コミットする生成ファイル（Go が読むもの。`scripts/task.sh generate` の出力）は
    手で衝突を解かずに作り直し、`scripts/task.sh check:changed` を通して push する（もう一度キューに入れるのは 5. と同じ人）。
    `main` の取り込みは、PR が衝突したときかキューから外れたときだけにする（キューが最新の `main` に重ねて検査する）。
@@ -62,7 +62,7 @@ CI（`.github/workflows/`）は、どこで何を検査するかを次のよう�
 - PR の CI はコンパイル・型・テストを回しません。push の前に手元で `scripts/task.sh check:changed` を通してください。
   Merge Queue で落ちた原因を PR で調べるときや、外からの貢献の PR を早めに確かめるときは、PR にラベル `ci:full` を付けます。
 - PR では Web の E2E は自動では回りません。Web クライアントに触れる PR は、手元で `scripts/task.sh web:e2e` を回すか、PR のブランチに対して
-  `gh workflow run web-e2e.yml -R best-friends/my --ref <branch>`（全マトリクスは `-f matrix=full` を足す。Actions タブからも実行できる）で回します。
+  `gh workflow run web-e2e.yml -R mycroblog/my --ref <branch>`（全マトリクスは `-f matrix=full` を足す。Actions タブからも実行できる）で回します。
 - `slow-suite.yml`・`nightly.yml`・`web-e2e.yml`・`federation-live.yml`・`postgres-contract.yml`・`stream-contract.yml`・`codeql.yml` も
   `workflow_dispatch` で手で回せます。
 

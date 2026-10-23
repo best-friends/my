@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/projection"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/projection"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // ProjectionStoreHarness is a projection.Store on a fresh database with the product schema,

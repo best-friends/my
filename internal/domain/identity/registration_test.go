@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 func TestNormalizeInviteCode(t *testing.T) {

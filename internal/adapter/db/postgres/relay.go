@@ -6,10 +6,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 var _ appfederation.RelayRepository = (*FederationRepository)(nil)

@@ -9,9 +9,9 @@ import (
 	"slices"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/domain/graph"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // Graph is the part of the graph module's public API that the client API uses: follows,

@@ -6,10 +6,10 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // This file holds the delivery attempts and the health of remote servers (federation.md §7.3).

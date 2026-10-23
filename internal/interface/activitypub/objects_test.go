@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // getSigned serves one GET whose fake signature names the requester's domain ("" for none). The

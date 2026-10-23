@@ -15,7 +15,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/best-friends/my/internal/interface/web"
+	"github.com/mycroblog/my/internal/interface/web"
 )
 
 // fakeBuild is a Vite build with an entry that imports a shared chunk, CSS on both, a

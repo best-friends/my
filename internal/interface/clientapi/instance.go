@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/domain/instance"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // InstanceInfo reads the instance settings and texts. *appinstance.Service implements it.

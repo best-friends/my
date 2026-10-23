@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // Pages returns the handler of the GET paths that no route serves: the web client's pages.

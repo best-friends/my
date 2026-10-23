@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // FakeBillingSource is the fake adapter of the appfinance.BillingSource port (ADR-0068 §1): an

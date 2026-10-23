@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 func TestParseVisibility(t *testing.T) {

@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // The events of the subscriptions that the notification module tells the subscribers of

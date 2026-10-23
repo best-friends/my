@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 type stubWebhooks struct {

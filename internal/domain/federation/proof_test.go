@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // The test vectors of FEP-8b32 (fep-8b32.feature) and FEP-521a (fep-521a.feature), from

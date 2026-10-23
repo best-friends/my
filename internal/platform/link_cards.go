@@ -8,10 +8,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpLinkCards builds the link cards (ADR-0062): their projector, which enqueues the fetches

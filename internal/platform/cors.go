@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // CORS of the client API (ADR-0019 §4). The API authenticates only with the Authorization

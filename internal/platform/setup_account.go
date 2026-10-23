@@ -5,10 +5,10 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/account"
-	domainaccount "github.com/best-friends/my/internal/domain/account"
-	domaincontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/account"
+	domainaccount "github.com/mycroblog/my/internal/domain/account"
+	domaincontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpAccount registers the account module's projectors and builds its service. It comes first

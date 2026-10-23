@@ -10,9 +10,9 @@ import (
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 
-	billingaws "github.com/best-friends/my/internal/adapter/billing/aws"
-	"github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/platform/config"
+	billingaws "github.com/mycroblog/my/internal/adapter/billing/aws"
+	"github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 func init() { billingSourceAdapters["aws"] = newAWSBillingSource }

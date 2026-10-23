@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Inbox is what the inbox endpoints need from the federation module; *appfederation.Inbox

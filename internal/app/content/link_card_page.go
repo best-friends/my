@@ -18,7 +18,7 @@ import (
 	"golang.org/x/net/html/atom"
 	"golang.org/x/net/html/charset"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // This file reads a link card from the head of an HTML page (ADR-0062 §2): the Open Graph and

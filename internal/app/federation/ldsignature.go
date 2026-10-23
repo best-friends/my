@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // Linked data signatures (RsaSignature2017) of public posts (ADR-0061, federation.md §7.3): a

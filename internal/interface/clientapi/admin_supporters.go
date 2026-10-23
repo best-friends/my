@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/supporters"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // The supporter program (ADR-0072 §2, §3, §9, §10, §18): the admin operations under

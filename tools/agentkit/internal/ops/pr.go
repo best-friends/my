@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/tools/agentkit/internal/gh"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/gh"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
 )
 
 // OpenOptions are the parts of a pull request the agent writes; the rest comes from the issue and the commits.

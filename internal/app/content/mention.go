@@ -8,7 +8,7 @@ import (
 	"errors"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
+	appaccount "github.com/mycroblog/my/internal/app/account"
 )
 
 // mentionResolver resolves the mentions of one text (data-model §4.4, federation.md §6.2):

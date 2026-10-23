@@ -7,7 +7,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 func TestUUIDv7Floor(t *testing.T) {

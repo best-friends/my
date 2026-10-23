@@ -22,7 +22,7 @@ import (
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 
-	"github.com/best-friends/my/internal/adapter/htmlsanitizer"
+	"github.com/mycroblog/my/internal/adapter/htmlsanitizer"
 )
 
 // Renderer renders documents. It is safe for concurrent use.

@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // JobVerify is the type of the scheduled job that verifies every projection and corrects the

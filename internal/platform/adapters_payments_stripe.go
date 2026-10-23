@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"time"
 
-	paymentstripe "github.com/best-friends/my/internal/adapter/payment/stripe"
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/platform/config"
+	paymentstripe "github.com/mycroblog/my/internal/adapter/payment/stripe"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 func init() { paymentProviderAdapters[paymentstripe.Name] = newStripePaymentProvider }

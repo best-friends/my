@@ -11,11 +11,11 @@ import (
 	"net/url"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/graph"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // Accounts is what the handlers need from the account module; *account.Service implements it.

@@ -4,7 +4,7 @@
 
 package config
 
-import billinggcp "github.com/best-friends/my/internal/adapter/billing/gcp"
+import billinggcp "github.com/mycroblog/my/internal/adapter/billing/gcp"
 
 func checkBillingGCPTable(v string) error { return billinggcp.CheckTable(v) }
 

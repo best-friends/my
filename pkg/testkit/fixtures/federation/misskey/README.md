@@ -6,7 +6,7 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
   © Pleroma Authors and Akkoma Authors, AGPL-3.0. The sending server's host → `misskey.example`, other servers → `remote.example`
   (`example.com` included), and the mentioned user → `bob`.
 - `2025.4/` was captured from a running Misskey 2025.4 server; it is the document of
-  [peers/misskey/actor.json](https://github.com/best-friends/my/blob/main/internal/interface/activitypub/testdata/peers/misskey/actor.json)
+  [peers/misskey/actor.json](https://github.com/mycroblog/my/blob/main/internal/interface/activitypub/testdata/peers/misskey/actor.json)
   (hosts, names, and texts already replaced there) with `publicKeyPem` replaced.
 - `2025.4/follow.json`, `accept-follow.json`, and `undo-follow.json` are what Misskey 2025.4.0 sends, rendered from its source
   (© misskey-dev, AGPL-3.0): `UserFollowingService` wraps `ApRendererService.renderFollow` / `renderAccept` / `renderUndo` in

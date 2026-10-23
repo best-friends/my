@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // A WebM is remuxed by writing its Segment again with the seek index (SeekHead), the segment

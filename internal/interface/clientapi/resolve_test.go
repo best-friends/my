@@ -11,10 +11,10 @@ import (
 	"sync"
 	"testing"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 const remoteAccountID = "01890a5d-ac96-774b-bcce-b302099a8100"

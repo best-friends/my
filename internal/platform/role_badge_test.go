@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/identity"
-	domainidentity "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/identity"
+	domainidentity "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestRoleBadgesStayOnTheProfile checks, through the composition root on SQLite, that a role

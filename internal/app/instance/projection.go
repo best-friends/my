@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // Event types of the instance module, for uow.Projectors.

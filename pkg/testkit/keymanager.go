@@ -9,7 +9,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // KeyManager is an in-memory kernel.KeyManager for tests: it wraps with AES-256-GCM under a key

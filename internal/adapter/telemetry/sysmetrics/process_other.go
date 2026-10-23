@@ -4,7 +4,7 @@
 
 package sysmetrics
 
-import "github.com/best-friends/my/internal/app/kernel"
+import "github.com/mycroblog/my/internal/app/kernel"
 
 // registerOSProcess reports nothing more: the process metrics beyond the uptime are read on
 // Linux only, where the server runs in production.

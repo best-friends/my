@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/i18n"
-	"github.com/best-friends/my/internal/interface/authpages"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/i18n"
+	"github.com/mycroblog/my/internal/interface/authpages"
 )
 
 // fakePasswordReset knows the reset token "my_prt_good", which works once, and fails requests

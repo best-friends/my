@@ -11,7 +11,7 @@
 ローカルのアカウントを凍結しても連合先には投稿とプロフィールが残り、ドメインを凍結してもフォロー関係は残る。通報の転送（FR-709）の形も決まっていない。
 FR-716・FR-717 と NFR-MOD-3 を実装する前に、どの処分で何を送るかを決める必要がある。
 
-主要実装の挙動（2026-10-17 にソースで確認。出典は [#327 の調査報告](https://github.com/best-friends/my/issues/327)）:
+主要実装の挙動（2026-10-17 にソースで確認。出典は [#327 の調査報告](https://github.com/mycroblog/my/issues/327)）:
 
 - Mastodon はローカルのアカウントを凍結すると、Actor に `suspended: true` を付けた `Update` を届く限りの inbox に送り、解除で再び `Update` を送る。
   データは 30 日後に消し、そのとき `Delete` を送る（[`SuspendAccountService`](https://github.com/mastodon/mastodon/blob/main/app/services/suspend_account_service.rb)、[`AccountDeletionRequest`](https://github.com/mastodon/mastodon/blob/main/app/models/account_deletion_request.rb)、[`suspended`](https://docs.joinmastodon.org/spec/activitypub/#suspended)）。

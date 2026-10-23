@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 var fast = uow.RetryPolicy{BaseDelay: time.Microsecond, MaxDelay: time.Microsecond}

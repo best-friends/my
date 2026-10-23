@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // TestTracing checks the client spans of ADR-0063: the method, the destination's host alone,

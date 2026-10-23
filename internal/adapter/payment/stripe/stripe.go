@@ -28,7 +28,7 @@ import (
 
 	stripe "github.com/stripe/stripe-go/v87"
 
-	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 // Name is the provider's name: the value of payments_provider and the {provider} of the webhook

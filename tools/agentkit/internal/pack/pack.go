@@ -14,11 +14,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/best-friends/my/tools/agentkit/internal/ctxmap"
-	"github.com/best-friends/my/tools/agentkit/internal/gh"
-	"github.com/best-friends/my/tools/agentkit/internal/kb"
-	"github.com/best-friends/my/tools/agentkit/internal/store"
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/ctxmap"
+	"github.com/mycroblog/my/tools/agentkit/internal/gh"
+	"github.com/mycroblog/my/tools/agentkit/internal/kb"
+	"github.com/mycroblog/my/tools/agentkit/internal/store"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
 // Options tunes a pack.

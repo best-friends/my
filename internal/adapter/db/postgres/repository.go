@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // queries returns the generated queries bound to the PostgreSQL transaction behind tx.

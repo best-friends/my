@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // This file holds what the Reader presents of the emoji reactions to a status (ADR-0052 §5): the

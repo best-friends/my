@@ -19,8 +19,8 @@ import (
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // DefaultMaxBytesBilled is the default of billing_gcp_max_bytes_billed: 1 GiB (ADR-0068 §4).

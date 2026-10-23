@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"testing"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // mediaRecordsRemoteMedia checks RecordRemoteMedia and FindRemoteMedia: a remote file is

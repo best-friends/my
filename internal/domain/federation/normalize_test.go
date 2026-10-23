@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 var now = time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)

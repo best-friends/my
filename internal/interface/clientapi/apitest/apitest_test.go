@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
 )
 
 // recorder is a testing.TB that records failures instead of failing the test.

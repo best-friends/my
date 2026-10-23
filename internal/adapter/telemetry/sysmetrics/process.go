@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // LabelCPUMode is the label of ProcessCPUTime: user or system.

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/i18n"
-	"github.com/best-friends/my/internal/interface/authpages"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/i18n"
+	"github.com/mycroblog/my/internal/interface/authpages"
 )
 
 // fakeDocuments holds documents by key. err fails every read.

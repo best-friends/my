@@ -5,8 +5,8 @@ package notification
 import (
 	"context"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/uow"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // ErasureRepository is the part of the notification module's persistence that the erasure of

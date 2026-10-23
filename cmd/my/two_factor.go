@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
 )
 
 // runAdminAccountDisableTwoFactor implements `my admin account disable-two-factor <account>`:

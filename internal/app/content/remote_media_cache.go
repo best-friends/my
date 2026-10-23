@@ -12,10 +12,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/best-friends/my/internal/app/blob"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // RemoteMediaPolicy is the remote_media_policy instance setting (FR-409, ADR-0005): which

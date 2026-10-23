@@ -49,7 +49,7 @@ my のライセンスは AGPL-3.0-only（[ADR-0011](../adr/0011-license.md)）�
 
 | 値 | 意味 |
 | --- | --- |
-| 指定しない | 既定の `https://github.com/best-friends/my`。改変していない my をそのまま動かすとき |
+| 指定しない | 既定の `https://github.com/mycroblog/my`。改変していない my をそのまま動かすとき |
 | `https:` の URL | ソースコードを読める場所（フォークのリポジトリ、特定の版のタグやアーカイブなど） |
 | `mailto:` の URI | ソースコードを請求するメールアドレス（例: `mailto:source@example.org`。`?subject=...` も付けられる） |
 

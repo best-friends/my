@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/identity"
-	domainidentity "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/app/identity"
+	domainidentity "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestPublicCostTotals drives the public totals on SQLite (FR-903, ADR-0067 §8): private by

@@ -5,8 +5,8 @@ package sqlite
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // This file holds the sources and the emptying of the projections that `my projection

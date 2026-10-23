@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strings"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
 )
 
 var _ appcontent.LinkCardCreators = (*RemoteActors)(nil)

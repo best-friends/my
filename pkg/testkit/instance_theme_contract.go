@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/instance"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // instanceThemeCases are the cases of InstanceRepositoryContract about the instance theme

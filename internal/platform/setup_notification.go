@@ -3,8 +3,8 @@
 package platform
 
 import (
-	"github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpNotification builds Web Push, registers the notification module's projectors, and builds

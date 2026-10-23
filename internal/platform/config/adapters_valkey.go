@@ -4,6 +4,6 @@
 
 package config
 
-import "github.com/best-friends/my/internal/adapter/valkey"
+import "github.com/mycroblog/my/internal/adapter/valkey"
 
 func checkValkeyURL(v string) error { return valkey.CheckURL(v) }

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Schedule is a periodic job (ADR-0004): every Every, the scheduler enqueues Job. The trigger

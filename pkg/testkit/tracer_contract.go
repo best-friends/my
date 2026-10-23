@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // ContractTraceParent is a valid, sampled traceparent from outside the process, as a trusted

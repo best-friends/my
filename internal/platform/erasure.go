@@ -5,12 +5,12 @@ package platform
 import (
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/app/timeline"
 )
 
 // setUpErasure registers the erasure of deleted local accounts' data and its schedule

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // recordingTracer keeps the spans that the runner starts. (testkit.Tracer does the same, but

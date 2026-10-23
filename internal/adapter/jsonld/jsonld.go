@@ -14,7 +14,7 @@ import (
 
 	"github.com/piprate/json-gold/ld"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
 )
 
 // The bundled contexts, by their URLs: ActivityStreams 2.0, the security vocabulary, and the

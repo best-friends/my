@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // DomainMutes tells whether a local account mutes the domain of a remote account (FR-304);

@@ -10,10 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/app/uow"
-	domain "github.com/best-friends/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/adapter/db/postgres/postgresgen"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/uow"
+	domain "github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // SupporterRepository implements supporters.Repository (data-model §4.13, ADR-0072 §15).

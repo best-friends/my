@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // SignatureScheme names an HTTP signature format (ADR-0006, ADR-0032). The values are the ones

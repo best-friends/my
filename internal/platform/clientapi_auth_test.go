@@ -10,16 +10,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/identity"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	domainaccount "github.com/best-friends/my/internal/domain/account"
-	domain "github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/interface/oauth"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/identity"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	domainaccount "github.com/mycroblog/my/internal/domain/account"
+	domain "github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/interface/oauth"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // issueTokens runs the web client's authorization code flow for a user and returns the tokens

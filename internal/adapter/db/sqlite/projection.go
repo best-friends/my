@@ -10,9 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/best-friends/my/internal/app/projection"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/app/projection"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/schema"
 )
 
 // ProjectionStore implements projection.Store on the tables of schema/sqlite. Its queries

@@ -5,8 +5,8 @@ package moderation
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // PublicDomainActions lists up to limit of the domain actions that the instance may list

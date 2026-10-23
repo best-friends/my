@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/blob/fs"
-	"github.com/best-friends/my/internal/app/blob"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/blob/fs"
+	"github.com/mycroblog/my/internal/app/blob"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func newStore(t *testing.T, dir string) *fs.Store {

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // MeterContract verifies a kernel.Meter adapter: it declares every kind of instrument, records

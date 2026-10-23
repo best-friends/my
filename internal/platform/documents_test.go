@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/platform"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // TestInstanceDocuments publishes the terms of service written in Markdown on the real database:

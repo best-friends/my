@@ -10,10 +10,10 @@ import (
 	"slices"
 	"testing"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 const supporterRoleID = "01890a5d-ac96-774b-bcce-b302099a8100"

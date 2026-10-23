@@ -6,10 +6,10 @@ import (
 	"context"
 	"fmt"
 
-	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/platform/config"
+	kvmemory "github.com/mycroblog/my/internal/adapter/kv/memory"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpKV builds the key-value store that cfg.KV selects, the rate limiter on it, and the

@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/payment/fake"
-	"github.com/best-friends/my/internal/app/supporters"
-	domain "github.com/best-friends/my/internal/domain/supporters"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/adapter/payment/fake"
+	"github.com/mycroblog/my/internal/app/supporters"
+	domain "github.com/mycroblog/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // newSupportersEnv is an App on SQLite with the inline queue, email (to a server that nobody

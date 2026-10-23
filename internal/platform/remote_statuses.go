@@ -5,11 +5,11 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
-	domaincontent "github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
+	domaincontent "github.com/mycroblog/my/internal/domain/content"
 )
 
 // remoteMediaRecorder records the attachments and custom emoji images of remote statuses for the

@@ -4,7 +4,7 @@
 
 package config
 
-import billingaws "github.com/best-friends/my/internal/adapter/billing/aws"
+import billingaws "github.com/mycroblog/my/internal/adapter/billing/aws"
 
 func checkBillingAWSTag(v string) error { return billingaws.CheckTag(v) }
 

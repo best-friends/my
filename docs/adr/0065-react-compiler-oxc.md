@@ -18,7 +18,7 @@
 React チームは React Compiler を Rust に移植しており（[react/react の `compiler/crates`](https://github.com/react/react/tree/main/compiler/crates)）、
 Oxc（`oxc-project/oxc`、MIT）はそれを取り込んだ `oxc-transform-react`（0.x）を npm に出している。
 
-スパイク（[#845 の報告](https://github.com/best-friends/my/issues/845#issuecomment-6308203825)、ブランチ `spike/845-oxc-react-compiler`）で、
+スパイク（[#845 の報告](https://github.com/mycroblog/my/issues/845#issuecomment-6308203825)、ブランチ `spike/845-oxc-react-compiler`）で、
 `oxc-transform-react` 0.153.0 を `app/web` と `app/ui` の全コードに適用し、Babel 版との出力の差、R4 の仕組み、組み込み方と時間、既存の検査、成熟度を確かめた。
 
 ## Decision Drivers（判断基準）

@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/stream"
-	domcontent "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/app/stream"
+	domcontent "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // sseEvent is one event of a Server-Sent Events stream.

@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // The effects on statuses of the moderation actions on statuses (data-model §5.2), which the

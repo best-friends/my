@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/best-friends/my/internal/app/account"
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/app/account"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // The subscriptions of the users (ADR-0072 §6, §8) and of the administrators (§10). A user

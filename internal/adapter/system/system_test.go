@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/system"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/system"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestClockContract(t *testing.T) {

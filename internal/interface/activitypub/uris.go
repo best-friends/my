@@ -5,9 +5,9 @@ package activitypub
 import (
 	"strings"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/account"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // actorsPrefix is the path of local actor ids before the UUID (ADR-0018).

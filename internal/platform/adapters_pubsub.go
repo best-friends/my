@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/platform/config"
+	pubsubstream "github.com/mycroblog/my/internal/adapter/stream/pubsub"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // newPubSubBus returns the stream.Bus of stream = pubsub, on the process ID of this process,

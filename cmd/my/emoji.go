@@ -13,9 +13,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/platform"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // stringList is a flag that may be given more than once.

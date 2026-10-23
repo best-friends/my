@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 func (f *fakeModeration) ReportStatuses(_ context.Context, id string) ([]appcontent.ReviewedStatus, error) {

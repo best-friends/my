@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // The routing, limits, and slow subscribers of Hub are verified by testkit.StreamBrokerContract

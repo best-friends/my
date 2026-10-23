@@ -5,7 +5,7 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // The logical type date is TEXT that date() gives back unchanged (data-model §1.2): the CHECK

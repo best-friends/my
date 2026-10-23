@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // What the moderators' account management (FR-714, the identity module's AccountAdmin) reads of

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 const (

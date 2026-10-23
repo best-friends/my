@@ -7,7 +7,7 @@ package platform
 import (
 	"context"
 
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpOTelMeter reports that the build tag no_otel left the OpenTelemetry adapter out.

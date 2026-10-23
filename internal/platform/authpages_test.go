@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // authClient keeps the cookies of the sign-in screens by hand: they are Secure, which a

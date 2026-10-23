@@ -6,8 +6,8 @@ import (
 	"context"
 	"slices"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // FederationPolicy reads the restrictions of domains and remote accounts that bear on

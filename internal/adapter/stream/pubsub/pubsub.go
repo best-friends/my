@@ -54,7 +54,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // The properties of the per-process subscriptions (ADR-0050 §2): the least values Pub/Sub

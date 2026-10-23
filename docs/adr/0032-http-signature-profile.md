@@ -16,7 +16,7 @@ FR-404 は draft-cavage-12 と RFC 9421 の両方の署名と double-knocking �
 - ADR-0006 の Open Questions: Mastodon が RFC 9421 の受信で必須とするコンポーネント、送信時の `alg` / `expires`、GoToSocial 式のクエリ文字列の再検証
 - 鍵の解決・キャッシュ・ローテーションの扱い（ADR-0019 §7 は TTL 24 時間と再取得 1 回を決めている）
 
-2026-10-17 に Mastodon の main（4.8.0-dev）のソースで確認したこと（出典は [#232 の調査報告](https://github.com/best-friends/my/issues/232)）:
+2026-10-17 に Mastodon の main（4.8.0-dev）のソースで確認したこと（出典は [#232 の調査報告](https://github.com/mycroblog/my/issues/232)）:
 
 - **送信は draft-cavage が先**。400 / 401 が返ったら RFC 9421（`@method @target-uri content-digest`）で 1 回だけ再送する。ホストごとの記憶はない（`app/lib/request.rb`）。
   ADR-0006 の「Mastodon 4.7 は RFC 9421 を先に試す」という記述は、現在のソースと合わない。

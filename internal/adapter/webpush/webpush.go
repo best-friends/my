@@ -29,9 +29,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/domain/notification"
+	"github.com/mycroblog/my/internal/app/kernel"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // recordSize is the record size of the aes128gcm coding (RFC 8188 §2.1). A message is one

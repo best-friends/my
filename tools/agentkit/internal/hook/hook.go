@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
 // Input is the part of the hook JSON the hooks read.

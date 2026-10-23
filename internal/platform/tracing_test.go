@@ -17,9 +17,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform/config"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform/config"
+	"github.com/mycroblog/my/schema"
 )
 
 // The span attributes that ADR-0063 §4 allows.

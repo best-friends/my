@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // HumanVerifierStub is the stub siteverify service that HumanVerifierContract gives the

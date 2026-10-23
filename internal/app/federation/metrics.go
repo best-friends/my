@@ -5,8 +5,8 @@ package federation
 import (
 	"net/http"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // Label keys of the federation metrics (ADR-0055 §3). No metric is labeled with a remote

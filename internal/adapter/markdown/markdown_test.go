@@ -5,9 +5,9 @@ package markdown_test
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/markdown"
-	"github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/markdown"
+	"github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 func TestContract(t *testing.T) {

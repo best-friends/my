@@ -21,9 +21,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/mail/smtp"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/adapter/mail/smtp"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // server is a minimal SMTP submission server: EHLO, STARTTLS, AUTH PLAIN, MAIL, RCPT, DATA, QUIT.

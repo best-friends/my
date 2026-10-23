@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/domain/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The invites (FR-001, manage_invites): the admin operations that create, list, and revoke the

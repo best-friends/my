@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // CustomEmojiView is a custom emoji as clients show it (ADR-0051 §4): its shortcode without

@@ -17,12 +17,12 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/clientapi/apitest"
-	"github.com/best-friends/my/internal/interface/oauth"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi/apitest"
+	"github.com/mycroblog/my/internal/interface/oauth"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // badTexts are the values that no text column of PostgreSQL can hold (data-model §1.2): a NUL

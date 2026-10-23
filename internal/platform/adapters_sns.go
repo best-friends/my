@@ -11,9 +11,9 @@ import (
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 
-	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/platform/config"
+	snsstream "github.com/mycroblog/my/internal/adapter/stream/sns"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // newSNSBus returns the stream.Bus of stream = sns, on the process ID of this process.

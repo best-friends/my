@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // The reads in a transaction: each answers as the method of the same name without Tx does, read

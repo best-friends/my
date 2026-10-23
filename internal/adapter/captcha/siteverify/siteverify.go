@@ -22,7 +22,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // MaxTokenBytes bounds the token that Verify sends; a longer one fails without a request.

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/best-friends/my/tools/agentkit/internal/ctxmap"
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/ctxmap"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
 )
 
 // checkContexts are the contexts of scripts/changed-contexts.sh.

@@ -3,9 +3,9 @@
 package platform
 
 import (
-	"github.com/best-friends/my/internal/adapter/httpsig"
-	"github.com/best-friends/my/internal/adapter/jsonld"
-	"github.com/best-friends/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/adapter/httpsig"
+	"github.com/mycroblog/my/internal/adapter/jsonld"
+	"github.com/mycroblog/my/internal/app/federation"
 )
 
 // setUpDelivery registers the delivery of outbound activities, the instance_health projector,

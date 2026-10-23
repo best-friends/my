@@ -2,7 +2,7 @@
 
 package sysmetrics
 
-import "github.com/best-friends/my/internal/app/kernel"
+import "github.com/mycroblog/my/internal/app/kernel"
 
 // Label keys of the outbound HTTP metrics. The destination is never a label (ADR-0056 §1).
 const (

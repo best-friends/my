@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/interface/activitypub"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/interface/activitypub"
 )
 
 // TestGolden pins every document the endpoints serve (ADR-0015).

@@ -4,7 +4,7 @@
 
 package config
 
-import pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
+import pubsubstream "github.com/mycroblog/my/internal/adapter/stream/pubsub"
 
 func checkPubSubTopic(v string) error { return pubsubstream.CheckTopic(v) }
 

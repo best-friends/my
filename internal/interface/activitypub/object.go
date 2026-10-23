@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // object serves GET /ap/objects/{id} (the Note of a local status) and GET

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // ReasonProofMismatch is the reason of a request refused because the integrity proof of its

@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // fakeTx emits events to its registry and keeps them, as a database adapter does, so that the

@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/identity"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The payment provider (ADR-0074 §4): its state and the reconciliation by hand, the admin

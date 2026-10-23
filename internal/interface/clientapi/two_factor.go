@@ -12,8 +12,8 @@ import (
 
 	"rsc.io/qr"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/kernel"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // The viewer's two-factor authentication with TOTP (FR-005). The identity module generates and

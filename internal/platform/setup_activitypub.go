@@ -5,9 +5,9 @@ package platform
 import (
 	"context"
 
-	domaininstance "github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/interface/activitypub"
-	"github.com/best-friends/my/internal/platform/config"
+	domaininstance "github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/interface/activitypub"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpActivityPub registers the ActivityPub handler and wraps the web client's pages with it.

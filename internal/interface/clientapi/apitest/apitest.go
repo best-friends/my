@@ -26,7 +26,7 @@ import (
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
 
-	"github.com/best-friends/my/api"
+	"github.com/mycroblog/my/api"
 )
 
 // Spec is the loaded and validated client API document.

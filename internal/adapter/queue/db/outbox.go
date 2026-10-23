@@ -8,8 +8,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // Outbox keeps jobs in outbox_events until Relay hands them to a queue outside the database

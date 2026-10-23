@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
 )
 
 // access is who asks for an ActivityPub document, and whether authorized fetch (FR-408) is on.

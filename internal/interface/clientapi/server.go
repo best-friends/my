@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // BasePath is the path prefix of every client API endpoint, the server URL of api/openapi.yaml.

@@ -13,7 +13,7 @@
 異議申し立て（FR-707）の期間、通報者の身元を誰に見せるか、本人の開示請求に何を渡すかも決まっていない。
 関連する要件: FR-008, FR-701, FR-707, FR-714, FR-719, NFR-MOD-5。
 
-法令とガイドライン（調査報告 [#327](https://github.com/best-friends/my/issues/327) §法令。法的助言ではない）:
+法令とガイドライン（調査報告 [#327](https://github.com/mycroblog/my/issues/327) §法令。法的助言ではない）:
 
 - GDPR は趣味のインスタンスにも及ぶ（2 条 2 項 c の家庭内の例外は、他人に SNS を提供する者には当たらない。[前文 18](https://gdpr-info.eu/recitals/no-18/)）。
   記録の種類ごとに保持期間を正当化できること（[5 条 1 項 e](https://gdpr-info.eu/art-5-gdpr/)）、本人への開示（[15 条](https://gdpr-info.eu/art-15-gdpr/)。他人の権利を害する部分は伏せられる。15 条 4 項）、IP アドレスは個人データ（CJEU Breyer C-582/14）。

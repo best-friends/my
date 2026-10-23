@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/identity"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The billing imports (ADR-0068 §9, FR-904): the admin operations on /admin/billing_imports

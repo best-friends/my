@@ -5,7 +5,7 @@ package federation
 import (
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 func TestQuoteRequestStatus(t *testing.T) {

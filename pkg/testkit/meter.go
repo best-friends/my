@@ -10,7 +10,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Meter is a kernel.Meter that keeps every measurement, for tests of the code that measures.

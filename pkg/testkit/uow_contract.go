@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // UnitOfWorkHarness is one uow.UnitOfWork under test, connected to its own empty database that

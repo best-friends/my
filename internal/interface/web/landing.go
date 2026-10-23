@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/i18n"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // This file serves the shells of the pages about the instance itself, the landing page (/), the

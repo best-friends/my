@@ -9,7 +9,7 @@
 
 決定者のフィードバック（#485）: 「プロフィールページを開く → 新規に投稿 → 再度プロフィールページを開いた時などに古いキャッシュのまま（最新の投稿が出ない）」。
 
-本物の `my serve`（SQLite）と Playwright で再現した（spike: [`spike-485.spec.ts`](https://github.com/best-friends/my/blob/99c9bb27a476da3e9f641a08d88c634ca2e6b7c9/app/web/e2e/spike-485.spec.ts)、API の GET に 800 ms の遅延を足して本番の往復を再現）。
+本物の `my serve`（SQLite）と Playwright で再現した（spike: [`spike-485.spec.ts`](https://github.com/mycroblog/my/blob/99c9bb27a476da3e9f641a08d88c634ca2e6b7c9/app/web/e2e/spike-485.spec.ts)、API の GET に 800 ms の遅延を足して本番の往復を再現）。
 プロフィールを開いたあとに投稿し、もう一度プロフィールを開くと、まず投稿前の一覧が出て、往復の時間のあとで新しい投稿に入れ替わる。
 再読み込みのあと・ブラウザの「戻る」でも同じになる。
 原因はクライアントだけにある。

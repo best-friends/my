@@ -2,7 +2,7 @@
 
 package content
 
-import "github.com/best-friends/my/internal/domain/content"
+import "github.com/mycroblog/my/internal/domain/content"
 
 // Event types of the content module's statuses, for uow.Projectors (data-model §4.4). Every
 // status command emits exactly one of them inside its transaction, after writing the resource

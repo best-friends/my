@@ -29,7 +29,7 @@
 
 ## Considered Options（選択肢）
 
-調べた結果は [#483 の調査報告](https://github.com/best-friends/my/issues/483#issuecomment-6261371624) にまとめた（数値は 2026-10-19 に npm の registry と各パッケージの中身で確かめた）。
+調べた結果は [#483 の調査報告](https://github.com/mycroblog/my/issues/483#issuecomment-6261371624) にまとめた（数値は 2026-10-19 に npm の registry と各パッケージの中身で確かめた）。
 バンドルの大きさは、今の 23 個（オンの版を含む）を Bun で木を揺すって minify し、React を外して gzip した値。今の手描きは 1.3 KB。
 
 | 選択肢 | ライセンス | 数 | 太さ・塗り | 23 個の大きさ（gzip） | 最新版 |

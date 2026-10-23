@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The files below are as Mastodon 4 exports them from Settings > Import and export.

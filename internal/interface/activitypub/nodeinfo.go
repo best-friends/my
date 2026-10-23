@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // nodeInfoSchema names NodeInfo 2.1, as the link relation and the profile of the document.

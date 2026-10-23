@@ -23,7 +23,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // DefaultChunkSize is how many rows Rebuild writes per transaction and how many rows a read

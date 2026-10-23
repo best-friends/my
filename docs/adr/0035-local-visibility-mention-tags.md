@@ -13,7 +13,7 @@
 - 「メンションの `tag` は残すが、**フォロワーでないリモートのメンション先には配送しない**」
 
 配送は shared inbox に集約する（ADR-0006、NFR-COST-5）。このため、メンション先と同じサーバーに作者のフォロワーが 1 人でもいれば、その投稿はメンション先のサーバーに届く。
-2026-10-17 に Mastodon の main（4.8.0-dev）のソースで、followers 宛ての `Create` の `tag` に、フォロワーでも宛先でもないローカルの利用者への `Mention` があるときの扱いを確かめた（出典は [#232 の調査報告](https://github.com/best-friends/my/issues/232)）。
+2026-10-17 に Mastodon の main（4.8.0-dev）のソースで、followers 宛ての `Create` の `tag` に、フォロワーでも宛先でもないローカルの利用者への `Mention` があるときの扱いを確かめた（出典は [#232 の調査報告](https://github.com/mycroblog/my/issues/232)）。
 
 - 作者にそのサーバーのフォロワーがいれば、投稿を受け入れる（`app/lib/activitypub/activity/create.rb` の `related_to_local_activity?`）
 - メンション先の利用者に `Mention` の行を作る（同 `process_mention`）

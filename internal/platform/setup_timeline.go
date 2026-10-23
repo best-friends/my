@@ -2,7 +2,7 @@
 
 package platform
 
-import "github.com/best-friends/my/internal/app/timeline"
+import "github.com/mycroblog/my/internal/app/timeline"
 
 // setUpTimeline registers the timeline module's projectors and builds its service. It comes
 // after the content and graph projectors, which reject the commands that must not reach the

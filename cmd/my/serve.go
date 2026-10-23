@@ -14,8 +14,8 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // runServe implements `my serve`: it runs the server in the configured role until SIGTERM or

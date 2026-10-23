@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"net/http"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/domain/identity"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The custom emoji (ADR-0051 §4): the list of the picker (GET /custom_emojis) and the admin

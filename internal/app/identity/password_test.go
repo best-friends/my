@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/identity"
 )
 
 var cheap = identity.Argon2Params{MemoryKiB: 64, Iterations: 1, Parallelism: 1, SaltLength: 16, KeyLength: 32}

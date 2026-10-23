@@ -6,10 +6,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // InsertRule implements instance.RuleRepository.

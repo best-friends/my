@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // ReportCounts counts the open reports. *appmoderation.Service implements it.

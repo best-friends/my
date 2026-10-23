@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/moderation"
 )
 
 // The reads in a transaction: each answers as the method of the same name without Tx does, read

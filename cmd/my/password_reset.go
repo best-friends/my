@@ -9,7 +9,7 @@ import (
 	"io"
 	"time"
 
-	appidentity "github.com/best-friends/my/internal/app/identity"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
 )
 
 // runAdminAccountPasswordResetLink implements `my admin account password-reset-link <account>`:

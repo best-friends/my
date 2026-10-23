@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // The acceptance window of ADR-0032 and ADR-0019 §7.

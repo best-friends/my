@@ -28,8 +28,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Transport timeouts and limits of ADR-0019 §1.

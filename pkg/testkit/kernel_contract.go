@@ -8,7 +8,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // ClockContract verifies that c satisfies the kernel.Clock contract: Now returns UTC times

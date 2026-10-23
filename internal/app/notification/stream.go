@@ -5,10 +5,10 @@ package notification
 import (
 	"context"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/internal/app/uow"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // RegisterCommitHooks signals to pub, once the command commits, the accounts that the events

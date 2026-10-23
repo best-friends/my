@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/queue"
 )
 
 // QueueBacklogContract verifies a queue adapter whose harness Queue is a queue.BacklogReader:

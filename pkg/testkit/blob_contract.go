@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/blob"
 )
 
 // BlobStoreFactory returns a new, empty store. The factory registers the cleanup of everything

@@ -8,13 +8,13 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
-	"github.com/best-friends/my/internal/adapter/media/native"
-	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/media"
-	mediahttp "github.com/best-friends/my/internal/interface/media"
-	"github.com/best-friends/my/internal/platform/config"
+	blobfs "github.com/mycroblog/my/internal/adapter/blob/fs"
+	"github.com/mycroblog/my/internal/adapter/media/native"
+	"github.com/mycroblog/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/media"
+	mediahttp "github.com/mycroblog/my/internal/interface/media"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpMedia builds the blob store, the media processor, the media proxy, and the media use

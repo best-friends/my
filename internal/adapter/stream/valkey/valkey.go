@@ -22,8 +22,8 @@ import (
 
 	valkeygo "github.com/valkey-io/valkey-go"
 
-	"github.com/best-friends/my/internal/adapter/valkey"
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/adapter/valkey"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // Channel returns the Pub/Sub channel of the Buses whose keys start with keyPrefix.

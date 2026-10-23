@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // The instance's finances as the holders of view_finance read them (ADR-0070 §5): the user

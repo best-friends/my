@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/identity"
-	"github.com/best-friends/my/internal/platform/config"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/platform/config"
+	"github.com/mycroblog/my/schema"
 )
 
 // newAdminEnv points the configuration at a new SQLite database with the product schema applied

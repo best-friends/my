@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
-	"github.com/best-friends/my/internal/i18n"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
+	"github.com/mycroblog/my/internal/i18n"
 )
 
 // The viewer's own moderation actions (FR-715, NFR-MOD-6): the list of them and the action of a

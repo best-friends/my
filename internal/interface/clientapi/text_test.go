@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
 )
 
 // TestBodyTextIsCheckedBeforeTheHandler checks that a NUL anywhere in a JSON body is a 422

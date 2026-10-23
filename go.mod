@@ -1,4 +1,4 @@
-module github.com/best-friends/my
+module github.com/mycroblog/my
 
 go 1.27.3
 

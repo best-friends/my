@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/stream"
+	"github.com/mycroblog/my/internal/app/stream"
 )
 
 // SweepingBus is a stream.Bus adapter that also sweeps what processes leave on its broker.

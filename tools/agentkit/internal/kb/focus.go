@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/best-friends/my/tools/agentkit/internal/store"
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/store"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
 func contains(s string, lower []string) bool {

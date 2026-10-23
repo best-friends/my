@@ -9,9 +9,9 @@ import (
 	"io"
 	"strings"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/platform"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // runAdminRefetch implements `my admin refetch <subcommand>`: the refetch of remote posts from

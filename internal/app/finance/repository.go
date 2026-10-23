@@ -12,8 +12,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/finance"
 )
 
 // ErrNotFound reports an unknown or canceled cost item, or an income movement that is not

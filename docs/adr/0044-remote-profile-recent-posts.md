@@ -19,7 +19,7 @@
 - [ADR-0019](0019-security-baseline.md)（SSRF ガード付き `HttpClient`）、[ADR-0034](0034-remote-content-scope-and-retention.md)（取り込みの範囲と保持期間）、[ADR-0036](0036-moderation-federation-propagation.md)（処分）
 - [federation.md §6](../architecture/federation.md#6-リモートの-actor--オブジェクトの取得)（取得の規則・スレッドの取得）、[§11](../architecture/federation.md#11-モデレーションとの連携)（処分と取得）
 
-主要実装の挙動（2026-10-19 にソースで確認。出典は [#486 の調査報告](https://github.com/best-friends/my/issues/486#issuecomment-6261357300)）:
+主要実装の挙動（2026-10-19 にソースで確認。出典は [#486 の調査報告](https://github.com/mycroblog/my/issues/486#issuecomment-6261357300)）:
 
 - Mastodon: Actor の処理（`ActivityPub::ProcessAccountService`）で outbox の `totalItems` だけを読み（投稿数の表示）、項目は取得しない。
   `featured`（ピン留め）の最初のページを取得して同期する。Web UI は、リモートのプロフィールに「Some posts from this profile may be missing.」と

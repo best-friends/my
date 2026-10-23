@@ -6,11 +6,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/interface/authpages"
-	"github.com/best-friends/my/internal/interface/clientapi"
-	"github.com/best-friends/my/internal/interface/web"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/interface/authpages"
+	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/web"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // setUpClientAPI registers the client API on every module, and makes the data of the webhook

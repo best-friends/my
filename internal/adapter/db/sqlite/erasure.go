@@ -6,15 +6,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	appgraph "github.com/best-friends/my/internal/app/graph"
-	appidentity "github.com/best-friends/my/internal/app/identity"
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	apptimeline "github.com/best-friends/my/internal/app/timeline"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	appgraph "github.com/mycroblog/my/internal/app/graph"
+	appidentity "github.com/mycroblog/my/internal/app/identity"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	apptimeline "github.com/mycroblog/my/internal/app/timeline"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // The erasure of deleted local accounts' data (data-model §8): each module's repository

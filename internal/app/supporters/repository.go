@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // ErrNotFound reports a record that does not exist.

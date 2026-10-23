@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // registerOSProcess reports the CPU time, the resident memory, and the file descriptors from

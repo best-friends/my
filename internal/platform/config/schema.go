@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/webpush"
-	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/adapter/webpush"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 // EnvPrefix is prepended to the upper-cased key to form a setting's environment variable.
@@ -28,7 +28,7 @@ const EnvPrefix = "MY_"
 const EnvConfigFile = EnvPrefix + "CONFIG"
 
 // DefaultSourceURL is the repository of the unmodified server, the default of source_url.
-const DefaultSourceURL = "https://github.com/best-friends/my"
+const DefaultSourceURL = "https://github.com/mycroblog/my"
 
 // kekSize is the length in bytes of the AES-256 key-encryption key (ADR-0019 §6).
 const kekSize = 32

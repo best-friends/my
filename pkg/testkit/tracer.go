@@ -9,7 +9,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Tracer is a kernel.Tracer that records every span, sampled, for tests of the code that

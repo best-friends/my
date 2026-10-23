@@ -9,9 +9,9 @@ import (
 	"slices"
 	"strings"
 
-	domaininstance "github.com/best-friends/my/internal/domain/instance"
-	mediahttp "github.com/best-friends/my/internal/interface/media"
-	"github.com/best-friends/my/internal/interface/web"
+	domaininstance "github.com/mycroblog/my/internal/domain/instance"
+	mediahttp "github.com/mycroblog/my/internal/interface/media"
+	"github.com/mycroblog/my/internal/interface/web"
 )
 
 // noIndexPrefixes are the paths whose responses are not pages for search engines: the client

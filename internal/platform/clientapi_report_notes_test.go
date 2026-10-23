@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestReportNotesReopenAndActionThroughTheAPI handles a local report through the admin API on

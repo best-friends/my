@@ -766,7 +766,7 @@ func TestServerOrigin(t *testing.T) {
 // server refuses to start with anything else.
 func TestSourceURL(t *testing.T) {
 	for _, v := range []string{
-		"https://github.com/best-friends/my",
+		"https://github.com/mycroblog/my",
 		"https://git.example.org/fork/my/-/tree/v1.2.3",
 		"mailto:source@example.org",
 		"mailto:source@example.org?subject=Source%20code",
@@ -781,12 +781,12 @@ func TestSourceURL(t *testing.T) {
 		}
 	}
 	for _, v := range []string{
-		"http://github.com/best-friends/my",
+		"http://github.com/mycroblog/my",
 		"https:///no-host",
 		"https://user@git.example.org/my",
 		"https://git.example.org/my#readme",
 		"ftp://git.example.org/my",
-		"ssh://example.org/best-friends/my",
+		"ssh://example.org/mycroblog/my",
 		"mailto:",
 		"mailto:no-address",
 		"mailto://source@example.org",

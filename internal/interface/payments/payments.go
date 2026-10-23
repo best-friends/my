@@ -15,8 +15,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/supporters"
 )
 
 // PathPrefix is the path of the webhook endpoints, followed by the provider's name.

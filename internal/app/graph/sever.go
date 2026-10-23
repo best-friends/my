@@ -7,8 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/graph"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/graph"
 )
 
 // The follows that moderation cuts when it suspends a domain or a remote account (FR-717,

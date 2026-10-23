@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	kvvalkey "github.com/best-friends/my/internal/adapter/kv/valkey"
-	"github.com/best-friends/my/internal/adapter/system"
-	"github.com/best-friends/my/internal/adapter/valkey"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/pkg/testkit/valkeytest"
+	kvvalkey "github.com/mycroblog/my/internal/adapter/kv/valkey"
+	"github.com/mycroblog/my/internal/adapter/system"
+	"github.com/mycroblog/my/internal/adapter/valkey"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/pkg/testkit/valkeytest"
 )
 
 // With kv = valkey the server starts, is ready while the Valkey server answers, and keeps the

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/app/graph"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform"
+	"github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/app/graph"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform"
 )
 
 // The scheduler's first tick enqueues every periodic cleanup, and the key-value store's cleanup

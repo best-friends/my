@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // The account module's types that other modules name in their ports.

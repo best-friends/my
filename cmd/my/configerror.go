@@ -8,8 +8,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/best-friends/my/internal/i18n"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/i18n"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // printLoadError writes an error of config.Load to w. A *config.ValidationError is

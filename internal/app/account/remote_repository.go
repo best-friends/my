@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 // RemoteRepository is the part of Repository about remote actors: their subtype rows,

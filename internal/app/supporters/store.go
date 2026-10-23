@@ -7,8 +7,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // The records of the supporter program, its plans, and their subscriptions (ADR-0072 §15,

@@ -11,7 +11,7 @@ import (
 	randv2 "math/rand/v2"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // JobRunner runs jobs until ctx ends. It has two forms (ADR-0004): a pull runner, which polls

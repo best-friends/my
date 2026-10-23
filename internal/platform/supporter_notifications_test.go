@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/supporters"
-	domain "github.com/best-friends/my/internal/domain/supporters"
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/app/supporters"
+	domain "github.com/mycroblog/my/internal/domain/supporters"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestSupporterNotifications tells a subscriber of their subscription (ADR-0072 §16), on both

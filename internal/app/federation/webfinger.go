@@ -11,9 +11,9 @@ import (
 	"net/url"
 	"strings"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/domain/federation"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/domain/federation"
 )
 
 // webFingerAccept is the Accept header of WebFinger requests (RFC 7033 §10.2).

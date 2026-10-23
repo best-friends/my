@@ -12,7 +12,7 @@ FR-704（監査ログ）と NFR-MOD-1 は、モデレーターと管理者の操
 対象の操作は `moderation`（処分・通報）、`identity`（登録審査・ロール）、`instance`（設定・ルール）の 3 つのモジュールにまたがる。
 各イベントテーブルを横断して読むと、`moderation` が他のモジュールのテーブルを読むことになり、ADR-0002 のモジュール境界に反する。
 
-主要実装の例（2026-10-17 にソースで確認。出典は [#327 の調査報告](https://github.com/best-friends/my/issues/327)）:
+主要実装の例（2026-10-17 にソースで確認。出典は [#327 の調査報告](https://github.com/mycroblog/my/issues/327)）:
 
 - Mastodon は専用の `admin_action_logs`（操作者・操作・対象の型と ID・対象の表示名の写し・変更の内容）を持ち、約 60 種の操作を記録する。自動の消去はしない（[`Admin::ActionLog`](https://github.com/mastodon/mastodon/blob/main/app/models/admin/action_log.rb)、[`ActionLogFilter`](https://github.com/mastodon/mastodon/blob/main/app/models/admin/action_log_filter.rb)）。
 - Misskey は `moderation_log`（操作者・種類・詳細）を、Pleroma / Akkoma は `ModerationLog` を持つ。

@@ -17,7 +17,7 @@
 
 キュー（ADR-0004）は `orderingKey` を持つが、pull runner はまだ直列化しない（#77）。SQS 標準キューと Cloud Tasks は、そもそも同じキーのジョブを直列化できない。
 
-主要実装の方式（出典は [#232 の調査報告](https://github.com/best-friends/my/issues/232)）:
+主要実装の方式（出典は [#232 の調査報告](https://github.com/mycroblog/my/issues/232)）:
 
 | 実装 | 同期で行うこと | 非同期 | 重複排除 |
 | --- | --- | --- | --- |

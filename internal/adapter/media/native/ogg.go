@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/app/media"
+	"github.com/mycroblog/my/internal/app/media"
 )
 
 // An Ogg of one Vorbis or Opus stream is remuxed by replacing its comment header (Vorbis

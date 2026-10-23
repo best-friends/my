@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 func TestValidText(t *testing.T) {

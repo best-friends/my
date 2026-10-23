@@ -8,7 +8,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // The supporter list (ADR-0071 §4, §6): a member of a plan (a subscription in a member state)

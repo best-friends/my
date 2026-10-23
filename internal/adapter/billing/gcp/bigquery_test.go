@@ -20,10 +20,10 @@ import (
 
 	"google.golang.org/api/option"
 
-	billinggcp "github.com/best-friends/my/internal/adapter/billing/gcp"
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/pkg/testkit"
+	billinggcp "github.com/mycroblog/my/internal/adapter/billing/gcp"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 const table = "my-billing.billing_export.gcp_billing_export_v1_012345_6789AB_CDEF01"

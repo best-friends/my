@@ -13,7 +13,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // The values of traces_flush (ADR-0063 §5).
@@ -85,7 +85,7 @@ func NewTracer(ctx context.Context, opts TracerOptions) (*Tracer, error) {
 	)
 	return &Tracer{
 		provider: provider,
-		tracer:   provider.Tracer("github.com/best-friends/my"),
+		tracer:   provider.Tracer("github.com/mycroblog/my"),
 		unit:     opts.Flush == FlushUnit,
 	}, nil
 }

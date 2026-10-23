@@ -6,10 +6,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/identity"
-	"github.com/best-friends/my/internal/app/queue"
-	domidentity "github.com/best-friends/my/internal/domain/identity"
+	"github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/app/identity"
+	"github.com/mycroblog/my/internal/app/queue"
+	domidentity "github.com/mycroblog/my/internal/domain/identity"
 )
 
 // setUpExports builds the exports of the users' data (FR-008) and registers their jobs. The

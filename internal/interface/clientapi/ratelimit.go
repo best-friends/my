@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Rate limits of the client API (ADR-0019 §5): requests without a valid access token share a

@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/metrics"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/metrics"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // TestPrometheusMetrics serves the scrape on its own listener and checks the HTTP and job

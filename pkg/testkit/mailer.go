@@ -6,7 +6,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // Mailer is a kernel.Mailer that keeps the messages it is given. Set Err to make Send fail.

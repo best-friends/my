@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/content"
-	domain "github.com/best-friends/my/internal/domain/content"
-	"github.com/best-friends/my/internal/platform"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/content"
+	domain "github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/platform"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // An upload goes through the database queue's outbox to the worker, which strips its EXIF

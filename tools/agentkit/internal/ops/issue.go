@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/best-friends/my/tools/agentkit/internal/gh"
-	"github.com/best-friends/my/tools/agentkit/internal/text"
+	"github.com/mycroblog/my/tools/agentkit/internal/gh"
+	"github.com/mycroblog/my/tools/agentkit/internal/text"
 )
 
 var reStatus = regexp.MustCompile(`(?m)^- Status:\s*([A-Za-z]+)`)

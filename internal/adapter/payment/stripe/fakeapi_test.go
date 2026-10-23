@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // fakeAPI is an httptest server that answers the parts of Stripe's REST API that the adapter

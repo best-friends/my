@@ -24,9 +24,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pubsub "github.com/best-friends/my/internal/adapter/stream/pubsub"
-	"github.com/best-friends/my/internal/app/stream"
-	"github.com/best-friends/my/pkg/testkit"
+	pubsub "github.com/mycroblog/my/internal/adapter/stream/pubsub"
+	"github.com/mycroblog/my/internal/app/stream"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // The environment variables of the emulator tests: TEST_STREAM=container runs the contract on

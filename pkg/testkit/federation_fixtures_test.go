@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/pkg/testkit"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files under testdata/golden")

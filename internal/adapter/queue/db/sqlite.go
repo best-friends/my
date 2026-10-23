@@ -11,10 +11,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
-	"github.com/best-friends/my/internal/adapter/queue/db/internal/sqlitequeue"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite"
+	"github.com/mycroblog/my/internal/adapter/queue/db/internal/sqlitequeue"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/app/uow"
 )
 
 // NewSQLite returns the queue kept in the SQLite database d.

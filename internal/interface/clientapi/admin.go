@@ -12,9 +12,9 @@ import (
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/domain/federation"
-	"github.com/best-friends/my/internal/domain/identity"
+	appfederation "github.com/mycroblog/my/internal/app/federation"
+	"github.com/mycroblog/my/internal/domain/federation"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // The admin operations (tag admin): the health of remote servers and the queue dashboard

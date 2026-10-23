@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/best-friends/my/internal/adapter/webauthn"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/adapter/webauthn"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // newPasskeys returns the WebAuthn ceremonies of the instance's passkeys (FR-004). The relying

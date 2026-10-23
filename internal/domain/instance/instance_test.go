@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 func TestDefinitionsAreValid(t *testing.T) {

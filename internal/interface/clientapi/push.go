@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
-	appnotification "github.com/best-friends/my/internal/app/notification"
-	"github.com/best-friends/my/internal/domain/notification"
+	appnotification "github.com/mycroblog/my/internal/app/notification"
+	"github.com/mycroblog/my/internal/domain/notification"
 )
 
 // WebPush runs the use cases of the Web Push subscription of the viewer's grant (FR-206).

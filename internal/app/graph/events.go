@@ -2,7 +2,7 @@
 
 package graph
 
-import "github.com/best-friends/my/internal/domain/graph"
+import "github.com/mycroblog/my/internal/domain/graph"
 
 // Event types of the graph module, for uow.Projectors (data-model §4.5). Every follow command
 // emits exactly one of them inside its transaction, after writing the event rows, so that the

@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // RegisterProjectors registers the synchronous projectors of the content module's statuses

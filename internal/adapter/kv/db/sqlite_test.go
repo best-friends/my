@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
-	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
-	"github.com/best-friends/my/internal/app/kernel"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/pkg/testkit"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite"
+	kvdb "github.com/mycroblog/my/internal/adapter/kv/db"
+	"github.com/mycroblog/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/pkg/testkit"
+	"github.com/mycroblog/my/schema"
 )
 
 func TestSQLiteKeyValueStoreContract(t *testing.T) {

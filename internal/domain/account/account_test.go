@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/best-friends/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/domain/account"
 )
 
 const (

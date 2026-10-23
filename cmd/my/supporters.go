@@ -11,9 +11,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appsupporters "github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/supporters"
+	appsupporters "github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/supporters"
 )
 
 // runAdminSupporters implements `my admin supporters <subcommand>`: the supporter program

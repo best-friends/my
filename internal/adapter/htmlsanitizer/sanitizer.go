@@ -25,7 +25,7 @@ import (
 	nethtml "golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 
-	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/mycroblog/my/internal/app/kernel"
 )
 
 // PolicyVersion is the version of the policy, stored as html_policy_version next to the

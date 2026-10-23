@@ -7,10 +7,10 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
-	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/mycroblog/my/internal/adapter/db/sqlite/sqlitegen"
+	appinstance "github.com/mycroblog/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/instance"
 )
 
 // The server-wide announcements (FR-726): the instance.AnnouncementRepository part of

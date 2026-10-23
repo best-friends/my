@@ -1,4 +1,4 @@
-module github.com/best-friends/my/tools/agentkit
+module github.com/mycroblog/my/tools/agentkit
 
 go 1.27.3
 

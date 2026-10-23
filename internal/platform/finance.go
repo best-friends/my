@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/internal/platform/config"
+	"github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/app/queue"
+	"github.com/mycroblog/my/internal/platform/config"
 )
 
 // billingSourceAdapters builds the BillingSource of each name of billing_sources whose adapter is

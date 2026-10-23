@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/tools/agentkit/internal/repo"
-	"github.com/best-friends/my/tools/agentkit/internal/store"
+	"github.com/mycroblog/my/tools/agentkit/internal/repo"
+	"github.com/mycroblog/my/tools/agentkit/internal/store"
 )
 
 // fixture builds a small repository with a document, an operation, a handler, a service, an adapter, a

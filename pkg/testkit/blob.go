@@ -10,7 +10,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/best-friends/my/internal/app/blob"
+	"github.com/mycroblog/my/internal/app/blob"
 )
 
 // MemoryBlobStore is an in-memory blob.Store for tests. It passes BlobStoreContract. Its

@@ -11,8 +11,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/content"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // runAdminEmojiRequests implements `my admin emoji requests <subcommand>`: the requests of the

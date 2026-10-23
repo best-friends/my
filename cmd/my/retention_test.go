@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	appmoderation "github.com/best-friends/my/internal/app/moderation"
+	appmoderation "github.com/mycroblog/my/internal/app/moderation"
 )
 
 func TestAdminRetentionAndExportCommands(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/pkg/testkit"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // fakeFailures are the provider errors of the fake, wrapped like an adapter wraps its provider's.

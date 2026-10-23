@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/best-friends/my/internal/app/uow"
-	"github.com/best-friends/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/app/uow"
+	"github.com/mycroblog/my/internal/domain/content"
 )
 
 // IsDeleted reports inside tx whether a status has a deletion, for rebuilding other modules'

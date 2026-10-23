@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/best-friends/my/internal/app/supporters"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/schema"
+	"github.com/mycroblog/my/internal/app/supporters"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/internal/domain/instance"
+	"github.com/mycroblog/my/schema"
 )
 
 func TestTables(t *testing.T) {

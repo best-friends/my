@@ -20,10 +20,10 @@ import (
 
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 
-	billingaws "github.com/best-friends/my/internal/adapter/billing/aws"
-	appfinance "github.com/best-friends/my/internal/app/finance"
-	"github.com/best-friends/my/internal/domain/finance"
-	"github.com/best-friends/my/pkg/testkit"
+	billingaws "github.com/mycroblog/my/internal/adapter/billing/aws"
+	appfinance "github.com/mycroblog/my/internal/app/finance"
+	"github.com/mycroblog/my/internal/domain/finance"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 // now is the time of the tests: the data of October 2026 is through the 20th.

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/clientapi"
 )
 
 // TestCostItemsAdmin drives the admin API of the instance's costs on SQLite (ADR-0067 §9): an

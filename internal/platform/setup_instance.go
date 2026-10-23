@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/best-friends/my/internal/adapter/markdown"
-	"github.com/best-friends/my/internal/app/instance"
+	"github.com/mycroblog/my/internal/adapter/markdown"
+	"github.com/mycroblog/my/internal/app/instance"
 )
 
 // setUpInstance registers the instance module's projectors and builds its service, which holds

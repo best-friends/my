@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
-	appaccount "github.com/best-friends/my/internal/app/account"
-	appcontent "github.com/best-friends/my/internal/app/content"
-	"github.com/best-friends/my/internal/domain/account"
-	"github.com/best-friends/my/internal/interface/activitypub"
+	appaccount "github.com/mycroblog/my/internal/app/account"
+	appcontent "github.com/mycroblog/my/internal/app/content"
+	"github.com/mycroblog/my/internal/domain/account"
+	"github.com/mycroblog/my/internal/interface/activitypub"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files under testdata/golden")
@@ -200,7 +200,7 @@ func newServer(t *testing.T, accountDomain string) *server {
 	t.Helper()
 	s := &server{mux: http.NewServeMux(), accounts: newAccounts(t), objects: newObjects(), graph: &fakeGraph{}, inbox: &fakeInbox{}, suspended: fakeSuspensions{}}
 	activitypub.New(activitypub.Options{
-		Host: host, AccountDomain: accountDomain, SoftwareVersion: "0.1.0", SourceURL: "https://github.com/best-friends/my",
+		Host: host, AccountDomain: accountDomain, SoftwareVersion: "0.1.0", SourceURL: "https://github.com/mycroblog/my",
 		InstanceName:      func(context.Context) string { return "Example Social" },
 		OpenRegistrations: func(context.Context) (bool, error) { return true, nil },
 		LocalPosts:        func(context.Context) (int64, error) { return 42, nil },

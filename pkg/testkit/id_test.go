@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/best-friends/my/pkg/testkit"
+	"github.com/mycroblog/my/pkg/testkit"
 )
 
 var canonicalUUIDv7 = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
