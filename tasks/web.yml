@@ -64,7 +64,7 @@ tasks:
     cmds:
       - >-
         git diff --exit-code --quiet -- app/web/src/routeTree.gen.ts
-        || { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client.md §9)' >&2; exit 1; }
+        || { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client/09-app-shell.md §9)' >&2; exit 1; }
 
   licenses:
     desc: Fail on client npm dependency licenses incompatible with AGPL-3.0
@@ -106,11 +106,11 @@ tasks:
       - bun run knip
 
   lint-css:
-    desc: Fail when CSS uses 100vh (docs/architecture/web-client.md D5)
+    desc: Fail when CSS uses 100vh (docs/architecture/web-client/README.md D5)
     cmds:
       - >-
         ! grep -rn --include='*.css' '100vh' app/ui/src app/web/src
-        || { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
+        || { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client/README.md D5)' >&2; exit 1; }
 
   tokens:
     desc: Check the @my/ui design tokens, WCAG AA contrast of every token pair, no palette / arbitrary colors or token values, motion only under motion-safe, the generated token list up to date
