@@ -7,8 +7,8 @@ enum:
   - registration_mode
   - max_status_length
   - default_locale
-  - local_timeline_enabled
-  - federated_timeline_enabled
+  - local_timeline_access
+  - federated_timeline_access
   - preview_image
   - contact_account
   - contact_email

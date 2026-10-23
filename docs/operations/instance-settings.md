@@ -7,7 +7,7 @@
 
 | | 設定 | インスタンス設定 |
 | --- | --- | --- |
-| 内容 | デプロイの構成: 役割・アダプタ・接続先・ホスト名・秘密情報 | 運営の方針: 登録モード・文字数上限・既定のロケール・タイムラインの有効 / 無効、インスタンスの名前・説明・規約 |
+| 内容 | デプロイの構成: 役割・アダプタ・接続先・ホスト名・秘密情報 | 運営の方針: 登録モード・文字数上限・既定のロケール・タイムラインを誰に見せるか、インスタンスの名前・説明・規約 |
 | 置き場所 | 環境変数 `MY_*` と設定ファイル（[設定リファレンス](../reference/configuration.md)、ADR-0010） | DB。変更はすべて版として残る |
 | 変更 | プロセスの再起動で反映 | `my instance set`・Web クライアントの管理画面・クライアント API で即時に反映（[管理画面とクライアント API](#管理画面とクライアント-api)） |
 | 未設定のとき | スキーマの既定値（必須なら起動しない） | コードで定義した既定値 |
@@ -32,8 +32,8 @@
 | `registration_mode` | `open` / `approval` / `invite` / `closed` | `approval` | 登録モード（FR-001、[利用者登録](registration.md)） |
 | `max_status_length` | 整数 1〜100000 | `500` | 投稿の文字数上限（FR-101） |
 | `default_locale` | BCP 47 言語タグ | `en` | 既定のロケール。新しい利用者の UI ロケールの初期値で、利用者の希望に合うカタログが無いときにも使う（ADR-0009） |
-| `local_timeline_enabled` | `true` / `false` | `true` | ローカルタイムラインを提供するか（FR-202） |
-| `federated_timeline_enabled` | `true` / `false` | `true` | 連合タイムラインを提供するか（FR-202） |
+| `local_timeline_access` | `off` / `logged_in` / `everyone` | `everyone` | ローカルタイムライン（`GET /api/v1/timelines/local`）を誰に見せるか: 誰にも / ログインした利用者に / 誰にでも（FR-202）。`off` は 404、`logged_in` はログインしていない訪問者に 401 を返し、ナビゲーションにも出さない。`everyone` でないとき、ランディングページは見本の投稿を出さない |
+| `federated_timeline_access` | `off` / `logged_in` / `everyone` | `everyone` | 連合タイムライン（`GET /api/v1/timelines/public`）を誰に見せるか。値の意味はローカルタイムラインと同じ（FR-202） |
 | `preview_image` | メディア ID（空 = 未設定） | 空 | 画像のない投稿・プロフィールのリンクプレビュー画像（`og:image`）。未設定なら同梱の既定画像（[リンクプレビュー](link-previews.md)） |
 | `contact_account` | ローカルアカウントのユーザー名（空 = 未設定） | 空 | 運営への連絡先のアカウント。[連絡先とサムネイル](#連絡先とサムネイル) |
 | `contact_email` | メールアドレス（空 = 未設定） | 空 | 運営への連絡先のメールアドレス |
@@ -179,7 +179,7 @@ CLI で変えられる設定値は、Web クライアントの管理画面とク
   | --- | --- |
   | 登録 | `registration_mode` |
   | 言語 | `default_locale`（アプリのある言語から選ぶ） |
-  | タイムライン | `local_timeline_enabled`・`federated_timeline_enabled` |
+  | タイムライン | `local_timeline_access`・`federated_timeline_access` |
   | 投稿 | `require_media_description` |
   | 連合 | `authorized_fetch`・`remote_media_policy`・`remote_media_cache_ttl`（1 時間・1 日・7 日・30 日・365 日から選ぶ）・`link_cards_enabled` |
   | 制限・凍結したサーバー | `domain_actions_visibility`・`domain_actions_rationale_visibility` |

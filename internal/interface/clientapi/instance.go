@@ -77,7 +77,7 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	}
 	out.Registrations = InstanceRegistrations{Mode: InstanceRegistrationsMode(settings.RegistrationMode())}
 	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength(), RequireMediaDescription: settings.RequireMediaDescription()}
-	out.Timelines = InstanceTimelines{Local: settings.LocalTimelineEnabled(), Federated: settings.FederatedTimelineEnabled()}
+	out.Timelines = InstanceTimelines{Local: TimelineAccess(settings.LocalTimelineAccess()), Federated: TimelineAccess(settings.FederatedTimelineAccess())}
 	// The direction the instance federates in, by which clients offer the operations on remote
 	// accounts and posts (FR-413, ADR-0076).
 	out.Federation = InstanceFederation{Mode: InstanceFederationMode(federationMode(settings))}

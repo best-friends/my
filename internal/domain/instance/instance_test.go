@@ -37,9 +37,11 @@ func TestParse(t *testing.T) {
 		raw  string
 		want string // "" means invalid
 	}{
-		{instance.SettingLocalTimelineEnabled, "true", "true"},
-		{instance.SettingLocalTimelineEnabled, "False", "false"},
-		{instance.SettingLocalTimelineEnabled, "1", ""},
+		{instance.SettingAuthorizedFetch, "true", "true"},
+		{instance.SettingAuthorizedFetch, "False", "false"},
+		{instance.SettingAuthorizedFetch, "1", ""},
+		{instance.SettingLocalTimelineAccess, "logged_in", "logged_in"},
+		{instance.SettingFederatedTimelineAccess, "true", ""},
 		{instance.SettingMaxStatusLength, "1", "1"},
 		{instance.SettingMaxStatusLength, "+42", "42"},
 		{instance.SettingMaxStatusLength, "100000", "100000"},

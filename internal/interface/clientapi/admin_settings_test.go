@@ -113,7 +113,7 @@ func TestManageInstanceSettings(t *testing.T) {
 	}
 
 	res = e.sendJSON(t, http.MethodPatch, "/admin/settings", "admin",
-		`{"values":{"local_timeline_enabled":"FALSE","registration_mode":"invite"}}`)
+		`{"values":{"authorized_fetch":"TRUE","registration_mode":"invite"}}`)
 	list = decodeJSON[clientapi.AdminSettingList](t, res)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("patch = %d", res.StatusCode)
@@ -121,13 +121,13 @@ func TestManageInstanceSettings(t *testing.T) {
 	if got := settingItem(t, list, clientapi.InstanceSettingKeyRegistrationMode); got.Value != "invite" || !got.Stored {
 		t.Errorf("registration_mode after the change = %+v, want invite, stored", got)
 	}
-	if got := settingItem(t, list, clientapi.InstanceSettingKeyLocalTimelineEnabled); got.Value != "false" {
-		t.Errorf("local_timeline_enabled after the change = %+v, want the canonical false", got)
+	if got := settingItem(t, list, clientapi.InstanceSettingKeyAuthorizedFetch); got.Value != "true" {
+		t.Errorf("authorized_fetch after the change = %+v, want the canonical true", got)
 	}
 	// The values are set together, in the order of the definitions, by alice.
 	want := []appinstance.SetSettingInput{
 		{Key: instance.SettingRegistrationMode, Value: "invite", RevisedByUserID: "user-" + aliceAccountID},
-		{Key: instance.SettingLocalTimelineEnabled, Value: "FALSE", RevisedByUserID: "user-" + aliceAccountID},
+		{Key: instance.SettingAuthorizedFetch, Value: "TRUE", RevisedByUserID: "user-" + aliceAccountID},
 	}
 	if len(f.sets) != 1 || !slices.Equal(f.sets[0], want) {
 		t.Errorf("sets = %+v, want one call of %+v", f.sets, want)

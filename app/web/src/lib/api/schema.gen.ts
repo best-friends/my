@@ -2076,7 +2076,8 @@ export interface paths {
          * Get the local timeline
          * @description The public posts of the instance's accounts, newest first, and their local posts for a
          *     logged-in viewer, in the viewer's timeline languages. The instance setting
-         *     `local_timeline_enabled` turns it off; it is then a 404.
+         *     `local_timeline_access` decides who may read it: while it is `off` it is a 404, and while it
+         *     is `logged_in` an anonymous request is a 401.
          */
         get: operations["getLocalTimeline"];
         put?: never;
@@ -2099,7 +2100,8 @@ export interface paths {
          * @description The public posts of the instance's accounts and of the remote accounts whose posts the
          *     instance holds, newest first, in the viewer's timeline languages (FR-202). Posts of other
          *     visibilities, `local` ones included, and boosts never appear on it. The instance setting
-         *     `federated_timeline_enabled` turns it off; it is then a 404.
+         *     `federated_timeline_access` decides who may read it: while it is `off` it is a 404, and while it
+         *     is `logged_in` an anonymous request is a 401.
          */
         get: operations["getPublicTimeline"];
         put?: never;
@@ -7867,7 +7869,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility" | "finance_viewer_item_names" | "finance_viewer_item_memos" | "finance_viewer_income" | "supporter_list_visibility" | "income_visibility" | "federation_mode";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_access" | "federated_timeline_access" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility" | "finance_viewer_item_names" | "finance_viewer_item_memos" | "finance_viewer_income" | "supporter_list_visibility" | "income_visibility" | "federation_mode";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
@@ -7910,14 +7912,14 @@ export interface components {
             alt?: string;
         };
         /**
-         * @description Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
-         *     clients do not offer it.
+         * @description Who may read the public timelines the instance serves (FR-202): `local` is the instance
+         *     setting `local_timeline_access` of `GET /timelines/local`, and `federated` the instance
+         *     setting `federated_timeline_access` of `GET /timelines/public`. Clients do not offer a
+         *     timeline that is `off`, nor one that is `logged_in` to a visitor who is not logged in.
          */
         InstanceTimelines: {
-            /** @description Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`). */
-            local: boolean;
-            /** @description Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`). */
-            federated: boolean;
+            local: components["schemas"]["TimelineAccess"];
+            federated: components["schemas"]["TimelineAccess"];
         };
         /** @description Why an action on an account is lifted. */
         LiftAccountActionRequest: {
@@ -9599,6 +9601,14 @@ export interface components {
             dark?: string;
             value?: string;
         };
+        /**
+         * @description Who may read a public timeline (the instance settings `local_timeline_access` and
+         *     `federated_timeline_access`, FR-202): `off`, nobody, and the timeline is a 404;
+         *     `logged_in`, the users logged in to this server, and an anonymous request is a 401;
+         *     `everyone`, everyone, anonymous visitors included.
+         * @enum {string}
+         */
+        TimelineAccess: "off" | "logged_in" | "everyone";
         /** @description A new TOTP secret to add to an authenticator app. */
         TotpSetup: {
             /** @description The secret in base32, for typing it into the app. */

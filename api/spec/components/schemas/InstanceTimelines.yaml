@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 description: |
-  Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
-  clients do not offer it.
+  Who may read the public timelines the instance serves (FR-202): `local` is the instance
+  setting `local_timeline_access` of `GET /timelines/local`, and `federated` the instance
+  setting `federated_timeline_access` of `GET /timelines/public`. Clients do not offer a
+  timeline that is `off`, nor one that is `logged_in` to a visitor who is not logged in.
 type: object
 required: [local, federated]
 properties:
   local:
-    description: Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`).
-    type: boolean
+    $ref: ./TimelineAccess.yaml
   federated:
-    description: Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`).
-    type: boolean
+    $ref: ./TimelineAccess.yaml
