@@ -51,14 +51,14 @@
 | [0037](0037-audit-log.md) | 監査ログを処分のイベントとは別の追記専用の記録にする | Accepted |
 | [0038](0038-moderation-personal-data-retention.md) | モデレーションに関わる個人データの保持期間と開示の範囲 | Accepted |
 | [0039](0039-mobile-navigation-and-compose-entry.md) | モバイルのナビゲーションの項目と投稿の入口 | Accepted |
-| [0040](0040-e2e-on-main-only.md) | Web の E2E を main への push でだけ回す | Accepted |
+| [0040](0040-e2e-on-main-only.md) | Web の E2E を main への push でだけ回す | Superseded by ADR-0079 |
 | [0041](0041-postgres-tests-on-pgmem.md) | PostgreSQL のテストを pgmem で動かす | Accepted |
 | [0042](0042-captcha-human-verifier.md) | サインインと登録のボット対策に CAPTCHA を設定で使えるようにする | Accepted |
 | [0043](0043-icon-set.md) | UI キットのアイコンを既存のアイコンセット（Phosphor）から使う | Accepted |
 | [0044](0044-remote-profile-recent-posts.md) | リモートのプロフィールを開いたときに最近の投稿を取得する | Accepted |
 | [0045](0045-client-server-cache-policy.md) | キャッシュの方針（クライアントとサーバー） | Accepted |
 | [0046](0046-dependabot-vulnerability-detection.md) | 依存関係の脆弱性検知を Dependabot に移す | Accepted |
-| [0047](0047-ci-protection-layers.md) | CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける | Accepted |
+| [0047](0047-ci-protection-layers.md) | CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける | Superseded by ADR-0079 |
 | [0048](0048-typescript-7-with-typescript-6-api.md) | 型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる | Accepted |
 | [0049](0049-client-lint-oxlint.md) | クライアントの lint を ESLint から Oxlint に移す | Accepted |
 | [0050](0050-stream-pubsub-across-processes.md) | リアルタイム更新のプロセス間 Pub/Sub | Accepted |
@@ -90,4 +90,8 @@
 | [0076](0076-federation-direction.md) | 連合の向きをインスタンス設定で選ぶ（オフ / 受信のみ / 送信のみ / 送受信） | Accepted |
 | [0077](0077-timeline-auto-insert.md) | タイムラインの新着をユーザーの設定で自動で差し込む | Accepted |
 | [0078](0078-postgres-uuid-columns.md) | PostgreSQL の ID の列を uuid 型にする | Accepted |
+| [0079](0079-ci-single-gate-merge-queue.md) | CI の検査を Merge Queue に一本化する | Accepted |
+| [0080](0080-task-runner-go-task.md) | タスクの実行を Make から go-task に移す | Accepted |
+| [0081](0081-generated-files-policy.md) | Go が読む生成物だけをコミットする | Accepted |
+| [0082](0082-conflict-free-file-layout.md) | 並列の作業で衝突しないファイルの構成 | Accepted |
 <!-- adr-index:end -->

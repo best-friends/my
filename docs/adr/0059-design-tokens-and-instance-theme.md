@@ -1,6 +1,6 @@
 # ADR-0059: デザイントークンの体系とサーバー単位のテーマ
 
-- Status: Accepted
+- Status: Accepted（生成したトークンの一覧をコミットする範囲を ADR-0081（Go が読む生成物だけをコミットする） が置き換える）
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #649

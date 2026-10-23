@@ -1,6 +1,6 @@
 # ADR-0040: Web の E2E を main への push でだけ回す
 
-- Status: Accepted（main で回すジョブと取り消し、E2E を 1 ジョブで回す部分を ADR-0047（CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける） が置き換える）
+- Status: Superseded by ADR-0079（CI の検査を Merge Queue に一本化する）
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: <!-- 議論用 Issue なし（決定者の指示による） -->

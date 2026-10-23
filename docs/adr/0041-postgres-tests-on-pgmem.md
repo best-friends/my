@@ -1,6 +1,6 @@
 # ADR-0041: PostgreSQL のテストを pgmem で動かす
 
-- Status: Accepted（コンテナの PostgreSQL のテストを回す頻度を ADR-0047（CI の検査を PR・Merge Queue・main・nightly に振り分け、文脈ごとのワークフローに分ける） が置き換える）
+- Status: Accepted（コンテナの PostgreSQL のテストを回す頻度を ADR-0079（CI の検査を Merge Queue に一本化する） が置き換える）
 - Date: 2026-10-19
 - Deciders: @rosylilly
 - Issue: #453
