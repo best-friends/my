@@ -55,7 +55,7 @@ PostgreSQL での型（`COLLATE "C"` の `text` か `uuid` 型）を、この AD
 - PostgreSQL の `uuid` の比較は 16 バイトの符号なしのバイト順（`memcmp`）。UUIDv7 は先頭の 48 ビットがミリ秒の時刻（ビッグエンディアン）なので、バイト順 = 時刻順 = 小文字の正規形の文字列のバイト順
 - そのため `ORDER BY id`、`id < :cursor` のキーセットページング、`id >= UUIDv7Floor(t)` の読み取り窓は、意味も結果も変わらない
   - 確認: PostgreSQL 18.6 で 200 万行の UUIDv7 を `ORDER BY id` と `ORDER BY id::text COLLATE "C"` で並べ、順位の食い違いは 0 行（2026-10-23）
-- PostgreSQL には `uuid` の `max` / `min` の集約関数が無い（18.6 で `function max(uuid) does not exist` を確認）。今の `MAX(id)` / `MIN(id)`（42 か所）は、
+- PostgreSQL には `uuid` の `max` / `min` の集約関数が無い（18.6 で `function max(uuid) does not exist` を確認）。今の `MAX(id)` / `MIN(id)`（`queries/postgres` の 15 か所）は、
   `ORDER BY id DESC LIMIT 1`・`DISTINCT ON` などに書き換える。集約関数を自前で定義することはしない（[ADR-0023](0023-declarative-schema-management.md) の目標スキーマに書けないものを増やさない）
 
 ### 3. SQLite
