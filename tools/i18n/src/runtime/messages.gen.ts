@@ -6722,6 +6722,14 @@ export interface MessageArgs {
   "server:preview.builtin_image_alt": {};
   /** Image of {instance} */
   "server:preview.default_image_alt": { instance: string };
+  /** {document} | {instance} */
+  "server:preview.document_title": { document: string; instance: string };
+  /** Commerce disclosures */
+  "server:preview.document.commerce_disclosure": {};
+  /** Privacy policy */
+  "server:preview.document.privacy_policy": {};
+  /** Terms of service */
+  "server:preview.document.terms": {};
   /** Header image of {name} */
   "server:preview.header_alt": { name: string };
   /** {name} (@{handle}) */

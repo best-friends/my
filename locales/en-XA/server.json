@@ -1191,6 +1191,22 @@
     "defaultMessage": "[Īḿȧȧɠḗḗ ǿǿƒ {instance}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "preview.document.commerce_disclosure": {
+    "defaultMessage": "[Ƈǿǿḿḿḗḗřƈḗḗ ḓīşƈŀǿǿşŭŭřḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.document.privacy_policy": {
+    "defaultMessage": "[Ƥřīṽȧȧƈẏ ƥǿǿŀīƈẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.document.terms": {
+    "defaultMessage": "[Ŧḗḗřḿş ǿǿƒ şḗḗřṽīƈḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "preview.document_title": {
+    "defaultMessage": "[{document} | {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "preview.header_alt": {
     "defaultMessage": "[Ħḗḗȧȧḓḗḗř īḿȧȧɠḗḗ ǿǿƒ {name}]",
     "description": "Generated from en by tools/i18n; do not edit."

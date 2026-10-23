@@ -1151,6 +1151,22 @@
     "defaultMessage": "{instance} について",
     "description": "Title of the link preview (og:title and the page title) of the instance's information page (/about). {instance} is the instance name."
   },
+  "preview.document_title": {
+    "defaultMessage": "{document} | {instance}",
+    "description": "Title of the link preview (og:title and the page title) of the page of one of the instance's documents (/about/terms, /about/privacy, /about/commerce). {document} is the document's name (preview.document.*), {instance} the instance name."
+  },
+  "preview.document.terms": {
+    "defaultMessage": "利用規約",
+    "description": "Name of the instance's terms of service in the link preview of their page (/about/terms)."
+  },
+  "preview.document.privacy_policy": {
+    "defaultMessage": "プライバシーポリシー",
+    "description": "Name of the instance's privacy policy in the link preview of its page (/about/privacy)."
+  },
+  "preview.document.commerce_disclosure": {
+    "defaultMessage": "特定商取引法に基づく表記",
+    "description": "Name of the instance's commerce disclosures of its supporter plans in the link preview of their page (/about/commerce)."
+  },
   "push.admin_appeal": {
     "defaultMessage": "{instance} のモデレーターに新しい異議申し立てが届きました",
     "description": "Web Push notification to a moderator: a user appealed a moderation action. It never names the user. {instance} is the server's display name, or its domain name when it has none."
