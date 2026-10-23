@@ -1,7 +1,7 @@
 # インスタンス設定
 
 運営者向けの手順です。要件は FR-001・FR-101・FR-202・FR-408・FR-704・FR-705・FR-718・FR-725（[機能要件](../requirements/01-functional.md)）、
-テーブルは [データモデル §4.9](../architecture/data-model/04-tables.md#49-instance) です。
+テーブルは [データモデル §4.9](../architecture/data-model/04-tables/09-instance.md#49-instance) です。
 
 ## 設定（環境変数）とインスタンス設定（DB）の分担
 
@@ -141,7 +141,7 @@ my instance set thumbnail_alt "海辺の町の写真"
 
 - フラグはキーと値より前に書きます。
 - `-owner <ユーザー名>` を付けると、`preview_image`・`thumbnail` の値を画像ファイルのパスとして読み、そのローカルアカウントのメディアとしてアップロードします。
-  画像はワーカーが処理してから使われます（[メディア](../architecture/data-model/04-tables.md#44-content)）。推奨は 1200×630 の横長の画像です。
+  画像はワーカーが処理してから使われます（[メディア](../architecture/data-model/04-tables/04-content.md#44-content)）。推奨は 1200×630 の横長の画像です。
 - 変更は 1 回のトランザクションで版（`instance_*_revisions`）を記録し、現在値（`instance_settings` / `instance_texts`）を更新します。
   CLI からの変更は変更者なし（履歴の `BY` が `cli`）として残ります。
 - 同じ値を設定し直しても版は増えます。

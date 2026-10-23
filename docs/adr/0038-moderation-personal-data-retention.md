@@ -73,7 +73,7 @@
 
 - 良い影響: 既定値のまま運用すれば、プライバシーポリシーに書く保持期間が決まる。IP を 180 日で消すので、漏洩したときの影響が小さい。
 - 悪い影響: 365 日より前の処分は再犯の判断に使えない。発信者情報開示の請求が投稿から 180 日を過ぎて届くと、ログイン元の IP は残っていない。
-- `sessions.ip` / `user_agent` は消去の単位を分けるため別の表（`session_origins`）に移し、登録元の IP の表（`registration_origins`）を足す（[data-model §4.1](../architecture/data-model/04-tables.md#41-identity)）。
+- `sessions.ip` / `user_agent` は消去の単位を分けるため別の表（`session_origins`）に移し、登録元の IP の表（`registration_origins`）を足す（[data-model §4.1](../architecture/data-model/04-tables/01-identity.md#41-identity)）。
 - 運営者向けに、記録の種類・目的・保持期間・提供先（連合先）を書いたプライバシーポリシーと処理の記録（GDPR 30 条）のひな形を `docs/operations/` に置く。
 - 後続の作業: 保持期間の設定キーと消去ジョブ、保全、開示の書き出しの CLI、IP の表の分離。
 

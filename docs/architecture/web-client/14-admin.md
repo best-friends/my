@@ -22,7 +22,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](../client-api.md) 
   通報（`/moderation/reports`）・登録の審査・異議申し立て（`/moderation/appeals`）のリンクは、待っている件数（未解決の通報・承認待ちの登録・審査待ちの異議申し立て）の `Badge` を持ち、その文言（「承認待ち 1 件」）はリンクの名前に入る。使える画面がないロールには、その理由を `EmptyState` で出す。
 - **連合先**（`/moderation/instances`）: 状態のタブ（`?state=unavailable` / `available`、URL に置く。S3）と、ドメイン順の一覧。各サーバーは見出し（ドメインへのリンク）と、状態・その状態になった日時・失敗した日数・最後に失敗した日（UTC の日付）の説明リストにする。状態は文言で示し、色はそれを繰り返すだけにする。
 - **連合先の詳細**（`/moderation/instances/{domain}`）: 状態と、最新の `instance_availability_events` の理由、最後に配送を再開した日時（最新の `marked_available`）、新しい順の履歴。
-  データモデルは成功した配送の日時を持たない（`instance_health` は失敗の間だけ更新する。[data-model §4.8](../data-model/04-tables.md#48-federation)）ので、「最後の成功」は配送の再開の日時で示す。
+  データモデルは成功した配送の日時を持たない（`instance_health` は失敗の間だけ更新する。[data-model §4.8](../data-model/04-tables/08-federation.md#48-federation)）ので、「最後の成功」は配送の再開の日時で示す。
   失敗の日数があるか停止中なら「配送を再開する」を出し、成功したら詳細の答えを置き換え、一覧と履歴を無効にして結果を知らせる。失敗はトーストで知らせ、状態とボタンを残す（E2）。
   「モデレーション」の区画から、そのドメインのドメインへの処分の画面（`/moderation/domain-actions?domain=…`）へリンクする。「投稿の取り直し」の区画（下の「投稿の取り直し」）を持つ。
 - **ドメインへの処分**（`/moderation/domain-actions`、FR-702）: 新しい処分のフォームと、新しい順の処分の一覧と、Mastodon の CSV（FR-706）の 3 つの区画。一覧は「有効」（`active=true`）と「すべて」のタブ（`?filter=all`、URL に置く。S3）で、
