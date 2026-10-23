@@ -72,6 +72,13 @@ tasks:
     cmds:
       - go test -count=1 ./internal/adapter/stream/...
 
+  warm:
+    desc: Download the modules and build the packages and the Go tools once, so that the Go checks a CI job runs in parallel read the build cache instead of each compiling the same packages
+    cmds:
+      - go mod download
+      - go build ./...
+      - go build -modfile=tools/go.mod tool
+
   build:
     desc: Build all packages statically (CGO_ENABLED=0)
     env:

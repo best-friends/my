@@ -13,6 +13,14 @@ tasks:
     cmds:
       - CGO_ENABLED=0 go build -o ../../bin/agentkit ./cmd/agentkit
 
+  warm:
+    desc: Download the modules and build the packages and test binaries of tools/agentkit once, so that its checks a CI job runs in parallel read the build cache
+    dir: tools/agentkit
+    cmds:
+      - go mod download
+      - go build ./...
+      - go test -run '^$' ./...
+
   check:
     desc: Check tools/agentkit (tidy, vet, lint, tests, dependencies) and that its context map covers every path
     deps: [mod-check, vet, lint, test, deps-check, map-check]

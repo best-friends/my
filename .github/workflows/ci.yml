@@ -155,6 +155,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.full == 'true' && needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
+    # One cgo setting for every step, so that they share one build cache: the server builds without cgo (ADR-0010).
+    env:
+      CGO_ENABLED: "0"
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -163,6 +166,10 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
         id: go
+      # Parallel steps would each compile the same packages, since the build cache only holds a package once a
+      # compile of it has finished: build them once first.
+      - name: Build the packages and the Go tools once
+        run: scripts/task.sh go:warm
       # The api checks bundle the spec with Redocly on Bun. i18n:lint runs once, in client-static, which every i18n change
       # also selects.
       - name: Set up Bun
@@ -288,6 +295,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
+    # As in server-static: one cgo setting, one build cache.
+    env:
+      CGO_ENABLED: "0"
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -296,6 +306,9 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
         id: go
+      # As in server-static: build agentkit and its test binaries once before the parallel checks.
+      - name: Build agentkit once
+        run: scripts/task.sh agentkit:warm
       - parallel:
           - name: agentkit:lint
             uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
