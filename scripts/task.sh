@@ -8,7 +8,8 @@
 #
 # The exit code is the failed command's own (--exit-code), not go-task's 201. Locally, TASK_CONCURRENCY defaults to
 # half the CPUs, since several agents run checks on one machine; set it to override. In CI (CI set) the concurrency
-# is unlimited: each workflow step runs one task (ADR-0083).
+# is unlimited and the output is interleaved, with no `[task]` prefix: each workflow step runs one task and has its own
+# log (ADR-0083), and the problem matchers of the setup actions find `file:line` only at the start of a line.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -27,4 +28,9 @@ if [ -z "${CI:-}" ] && [ -z "${TASK_CONCURRENCY:-}" ]; then
   export TASK_CONCURRENCY
 fi
 
-exec "$bin" --exit-code --dir "$root" "$@"
+output=()
+if [ -n "${CI:-}" ] && [ -z "${TASK_OUTPUT:-}" ]; then
+  output=(--output interleaved)
+fi
+
+exec "$bin" --exit-code "${output[@]}" --dir "$root" "$@"
