@@ -36,7 +36,7 @@ type Entry struct {
 	Name   string   `yaml:"name"`
 	Paths  []string `yaml:"paths"`
 	Docs   []string `yaml:"docs"`   // <path>#<anchor> or <path>: what an agent reads before changing the area
-	Checks []string `yaml:"checks"` // make check contexts
+	Checks []string `yaml:"checks"` // contexts of `scripts/task.sh check`
 	Shared bool     `yaml:"shared"` // sources many changes edit; never two parallel agents at once (workflow.md §9)
 	Notes  []string `yaml:"notes"`  // short rules or steps worth printing in every context pack of the area
 }

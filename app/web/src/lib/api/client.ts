@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The client API client (ADR-0029): openapi-fetch typed by the types that openapi-typescript generates
-// from api/openapi.yaml (schema.gen.ts, `make generate`), and openapi-react-query on top of it for the
+// from api/openapi.yaml (schema.gen.ts, `scripts/task.sh api:generate`), and openapi-react-query on top of it for the
 // `queryOptions` of features/<x>/api (web-client.md S1). Its middleware
 //
 // - sends the access token as a Bearer token, and after a 401 refreshes it once and sends the request again;

@@ -12,7 +12,7 @@ import (
 var update = flag.Bool("update", false, "regenerate "+ReferencePath)
 
 // TestReferenceUpToDate fails when the committed reference differs from the schema.
-// Regenerate it with `make config-docs`.
+// Regenerate it with `scripts/task.sh go:config-docs`.
 func TestReferenceUpToDate(t *testing.T) {
 	path := filepath.Join("..", "..", "..", filepath.FromSlash(ReferencePath))
 	want := Reference()
@@ -27,9 +27,9 @@ func TestReferenceUpToDate(t *testing.T) {
 	}
 	got, err := os.ReadFile(path) //nolint:gosec // fixed path inside the repository
 	if err != nil {
-		t.Fatalf("%v; run `make config-docs`", err)
+		t.Fatalf("%v; run `scripts/task.sh go:config-docs`", err)
 	}
 	if string(got) != want {
-		t.Errorf("%s is stale; run `make config-docs`", ReferencePath)
+		t.Errorf("%s is stale; run `scripts/task.sh go:config-docs`", ReferencePath)
 	}
 }

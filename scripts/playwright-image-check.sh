@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
-# Fails when a workflow's Playwright image differs from PLAYWRIGHT_IMAGE in the Makefile, or when the image's
+# Fails when a workflow's Playwright image differs from PLAYWRIGHT_IMAGE in Taskfile.yml, or when the image's
 # Playwright version differs from the one the client workspace pins. The browser in the image must be the one
 # the pinned playwright package drives, and every screenshot baseline comes from this one image (ADR-0027).
 # Usage: PLAYWRIGHT_IMAGE=<image@digest> scripts/playwright-image-check.sh
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-image="${PLAYWRIGHT_IMAGE:?set PLAYWRIGHT_IMAGE (make playwright-image-check does)}"
+image="${PLAYWRIGHT_IMAGE:?set PLAYWRIGHT_IMAGE (scripts/task.sh web:playwright-image-check does)}"
 status=0
 
 # mcr.microsoft.com/playwright:v1.63.0-noble@sha256:... -> 1.63.0

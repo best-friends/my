@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # sqlc configuration (ADR-0003). The sqlc version is pinned in tools/go.mod. Regenerate with
-# `make sqlc`; `make sqlc-check` (part of `make check`) fails when the committed code is stale.
+# `scripts/task.sh go:sqlc`; `scripts/task.sh go:sqlc-check` (part of `scripts/task.sh check`) fails when the committed code is stale.
 #
 # Product queries live in queries/<dialect>/*.sql, read schema/<dialect>.sql, and generate into
 # internal/adapter/db/<dialect>/<dialect>gen. Comments above a query become the doc comment of

@@ -11,14 +11,14 @@
  *   2. --color-*    semantic colors, the only colors with utilities (bg-surface, text-fg-muted ...).
  *                   Each one is light-dark(<light>, <dark>), resolved by the used color-scheme.
  *
- * The contrast check (scripts/check-tokens.ts, run by `make web-check`) reads this file, so keep
+ * The contrast check (scripts/check-tokens.ts, run by `scripts/task.sh web:check`) reads this file, so keep
  * every color as oklch() or hex, in the sRGB gamut, and every semantic color as a var(--palette-*)
  * or light-dark() of them. The fg / bg pairs it verifies are listed in src/tokens.ts.
  *
  * Server themes (ADR-0059) override the tokens other than the palette with an unlayered :root rule,
  * which wins over the @layer theme that Tailwind emits these into. That works only while utilities
  * refer to the variables, so never declare a token in `@theme inline`. scripts/theme-tokens.ts
- * generates the list of overridable tokens from this file (`make web-tokens-gen`); src/tokens.ts
+ * generates the list of overridable tokens from this file (`scripts/task.sh web:tokens-gen`); src/tokens.ts
  * says how each one is checked.
  */
 

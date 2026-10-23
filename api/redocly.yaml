@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Lint rules of the split client API spec api/spec/openapi.yaml (ADR-0066) for Redocly CLI (pinned in
-# the Makefile, run by `make api-lint`).
+# tasks/api.yml, run by `scripts/task.sh api:lint`).
 # Besides the recommended rules, the custom rules keep the document inside the OpenAPI 3.1
 # subset that oapi-codegen and openapi-typescript support (ADR-0029) and enforce the
 # conventions of ADR-0016. docs/architecture/client-api.md lists the conventions.

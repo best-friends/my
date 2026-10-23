@@ -3,7 +3,7 @@
 # Live interoperability stack (ADR-0006, ADR-0015, docs/architecture/federation.md §12): this server, Mastodon,
 # GoToSocial, and Misskey federating over HTTPS with a private CA, and an Activity-Relay relay (ADR-0061). scripts/federation-live.sh generates the CA, the
 # certificate, and the secrets, starts this file, creates one user on each server, runs the scenarios, and
-# collects the logs; run it with `make federation-live` (README.md next to this file).
+# collects the logs; run it with `scripts/task.sh docker:federation-live` (README.md next to this file).
 #
 # Container DNS: the proxy holds the network aliases my.test, mastodon.test, gts.test, misskey.test, and
 # relay.test, so every server reaches every other one (and itself) through the proxy, which terminates TLS with a certificate

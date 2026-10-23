@@ -34,7 +34,7 @@ awk -v table="$table" '
 
 if [[ "${1:-}" == "--check" ]]; then
   if ! diff -u "$readme" "$table.new"; then
-    echo "error: docs/adr/README.md is out of date. Run 'make adr-index'." >&2
+    echo "error: docs/adr/README.md is out of date. Run 'scripts/task.sh docs:adr-index'." >&2
     exit 1
   fi
 else

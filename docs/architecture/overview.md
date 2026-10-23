@@ -67,7 +67,7 @@ Remote servers ──AP──►│                               │
 - モジュール間はアプリケーション層の公開 API（ユースケース / イベント）経由でのみ参照する。テーブルの直接参照は禁止。
 - インターフェイス層（Client API / AP）はアプリケーション層のユースケースを呼ぶだけで、ドメインロジックを持たない。
 - **公開範囲の判定（`canView(viewer, status)`）はドメイン層の 1 箇所に集約**（NFR-SEC-4、[公開範囲の閲覧判定](visibility.md)）。公開範囲は `public` / `local` / `unlisted` / `private` / `direct`（[ADR-0017](../adr/0017-visibility-local.md)）。
-- import の方向は golangci-lint の depguard（`.golangci.yml`）で `make check` と CI が検査する。§6 の各ディレクトリについて:
+- import の方向は golangci-lint の depguard（`.golangci.yml`）で `scripts/task.sh check` と CI が検査する。§6 の各ディレクトリについて:
 
   | パッケージ | import してよいもの |
   | --- | --- |

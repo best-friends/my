@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Fails when tools/agentkit uses a module version the server module does not: agentkit's dependencies are
-# limited to modules whose licenses `make go-licenses` already checks (tools/agentkit/docs/adr/0001-agentkit.md).
+# limited to modules whose licenses `scripts/task.sh go:licenses` already checks (tools/agentkit/docs/adr/0001-agentkit.md).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Catalog checks run by `make i18n-check` (ADR-0009 §1).
+// Catalog checks run by `scripts/task.sh i18n:check` (ADR-0009 §1).
 //   error: ICU syntax error, including a plural / select without `other`
 //   error: translation argument unknown to the source, or of a different type
 //   error: plural / selectordinal category the locale's CLDR rules do not have
@@ -7,7 +7,7 @@
 //   error: rich-text tag, number skeleton / style, or date / time argument in a namespace
 //          shared with Go (anything but client*)
 //   error: malformed locale directory, namespace, or key; two keys mapping to one accessor
-//   error: generated files (pseudo-locales, accessors, golden) differ from `make i18n-gen`
+//   error: generated files (pseudo-locales, accessors, golden) differ from `scripts/task.sh i18n:gen`
 //   error: copy outside the tone and punctuation rules (web-client.md G19, G20): an exclamation mark
 //          in any non-pseudo locale; an ASCII colon or comma in Japanese text (use "：" and "、")
 //   warn:  untranslated key (falls back to en at runtime)
@@ -158,13 +158,13 @@ async function checkGenerated(catalog: Catalog) {
   const files = await generate(catalog);
   for (const [path, want] of files) {
     const got = existsSync(path) ? readFileSync(path, "utf8") : undefined;
-    if (got !== want) error(`${rel(path)} is ${got === undefined ? "missing" : "stale"}; run make i18n-gen and commit the result`);
+    if (got !== want) error(`${rel(path)} is ${got === undefined ? "missing" : "stale"}; run scripts/task.sh i18n:gen and commit the result`);
   }
   for (const locale of PSEUDO_LOCALES) {
     const dir = join(localesDir, locale);
     if (!existsSync(dir)) continue;
     for (const f of readdirSync(dir)) {
-      if (!files.has(join(dir, f))) error(`locales/${locale}/${f} has no source namespace; run make i18n-gen`);
+      if (!files.has(join(dir, f))) error(`locales/${locale}/${f} has no source namespace; run scripts/task.sh i18n:gen`);
     }
   }
 }

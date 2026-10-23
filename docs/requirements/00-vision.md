@@ -22,7 +22,7 @@
 | G4 | 相互運用性: Mastodon / Misskey / GoToSocial / Pleroma(Akkoma) と問題なく連合できる |
 | G5 | 多言語: UI・通知・投稿メタデータを含め、最初期から i18n / l10n を前提にする |
 | G6 | マルチクライアント: Web(PWA) と、モバイルアプリ（Tauri 2 もしくはネイティブ）を提供する。クライアント API は独自（Mastodon クライアント互換はしない） |
-| G7 | エージェント駆動開発: コーディングエージェントが Issue 単位で自律的に作業し、`make check` 一発で検証できる |
+| G7 | エージェント駆動開発: コーディングエージェントが Issue 単位で自律的に作業し、`scripts/task.sh check` 一発で検証できる |
 
 ## 非目標（Non-goals, v0）
 

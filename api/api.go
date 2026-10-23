@@ -7,7 +7,7 @@ package api
 
 import _ "embed"
 
-// Spec is the OpenAPI 3.1 document of the client API, in YAML: the bundle that `make generate` writes.
+// Spec is the OpenAPI 3.1 document of the client API, in YAML: the bundle that `scripts/task.sh api:generate` writes.
 //
 //go:embed openapi.yaml
 var Spec []byte

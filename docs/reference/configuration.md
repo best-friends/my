@@ -1,4 +1,4 @@
-<!-- Code generated from internal/platform/config/schema.go by "make config-docs". DO NOT EDIT. -->
+<!-- Code generated from internal/platform/config/schema.go by "scripts/task.sh go:config-docs". DO NOT EDIT. -->
 
 # Configuration reference
 

@@ -5,7 +5,7 @@ Web クライアント（`app/web`）と共有 UI キット（`app/ui`）を書�
 主な出典は react.dev、WAI-ARIA Authoring Practices、WCAG 2.2、Tailwind CSS・TanStack・Testing Library の公式ドキュメントです。
 
 「強制」の列は、lint・型検査・テストで機械的に検査するものを示します。「レビュー」はレビューで確認します。
-lint は Oxlint で、`make web-lint`（`make web-check` と `make check` の一部）で実行します（[ADR-0049](../adr/0049-client-lint-oxlint.md)）。
+lint は Oxlint で、`scripts/task.sh web:lint`（`web:check` と `check` の一部）で実行します（[ADR-0049](../adr/0049-client-lint-oxlint.md)）。
 設定は `app/.oxlintrc.json` です。型情報の規則（`typescript/*`）は tsgolint が、React Compiler とフックの規則（`react/*`）は Oxlint が動かし、
 ほかのプラグインの規則は Oxlint の JS プラグインとして動きます。独自の制限は、`app/.oxlintrc.json` がセレクタを渡す JS プラグイン `app/oxlint/restrictions.js` の規則
 （`restrict/syntax`・`restrict/svg`・`restrict/feature`・`restrict/test`）と、Oxlint の `no-restricted-imports` などの規則の設定です。
@@ -98,7 +98,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | --- | --- | --- |
 | Y1 | すべてのストーリーと E2E の画面で、axe の違反（`wcag2a` / `wcag2aa` / `wcag21a` / `wcag21aa` / `wcag22aa`）がない | Storybook（`a11y.test: 'error'`）、Playwright |
 | Y2 | 操作できる要素はすべてロールとアクセシブルネームを持つ。テストは `getByRole` / `getByLabelText` で探し、テスト ID は最後の手段にする | `eslint-plugin-testing-library` の `flat/react`、`testing-library/no-test-id-queries`（使うときは理由付きの無効化コメント） |
-| Y3 | コントラストは AA（文字 4.5:1、UI 3:1）をライト / ダークの両方で満たす | `make web-tokens`（トークンの組）、実ブラウザの axe |
+| Y3 | コントラストは AA（文字 4.5:1、UI 3:1）をライト / ダークの両方で満たす | `scripts/task.sh web:tokens`（トークンの組）、実ブラウザの axe |
 | Y4 | フォーカスできる要素はすべて `focus-visible` のリングを持つ。固定ヘッダでフォーカスを隠さない（`scroll-padding`） | 見た目のスナップショット、レビュー |
 | Y5 | ルートが変わったら、新しい画面の `h1`（`tabindex="-1"`）にフォーカスを移し、`document.title` を更新する。外枠が 1 か所で行う（§9） | Playwright、統合テスト |
 | Y6 | タイムラインは feed パターンにする（`@my/ui` の `Feed`。`role="feed"`、`<article>`、`aria-posinset` / `aria-setsize`（総数が分からないときは `-1`）、`aria-busy` を必ず戻す、Page Down / Page Up で記事の間を移動し、Control + End / Control + Home で feed の外に出る）。仮想化しても、フォーカスのある記事は表示範囲の外でもマウントしておく | ARIA スナップショット、キーボードのテスト（`Feed` の部品のテストとストーリー） |
@@ -117,10 +117,10 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | D2 | 画面幅のブレークポイントはアプリの外枠（`@my/ui` の `AppShell.tsx`・`AppNavigation.tsx`）だけで使う。部品にはコンテナクエリ（`@container`、`@md:`）を使う。外枠のストーリーはストーリーのビューポートを変えて確かめる（`ui/src/storyViewports.ts`） | 外枠の 2 つを除く `ui/src` と `features` の `.tsx` で `better-tailwindcss/no-restricted-classes`（`sm:`〜`2xl:`・`max-*:`・`min-[…]:`） |
 | D3 | 320 px のどのロケールでも横スクロールが出ない | Playwright（`scrollWidth <= clientWidth`） |
 | D4 | タップ領域は 24 × 24 px 以上、主要な操作は `pointer-coarse:` で 44 px 以上にする | axe `target-size`、レビュー |
-| D5 | `100vh` を使わない（`svh` / `dvh`）。端に固定する要素には `env(safe-area-inset-*)` を足す | `restrict/syntax`（文字列）、`better-tailwindcss/no-restricted-classes`（`h-screen` など）、`make web-lint` の grep（CSS） |
-| D6 | アニメーションは `motion-safe:` の下に置く | `make web-tokens`、`better-tailwindcss/no-restricted-classes`（`animate-*`）、レビュー |
+| D5 | `100vh` を使わない（`svh` / `dvh`）。端に固定する要素には `env(safe-area-inset-*)` を足す | `restrict/syntax`（文字列）、`better-tailwindcss/no-restricted-classes`（`h-screen` など）、`scripts/task.sh web:lint` の grep（CSS） |
+| D6 | アニメーションは `motion-safe:` の下に置く | `scripts/task.sh web:tokens`、`better-tailwindcss/no-restricted-classes`（`animate-*`）、レビュー |
 | D7 | 方向は論理プロパティのユーティリティで書く。`ml-` / `mr-` / `pl-` / `pr-` / `left-` / `right-` / `text-left` / `text-right` / `rounded-l` / `rounded-r` / `border-l` / `border-r` / `mask-l-` / `mask-r-` を使わない（方向のあるアイコンの反転と、論理方向の版がない `mask-l-` / `mask-r-`（端のフェード）だけ、`rtl:` / `ltr:` の下で許可） | `better-tailwindcss/no-restricted-classes` |
-| D8 | 色は `@my/ui/theme.css` の意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレット（`--palette-*`）や任意の色を部品に書かない（`--color-*: initial` で Tailwind の既定の色を消す）。トークンの一覧・コントラストの組・ライト / ダークの切り替えは [app/ui/README.md](../../app/ui/README.md) にある | Tailwind の設定、`make web-tokens`、`better-tailwindcss/no-unknown-classes` |
+| D8 | 色は `@my/ui/theme.css` の意味のトークン（`--color-surface`、`--color-fg-muted` など）だけを使う。生のパレット（`--palette-*`）や任意の色を部品に書かない（`--color-*: initial` で Tailwind の既定の色を消す）。トークンの一覧・コントラストの組・ライト / ダークの切り替えは [app/ui/README.md](../../app/ui/README.md) にある | Tailwind の設定、`scripts/task.sh web:tokens`、`better-tailwindcss/no-unknown-classes` |
 | D9 | 部品の見た目の違いは `tailwind-variants` の 1 部品 1 レシピで定義する。クラス名を動的に組み立てない。`className` は `tailwind-merge` で root / スロットにだけ合成し、`web/src` からは渡さない（A4） | `better-tailwindcss/no-concatenated-classes`、`better-tailwindcss/no-conflicting-classes`、レビュー |
 | D10 | CSP を壊さない。`setAttribute('style')` や `cssText` を使わない（React の `style={}` は可） | `restrict/syntax` |
 
@@ -138,7 +138,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 
 ### テストの置き場所と道具
 
-- 部品のテストは対象の隣に `*.test.ts(x)` で置き、`make web-test` で動かす（`app/web/vitest.config.ts`、jsdom）。
+- 部品のテストは対象の隣に `*.test.ts(x)` で置き、`scripts/task.sh web:test` で動かす（`app/web/vitest.config.ts`、jsdom）。
   - `src/test/setup.ts` が jest-dom のマッチャーを読み込み、MSW のサーバーを起動する。どのハンドラにも合わない要求はテストを失敗させる。
     `findBy` / `waitFor` の上限（`asyncUtilTimeout`）は 10 秒、1 つのテストの上限（`vitest.config.ts` の `testTimeout`）は 30 秒にする（T7）。
     通るテストはこの上限まで待たない。上限は壊れたテストが止まるまでの時間だけを決める。
@@ -157,15 +157,15 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     サインインした状態は `server.use(signedInHandler)`（リフレッシュがハンドラの受け付けるアクセストークンを返す）で作る。
   - jsdom の `FormData` と `File` の本文は、MSW が相手にする Node.js の `fetch` で送れない。ファイルを送るテストは `src/test/multipart.ts` の `nodeUploadFile()` で
     Node.js の `File` を作り、そのテストの間だけ `FormData` を Node.js のものにする。
-  - `@my/ui` の部品のテストも `app/ui/src` の部品の隣に置き、`make web-test` で動かす（`app/ui/vitest.config.ts` の `unit` プロジェクト、jsdom）。
+  - `@my/ui` の部品のテストも `app/ui/src` の部品の隣に置き、`scripts/task.sh ui:unit-test` で動かす（`app/ui/vitest.config.ts` の `unit` プロジェクト、jsdom）。
     `app/ui/test/setup.ts` が jest-dom のマッチャーを読み込み、`app/web` と同じ待ち時間の上限を設定する。キットは通信しないので MSW もプロバイダもなく、Testing Library の `render` で描画する。
     構造は `app/ui/test/aria-snapshot.ts` の `ariaSnapshot()`（Playwright の ARIA スナップショットと同じ形の、ロール・名前・説明・状態の木）で検査する。
-- E2E は `app/web/e2e/*.spec.ts` に置き、`make web-e2e` で動かす（`app/web/playwright.config.ts`、ビルドした `vite preview` が相手）。
+- E2E は `app/web/e2e/*.spec.ts` に置き、`scripts/task.sh web:e2e` で動かす（`app/web/playwright.config.ts`、ビルドした `vite preview` が相手）。
   - `vite preview` と `e2e/server.ts` は、実行ごとに選んだ空きポートで待ち受ける（`E2E_PREVIEW_PORT` / `E2E_SERVER_PORT` で固定できる）。
     この実行が起動していないサーバーは再利用しないので、同じマシンの複数の worktree で同時に動かしても互いのサーバーを相手にしない。
     起動済みのサーバーを相手にするときは `E2E_BASE_URL`（クライアント）と `E2E_SERVER_URL`（`my serve -pseudo-locales`）を指定する。
   - サーバーが描画する画面（§8）の E2E（`e2e/auth-pages.spec.ts`）と、本物の CSP の下で SPA がログインして API に届くことを確かめる E2E（`e2e/csp.spec.ts`、CSP の違反が 1 件でもあれば失敗）は、本物の `my serve` が相手になる。`e2e/server.ts` が一時ディレクトリの SQLite に `schema/sqlite.sql` を適用し、
-    管理者とサードパーティの OAuth クライアントを入れてから、`make build` で作った `bin/my` を起動する。ホストは `localhost`（`__Host-` の Cookie を HTTP で受け取れるのは `localhost` だけ）。
+    管理者とサードパーティの OAuth クライアントを入れてから、`scripts/task.sh go:bin` で作った `bin/my` を起動する。ホストは `localhost`（`__Host-` の Cookie を HTTP で受け取れるのは `localhost` だけ）。
     `MY_WEB_ORIGIN` は `http://localhost:<port>` なので、外枠のランタイム設定の `apiOrigin` もそれになり、SPA は同じサーバーの API に HTTP で届く。
     疑似ロケールは利用者に出さないので、`my serve` は開発・テスト専用のフラグ `-pseudo-locales` を付けたときだけ `en-XA` / `ar-XB` を選べる。`e2e/server.ts` はこれを付けて起動し、各ページがプロジェクトのロケールの `lang` と向き（`ar-XB` は `rtl`）で描画されることを確かめる。
   - Playwright は Service Worker を止めて動かす（`serviceWorkers: 'block'`）。Service Worker が遷移に応えると、ロケールの fixture の `page.route()` を通らないため。
@@ -185,16 +185,16 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     種類の変わるボタン（「フォロー」のアクセントから「リクエスト中」の面へ）は `motion-safe:transition-colors` で色を移すので、途中で `color-contrast` が中間の文字色と背景色を読むと違反になるため。
     終わりのないアニメーション（スピナー、スケルトンの明滅）は待たない。
   - プロジェクトは画面幅 320 / 390 / 768 / 1024 / 1440 px × ロケール `en` / `ja` / `en-XA` / `ar-XB` の 20 個。768 px 未満はタッチと粗いポインタのスマートフォンとして動かす。
-  - main への push では全ロケールの 320 / 1440 px だけを動かし（PR では動かさない、[ADR-0040](../adr/0040-e2e-on-main-only.md)。Web に触れる PR では作者が手元で `make web-e2e` を回すか、PR のブランチに対して `web-e2e.yml` を `workflow_dispatch` で手で回す）、nightly（`E2E_MATRIX=full`）は全体を動かす。
-  - CI（`web-e2e.yml`）は `app/web/dist` と `bin/my` を 1 回だけビルドし、全シャードが同じビルドを検査する（[ADR-0047](../adr/0047-ci-protection-layers.md)）。シャードは main が 4、nightly が 8 で、各シャードの blob レポートを 1 つの HTML レポートにまとめる。`make web-e2e` は手元で全部を 1 回で回す。
+  - main への push では全ロケールの 320 / 1440 px だけを動かし（PR では動かさない、[ADR-0040](../adr/0040-e2e-on-main-only.md)。Web に触れる PR では作者が手元で `scripts/task.sh web:e2e` を回すか、PR のブランチに対して `web-e2e.yml` を `workflow_dispatch` で手で回す）、nightly（`E2E_MATRIX=full`）は全体を動かす。
+  - CI（`web-e2e.yml`）は `app/web/dist` と `bin/my` を 1 回だけビルドし、全シャードが同じビルドを検査する（[ADR-0047](../adr/0047-ci-protection-layers.md)）。シャードは main が 4、nightly が 8 で、各シャードの blob レポートを 1 つの HTML レポートにまとめる。`scripts/task.sh web:e2e` は手元で全部を 1 回で回す。
   - spec は `e2e/fixtures.ts` から `test` / `expect` を import する。`vite preview` は `index.html`（ランタイム設定の代わりを含む）をそのまま返すので、fixture がプロジェクトのロケールを `<html lang dir>` に書き込み、サーバーの外枠と同じ状態にする。ビルドのファイルへの相対のリンクは、`my serve` と同じくルートからのものにする（ルートより下の画面のため）。`vite preview` は CSP を付けないので、fixture は `my serve`（`e2e/server.ts`）の外枠が送る CSP を取得してそのまま付ける。spec も本番と同じ Trusted Types と取得元の制限の下で動き、CSP が拒む sink（`DOMParser` や `innerHTML` への文字列）はアプリと同じく spec を失敗させる。画像は自分のオリジンからしか読めないので、spec が作る画像は `data:` URL を `servedImage` に渡し、プレビューのオリジンで配る。ランタイム設定の `apiOrigin` もその回の `vite preview` のオリジンに書き換えるので、クライアントの API と OAuth の要求はプレビューに届き、spec が `page.route` で応答できる（ログイン済みの画面は、`/oauth/token/refresh` と API の操作に応答して作る）。axe は `makeAxeBuilder` と `expectNoAxeViolations`（規則と対象のセレクタの一覧が空であることを検査）、横スクロールは `expectNoHorizontalScroll` で検査する。
   - 構造は `toMatchAriaSnapshot` で検査する。ロケールで変わる名前は、スナップショットから省くか正規表現にする。
   - CI は、digest で固定した Playwright の公式イメージで動かす。イメージの版は `@playwright/test` の版と合わせる。
-- `@my/ui` のストーリーは `app/ui/src/*.stories.tsx` に置く（CSF 3、`satisfies Meta`）。Storybook は `make storybook` で開く（`app/ui/.storybook`）。
+- `@my/ui` のストーリーは `app/ui/src/*.stories.tsx` に置く（CSF 3、`satisfies Meta`）。Storybook は `scripts/task.sh ui:storybook` で開く（`app/ui/.storybook`）。
   - ツールバーでロケール（`en` / `ja` / `en-XA` / `ar-XB`）とテーマ（ライト / ダーク）とサーバー単位のテーマ（既定 / 見本）を切り替える。ロケールは `<html>` の `lang` / `dir` と React Aria の `I18nProvider` に、テーマは `<html>` の `data-theme` に反映する。
     見本のテーマ（`.storybook/sampleTheme.ts`、ADR-0059）は、サーバーのスタイルシートと同じ `@layer` の外の `:root` の規則にして、構築できるスタイルシートで当てる。
     `Foundations/Theme sample`（`src/ThemeSample.stories.tsx`）だけが見本のテーマを固定し、代表的な部品のスクリーンショットを残す。ほかのストーリーは既定のトークンで検査する。
-  - ストーリーは `make ui-test` で実ブラウザのテストになる（`app/ui/vitest.config.ts`、Storybook の Vitest アドオンと Vitest のブラウザモード、Playwright の Chromium）。
+  - ストーリーは `scripts/task.sh ui:test` で実ブラウザのテストになる（`app/ui/vitest.config.ts`、Storybook の Vitest アドオンと Vitest のブラウザモード、Playwright の Chromium）。
     - プロジェクトは方向 × テーマの 4 つ（`en` / `ar-XB` × ライト / ダーク）。すべてのストーリーを 4 つすべてで動かす。
     - axe の違反が 1 つでもあれば失敗する（`parameters.a11y.test: 'error'`、Y1 のタグ）。
     - `@my/ui` の部品の振る舞いのテスト（フォーカスの閉じ込めと復帰、Esc、矢印キー）は、ストーリーの `play` 関数に `storybook/test` の `expect` と文脈の `userEvent` / `canvas` で書く。
@@ -205,12 +205,12 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
       `play` 関数のためだけにある長いストーリー（仮想化した `Feed`）は `no-screenshot` のタグで比較を外す。同じ部品のほかのストーリーが見た目を検査する。
     - スクリーンショットは `prefers-reduced-motion: reduce` を模擬して撮る。その状態で枠の中に動いているアニメーションが 1 つでもあれば失敗する（D6）。ストーリーの描画と `play` 関数は模擬なしで動く。
     - `play` 関数（`storybook/test`）で、部品をロールとアクセシブルネームで探して検査する（Y2）。
-  - 基準画像は `app/ui/src/__screenshots__/` にあり、固定した Playwright のイメージ（`Makefile` の `PLAYWRIGHT_IMAGE`）の中でだけ作る。
+  - 基準画像は `app/ui/src/__screenshots__/` にあり、固定した Playwright のイメージ（`Taskfile.yml` の `PLAYWRIGHT_IMAGE`）の中でだけ作る。
     手元の OS のフォントや描画では一致しないので、手元で作った画像はコミットしない。
-    - 見た目を変えたら `make ui-snapshots-update`（Docker でそのイメージを使う）で作り直し、差分の画像を確かめてからコミットする。
-    - 同じ比較を手元でするときは `make ui-test-docker` を使う。`make ui-test` を手元で動かす（`make ui-test-install` でブラウザを入れる）と、axe は信用できるが、スクリーンショットは一致しない。
-  - `make check` はブラウザなしで動く検査だけを集める。`make ui-test` は CI の `ui-test` ジョブがそのイメージの中で、`app/ui` を変える PR と main への push で動かす（Merge Queue では動かさない、[ADR-0047](../adr/0047-ci-protection-layers.md)）。失敗したときの実際の画像と差分は成果物 `ui-test-screenshots` にある。
-  - ワークフローのイメージと `PLAYWRIGHT_IMAGE`、`playwright` / `@playwright/test` の版が食い違うと、`make playwright-image-check`（`make check` の一部）が失敗する。
+    - 見た目を変えたら `scripts/task.sh ui:snapshots-update`（Docker でそのイメージを使う）で作り直し、差分の画像を確かめてからコミットする。
+    - 同じ比較を手元でするときは `scripts/task.sh ui:test-docker` を使う。`scripts/task.sh ui:test` を手元で動かす（`scripts/task.sh ui:test-install` でブラウザを入れる）と、axe は信用できるが、スクリーンショットは一致しない。
+  - `scripts/task.sh check` はブラウザなしで動く検査だけを集める。`scripts/task.sh ui:test` は CI の `ui-test` ジョブがそのイメージの中で、`app/ui` を変える PR と main への push で動かす（Merge Queue では動かさない、[ADR-0047](../adr/0047-ci-protection-layers.md)）。失敗したときの実際の画像と差分は成果物 `ui-test-screenshots` にある。
+  - ワークフローのイメージと `PLAYWRIGHT_IMAGE`、`playwright` / `@playwright/test` の版が食い違うと、`scripts/task.sh web:playwright-image-check`（`scripts/task.sh check` の一部）が失敗する。
 
 ## 8. サーバーが描画する画面
 
@@ -492,7 +492,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 
 API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱う（ADR-0029、ADR-0030）。機能はこれを作り直さない。
 
-- **型**（S9）: `make generate` が openapi-typescript で、`api/spec/` をまとめた `api/openapi.yaml` から `lib/api/schema.gen.ts` を生成する。生成物はコミットし、`make generate-check` が差分を検査する。
+- **型**（S9）: `scripts/task.sh api:generate` が openapi-typescript で、`api/spec/` をまとめた `api/openapi.yaml` から `lib/api/schema.gen.ts` を生成する。生成物はコミットし、`scripts/task.sh api:generate-check` が差分を検査する。
   機能は API の型を自分の `features/<x>/api` から export して使う（`lib/api` を直接 import できるのは `features/*/api` と `lib/` だけ。S1）。
 - **クライアント**（`lib/api/client.ts`）: openapi-fetch のクライアントと、その上の openapi-react-query のクライアントを 1 つずつ作る（`Api` の `fetch` と `query`）。
   機能は `features/<x>/api` で `api.query.queryOptions(...)` から `queryOptions` を作る。キーは `[method, path, params]` になる。
@@ -1130,7 +1130,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
 | # | 規約 | 強制 |
 | --- | --- | --- |
 | G19 | 文は利用者に向けて、短く、平らに書く。感嘆符・絵文字・冗談・責める言い方（「無効な入力です」）を使わない。エラーは利用者が直せることを書く（GOV.UK の [Error message](https://design-system.service.gov.uk/components/error-message/)） | レビュー |
-| G20 | 英語は sentence case（`Write a post`、`Follow requests`）、ボタンと項目は動詞で始め、`Click` / `Tap` のような操作の手段を書かない。日本語は です・ます 調、ボタンと項目は「〜する」か名詞で終え（「投稿する」「フォロー」）、文の中の区切りは全角の記号（「：」「、」）にする | `make i18n-check`（カタログの lint）、レビュー |
+| G20 | 英語は sentence case（`Write a post`、`Follow requests`）、ボタンと項目は動詞で始め、`Click` / `Tap` のような操作の手段を書かない。日本語は です・ます 調、ボタンと項目は「〜する」か名詞で終え（「投稿する」「フォロー」）、文の中の区切りは全角の記号（「：」「、」）にする | `scripts/task.sh i18n:check`（カタログの lint）、レビュー |
 | G21 | 同じものは同じ語で呼ぶ。用語（投稿・ブースト・お気に入り・ブックマーク・公開範囲・ローカル・連合・CW）は [vision](../requirements/00-vision.md) と既存のカタログの語に合わせ、画面ごとに言い換えない | レビュー |
 | G22 | 確かめのダイアログは、見出しを問い（「この投稿を削除しますか？」）、本文を結果（取り消せるかどうか）、ボタンを動詞（「削除」「キャンセル」）にし、「はい / いいえ」にしない | レビュー |
 

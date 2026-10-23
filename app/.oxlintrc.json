@@ -38,7 +38,7 @@
     "oxlint/violations/"
   ],
   // The workspace root has no react dependency to detect the version from (react-x). Paths are relative to app/,
-  // where `make web-lint` runs Oxlint.
+  // where `scripts/task.sh web:lint` runs Oxlint.
   "settings": {
     "react-x": {
       "version": "19.3.0"

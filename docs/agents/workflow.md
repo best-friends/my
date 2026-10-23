@@ -49,16 +49,16 @@ git switch -c <type>/<N>-<short-slug>     # e.g. task/42-sqlite-adapter, spike/1
 ## 5. Verify
 
 ```sh
-scripts/agentkit.sh check # make check-changed, printing the contexts, their results, and only the failing lines
-make check-changed        # the contexts changed since origin/main and their dependents, in parallel
-make go-check             # or one context: docs-check, go-check, i18n-check, api-check, ui-check, web-check, docker-check
-make check                # every context, when the change touches shared configuration
+scripts/agentkit.sh check      # scripts/task.sh check:changed, printing the contexts, their results, and only the failing lines
+scripts/task.sh check:changed  # the contexts changed since origin/main and their dependents, in parallel
+scripts/task.sh go:check       # or one context: docs:check, go:check, i18n:check, api:check, ui:check, web:check, docker:check, agentkit:check
+scripts/task.sh check          # every context, when the change touches shared configuration
 ```
 
 Must pass. CI runs every affected context again and its `check` gate decides the merge.
 If a check is wrong or flaky, fix it in a separate commit and explain in the PR.
 
-Pull requests do not run the web E2E. In single-issue work, when the change touches the web client, run `make web-e2e`
+Pull requests do not run the web E2E. In single-issue work, when the change touches the web client, run `scripts/task.sh web:e2e`
 locally, or run the workflow on the PR's branch and wait for it (in a parallel batch, see [§9](#9-parallel-batches) instead):
 
 ```sh
@@ -72,9 +72,9 @@ The layout of [ADR-0047](../adr/0047-ci-protection-layers.md) (`.github/workflow
 
 | When | Workflow | What runs |
 | --- | --- | --- |
-| Pull request | `ci.yml` | The `ctx-<context>.yml` of every context the change touches and of its dependents (`scripts/changed-contexts.sh`), the same checks as `make check`, with the PostgreSQL tests on pgmem; the `@my/ui` story tests (`ui-test.yml`) when `app/ui` changes; the linux/arm64 image builds when the docker context changes; the Docker Compose smoke test when the docker context, `cmd/`, or `internal/platform/` changes. The required `check` collects the results |
+| Pull request | `ci.yml` | The `ctx-<context>.yml` of every context the change touches and of its dependents (`scripts/changed-contexts.sh`), the same checks as `scripts/task.sh check`, with the PostgreSQL tests on pgmem; the `@my/ui` story tests (`ui-test.yml`) when `app/ui` changes; the linux/arm64 image builds when the docker context changes; the Docker Compose smoke test when the docker context, `cmd/`, or `internal/platform/` changes. The required `check` collects the results |
 | Merge queue | `ci.yml` | The same contexts again on the merge group (the PR on top of `main` and the PRs queued ahead of it), without the checks decided file by file (markdownlint, Go and npm licenses, shellcheck, the CSS `100vh` check, design tokens, the Playwright image version) and without the story tests, the smoke test, and the arm64 builds. The queue merges the group when `check` passes |
-| Push to `main` | `main.yml` | The web E2E subset on 4 shards; the smoke test unless the push changes docs only; the story tests when `app/ui` changes; the PostgreSQL tests on a real container (`postgres-contract.yml`) and the `stream.Bus` contracts on broker containers (`stream-contract.yml`), each when a path they depend on changes; the Go and Bun caches that pull requests and the queue restore. The `make check` contexts do not run again |
+| Push to `main` | `main.yml` | The web E2E subset on 4 shards; the smoke test unless the push changes docs only; the story tests when `app/ui` changes; the PostgreSQL tests on a real container (`postgres-contract.yml`) and the `stream.Bus` contracts on broker containers (`stream-contract.yml`), each when a path they depend on changes; the Go and Bun caches that pull requests and the queue restore. The `scripts/task.sh check` contexts do not run again |
 | Nightly (03:00 JST) | `nightly.yml` | The full web E2E matrix on 8 shards, the live interoperability test (`federation-live.yml`), the PostgreSQL tests on a real container, the `stream.Bus` contracts on broker containers, the smoke test, and the arm64 builds |
 | Push to `main`, weekly (Monday 06:00 JST) | `codeql.yml` | CodeQL code scanning of Go, JavaScript / TypeScript, and GitHub Actions, which follows untrusted values to SQL, HTML, paths, redirects, and the like; the results go to the Security tab. An addition to the main and nightly layers of ADR-0047: it never runs on pull requests or merge groups and is not part of `check` |
 
@@ -112,8 +112,8 @@ EOF
 
 ```sh
 git fetch origin && git merge origin/main
-scripts/agentkit.sh regen              # runs the generators whose sources changed: make generate, sqlc, i18n-gen,
-                                       # web-dist (app/web/src/routeTree.gen.ts), config-docs, adr-index
+scripts/agentkit.sh regen              # runs the generators whose sources changed: api:generate, go:sqlc, i18n:gen,
+                                       # web:dist (app/web/src/routeTree.gen.ts), go:config-docs, docs:adr-index
 scripts/agentkit.sh check
 ```
 
@@ -158,7 +158,7 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 
 ### Agents in the queue
 
-- The PR gate is `make check-changed` locally and the PR's `check` CI. Do not run the web E2E per PR (`make web-e2e`
+- The PR gate is `scripts/task.sh check:changed` locally and the PR's `check` CI. Do not run the web E2E per PR (`scripts/task.sh web:e2e`
   or `web-e2e.yml`), not even the specs the change adds: write and update the E2E specs the change needs, but do not
   run the suite.
 - Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R best-friends/my --json mergeable`).

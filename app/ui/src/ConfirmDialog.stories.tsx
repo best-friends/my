@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// ConfirmDialog stories. The play functions are the alert dialog's behaviour tests (`make ui-test`): focus moves
+// ConfirmDialog stories. The play functions are the alert dialog's behaviour tests (`scripts/task.sh ui:test`): focus moves
 // to the first safe control on open (cancel, or the first field), Esc closes it, focus returns to the trigger,
 // and confirming waits for the fields to be valid.
 import type { Meta, StoryObj } from "@storybook/react-vite";

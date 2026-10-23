@@ -32,7 +32,7 @@ import (
 // The environment variables of the emulator tests: TEST_STREAM=container runs the contract on
 // the Pub/Sub emulator in a container of TEST_PUBSUB_IMAGE (default emulatorImage) too, and
 // TEST_PUBSUB_REQUIRED makes a missing Docker fail the tests instead of skipping them. CI sets
-// both on the pushes to main and nightly (make go-test-stream); pull requests run the contract
+// both on the pushes to main and nightly (scripts/task.sh go:test-stream); pull requests run the contract
 // on pstest only.
 const (
 	envStream   = "TEST_STREAM"
@@ -416,7 +416,7 @@ var emulator struct {
 func emulatorAddr(t *testing.T) string {
 	t.Helper()
 	if os.Getenv(envStream) != "container" {
-		t.Skipf("%s=container runs the contract on the Pub/Sub emulator (make go-test-stream)", envStream)
+		t.Skipf("%s=container runs the contract on the Pub/Sub emulator (scripts/task.sh go:test-stream)", envStream)
 	}
 	emulator.once.Do(func() {
 		if err := exec.Command("docker", "info").Run(); err != nil {

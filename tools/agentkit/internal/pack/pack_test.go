@@ -68,7 +68,7 @@ func TestBuild(t *testing.T) {
 		"**schema** [shared",
 		"Edit every dialect together.",
 		"table:custom_emoji_requests",
-		"`make db-check` for both dialects",
+		"`scripts/task.sh db:check-all` for both dialects",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("pack lacks %q:\n%s", want, out)

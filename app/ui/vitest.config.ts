@@ -3,7 +3,7 @@
 // Storybook Vitest addon. A story fails on any axe violation (parameters.a11y.test = 'error' in
 // .storybook/preview.tsx) and on a visual difference from its screenshots (.storybook/vitest.setup.ts).
 // There is one project per direction × theme, so contrast is checked in both themes and layout in RTL.
-// Screenshot baselines are generated only in the pinned Playwright image (`make ui-snapshots-update`).
+// Screenshot baselines are generated only in the pinned Playwright image (`scripts/task.sh ui:snapshots-update`).
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig, mergeConfig } from "vitest/config";
@@ -18,7 +18,7 @@ export default mergeConfig(
   defineConfig({
     test: {
       projects: [
-        // Component tests (src/**/*.test.tsx): Testing Library in jsdom, run by `make web-test`
+        // Component tests (src/**/*.test.tsx): Testing Library in jsdom, run by `scripts/task.sh ui:unit-test`
         // (`bun run test:unit`). Like app/web, they never use the `node` environment (web-client.md T6).
         {
           extends: true,
