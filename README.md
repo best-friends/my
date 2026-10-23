@@ -5,7 +5,7 @@ ActivityPub 互換のマイクロブログサーバー。Go 製。Google Cloud /
 
 > **Status: v0 の開発中（M1: Walking Skeleton）。** 動くのは、管理者アカウントの作成と、他サーバーがアカウントを見つけるための
 > WebFinger・Actor・NodeInfo だけです。投稿やフォローはまだできません。
-> v0 の間は DB の作り直しを含む破壊的変更が頻繁に入ります（[ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)）。
+> `v0.1.0` より前は DB の作り直しを含む破壊的変更が入ります。`v0.1.0` 以降は、版の間の更新でデータを引き継ぎます（[ADR-0087](docs/adr/0087-schema-changes-after-launch.md)）。
 
 ## 目指すもの
 

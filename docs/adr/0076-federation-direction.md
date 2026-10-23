@@ -1,6 +1,6 @@
 # ADR-0076: 連合の向きをインスタンス設定で選ぶ（オフ / 受信のみ / 送信のみ / 送受信）
 
-- Status: Accepted
+- Status: Accepted（`Move` の送信を `retract` の流れに加える部分を ADR-0089（アカウントの移転（Move）と別名（alsoKnownAs））が、閉鎖の間の流れの扱いを ADR-0088（サービスの終了の予告モードとクローズモード）が加える）
 - Date: 2026-10-22
 - Deciders: @rosylilly
 - Issue: #976

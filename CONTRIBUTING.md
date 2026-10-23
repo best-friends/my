@@ -95,7 +95,7 @@ scripts/task.sh db:down                       # コンテナとデータを削�
   PostgreSQL の URL は `search_path=public` を付けたスキーマ単位の URL にします。
 - コンテナ以外の PostgreSQL に適用するときは、準備 SQL の実行方法も `PG_BOOTSTRAP` で指定します
   （例: `PG_BOOTSTRAP='psql -v ON_ERROR_STOP=1 -q "postgres://..."'`）。開発用 DB にも準備 SQL を先に流しておきます。
-- 差分の適用に失敗する変更（v0 では許容される破壊的変更、[ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)）は `scripts/task.sh db:reset` で作り直します。
+- 差分の適用に失敗する変更は、開発用の DB なら `scripts/task.sh db:reset` で作り直します。`v0.1.0` 以降の PR は、データを失わずに直前の `main` から更新できるスキーマ変更にします（[ADR-0087](docs/adr/0087-schema-changes-after-launch.md)）。
 - CI は両方言について、空の DB への適用と、適用後に差分が残らないことを検査します（`scripts/task.sh db:check-all`）。
 
 ## クライアント API

@@ -81,8 +81,10 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
   No changelog sections, no "previously / in the first draft / old proposal" wording, no `[x]` resolved items in Open Questions —
   fold resolved answers into the body. Explain *why it changed* in the commit message and PR description instead.
 - Create ADRs with `scripts/task.sh docs:adr-new`, which picks a number no open PR uses; list them with `scripts/agentkit.sh adr list`.
-- v0 allows breaking changes everywhere ([ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)) — no migrations, no compat shims.
-  Exception: ActivityPub wire formats and federated URIs must stay spec-compliant.
+- Breaking changes ([ADR-0087](docs/adr/0087-schema-changes-after-launch.md)): before `v0.1.0` the DB may be recreated and nothing keeps compat shims.
+  From `v0.1.0`, every schema change must upgrade the previous `main` without losing data (drop in a later minor release, rewrite data with `my db upgrade`);
+  config keys and internal interfaces may still change in v0.x with release notes, and the client API follows [ADR-0090](docs/adr/0090-third-party-oauth-apps.md) §8.
+  ActivityPub wire formats and federated URIs must always stay spec-compliant.
 - Do not add Mastodon *client* API compatibility code ([ADR-0007](docs/adr/0007-client-api.md)). Federation with Mastodon servers is still required.
 - Language: design docs (ADR, requirements) in Japanese during v0; code, identifiers, code comments, commit messages, and PR titles in English.
 - Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`; `!` for breaking).

@@ -1,0 +1,162 @@
+# ADR-0089: アカウントの移転（Move）と別名（alsoKnownAs）
+
+- Status: Accepted
+- Date: 2026-10-23
+- Deciders: @rosylilly
+- Issue: #1035
+
+## Context（背景・課題）
+
+[ADR-0006](0006-federation-protocol-scope.md)（Accepted）は `Move` を「非対応」とし、vision の非目標にも「アカウント移行（`Move`）」がある。
+受けた `Move` は federation.md §3.4 でログとメトリクスに残して完了にしている（`internal/app/federation/mode.go` は `Move` を `follow_out` の流れに分類済み）。
+
+決定者は M5 の範囲に `Move` を入れると決めた（「M5 に Move も入れましょう」）。サービスのクローズ（[ADR-0088](0088-service-shutdown-modes.md)、#1034）の予告の期間に、
+利用者がフォロワーを移転先へ移せないと、クローズでフォロー関係がすべて失われる。移転はクローズ以外でも、利用者が別のサーバーへ移る・別のサーバーから移ってくるときに使う。
+
+関連する要件: FR-008（データのエクスポート・インポート）、FR-405（受信アクティビティ）、FR-413（連合の向き）、NFR-SEC-1（SSRF ガード）。
+この ADR は ADR-0006 の対応範囲の表の `Move` の行を置き換え、[ADR-0076](0076-federation-direction.md) の流れの分類に `Move` の送信を加える。
+
+## Decision Drivers（判断基準）
+
+1. **主要実装との相互運用**: Mastodon・Misskey・GoToSocial・Akkoma が送る `Move` を受け、こちらの `Move` で相手のサーバーのフォロワーが移ること
+2. **なりすましへの耐性**: 移転先の同意（`alsoKnownAs`）のない移転・送り主と異なる主体の移転でフォローが奪われないこと
+3. **データモデルの規約**（[ADR-0020](0020-data-modeling-principles.md)）: 移転をイベントとして記録し、状態は投影で持つ。既存のライフサイクルの軸と直交させる
+4. **負荷**: フォロワーの多いアカウントの移転・同じ時期の大量の移転でキューと相手のサーバーを詰まらせない
+5. **実装の小ささ**: M5 に入る範囲に収める。投稿の移し替えなど主要実装もしないことはしない
+
+## Considered Options（選択肢）
+
+1. **Mastodon 互換の移転（フォロワーの移し替えだけ）**: 移転先の `alsoKnownAs` を確かめて `Move` を送受信し、受けた側がフォローを移す。投稿は移さない。フォロー中・ブロック・ミュートは CSV（FR-008）で運ぶ
+2. **選択肢 1 に加えて、移転元のサーバー間でデータを直接運ぶ**: フォロー中・ブロック・ミュート・ブックマーク・投稿を、移転先へ API や独自のアクティビティで運ぶ
+3. **非対応のまま**（ADR-0006 のまま）: クローズの予告では CSV のエクスポートと新しいアドレスの告知だけを案内する
+
+## Decision（決定）
+
+**選択肢 1（Mastodon 互換の移転）を採用する。** 主要実装が同じ形で相互運用でき（判断基準 1）、検証の手順が確立している（判断基準 2）。
+選択肢 2 の独自の運び方は相手のサーバーが解さず、投稿の移し替えは主要実装もしない。選択肢 3 はクローズでフォロワーを失わせ、決定者の範囲の判断に反する。
+
+### 語彙
+
+- Actor に `alsoKnownAs`（`as:alsoKnownAs`、IRI の配列）と `movedTo`（`as:movedTo`、IRI）を出す。`@context` は既存の Actor と同じ。
+- 送る `Move` は `actor` と `object` がこちらの Actor、`target` が移転先の Actor、`to` がこちらの `followers` コレクション（FEP-7628 の push mode。Mastodon の文書の例と同じ形）。`id` は `https://{host}/ap/activities/{uuid}`（[ADR-0018](0018-federated-uris.md)）。
+
+### 移ってくる側: 別名の設定
+
+- ローカルの利用者は、設定で別名（移転元のアカウント）を足し・消しできる。入力はハンドルか URL で、WebFinger と Actor の取得（SSRF ガード付きの `kernel.HTTPClient`）で Actor の `id` に解決して保存する。上限は 5 件。
+- 別名の変更は Actor の `Update` を、ほかのプロフィールの変更と同じ宛先へ配送する（`publish` の流れ）。
+- 別名は移転を受け入れる表明でしかなく、それだけでは何も起きない（Mastodon と同じ。下の「主要実装の挙動」）。
+
+### 送る側: ローカルから外へ移る
+
+- 操作は client API の 1 つのエンドポイントで、パスワード（パスワードの無い利用者はパスキー）の再認証を要求する。Web は確認のダイアログで、移るもの（フォロワー）と移らないもの（投稿・フォロー中・ブロック・ミュート・ブックマーク）を示し、CSV のエクスポート（FR-008）へのリンクを出す。
+- 送る前に、移転先の Actor をキャッシュを使わずに取得し直し、`alsoKnownAs` にこちらの Actor の `id` があることを確かめる。無ければ `422` で断る。移転先がローカルのアカウントでも同じ規則で、同じサーバー内の移転もできる。
+- 断る条件: 前回の移転から 30 日以内（Mastodon と同じ待ち時間。2026-10-23 に [Moving or leaving accounts](https://docs.joinmastodon.org/user/moving/) で確認）、移転先が自分自身・移転先がすでに移転済み（`movedTo` がある）、移転先のドメインが `suspend` の処分中、こちらが凍結・BAN 中（そもそもログインできない）。
+- 移転の記録と同じトランザクションで、`Move` と Actor の `Update`（`movedTo` 付き）を outbox に積む。Actor の GET もこのトランザクションの後は `movedTo` を返す（Misskey は `Move` を受けると Actor を取り直し、その `movedTo` で移転を処理するため）。宛先は承認済みのリモートのフォロワーの inbox を shared inbox へ集約したもの（`Delete(Actor)` と同じ展開）。ローカルのフォロワーは、受ける側と同じ処理（下）を直接ジョブで呼ぶ。
+- 移転後のアカウント（以下「移転済み」）: ログイン・閲覧・エクスポート・削除・別名の設定・移転の取り消しはできる。投稿・ブースト・反応・フォロー・投票はできない（client API が `403`、problem type `account-moved`）。既存の投稿は残り、外からのフォロー（`Follow`）は `Reject` を返す。プロフィールに「移転しました」の帯と移転先へのリンクを出す。
+- 移転の取り消し: 利用者は移転済みを解除できる。Actor の `Update`（`movedTo` なし）を送り、投稿などが再びできるようになる。移ったフォロワーは戻らない（相手のサーバーは `Move` を取り消さない）。取り消しは `account_move_cancellations` に記録し、`account_move_states` の行を消す。取り消しても 30 日の待ち時間は前回の移転から数える。
+
+### 受ける側: 外のアカウントの移転を受ける
+
+- `Move` のハンドラを federation に登録し、次をすべて満たすときだけ処理する。満たさなければ理由をログとメトリクスに残して完了にする。
+  1. `actor` と `object` が同じで、署名者が `actor`（§3.2 の確かめ）。FEP-7628 の pull mode（移転先が送る `Move`）は受けない（Mastodon・Akkoma も受けない）
+  2. `target` の Actor をキャッシュを使わずに取得し、その `alsoKnownAs` に `actor` の `id` がある
+  3. `target` が `actor` と異なり、`target` 自身が移転済みでない（移転の連鎖をたどらない）
+  4. 移転元・移転先のアカウントにも、そのドメインにも、このサーバーの `suspend` の処分がない
+- 処理を通ったら、移転元に移転を記録し（下のデータモデル）、移転元の Actor の表示に移転先を出す。
+- 移転元をフォローしているローカルの利用者ごとに、ジョブ `graph.migrate_follows`（冪等キーは移転元と移転先の組）で、100 件ずつのページで次をする。
+  - 利用者が移転先をブロックしていない・移転先のドメインをミュートしていないときだけ、移転先へフォローし（`Follow` を送る。移転先が鍵アカウントなら承認待ちになる）、移転元へのフォローを `follow_terminations`（`reason = moved`、新しい値）で終えて `Undo Follow` を送る。フォローの設定（`show_boosts`・`notify`）は引き継ぐ。移転先をフォローしないときは移転元へのフォローを残す（Mastodon と同じ）。移転先からブロックされていれば相手の `Reject` で終わる。
+  - 移転元をブロック・ミュートしているローカルの利用者には、移転先にも同じブロック・ミュート（ミュートは通知の扱いと期限も）を足す（Mastodon・Misskey と同じ）。
+  - 利用者に通知 `account_moved`（フォローしている人が移転した。移転先をフォローしたか、しなかった理由）を送る。
+- 移転元のフォロワーではない利用者の表示は、移転元のプロフィールの帯だけが変わる。
+- 負荷と悪用: 同じ移転元の `Move` は移転先ごとに 1 回だけ処理する（記録の一意制約）。同じ移転元からの別の移転先への `Move` は、前の移転の処理から 7 日以内なら捨てる（Mastodon は移転元ごとに 7 日、GoToSocial は成功から 1 週間）。フォローの移し替えはドメインごとの配送の並列度とサーキットブレーカー（ADR-0006）にそのまま従い、ジョブはページごとに間隔を空ける。
+
+### データモデル（所有モジュール: `account`）
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `account_aliases` | 現在値 | `account_id`, `alias_uri`, `added_at` | PK `(account_id, alias_uri)`。ローカルのアカウントだけ。リモートの `alsoKnownAs` は移転の検証のときに取得し、保存しない |
+| `account_moves` | イベント | `id`, `account_id`（移転元）, `target_account_id`, `initiated_by`（`enum(self, remote)`）, `activity_uri`（NULL 可。受けた `Move`）, `occurred_at` | 一意 `(account_id, target_account_id)` |
+| `account_move_cancellations` | イベント | `move_id`（PK）, `cancelled_at` | ローカルの移転だけ |
+| `account_move_states` | 投影 | `account_id`（PK）, `move_id`, `target_account_id`, `since` | 取り消しで行を消す。`account_lifecycle_states` と直交する軸（ADR-0020 規約 2） |
+
+- `graph` の `follow_terminations.reason` に `moved` を足す。移し替えは `graph` の公開 API を、`account.moved` のドメインイベントを購読するジョブから呼ぶ。
+- 待ち時間の判定は `account_moves` の最新行の `occurred_at` で読み取りのときに行う（状態の列を持たない）。
+
+### 連合の向き（ADR-0076）との関係
+
+| 活動 | `Flow` |
+| --- | --- |
+| `Move` の受信とフォローの移し替え | `follow_out`（いまの分類のまま） |
+| `Move` の送信と `movedTo` 付きの `Update(Actor)` | `retract`（新しい内容を出さず、すでにいるフォロワーにだけ行き先を伝えるため。`inbound` でも送れる） |
+| 別名の `Update(Actor)` | `publish` |
+
+ADR-0076 の流れの表の `retract` に `Move` の送信を加える（ADR-0076 の該当行を部分的に置き換える）。
+
+### モデレーション
+
+- 凍結・BAN 中のローカルのアカウントは移転できない。`limit` などの制限中は移転できるが、移転先がローカルのアカウントなら制限を移転先にも付けるかをモデレーターに知らせる（監査ログに `account_moved` を記録し、通知のキューに出す）。自動では引き継がない。
+- リモートの移転元にこのサーバーの `limit` がある場合も、移転先へは自動で引き継がず、モデレーターに知らせる。
+- ドメインの `suspend`（ADR-0036）は、移転元・移転先のどちらのドメインでも移し替えを止める。
+
+### クローズ（ADR-0088）との関係
+
+- 予告の期間に、Web は全員に移転の手順（移転先で別名を設定 → こちらで移転）と CSV のエクスポートを案内する。
+- クローズの `Delete(Actor)` は移転済みのアカウントにも送る。フォロワーは移転の時点で移っており、`Delete` で移転先の関係は消えない。移転済みのアカウントへの `Delete` はクローズの配送の最後のフェーズにまとめ、配送が終わるまで移転済みの Actor の GET は `movedTo` を返し続ける（ADR-0088 §4）。
+- 移転の送信と移し替えのジョブは、クローズの配送より前に終わっている必要がある。ADR-0088 はこの ADR を前提にする。
+
+### 主要実装の挙動（2026-10-23 にソースコードで確認）
+
+| 実装 | 受けた `Move` の検証 | 受けた後の処理 |
+| --- | --- | --- |
+| Mastodon（[move.rb](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/lib/activitypub/activity/move.rb)、[move_worker.rb](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/workers/move_worker.rb)、[follow_migration_service.rb](https://github.com/mastodon/mastodon/blob/131aabcaf1f1f13e0615f8ad2748ab05f966e2c9/app/services/follow_migration_service.rb)） | `object` が送り主、`target` を取得し直して `alsoKnownAs` に送り主がある。移転元ごとに 7 日に 1 回 | フォロワーごとに移転先へ `Follow`（設定を引き継ぐ）を送ってから移転元を `Undo Follow`。フォローできなければ移転元のフォローは残る。ブロック・ミュートとメモを移転先へ写す |
+| Misskey（[ApInboxService.ts](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/core/activitypub/ApInboxService.ts)、[AccountMoveService.ts](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/core/AccountMoveService.ts)、[ApPersonService.ts](https://github.com/misskey-dev/misskey/blob/2dd2e114b72dc256bdfa0ce88a8387f5cf6bd348/packages/backend/src/core/activitypub/models/ApPersonService.ts)） | `Move` を受けると送り主の Actor を取り直し、その `movedTo` と移転先の `alsoKnownAs` で確かめる。移転の連鎖と 14 日以内の再移転は処理しない | フォローの移し替え、ブロック・ミュート・リストを移転先へ写す。送る側は `Update(Actor)` と `Move` をフォロワーへ配送する |
+| GoToSocial（[fromfediapi_move.go](https://codeberg.org/superseriousbusiness/gotosocial/src/commit/311cecaeb6e302509c847d20e21185a7ec41d28d/internal/processing/workers/fromfediapi_move.go)） | `target` を取得し直して `alsoKnownAs` を確かめる。移転先が移転済み・凍結中なら処理しない。同じ組の試行は 5 分、成功は 1 週間あけて | ローカルのフォロワーを移転先へ移し、移転元がローカルの人へのフォローを消す |
+| Akkoma（[transmogrifier.ex](https://akkoma.dev/AkkomaGang/akkoma/src/commit/a69f0b9e328dd6c12bf4a308892041035408d03a/lib/pleroma/web/activity_pub/transmogrifier.ex)） | `actor` と `object` が同じ、`target` を取得し直して（5 秒より古ければ）`alsoKnownAs` に送り主がある | フォローの移し替えをジョブで行う |
+
+移るのはフォロワーだけで、別名は移転のためだけにある（Mastodon。2026-10-23 に [Moving or leaving accounts](https://docs.joinmastodon.org/user/moving/) で確認）。
+
+[FEP-7628](https://codeberg.org/fediverse/fep/src/commit/fc90938eec71ac07f5186955926fc27e6b64f15f/fep/7628/fep-7628.md)（FINAL）は、移転元が送る push mode をフォロワー宛てにすること、受けた側が移転先を `Follow` するか利用者に知らせることを求める。上の検証と処理はこれを満たす。FEP の pull mode と `copiedTo` は主要実装が使っていないので扱わない。
+
+### 相互運用の確かめ方
+
+`deploy/docker/federation-live` に、Mastodon・GoToSocial・Misskey それぞれとの往復（こちら → 相手、相手 → こちら）のシナリオを足す: 別名の設定、`Move`、相手のサーバーでフォロワーが移ること、こちらでフォローが移り通知が出ること。Akkoma は federation-live に無い（2026-10-23 の `compose.yaml`）ので、Akkoma が送る `Move` の JSON のフィクスチャを testkit に足して回帰テストにする。
+
+### 実装の issue の分け方
+
+次を別の issue にする: (1) データモデルと受ける側、(2) 送る側と移転済みの制限、(3) 別名の設定と `Update(Actor)`、(4) Web（別名・移転の操作・移転済みの表示・通知）、(5) federation-live の相互運用の確認、(6) 文書（federation.md・data-model・requirements）の更新。
+
+この決定を見直す条件: 主要実装のいずれかが、ここで送る `Move` の形でフォロワーを移さないことが相互運用テストで分かった場合（その実装の求める形に合わせるか、送る `Move` を実装ごとに変えるかを決め直す）。主要実装が FEP-7628 の pull mode や `copiedTo` を送るようになった場合も見直す。
+
+## Consequences（影響）
+
+- 良い影響
+  - クローズの前に利用者がフォロワーを移せる。ほかのサーバーとの行き来もできる
+  - `alsoKnownAs` の取得し直しと署名者の一致で、同意のない移転を受けない
+  - 移転を `account` のイベントと投影で持ち、ライフサイクルと直交させるので、削除・凍結の判定に手を入れない
+- 悪い影響・トレードオフ
+  - 投稿・フォロー中・ブックマークは移らない。利用者は CSV で運ぶ必要がある
+  - 受けた `Move` 1 件で、フォロワーの数だけ `Undo Follow` と `Follow` の配送が生じる。大きなサーバーの一斉の移転では配送のキューが伸びる
+  - 移転の取り消しを許すので、相手のサーバーでは移転済みのまま、こちらでは投稿できる状態が生じる（Mastodon のリダイレクトの取り消しと同じ）
+  - ADR-0076 の `retract` の意味が「撤回と行き先の通知」に広がる
+- 後続で必要になる作業（Issue 化する）
+  - 上の「実装の issue の分け方」の 6 件
+  - vision の非目標から `Move` を外し、機能要件に FR-009（別名と移転の操作）と FR-414（`Move` の送受信）を足す
+  - ADR-0006 と ADR-0076 の Status 行に、この ADR が置き換える部分を書く
+  - federation.md §3.4・§8 の `Move`、data-model §4.2・§4.5、通知の種類に `account_moved` を足す
+
+## Pros and Cons of the Options（詳細比較・任意）
+
+| 観点 | 1. Mastodon 互換 | 2. データも運ぶ | 3. 非対応 |
+| --- | --- | --- | --- |
+| 相互運用 | 主要実装と同じ形 | 独自部分は相手が解さない | — |
+| クローズでのフォロワー | 移る | 移る | 失われる |
+| 実装量 | 中 | 大（投稿の移し替えは前例がない） | 無 |
+| 利用者の手間 | 別名の設定・CSV | 少ない | 全員にフォローし直してもらう |
+
+選択肢 2 の最も強い論点は、利用者の手間が減ることである。ただし移転先が同じソフトウェアのときしか効かず、クローズの予告の期間に作り込む価値は小さい。
+選択肢 3 の最も強い論点は、実装も検証もいらないことである。
+
+## Open Questions / 要検証
+
+- 要検証: こちらの送る `Move` で、Mastodon・Misskey・GoToSocial・Akkoma の側のフォロワーが実際に移ること（実サーバーとの往復が要るので、federation-live のシナリオで確かめる）
+- フォローの移し替えのページの間隔の値（実装の後、配送のキューの伸びを見て決める）
