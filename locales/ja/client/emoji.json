@@ -1,0 +1,30 @@
+{
+  "emoji.picker.button": {
+    "defaultMessage": "絵文字を入れる",
+    "description": "Accessible name and tooltip of the icon button of the post form that opens the custom emoji picker."
+  },
+  "emoji.picker.title": {
+    "defaultMessage": "カスタム絵文字",
+    "description": "Accessible name of the popover of the custom emoji picker."
+  },
+  "emoji.picker.search": {
+    "defaultMessage": "絵文字を検索",
+    "description": "Label of the search field of the custom emoji picker; it finds emoji by shortcode or other name."
+  },
+  "emoji.picker.grid": {
+    "defaultMessage": "カスタム絵文字",
+    "description": "Accessible name of the grid of emoji in the custom emoji picker."
+  },
+  "emoji.picker.recent": {
+    "defaultMessage": "最近使った絵文字",
+    "description": "Heading of the emoji picked recently on this device, first in the picker."
+  },
+  "emoji.picker.uncategorized": {
+    "defaultMessage": "その他",
+    "description": "Heading of the emoji without a category in the picker."
+  },
+  "emoji.picker.empty": {
+    "defaultMessage": "絵文字が見つかりません",
+    "description": "What the custom emoji picker shows when nothing matches the search."
+  }
+}

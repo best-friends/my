@@ -1,0 +1,54 @@
+{
+  "search.description": {
+    "defaultMessage": "@ユーザー名@サーバー か、プロフィールのアドレスを入力します。ほかのサーバーのアカウントも探せます。",
+    "description": "Help text under the search field for a signed-in user, who can find accounts on any server."
+  },
+  "search.description_signed_out": {
+    "defaultMessage": "@ユーザー名@サーバー か、プロフィールのアドレスを入力します。このサーバーがすでに知っているアカウントだけが見つかります。",
+    "description": "Help text under the search field while nobody is signed in: the server does not fetch unknown accounts from other servers."
+  },
+  "search.description_known_only": {
+    "defaultMessage": "@ユーザー名@サーバー か、プロフィールのアドレスを入力します。このサーバーはいまほかのサーバーのアカウントを問い合わせないため、すでに知っているアカウントだけが見つかります。",
+    "description": "Help text of the account search field while this server does not look up accounts of other servers (federation direction 'Send only' or 'Off', ADR-0076)."
+  },
+  "search.failed": {
+    "defaultMessage": "アカウントを検索できませんでした：{reason}",
+    "description": "Error under the search field when the search failed for another reason. {reason} is the localized reason."
+  },
+  "search.label": {
+    "defaultMessage": "ハンドルまたは URL",
+    "description": "Label of the search field, which takes an account's handle (@username@server) or the address of its profile."
+  },
+  "search.not_found": {
+    "defaultMessage": "アカウントが見つかりません。ハンドルかアドレスを確かめてください。",
+    "description": "Error under the search field when neither this server nor the account's server knows the account."
+  },
+  "search.not_found_signed_out": {
+    "defaultMessage": "このサーバーはそのアカウントを知りません。サインインすると、そのアカウントのサーバーに問い合わせられます。",
+    "description": "Error under the search field when nobody is signed in and this server does not know the account."
+  },
+  "search.not_found_known_only": {
+    "defaultMessage": "このサーバーはそのアカウントを知らず、いまはほかのサーバーに問い合わせません。",
+    "description": "Error of the account search when this server does not know the account and does not look up accounts of other servers (federation direction 'Send only' or 'Off', ADR-0076)."
+  },
+  "search.rate_limited": {
+    "defaultMessage": "検索の回数が多すぎます。数分たってからもう一度お試しください。",
+    "description": "Error under the search field when the server limits how often the user can look up accounts on other servers."
+  },
+  "search.required": {
+    "defaultMessage": "ハンドルか URL を入力してください。",
+    "description": "Error under the search field when it is sent empty."
+  },
+  "search.sign_in": {
+    "defaultMessage": "サインインしてほかのサーバーのアカウントを探す",
+    "description": "Link on the search page while nobody is signed in; it signs in and comes back to the search."
+  },
+  "search.submit": {
+    "defaultMessage": "検索",
+    "description": "Button that sends the search for an account."
+  },
+  "search.title": {
+    "defaultMessage": "検索",
+    "description": "Heading and document title of the page that finds an account by its handle or URL."
+  }
+}

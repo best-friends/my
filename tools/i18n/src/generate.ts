@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Computes the generated files from the source catalogs, without writing anything. They come in two parts
 // (ADR-0081): the files Go reads, which are committed,
-//   locales/en-XA/*.json, locales/ar-XB/*.json   pseudo-locales of the namespaces Go formats (FormatJS AST transforms)
-//   internal/i18n/messages_gen.go                Go typed accessors
-//   internal/i18n/testdata/golden.json           FormatJS outputs the Go parity tests compare against
+//   locales/{en-XA,ar-XB}/<namespace>/   pseudo-locales of the namespaces Go formats (FormatJS AST transforms),
+//                                        one file per area as in the source locale
+//   internal/i18n/messages_gen.go        Go typed accessors
+//   internal/i18n/testdata/golden.json   FormatJS outputs the Go parity tests compare against
 // and the files only the TS clients read, which are not:
-//   locales/en-XA/client*.json, locales/ar-XB/client*.json   pseudo-locales of the client namespaces
-//   tools/i18n/src/runtime/messages.gen.ts                   TS typed accessors
+//   locales/{en-XA,ar-XB}/client*/            pseudo-locales of the client namespaces
+//   tools/i18n/src/runtime/messages.gen.ts   TS typed accessors
 // gen.ts writes the result; check.ts compares the committed part with the committed files.
 import { compile } from "@formatjs/cli-lib";
 import type { MessageFormatElement } from "@formatjs/icu-messageformat-parser";
@@ -16,12 +17,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   type Catalog,
+  catalogFile,
   formattingLocale,
   goPackageDir,
   goTestdataDir,
   isClientNamespace,
   isPseudo,
-  localesDir,
   type Namespace,
   SOURCE,
   toJSON,
@@ -54,12 +55,12 @@ export const pseudoPart = (ns: string): Part => (isClientNamespace(ns) ? "ts" : 
 async function pseudoCatalogs(catalog: Catalog, part: Part): Promise<Catalog> {
   const out: Catalog = {};
   for (const ns of Object.keys(catalog[SOURCE]).filter((ns) => pseudoPart(ns) === part).sort()) {
-    const file = join(localesDir, SOURCE, `${ns}.json`);
+    const files = [...new Set(Object.keys(catalog[SOURCE][ns]).map((key) => catalogFile(SOURCE, ns, key)))];
     for (const [locale, transform] of Object.entries(PSEUDO_TRANSFORMS)) {
       // FormatJS pseudo-localizes the parsed AST, so arguments, `#` and plural keywords
       // survive; print it back to ICU source.
       const compiled: Record<string, MessageFormatElement[]> = JSON.parse(
-        await compile([file], { pseudoLocale: transform, ast: true }),
+        await compile(files, { pseudoLocale: transform, ast: true }),
       );
       const entries: Namespace = {};
       for (const key of Object.keys(catalog[SOURCE][ns]).sort()) {
@@ -214,7 +215,15 @@ export async function generate(catalog: Catalog, parts: readonly Part[] = ["go",
   for (const part of parts) {
     const pseudo = await pseudoCatalogs(source, part);
     for (const [locale, namespaces] of Object.entries(pseudo)) {
-      for (const [ns, entries] of Object.entries(namespaces)) files.set(join(localesDir, locale, `${ns}.json`), toJSON(entries));
+      for (const [ns, entries] of Object.entries(namespaces)) {
+        // One file per area, like the source catalog; the keys stay sorted inside each file.
+        const areas = new Map<string, Namespace>();
+        for (const [key, entry] of Object.entries(entries)) {
+          const file = catalogFile(locale, ns, key);
+          areas.set(file, { ...areas.get(file), [key]: entry });
+        }
+        for (const [file, area] of areas) files.set(file, toJSON(area));
+      }
     }
     if (part === "go") {
       files.set(join(goPackageDir, "messages_gen.go"), goAccessors(messages));

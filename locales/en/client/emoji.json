@@ -1,0 +1,30 @@
+{
+  "emoji.picker.button": {
+    "defaultMessage": "Add emoji",
+    "description": "Accessible name and tooltip of the icon button of the post form that opens the custom emoji picker."
+  },
+  "emoji.picker.title": {
+    "defaultMessage": "Custom emoji",
+    "description": "Accessible name of the popover of the custom emoji picker."
+  },
+  "emoji.picker.search": {
+    "defaultMessage": "Search emoji",
+    "description": "Label of the search field of the custom emoji picker; it finds emoji by shortcode or other name."
+  },
+  "emoji.picker.grid": {
+    "defaultMessage": "Custom emoji",
+    "description": "Accessible name of the grid of emoji in the custom emoji picker."
+  },
+  "emoji.picker.recent": {
+    "defaultMessage": "Recently used",
+    "description": "Heading of the emoji picked recently on this device, first in the picker."
+  },
+  "emoji.picker.uncategorized": {
+    "defaultMessage": "Other",
+    "description": "Heading of the emoji without a category in the picker."
+  },
+  "emoji.picker.empty": {
+    "defaultMessage": "No emoji found",
+    "description": "What the custom emoji picker shows when nothing matches the search."
+  }
+}

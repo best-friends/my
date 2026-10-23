@@ -98,10 +98,14 @@ func refs(src, body string) []Edge {
 	return out
 }
 
-// Locale makes one node per message of a catalog: msg:<namespace>:<key>@<locale>, titled by its English or Japanese text.
+// Locale makes one node per message of a catalog file locales/<locale>/<namespace>/<area>.json:
+// msg:<namespace>:<key>@<locale>, titled by its English or Japanese text.
 func Locale(p string, src []byte) Result {
-	ns := strings.TrimSuffix(path.Base(p), ".json")
-	locale := path.Base(path.Dir(p))
+	segments := strings.Split(p, "/")
+	if len(segments) < 4 {
+		return Result{}
+	}
+	locale, ns := segments[1], segments[2]
 	lines := strings.Split(string(src), "\n")
 	var r Result
 	for i := 0; i < len(lines); i++ {

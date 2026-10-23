@@ -1,0 +1,430 @@
+{
+  "status.action.bookmark": {
+    "defaultMessage": "Bookmark",
+    "description": "Toggle button under a post that bookmarks it or removes the bookmark. Bookmarks are private. The same text is used in both states."
+  },
+  "status.action.boost": {
+    "defaultMessage": "Boost",
+    "description": "Toggle button under a post that shares (boosts) it with the user's followers, or retracts the boost. The same text is used in both states."
+  },
+  "status.action.copy_link": {
+    "defaultMessage": "Copy link",
+    "description": "Menu item that copies the address of a post to the clipboard."
+  },
+  "status.action.delete": {
+    "defaultMessage": "Delete",
+    "description": "Menu item, on the user's own post, that asks to delete it."
+  },
+  "status.action.edit": {
+    "defaultMessage": "Edit",
+    "description": "Item of a post's More actions menu, for the user's own posts: opens the dialog that edits the post."
+  },
+  "status.action.failed": {
+    "defaultMessage": "Could not save the change: {reason}",
+    "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
+  },
+  "status.action.favourite": {
+    "defaultMessage": "Favourite",
+    "description": "Toggle button under a post that adds it to or removes it from the user's favourites. The same text is used in both states."
+  },
+  "status.action.more": {
+    "defaultMessage": "More actions",
+    "description": "Button under a post that opens a menu with more actions on it, and the name of that menu."
+  },
+  "status.action.reply": {
+    "defaultMessage": "Reply",
+    "description": "Button under a post that starts a reply to it."
+  },
+  "status.bookmark.off": {
+    "defaultMessage": "Bookmark removed",
+    "description": "Read out by screen readers after the user removed the bookmark of a post."
+  },
+  "status.bookmark.on": {
+    "defaultMessage": "Bookmarked",
+    "description": "Read out by screen readers after the user bookmarked a post."
+  },
+  "status.boost.off": {
+    "defaultMessage": "Boost retracted",
+    "description": "Read out by screen readers after the user retracted the boost of a post."
+  },
+  "status.boost.on": {
+    "defaultMessage": "Boosted",
+    "description": "Read out by screen readers after the user boosted a post."
+  },
+  "status.delete.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button in the delete confirmation dialog that keeps the post."
+  },
+  "status.delete.confirm": {
+    "defaultMessage": "Delete",
+    "description": "Button in the delete confirmation dialog that deletes the post."
+  },
+  "status.delete.description": {
+    "defaultMessage": "It will be removed for everyone, along with its boosts and favourites. You cannot undo this.",
+    "description": "Text of the dialog that asks the user to confirm deleting their post."
+  },
+  "status.delete.done": {
+    "defaultMessage": "Post deleted",
+    "description": "Toast after the user's post was deleted."
+  },
+  "status.delete.failed": {
+    "defaultMessage": "Could not delete the post: {reason}",
+    "description": "Toast when deleting the user's post failed. {reason} is the error message, a full sentence."
+  },
+  "status.delete.title": {
+    "defaultMessage": "Delete this post?",
+    "description": "Heading of the dialog that asks the user to confirm deleting their post."
+  },
+  "status.edit.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button of the dialog that edits the user's post: closes it without saving."
+  },
+  "status.edit.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close (x) button of the dialog that edits the user's post."
+  },
+  "status.edit.done": {
+    "defaultMessage": "Post edited",
+    "description": "Toast after the user's post was edited and saved."
+  },
+  "status.edit.failed": {
+    "defaultMessage": "Could not save the edit: {reason}",
+    "description": "Shown in the dialog that edits the user's post when saving failed. {reason} is the error message, a full sentence."
+  },
+  "status.edit.fixed": {
+    "defaultMessage": "The visibility and the post it replies to stay as they are.",
+    "description": "Note in the dialog that edits the user's post: an edit cannot change these."
+  },
+  "status.edit.load_failed": {
+    "defaultMessage": "Could not load the post to edit: {reason}",
+    "description": "Shown in the dialog that edits the user's post when its text failed to load. {reason} is the error message, a full sentence."
+  },
+  "status.edit.loading": {
+    "defaultMessage": "Loading the post",
+    "description": "Accessible name of the spinner while the dialog that edits the user's post loads its text."
+  },
+  "status.edit.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that loads the post to edit again after it failed."
+  },
+  "status.edit.save": {
+    "defaultMessage": "Save",
+    "description": "Submit button of the dialog that edits the user's post."
+  },
+  "status.edit.title": {
+    "defaultMessage": "Edit post",
+    "description": "Heading of the dialog that edits the user's post, and the name of its form."
+  },
+  "status.edited": {
+    "defaultMessage": "Edited",
+    "description": "Link under an edited post to its edit history."
+  },
+  "status.federation.stays_local": {
+    "defaultMessage": "Won't reach its server",
+    "description": "Short note at the end of the action bar of a post of another server while this server sends nothing to other servers (federation direction 'Receive only' or 'Off', ADR-0076): replies, boosts, favourites and reactions are recorded on this server but do not reach the post's server. It also describes those buttons."
+  },
+  "status.favourite.off": {
+    "defaultMessage": "Removed from favourites",
+    "description": "Read out by screen readers after the user removed a post from their favourites."
+  },
+  "status.favourite.on": {
+    "defaultMessage": "Added to favourites",
+    "description": "Read out by screen readers after the user favourited a post."
+  },
+  "status.focused.boosts": {
+    "defaultMessage": "{count, plural, one {# boost} other {# boosts}}",
+    "description": "Under the body of the post a page is about: how many times it was boosted. Shown only when it was."
+  },
+  "status.focused.favourites": {
+    "defaultMessage": "{count, plural, one {# favourite} other {# favourites}}",
+    "description": "Under the body of the post a page is about: how many people favourited it. Shown only when someone did."
+  },
+  "status.focused.label": {
+    "defaultMessage": "Opened post",
+    "description": "Not shown: read out by screen readers before the author and time of the post a page is about, to tell it apart from the posts of its thread."
+  },
+  "status.history.back": {
+    "defaultMessage": "Back to the post",
+    "description": "Link from a post's edit history to the post's page."
+  },
+  "status.history.change.media": {
+    "defaultMessage": "media",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the attached media or their descriptions."
+  },
+  "status.history.change.sensitive": {
+    "defaultMessage": "sensitive media",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: whether the media are marked sensitive."
+  },
+  "status.history.change.text": {
+    "defaultMessage": "text",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the text of the post."
+  },
+  "status.history.change.warning": {
+    "defaultMessage": "content warning",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the content warning."
+  },
+  "status.history.changes": {
+    "defaultMessage": "Changed: {changes}",
+    "description": "What a revision of a post changed from the one before. {changes} is a list of the changes, like text, content warning."
+  },
+  "status.history.current": {
+    "defaultMessage": "Current version",
+    "description": "Label of the revision that is the post's content now, in the edit history."
+  },
+  "status.history.list": {
+    "defaultMessage": "Versions",
+    "description": "Accessible name of the list of the revisions of a post."
+  },
+  "status.history.original": {
+    "defaultMessage": "Original post",
+    "description": "Label of the revision that is the post as first written, in the edit history."
+  },
+  "status.history.title": {
+    "defaultMessage": "Edit history",
+    "description": "Heading and title of the page that lists the revisions of a post."
+  },
+  "status.link.copied": {
+    "defaultMessage": "Link copied",
+    "description": "Toast after the address of a post was copied to the clipboard."
+  },
+  "status.link.failed": {
+    "defaultMessage": "Could not copy the link.",
+    "description": "Toast when the browser refused to copy the address of a post to the clipboard."
+  },
+  "status.not_found.body": {
+    "defaultMessage": "This post does not exist, or you cannot see it.",
+    "description": "Text under the heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.not_found.title": {
+    "defaultMessage": "Post not found",
+    "description": "Heading of the page of a post that does not exist or that the user may not see."
+  },
+  "status.original": {
+    "defaultMessage": "Open the original post on {host}",
+    "description": "Accessible name of the link on a post of another server to its page on that server; the link shows only {host}, that server's host name, for example 'mastodon.social'."
+  },
+  "status.pin.action": {
+    "defaultMessage": "Pin to profile",
+    "description": "Menu item, on the user's own post, that pins it to the top of their profile."
+  },
+  "status.pin.done": {
+    "defaultMessage": "Post pinned to your profile",
+    "description": "Toast after the user pinned their post to their profile."
+  },
+  "status.pin.failed": {
+    "defaultMessage": "Could not pin the post: {reason}",
+    "description": "Toast when pinning the user's post failed, for example because they already pinned as many posts as allowed. {reason} is the error message, a full sentence."
+  },
+  "status.pin.label": {
+    "defaultMessage": "Pinned post",
+    "description": "Line above a post at the top of a profile that the account pinned there."
+  },
+  "status.poll.choose_many": {
+    "defaultMessage": "Choose one or more options.",
+    "description": "Hint above the options of a poll that lets the user choose several of them."
+  },
+  "status.poll.choose_one": {
+    "defaultMessage": "Choose one option.",
+    "description": "Hint under the options of a poll that lets the user choose one of them."
+  },
+  "status.poll.closed": {
+    "defaultMessage": "Closed",
+    "description": "Under a poll whose end has passed: it takes no more votes and shows its results."
+  },
+  "status.poll.ends": {
+    "defaultMessage": "Ends {time}",
+    "description": "Under a poll: when it ends. {time} is a relative time ahead, such as \"in 3 hr.\" or \"in 2 days\"."
+  },
+  "status.poll.hidden": {
+    "defaultMessage": "The votes of each option are shown when the poll ends.",
+    "description": "Under a poll whose author hides the votes of each option until it ends, in place of the shares of the votes."
+  },
+  "status.poll.label": {
+    "defaultMessage": "Poll",
+    "description": "Accessible name of the poll of a post: its options or results and how many voted."
+  },
+  "status.poll.options": {
+    "defaultMessage": "Poll options",
+    "description": "Accessible name of the group of radio buttons or checkboxes the user chooses from to vote in a poll."
+  },
+  "status.poll.own_vote": {
+    "defaultMessage": "Your vote",
+    "description": "After an option in the results of a poll that the user voted for."
+  },
+  "status.poll.remote_counts": {
+    "defaultMessage": "Counts as {host} last reported them",
+    "description": "Under the results of a poll of a post from another server: the counts are those that server sent last, and a vote of the user shows in them once it sends them again. {host} is that server's host name."
+  },
+  "status.poll.results": {
+    "defaultMessage": "Poll results",
+    "description": "Accessible name of the list of the options of a poll with their share of the votes."
+  },
+  "status.poll.vote": {
+    "defaultMessage": "Vote",
+    "description": "Button under the options of a poll that sends the user's choice."
+  },
+  "status.poll.vote_failed": {
+    "defaultMessage": "Could not vote: {reason}",
+    "description": "Toast when the user's vote in a poll failed, for example because the poll has ended. {reason} is the error message, a full sentence."
+  },
+  "status.poll.voted": {
+    "defaultMessage": "Vote sent",
+    "description": "Toast after the user voted in a poll."
+  },
+  "status.poll.voters": {
+    "defaultMessage": "{count, plural, one {# person} other {# people}}",
+    "description": "Under a poll: how many accounts voted."
+  },
+  "status.poll.votes": {
+    "defaultMessage": "{count, plural, one {# vote} other {# votes}}",
+    "description": "Under a poll whose number of voters is unknown: how many votes it has, one per chosen option."
+  },
+  "status.unpin.action": {
+    "defaultMessage": "Unpin from profile",
+    "description": "Menu item, on the user's own pinned post, that removes it from the top of their profile."
+  },
+  "status.unpin.done": {
+    "defaultMessage": "Post unpinned from your profile",
+    "description": "Toast after the user unpinned their post from their profile."
+  },
+  "status.unpin.failed": {
+    "defaultMessage": "Could not unpin the post: {reason}",
+    "description": "Toast when unpinning the user's post failed. {reason} is the error message, a full sentence."
+  },
+  "status.thread.ancestors": {
+    "defaultMessage": "Earlier in the thread",
+    "description": "Heading above the posts that the post of the page replies to, oldest first."
+  },
+  "status.thread.failed": {
+    "defaultMessage": "Could not load the replies: {reason}",
+    "description": "Shown under the post of the page when its thread failed to load. {reason} is the error message, a full sentence."
+  },
+  "status.thread.loading": {
+    "defaultMessage": "Loading the replies",
+    "description": "Visually hidden text that names the busy replies section while the thread around a post loads."
+  },
+  "status.thread.no_replies": {
+    "defaultMessage": "No replies yet.",
+    "description": "Shown under the Replies heading when the post has no replies."
+  },
+  "status.thread.replies": {
+    "defaultMessage": "Replies",
+    "description": "Heading above the replies to the post of the page."
+  },
+  "status.thread.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that loads the thread around a post again after a failure."
+  },
+  "status.title": {
+    "defaultMessage": "Post",
+    "description": "Heading of the page of one post and the thread around it."
+  },
+  "status.reaction.on": {
+    "defaultMessage": "Reacted with {emoji}",
+    "description": "Read out by screen readers after the user reacted to a post with an emoji. {emoji} is the emoji itself or its :shortcode:."
+  },
+  "status.reaction.off": {
+    "defaultMessage": "Reaction removed",
+    "description": "Read out by screen readers after the user took back their emoji reaction to a post."
+  },
+  "status.quote.label": {
+    "defaultMessage": "Quoted post",
+    "description": "Accessible name of the box in a post that shows the post it quotes."
+  },
+  "status.quote.pending": {
+    "defaultMessage": "The quoted post is not available yet.",
+    "description": "Shown in place of a quoted post whose author has not approved the quote yet, or that this server has not received yet."
+  },
+  "status.quote.rejected": {
+    "defaultMessage": "The author of the quoted post did not allow this quote.",
+    "description": "Shown in place of a quoted post whose author refused the quote."
+  },
+  "status.quote.revoked": {
+    "defaultMessage": "The author of the quoted post withdrew it from this quote.",
+    "description": "Shown in place of a quoted post whose author withdrew the approval of the quote."
+  },
+  "status.quote.deleted": {
+    "defaultMessage": "The quoted post was deleted.",
+    "description": "Shown in place of a quoted post that was deleted."
+  },
+  "status.quote.unauthorized": {
+    "defaultMessage": "You cannot see the quoted post.",
+    "description": "Shown in place of a quoted post that the viewer is not allowed to see, such as a followers-only post."
+  },
+  "status.quote.blocked_account": {
+    "defaultMessage": "The quoted post is hidden because of a block.",
+    "description": "Shown in place of a quoted post whose author the viewer blocks, or who blocks the viewer."
+  },
+  "status.quote.muted_account": {
+    "defaultMessage": "You muted the author of the quoted post.",
+    "description": "Shown in place of a quoted post whose author the viewer muted; a button next to it shows the post."
+  },
+  "status.quote.blocked_domain": {
+    "defaultMessage": "You muted the server of the quoted post.",
+    "description": "Shown in place of a quoted post from a server that the viewer muted; a button next to it shows the post."
+  },
+  "status.quote.reveal": {
+    "defaultMessage": "Show the quoted post",
+    "description": "Button next to the notice of a muted author or server, in place of a quoted post, that shows the post."
+  },
+  "status.action.quote": {
+    "defaultMessage": "Quote",
+    "description": "Accessible name of the button in a post's action bar that starts a new post quoting it."
+  },
+  "status.quote_policy.action": {
+    "defaultMessage": "Change who can quote",
+    "description": "Item of the menu of the user's own post that opens the dialog choosing who may quote it."
+  },
+  "status.quote_policy.title": {
+    "defaultMessage": "Who can quote this post",
+    "description": "Title of the dialog that chooses who may quote one of the user's posts."
+  },
+  "status.quote_policy.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close button of the dialog that chooses who may quote a post."
+  },
+  "status.quote_policy.label": {
+    "defaultMessage": "Who can quote",
+    "description": "Label of the choices of who may quote a post, in its dialog."
+  },
+  "status.quote_policy.description": {
+    "defaultMessage": "Quotes approved before stay. To take your post out of one, use the menu of the post that quotes it.",
+    "description": "Description of the choices of who may quote a post."
+  },
+  "status.quote_policy.done": {
+    "defaultMessage": "Changed who can quote the post",
+    "description": "Toast after the user changed who may quote one of their posts."
+  },
+  "status.quote_policy.failed": {
+    "defaultMessage": "Could not change who can quote the post: {reason}",
+    "description": "Toast when the change of who may quote a post failed. {reason} is the server's reason."
+  },
+  "status.quotes.action": {
+    "defaultMessage": "Posts that quote this",
+    "description": "Item of the menu of the user's own post that opens the list of the posts that quote it."
+  },
+  "status.quotes.title": {
+    "defaultMessage": "Quotes of your post",
+    "description": "Title of the page that lists the posts that quote one of the user's posts."
+  },
+  "status.quote.revoke.action": {
+    "defaultMessage": "Remove my post from this quote",
+    "description": "Item of the menu of a post that quotes one of the user's posts; it withdraws the approval of the quote."
+  },
+  "status.quote.revoke.done": {
+    "defaultMessage": "Your post was removed from the quote",
+    "description": "Toast after the user withdrew the approval of a quote of their post."
+  },
+  "status.quote.revoke.failed": {
+    "defaultMessage": "Could not remove your post from the quote: {reason}",
+    "description": "Toast when the withdrawal of the approval of a quote failed. {reason} is the server's reason."
+  },
+  "status.edit.remove_quote": {
+    "defaultMessage": "Remove the quoted post",
+    "description": "Checkbox of the edit dialog of a post that quotes another: the edit takes the quote away."
+  },
+  "status.edit.remove_quote.description": {
+    "defaultMessage": "A quote that is removed cannot be added back.",
+    "description": "Description of the checkbox that removes the quote of a post in its edit dialog."
+  }
+}

@@ -6,11 +6,11 @@
 // post from its first render, not the cached old one first (#505). The page is checked with axe, for
 // horizontal scrolling and against an ARIA snapshot.
 import { randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, openFromNavigation, test } from "./fixtures";
 import { ownsServer, runMy } from "./server-cli.ts";
 import { serverURL } from "./server-origin.ts";
+import { readCatalog } from "./catalog.ts";
 
 // Without motion the colors do not transition, so axe never samples a color in the middle of a change.
 test.use({ baseURL: serverURL, reducedMotion: "reduce" });
@@ -18,12 +18,10 @@ test.use({ baseURL: serverURL, reducedMotion: "reduce" });
 /** How much longer every read of the API takes once the profile is saved. */
 const slowReads = 2000;
 
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

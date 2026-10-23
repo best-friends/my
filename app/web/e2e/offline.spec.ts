@@ -6,20 +6,18 @@
 // the timelines with `page.route`. `context.setOffline` takes the network away; a route still answers then, so the
 // spec's routes fail their requests while offline, as the network would.
 // Texts come from the project's catalog, so the spec finds the same elements in every locale.
-import { readFileSync } from "node:fs";
 import type { BrowserContext, Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, openFromNavigation as openFromNavigationItem, test } from "./fixtures";
+import { readCatalog } from "./catalog.ts";
 
 type Instance = components["schemas"]["Instance"];
 type Status = components["schemas"]["Status"];
 type StatusPage = components["schemas"]["StatusPage"];
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

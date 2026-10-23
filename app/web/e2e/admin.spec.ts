@@ -5,16 +5,14 @@
 // no API, so each test plays the server of a signed-in operator with page.route; names change with the
 // locale, so the structure is checked by role, the names in the project's locale catalog and the identifiers the
 // server sends (domains, job types).
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
-
-type Catalog = Record<string, { defaultMessage: string }>;
+import { readCatalog } from "./catalog.ts";
 
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

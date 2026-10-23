@@ -8,6 +8,7 @@
 // of the shell (ADR-0028). The signed-in user's own locale replaces it while the page is open (lib/locale).
 import type { ReactNode } from "react";
 import { createIntl, IntlProvider, useIntl } from "react-intl";
+import catalogs from "virtual:locales";
 import type { MessageArgs, MessageKey } from "../../../../tools/i18n/src/runtime/messages.gen";
 
 /** The IDs of the client's messages; other namespaces are formatted by the server. */
@@ -26,14 +27,12 @@ declare global {
 /** The locale every catalog is written in, and the last fallback (ADR-0009). */
 const sourceLocale = "en";
 
-/** One locales/<locale>/client.json file (the FormatJS JSON catalog shape). */
+/** A locale's client catalog in the FormatJS JSON catalog shape, merged from its area files (ADR-0082). */
 type Catalog = Record<string, { defaultMessage: string }>;
 
-/** A loader per locale that has a client catalog; each catalog is its own chunk of the build. */
+/** A loader per locale that has a client catalog; each catalog is its own chunk of the build (vite-plugins/client-catalogs.ts). */
 const catalogLoaders: ReadonlyMap<string, () => Promise<Catalog>> = new Map(
-  Object.entries(import.meta.glob<Catalog>("../../../../locales/*/client.json", { import: "default" })).map(
-    ([path, load]) => [path.split("/").at(-2) ?? "", load],
-  ),
+  Object.entries(catalogs).map(([locale, load]) => [locale, async () => (await load()).default]),
 );
 
 /** The locales the client has catalogs for. */

@@ -1,0 +1,6 @@
+{
+  "health.unavailable": {
+    "defaultMessage": "サーバーはまだリクエストを受け付けられる状態ではありません。",
+    "description": "Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable."
+  }
+}

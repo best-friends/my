@@ -4,16 +4,14 @@
 // arrow keys in the writing direction, and the emoji picked with Enter goes into the text. `vite preview` has no
 // API, so the spec answers the client API and the token refresh as a signed-in session (as compose.spec.ts does).
 // Names come from the project's catalog.
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, servedImage, test } from "./fixtures";
-
-type Catalog = Record<string, { defaultMessage: string }>;
+import { readCatalog } from "./catalog.ts";
 
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

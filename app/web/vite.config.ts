@@ -5,8 +5,9 @@ import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig, searchForWorkspaceRoot } from "vite";
+import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { clientCatalogs } from "./vite-plugins/client-catalogs.ts";
 import { reactCompiler } from "./vite-plugins/react-compiler.ts";
 
 /** The shared message catalogs at the repository root (ADR-0009). */
@@ -40,8 +41,6 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     origin: "http://localhost:5173",
-    // Catalogs are imported from locales/, outside the workspace root.
-    fs: { allow: [searchForWorkspaceRoot(process.cwd()), localesDir] },
   },
   plugins: [
     // File-based routes from src/routes into src/routeTree.gen.ts, which is not committed (ADR-0081);
@@ -51,6 +50,7 @@ export default defineConfig({
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     reactCompiler(),
+    clientCatalogs(localesDir),
     tailwindcss(),
     // The Service Worker (ADR-0028): sw/sw.ts with the precache manifest injected, built into dist/sw.js
     // (https://vite-pwa-org.netlify.app/guide/inject-manifest.html). Go generates the Web App Manifest and

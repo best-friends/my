@@ -4,18 +4,16 @@
 // scroll sideways, and a post whose bookmark is removed is gone when the list opens again. `vite preview` has no
 // API, so the spec answers the token refresh and the client API with `page.route`, as a signed-in user's server
 // would. Names come from the project's catalog, so the spec finds the same elements in every locale.
-import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, openFromNavigation, test } from "./fixtures";
+import { readCatalog } from "./catalog.ts";
 
 type Status = components["schemas"]["Status"];
-type Catalog = Record<string, { defaultMessage: string }>;
-
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = test.info().project.use.locale ?? "en";
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

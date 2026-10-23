@@ -1,0 +1,62 @@
+{
+  "admin.reports.column.report": {
+    "defaultMessage": "Report",
+    "description": "Header of the column of the reports table that names the reported account and links to the report."
+  },
+  "admin.reports.category.legal": {
+    "defaultMessage": "Illegal content",
+    "description": "Category of a report, and of the reason of an account action: content against the law."
+  },
+  "admin.reports.category.other": {
+    "defaultMessage": "Something else",
+    "description": "Category of a report, and of the reason of an account action: other."
+  },
+  "admin.reports.category.spam": {
+    "defaultMessage": "Spam",
+    "description": "Category of a report, and of the reason of an account action: spam."
+  },
+  "admin.reports.category.violation": {
+    "defaultMessage": "Breaks the server rules",
+    "description": "Category of a report, and of the reason of an account action: a rule violation."
+  },
+  "admin.reports.empty.open": {
+    "defaultMessage": "No open reports",
+    "description": "Empty state of the open reports."
+  },
+  "admin.reports.empty.open.description": {
+    "defaultMessage": "Reports from people here and from other servers show up here.",
+    "description": "Description of the empty state of the open reports."
+  },
+  "admin.reports.empty.resolved": {
+    "defaultMessage": "No resolved reports",
+    "description": "Empty state of the resolved reports."
+  },
+  "admin.reports.filter.label": {
+    "defaultMessage": "Reports",
+    "description": "Accessible name of the tabs of the report queue."
+  },
+  "admin.reports.filter.open": {
+    "defaultMessage": "Open",
+    "description": "Tab of the reports that await the moderators, and that state of a report."
+  },
+  "admin.reports.filter.resolved": {
+    "defaultMessage": "Resolved",
+    "description": "Tab of the handled reports, and that state of a report."
+  },
+  "admin.reports.outcome.actioned": {
+    "defaultMessage": "Action taken",
+    "description": "Outcome of a report: a moderator took an action on the target."
+  },
+  "admin.reports.outcome.dismissed": {
+    "defaultMessage": "No action",
+    "description": "Outcome of a report: there was nothing to act on."
+  },
+  "admin.reports.summary": {
+    "defaultMessage": "Reports of accounts and posts to the moderators, and handling them.",
+    "description": "Description of the report queue in the administration menu of the settings."
+  },
+  "admin.reports.title": {
+    "defaultMessage": "Reports",
+    "description": "Heading and title of the report queue."
+  }
+}

@@ -55,5 +55,5 @@ storybook-static/
 /app/web/src/lib/api/schema.gen.ts
 /app/web/src/routeTree.gen.ts
 /app/ui/src/themeTokens.gen.ts
-/locales/en-XA/client*.json
-/locales/ar-XB/client*.json
+/locales/en-XA/client*/
+/locales/ar-XB/client*/

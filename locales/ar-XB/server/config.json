@@ -1,0 +1,14 @@
+{
+  "config.errors": {
+    "defaultMessage": "‮{count,plural,one{Ⅎonup # ɔouɟıƃnɹɐʇıou ǝɹɹoɹ.} other{Ⅎonup # ɔouɟıƃnɹɐʇıou ǝɹɹoɹs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "config.invalid": {
+    "defaultMessage": "‮⊥ɥǝ sǝʇʇıuƃ {name} ɥɐs ɐu ıuʌɐʅıp ʌɐʅnǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "config.missing": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝbnıɹǝp sǝʇʇıuƃ {name} ıs uoʇ sǝʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  }
+}
