@@ -23,14 +23,19 @@ if [[ -z "$slug" ]]; then
   exit 2
 fi
 
-# open_pr_adrs prints the ADR file names the open pull requests change, one per line; it fails when gh does.
+# open_pr_adrs prints the ADR file names the open pull requests change, one per line; it fails when listing the pull
+# requests fails. It reads each pull request's file list (up to 3,000 files) rather than its diff, which GitHub refuses
+# for a large pull request, and warns about a pull request whose files it cannot read instead of ignoring them all.
 open_pr_adrs() {
-  local prs files
+  local prs
   prs="$(gh pr list -R "$repo" --state open --limit 500 --json number --jq '.[].number')" || return 1
   [[ -z "$prs" ]] && return 0
-  # One gh call per pull request, eight at a time; xargs fails when any of them fails.
-  files="$(printf '%s\n' "$prs" | xargs -P 8 -I{} gh pr diff {} -R "$repo" --name-only)" || return 1
-  printf '%s\n' "$files" | sed -n 's|^docs/adr/\([0-9]\{4\}-[^/]*\.md\)$|\1|p'
+  # One gh call per pull request, eight at a time. The script is single-quoted on purpose: sh -c expands $1 and $2.
+  # shellcheck disable=SC2016
+  printf '%s\n' "$prs" | xargs -P 8 -I{} sh -c \
+    'gh api --paginate "repos/$1/pulls/$2/files" --jq ".[].filename" || echo "warning: could not read the files of pull request #$2; the number ignores its ADRs" >&2' \
+    _ "$repo" {} |
+    sed -n 's|^docs/adr/\([0-9]\{4\}-[^/]*\.md\)$|\1|p'
 }
 
 names="$(find "$dir" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]-*.md' -printf '%f\n')"
