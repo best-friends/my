@@ -21,22 +21,22 @@ func TestCountsAsReply(t *testing.T) {
 }
 
 func TestRevisionSupersedes(t *testing.T) {
-	if !(content.Revision{ID: "r1", Seq: 1}).Supersedes(content.Head{}) {
+	if !(content.Revision{ID: testID(1), Seq: 1}).Supersedes(content.Head{}) {
 		t.Error("a first revision does not supersede an empty head")
 	}
-	head := content.Head{RevisionID: "r2", Seq: 2}
-	if (content.Revision{ID: "r1", Seq: 1}).Supersedes(head) || (content.Revision{ID: "r2", Seq: 2}).Supersedes(head) {
+	head := content.Head{RevisionID: testID(2), Seq: 2}
+	if (content.Revision{ID: testID(1), Seq: 1}).Supersedes(head) || (content.Revision{ID: testID(2), Seq: 2}).Supersedes(head) {
 		t.Error("an older or the same revision supersedes the head")
 	}
-	if !(content.Revision{ID: "r3", Seq: 3}).Supersedes(head) {
+	if !(content.Revision{ID: testID(3), Seq: 3}).Supersedes(head) {
 		t.Error("a newer revision does not supersede the head")
 	}
 }
 
 func TestHeadOf(t *testing.T) {
 	at := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
-	h := content.HeadOf(content.Revision{ID: "r", StatusID: "s", Seq: 2, RevisedAt: at})
-	if h != (content.Head{StatusID: "s", RevisionID: "r", Seq: 2, LastRevisedAt: at}) {
+	h := content.HeadOf(content.Revision{ID: testID(2), StatusID: testID(1), Seq: 2, RevisedAt: at})
+	if h != (content.Head{StatusID: testID(1), RevisionID: testID(2), Seq: 2, LastRevisedAt: at}) {
 		t.Errorf("HeadOf = %+v", h)
 	}
 	if !h.Edited() || (content.Head{Seq: 1}).Edited() {

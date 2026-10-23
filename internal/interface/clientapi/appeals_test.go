@@ -337,7 +337,7 @@ func TestListAppealNotifications(t *testing.T) {
 	if _, err := f.FileAppeal(t.Context(), aliceAccountID, actionID(2), "I did not."); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.DecideAppeal(t.Context(), appealID(1), moderation.AppealDecisionUpheld, "It was spam.", "user-"+bobAccountID); err != nil {
+	if _, err := f.DecideAppeal(t.Context(), appealID(1), moderation.AppealDecisionUpheld, "It was spam.", userOf(bobAccountID)); err != nil {
 		t.Fatal(err)
 	}
 	res := e.send(t, http.MethodGet, "/notifications", "read", "")

@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	smallPlanID = "01890a5d-ac96-774b-bcce-b302099a8201"
-	largePlanID = "01890a5d-ac96-774b-bcce-b302099a8202"
-	ownSubID    = "01890a5d-ac96-774b-bcce-b302099a8203"
+	smallPlanID  = "01890a5d-ac96-774b-bcce-b302099a8201"
+	largePlanID  = "01890a5d-ac96-774b-bcce-b302099a8202"
+	ownSubID     = "01890a5d-ac96-774b-bcce-b302099a8203"
+	smallPriceID = "01890a5d-ac96-774b-bcce-b302099a8204"
 )
 
 // fakeOwnSupporters is the users' subscriptions of one user, alice, and the supporter list.
@@ -171,13 +172,13 @@ func activeSubscription() *appsupporters.SubscriptionView {
 	ends := time.Date(2026, 11, 16, 0, 0, 0, 0, time.UTC)
 	return &appsupporters.SubscriptionView{
 		SubscriptionRecord: appsupporters.SubscriptionRecord{
-			Subscription: appsupporters.Subscription{ID: ownSubID, UserID: "user-" + aliceAccountID, PlanID: smallPlanID, CreatedAt: ends.AddDate(0, -1, 0)},
+			Subscription: appsupporters.Subscription{ID: ownSubID, UserID: userOf(aliceAccountID), PlanID: smallPlanID, CreatedAt: ends.AddDate(0, -1, 0)},
 			Current: appsupporters.TransitionRecord{Transition: supporters.Transition{
-				State: supporters.StateActive, PlanID: smallPlanID, PriceID: "price-small-month", PeriodEndsAt: ends,
+				State: supporters.StateActive, PlanID: smallPlanID, PriceID: smallPriceID, PeriodEndsAt: ends,
 			}},
 		},
 		Plan:  plan(smallPlanID, "Small", 1),
-		Price: appsupporters.Price{ID: "price-small-month", PlanID: smallPlanID, Interval: supporters.IntervalMonth, AmountMinor: 500, Currency: "JPY"},
+		Price: appsupporters.Price{ID: smallPriceID, PlanID: smallPlanID, Interval: supporters.IntervalMonth, AmountMinor: 500, Currency: "JPY"},
 	}
 }
 
@@ -238,7 +239,7 @@ func TestOwnSupporterSubscription(t *testing.T) {
 		t.Errorf("checkout = %+v", co)
 	}
 	in := f.checkouts[len(f.checkouts)-1]
-	if in.UserID != "user-"+aliceAccountID || in.PlanID != smallPlanID || in.Interval != supporters.IntervalMonth ||
+	if in.UserID != userOf(aliceAccountID) || in.PlanID != smallPlanID || in.Interval != supporters.IntervalMonth ||
 		in.SuccessURL != "https://app.social.example/settings/supporter?checkout=success" ||
 		in.CancelURL != "https://app.social.example/settings/supporter?checkout=canceled" {
 		t.Errorf("the checkout's input = %+v", in)
@@ -310,7 +311,7 @@ func TestSupporterListingChoice(t *testing.T) {
 		t.Error("a member is listed before choosing to be")
 	}
 	if got := decode[clientapi.SupporterListing](t, e.sendJSON(t, http.MethodPut, "/preferences/supporter_listing", "accounts", `{"listed":true}`)); !got.Listed ||
-		!f.listed["user-"+aliceAccountID] {
+		!f.listed[userOf(aliceAccountID)] {
 		t.Errorf("PUT = %+v, stored %v", got, f.listed)
 	}
 }

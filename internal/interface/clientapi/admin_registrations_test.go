@@ -75,7 +75,7 @@ func (f *fakeRegistrations) DecideRegistration(_ context.Context, in appidentity
 	}
 	f.entries[i].State.State = in.Decision.State()
 	f.decided = append(f.decided, in)
-	return identity.RegistrationDecision{ID: "decision", Decision: in.Decision, Note: in.Note}, nil
+	return identity.RegistrationDecision{ID: testkit.NamedID("decision"), Decision: in.Decision, Note: in.Note}, nil
 }
 
 var registrationsNow = time.Date(2026, 10, 18, 12, 0, 0, 0, time.UTC)
@@ -86,14 +86,14 @@ func newRegistrationsEnv(t *testing.T, perms ...identity.Permission) (*authEnv, 
 	for i, name := range []string{"dave", "erin", "fern"} {
 		since := registrationsNow.Add(time.Duration(i) * time.Minute)
 		regs.entries = append(regs.entries, appidentity.RegistrationEntry{
-			Application: identity.RegistrationApplication{ID: "app-" + name, UserID: testkit.OrderedID(uint32(i + 1)), Reason: "I am " + name, SubmittedAt: since},
+			Application: identity.RegistrationApplication{ID: testkit.NamedID("app-" + name), UserID: testkit.OrderedID(uint32(i + 1)), Reason: "I am " + name, SubmittedAt: since},
 			State:       identity.UserRegistrationState{UserID: testkit.OrderedID(uint32(i + 1)), State: identity.RegistrationPending, Since: since},
-			Email:       name + "@example.com", AccountID: "account-" + name, Username: name,
+			Email:       name + "@example.com", AccountID: testkit.NamedID("account-" + name), Username: name,
 		})
 	}
 	regs.entries[1].Application.Reason = ""
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: perms}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): perms}
 		o.Registrations = regs
 	})
 	e.auth.tokens["admin-read"] = bearer("admin:read", aliceAccountID)
@@ -125,7 +125,7 @@ func TestListPendingRegistrations(t *testing.T) {
 	}
 	d := page.Items[0]
 	if d.Reason == nil || *d.Reason != "I am dave" || d.Username == nil || *d.Username != "dave" || d.AccountId == nil ||
-		*d.AccountId != "account-dave" || d.Email != "dave@example.com" || d.State != clientapi.RegistrationStatePending ||
+		*d.AccountId != testkit.NamedID("account-dave") || d.Email != "dave@example.com" || d.State != clientapi.RegistrationStatePending ||
 		!d.Since.Equal(registrationsNow) || page.Items[1].Reason != nil {
 		t.Errorf("first page = %+v", page.Items)
 	}
@@ -158,8 +158,8 @@ func TestDecideRegistration(t *testing.T) {
 		t.Errorf("deciding again = %d, want 200 approved", res.StatusCode)
 	}
 	want := []appidentity.DecideInput{
-		{UserID: userDave, Decision: identity.DecisionApproved, DecidedByUserID: "user-" + aliceAccountID, Note: "welcome"},
-		{UserID: userErin, Decision: identity.DecisionRejected, DecidedByUserID: "user-" + aliceAccountID},
+		{UserID: userDave, Decision: identity.DecisionApproved, DecidedByUserID: userOf(aliceAccountID), Note: "welcome"},
+		{UserID: userErin, Decision: identity.DecisionRejected, DecidedByUserID: userOf(aliceAccountID)},
 	}
 	if len(regs.decided) != 2 || regs.decided[0] != want[0] || regs.decided[1] != want[1] {
 		t.Errorf("decisions = %+v, want %+v", regs.decided, want)

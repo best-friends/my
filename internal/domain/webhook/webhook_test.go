@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+const (
+	olderID    = "01890a5d-ac96-7000-8000-000000000001"
+	newestID   = "01890a5d-ac96-7000-8000-000000000002"
+	attemptID  = "01890a5d-ac96-7000-8000-000000000003"
+	deliveryID = "01890a5d-ac96-7000-8000-000000000004"
+)
+
 // The example of the Standard Webhooks specification.
 func TestSignMatchesTheSpecification(t *testing.T) {
 	// The example's secret is 24 bytes, shorter than the secrets of this server.
@@ -44,12 +51,12 @@ func TestSignMatchesTheSpecification(t *testing.T) {
 
 func TestSigningSecrets(t *testing.T) {
 	now := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
-	newest := Secret{ID: "b", CreatedAt: now.Add(-time.Hour)}
-	older := Secret{ID: "a", CreatedAt: now.Add(-48 * time.Hour)}
+	newest := Secret{ID: newestID, CreatedAt: now.Add(-time.Hour)}
+	older := Secret{ID: olderID, CreatedAt: now.Add(-48 * time.Hour)}
 	if got := SigningSecrets([]Secret{newest, older}, now); len(got) != 2 {
 		t.Errorf("within the overlap = %v, want both", got)
 	}
-	if got := SigningSecrets([]Secret{newest, older}, now.Add(SecretOverlap)); len(got) != 1 || got[0].ID != "b" {
+	if got := SigningSecrets([]Secret{newest, older}, now.Add(SecretOverlap)); len(got) != 1 || got[0].ID != newestID {
 		t.Errorf("after the overlap = %v, want the newest", got)
 	}
 	if got := SigningSecrets(nil, now); got != nil {
@@ -141,7 +148,7 @@ func TestRetryAfterAndOutcomes(t *testing.T) {
 	if OutcomeOf(204) != OutcomeSucceeded || OutcomeOf(302) != OutcomeHTTPError || !Gone(410) {
 		t.Error("outcomes of 204, 302, or 410")
 	}
-	if err := (Attempt{ID: "a", DeliveryID: "d", Outcome: OutcomeTimeout, StatusCode: 500}).Validate(); !errors.Is(err, ErrInvalidAttempt) {
+	if err := (Attempt{ID: attemptID, DeliveryID: deliveryID, Outcome: OutcomeTimeout, StatusCode: 500}).Validate(); !errors.Is(err, ErrInvalidAttempt) {
 		t.Errorf("a timeout with a status code: %v", err)
 	}
 	if len(RetryDelays) != MaxAttempts-1 {

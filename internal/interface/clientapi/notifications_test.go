@@ -21,6 +21,7 @@ import (
 	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/domain/notification"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // fakeNotifications keeps notifications in memory with the semantics of
@@ -200,7 +201,7 @@ func TestListModeratorNotifications(t *testing.T) {
 	at := time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)
 	f := &fakeNotifications{dismissed: map[string]bool{}, markers: map[string]string{}, ns: []notification.Notification{
 		{ID: notificationID(1), RecipientAccountID: aliceAccountID, Type: notification.TypeAdminReport, ReportID: reportID, CreatedAt: at},
-		{ID: notificationID(2), RecipientAccountID: aliceAccountID, Type: notification.TypeAdminSignUp, SubjectUserID: "user-" + bobAccountID, CreatedAt: at},
+		{ID: notificationID(2), RecipientAccountID: aliceAccountID, Type: notification.TypeAdminSignUp, SubjectUserID: userOf(bobAccountID), CreatedAt: at},
 	}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Notifications = f
@@ -243,15 +244,15 @@ func TestListSeveranceNotifications(t *testing.T) {
 	severed := func(i int) notification.Notification {
 		return notification.Notification{
 			ID: notificationID(i), RecipientAccountID: aliceAccountID, Type: notification.TypeRelationshipsSevered,
-			SeveranceID: fmt.Sprintf("severance-%d", i), CreatedAt: at,
+			SeveranceID: testkit.NamedID(fmt.Sprintf("severance-%d", i)), CreatedAt: at,
 		}
 	}
 	f := &fakeNotifications{dismissed: map[string]bool{}, markers: map[string]string{}, ns: []notification.Notification{severed(1), severed(2), severed(3)}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Notifications = f
 		o.Severances = fakeSeverances{
-			"severance-1": {Severance: moderation.Severance{ID: "severance-1", DomainActionID: "d", AccountID: aliceAccountID, FollowersLost: 2, FollowingLost: 1}, Domain: "bad.example"},
-			"severance-2": {Severance: moderation.Severance{ID: "severance-2", ActionID: "a", AccountID: aliceAccountID, FollowersLost: 1}, TargetAccountID: bobAccountID},
+			testkit.NamedID("severance-1"): {Severance: moderation.Severance{ID: testkit.NamedID("severance-1"), DomainActionID: testkit.NamedID("domain-action"), AccountID: aliceAccountID, FollowersLost: 2, FollowingLost: 1}, Domain: "bad.example"},
+			testkit.NamedID("severance-2"): {Severance: moderation.Severance{ID: testkit.NamedID("severance-2"), ActionID: testkit.NamedID("action"), AccountID: aliceAccountID, FollowersLost: 1}, TargetAccountID: bobAccountID},
 		}
 		o.Accounts.(fakeAccounts)[bobAccountID] = o.Accounts.(fakeAccounts)[aliceAccountID]
 	})

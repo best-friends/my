@@ -45,7 +45,7 @@ func newThemeEnv(t *testing.T) (*authEnv, *fakeThemes) {
 	t.Helper()
 	f := &fakeThemes{now: adminNow}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.Themes = f
 		o.ThemeStylesheetPath = func(id string) string { return "/theme/" + id + ".css" }
 	})
@@ -92,7 +92,7 @@ func TestManageTheme(t *testing.T) {
 		got.Tokens[1].Token != "radius-md" || *got.Tokens[1].Value != "2px" || got.Tokens[1].Light != nil {
 		t.Errorf("tokens = %s", mustJSON(t, got.Tokens))
 	}
-	if by := f.sets[0].RevisedByUserID; by != "user-"+aliceAccountID {
+	if by := f.sets[0].RevisedByUserID; by != userOf(aliceAccountID) {
 		t.Errorf("revised by %q", by)
 	}
 	inst := decodeJSON[clientapi.Instance](t, e.get(t, "/instance", nil))

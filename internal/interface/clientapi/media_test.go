@@ -136,7 +136,7 @@ func (f *fakeMedia) processAV(id string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	m := f.files[id]
-	r := content.MediaProcessingResult{ID: "result-" + id, MediaID: id, Outcome: content.MediaReady, Purpose: content.PurposeAttachment, DurationMS: 12500}
+	r := content.MediaProcessingResult{ID: testkit.NamedID("result-" + id), MediaID: id, Outcome: content.MediaReady, Purpose: content.PurposeAttachment, DurationMS: 12500}
 	file := content.MediaVariant{ResultID: r.ID, Size: content.SizeLarge, Motion: content.MotionAnimated, ContentType: m.Upload.ContentType, FileSize: 5000}
 	if m.Upload.ContentType == "video/mp4" {
 		r.MediaType, r.Width, r.Height = content.MediaTypeVideo, 640, 360
@@ -162,7 +162,7 @@ func (f *fakeMedia) process(id string, outcome content.MediaOutcome) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	m := f.files[id]
-	r := content.MediaProcessingResult{ID: "result-" + id, MediaID: id, Outcome: outcome, MediaType: content.MediaTypeUnknown}
+	r := content.MediaProcessingResult{ID: testkit.NamedID("result-" + id), MediaID: id, Outcome: outcome, MediaType: content.MediaTypeUnknown}
 	if outcome == content.MediaReady {
 		r.MediaType, r.Width, r.Height, r.Blurhash = content.MediaTypeImage, 640, 480, "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
 		r.Purpose = content.PurposeAttachment

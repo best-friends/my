@@ -138,14 +138,14 @@ const roleRemoteAccountID = "01890a5d-ac96-774b-bcce-b302099a8070"
 // role, and a remote account exists.
 func newRolesEnv(t *testing.T) (*authEnv, *fakeRoles) {
 	t.Helper()
-	f := &fakeRoles{held: map[string][]string{"user-" + aliceAccountID: {identity.RoleAdmin}}}
+	f := &fakeRoles{held: map[string][]string{userOf(aliceAccountID): {identity.RoleAdmin}}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = f
 		o.Roles = f
 		accounts := o.Accounts.(fakeAccounts)
 		accounts[bobAccountID] = appaccount.Actor{
 			Account:   account.Account{ID: bobAccountID, URI: "https://social.example/ap/actors/" + bobAccountID, CreatedAt: adminNow},
-			Local:     &account.LocalAccount{AccountID: bobAccountID, UserID: "user-" + bobAccountID, Username: "bob"},
+			Local:     &account.LocalAccount{AccountID: bobAccountID, UserID: userOf(bobAccountID), Username: "bob"},
 			Lifecycle: account.InitialLifecycleState(bobAccountID),
 		}
 		accounts[roleRemoteAccountID] = appaccount.Actor{
@@ -234,9 +234,9 @@ func TestGrantAndRevokeRoles(t *testing.T) {
 		t.Errorf("alice lists roles after losing admin = %d, want 403", res.StatusCode)
 	}
 	wantChanges := []string{
-		"grant admin to user-" + bobAccountID + " by user-" + aliceAccountID,
-		"grant moderator to user-" + bobAccountID + " by user-" + bobAccountID,
-		"revoke admin from user-" + aliceAccountID + " by user-" + bobAccountID,
+		"grant admin to " + userOf(bobAccountID) + " by " + userOf(aliceAccountID),
+		"grant moderator to " + userOf(bobAccountID) + " by " + userOf(bobAccountID),
+		"revoke admin from " + userOf(aliceAccountID) + " by " + userOf(bobAccountID),
 	}
 	if !reflect.DeepEqual(f.changes, wantChanges) {
 		t.Errorf("changes = %q, want %q", f.changes, wantChanges)
@@ -263,7 +263,7 @@ func TestRoleProblems(t *testing.T) {
 		}
 	}
 	// A moderator who may manage roles still cannot grant a role above its own.
-	f.held["user-"+bobAccountID] = []string{identity.RoleModerator}
+	f.held[userOf(bobAccountID)] = []string{identity.RoleModerator}
 	f.anyHolderManagesRoles = true
 	res := e.send(t, http.MethodPut, "/admin/accounts/"+bobAccountID+"/roles/admin", "bob-admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeBlank {

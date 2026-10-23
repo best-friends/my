@@ -68,7 +68,7 @@ func TestReactionEmojiKey(t *testing.T) {
 	if u.Key() != "👍" || c.Key() != c.CustomEmojiID || !u.Valid() || !c.Valid() {
 		t.Errorf("keys = %q, %q", u.Key(), c.Key())
 	}
-	if (ReactionEmoji{}).Valid() || (ReactionEmoji{Unicode: "👍", CustomEmojiID: "x"}).Valid() {
+	if (ReactionEmoji{}).Valid() || (ReactionEmoji{Unicode: "👍", CustomEmojiID: testID(1)}).Valid() {
 		t.Error("an emoji with none or both set is valid")
 	}
 }

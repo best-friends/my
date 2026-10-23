@@ -65,7 +65,7 @@ func (s *buryingSource) Bury(_ context.Context, _ string, j queue.Job, _ string,
 func TestRunnerRecordsUnsuccessfulAttempts(t *testing.T) {
 	for _, recordErr := range []error{nil, errors.New("db down")} {
 		src := &buryingSource{jobsSource: jobsSource{jobs: []queue.Job{
-			{ID: "1", Type: "ok"}, {ID: "2", Type: "flaky"}, {ID: "3", Type: "bad"},
+			{ID: testID(1), Type: "ok"}, {ID: testID(2), Type: "flaky"}, {ID: testID(3), Type: "bad"},
 		}}}
 		reg := &queue.JobHandlerRegistry{}
 		reg.Register("ok", func(context.Context, queue.Job) queue.Result { return queue.Done() })
@@ -79,7 +79,7 @@ func TestRunnerRecordsUnsuccessfulAttempts(t *testing.T) {
 			t.Fatalf("Drain() = %d, %v", n, err)
 		}
 		// A failure to record leaves the results alone.
-		if len(src.released) != 1 || src.released[0] != "2" || len(src.buried) != 1 || src.buried[0] != "3" {
+		if len(src.released) != 1 || src.released[0] != testID(2) || len(src.buried) != 1 || src.buried[0] != testID(3) {
 			t.Errorf("released %v, buried %v; want [2], [3]", src.released, src.buried)
 		}
 		if len(log.got) != 2 {
@@ -87,8 +87,8 @@ func TestRunnerRecordsUnsuccessfulAttempts(t *testing.T) {
 		}
 		now := clock{}.Now()
 		want := []queue.Attempt{
-			{JobID: "2", JobType: "flaky", Attempt: 1, Outcome: queue.OutcomeRetry, Error: "later", Worker: "w1", StartedAt: now, FinishedAt: now},
-			{JobID: "3", JobType: "bad", Attempt: 1, Outcome: queue.OutcomeDead, Error: "never", Worker: "w1", StartedAt: now, FinishedAt: now},
+			{JobID: testID(2), JobType: "flaky", Attempt: 1, Outcome: queue.OutcomeRetry, Error: "later", Worker: "w1", StartedAt: now, FinishedAt: now},
+			{JobID: testID(3), JobType: "bad", Attempt: 1, Outcome: queue.OutcomeDead, Error: "never", Worker: "w1", StartedAt: now, FinishedAt: now},
 		}
 		for i, w := range want {
 			if log.got[i] != w {

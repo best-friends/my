@@ -61,7 +61,7 @@ func newInvitesEnv(t *testing.T) (*authEnv, *fakeInvites) {
 	t.Helper()
 	f := &fakeInvites{}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.Invites, o.SignUpPath = f, "/auth/sign_up"
 	})
 	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)
@@ -97,7 +97,7 @@ func TestManageInvites(t *testing.T) {
 		got.ExpiresAt == nil || !got.ExpiresAt.Equal(adminNow.Add(24*time.Hour)) {
 		t.Fatalf("create = %d %+v", res.StatusCode, got)
 	}
-	want := appidentity.CreateInviteInput{CreatedByUserID: "user-" + aliceAccountID, MaxUses: 5, ExpiresIn: 24 * time.Hour}
+	want := appidentity.CreateInviteInput{CreatedByUserID: userOf(aliceAccountID), MaxUses: 5, ExpiresIn: 24 * time.Hour}
 	if len(f.creates) != 1 || f.creates[0] != want {
 		t.Errorf("creates = %+v, want %+v", f.creates, want)
 	}

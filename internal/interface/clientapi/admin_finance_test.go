@@ -96,8 +96,8 @@ func TestCostItems(t *testing.T) {
 	}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{
-			"user-" + aliceAccountID: {identity.PermManageFinance},
-			"user-" + bobAccountID:   {identity.PermManageSettings},
+			userOf(aliceAccountID): {identity.PermManageFinance},
+			userOf(bobAccountID):   {identity.PermManageSettings},
 		}
 		o.Costs = costs
 	})
@@ -146,7 +146,7 @@ func TestCostItems(t *testing.T) {
 			t.Errorf("%s %s with %s = %d, want %d", tc.method, tc.path, tc.token, res.StatusCode, tc.status)
 		}
 	}
-	by := " by user-" + aliceAccountID
+	by := " by " + userOf(aliceAccountID)
 	want := []string{
 		"create example.com" + by, "relabel example.com Other registrar" + by, "revise 2027-04-10 1800" + by,
 		"end 2028-04-09" + by, "end none" + by, "cancel" + by,

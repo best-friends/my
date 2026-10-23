@@ -62,7 +62,7 @@ func newTextsEnv(t *testing.T) (*authEnv, *fakeTexts) {
 	t.Helper()
 	f := &fakeTexts{inst: &fakeInstance{}, now: adminNow}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.Instance, o.InstanceTexts = f.inst, f
 		o.TermsPath, o.PrivacyPolicyPath = "/about/terms", "/about/privacy"
 	})
@@ -117,7 +117,7 @@ func TestManageInstanceTexts(t *testing.T) {
 	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
 		t.Errorf("Cache-Control = %q, want no-store", cc)
 	}
-	if by := f.sets[0].RevisedByUserID; by != "user-"+aliceAccountID {
+	if by := f.sets[0].RevisedByUserID; by != userOf(aliceAccountID) {
 		t.Errorf("revised by %q, want alice's user", by)
 	}
 	if got := decodeJSON[clientapi.AdminInstanceText](t, e.sendJSON(t, http.MethodPut, "/admin/instance_texts/name", "admin", `{"body":"Example Social"}`)); got.Body != "Example Social" {

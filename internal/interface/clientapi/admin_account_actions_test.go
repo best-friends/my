@@ -130,7 +130,7 @@ func newAccountModerationEnv(t *testing.T) (*authEnv, *fakeAccountModeration) {
 		f.accounts = o.Accounts.(fakeAccounts)
 		f.accounts[bobAccountID] = appaccount.Actor{
 			Account:   account.Account{ID: bobAccountID, URI: "https://social.example/ap/actors/" + bobAccountID, CreatedAt: adminNow},
-			Local:     &account.LocalAccount{AccountID: bobAccountID, UserID: "user-" + bobAccountID, Username: "bob"},
+			Local:     &account.LocalAccount{AccountID: bobAccountID, UserID: userOf(bobAccountID), Username: "bob"},
 			Lifecycle: account.InitialLifecycleState(bobAccountID),
 		}
 		f.accounts[instanceActorID] = appaccount.Actor{
@@ -187,7 +187,7 @@ func TestCreateListAndLiftAccountActions(t *testing.T) {
 		got.ExpiresAt == nil || !got.ExpiresAt.Equal(adminNow.Add(time.Hour)) || got.LiftedAt != nil {
 		t.Errorf("created = %+v", got)
 	}
-	if in := f.issued[0]; in.IssuedByUserID != "user-"+aliceAccountID || in.Duration != time.Hour {
+	if in := f.issued[0]; in.IssuedByUserID != userOf(aliceAccountID) || in.Duration != time.Hour {
 		t.Errorf("issued = %+v, want by alice for an hour", in)
 	}
 	// The defaults: the category other, a notice, no end.

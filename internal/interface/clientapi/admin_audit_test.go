@@ -16,6 +16,7 @@ import (
 	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/interface/clientapi/apitest"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // fakeAuditLog keeps entries oldest first and lists them like appmoderation.Service.AuditLog,
@@ -26,6 +27,9 @@ type fakeAuditLog struct {
 	gone    map[appmoderation.AuditTarget]bool
 	lookups int
 }
+
+// userCarol is a user that no account belongs to.
+var userCarol = testkit.NamedID("user-carol")
 
 func (f *fakeAuditLog) GoneAuditTargets(_ context.Context, entries []moderation.AuditEntry) (map[appmoderation.AuditTarget]bool, error) {
 	f.lookups++
@@ -62,7 +66,7 @@ func newAuditEnv(t *testing.T) (*authEnv, *fakeAuditLog) {
 	at := func(m int) time.Time { return adminNow.Add(time.Duration(m) * time.Minute) }
 	f := &fakeAuditLog{entries: []moderation.AuditEntry{
 		{
-			ID: "01890a5d-ac96-774b-bcce-b302099a7001", ActorKind: moderation.AuditActorUser, ActorUserID: "user-" + aliceAccountID,
+			ID: "01890a5d-ac96-774b-bcce-b302099a7001", ActorKind: moderation.AuditActorUser, ActorUserID: userOf(aliceAccountID),
 			Action: moderation.AuditDomainActionIssued, TargetKind: moderation.AuditTargetDomain, TargetID: "bad.example",
 			TargetLabel: "bad.example", SourceEventID: "01890a5d-ac96-774b-bcce-b302099a6001", OccurredAt: at(1),
 		},
@@ -72,15 +76,15 @@ func newAuditEnv(t *testing.T) (*authEnv, *fakeAuditLog) {
 			TargetLabel: "@spammer@remote.example", SourceEventID: "01890a5d-ac96-774b-bcce-b302099a6002", OccurredAt: at(2),
 		},
 		{
-			ID: "01890a5d-ac96-774b-bcce-b302099a7003", ActorKind: moderation.AuditActorUser, ActorUserID: "user-" + goneAccountID,
+			ID: "01890a5d-ac96-774b-bcce-b302099a7003", ActorKind: moderation.AuditActorUser, ActorUserID: userOf(goneAccountID),
 			Action: moderation.AuditRuleAdded, TargetKind: moderation.AuditTargetRule, TargetID: "01890a5d-ac96-774b-bcce-b302099a6003",
 			TargetLabel: "Be kind", OccurredAt: at(3),
 		},
 	}, gone: map[appmoderation.AuditTarget]bool{{Kind: moderation.AuditTargetReport, ID: reportOne}: true}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{
-			"user-" + aliceAccountID: identity.AllPermissions(),
-			"user-carol":             {identity.PermManageReports, identity.PermViewAudit},
+			userOf(aliceAccountID): identity.AllPermissions(),
+			userCarol:              {identity.PermManageReports, identity.PermViewAudit},
 		}
 		o.AuditLog = f
 		o.UserAccounts = fakeUserAccounts{}
@@ -89,7 +93,7 @@ func newAuditEnv(t *testing.T) (*authEnv, *fakeAuditLog) {
 	e.auth.tokens["admin-read"] = bearer("admin:read", aliceAccountID)
 	e.auth.tokens["bob-admin"] = bearer("admin", bobAccountID)
 	carol := bearer("admin:read", bobAccountID)
-	carol.UserID = "user-carol"
+	carol.UserID = userCarol
 	e.auth.tokens["carol"] = carol
 	return e, f
 }
@@ -171,7 +175,7 @@ func TestListAuditLog(t *testing.T) {
 	}) {
 		t.Errorf("queries = %+v, want one on the report", f.queries)
 	}
-	if !slices.ContainsFunc(f.queries, func(q appmoderation.AuditQuery) bool { return q.ActorUserID == "user-"+aliceAccountID }) {
+	if !slices.ContainsFunc(f.queries, func(q appmoderation.AuditQuery) bool { return q.ActorUserID == userOf(aliceAccountID) }) {
 		t.Errorf("queries = %+v, want one by alice's user", f.queries)
 	}
 

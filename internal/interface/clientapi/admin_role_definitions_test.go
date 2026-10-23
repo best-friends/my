@@ -89,7 +89,7 @@ func TestRoleDefinitionsNeedAPermission(t *testing.T) {
 
 func TestCreateUpdateAndDeleteRoles(t *testing.T) {
 	e, f := newRolesEnv(t)
-	alice := "user-" + aliceAccountID
+	alice := userOf(aliceAccountID)
 
 	res := e.send(t, http.MethodPost, "/admin/roles", "admin", `{"key":"helper","position":50,"permissions":["view_audit","manage_reports"]}`)
 	if res.StatusCode != http.StatusOK {

@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // malformedIDs are forms of an ID that PostgreSQL's uuid type accepts or that are no UUID at
@@ -24,6 +26,25 @@ var malformedIDs = map[string]string{
 	"uuidv4":     "3f2b8c1e-9d4a-4e6b-8a3c-1f2e3d4c5b6a",
 	"garbage":    "not-an-id",
 	"quote":      "x'--",
+}
+
+// usersOfAccounts remembers the account each userOf ID was derived from.
+var usersOfAccounts sync.Map
+
+// userOf returns the user ID of the local account accountID: a stable UUIDv7 per account.
+func userOf(accountID string) string {
+	userID := testkit.NamedID("user-" + accountID)
+	usersOfAccounts.Store(userID, accountID)
+	return userID
+}
+
+// accountOfUser is the inverse of userOf for the IDs it has handed out.
+func accountOfUser(userID string) (string, bool) {
+	accountID, ok := usersOfAccounts.Load(userID)
+	if !ok {
+		return "", false
+	}
+	return accountID.(string), true
 }
 
 // answer is what a client sees of a response.

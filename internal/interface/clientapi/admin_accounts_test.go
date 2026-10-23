@@ -18,6 +18,7 @@ import (
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/domain/moderation"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // fakeAccountAdmin is the account management over the accounts of the test: alice is a local
@@ -97,8 +98,8 @@ func (f *fakeAccountAdmin) Reveal(_ context.Context, id, by string) (appidentity
 		Email: "alice@example.com", EmailVerified: true,
 		Registration: &identity.RegistrationOrigin{UserID: a.Local.UserID, IP: "192.0.2.1", RecordedAt: adminNow.Add(-time.Hour)},
 		SignIns: []identity.SessionOrigin{
-			{SessionID: "s2", UserID: a.Local.UserID, IP: "192.0.2.2", UserAgent: "ua", CreatedAt: adminNow},
-			{SessionID: "s1", UserID: a.Local.UserID, UserAgent: "ua", CreatedAt: adminNow.Add(-time.Minute)},
+			{SessionID: testkit.NamedID("session-2"), UserID: a.Local.UserID, IP: "192.0.2.2", UserAgent: "ua", CreatedAt: adminNow},
+			{SessionID: testkit.NamedID("session-1"), UserID: a.Local.UserID, UserAgent: "ua", CreatedAt: adminNow.Add(-time.Minute)},
 		},
 		SameIP: []appidentity.SameIPAccounts{
 			{IP: "192.0.2.2", Accounts: []appidentity.AdminAccount{}},
@@ -153,7 +154,7 @@ func newAccountAdminEnv(t *testing.T) (*authEnv, *fakeAccountAdmin, *fakeAccount
 		accounts := o.Accounts.(fakeAccounts)
 		accounts[bobAccountID] = appaccount.Actor{
 			Account:   account.Account{ID: bobAccountID, URI: "https://social.example/ap/actors/" + bobAccountID, CreatedAt: adminNow},
-			Local:     &account.LocalAccount{AccountID: bobAccountID, UserID: "user-" + bobAccountID, Username: "bob"},
+			Local:     &account.LocalAccount{AccountID: bobAccountID, UserID: userOf(bobAccountID), Username: "bob"},
 			Lifecycle: account.InitialLifecycleState(bobAccountID),
 		}
 		admin.accounts, mod.accounts = accounts, accounts
@@ -231,7 +232,7 @@ func TestSearchAdminAccounts(t *testing.T) {
 func TestGetAdminAccount(t *testing.T) {
 	e, admin, mod := newAccountAdminEnv(t)
 	if _, err := mod.IssueAccountAction(t.Context(), appmoderation.AccountActionInput{
-		TargetAccountID: aliceAccountID, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam, IssuedByUserID: "user-" + aliceAccountID,
+		TargetAccountID: aliceAccountID, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam, IssuedByUserID: userOf(aliceAccountID),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +279,7 @@ func TestRevealAdminAccount(t *testing.T) {
 		len(d.SameIpAccounts) != 2 || len(d.SameIpAccounts[0].Accounts) != 0 || d.SameIpAccounts[1].Accounts[0].Id != bobAccountID {
 		t.Errorf("revealed = %+v", d)
 	}
-	if want := []string{aliceAccountID + " by user-" + aliceAccountID}; !slices.Equal(admin.reveals, want) {
+	if want := []string{aliceAccountID + " by " + userOf(aliceAccountID)}; !slices.Equal(admin.reveals, want) {
 		t.Errorf("reveals = %v, want %v", admin.reveals, want)
 	}
 
@@ -299,7 +300,7 @@ func TestDisableAdminAccountTwoFactor(t *testing.T) {
 	e, admin, _ := newAccountAdminEnv(t)
 	path := func(id string) string { return "/admin/accounts/" + id + "/two_factor/disable" }
 	// A moderator's manage_accounts is not enough: removing 2FA is the administrators' (ADR-0058).
-	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
+	admin.perms[userOf(bobAccountID)] = []identity.Permission{identity.PermManageAccounts}
 	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
 		p.Detail == nil || !strings.Contains(*p.Detail, "manage_login_recovery") {
@@ -316,7 +317,7 @@ func TestDisableAdminAccountTwoFactor(t *testing.T) {
 	if res.StatusCode != http.StatusNoContent {
 		t.Fatalf("disable = %d, want 204", res.StatusCode)
 	}
-	if want := []string{aliceAccountID + " by user-" + aliceAccountID}; !slices.Equal(admin.twoFactorRemovals, want) {
+	if want := []string{aliceAccountID + " by " + userOf(aliceAccountID)}; !slices.Equal(admin.twoFactorRemovals, want) {
 		t.Errorf("removals = %v, want %v", admin.twoFactorRemovals, want)
 	}
 	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin", "")
@@ -337,7 +338,7 @@ func TestIssueAdminAccountPasswordResetLink(t *testing.T) {
 	e, admin, _ := newAccountAdminEnv(t)
 	path := func(id string) string { return "/admin/accounts/" + id + "/password_reset_link" }
 	// A moderator's manage_accounts is not enough: the link lets its holder into the account.
-	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
+	admin.perms[userOf(bobAccountID)] = []identity.Permission{identity.PermManageAccounts}
 	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
 		p.Detail == nil || !strings.Contains(*p.Detail, "manage_login_recovery") {
@@ -358,7 +359,7 @@ func TestIssueAdminAccountPasswordResetLink(t *testing.T) {
 	if link.Url != "https://social.example/auth/reset_password?token=rst_secret" || !link.ExpiresAt.Equal(adminNow.Add(time.Hour)) {
 		t.Errorf("link = %+v", link)
 	}
-	if want := []string{aliceAccountID + " by user-" + aliceAccountID}; !slices.Equal(admin.resetLinks, want) {
+	if want := []string{aliceAccountID + " by " + userOf(aliceAccountID)}; !slices.Equal(admin.resetLinks, want) {
 		t.Errorf("issued = %v, want %v", admin.resetLinks, want)
 	}
 	res = e.send(t, http.MethodPost, path(reporterAccountID), "admin", "")

@@ -12,6 +12,7 @@ import (
 
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/interface/web"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 var defaultSurface, _ = instance.LookupThemeToken("color-surface")
@@ -38,10 +39,13 @@ func themeHandler(t *testing.T, f *fakeThemes) http.Handler {
 	return mux
 }
 
+// themeRevisionID is the theme revision the fake serves.
+var themeRevisionID = testkit.NamedID("theme-revision")
+
 func newThemes() *fakeThemes {
 	return &fakeThemes{revisions: map[string]instance.ThemeRevision{
-		"rev1": {
-			ID:        "rev1",
+		themeRevisionID: {
+			ID:        themeRevisionID,
 			Tokens:    []instance.ThemeTokenValue{{Token: "color-surface", Light: "#fffdf5", Dark: "#101010"}, {Token: "radius-md", Value: "2px"}},
 			CustomCSS: ".brand { color: red }",
 			RevisedAt: time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC),
@@ -71,10 +75,10 @@ func TestShellWithTheme(t *testing.T) {
 	mux := themeHandler(t, f)
 	before := get(mux, "/", nil).Header().Get("ETag")
 
-	f.current = "rev1"
+	f.current = themeRevisionID
 	rec := get(mux, "/home", nil)
 	body := rec.Body.String()
-	link := `<link rel="stylesheet" href="` + web.ThemeStylesheetPath("rev1") + `">`
+	link := `<link rel="stylesheet" href="` + web.ThemeStylesheetPath(themeRevisionID) + `">`
 	build := `<link rel="stylesheet" href="/assets/shared-DDDD.css">`
 	if i, j := strings.Index(body, build), strings.Index(body, link); i < 0 || j < i {
 		t.Errorf("the theme stylesheet must follow the build's stylesheets:\n%s", body)
@@ -111,7 +115,7 @@ func TestShellWithTheme(t *testing.T) {
 
 func TestThemeStylesheet(t *testing.T) {
 	mux := themeHandler(t, newThemes())
-	rec := get(mux, web.ThemeStylesheetPath("rev1"), nil)
+	rec := get(mux, web.ThemeStylesheetPath(themeRevisionID), nil)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("GET stylesheet = %d", rec.Code)
 	}
@@ -127,7 +131,7 @@ func TestThemeStylesheet(t *testing.T) {
 		}
 	}
 	for _, path := range []string{
-		web.ThemeStylesheetPath("unknown"), web.ThemeStylesheetPath("reset"), web.PathTheme + "rev1.js", web.PathTheme + "rev1",
+		web.ThemeStylesheetPath("unknown"), web.ThemeStylesheetPath("reset"), web.PathTheme + themeRevisionID + ".js", web.PathTheme + themeRevisionID,
 	} {
 		if rec := get(mux, path, nil); rec.Code != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", path, rec.Code)

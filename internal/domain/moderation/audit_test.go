@@ -13,7 +13,7 @@ import (
 
 func validAuditEntry() moderation.AuditEntry {
 	return moderation.AuditEntry{
-		ID: "01890a5d-ac96-774b-bcce-b302099a8057", ActorKind: moderation.AuditActorUser, ActorUserID: "user-1",
+		ID: "01890a5d-ac96-774b-bcce-b302099a8057", ActorKind: moderation.AuditActorUser, ActorUserID: testID(60),
 		Action: moderation.AuditDomainActionIssued, TargetKind: moderation.AuditTargetDomain, TargetID: "bad.example",
 		TargetLabel: "bad.example", SourceEventID: "01890a5d-ac96-774b-bcce-b302099a8058",
 		OccurredAt: time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC),
@@ -73,8 +73,8 @@ func TestAuditActor(t *testing.T) {
 	if k, u := moderation.AuditActor(""); k != moderation.AuditActorCLI || u != "" {
 		t.Errorf(`AuditActor("") = %q, %q; want the CLI`, k, u)
 	}
-	if k, u := moderation.AuditActor("u1"); k != moderation.AuditActorUser || u != "u1" {
-		t.Errorf(`AuditActor("u1") = %q, %q; want the user`, k, u)
+	if k, u := moderation.AuditActor(testID(61)); k != moderation.AuditActorUser || u != testID(61) {
+		t.Errorf(`AuditActor(testID(61)) = %q, %q; want the user`, k, u)
 	}
 }
 

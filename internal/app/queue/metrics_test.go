@@ -65,7 +65,7 @@ func (s *jobsSource) Claim(_ context.Context, _ string, now time.Time, _ time.Du
 
 func TestRunnerRecordsJobMetrics(t *testing.T) {
 	src := &jobsSource{emptySource: emptySource{claims: make(chan struct{}, 1)}, jobs: []queue.Job{
-		{ID: "1", Type: "ok"}, {ID: "2", Type: "flaky"}, {ID: "3", Type: "bad"}, {ID: "4", Type: "unknown.type"},
+		{ID: testID(1), Type: "ok"}, {ID: testID(2), Type: "flaky"}, {ID: testID(3), Type: "bad"}, {ID: testID(4), Type: "unknown.type"},
 	}}
 	reg := &queue.JobHandlerRegistry{}
 	reg.Register("ok", func(context.Context, queue.Job) queue.Result { return queue.Done() })
@@ -97,7 +97,7 @@ func TestRunnerRecordsJobMetrics(t *testing.T) {
 // under the same names and values, and the duration and wait in seconds (ADR-0055 §5).
 func TestRunnerLogsJobRuns(t *testing.T) {
 	src := &jobsSource{emptySource: emptySource{claims: make(chan struct{}, 1)}, jobs: []queue.Job{
-		{ID: "1", Type: "ok"}, {ID: "2", Type: "flaky"}, {ID: "3", Type: "bad"}, {ID: "4", Type: "unknown.type"},
+		{ID: testID(1), Type: "ok"}, {ID: testID(2), Type: "flaky"}, {ID: testID(3), Type: "bad"}, {ID: testID(4), Type: "unknown.type"},
 	}}
 	reg := &queue.JobHandlerRegistry{}
 	reg.Register("ok", func(context.Context, queue.Job) queue.Result { return queue.Done() })
@@ -109,10 +109,10 @@ func TestRunnerLogsJobRuns(t *testing.T) {
 		t.Fatalf("Drain() = %d, %v", n, err)
 	}
 	want := map[string]struct{ jobType, outcome, level, err string }{
-		"1": {"ok", queue.OutcomeSuccess, "INFO", ""},
-		"2": {"flaky", queue.OutcomeRetry, "WARN", "later"},
-		"3": {"bad", queue.OutcomeDead, "ERROR", "never"},
-		"4": {queue.JobTypeOther, queue.OutcomeRetry, "WARN", queue.ErrNoHandler.Error() + ": unknown.type"},
+		testID(1): {"ok", queue.OutcomeSuccess, "INFO", ""},
+		testID(2): {"flaky", queue.OutcomeRetry, "WARN", "later"},
+		testID(3): {"bad", queue.OutcomeDead, "ERROR", "never"},
+		testID(4): {queue.JobTypeOther, queue.OutcomeRetry, "WARN", queue.ErrNoHandler.Error() + ": unknown.type"},
 	}
 	lines := 0
 	for line := range strings.Lines(buf.String()) {

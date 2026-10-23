@@ -9,6 +9,19 @@ import (
 	"time"
 )
 
+const (
+	// Plan and price ids are ids of this server, so they are UUIDv7 values.
+	planBasic       = "01890a5d-ac96-7000-8000-000000000001"
+	planGold        = "01890a5d-ac96-7000-8000-000000000002"
+	planA           = "01890a5d-ac96-7000-8000-000000000003"
+	planB           = "01890a5d-ac96-7000-8000-000000000004"
+	priceBasicMonth = "01890a5d-ac96-7000-8000-0000000000a1"
+	priceGoldMonth  = "01890a5d-ac96-7000-8000-0000000000a2"
+	priceA1         = "01890a5d-ac96-7000-8000-0000000000b1"
+	priceA2         = "01890a5d-ac96-7000-8000-0000000000b2"
+	priceB1         = "01890a5d-ac96-7000-8000-0000000000b3"
+)
+
 var (
 	t0         = time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
 	day        = 24 * time.Hour
@@ -22,7 +35,7 @@ func active(plan, price string) Transition {
 }
 
 func snapshot(status ProviderStatus) *Snapshot {
-	return &Snapshot{Status: status, PlanID: "basic", PriceID: "basic-month", PeriodEnd: periodA}
+	return &Snapshot{Status: status, PlanID: planBasic, PriceID: priceBasicMonth, PeriodEnd: periodA}
 }
 
 func with(s *Snapshot, f func(*Snapshot)) *Snapshot {
@@ -33,12 +46,12 @@ func with(s *Snapshot, f func(*Snapshot)) *Snapshot {
 // The state of a subscription follows from the snapshot and our facts (ADR-0072 §7): the grace
 // of 7 days, the end of the period, refunds and chargebacks, and the change of plan.
 func TestDerive(t *testing.T) {
-	pending := Transition{State: StatePending, PlanID: "basic", PriceID: "basic-month"}
+	pending := Transition{State: StatePending, PlanID: planBasic, PriceID: priceBasicMonth}
 	pastDue := Transition{
-		State: StatePastDue, PlanID: "basic", PriceID: "basic-month", PeriodEndsAt: periodA,
+		State: StatePastDue, PlanID: planBasic, PriceID: priceBasicMonth, PeriodEndsAt: periodA,
 		Grace: &Grace{FailedAt: failedTime, EndsAt: failedTime.Add(GracePeriod)},
 	}
-	lapsed := Transition{State: StateLapsed, PlanID: "basic", PriceID: "basic-month", PeriodEndsAt: periodA}
+	lapsed := Transition{State: StateLapsed, PlanID: planBasic, PriceID: priceBasicMonth, PeriodEndsAt: periodA}
 	for _, tc := range []struct {
 		name     string
 		prev     Transition
@@ -66,16 +79,16 @@ func TestDerive(t *testing.T) {
 					t.Errorf("abandoned with a period end %v", got.PeriodEndsAt)
 				}
 			}},
-		{name: "same snapshot again", prev: active("basic", "basic-month"), snap: snapshot(ProviderActive), want: StateActive, role: true, noChange: true},
-		{name: "renewed", prev: active("basic", "basic-month"), snap: with(snapshot(ProviderActive), func(s *Snapshot) { s.PeriodEnd = periodB }),
+		{name: "same snapshot again", prev: active(planBasic, priceBasicMonth), snap: snapshot(ProviderActive), want: StateActive, role: true, noChange: true},
+		{name: "renewed", prev: active(planBasic, priceBasicMonth), snap: with(snapshot(ProviderActive), func(s *Snapshot) { s.PeriodEnd = periodB }),
 			want: StateActive, reason: ReasonSynced, role: true},
-		{name: "canceled keeps the role to the period end", prev: active("basic", "basic-month"),
+		{name: "canceled keeps the role to the period end", prev: active(planBasic, priceBasicMonth),
 			snap: with(snapshot(ProviderActive), func(s *Snapshot) { s.CancelAtPeriodEnd = true }), want: StateCanceling, reason: ReasonSynced, role: true},
-		{name: "cancellation withdrawn", prev: Transition{State: StateCanceling, PlanID: "basic", PriceID: "basic-month", PeriodEndsAt: periodA},
+		{name: "cancellation withdrawn", prev: Transition{State: StateCanceling, PlanID: planBasic, PriceID: priceBasicMonth, PeriodEndsAt: periodA},
 			snap: snapshot(ProviderActive), want: StateActive, reason: ReasonSynced, role: true},
-		{name: "period ended after a cancellation", prev: Transition{State: StateCanceling, PlanID: "basic", PriceID: "basic-month", PeriodEndsAt: periodA},
+		{name: "period ended after a cancellation", prev: Transition{State: StateCanceling, PlanID: planBasic, PriceID: priceBasicMonth, PeriodEndsAt: periodA},
 			snap: snapshot(ProviderCanceled), facts: Facts{Now: periodA}, want: StateExpired, reason: ReasonSynced},
-		{name: "payment failed", prev: active("basic", "basic-month"),
+		{name: "payment failed", prev: active(planBasic, priceBasicMonth),
 			snap:  with(snapshot(ProviderPastDue), func(s *Snapshot) { s.PaymentFailedAt = failedTime }),
 			facts: Facts{Now: failedTime.Add(time.Hour)}, want: StatePastDue, reason: ReasonSynced, role: true,
 			check: func(t *testing.T, got Transition) {
@@ -83,7 +96,7 @@ func TestDerive(t *testing.T) {
 					t.Errorf("grace %+v", got.Grace)
 				}
 			}},
-		{name: "failure without a time starts the grace now", prev: active("basic", "basic-month"), snap: snapshot(ProviderUnpaid),
+		{name: "failure without a time starts the grace now", prev: active(planBasic, priceBasicMonth), snap: snapshot(ProviderUnpaid),
 			facts: Facts{Now: failedTime}, want: StatePastDue, reason: ReasonSynced, role: true,
 			check: func(t *testing.T, got Transition) {
 				if got.Grace == nil || !got.Grace.FailedAt.Equal(failedTime) {
@@ -96,7 +109,7 @@ func TestDerive(t *testing.T) {
 			facts: Facts{Now: failedTime.Add(GracePeriod - time.Nanosecond)}, want: StatePastDue, role: true, noChange: true},
 		{name: "grace expired", prev: pastDue, snap: with(snapshot(ProviderPastDue), func(s *Snapshot) { s.PaymentFailedAt = failedTime }),
 			facts: Facts{Now: failedTime.Add(GracePeriod)}, want: StateLapsed, reason: ReasonGraceExpired},
-		{name: "grace expired while we missed it", prev: active("basic", "basic-month"),
+		{name: "grace expired while we missed it", prev: active(planBasic, priceBasicMonth),
 			snap:  with(snapshot(ProviderUnpaid), func(s *Snapshot) { s.PaymentFailedAt = failedTime }),
 			facts: Facts{Now: failedTime.Add(8 * day)}, want: StateLapsed, reason: ReasonSynced},
 		{name: "paid within the grace", prev: pastDue, snap: snapshot(ProviderActive), facts: Facts{Now: failedTime.Add(2 * day)},
@@ -110,32 +123,32 @@ func TestDerive(t *testing.T) {
 			want: StateActive, reason: ReasonSynced, role: true},
 		{name: "lapsed stays lapsed without a failure time", prev: lapsed, snap: snapshot(ProviderPastDue), facts: Facts{Now: failedTime.Add(20 * day)},
 			want: StateLapsed, noChange: true},
-		{name: "paused", prev: active("basic", "basic-month"), snap: snapshot(ProviderPaused), want: StateLapsed, reason: ReasonSynced},
-		{name: "unknown provider state", prev: active("basic", "basic-month"), snap: snapshot("weird"), want: StateLapsed, reason: ReasonSynced},
-		{name: "ended at the provider", prev: active("basic", "basic-month"), snap: snapshot(ProviderCanceled), want: StateExpired, reason: ReasonSynced},
-		{name: "full refund or chargeback", prev: active("basic", "basic-month"), snap: snapshot(ProviderActive), facts: Facts{Reversed: true},
+		{name: "paused", prev: active(planBasic, priceBasicMonth), snap: snapshot(ProviderPaused), want: StateLapsed, reason: ReasonSynced},
+		{name: "unknown provider state", prev: active(planBasic, priceBasicMonth), snap: snapshot("weird"), want: StateLapsed, reason: ReasonSynced},
+		{name: "ended at the provider", prev: active(planBasic, priceBasicMonth), snap: snapshot(ProviderCanceled), want: StateExpired, reason: ReasonSynced},
+		{name: "full refund or chargeback", prev: active(planBasic, priceBasicMonth), snap: snapshot(ProviderActive), facts: Facts{Reversed: true},
 			want: StateRevoked, reason: ReasonReversed},
-		{name: "revoked stays revoked after a won dispute", prev: Transition{State: StateRevoked, PlanID: "basic", PriceID: "basic-month", PeriodEndsAt: periodA},
+		{name: "revoked stays revoked after a won dispute", prev: Transition{State: StateRevoked, PlanID: planBasic, PriceID: priceBasicMonth, PeriodEndsAt: periodA},
 			snap: snapshot(ProviderActive), want: StateRevoked, noChange: true},
-		{name: "expired is final", prev: Transition{State: StateExpired, PlanID: "basic", PriceID: "basic-month", PeriodEndsAt: periodA},
+		{name: "expired is final", prev: Transition{State: StateExpired, PlanID: planBasic, PriceID: priceBasicMonth, PeriodEndsAt: periodA},
 			snap: snapshot(ProviderActive), want: StateExpired, noChange: true},
-		{name: "upgrade shows in the snapshot", prev: active("basic", "basic-month"),
-			snap: with(snapshot(ProviderActive), func(s *Snapshot) { s.PlanID, s.PriceID = "gold", "gold-month" }),
+		{name: "upgrade shows in the snapshot", prev: active(planBasic, priceBasicMonth),
+			snap: with(snapshot(ProviderActive), func(s *Snapshot) { s.PlanID, s.PriceID = planGold, priceGoldMonth }),
 			want: StateActive, reason: ReasonSynced, role: true,
 			check: func(t *testing.T, got Transition) {
-				if got.PlanID != "gold" || got.PriceID != "gold-month" {
+				if got.PlanID != planGold || got.PriceID != priceGoldMonth {
 					t.Errorf("plan %s price %s", got.PlanID, got.PriceID)
 				}
 			}},
-		{name: "downgrade waits for the period end", prev: active("gold", "gold-month"),
-			snap: &Snapshot{Status: ProviderActive, PlanID: "gold", PriceID: "gold-month", PeriodEnd: periodA, ScheduledPriceID: "basic-month"},
+		{name: "downgrade waits for the period end", prev: active(planGold, priceGoldMonth),
+			snap: &Snapshot{Status: ProviderActive, PlanID: planGold, PriceID: priceGoldMonth, PeriodEnd: periodA, ScheduledPriceID: priceBasicMonth},
 			want: StateActive, reason: ReasonSynced, role: true,
 			check: func(t *testing.T, got Transition) {
-				if got.PlanID != "gold" || got.Scheduled == nil || got.Scheduled.PriceID != "basic-month" || !got.Scheduled.EffectiveAt.Equal(periodA) {
+				if got.PlanID != planGold || got.Scheduled == nil || got.Scheduled.PriceID != priceBasicMonth || !got.Scheduled.EffectiveAt.Equal(periodA) {
 					t.Errorf("plan %s scheduled %+v", got.PlanID, got.Scheduled)
 				}
 			}},
-		{name: "unknown price keeps the plan", prev: active("basic", "basic-month"),
+		{name: "unknown price keeps the plan", prev: active(planBasic, priceBasicMonth),
 			snap: with(snapshot(ProviderActive), func(s *Snapshot) { s.PlanID, s.PriceID = "", "" }), want: StateActive, role: true, noChange: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -173,7 +186,7 @@ func TestDerive(t *testing.T) {
 // re-reads return, in any order, ends in the state of the newest one.
 func TestDeriveIgnoresOrderAndDuplicates(t *testing.T) {
 	newest := with(snapshot(ProviderActive), func(s *Snapshot) { s.PeriodEnd = periodB })
-	start := Transition{State: StatePending, PlanID: "basic", PriceID: "basic-month"}
+	start := Transition{State: StatePending, PlanID: planBasic, PriceID: priceBasicMonth}
 	facts := Facts{Now: t0.Add(time.Hour), StartedAt: t0}
 	for _, order := range [][]*Snapshot{
 		{newest},
@@ -196,14 +209,14 @@ func TestRoleChangeOf(t *testing.T) {
 		prev, next   Transition
 		revoke, give string
 	}{
-		{"granted when paid", Transition{State: StatePending, PlanID: "a"}, active("a", "a1"), "", "a"},
-		{"kept while canceling", active("a", "a1"), Transition{State: StateCanceling, PlanID: "a"}, "", ""},
-		{"kept while past due", active("a", "a1"), Transition{State: StatePastDue, PlanID: "a"}, "", ""},
-		{"revoked when lapsed", Transition{State: StatePastDue, PlanID: "a"}, Transition{State: StateLapsed, PlanID: "a"}, "a", ""},
-		{"granted again after lapsing", Transition{State: StateLapsed, PlanID: "a"}, active("a", "a1"), "", "a"},
-		{"revoked when refunded", active("a", "a1"), Transition{State: StateRevoked, PlanID: "a"}, "a", ""},
-		{"replaced on a change of plan", active("a", "a1"), active("b", "b1"), "a", "b"},
-		{"nothing for an interval change", active("a", "a1"), active("a", "a2"), "", ""},
+		{"granted when paid", Transition{State: StatePending, PlanID: planA}, active(planA, priceA1), "", planA},
+		{"kept while canceling", active(planA, priceA1), Transition{State: StateCanceling, PlanID: planA}, "", ""},
+		{"kept while past due", active(planA, priceA1), Transition{State: StatePastDue, PlanID: planA}, "", ""},
+		{"revoked when lapsed", Transition{State: StatePastDue, PlanID: planA}, Transition{State: StateLapsed, PlanID: planA}, planA, ""},
+		{"granted again after lapsing", Transition{State: StateLapsed, PlanID: planA}, active(planA, priceA1), "", planA},
+		{"revoked when refunded", active(planA, priceA1), Transition{State: StateRevoked, PlanID: planA}, planA, ""},
+		{"replaced on a change of plan", active(planA, priceA1), active(planB, priceB1), planA, planB},
+		{"nothing for an interval change", active(planA, priceA1), active(planA, priceA2), "", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c := RoleChangeOf(tc.prev, tc.next)
@@ -216,13 +229,13 @@ func TestRoleChangeOf(t *testing.T) {
 
 func TestClose(t *testing.T) {
 	now := t0.Add(5 * day)
-	if got, ok := Close(active("a", "a1"), now); !ok || got.State != StateExpired || !got.PeriodEndsAt.Equal(now) {
+	if got, ok := Close(active(planA, priceA1), now); !ok || got.State != StateExpired || !got.PeriodEndsAt.Equal(now) {
 		t.Errorf("active: %+v %v", got, ok)
 	}
-	if got, ok := Close(Transition{State: StatePending, PlanID: "a"}, now); !ok || got.State != StateAbandoned || !got.PeriodEndsAt.IsZero() {
+	if got, ok := Close(Transition{State: StatePending, PlanID: planA}, now); !ok || got.State != StateAbandoned || !got.PeriodEndsAt.IsZero() {
 		t.Errorf("pending: %+v %v", got, ok)
 	}
-	if _, ok := Close(Transition{State: StateRevoked, PlanID: "a", PeriodEndsAt: periodA}, now); ok {
+	if _, ok := Close(Transition{State: StateRevoked, PlanID: planA, PeriodEndsAt: periodA}, now); ok {
 		t.Error("closed a final state")
 	}
 }
@@ -231,7 +244,7 @@ func TestDeadlineOf(t *testing.T) {
 	if k, at, ok := DeadlineOf(Transition{State: StatePending}, t0); !ok || k != DeadlineCheckout || !at.Equal(t0.Add(CheckoutTimeout)) {
 		t.Errorf("pending: %s %v %v", k, at, ok)
 	}
-	if k, at, ok := DeadlineOf(active("a", "a1"), t0); !ok || k != DeadlinePeriodEnd || !at.Equal(periodA) {
+	if k, at, ok := DeadlineOf(active(planA, priceA1), t0); !ok || k != DeadlinePeriodEnd || !at.Equal(periodA) {
 		t.Errorf("active: %s %v %v", k, at, ok)
 	}
 	g := &Grace{FailedAt: failedTime, EndsAt: failedTime.Add(GracePeriod)}
@@ -307,8 +320,8 @@ func TestPlanTermsValidate(t *testing.T) {
 // A higher plan includes the one below it: a higher position, a superset of the permissions, and
 // at least the emoji limit when both create emoji (ADR-0072 §4).
 func TestCheckTiers(t *testing.T) {
-	basic := Tier{PlanID: "basic", Rank: 1, Position: 10, Permissions: []string{"create"}, CreatesEmojis: true, EmojiLimit: 5}
-	gold := Tier{PlanID: "gold", Rank: 2, Position: 20, Permissions: []string{"create", "view"}, CreatesEmojis: true, EmojiLimit: 10}
+	basic := Tier{PlanID: planBasic, Rank: 1, Position: 10, Permissions: []string{"create"}, CreatesEmojis: true, EmojiLimit: 5}
+	gold := Tier{PlanID: planGold, Rank: 2, Position: 20, Permissions: []string{"create", "view"}, CreatesEmojis: true, EmojiLimit: 10}
 	if err := CheckTiers([]Tier{gold, basic}); err != nil {
 		t.Fatalf("ordered tiers: %v", err)
 	}

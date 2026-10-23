@@ -20,7 +20,7 @@ import (
 )
 
 // fakePasskeys hands out the challenges "challenge-1", "challenge-2", …, each of which signs
-// in once: the credential "alice" as alice ("u1"), "bob" into bob's code step, and anything
+// in once: the credential "alice" as alice (userAlice), "bob" into bob's code step, and anything
 // else fails.
 type fakePasskeys struct {
 	n       int
@@ -53,8 +53,8 @@ func (f *fakePasskeys) SignInWithPasskey(_ context.Context, in appidentity.Passk
 	switch string(in.Response) {
 	case `{"id":"alice"}`:
 		delete(f.id.live, in.CurrentToken)
-		token := f.id.newToken("u1")
-		return appidentity.SignedIn{Token: token, Session: identity.Session{UserID: "u1", ExpiresAt: time.Now().Add(time.Hour)}}, nil
+		token := f.id.newToken(userAlice)
+		return appidentity.SignedIn{Token: token, Session: identity.Session{UserID: userAlice, ExpiresAt: time.Now().Add(time.Hour)}}, nil
 	case `{"id":"bob"}`:
 		return appidentity.SignedIn{}, &appidentity.SecondFactorRequiredError{Challenge: bobChallenge}
 	}

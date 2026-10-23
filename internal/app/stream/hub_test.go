@@ -23,7 +23,7 @@ func isDone(s stream.Subscription) bool {
 
 func TestHubClose(t *testing.T) {
 	h := stream.NewHub(stream.HubOptions{})
-	s, err := h.Subscribe(t.Context(), "alice")
+	s, err := h.Subscribe(t.Context(), aliceID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,10 +31,10 @@ func TestHubClose(t *testing.T) {
 	if !isDone(s) {
 		t.Error("Close left a subscription open")
 	}
-	if _, err := h.Subscribe(t.Context(), "alice"); !errors.Is(err, stream.ErrClosed) {
+	if _, err := h.Subscribe(t.Context(), aliceID); !errors.Is(err, stream.ErrClosed) {
 		t.Errorf("Subscribe after Close: %v, want ErrClosed", err)
 	}
-	h.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: "s"})
+	h.Publish(stream.Event{Kind: stream.KindHomeEntry, EntryID: entryID})
 	if got := h.Len(); got != 0 {
 		t.Errorf("Len = %d, want 0", got)
 	}

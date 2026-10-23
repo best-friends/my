@@ -19,6 +19,7 @@ import (
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 const sampleStatusID = "01890a5d-ac96-774b-bcce-b302099a9001"
@@ -186,7 +187,7 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 			AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic, PublishedAt: published,
 		},
 		Revision: content.Revision{
-			ID: "rev-2", StatusID: sampleStatusID, Seq: 2, SpoilerText: "cw", Sensitive: true, Language: "en", RevisedAt: published.Add(time.Hour),
+			ID: testkit.NamedID("rev-2"), StatusID: sampleStatusID, Seq: 2, SpoilerText: "cw", Sensitive: true, Language: "en", RevisedAt: published.Add(time.Hour),
 			Bodies: []content.Body{{Language: "en", ContentHTML: "<p>hi</p>"}},
 			Source: &content.Source{Text: "hi", Format: content.SourceTextPlain},
 		},

@@ -57,24 +57,24 @@ func ids(p apptimeline.Page) []string {
 func TestServiceReappliesCanView(t *testing.T) {
 	repo := &leakyRepository{
 		rows: []apptimeline.Entry{
-			post("06", "blocker", appcontent.VisibilityPublic),
-			post("05", "author", appcontent.VisibilityDirect),
-			post("04", "author", appcontent.VisibilityPrivate),
-			post("03", "author", appcontent.VisibilityUnlisted),
-			post("02", "author", appcontent.VisibilityPublic),
-			post("01", "muted", appcontent.VisibilityPublic),
+			post(testID(6), blockerID, appcontent.VisibilityPublic),
+			post(testID(5), authorID, appcontent.VisibilityDirect),
+			post(testID(4), authorID, appcontent.VisibilityPrivate),
+			post(testID(3), authorID, appcontent.VisibilityUnlisted),
+			post(testID(2), authorID, appcontent.VisibilityPublic),
+			post(testID(1), mutedID, appcontent.VisibilityPublic),
 		},
 		facts: apptimeline.Facts{Exclusions: map[string][]timeline.ExclusionReason{
-			"blocker": {timeline.ExcludedBlockedBy}, "muted": {timeline.ExcludedMute},
+			blockerID: {timeline.ExcludedBlockedBy}, mutedID: {timeline.ExcludedMute},
 		}},
 	}
 	svc := apptimeline.NewService(apptimeline.Deps{Repository: repo, Clock: fixedClock{time.Now()}})
-	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: "viewer"}
+	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: viewerID}
 	p, err := svc.Local(t.Context(), viewer, apptimeline.Query{Limit: 10})
 	if err != nil {
 		t.Fatalf("Local: %v", err)
 	}
-	if got, want := ids(p), []string{"02"}; !slices.Equal(got, want) {
+	if got, want := ids(p), []string{testID(2)}; !slices.Equal(got, want) {
 		t.Errorf("Local = %v, want %v", got, want)
 	}
 	// The page is cut before CanView, so the cursor follows the rows read, not the rows kept.
@@ -82,25 +82,25 @@ func TestServiceReappliesCanView(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Local: %v", err)
 	}
-	if !slices.Equal(ids(p), nil) || p.Next != "04" {
+	if !slices.Equal(ids(p), nil) || p.Next != testID(4) {
 		t.Errorf("Local(limit 3) = %v next %q, want no entries and next 04", ids(p), p.Next)
 	}
 }
 
 func TestServiceChecksBoostedStatuses(t *testing.T) {
 	boost := apptimeline.Entry{
-		ID: "02", Kind: timeline.KindBoost, StatusID: "01", AuthorAccountID: "followee", OriginalAuthorAccountID: "blocker",
+		ID: testID(2), Kind: timeline.KindBoost, StatusID: testID(1), AuthorAccountID: followeeID, OriginalAuthorAccountID: blockerID,
 		Visibility: appcontent.VisibilityPublic, IsLocal: true, Language: "en", RevisionSeq: 1,
 	}
 	repo := &leakyRepository{
 		rows: []apptimeline.Entry{boost},
 		facts: apptimeline.Facts{
-			Followed:   map[string]bool{"followee": true},
-			Exclusions: map[string][]timeline.ExclusionReason{"blocker": {timeline.ExcludedBlockedBy}},
+			Followed:   map[string]bool{followeeID: true},
+			Exclusions: map[string][]timeline.ExclusionReason{blockerID: {timeline.ExcludedBlockedBy}},
 		},
 	}
 	svc := apptimeline.NewService(apptimeline.Deps{Repository: repo, Clock: fixedClock{time.Now()}})
-	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: "viewer"}
+	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: viewerID}
 	p, err := svc.Home(t.Context(), viewer, apptimeline.Query{})
 	if err != nil {
 		t.Fatalf("Home: %v", err)
@@ -126,31 +126,31 @@ func TestServiceChecksBoostedStatuses(t *testing.T) {
 func TestHomeEntry(t *testing.T) {
 	repo := &leakyRepository{
 		rows: []apptimeline.Entry{
-			post("03", "followee", appcontent.VisibilityPublic),
-			post("02", "followee", appcontent.VisibilityDirect),
-			post("01", "followee", appcontent.VisibilityPublic),
+			post(testID(3), followeeID, appcontent.VisibilityPublic),
+			post(testID(2), followeeID, appcontent.VisibilityDirect),
+			post(testID(1), followeeID, appcontent.VisibilityPublic),
 		},
-		facts: apptimeline.Facts{Followed: map[string]bool{"followee": true}},
+		facts: apptimeline.Facts{Followed: map[string]bool{followeeID: true}},
 	}
 	svc := apptimeline.NewService(apptimeline.Deps{Repository: repo, Clock: fixedClock{time.Now()}})
-	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: "viewer"}
+	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: viewerID}
 	q := apptimeline.Query{Languages: []string{"en"}}
 
-	e, ok, err := svc.HomeEntry(t.Context(), viewer, "01", q)
-	if err != nil || !ok || e.ID != "01" {
+	e, ok, err := svc.HomeEntry(t.Context(), viewer, testID(1), q)
+	if err != nil || !ok || e.ID != testID(1) {
 		t.Errorf("HomeEntry(01) = %+v, %v, %v; want the entry", e, ok, err)
 	}
-	if hq := repo.homes[len(repo.homes)-1]; hq.Floor != "01" || hq.ViewerAccountID != "viewer" || !slices.Equal(hq.Languages, q.Languages) {
+	if hq := repo.homes[len(repo.homes)-1]; hq.Floor != testID(1) || hq.ViewerAccountID != viewerID || !slices.Equal(hq.Languages, q.Languages) {
 		t.Errorf("HomeEntry read %+v, want the viewer's entries from 01 up in its languages", hq)
 	}
 	// CanView still applies: a direct post not addressed to the viewer is not listed.
-	if _, ok, err := svc.HomeEntry(t.Context(), viewer, "02", q); err != nil || ok {
+	if _, ok, err := svc.HomeEntry(t.Context(), viewer, testID(2), q); err != nil || ok {
 		t.Errorf("HomeEntry(02) = %v, %v; want not listed", ok, err)
 	}
-	if _, ok, err := svc.HomeEntry(t.Context(), viewer, "04", q); err != nil || ok {
+	if _, ok, err := svc.HomeEntry(t.Context(), viewer, testID(4), q); err != nil || ok {
 		t.Errorf("HomeEntry(04) = %v, %v; want not listed", ok, err)
 	}
-	if _, _, err := svc.HomeEntry(t.Context(), appcontent.Viewer{}, "01", q); err == nil {
+	if _, _, err := svc.HomeEntry(t.Context(), appcontent.Viewer{}, testID(1), q); err == nil {
 		t.Error("HomeEntry for a visitor succeeded")
 	}
 }

@@ -177,20 +177,20 @@ func TestNormalizeThemeChecksCustomCSS(t *testing.T) {
 
 func TestThemeStylesheet(t *testing.T) {
 	r := instance.ThemeRevision{
-		ID: "rev1",
+		ID: testID(1),
 		Tokens: []instance.ThemeTokenValue{
 			{Token: "color-surface", Light: "#fffdf5", Dark: "#101010"},
 			{Token: "radius-md", Value: "2px"},
 		},
 		CustomCSS: ".x { color: red }",
 	}
-	want := "/* The theme of this server (revision rev1). */\n" +
+	want := "/* The theme of this server (revision " + testID(1) + "). */\n" +
 		":root {\n  --color-surface: light-dark(#fffdf5, #101010);\n  --radius-md: 2px;\n}\n" +
 		".x { color: red }\n"
 	if got := string(r.Stylesheet()); got != want {
 		t.Errorf("Stylesheet() =\n%s\nwant\n%s", got, want)
 	}
-	if got := string((instance.ThemeRevision{ID: "r", CustomCSS: "a{}\n"}).Stylesheet()); strings.Contains(got, ":root") {
+	if got := string((instance.ThemeRevision{ID: testID(1), CustomCSS: "a{}\n"}).Stylesheet()); strings.Contains(got, ":root") {
 		t.Errorf("a theme without tokens has a :root rule: %s", got)
 	}
 }

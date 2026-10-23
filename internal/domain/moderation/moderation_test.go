@@ -14,12 +14,12 @@ func TestMergeKeepsTheLatestEndOfEachRestriction(t *testing.T) {
 	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
 	at := func(d time.Duration) *time.Time { t := now.Add(d); return &t }
 	rows := []RestrictionRow{
-		{Restriction: RestrictFederation, SourceActionID: "a", EffectiveUntil: at(time.Hour)},
-		{Restriction: RestrictFederation, SourceActionID: "b", EffectiveUntil: at(2 * time.Hour)},
-		{Restriction: RestrictProfileView, SourceActionID: "a", EffectiveUntil: at(time.Hour)},
-		{Restriction: RestrictProfileView, SourceActionID: "c"},
-		{Restriction: RestrictProfileView, SourceActionID: "d", EffectiveUntil: at(3 * time.Hour)},
-		{Restriction: RestrictMediaFetch, SourceActionID: "e", EffectiveUntil: at(0)},
+		{Restriction: RestrictFederation, SourceActionID: testID(1), EffectiveUntil: at(time.Hour)},
+		{Restriction: RestrictFederation, SourceActionID: testID(2), EffectiveUntil: at(2 * time.Hour)},
+		{Restriction: RestrictProfileView, SourceActionID: testID(1), EffectiveUntil: at(time.Hour)},
+		{Restriction: RestrictProfileView, SourceActionID: testID(3)},
+		{Restriction: RestrictProfileView, SourceActionID: testID(4), EffectiveUntil: at(3 * time.Hour)},
+		{Restriction: RestrictMediaFetch, SourceActionID: testID(5), EffectiveUntil: at(0)},
 	}
 	got := Merge(rows, now)
 	want := []Effect{
@@ -46,11 +46,11 @@ func TestDomainAndParents(t *testing.T) {
 func TestActionsAndTheirRestrictions(t *testing.T) {
 	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
 	later := now.Add(time.Hour)
-	ok := Action{ID: "a", TargetAccountID: "x", Kind: ActionSuspend, ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now, ExpiresAt: &later}
+	ok := Action{ID: testID(1), TargetAccountID: testID(10), Kind: ActionSuspend, ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now, ExpiresAt: &later}
 	if err := ok.Validate(); err != nil {
 		t.Fatalf("Validate = %v", err)
 	}
-	if rows := ok.Rows(); len(rows) != 5 || rows[0].Target != "x" || rows[0].SourceActionID != "a" || rows[0].EffectiveUntil != &later {
+	if rows := ok.Rows(); len(rows) != 5 || rows[0].Target != testID(10) || rows[0].SourceActionID != testID(1) || rows[0].EffectiveUntil != &later {
 		t.Errorf("Rows = %+v, want the 5 restrictions of a suspension", rows)
 	}
 	ban := ok
@@ -69,7 +69,7 @@ func TestActionsAndTheirRestrictions(t *testing.T) {
 	if ActionBan.Liftable() || !ActionSuspend.Liftable() || !ActionDeleteStatuses.Liftable() {
 		t.Error("only a ban should not be liftable")
 	}
-	d := DomainAction{ID: "d", Domain: "bad.example", Kind: DomainSuspend, IssuedAt: now}
+	d := DomainAction{ID: testID(20), Domain: "bad.example", Kind: DomainSuspend, IssuedAt: now}
 	if err := d.Validate(); err != nil {
 		t.Fatalf("Validate = %v", err)
 	}
@@ -86,7 +86,7 @@ func TestActionsAndTheirRestrictions(t *testing.T) {
 func TestActionsOnStatuses(t *testing.T) {
 	now := time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
 	later := now.Add(time.Hour)
-	base := Action{ID: "a", TargetAccountID: "x", ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}
+	base := Action{ID: testID(1), TargetAccountID: testID(10), ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}
 	with := func(kind ActionKind, ids []string, expires *time.Time) Action {
 		a := base
 		a.Kind, a.StatusIDs, a.ExpiresAt = kind, ids, expires
@@ -94,13 +94,13 @@ func TestActionsOnStatuses(t *testing.T) {
 	}
 	tooMany := make([]string, MaxActionStatuses+1)
 	for i := range tooMany {
-		tooMany[i] = strings.Repeat("s", i+1)
+		tooMany[i] = testID(i + 1)
 	}
 	for _, kind := range []ActionKind{ActionDeleteStatuses, ActionMarkStatusesSensitive} {
 		if !kind.OnStatuses() || len(kind.Restrictions()) != 0 {
 			t.Errorf("%s: OnStatuses = %v, restrictions %v", kind, kind.OnStatuses(), kind.Restrictions())
 		}
-		if err := with(kind, []string{"s1", "s2"}, nil).Validate(); err != nil {
+		if err := with(kind, []string{testID(41), testID(42)}, nil).Validate(); err != nil {
 			t.Errorf("Validate(%s on 2 statuses) = %v", kind, err)
 		}
 		for name, c := range map[string]struct {
@@ -108,17 +108,17 @@ func TestActionsOnStatuses(t *testing.T) {
 			want error
 		}{
 			"no statuses":    {with(kind, nil, nil), ErrInvalidActionStatuses},
-			"repeated":       {with(kind, []string{"s1", "s1"}, nil), ErrInvalidActionStatuses},
+			"repeated":       {with(kind, []string{testID(41), testID(41)}, nil), ErrInvalidActionStatuses},
 			"empty":          {with(kind, []string{""}, nil), ErrInvalidActionStatuses},
 			"too many":       {with(kind, tooMany, nil), ErrInvalidActionStatuses},
-			"with an expiry": {with(kind, []string{"s1"}, &later), ErrActionNeverExpires},
+			"with an expiry": {with(kind, []string{testID(41)}, &later), ErrActionNeverExpires},
 		} {
 			if err := c.a.Validate(); !errors.Is(err, c.want) || !errors.Is(err, ErrInvalidAction) {
 				t.Errorf("Validate(%s, %s) = %v, want %v", kind, name, err, c.want)
 			}
 		}
 	}
-	if err := with(ActionSuspend, []string{"s1"}, nil).Validate(); !errors.Is(err, ErrInvalidActionStatuses) {
+	if err := with(ActionSuspend, []string{testID(41)}, nil).Validate(); !errors.Is(err, ErrInvalidActionStatuses) {
 		t.Errorf("Validate(suspend naming a status) = %v, want ErrInvalidActionStatuses", err)
 	}
 	if ActionSuspend.OnStatuses() || ActionBan.OnStatuses() {
@@ -137,7 +137,7 @@ func TestTruncateComment(t *testing.T) {
 }
 
 func TestReportValidate(t *testing.T) {
-	ok := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategorySpam, Comment: "spam", FiledAt: time.Unix(1, 0)}
+	ok := Report{ID: testID(30), ReporterAccountID: testID(11), TargetAccountID: testID(12), Category: CategorySpam, Comment: "spam", FiledAt: time.Unix(1, 0)}
 	if err := ok.Validate(); err != nil {
 		t.Fatalf("Validate = %v", err)
 	}
@@ -151,7 +151,7 @@ func TestReportValidate(t *testing.T) {
 }
 
 func TestReportCitesRulesOnlyForAViolation(t *testing.T) {
-	r := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategoryViolation, RuleIDs: []string{"rule"}, FiledAt: time.Unix(1, 0)}
+	r := Report{ID: testID(30), ReporterAccountID: testID(11), TargetAccountID: testID(12), Category: CategoryViolation, RuleIDs: []string{testID(50)}, FiledAt: time.Unix(1, 0)}
 	if err := r.ValidateLocal(); err != nil {
 		t.Fatalf("ValidateLocal(violation with a rule) = %v", err)
 	}
@@ -164,7 +164,7 @@ func TestReportCitesRulesOnlyForAViolation(t *testing.T) {
 }
 
 func TestReportValidateLocal(t *testing.T) {
-	ok := Report{ID: "r", ReporterAccountID: "a", TargetAccountID: "b", Category: CategoryOther, FiledAt: time.Unix(1, 0)}
+	ok := Report{ID: testID(30), ReporterAccountID: testID(11), TargetAccountID: testID(12), Category: CategoryOther, FiledAt: time.Unix(1, 0)}
 	if err := ok.ValidateLocal(); err != nil {
 		t.Fatalf("ValidateLocal = %v", err)
 	}
@@ -193,9 +193,9 @@ func TestReportValidateLocal(t *testing.T) {
 
 func TestTextsOfActionsAndLifts(t *testing.T) {
 	now := time.Unix(1, 0)
-	action := Action{ID: "a", TargetAccountID: "b", Kind: ActionLimit, ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}
-	domain := DomainAction{ID: "d", Domain: "bad.example", Kind: DomainSuspend, IssuedAt: now}
-	lift := Lift{ActionID: "a", LiftedAt: now}
+	action := Action{ID: testID(1), TargetAccountID: testID(12), Kind: ActionLimit, ReasonCategory: CategorySpam, Issuer: IssuerModerator, IssuedAt: now}
+	domain := DomainAction{ID: testID(20), Domain: "bad.example", Kind: DomainSuspend, IssuedAt: now}
+	lift := Lift{ActionID: testID(1), LiftedAt: now}
 	long := strings.Repeat("あ", MaxActionText+1)
 	for _, tc := range []struct {
 		field    string

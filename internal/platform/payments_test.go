@@ -69,7 +69,7 @@ func TestPaymentWebhooks(t *testing.T) {
 		"MY_PAYMENTS_RECONCILE_INTERVAL": "1h",
 	})
 	prov := fake.New(fake.Options{Name: "stripe"})
-	prov.PutSubscription(supporters.SubscriptionSnapshot{Ref: "sub_1", LocalID: "local-1", Status: supporters.StatusActive})
+	prov.PutSubscription(supporters.SubscriptionSnapshot{Ref: "sub_1", LocalID: "01890a5d-ac96-7000-8000-000000000001", Status: supporters.StatusActive})
 	synced := &syncedSubscriptions{}
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{
 		Logger: slog.New(slog.DiscardHandler), PaymentProvider: prov, SupporterSync: synced,
@@ -145,7 +145,7 @@ func TestPaymentReconcileByHand(t *testing.T) {
 	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline"})
 	prov := fake.New(fake.Options{Name: "stripe"})
-	prov.PutSubscription(supporters.SubscriptionSnapshot{Ref: "sub_1", LocalID: "local-1", Status: supporters.StatusActive})
+	prov.PutSubscription(supporters.SubscriptionSnapshot{Ref: "sub_1", LocalID: "01890a5d-ac96-7000-8000-000000000001", Status: supporters.StatusActive})
 	synced := &syncedSubscriptions{}
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{
 		Logger: slog.New(slog.DiscardHandler), PaymentProvider: prov, SupporterSync: synced,

@@ -16,13 +16,13 @@ func TestFollowURI(t *testing.T) {
 }
 
 func TestFollowValidate(t *testing.T) {
-	if err := (Follow{FollowerAccountID: "a", FolloweeAccountID: "a"}).Validate(); !errors.Is(err, ErrSelfFollow) {
+	if err := (Follow{FollowerAccountID: idA, FolloweeAccountID: idA}).Validate(); !errors.Is(err, ErrSelfFollow) {
 		t.Errorf("self follow: %v, want ErrSelfFollow", err)
 	}
-	if err := (Follow{FollowerAccountID: "a"}).Validate(); err == nil {
+	if err := (Follow{FollowerAccountID: idA}).Validate(); err == nil {
 		t.Error("missing followee: want an error")
 	}
-	if err := (Follow{FollowerAccountID: "a", FolloweeAccountID: "b"}).Validate(); err != nil {
+	if err := (Follow{FollowerAccountID: idA, FolloweeAccountID: idB}).Validate(); err != nil {
 		t.Errorf("valid follow: %v", err)
 	}
 }
@@ -30,18 +30,18 @@ func TestFollowValidate(t *testing.T) {
 func TestHistoryEdge(t *testing.T) {
 	requested := time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC)
 	accepted := requested.Add(time.Minute)
-	f := Follow{ID: "f", FollowerAccountID: "a", FolloweeAccountID: "b", RequestedAt: requested}
-	acc := &Acceptance{FollowID: "f", AcceptedBy: AcceptedByFollowee, AcceptedAt: accepted}
+	f := Follow{ID: idF, FollowerAccountID: idA, FolloweeAccountID: idB, RequestedAt: requested}
+	acc := &Acceptance{FollowID: idF, AcceptedBy: AcceptedByFollowee, AcceptedAt: accepted}
 	cases := []struct {
 		name   string
 		h      History
 		want   Edge
 		wantOK bool
 	}{
-		{"pending", History{Follow: f}, Edge{"a", "b", "f", StatePending, requested}, true},
-		{"accepted", History{Follow: f, Acceptance: acc}, Edge{"a", "b", "f", StateActive, accepted}, true},
-		{"rejected", History{Follow: f, Rejection: &Rejection{FollowID: "f"}}, Edge{}, false},
-		{"terminated", History{Follow: f, Acceptance: acc, Termination: &Termination{FollowID: "f"}}, Edge{}, false},
+		{"pending", History{Follow: f}, Edge{idA, idB, idF, StatePending, requested}, true},
+		{"accepted", History{Follow: f, Acceptance: acc}, Edge{idA, idB, idF, StateActive, accepted}, true},
+		{"rejected", History{Follow: f, Rejection: &Rejection{FollowID: idF}}, Edge{}, false},
+		{"terminated", History{Follow: f, Acceptance: acc, Termination: &Termination{FollowID: idF}}, Edge{}, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -55,14 +55,14 @@ func TestHistoryEdge(t *testing.T) {
 
 func TestCountEdges(t *testing.T) {
 	got := CountEdges([]Edge{
-		{FollowerAccountID: "a", FolloweeAccountID: "b", State: StateActive},
-		{FollowerAccountID: "c", FolloweeAccountID: "b", State: StateActive},
-		{FollowerAccountID: "b", FolloweeAccountID: "a", State: StatePending},
+		{FollowerAccountID: idA, FolloweeAccountID: idB, State: StateActive},
+		{FollowerAccountID: idC, FolloweeAccountID: idB, State: StateActive},
+		{FollowerAccountID: idB, FolloweeAccountID: idA, State: StatePending},
 	})
 	want := map[string]Counters{
-		"a": {AccountID: "a", FollowingCount: 1},
-		"b": {AccountID: "b", FollowersCount: 2},
-		"c": {AccountID: "c", FollowingCount: 1},
+		idA: {AccountID: idA, FollowingCount: 1},
+		idB: {AccountID: idB, FollowersCount: 2},
+		idC: {AccountID: idC, FollowingCount: 1},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("CountEdges = %+v, want %+v", got, want)

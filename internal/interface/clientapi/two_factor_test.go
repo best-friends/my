@@ -136,7 +136,7 @@ func TestTwoFactorEnrollment(t *testing.T) {
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusConflict || p.Type != clientapi.ProblemTypeTwoFactorEnabled {
 		t.Errorf("setup when enabled = %d %+v, want 409", res.StatusCode, p)
 	}
-	if want := "user-" + aliceAccountID; !slices.ContainsFunc(f.calls, func(c string) bool { return c == "enable "+want }) {
+	if want := userOf(aliceAccountID); !slices.ContainsFunc(f.calls, func(c string) bool { return c == "enable "+want }) {
 		t.Errorf("calls = %v, want alice's", f.calls)
 	}
 }

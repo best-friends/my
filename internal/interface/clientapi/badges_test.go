@@ -52,7 +52,7 @@ func (f *fakeBadges) SetBadgeDisplayed(_ context.Context, userID, roleID string,
 func newBadgeEnv(t *testing.T, displayed bool, tweak func(*clientapi.Options)) (*authEnv, *fakeBadges) {
 	t.Helper()
 	badges := &fakeBadges{choices: map[string][]identity.BadgeChoice{
-		"user-" + aliceAccountID: {{
+		userOf(aliceAccountID): {{
 			ProfileBadge: identity.ProfileBadge{RoleID: supporterRoleID, Label: "Supporter", Color: identity.BadgeGreen}, Displayed: displayed,
 		}},
 	}}
@@ -147,7 +147,7 @@ func TestBadgeChoices(t *testing.T) {
 		t.Fatal(err)
 	}
 	want.Displayed = true
-	if got != want || !badges.choices["user-"+aliceAccountID][0].Displayed {
+	if got != want || !badges.choices[userOf(aliceAccountID)][0].Displayed {
 		t.Errorf("PUT = %+v, want %+v saved", got, want)
 	}
 

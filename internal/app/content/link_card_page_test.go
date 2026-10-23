@@ -142,7 +142,7 @@ func TestLinkCardURL(t *testing.T) {
 		},
 		{
 			name: "attachments",
-			rev:  domain.Revision{Source: &domain.Source{Text: "https://news.example/a"}, Attachments: []domain.Attachment{{MediaID: "m"}}},
+			rev:  domain.Revision{Source: &domain.Source{Text: "https://news.example/a"}, Attachments: []domain.Attachment{{MediaID: "01890a5d-ac96-7000-8000-000000000001"}}},
 		},
 		{
 			name: "poll",

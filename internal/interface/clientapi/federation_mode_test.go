@@ -13,6 +13,7 @@ import (
 	"github.com/best-friends/my/internal/domain/graph"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // followGraph follows any account at once, and reports the accounts in following as followed
@@ -70,7 +71,7 @@ func TestFederationModeRestrictsRemoteOperations(t *testing.T) {
 			var accounts fakeAccounts
 			e := newAuthEnv(t, func(o *clientapi.Options) {
 				o.Instance = &fakeInstance{settings: []instance.CurrentSetting{
-					{Key: instance.SettingFederationMode, RevisionID: "r1", Value: tt.mode},
+					{Key: instance.SettingFederationMode, RevisionID: testkit.NamedID("revision-1"), Value: tt.mode},
 				}}
 				o.Resolver = resolver
 				accounts = o.Accounts.(fakeAccounts)
@@ -149,7 +150,7 @@ func TestFederationModeKeepsRemoteFollowPreferences(t *testing.T) {
 	var follows []string
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Instance = &fakeInstance{settings: []instance.CurrentSetting{
-			{Key: instance.SettingFederationMode, RevisionID: "r1", Value: "off"},
+			{Key: instance.SettingFederationMode, RevisionID: testkit.NamedID("revision-1"), Value: "off"},
 		}}
 		o.Accounts.(fakeAccounts)[remoteAccountID] = remoteBob
 		o.Graph = followGraph{following: map[string]bool{remoteAccountID: true}, follows: &follows}

@@ -36,7 +36,7 @@ func TestGetAdminCounts(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newAuthEnv(t, func(o *clientapi.Options) {
-				o.Permissions = fakePermissions{"user-" + aliceAccountID: tc.perms}
+				o.Permissions = fakePermissions{userOf(aliceAccountID): tc.perms}
 				o.ReportCounts, o.RegistrationCounts = fakeCounts{reports: 3}, fakeCounts{reports: 3}
 			})
 			e.auth.tokens["admin-read"] = bearer("admin:read", aliceAccountID)
@@ -54,7 +54,7 @@ func TestGetAdminCounts(t *testing.T) {
 // TestGetAdminCountsNeedsTheAdminScope checks that a token without admin:read is refused.
 func TestGetAdminCountsNeedsTheAdminScope(t *testing.T) {
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.ReportCounts, o.RegistrationCounts = fakeCounts{}, fakeCounts{}
 	})
 	if res := e.admin(t, http.MethodGet, "/admin/counts", "read", nil); res.StatusCode != http.StatusForbidden {

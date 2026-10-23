@@ -41,8 +41,8 @@ func TestPaymentStatus(t *testing.T) {
 	payments := &fakePayments{}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{
-			"user-" + aliceAccountID: {identity.PermManageSupporters},
-			"user-" + bobAccountID:   {identity.PermManageFinance},
+			userOf(aliceAccountID): {identity.PermManageSupporters},
+			userOf(bobAccountID):   {identity.PermManageFinance},
 		}
 		o.Payments = payments
 	})
@@ -82,7 +82,7 @@ func TestPaymentStatus(t *testing.T) {
 			t.Errorf("%s %s with %s = %d, want %d", tc.method, tc.path, tc.token, res.StatusCode, tc.status)
 		}
 	}
-	if want := "user-" + aliceAccountID; len(payments.requested) != 1 || payments.requested[0] != want {
+	if want := userOf(aliceAccountID); len(payments.requested) != 1 || payments.requested[0] != want {
 		t.Errorf("requested = %v, want %s", payments.requested, want)
 	}
 }
@@ -90,7 +90,7 @@ func TestPaymentStatus(t *testing.T) {
 // Without a payment provider, the operations are a 404.
 func TestPaymentStatusWithoutProvider(t *testing.T) {
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: {identity.PermManageSupporters}}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): {identity.PermManageSupporters}}
 	})
 	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)
 	for _, method := range []string{http.MethodGet, http.MethodPost} {

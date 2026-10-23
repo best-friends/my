@@ -10,16 +10,16 @@ import (
 
 func TestSeveranceValidate(t *testing.T) {
 	at := time.Date(2026, 10, 19, 0, 0, 0, 0, time.UTC)
-	ok := Severance{ID: "s", DomainActionID: "d", AccountID: "a", FollowersLost: 1, OccurredAt: at}
+	ok := Severance{ID: testID(31), DomainActionID: testID(20), AccountID: testID(11), FollowersLost: 1, OccurredAt: at}
 	ofAccount := ok
-	ofAccount.DomainActionID, ofAccount.ActionID, ofAccount.FollowersLost, ofAccount.FollowingLost = "", "x", 0, 1
+	ofAccount.DomainActionID, ofAccount.ActionID, ofAccount.FollowersLost, ofAccount.FollowingLost = "", testID(1), 0, 1
 	for _, s := range []Severance{ok, ofAccount} {
 		if err := s.Validate(); err != nil {
 			t.Errorf("Validate(%+v) = %v", s, err)
 		}
 	}
 	both := ok
-	both.ActionID = "x"
+	both.ActionID = testID(1)
 	neither := ok
 	neither.DomainActionID = ""
 	nothingLost := ok

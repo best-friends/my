@@ -59,9 +59,9 @@ func TestFinanceCostTotals(t *testing.T) {
 	settings := settingsInstance{&fakeSettings{}}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Permissions = fakePermissions{
-			"user-" + aliceAccountID: {identity.PermManageSettings},
-			"user-" + bobAccountID:   {identity.PermManageFinance},
-			"user-" + carolAccountID: {identity.PermViewFinance},
+			userOf(aliceAccountID): {identity.PermManageSettings},
+			userOf(bobAccountID):   {identity.PermManageFinance},
+			userOf(carolAccountID): {identity.PermViewFinance},
 		}
 		o.Costs, o.Settings, o.Instance = costs, settings.fakeSettings, settings
 	})

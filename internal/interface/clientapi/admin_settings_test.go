@@ -53,7 +53,7 @@ func newSettingsEnv(t *testing.T) (*authEnv, *fakeSettings) {
 	t.Helper()
 	f := &fakeSettings{}
 	e := newAuthEnv(t, func(o *clientapi.Options) {
-		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Permissions = fakePermissions{userOf(aliceAccountID): identity.AllPermissions()}
 		o.Settings = f
 	})
 	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)
@@ -126,8 +126,8 @@ func TestManageInstanceSettings(t *testing.T) {
 	}
 	// The values are set together, in the order of the definitions, by alice.
 	want := []appinstance.SetSettingInput{
-		{Key: instance.SettingRegistrationMode, Value: "invite", RevisedByUserID: "user-" + aliceAccountID},
-		{Key: instance.SettingAuthorizedFetch, Value: "TRUE", RevisedByUserID: "user-" + aliceAccountID},
+		{Key: instance.SettingRegistrationMode, Value: "invite", RevisedByUserID: userOf(aliceAccountID)},
+		{Key: instance.SettingAuthorizedFetch, Value: "TRUE", RevisedByUserID: userOf(aliceAccountID)},
 	}
 	if len(f.sets) != 1 || !slices.Equal(f.sets[0], want) {
 		t.Errorf("sets = %+v, want one call of %+v", f.sets, want)

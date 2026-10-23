@@ -56,7 +56,7 @@ func (f *fakePasswordReset) ResetPassword(ctx context.Context, token, password s
 	}
 	f.used = true
 	f.resets = append(f.resets, password)
-	return "u1", nil
+	return userAlice, nil
 }
 
 func newResetServer(t *testing.T, id authpages.Identity, reset authpages.PasswordReset, w *kernel.HumanCheckWidget) http.Handler {

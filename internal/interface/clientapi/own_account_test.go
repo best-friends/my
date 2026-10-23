@@ -16,6 +16,7 @@ import (
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // fakeOwnAccount deletes accounts and changes passwords confirmed with the password "secret" or
@@ -124,7 +125,7 @@ func (f *fakeExports) Now() time.Time { return f.now }
 func TestDeleteOwnAccount(t *testing.T) {
 	own := &fakeOwnAccount{}
 	e := newAuthEnv(t, func(o *clientapi.Options) { o.OwnAccount = own })
-	alice := "user-" + aliceAccountID
+	alice := userOf(aliceAccountID)
 
 	res := e.sendJSON(t, http.MethodPost, "/accounts/delete", "write", `{"password":"wrong"}`)
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Type != clientapi.ProblemTypeWrongPassword || res.Header.Get("Content-Language") != "ja" {
@@ -164,7 +165,7 @@ func TestDeleteOwnAccount(t *testing.T) {
 func TestChangePassword(t *testing.T) {
 	own := &fakeOwnAccount{}
 	e := newAuthEnv(t, func(o *clientapi.Options) { o.OwnAccount = own })
-	alice := "user-" + aliceAccountID
+	alice := userOf(aliceAccountID)
 
 	res := e.sendJSON(t, http.MethodPost, "/accounts/password", "write", `{"current_password":"wrong","new_password":"new password"}`)
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Type != clientapi.ProblemTypeWrongPassword {
@@ -188,7 +189,7 @@ func TestChangePassword(t *testing.T) {
 	if res.StatusCode != http.StatusNoContent || len(own.changed) != 1 {
 		t.Fatalf("change = %d, changed %+v; want 204 and one change", res.StatusCode, own.changed)
 	}
-	if got := own.changed[0]; got.UserID != alice || got.NewPassword != "new password" || got.KeepFamilyID != "fam-write" {
+	if got := own.changed[0]; got.UserID != alice || got.NewPassword != "new password" || got.KeepFamilyID != testkit.NamedID("fam-write") {
 		t.Errorf("change = %+v, want alice's new password keeping the request's grant", got)
 	}
 
@@ -211,7 +212,7 @@ func TestChangePassword(t *testing.T) {
 func TestRemovePassword(t *testing.T) {
 	own := &fakeOwnAccount{}
 	e := newAuthEnv(t, func(o *clientapi.Options) { o.OwnAccount = own })
-	alice := "user-" + aliceAccountID
+	alice := userOf(aliceAccountID)
 
 	res := e.send(t, http.MethodGet, "/accounts/password", "read-accounts", "")
 	if got := decodeJSON[clientapi.PasswordStatus](t, res); res.StatusCode != http.StatusOK || !got.HasPassword ||
@@ -236,7 +237,7 @@ func TestRemovePassword(t *testing.T) {
 		t.Errorf("without write:accounts = %d, want 403", res.StatusCode)
 	}
 	res = e.sendJSON(t, http.MethodPost, "/accounts/password/remove", "write", `{"passkey":{"confirmation_token":"good","credential":{"id":"x"}}}`)
-	if res.StatusCode != http.StatusNoContent || len(own.removed) != 1 || own.removed[0].UserID != alice || own.removed[0].KeepFamilyID != "fam-write" {
+	if res.StatusCode != http.StatusNoContent || len(own.removed) != 1 || own.removed[0].UserID != alice || own.removed[0].KeepFamilyID != testkit.NamedID("fam-write") {
 		t.Fatalf("remove = %d, removed %+v; want 204 keeping the request's grant", res.StatusCode, own.removed)
 	}
 	res = e.send(t, http.MethodGet, "/accounts/password", "read-accounts", "")

@@ -24,13 +24,13 @@ func TestAnnouncementLabel(t *testing.T) {
 
 func TestAnnouncementHeadApply(t *testing.T) {
 	at := time.Date(2026, 10, 21, 12, 0, 0, 0, time.UTC)
-	h := AnnouncementHead{AnnouncementID: "a"}.Apply("r1", nil)
-	if h.State != AnnouncementDraft || h.RevisionID != "r1" || !h.PublishedAt.IsZero() {
+	h := AnnouncementHead{AnnouncementID: testID(1)}.Apply(testID(1), nil)
+	if h.State != AnnouncementDraft || h.RevisionID != testID(1) || !h.PublishedAt.IsZero() {
 		t.Fatalf("after a revision: %+v, want a draft", h)
 	}
 	h = h.Apply("", &AnnouncementStateChange{State: AnnouncementPublished, ChangedAt: at})
-	h = h.Apply("r0", nil) // an older revision changes nothing
-	if h.State != AnnouncementPublished || h.RevisionID != "r1" || !h.PublishedAt.Equal(at) {
+	h = h.Apply(testID(0), nil) // an older revision changes nothing
+	if h.State != AnnouncementPublished || h.RevisionID != testID(1) || !h.PublishedAt.Equal(at) {
 		t.Fatalf("after publishing: %+v", h)
 	}
 	h = h.Apply("", &AnnouncementStateChange{State: AnnouncementWithdrawn, ChangedAt: at.Add(time.Hour)})
@@ -39,7 +39,7 @@ func TestAnnouncementHeadApply(t *testing.T) {
 		t.Errorf("after withdrawing: %+v, want withdrawn for good, published at %v", h, at)
 	}
 	// A draft withdrawn before any publication still has a time, as announcement_heads requires.
-	d := AnnouncementHead{}.Apply("r1", &AnnouncementStateChange{State: AnnouncementWithdrawn, ChangedAt: at})
+	d := AnnouncementHead{}.Apply(testID(1), &AnnouncementStateChange{State: AnnouncementWithdrawn, ChangedAt: at})
 	if d.State != AnnouncementWithdrawn || !d.PublishedAt.Equal(at) {
 		t.Errorf("withdrawn draft: %+v", d)
 	}

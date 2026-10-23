@@ -73,7 +73,7 @@ func TestPollOption(t *testing.T) {
 }
 
 func TestPollVoteURI(t *testing.T) {
-	if got, want := PollVoteURI("example.org", "v1"), "https://example.org/ap/objects/v1"; got != want {
+	if got, want := PollVoteURI("example.org", testID(1)), "https://example.org/ap/objects/"+testID(1); got != want {
 		t.Errorf("PollVoteURI = %q, want %q", got, want)
 	}
 }
@@ -81,12 +81,12 @@ func TestPollVoteURI(t *testing.T) {
 func TestNewPoll(t *testing.T) {
 	now := time.Date(2026, 10, 1, 12, 0, 0, 500_000_000, time.UTC)
 	ok := PollInput{Options: []string{" yes ", "no"}, Duration: time.Hour, Multiple: true, HideTotals: true}
-	p, err := NewPoll("p1", ok, now)
+	p, err := NewPoll(testID(1), ok, now)
 	if err != nil {
 		t.Fatalf("NewPoll = %v", err)
 	}
 	want := now.Add(time.Hour).Truncate(time.Second)
-	if p.ID != "p1" || !p.Multiple || !p.HideTotals || p.ClosesAt == nil || !p.ClosesAt.Equal(want) ||
+	if p.ID != testID(1) || !p.Multiple || !p.HideTotals || p.ClosesAt == nil || !p.ClosesAt.Equal(want) ||
 		!slices.Equal(p.Options, []PollOption{{Position: 0, Title: "yes"}, {Position: 1, Title: "no"}}) {
 		t.Errorf("NewPoll = %+v", p)
 	}
@@ -105,11 +105,11 @@ func TestNewPoll(t *testing.T) {
 		{"long", PollInput{Options: []string{"a", "b"}, Duration: MaxPollDuration + time.Second}},
 	}
 	for _, c := range cases {
-		if _, err := NewPoll("p", c.in, now); !errors.Is(err, ErrInvalidPoll) {
+		if _, err := NewPoll(testID(1), c.in, now); !errors.Is(err, ErrInvalidPoll) {
 			t.Errorf("%s: NewPoll = %v, want ErrInvalidPoll", c.name, err)
 		}
 	}
-	if _, err := NewPoll("p", PollInput{Options: []string{"a", strings.Repeat("あ", MaxPollOptionLength)}, Duration: MaxPollDuration}, now); err != nil {
+	if _, err := NewPoll(testID(1), PollInput{Options: []string{"a", strings.Repeat("あ", MaxPollOptionLength)}, Duration: MaxPollDuration}, now); err != nil {
 		t.Errorf("NewPoll at the limits = %v", err)
 	}
 }

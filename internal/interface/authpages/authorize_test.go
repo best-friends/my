@@ -15,6 +15,7 @@ import (
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/authpages"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 const (
@@ -33,8 +34,8 @@ func (f *fakeOAuth) ValidateAuthorization(_ context.Context, req appidentity.Aut
 		c   identity.OAuthClient
 		uri string
 	}{
-		"web": {identity.OAuthClient{ID: "1", ClientID: "web", Name: "Web", FirstParty: true}, webRedirect},
-		"app": {identity.OAuthClient{ID: "2", ClientID: "app", Name: "Example App"}, appRedirect},
+		"web": {identity.OAuthClient{ID: testkit.NamedID("client-web"), ClientID: "web", Name: "Web", FirstParty: true}, webRedirect},
+		"app": {identity.OAuthClient{ID: testkit.NamedID("client-app"), ClientID: "app", Name: "Example App"}, appRedirect},
 	}
 	c, ok := clients[req.ClientID]
 	if !ok {
@@ -145,7 +146,7 @@ func TestAuthorizeIssuesNoCodeToAccountsThatCannotBeUsedYet(t *testing.T) {
 	oauth := &fakeOAuth{}
 	id := newFakeIdentity()
 	b := signedIn(t, newOAuthServer(t, id, oauth))
-	id.access["u1"] = appidentity.Access{Registration: identity.RegistrationPending, EmailVerified: true}
+	id.access[userAlice] = appidentity.Access{Registration: identity.RegistrationPending, EmailVerified: true}
 	w := b.do(http.MethodGet, authorizeQuery("web", webRedirect), nil, nil)
 	if w.Code != http.StatusForbidden || w.Header().Get("Location") != "" || len(oauth.issued) != 0 {
 		t.Fatalf("authorize for a pending registration = %d → %q, issued %d; want the 403 status page and no code",
