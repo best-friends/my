@@ -218,15 +218,19 @@
 
 @theme {
   /* --- Typography ---------------------------------------------------------------------------- */
-  /* OS fonts first, no web fonts. After the Latin UI fonts come Japanese / Chinese / Korean and
-     Arabic system fonts, then the Noto families Linux and Android ship, then emoji. */
+  /* Emoji first: "my Noto Color Emoji" is the web font of @my/ui/emoji.css (ADR-0095), whose unicode-range holds only
+     emoji code points, so the OS fonts still draw every other character; ahead of them, it also wins over the CJK and
+     UI fonts that have their own glyphs of symbols such as ☀ ♠ ❤. A stylesheet that does not import emoji.css (the
+     server-rendered pages) has no such face, and the family is skipped. Then the OS fonts: after the Latin UI fonts
+     come Japanese / Chinese / Korean and Arabic system fonts, then the Noto families Linux and Android ship, then the
+     OS emoji fonts, for when the web font does not load. */
   --font-sans:
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Sans",
+    "my Noto Color Emoji", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Sans",
     "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, "PingFang SC", "Microsoft YaHei UI", "Malgun Gothic",
     "Geeza Pro", "Segoe UI Arabic", Tahoma, "Noto Sans", "Noto Sans CJK JP", "Noto Sans JP", "Noto Sans Arabic",
     sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", "Osaka-Mono", "Noto Sans Mono CJK JP",
+    "my Noto Color Emoji", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", "Osaka-Mono", "Noto Sans Mono CJK JP",
     monospace;
   /* Brand moments only: display headlines, page titles, EmptyState headings, avatar initials. */
   --font-serif: Georgia, "Noto Serif JP", serif;

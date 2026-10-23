@@ -14,8 +14,14 @@ import { reactCompiler } from "./vite-plugins/react-compiler.ts";
 /** The shared message catalogs at the repository root (ADR-0009). */
 const localesDir = fileURLToPath(new URL("../../locales", import.meta.url));
 
-/** The license notices of bundled data that are not npm dependencies, copied into dist/licenses/. */
-const licenseFiles = [fileURLToPath(new URL("src/features/emoji/unicode/LICENSE-Unicode.txt", import.meta.url))];
+/**
+ * The license notices of bundled data that are not npm dependencies, copied into dist/licenses/: the Unicode emoji data
+ * (ADR-0091 §1) and the Noto Color Emoji fonts of @my/ui (ADR-0095 §6).
+ */
+const licenseFiles = [
+  fileURLToPath(new URL("src/features/emoji/unicode/LICENSE-Unicode.txt", import.meta.url)),
+  fileURLToPath(new URL("../ui/src/fonts/emoji/OFL.txt", import.meta.url)),
+];
 
 export default defineConfig({
   // Go serves the HTML and builds its <script> / <link> tags from the manifest (ADR-0028).
@@ -77,7 +83,15 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,svg,png,woff2}"],
         // index.html is the stand-in shell of `vite preview` (the worker precaches the server's shell at /
         // instead), and the stylesheet and the passkey script of the server-rendered pages are never loaded by the app.
-        globIgnores: ["index.html", "sw.js", "assets/server-pages-*.css", "assets/server-pages-passkey-*.js"],
+        // The Noto Color Emoji splits (@my/ui/emoji.css, about 6 MB in both formats) are cached at run time when a
+        // page uses them instead (sw/sw.ts, ADR-0095 §3).
+        globIgnores: [
+          "index.html",
+          "sw.js",
+          "assets/server-pages-*.css",
+          "assets/server-pages-passkey-*.js",
+          "assets/noto-emoji-*.woff2",
+        ],
       },
     }),
   ],

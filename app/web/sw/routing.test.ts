@@ -45,6 +45,15 @@ describe("classify", () => {
     expect(classify(facts("/mediae/a.png", { destination: "image" }), origin)).toBe("network");
   });
 
+  it("caches the emoji fonts of the build, which the precache leaves out", () => {
+    const font = { destination: "font", mode: "cors" };
+    expect(classify(facts("/assets/noto-emoji-colrv1-smileys-emotion-B2x9Qa1c.woff2", font), origin)).toBe("emoji-font");
+    expect(classify(facts("/assets/noto-emoji-svg-country-flags-Cq0_aZ3d.woff2", font), origin)).toBe("emoji-font");
+    expect(classify(facts("/assets/index-B2x9Qa1c.woff2", font), origin)).toBe("network");
+    expect(classify(facts("/media/noto-emoji-colrv1-x.woff2", font), origin)).toBe("network");
+    expect(classify(facts("/assets/noto-emoji-colrv1-x.woff2", { destination: "" }), origin)).toBe("network");
+  });
+
   it("caches the instance theme's stylesheets, whose URL names their revision", () => {
     expect(classify(facts("/theme/0199f0e0.css", { destination: "style", mode: "no-cors" }), origin)).toBe("theme");
     expect(classify(facts("/theme/0199f0e0.css", { destination: "style", authorized: true }), origin)).toBe("network");

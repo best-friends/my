@@ -25,9 +25,14 @@ const passThroughPaths = [
  * - `navigation`: network only with a timeout, falling back to the precached shell;
  * - `media`: cache first, bounded;
  * - `theme`: cache first, bounded: the instance theme's stylesheets (ADR-0059), whose URL names their revision;
+ * - `emoji-font`: cache first, bounded: the Noto Color Emoji splits of the build (ADR-0095 §3), whose URL carries the
+ *   hash of their content and which the precache leaves out (vite.config.ts), fetched only when a page shows an emoji;
  * - `network`: not answered by the worker at all (the client API, every non-GET, other origins).
  */
-export type Handling = "navigation" | "media" | "theme" | "network";
+export type Handling = "navigation" | "media" | "theme" | "emoji-font" | "network";
+
+/** The emoji fonts of the build: assets/noto-emoji-<format>-<split>-<hash>.woff2 (@my/ui/emoji.css). */
+const emojiFontPath = /^\/assets\/noto-emoji-[\w-]+\.woff2$/;
 
 /** The parts of a fetch event's Request that decide its handling. */
 export type RequestFacts = {
@@ -52,6 +57,8 @@ export function classify(request: RequestFacts, origin: string): Handling {
   // The instance theme's stylesheet (ADR-0059): its content never changes, so the offline shell gets the theme
   // it was last shown with.
   if (underAny(url.pathname, ["/theme"]) && request.destination === "style" && !request.authorized) return "theme";
+  // The emoji fonts (ADR-0095 §3): too large to precache, and named by the hash of their content.
+  if (emojiFontPath.test(url.pathname) && request.destination === "font") return "emoji-font";
   return "network";
 }
 

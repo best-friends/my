@@ -24,7 +24,10 @@ const port = previewPort;
 const externalBaseURL = process.env["E2E_BASE_URL"];
 const externalServer = process.env["E2E_SERVER_URL"] !== undefined;
 
-const projects: Project[] = widths
+/** The spec of the emoji web font, which runs once per browser engine instead of in the width × locale projects. */
+const emojiFontSpec = /emoji-font\.spec\.ts$/;
+
+const matrix: Project[] = widths
   .filter((width) => fullMatrix || prWidths.has(width))
   .flatMap((width) =>
     locales.map((locale) => {
@@ -32,6 +35,7 @@ const projects: Project[] = widths
       const phone = width < 768;
       return {
         name: `${locale}-${width}`,
+        testIgnore: emojiFontSpec,
         use: {
           ...devices["Desktop Chrome"],
           viewport: { width, height: phone ? 800 : 900 },
@@ -42,6 +46,16 @@ const projects: Project[] = widths
       };
     }),
   );
+
+// The Noto Color Emoji web font (ADR-0095 §3) picks its format by the browser's tech() support: COLRv1 in Chromium and
+// Firefox, OpenType-SVG in WebKit, so its spec runs in all three engines (the pinned Playwright image has them).
+const emojiFontProjects: Project[] = (["Desktop Chrome", "Desktop Firefox", "Desktop Safari"] as const).map((device) => ({
+  name: `emoji-font-${devices[device].defaultBrowserType}`,
+  testMatch: emojiFontSpec,
+  use: { ...devices[device], viewport: { width: 1440, height: 900 }, locale: "en" },
+}));
+
+const projects: Project[] = [...matrix, ...emojiFontProjects];
 
 export default defineConfig({
   testDir: "./e2e",

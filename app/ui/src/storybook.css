@@ -4,6 +4,7 @@
    apps scan src/ without the stories. */
 @import "tailwindcss";
 @import "./theme.css";
+@import "./emoji.css";
 @source "../.storybook";
 /* The generated token list holds token names, which look like classes but are not. */
 @source not "./themeTokens.gen.ts";
