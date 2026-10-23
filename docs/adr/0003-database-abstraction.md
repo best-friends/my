@@ -1,6 +1,6 @@
 # ADR-0003: RDB の抽象化と対応方言
 
-- Status: Accepted（PostgreSQL のコントラクトテストの頻度を ADR-0041（PostgreSQL のテストを pgmem で動かす） が置き換える）
+- Status: Accepted（PostgreSQL のコントラクトテストの頻度を ADR-0041（PostgreSQL のテストを pgmem で動かす） が、PostgreSQL での ID の型を ADR-0078（PostgreSQL の ID の列を uuid 型にする） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #3

@@ -89,4 +89,5 @@
 | [0075](0075-metrics-surface-payments.md) | my.surface に payments を加える | Accepted |
 | [0076](0076-federation-direction.md) | 連合の向きをインスタンス設定で選ぶ（オフ / 受信のみ / 送信のみ / 送受信） | Accepted |
 | [0077](0077-timeline-auto-insert.md) | タイムラインの新着をユーザーの設定で自動で差し込む | Accepted |
+| [0078](0078-postgres-uuid-columns.md) | PostgreSQL の ID の列を uuid 型にする | Accepted |
 <!-- adr-index:end -->
