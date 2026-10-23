@@ -38,6 +38,7 @@
 - [検索エンジンと AI クローラー（robots.txt・noindex・AI の拒否の表明）](operations/crawlers.md)
 - [サーバー単位の webhook](operations/webhooks.md)
 - [連合リレー](operations/relays.md)
+- [リリースの手順](operations/releasing.md)
 - [クラウドの利用料金の取り込み（AWS Cost Explorer、Google Cloud の BigQuery への export）](operations/billing-import.md)
 - [サポーターの決済（Stripe）](operations/payments-stripe.md)
 - [サポーター（課金のプラン）](operations/supporters.md)

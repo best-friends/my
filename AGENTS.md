@@ -59,11 +59,11 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 4. Open a PR using the template, with `Closes #N` and the acceptance criteria checked, and wait for its CI to pass.
    Pull requests run the `check` gate ([ADR-0047](docs/adr/0047-ci-protection-layers.md)) but not the web E2E: in single-issue work, for a
    change to the web client, run `scripts/task.sh web:e2e` or `gh workflow run web-e2e.yml --ref <branch>`. In a parallel batch run by an orchestrator,
-   follow [workflow.md §9](docs/agents/workflow.md#9-parallel-batches) instead (no per-PR web E2E; web E2E failures on `main` are fixed together at the end of the milestone).
+   follow [workflow.md §9](docs/agents/workflow.md#9-parallel-batches) instead (no per-PR web E2E; failures of the nightly web E2E are fixed together at the end of the milestone).
    Do not merge or queue the PR yourself: the orchestrator or the decider queues it with `gh pr merge --auto`, and the merge queue
    runs `check` again on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
-   queue drops it. Pushes to `main` and the nightly run the slower suites, and CodeQL code scanning (`codeql.yml`) runs on
-   pushes to `main` and weekly, never on PRs; the table of what runs where is in the workflow.
+   queue drops it. The slower suites and CodeQL (`slow-suite.yml`) run as the release gate (`release.yml`), nightly, and by
+   hand, never on PRs ([ADR-0079](docs/adr/0079-ci-single-gate-merge-queue.md)); the table of what runs where is in the workflow.
 5. If you need a decision that no Accepted ADR covers: small → state the assumption in the PR; large → draft a *Proposed* ADR
    (`scripts/task.sh docs:adr-new TITLE=... SLUG=...`), comment on the issue, add `agent:blocked`, and stop.
 
