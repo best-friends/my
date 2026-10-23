@@ -2090,6 +2090,34 @@ func (l *Localizer) ServerPreviewDefaultImageAlt(instance string) string {
 	return l.format("server:preview.default_image_alt", map[string]any{"instance": instance})
 }
 
+// ServerPreviewDocumentTitle formats "server:preview.document_title". Title of the link preview (og:title and the page title) of the page of one of the instance's documents (/about/terms, /about/privacy, /about/commerce). {document} is the document's name (preview.document.*), {instance} the instance name.
+//
+//	en: {document} | {instance}
+func (l *Localizer) ServerPreviewDocumentTitle(document string, instance string) string {
+	return l.format("server:preview.document_title", map[string]any{"document": document, "instance": instance})
+}
+
+// ServerPreviewDocumentCommerceDisclosure formats "server:preview.document.commerce_disclosure". Name of the instance's commerce disclosures of its supporter plans in the link preview of their page (/about/commerce).
+//
+//	en: Commerce disclosures
+func (l *Localizer) ServerPreviewDocumentCommerceDisclosure() string {
+	return l.format("server:preview.document.commerce_disclosure", nil)
+}
+
+// ServerPreviewDocumentPrivacyPolicy formats "server:preview.document.privacy_policy". Name of the instance's privacy policy in the link preview of its page (/about/privacy).
+//
+//	en: Privacy policy
+func (l *Localizer) ServerPreviewDocumentPrivacyPolicy() string {
+	return l.format("server:preview.document.privacy_policy", nil)
+}
+
+// ServerPreviewDocumentTerms formats "server:preview.document.terms". Name of the instance's terms of service in the link preview of their page (/about/terms).
+//
+//	en: Terms of service
+func (l *Localizer) ServerPreviewDocumentTerms() string {
+	return l.format("server:preview.document.terms", nil)
+}
+
 // ServerPreviewHeaderAlt formats "server:preview.header_alt". Alt text of a profile's header image in a link preview (og:image:alt) when the header is the preview image. {name} is the display name, or the username when there is none.
 //
 //	en: Header image of {name}

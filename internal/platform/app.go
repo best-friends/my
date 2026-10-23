@@ -896,6 +896,8 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
 		// Profile and post pages carry link previews of what an anonymous visitor may see.
 		Previews: a.Previews, Messages: a.Messages,
+		// The pages of the published documents carry link previews under their names.
+		Documents: a.Instance,
 		// The instance's preview image is read per request, so that a change applies at once.
 		DefaultImage: a.previewImage,
 		// The instance theme (ADR-0059), read per request so that a saved theme applies at once.

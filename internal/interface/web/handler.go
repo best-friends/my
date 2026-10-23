@@ -68,6 +68,10 @@ type Options struct {
 	// post pages (/@alice/status/{id}) describe in their link preview meta tags; nil serves the
 	// generic shell there.
 	Previews Previews
+	// Documents reads which of the instance's documents are published, for the link previews of
+	// their pages (/about/terms, /about/privacy, /about/commerce); nil serves the generic shell
+	// there. It is called per request, so that publishing a document applies at once.
+	Documents Documents
 	// Messages formats the texts of link previews; nil loads the embedded catalogs.
 	Messages *i18n.Bundle
 	// DefaultImage returns the instance's preview image for profiles and posts without images,
@@ -406,8 +410,8 @@ func (h *Handler) Register(r Router) {
 
 // ServeHTTP serves a GET request for an SPA route: a file at the root of the build when one
 // has the requested name, the server's 404 under the paths of other endpoints, the shell with
-// link preview meta tags at the pages about the instance (/ and /about) and at profile and post
-// pages, and the generic shell otherwise.
+// link preview meta tags at the pages about the instance (/ and /about), at the pages of its
+// published documents, and at profile and post pages, and the generic shell otherwise.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	if (r.Method != http.MethodGet && r.Method != http.MethodHead) || reserved(p) {
@@ -426,7 +430,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if p == pathLanding || p == pathAbout {
-		h.serveInstancePage(w, r, p)
+		h.serveInstancePage(w, r, p, "")
+		return
+	}
+	if page, ok := documentPages[p]; ok && h.o.Documents != nil {
+		h.serveDocumentPage(w, r, p, page)
 		return
 	}
 	if h.o.Previews != nil {

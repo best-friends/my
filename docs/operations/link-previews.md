@@ -5,12 +5,13 @@
 
 ## サーバーが返すもの
 
-ランディングページ（`https://<host>/`）とインスタンスの情報ページ（`https://<host>/about`）、プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/status/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
+ランディングページ（`https://<host>/`）とインスタンスの情報ページ（`https://<host>/about`）、公開している文書のページ（`/about/terms`・`/about/privacy`・`/about/commerce`）、プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/status/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
 HTML のリクエストは常に未ログインとして扱うので、プレビューに出るのは未ログインでも見られるものだけです。
 
 | ページ | 応答 |
 | --- | --- |
 | ランディングページ（`/`）、インスタンスの情報ページ（`/about`） | 200。インスタンスを紹介する meta タグ付きの外枠（下の「ランディングページ」） |
+| 公開している文書のページ（`/about/terms`・`/about/privacy`・`/about/commerce`） | 200。インスタンスを紹介する meta タグ付きの外枠で、題名は「文書の名前 \| インスタンス名」。公開していない文書のページは汎用の外枠 |
 | `public` の投稿、有効なローカルアカウントのプロフィール | 200。meta タグ付きの外枠 |
 | `unlisted` の投稿 | 200。meta タグ付きの外枠に `<meta name="robots" content="noindex, noarchive">` と `X-Robots-Tag: noindex, noarchive` |
 | `local` / `private` / `direct` / 削除済み / 存在しない投稿、停止・削除されたアカウントや制限のあるアカウントのプロフィールと投稿 | 404。汎用の外枠と `X-Robots-Tag: noindex, noarchive`。本文とヘッダーは理由によらず同じ |
@@ -47,6 +48,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 - `og:image` は下の 3（インスタンスのプレビュー画像）、なければ 4 です。
 - アカウントのものではないので、`fediverse:creator` と ActivityPub の `alternate` は出しません。
 - インスタンスの情報ページ（`/about`）も同じ meta タグで、`og:title` と `<title>` は「{インスタンスの名前} について」（`server:preview.about_title`）、`og:url` と `<link rel="canonical">` は `https://<host>/about` です。
+- 公開している文書のページ（`/about/terms`・`/about/privacy`・`/about/commerce`）も同じ meta タグで、`og:title` と `<title>` は「{文書の名前} | {インスタンスの名前}」（`server:preview.document_title`）、`og:url` と `<link rel="canonical">` はそのページのアドレスです。公開していない文書のページは汎用の外枠です。
 
 `og:image` は次の順で選びます。
 
@@ -64,8 +66,8 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 
 ### キャッシュ
 
-- `Cache-Control: public, max-age=60, stale-while-revalidate=300` を返します。削除や公開範囲の変更は、最長でこの時間だけ共有キャッシュに残ります。
-- ETag はテンプレート・アセット・インスタンスの設定の版、言語、投稿の版（リビジョン）、実効公開範囲、プロフィールの版、選んだ画像（ランディングページと情報ページは、ページのアドレス・タイトル・インスタンスの説明と選んだ画像）から作ります。`If-None-Match` には `304` を返します。
+- `Cache-Control: public, max-age=60, stale-while-revalidate=300` を返します。削除や公開範囲の変更、文書の公開と非公開は、最長でこの時間だけ共有キャッシュに残ります。
+- ETag はテンプレート・アセット・インスタンスの設定の版、言語、投稿の版（リビジョン）、実効公開範囲、プロフィールの版、選んだ画像（ランディングページと情報ページと文書のページは、ページのアドレス・タイトル・インスタンスの説明と選んだ画像）から作ります。`If-None-Match` には `304` を返します。
 - CDN を前に置く場合は、`Accept` をキャッシュキーに含めてください（AP の JSON と HTML を取り違えないため）。
 
 ## 手動確認の手順
