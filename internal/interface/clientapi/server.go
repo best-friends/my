@@ -57,6 +57,8 @@ type Options struct {
 	RemoteProfiles RemoteProfiles
 	// AccountSearch is the prefix search of accounts (searchAccounts); nil finds none.
 	AccountSearch AccountSearch
+	// TagSearch is the prefix search of hashtags (searchTags); nil finds none.
+	TagSearch TagSearch
 	// Resolver fetches unknown remote accounts for lookupAccount's resolve; nil resolves none
 	// (lookups find only stored accounts).
 	Resolver AccountResolver

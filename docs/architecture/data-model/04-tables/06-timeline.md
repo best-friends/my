@@ -6,7 +6,8 @@
 | --- | --- | --- | --- |
 | `feed_entries` | `id`（= 投稿の `status_id` またはブーストの `boost_id`）, `kind`（`enum(post, boost)`）, `status_id`, `author_account_id`（投稿者またはブーストした人）, `author_domain`, `original_author_account_id`（元投稿の作者。投稿なら `author_account_id` と同じ）, `original_author_domain`, `visibility`, `is_local`（投稿者またはブーストした人がローカルか）, `language`（`lang`。現在版の言語）, `revision_seq`（`int`。現在版の `seq`）, `is_reply`（`bool`。投稿が返信か。ブーストは常に偽） | PK `(id)`。インデックス `(author_account_id, id)`、`(status_id)`（版・削除での更新）、部分インデックス `(id) WHERE is_local AND kind = 'post' AND visibility IN ('public','local')`（ローカル）、`(id) WHERE kind = 'post' AND visibility = 'public'`（連合） | 投稿・版（言語）・削除・ブースト・ブースト取り消し |
 | `feed_direct_recipients` | `entry_id`, `recipient_account_id` | PK `(recipient_account_id, entry_id)`、インデックス `(entry_id)`。`direct` 投稿の宛先（現在版のメンション） | 投稿・版・削除 |
-| `feed_tag_entries` | `tag_id`, `entry_id`, `author_account_id`, `visibility`, `is_local` | PK `(tag_id, entry_id)`、インデックス `(entry_id)`。現在版のタグ。公開範囲は不変なので非正規化してよい（FR-203） | 投稿・版・削除 |
+| `feed_tag_entries` | `tag_id`, `entry_id`, `author_account_id`, `visibility`, `is_local`, `revised_at`（現在版の `revised_at`） | PK `(tag_id, entry_id)`、インデックス `(entry_id)`、部分インデックス `(tag_id, revised_at) WHERE visibility IN ('public','local','unlisted')`（`tag_usage.last_used_at`）。現在版のタグ。公開範囲は不変なので非正規化してよい（FR-203） | 投稿・版・削除 |
+| `tag_usage` | `tag_id`, `statuses_count`（`bigint`、1 以上）, `last_used_at` | PK `(tag_id)`。タグごとの `public` / `local` / `unlisted` の投稿の数と、それらの `feed_tag_entries.revised_at` の最大。ハッシュタグの前方一致の検索（FR-119, FR-306, ADR-0092 §1） | 投稿・版・削除（`feed_tag_entries` と同じ更新） |
 | `feed_follow_edges` | `follower_account_id`, `followee_account_id`, `show_boosts` | PK `(follower_account_id, followee_account_id)`。`active` のフォローだけ | フォロー（自動承認）・承認・終了、フォローごとの設定 |
 | `feed_exclusions` | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可。ミュートの期限） | PK `(viewer_account_id, target_account_id, reason)` | ブロック（両方向の 2 行）・ブロックの解除・ミュート・ミュートの解除 |
 | `feed_domain_mutes` | `viewer_account_id`, `domain` | PK `(viewer_account_id, domain)`。サブドメインにも効く（FR-304） | ドメインのミュート・解除 |
@@ -16,6 +17,10 @@
 - ドメイン（`author_domain` / `original_author_domain`）はローカルなら `''`、リモートなら投稿・ブーストの URI のホストです。ドメイン単位の制限の照合に使います。
 - ブーストの行は、元投稿の行から作者・ドメイン・言語・版を写します。元投稿の版が進むと、元投稿とそのブーストの行の `language` と `revision_seq` をまとめて更新します（`revision_seq` 以下の版は無視します）。
 - 削除された投稿の行は、投稿・そのブースト・宛先・タグをまとめて消します。削除された投稿への遅れた版やブーストは反映しません。
+- `tag_usage` は `feed_tag_entries` を置き換える・消すのと同じ更新で増減します（ADR-0092 §1）。`public` / `local` / `unlisted` の投稿のタグだけを数え、`private` / `direct` だけのタグは名前から投稿の存在が漏れるので行を持ちません。
+  数が 0 になったタグは行を消します。`last_used_at` は、数えている投稿の `feed_tag_entries.revised_at` の最大を、更新のたびに部分インデックスから読み直します（編集・削除で外れたタグも、残る投稿の時刻に戻ります）。
+  再構築は `feed_*` と同じく `timeline.RebuildProjections` が空にしてから作り直すので、増減の結果と一致します。アカウントの消去（§8）で消すエントリのタグも数から引きます。
+  - ハッシュタグの前方一致の検索（`GET /tags/search`）は、`content` の `tags.name_normalized` の範囲（`>= q AND < q || U+10FFFF`、PostgreSQL は `COLLATE "C"`）を索引の順に最大 100 行読み、`tag_usage` に行のあるタグだけを、完全一致 → `statuses_count` の多い順 → `last_used_at` の新しい順 → 名前の順に並べます。`tags` は JOIN しません。
 - `feed_entries` の挿入は、同じ `id` があれば失敗させます（投稿とブーストの ID は一度しか挿入されないので、projector の二重登録を検出できます）。
 - `feed_entries` は元の公開範囲を持ちます。サイレンスによる上限（§5.4）は、読み取り時に `feed_author_restrictions` と合成して適用します。
   データを書き換えないので、解除すれば元に戻ります。

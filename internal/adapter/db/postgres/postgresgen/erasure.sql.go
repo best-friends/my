@@ -23,6 +23,39 @@ func (q *Queries) AccountErased(ctx context.Context, accountID string) (bool, er
 	return exists, err
 }
 
+const countUsedFeedTagsOfEntries = `-- name: CountUsedFeedTagsOfEntries :many
+SELECT tag_id, count(*) AS n FROM feed_tag_entries
+WHERE entry_id = ANY($1::uuid[]) AND visibility IN ('public', 'local', 'unlisted')
+GROUP BY tag_id ORDER BY tag_id
+`
+
+type CountUsedFeedTagsOfEntriesRow struct {
+	TagID string
+	N     int64
+}
+
+// CountUsedFeedTagsOfEntries returns how many of the entries among ids that tag_usage counts
+// carry each tag.
+func (q *Queries) CountUsedFeedTagsOfEntries(ctx context.Context, ids []string) ([]CountUsedFeedTagsOfEntriesRow, error) {
+	rows, err := q.db.Query(ctx, countUsedFeedTagsOfEntries, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountUsedFeedTagsOfEntriesRow{}
+	for rows.Next() {
+		var i CountUsedFeedTagsOfEntriesRow
+		if err := rows.Scan(&i.TagID, &i.N); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteSingleReactionCountsBy = `-- name: DeleteSingleReactionCountsBy :exec
 
 DELETE FROM status_reaction_counts WHERE count = 1 AND EXISTS (

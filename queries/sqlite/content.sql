@@ -38,6 +38,14 @@ VALUES (?, ?, ?, ?, ?, ?);
 INSERT INTO tags (id, name, name_normalized, created_at) VALUES (?, ?, ?, ?)
 ON CONFLICT (name_normalized) DO NOTHING;
 
+-- ListTagsByPrefix returns up to lim tags whose name_normalized is in [low, high), in that order,
+-- for the prefix search of hashtags (ADR-0092 section 1).
+-- name: ListTagsByPrefix :many
+SELECT id, name, name_normalized, created_at FROM tags
+WHERE name_normalized >= CAST(sqlc.arg(low) AS TEXT) AND name_normalized < CAST(sqlc.arg(high) AS TEXT)
+ORDER BY name_normalized
+LIMIT sqlc.arg(lim);
+
 -- name: GetTagByName :one
 SELECT id, name, name_normalized, created_at FROM tags WHERE name_normalized = ?;
 

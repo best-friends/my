@@ -8879,6 +8879,15 @@ type SupporterSubscription struct {
 // before its first payment. The role is held while `active`, `canceling`, or `past_due`.
 type SupporterSubscriptionState string
 
+// TagSuggestion A hashtag that the prefix search of hashtags found (ADR-0092).
+type TagSuggestion struct {
+	// Name The hashtag as first written on this server, without `#`.
+	Name string `json:"name"`
+
+	// StatusesCount How many posts of visibility `public`, `local`, or `unlisted` carry the hashtag now.
+	StatusesCount int64 `json:"statuses_count"`
+}
+
 // ThemeError One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
 // `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
 // of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
@@ -9986,6 +9995,16 @@ type ListStatusReactionsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// SearchTagsParams defines parameters for SearchTags.
+type SearchTagsParams struct {
+	// Q The start of a hashtag: 1 to 100 characters after a leading `#`, which is ignored.
+	// Anything else is a 400.
+	Q string `form:"q" json:"q"`
+
+	// Limit The maximum number of results of a prefix search for the autocomplete (ADR-0092).
+	Limit *SearchLimit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // GetHomeTimelineParams defines parameters for GetHomeTimeline.
 type GetHomeTimelineParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -10945,6 +10964,9 @@ type ServerInterface interface {
 	// SyncOwnSupporterSubscription Re-read the authenticated user's subscription from the payment provider
 	// (POST /supporter/subscription/sync)
 	SyncOwnSupporterSubscription(w http.ResponseWriter, r *http.Request)
+	// SearchTags Search hashtags by prefix
+	// (GET /tags/search)
+	SearchTags(w http.ResponseWriter, r *http.Request, params SearchTagsParams)
 	// GetHomeTimeline Get the home timeline
 	// (GET /timelines/home)
 	GetHomeTimeline(w http.ResponseWriter, r *http.Request, params GetHomeTimelineParams)
@@ -17856,6 +17878,52 @@ func (siw *ServerInterfaceWrapper) SyncOwnSupporterSubscription(w http.ResponseW
 	handler.ServeHTTP(w, r)
 }
 
+// SearchTags operation middleware
+func (siw *ServerInterfaceWrapper) SearchTags(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchTagsParams
+
+	// ------------- Required query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchTags(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHomeTimeline operation middleware
 func (siw *ServerInterfaceWrapper) GetHomeTimeline(w http.ResponseWriter, r *http.Request) {
 
@@ -18341,6 +18409,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/quotes/{quote_id}/revoke", wrapper.RevokeStatusQuote)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/source", wrapper.GetStatusSource)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/tags/search", wrapper.SearchTags)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/local", wrapper.GetLocalTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/public", wrapper.GetPublicTimeline)
@@ -32883,6 +32952,68 @@ func (response SyncOwnSupporterSubscriptiondefaultApplicationProblemPlusJSONResp
 	return err
 }
 
+type SearchTagsRequestObject struct {
+	Params SearchTagsParams
+}
+
+type SearchTagsResponseObject interface {
+	VisitSearchTagsResponse(w http.ResponseWriter) error
+}
+
+type SearchTags200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type SearchTags200JSONResponse struct {
+	Body    []TagSuggestion
+	Headers SearchTags200ResponseHeaders
+}
+
+func (response SearchTags200JSONResponse) VisitSearchTagsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchTagsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SearchTagsdefaultApplicationProblemPlusJSONResponse) VisitSearchTagsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHomeTimelineRequestObject struct {
 	Params GetHomeTimelineParams
 }
@@ -34119,6 +34250,9 @@ type StrictServerInterface interface {
 	// SyncOwnSupporterSubscription Re-read the authenticated user's subscription from the payment provider
 	// (POST /supporter/subscription/sync)
 	SyncOwnSupporterSubscription(ctx context.Context, request SyncOwnSupporterSubscriptionRequestObject) (SyncOwnSupporterSubscriptionResponseObject, error)
+	// SearchTags Search hashtags by prefix
+	// (GET /tags/search)
+	SearchTags(ctx context.Context, request SearchTagsRequestObject) (SearchTagsResponseObject, error)
 	// GetHomeTimeline Get the home timeline
 	// (GET /timelines/home)
 	GetHomeTimeline(ctx context.Context, request GetHomeTimelineRequestObject) (GetHomeTimelineResponseObject, error)
@@ -40663,6 +40797,32 @@ func (sh *strictHandler) SyncOwnSupporterSubscription(w http.ResponseWriter, r *
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SyncOwnSupporterSubscriptionResponseObject); ok {
 		if err := validResponse.VisitSyncOwnSupporterSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SearchTags operation middleware
+func (sh *strictHandler) SearchTags(w http.ResponseWriter, r *http.Request, params SearchTagsParams) {
+	var request SearchTagsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchTags(ctx, request.(SearchTagsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchTags")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SearchTagsResponseObject); ok {
+		if err := validResponse.VisitSearchTagsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

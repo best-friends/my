@@ -12,6 +12,40 @@ import (
 	"time"
 )
 
+const addTagUsage = `-- name: AddTagUsage :exec
+INSERT INTO tag_usage (tag_id, statuses_count, last_used_at)
+VALUES ($1::uuid, $2::bigint, (SELECT max(f.revised_at) FROM feed_tag_entries f WHERE f.tag_id = $1::uuid AND f.visibility IN ('public', 'local', 'unlisted')))
+ON CONFLICT (tag_id) DO UPDATE SET statuses_count = tag_usage.statuses_count + excluded.statuses_count, last_used_at = excluded.last_used_at
+`
+
+type AddTagUsageParams struct {
+	TagID string
+	N     int64
+}
+
+// AddTagUsage adds n posts to the usage of a tag, which a post that counts carries.
+func (q *Queries) AddTagUsage(ctx context.Context, arg AddTagUsageParams) error {
+	_, err := q.db.Exec(ctx, addTagUsage, arg.TagID, arg.N)
+	return err
+}
+
+const adjustTagUsage = `-- name: AdjustTagUsage :exec
+UPDATE tag_usage SET statuses_count = statuses_count + $1::bigint, last_used_at = (SELECT max(f.revised_at) FROM feed_tag_entries f WHERE f.tag_id = $2::uuid AND f.visibility IN ('public', 'local', 'unlisted'))
+WHERE tag_id = $2::uuid
+`
+
+type AdjustTagUsageParams struct {
+	Delta int64
+	TagID string
+}
+
+// AdjustTagUsage adds delta (which may be zero or negative) posts to the usage of a tag that has
+// a row and that a post that counts still carries, and reads its last_used_at again.
+func (q *Queries) AdjustTagUsage(ctx context.Context, arg AdjustTagUsageParams) error {
+	_, err := q.db.Exec(ctx, adjustTagUsage, arg.Delta, arg.TagID)
+	return err
+}
+
 const deleteAllFeedDirectRecipients = `-- name: DeleteAllFeedDirectRecipients :exec
 DELETE FROM feed_direct_recipients
 `
@@ -65,6 +99,30 @@ DELETE FROM feed_tag_entries
 
 func (q *Queries) DeleteAllFeedTagEntries(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, deleteAllFeedTagEntries)
+	return err
+}
+
+const deleteAllTagUsage = `-- name: DeleteAllTagUsage :exec
+DELETE FROM tag_usage
+`
+
+func (q *Queries) DeleteAllTagUsage(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllTagUsage)
+	return err
+}
+
+const deleteDrainedTagUsage = `-- name: DeleteDrainedTagUsage :exec
+DELETE FROM tag_usage WHERE tag_id = $1::uuid AND statuses_count <= $2::bigint
+`
+
+type DeleteDrainedTagUsageParams struct {
+	TagID string
+	N     int64
+}
+
+// DeleteDrainedTagUsage deletes the usage of a tag that n posts fewer would leave at zero.
+func (q *Queries) DeleteDrainedTagUsage(ctx context.Context, arg DeleteDrainedTagUsageParams) error {
+	_, err := q.db.Exec(ctx, deleteDrainedTagUsage, arg.TagID, arg.N)
 	return err
 }
 
@@ -281,7 +339,7 @@ func (q *Queries) InsertFeedEntry(ctx context.Context, arg InsertFeedEntryParams
 }
 
 const insertFeedTagEntry = `-- name: InsertFeedTagEntry :exec
-INSERT INTO feed_tag_entries (tag_id, entry_id, author_account_id, visibility, is_local) VALUES ($1, $2, $3, $4, $5)
+INSERT INTO feed_tag_entries (tag_id, entry_id, author_account_id, visibility, is_local, revised_at) VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT DO NOTHING
 `
 
@@ -291,6 +349,7 @@ type InsertFeedTagEntryParams struct {
 	AuthorAccountID string
 	Visibility      string
 	IsLocal         bool
+	RevisedAt       time.Time
 }
 
 func (q *Queries) InsertFeedTagEntry(ctx context.Context, arg InsertFeedTagEntryParams) error {
@@ -300,6 +359,7 @@ func (q *Queries) InsertFeedTagEntry(ctx context.Context, arg InsertFeedTagEntry
 		arg.AuthorAccountID,
 		arg.Visibility,
 		arg.IsLocal,
+		arg.RevisedAt,
 	)
 	return err
 }
@@ -449,7 +509,7 @@ func (q *Queries) ListAllFeedFollowEdges(ctx context.Context) ([]FeedFollowEdge,
 }
 
 const listAllFeedTagEntries = `-- name: ListAllFeedTagEntries :many
-SELECT tag_id, entry_id, author_account_id, visibility, is_local FROM feed_tag_entries ORDER BY tag_id, entry_id
+SELECT tag_id, entry_id, author_account_id, visibility, is_local, revised_at FROM feed_tag_entries ORDER BY tag_id, entry_id
 `
 
 func (q *Queries) ListAllFeedTagEntries(ctx context.Context) ([]FeedTagEntry, error) {
@@ -467,10 +527,63 @@ func (q *Queries) ListAllFeedTagEntries(ctx context.Context) ([]FeedTagEntry, er
 			&i.AuthorAccountID,
 			&i.Visibility,
 			&i.IsLocal,
+			&i.RevisedAt,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllTagUsage = `-- name: ListAllTagUsage :many
+SELECT tag_id, statuses_count, last_used_at FROM tag_usage ORDER BY tag_id
+`
+
+func (q *Queries) ListAllTagUsage(ctx context.Context) ([]TagUsage, error) {
+	rows, err := q.db.Query(ctx, listAllTagUsage)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TagUsage{}
+	for rows.Next() {
+		var i TagUsage
+		if err := rows.Scan(&i.TagID, &i.StatusesCount, &i.LastUsedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCountedFeedTagIDs = `-- name: ListCountedFeedTagIDs :many
+
+SELECT tag_id FROM feed_tag_entries WHERE entry_id = $1 AND visibility IN ('public', 'local', 'unlisted') ORDER BY tag_id
+`
+
+// tag_usage (ADR-0092 section 1): the posts of visibility public, local, and unlisted count; the
+// statements run after feed_tag_entries has changed, and last_used_at is read back from it.
+// ListCountedFeedTagIDs returns the tags of an entry that tag_usage counts.
+func (q *Queries) ListCountedFeedTagIDs(ctx context.Context, entryID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCountedFeedTagIDs, entryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var tag_id string
+		if err := rows.Scan(&tag_id); err != nil {
+			return nil, err
+		}
+		items = append(items, tag_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -1090,6 +1203,31 @@ func (q *Queries) ListTagEntries(ctx context.Context, arg ListTagEntriesParams) 
 			&i.RevisionSeq,
 			&i.IsReply,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTagUsageOf = `-- name: ListTagUsageOf :many
+SELECT tag_id, statuses_count, last_used_at FROM tag_usage WHERE tag_id = ANY($1::uuid[]) ORDER BY tag_id
+`
+
+// ListTagUsageOf returns the usage of the tags among ids that have a row.
+func (q *Queries) ListTagUsageOf(ctx context.Context, ids []string) ([]TagUsage, error) {
+	rows, err := q.db.Query(ctx, listTagUsageOf, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TagUsage{}
+	for rows.Next() {
+		var i TagUsage
+		if err := rows.Scan(&i.TagID, &i.StatusesCount, &i.LastUsedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

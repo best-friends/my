@@ -108,7 +108,9 @@ CREATE INDEX status_deletions_uri ON status_deletions (uri);
 -- A remote status deleted by retention may be fetched again and deleted again (ADR-0034).
 CREATE UNIQUE INDEX status_deletions_tombstone_uri ON status_deletions (uri) WHERE origin <> 'retention';
 
--- Resource: a hashtag, unique by its normalized name.
+-- Resource: a hashtag, unique by its normalized name. name_normalized compares byte by byte (the
+-- default BINARY), so that the prefix search of hashtags (ADR-0092 §1) reads the range
+-- name_normalized >= q AND name_normalized < q || U+10FFFF in index order.
 CREATE TABLE tags (
   id TEXT NOT NULL PRIMARY KEY,
   name TEXT NOT NULL,

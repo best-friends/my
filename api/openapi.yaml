@@ -2944,6 +2944,52 @@ paths:
           $ref: '#/components/responses/AccountStatusPage'
         default:
           $ref: '#/components/responses/Problem'
+  /tags/search:
+    get:
+      operationId: searchTags
+      summary: Search hashtags by prefix
+      description: |
+        The hashtags whose name starts with `q`, for the autocomplete of hashtags in the compose
+        form and the hashtag search (FR-119, FR-306, ADR-0092). `q` and the names are compared
+        under NFKC and lowercase.
+
+        Only the hashtags that a post of visibility `public`, `local`, or `unlisted` carries now
+        are found: a hashtag of private and direct posts only, or one whose posts are all deleted
+        or edited away, is left out. The results come in this order: the hashtag equal to `q`,
+        then those carried by more posts, then the more recently used. There is no paging.
+      tags:
+        - statuses
+      security:
+        - oauth2:
+            - read:statuses
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: |
+            The start of a hashtag: 1 to 100 characters after a leading `#`, which is ignored.
+            Anything else is a 400.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 101
+        - $ref: '#/components/parameters/SearchLimit'
+      responses:
+        '200':
+          description: The hashtags, best match first.
+          headers:
+            Cache-Control:
+              description: '`private, max-age=30`: a client may reuse the results while the user types the same prefix again.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagSuggestion'
+        default:
+          $ref: '#/components/responses/Problem'
   /timelines/home:
     get:
       operationId: getHomeTimeline
@@ -15201,6 +15247,21 @@ components:
         - expired
         - revoked
         - abandoned
+    TagSuggestion:
+      description: A hashtag that the prefix search of hashtags found (ADR-0092).
+      type: object
+      required:
+        - name
+        - statuses_count
+      properties:
+        name:
+          description: The hashtag as first written on this server, without `#`.
+          type: string
+        statuses_count:
+          description: How many posts of visibility `public`, `local`, or `unlisted` carry the hashtag now.
+          type: integer
+          format: int64
+          minimum: 1
     ThemeError:
       description: |
         One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,

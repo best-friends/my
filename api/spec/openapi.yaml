@@ -258,6 +258,8 @@ paths:
     $ref: ./paths/statuses_{id}_source.yaml
   /accounts/{id}/statuses:
     $ref: ./paths/accounts_{id}_statuses.yaml
+  /tags/search:
+    $ref: ./paths/tags_search.yaml
   /timelines/home:
     $ref: ./paths/timelines_home.yaml
   /timelines/local:
@@ -1363,6 +1365,8 @@ components:
       $ref: ./components/schemas/SupporterSubscription.yaml
     SupporterSubscriptionState:
       $ref: ./components/schemas/SupporterSubscriptionState.yaml
+    TagSuggestion:
+      $ref: ./components/schemas/TagSuggestion.yaml
     ThemeError:
       $ref: ./components/schemas/ThemeError.yaml
     ThemeProblem:

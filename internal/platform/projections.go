@@ -132,7 +132,7 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 			},
 			{
 				Name: "feeds", Module: "timeline",
-				Tables: []string{"feed_entries", "feed_direct_recipients", "feed_tag_entries", "feed_follow_edges", "feed_exclusions", "feed_domain_mutes"},
+				Tables: []string{"feed_entries", "feed_direct_recipients", "feed_tag_entries", "tag_usage", "feed_follow_edges", "feed_exclusions", "feed_domain_mutes"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return timeline.RebuildProjections(ctx, u, r.feeds,
 						timeline.ContentSource(r.statuses, r.interactions), timeline.GraphSource(r.follows))

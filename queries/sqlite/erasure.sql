@@ -358,6 +358,13 @@ LIMIT sqlc.arg(lim);
 -- name: EraseFeedDirectRecipientsOfEntries :exec
 DELETE FROM feed_direct_recipients WHERE entry_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
 
+-- CountUsedFeedTagsOfEntries returns how many of the entries among ids that tag_usage counts
+-- carry each tag.
+-- name: CountUsedFeedTagsOfEntries :many
+SELECT tag_id, count(*) AS n FROM feed_tag_entries
+WHERE entry_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) AND visibility IN ('public', 'local', 'unlisted')
+GROUP BY tag_id ORDER BY tag_id;
+
 -- name: EraseFeedTagEntriesOfEntries :exec
 DELETE FROM feed_tag_entries WHERE entry_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
 
