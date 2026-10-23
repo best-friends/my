@@ -204,7 +204,7 @@ func paymentAccount(t *testing.T, newProvider PaymentProviderFactory) {
 
 func paymentPlanSpec(month int64) supporters.PlanSpec {
 	return supporters.PlanSpec{
-		PlanID: "plan-1", Name: "Supporter", Description: "Thanks",
+		PlanID: NamedID("plan-1"), Name: "Supporter", Description: "Thanks",
 		Prices: []supporters.PriceSpec{
 			{Interval: supporters.IntervalMonth, AmountMinor: month, Currency: "JPY"},
 			{Interval: supporters.IntervalYear, AmountMinor: 5000, Currency: "JPY"},
@@ -231,7 +231,7 @@ func ensurePlan(t *testing.T, p supporters.PaymentProvider, spec supporters.Plan
 
 func paymentPlans(t *testing.T, newProvider PaymentProviderFactory) {
 	s := paymentScenario(t)
-	s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_on_old", "local-1", supporters.StatusActive)}
+	s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_on_old", NamedID("local-1"), supporters.StatusActive)}
 	p := newProvider(t, s).Provider
 	first := ensurePlan(t, p, paymentPlanSpec(500))
 	if len(first.Archived) != 0 {
@@ -274,14 +274,14 @@ func paymentCheckouts(t *testing.T, newProvider PaymentProviderFactory) {
 	ctx := t.Context()
 	s := paymentScenario(t)
 	s.Checkouts = []supporters.CheckoutResult{
-		{Ref: "cs_done", Status: supporters.CheckoutCompleted, LocalID: "local-done", Customer: "cus_done", Subscription: "sub_done"},
-		{Ref: "cs_gone", Status: supporters.CheckoutExpired, LocalID: "local-gone"},
+		{Ref: "cs_done", Status: supporters.CheckoutCompleted, LocalID: NamedID("local-done"), Customer: "cus_done", Subscription: "sub_done"},
+		{Ref: "cs_gone", Status: supporters.CheckoutExpired, LocalID: NamedID("local-gone")},
 	}
 	u := newProvider(t, s)
 	p := u.Provider
 	refs := ensurePlan(t, p, paymentPlanSpec(500))
 	req := supporters.CheckoutRequest{
-		LocalID: "local-new", Price: refs.Prices[0].Ref, Email: "alice@example.com", Locale: "ja",
+		LocalID: NamedID("local-new"), Price: refs.Prices[0].Ref, Email: "alice@example.com", Locale: "ja",
 		SuccessURL: "https://my.example/supporters/done", CancelURL: "https://my.example/supporters", Key: "checkout:local-new",
 	}
 	c, err := p.StartCheckout(ctx, req)
@@ -295,7 +295,7 @@ func paymentCheckouts(t *testing.T, newProvider PaymentProviderFactory) {
 		t.Errorf("StartCheckout with the same key = %+v, %v, want %s", again, err, c.Ref)
 	}
 	got, err := p.GetCheckout(ctx, c.Ref)
-	if err != nil || got.Status != supporters.CheckoutOpen || got.LocalID != "local-new" {
+	if err != nil || got.Status != supporters.CheckoutOpen || got.LocalID != NamedID("local-new") {
 		t.Errorf("GetCheckout(new) = %+v, %v, want open with our ID", got, err)
 	}
 	for _, want := range s.Checkouts {
@@ -316,7 +316,7 @@ func paymentCheckouts(t *testing.T, newProvider PaymentProviderFactory) {
 func paymentCommands(t *testing.T, newProvider PaymentProviderFactory) {
 	ctx := t.Context()
 	s := paymentScenario(t)
-	s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_cmd", "local-cmd", supporters.StatusActive)}
+	s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_cmd", NamedID("local-cmd"), supporters.StatusActive)}
 	p := newProvider(t, s).Provider
 	refs := ensurePlan(t, p, paymentPlanSpec(500))
 	up, down := refs.Prices[1].Ref, refs.Prices[0].Ref
@@ -425,11 +425,11 @@ func paymentSnapshots(t *testing.T, newProvider PaymentProviderFactory) {
 		supporters.StatusIncomplete, supporters.StatusIncompleteExpired, supporters.StatusActive, supporters.StatusPastDue,
 		supporters.StatusUnpaid, supporters.StatusPaused, supporters.StatusCanceled,
 	} {
-		s.Subscriptions = append(s.Subscriptions, paymentSub(fmt.Sprintf("sub_%d", i), fmt.Sprintf("local-%d", i), st))
+		s.Subscriptions = append(s.Subscriptions, paymentSub(fmt.Sprintf("sub_%d", i), NamedID(fmt.Sprintf("local-%d", i)), st))
 	}
-	canceling := paymentSub("sub_canceling", "local-canceling", supporters.StatusActive)
+	canceling := paymentSub("sub_canceling", NamedID("local-canceling"), supporters.StatusActive)
 	canceling.CancelAtPeriodEnd, canceling.ScheduledPrice = true, "price_lower"
-	failed := paymentSub("sub_failed", "local-failed", supporters.StatusPastDue)
+	failed := paymentSub("sub_failed", NamedID("local-failed"), supporters.StatusPastDue)
 	failed.LatestPaymentFailed = paymentNow.Add(-2 * 24 * time.Hour)
 	s.Subscriptions = append(s.Subscriptions, canceling, failed, paymentSub("sub_not_ours", "", supporters.StatusActive))
 	p := newProvider(t, s).Provider
@@ -603,7 +603,7 @@ func paymentPages(t *testing.T, newProvider PaymentProviderFactory) {
 	ctx := t.Context()
 	s := paymentScenario(t)
 	for i := range 250 {
-		s.Subscriptions = append(s.Subscriptions, paymentSub(fmt.Sprintf("sub_%03d", i), fmt.Sprintf("local-%03d", i), supporters.StatusActive))
+		s.Subscriptions = append(s.Subscriptions, paymentSub(fmt.Sprintf("sub_%03d", i), NamedID(fmt.Sprintf("local-%03d", i)), supporters.StatusActive))
 	}
 	for i := range 230 {
 		s.Money = append(s.Money, PaymentScenarioMoney{
@@ -679,7 +679,7 @@ func paymentFailures(t *testing.T, newProvider PaymentProviderFactory) {
 		{supporters.ErrPaymentUnavailable, supporters.ErrorUnavailable},
 	} {
 		s := paymentScenario(t)
-		s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_1", "local-1", supporters.StatusActive)}
+		s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_1", NamedID("local-1"), supporters.StatusActive)}
 		s.Failure = tc.err
 		p := newProvider(t, s).Provider
 		calls := map[string]error{}
@@ -694,7 +694,7 @@ func paymentFailures(t *testing.T, newProvider PaymentProviderFactory) {
 		}
 	}
 	s := paymentScenario(t)
-	s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_1", "local-1", supporters.StatusActive)}
+	s.Subscriptions = []supporters.SubscriptionSnapshot{paymentSub("sub_1", NamedID("local-1"), supporters.StatusActive)}
 	p := newProvider(t, s).Provider
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()

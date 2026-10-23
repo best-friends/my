@@ -29,12 +29,12 @@ func postingModeration(t *testing.T, e *postingEnv) {
 		t.Helper()
 		return e.h.UnitOfWork.Tx(ctx, fn)
 	}
-	if err := tx(func(tx uow.Tx) error { return e.content.DeleteByModeration(ctx, tx, p.Status, "action-1", at) }); err != nil {
+	if err := tx(func(tx uow.Tx) error { return e.content.DeleteByModeration(ctx, tx, p.Status, NamedID("action-1"), at) }); err != nil {
 		t.Fatalf("DeleteByModeration = %v", err)
 	}
 	want := content.Deletion{
 		StatusID: p.Status.ID, URI: p.Status.URI, AuthorAccountID: alice, Origin: content.DeletedByModeration,
-		ModerationActionID: "action-1", DeletedAt: at,
+		ModerationActionID: NamedID("action-1"), DeletedAt: at,
 	}
 	if got, err := e.repo.FindDeletion(ctx, p.Status.ID); err != nil || got != want {
 		t.Errorf("deletion = %+v, %v; want %+v", got, err, want)
@@ -47,7 +47,7 @@ func postingModeration(t *testing.T, e *postingEnv) {
 	} else if ev, ok := events[0].(appcontent.StatusDeleted); !ok || ev.Deletion != want {
 		t.Errorf("event = %+v, want the deletion", events[0])
 	}
-	err := tx(func(tx uow.Tx) error { return e.content.DeleteByModeration(ctx, tx, p.Status, "action-2", at) })
+	err := tx(func(tx uow.Tx) error { return e.content.DeleteByModeration(ctx, tx, p.Status, NamedID("action-2"), at) })
 	if !errors.Is(err, appcontent.ErrAlreadyDeleted) {
 		t.Errorf("DeleteByModeration again = %v, want ErrAlreadyDeleted", err)
 	}
@@ -71,12 +71,12 @@ func postingModeration(t *testing.T, e *postingEnv) {
 		}
 	}
 	overridden(false)
-	mark("action-3")
-	mark("action-3") // again: nothing changes
-	mark("action-4")
+	mark(NamedID("action-3"))
+	mark(NamedID("action-3")) // again: nothing changes
+	mark(NamedID("action-4"))
 	overridden(true)
-	unmark("action-3")
+	unmark(NamedID("action-3"))
 	overridden(true)
-	unmark("action-4")
+	unmark(NamedID("action-4"))
 	overridden(false)
 }

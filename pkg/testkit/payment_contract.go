@@ -313,7 +313,7 @@ func subNotice(event, sub string, at time.Time) supporters.Notice {
 
 func paymentDuplicateWebhooks(t *testing.T, newHarness PaymentFactory) {
 	e := newPaymentEnv(t, newHarness, paymentEnvOptions{})
-	e.world.PutSubscription(paymentSub("sub_1", "local-1", supporters.StatusActive))
+	e.world.PutSubscription(paymentSub("sub_1", NamedID("local-1"), supporters.StatusActive))
 	n := subNotice("evt_1", "sub_1", e.clock.Now())
 	want := []supporters.WebhookOutcome{supporters.WebhookRecorded, supporters.WebhookDuplicate, supporters.WebhookDuplicate}
 	for i, w := range want {
@@ -336,7 +336,7 @@ func paymentDuplicateWebhooks(t *testing.T, newHarness PaymentFactory) {
 	if ran := e.run(t); ran != 0 {
 		t.Errorf("ran %d jobs after a duplicate, want 0", ran)
 	}
-	snap, syncs := e.syncer.snapshot("local-1")
+	snap, syncs := e.syncer.snapshot(NamedID("local-1"))
 	if syncs != 1 || snap.Status != supporters.StatusActive {
 		t.Errorf("synced %d times to %+v, want once to active", syncs, snap)
 	}
@@ -348,7 +348,7 @@ func paymentDuplicateWebhooks(t *testing.T, newHarness PaymentFactory) {
 	if r := e.svc.HandleNotice(t.Context(), n); !r.IsDone() {
 		t.Fatalf("HandleNotice again = %v", r.Err())
 	}
-	if again, _ := e.syncer.snapshot("local-1"); !sameSnapshot(again, snap) {
+	if again, _ := e.syncer.snapshot(NamedID("local-1")); !sameSnapshot(again, snap) {
 		t.Errorf("state after the job ran again = %+v, want %+v", again, snap)
 	}
 }
@@ -356,7 +356,7 @@ func paymentDuplicateWebhooks(t *testing.T, newHarness PaymentFactory) {
 func paymentOutOfOrderWebhooks(t *testing.T, newHarness PaymentFactory) {
 	e := newPaymentEnv(t, newHarness, paymentEnvOptions{})
 	ctx := t.Context()
-	sub := paymentSub("sub_1", "local-1", supporters.StatusIncomplete)
+	sub := paymentSub("sub_1", NamedID("local-1"), supporters.StatusIncomplete)
 	e.world.PutSubscription(sub)
 	created := subNotice("evt_created", "sub_1", e.clock.Now())
 	if got := e.deliver(t, created); got != supporters.WebhookRecorded {
@@ -384,7 +384,7 @@ func paymentOutOfOrderWebhooks(t *testing.T, newHarness PaymentFactory) {
 	if ran := e.run(t); ran != 4 {
 		t.Fatalf("ran %d jobs, want 4", ran)
 	}
-	got, _ := e.syncer.snapshot("local-1")
+	got, _ := e.syncer.snapshot(NamedID("local-1"))
 	if !sameSnapshot(got, sub) {
 		t.Errorf("state after the deliveries = %+v, want the provider's %+v", got, sub)
 	}
@@ -393,17 +393,17 @@ func paymentOutOfOrderWebhooks(t *testing.T, newHarness PaymentFactory) {
 		t.Fatalf("old event = %s", got)
 	}
 	e.run(t)
-	if got, _ := e.syncer.snapshot("local-1"); !sameSnapshot(got, sub) {
+	if got, _ := e.syncer.snapshot(NamedID("local-1")); !sameSnapshot(got, sub) {
 		t.Errorf("state after an old event = %+v, want %+v", got, sub)
 	}
 	// A completed checkout links the subscription it created.
-	e.world.PutCheckout(supporters.CheckoutResult{Ref: "cs_1", Status: supporters.CheckoutCompleted, LocalID: "local-2", Customer: "cus_2", Subscription: "sub_2"})
-	e.world.PutSubscription(paymentSub("sub_2", "local-2", supporters.StatusActive))
+	e.world.PutCheckout(supporters.CheckoutResult{Ref: "cs_1", Status: supporters.CheckoutCompleted, LocalID: NamedID("local-2"), Customer: "cus_2", Subscription: "sub_2"})
+	e.world.PutSubscription(paymentSub("sub_2", NamedID("local-2"), supporters.StatusActive))
 	if got := e.deliver(t, supporters.Notice{EventID: "evt_cs", Kind: supporters.NoticeCheckout, ObjectID: "cs_1"}); got != supporters.WebhookRecorded {
 		t.Fatalf("checkout = %s", got)
 	}
 	e.run(t)
-	if snap, n := e.syncer.snapshot("local-2"); n != 1 || snap.Ref != "sub_2" {
+	if snap, n := e.syncer.snapshot(NamedID("local-2")); n != 1 || snap.Ref != "sub_2" {
 		t.Errorf("after the checkout: %+v (%d syncs), want sub_2", snap, n)
 	}
 	if _, err := e.h.Payments.LastWebhookReceipt(ctx, paymentProvider); err != nil {
@@ -482,7 +482,7 @@ func paymentEventMoney(t *testing.T, newHarness PaymentFactory) {
 	for _, id := range []string{"txn_p1", "txn_r1", "txn_pending"} {
 		e.world.PutMoney(byID[id])
 	}
-	e.world.PutSubscription(paymentSub("sub_1", "local-1", supporters.StatusActive))
+	e.world.PutSubscription(paymentSub("sub_1", NamedID("local-1"), supporters.StatusActive))
 	// The refund comes first: its job reads the payment it refunds before recording it.
 	for _, id := range []string{"txn_r1", "txn_r1", "txn_pending"} {
 		e.deliver(t, supporters.Notice{EventID: "evt_" + id, Kind: supporters.NoticeMoney, ObjectID: id})
@@ -491,7 +491,7 @@ func paymentEventMoney(t *testing.T, newHarness PaymentFactory) {
 	if got := e.syncer.recordedMoney(); !slices.Equal(got, []string{"txn_p1", "txn_r1"}) {
 		t.Errorf("recorded money %v, want the payment and then its refund", got)
 	}
-	if _, n := e.syncer.snapshot("local-1"); n != 1 {
+	if _, n := e.syncer.snapshot(NamedID("local-1")); n != 1 {
 		t.Errorf("the refund synced its subscription %d times, want 1", n)
 	}
 	// The payment's own delivery records nothing new.
@@ -598,7 +598,7 @@ func (e *paymentEnv) reconcile(t *testing.T, key string) supporters.ReconcileRun
 func paymentReconcileCatchesUp(t *testing.T, newHarness PaymentFactory) {
 	e := newPaymentEnv(t, newHarness, paymentEnvOptions{})
 	ctx := t.Context()
-	sub := paymentSub("sub_1", "local-1", supporters.StatusActive)
+	sub := paymentSub("sub_1", NamedID("local-1"), supporters.StatusActive)
 	e.world.PutSubscription(sub)
 	e.world.PutSubscription(paymentSub("sub_not_ours", "", supporters.StatusActive))
 	first := e.reconcile(t, "schedule:1")
@@ -610,8 +610,8 @@ func paymentReconcileCatchesUp(t *testing.T, newHarness PaymentFactory) {
 	sub.Status = supporters.StatusCanceled
 	e.world.PutSubscription(sub)
 	e.world.PutChange(subNotice("evt_deleted", "sub_1", e.clock.Now()))
-	e.world.PutCheckout(supporters.CheckoutResult{Ref: "cs_open", Status: supporters.CheckoutCompleted, LocalID: "local-3", Customer: "cus_3", Subscription: "sub_3"})
-	e.world.PutSubscription(paymentSub("sub_3", "local-3", supporters.StatusActive))
+	e.world.PutCheckout(supporters.CheckoutResult{Ref: "cs_open", Status: supporters.CheckoutCompleted, LocalID: NamedID("local-3"), Customer: "cus_3", Subscription: "sub_3"})
+	e.world.PutSubscription(paymentSub("sub_3", NamedID("local-3"), supporters.StatusActive))
 	e.syncer.open = []supporters.CheckoutRef{"cs_open"}
 	movements := PaymentMovements(paymentMoneyScenario(t))
 	for _, m := range movements {
@@ -623,10 +623,10 @@ func paymentReconcileCatchesUp(t *testing.T, newHarness PaymentFactory) {
 	if run.Outcome != supporters.ReconcileSucceeded || run.ErrorKind != supporters.ErrorNone {
 		t.Fatalf("reconciliation = %+v, want succeeded", run)
 	}
-	if got, _ := e.syncer.snapshot("local-1"); got.Status != supporters.StatusCanceled {
+	if got, _ := e.syncer.snapshot(NamedID("local-1")); got.Status != supporters.StatusCanceled {
 		t.Errorf("local-1 after the reconciliation = %s, want canceled", got.Status)
 	}
-	if _, n := e.syncer.snapshot("local-3"); n != 1 {
+	if _, n := e.syncer.snapshot(NamedID("local-3")); n != 1 {
 		t.Errorf("local-3 synced %d times, want once from its checkout", n)
 	}
 	if got := e.syncer.recordedMoney(); len(got) != 9 {
@@ -655,7 +655,7 @@ func paymentReconcileCap(t *testing.T, newHarness PaymentFactory) {
 	const perRun = 3
 	e := newPaymentEnv(t, newHarness, paymentEnvOptions{pageSize: 10, maxRequests: perRun})
 	for i := range 35 {
-		e.world.PutSubscription(paymentSub(fmt.Sprintf("sub_%02d", i), fmt.Sprintf("local-%02d", i), supporters.StatusActive))
+		e.world.PutSubscription(paymentSub(fmt.Sprintf("sub_%02d", i), NamedID(fmt.Sprintf("local-%02d", i)), supporters.StatusActive))
 	}
 	before := e.world.Requests()
 	run := e.reconcile(t, "schedule:1")
@@ -684,7 +684,7 @@ func paymentReconcileCap(t *testing.T, newHarness PaymentFactory) {
 		t.Errorf("the continuations sent %d requests, more than %d each", sent, perRun)
 	}
 	for i := range 35 {
-		if _, n := e.syncer.snapshot(fmt.Sprintf("local-%02d", i)); n != 1 {
+		if _, n := e.syncer.snapshot(NamedID(fmt.Sprintf("local-%02d", i))); n != 1 {
 			t.Errorf("local-%02d synced %d times, want once", i, n)
 		}
 	}
@@ -693,7 +693,7 @@ func paymentReconcileCap(t *testing.T, newHarness PaymentFactory) {
 func paymentReconcileFailure(t *testing.T, newHarness PaymentFactory) {
 	e := newPaymentEnv(t, newHarness, paymentEnvOptions{pageSize: 10, maxRequests: 3})
 	for i := range 25 {
-		e.world.PutSubscription(paymentSub(fmt.Sprintf("sub_%02d", i), fmt.Sprintf("local-%02d", i), supporters.StatusActive))
+		e.world.PutSubscription(paymentSub(fmt.Sprintf("sub_%02d", i), NamedID(fmt.Sprintf("local-%02d", i)), supporters.StatusActive))
 	}
 	partial := e.reconcile(t, "schedule:1")
 	if partial.Outcome != supporters.ReconcilePartial {
@@ -714,14 +714,14 @@ func paymentReconcileFailure(t *testing.T, newHarness PaymentFactory) {
 	if next.Outcome == supporters.ReconcileFailed || next.SweepCursor == partial.SweepCursor {
 		t.Errorf("attempt after the failure = %+v, want it past the sweep cursor %q", next, partial.SweepCursor)
 	}
-	if _, n := e.syncer.snapshot("local-10"); n != 1 {
+	if _, n := e.syncer.snapshot(NamedID("local-10")); n != 1 {
 		t.Errorf("local-10 synced %d times, want once", n)
 	}
 }
 
 func paymentReconcileWindow(t *testing.T, newHarness PaymentFactory) {
 	e := newPaymentEnv(t, newHarness, paymentEnvOptions{})
-	e.world.PutSubscription(paymentSub("sub_1", "local-1", supporters.StatusActive))
+	e.world.PutSubscription(paymentSub("sub_1", NamedID("local-1"), supporters.StatusActive))
 	first := e.reconcile(t, "schedule:1")
 	// The reconciliations stop for 40 days; the provider no longer keeps the changes since.
 	e.clock.Advance(40 * 24 * time.Hour)
@@ -729,7 +729,7 @@ func paymentReconcileWindow(t *testing.T, newHarness PaymentFactory) {
 	if run.Outcome != supporters.ReconcileSucceeded || !run.ChangesUntil.After(first.ChangesUntil) {
 		t.Errorf("reconciliation after 40 days = %+v, want succeeded with the changes skipped", run)
 	}
-	if _, n := e.syncer.snapshot("local-1"); n != 2 {
+	if _, n := e.syncer.snapshot(NamedID("local-1")); n != 2 {
 		t.Errorf("local-1 synced %d times, want once per sweep", n)
 	}
 }

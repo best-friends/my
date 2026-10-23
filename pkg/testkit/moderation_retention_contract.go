@@ -288,7 +288,7 @@ func retentionPurgesReports(t *testing.T, e *retentionModEnv) {
 	ctx := t.Context()
 	period := e.settings.p.Reports
 	open := e.report(t, "open")
-	dismissed := e.report(t, "dismissed", "s1")
+	dismissed := e.report(t, "dismissed", NamedID("s1"))
 	if _, err := e.svc.AssignReport(ctx, dismissed.ID, e.moderator, e.moderator); err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +426,7 @@ func retentionKeepsEvidence(t *testing.T, e *retentionModEnv) {
 
 func retentionExports(t *testing.T, e *retentionModEnv) {
 	ctx := t.Context()
-	r := e.report(t, "export", "s1")
+	r := e.report(t, "export", NamedID("s1"))
 	if _, err := e.svc.AssignReport(ctx, r.ID, e.moderator, e.moderator); err != nil {
 		t.Fatal(err)
 	}

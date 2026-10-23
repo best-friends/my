@@ -190,7 +190,7 @@ func (e *remoteFollowEnv) job(t *testing.T, uri federation.IRI) {
 		t.Fatal(err)
 	}
 	e.clock.Advance(time.Second)
-	if r := e.processor.HandleJob(t.Context(), queue.Job{ID: "job", Type: nj.Type, Payload: nj.Payload, IdempotencyKey: nj.IdempotencyKey}); !r.IsDone() {
+	if r := e.processor.HandleJob(t.Context(), queue.Job{ID: NamedID("job"), Type: nj.Type, Payload: nj.Payload, IdempotencyKey: nj.IdempotencyKey}); !r.IsDone() {
 		t.Fatalf("job of %s = %+v (%v), want Done", uri, r, r.Err())
 	}
 }

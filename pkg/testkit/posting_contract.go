@@ -603,9 +603,9 @@ func postingRejectsInvalid(t *testing.T, e *postingEnv) {
 		}, content.ErrInvalidIdempotencyKey},
 		{"visibility", func(in *appcontent.CreateInput) { in.Visibility = "everyone" }, content.ErrInvalidVisibility},
 		{"language", func(in *appcontent.CreateInput) { in.Language = "not a tag" }, appcontent.ErrInvalidLanguage},
-		{"unknown author", func(in *appcontent.CreateInput) { in.AuthorAccountID = "missing" }, appcontent.ErrAccountUnavailable},
+		{"unknown author", func(in *appcontent.CreateInput) { in.AuthorAccountID = NamedID("missing") }, appcontent.ErrAccountUnavailable},
 		{"deactivated author", func(in *appcontent.CreateInput) { in.AuthorAccountID = deactivated }, appcontent.ErrAccountUnavailable},
-		{"unknown reply target", func(in *appcontent.CreateInput) { in.InReplyToID = "missing" }, appcontent.ErrReplyTargetNotFound},
+		{"unknown reply target", func(in *appcontent.CreateInput) { in.InReplyToID = NamedID("missing") }, appcontent.ErrReplyTargetNotFound},
 	} {
 		in := ok
 		tc.modify(&in)
@@ -778,7 +778,7 @@ func postingEdits(t *testing.T, e *postingEnv) {
 	if _, err := e.content.Edit(ctx, appcontent.EditInput{AccountID: bob, StatusID: p.Status.ID, TextInput: appcontent.TextInput{Text: "mine"}}); !errors.Is(err, appcontent.ErrNotAuthor) {
 		t.Errorf("Edit by another account = %v, want ErrNotAuthor", err)
 	}
-	if _, err := e.content.Edit(ctx, appcontent.EditInput{AccountID: alice, StatusID: "missing", TextInput: appcontent.TextInput{Text: "x"}}); !errors.Is(err, appcontent.ErrNotFound) {
+	if _, err := e.content.Edit(ctx, appcontent.EditInput{AccountID: alice, StatusID: NamedID("missing"), TextInput: appcontent.TextInput{Text: "x"}}); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Errorf("Edit of a missing status = %v, want ErrNotFound", err)
 	}
 	if _, err := e.content.Delete(ctx, alice, p.Status.ID); err != nil {

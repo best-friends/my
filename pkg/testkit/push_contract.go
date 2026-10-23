@@ -108,14 +108,14 @@ func (e *pushEnv) ofFamily(t *testing.T, family string) (notification.PushSubscr
 }
 
 func pushSubscriptions(t *testing.T, e *pushEnv) {
-	first := e.subscribe(t, "family-1", "https://push.example.net/1", notification.TypeMention, notification.TypeFollow, notification.TypeMention)
+	first := e.subscribe(t, NamedID("family-1"), "https://push.example.net/1", notification.TypeMention, notification.TypeFollow, notification.TypeMention)
 	if want := []notification.Type{notification.TypeFollow, notification.TypeMention}; !reflect.DeepEqual(first.Alerts, want) {
 		t.Errorf("alerts = %v, want %v", first.Alerts, want)
 	}
 	if first.KeyAuth != contractPushAuth {
 		t.Errorf("auth = %q, want it without padding", first.KeyAuth)
 	}
-	got, ok := e.ofFamily(t, "family-1")
+	got, ok := e.ofFamily(t, NamedID("family-1"))
 	if !ok || !reflect.DeepEqual(got, first) {
 		t.Errorf("FindPushSubscriptionOfFamily = %+v, %v; want %+v", got, ok, first)
 	}
@@ -125,17 +125,17 @@ func pushSubscriptions(t *testing.T, e *pushEnv) {
 
 	// The same browser changes its alerts: the subscription stays.
 	e.clock.Advance(time.Minute)
-	changed := e.subscribe(t, "family-1", "https://push.example.net/1", notification.TypeBoost)
+	changed := e.subscribe(t, NamedID("family-1"), "https://push.example.net/1", notification.TypeBoost)
 	if changed.ID != first.ID || !changed.CreatedAt.Equal(first.CreatedAt) || !changed.UpdatedAt.After(first.UpdatedAt) {
 		t.Errorf("changed = %+v, want the ID and creation of %+v", changed, first)
 	}
-	if got, _ := e.ofFamily(t, "family-1"); !reflect.DeepEqual(got.Alerts, []notification.Type{notification.TypeBoost}) {
+	if got, _ := e.ofFamily(t, NamedID("family-1")); !reflect.DeepEqual(got.Alerts, []notification.Type{notification.TypeBoost}) {
 		t.Errorf("alerts after the change = %v", got.Alerts)
 	}
 
 	// Another grant registers the same endpoint: it takes the endpoint over.
-	other := e.subscribe(t, "family-2", "https://push.example.net/1", notification.TypeMention)
-	if _, ok := e.ofFamily(t, "family-1"); ok {
+	other := e.subscribe(t, NamedID("family-2"), "https://push.example.net/1", notification.TypeMention)
+	if _, ok := e.ofFamily(t, NamedID("family-1")); ok {
 		t.Error("the first grant keeps a subscription with the endpoint of the second")
 	}
 	if _, err := e.h.Push.FindPushSubscription(t.Context(), first.ID); !errors.Is(err, appnotification.ErrNotFound) {
@@ -143,28 +143,28 @@ func pushSubscriptions(t *testing.T, e *pushEnv) {
 	}
 
 	// The grant subscribes another browser: it replaces its subscription.
-	moved := e.subscribe(t, "family-2", "https://push.example.net/2", notification.TypeMention)
+	moved := e.subscribe(t, NamedID("family-2"), "https://push.example.net/2", notification.TypeMention)
 	if moved.ID == other.ID {
 		t.Error("a new endpoint keeps the ID of the old subscription")
 	}
-	if got, _ := e.ofFamily(t, "family-2"); got.Endpoint != "https://push.example.net/2" {
+	if got, _ := e.ofFamily(t, NamedID("family-2")); got.Endpoint != "https://push.example.net/2" {
 		t.Errorf("endpoint = %s", got.Endpoint)
 	}
 
-	if err := e.svc.Unsubscribe(t.Context(), "family-2"); err != nil {
+	if err := e.svc.Unsubscribe(t.Context(), NamedID("family-2")); err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := e.ofFamily(t, "family-2"); ok {
+	if _, ok := e.ofFamily(t, NamedID("family-2")); ok {
 		t.Error("Unsubscribe left the subscription")
 	}
-	if err := e.svc.Unsubscribe(t.Context(), "family-2"); err != nil {
+	if err := e.svc.Unsubscribe(t.Context(), NamedID("family-2")); err != nil {
 		t.Errorf("Unsubscribe again: %v", err)
 	}
 }
 
 func pushSubscriptionIDs(t *testing.T, e *pushEnv) {
-	a := e.subscribe(t, "family-a", "https://push.example.net/a", notification.TypeMention, notification.TypeBoost)
-	b := e.subscribe(t, "family-b", "https://push.example.net/b", notification.TypeMention)
+	a := e.subscribe(t, NamedID("family-a"), "https://push.example.net/a", notification.TypeMention, notification.TypeBoost)
+	b := e.subscribe(t, NamedID("family-b"), "https://push.example.net/b", notification.TypeMention)
 	ids := func(acct string, typ notification.Type) []string {
 		t.Helper()
 		var out []string
@@ -233,14 +233,14 @@ func pushJobs(t *testing.T, e *pushEnv) {
 	if !ok {
 		t.Fatal("no handler of JobPush")
 	}
-	sub := e.subscribe(t, "family-j", "https://push.example.net/j", notification.TypeMention)
+	sub := e.subscribe(t, NamedID("family-j"), "https://push.example.net/j", notification.TypeMention)
 	run := func(subID string, typ notification.Type) queue.Result {
 		t.Helper()
 		payload, _ := json.Marshal(map[string]string{
 			"subscription_id": subID, "notification_id": "01890a5d-ac96-774b-bcce-b302099a8059", "account_id": contractPushAcct,
 			"type": string(typ), "source_account_id": "01890a5d-ac96-774b-bcce-b302099a805a", "status_id": "01890a5d-ac96-774b-bcce-b302099a805b",
 		})
-		return handler(t.Context(), queue.Job{ID: "job", Type: appnotification.JobPush, Payload: payload, Attempt: 1})
+		return handler(t.Context(), queue.Job{ID: NamedID("job"), Type: appnotification.JobPush, Payload: payload, Attempt: 1})
 	}
 
 	if r := run(sub.ID, notification.TypeMention); !r.IsDone() {
@@ -277,7 +277,7 @@ func pushJobs(t *testing.T, e *pushEnv) {
 	if r := run(sub.ID, notification.TypeMention); !r.IsDone() {
 		t.Errorf("gone = %+v", r)
 	}
-	if _, ok := e.ofFamily(t, "family-j"); ok {
+	if _, ok := e.ofFamily(t, NamedID("family-j")); ok {
 		t.Error("a gone subscription remains")
 	}
 	n := len(e.sender.sent())
@@ -287,13 +287,13 @@ func pushJobs(t *testing.T, e *pushEnv) {
 
 	// A grant that ended: its subscription is deleted without a message.
 	e.sender.set(appnotification.PushDelivered, 0)
-	ended := e.subscribe(t, "family-ended", "https://push.example.net/ended", notification.TypeMention)
-	e.audience.end("family-ended")
+	ended := e.subscribe(t, NamedID("family-ended"), "https://push.example.net/ended", notification.TypeMention)
+	e.audience.end(NamedID("family-ended"))
 	n = len(e.sender.sent())
 	if r := run(ended.ID, notification.TypeMention); !r.IsDone() || len(e.sender.sent()) != n {
 		t.Errorf("push to an ended grant = %+v, %d sent", r, len(e.sender.sent())-n)
 	}
-	if _, ok := e.ofFamily(t, "family-ended"); ok {
+	if _, ok := e.ofFamily(t, NamedID("family-ended")); ok {
 		t.Error("the subscription of an ended grant remains")
 	}
 }

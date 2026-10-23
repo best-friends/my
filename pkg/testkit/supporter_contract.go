@@ -225,7 +225,7 @@ func (e *supporterEnv) planOf(t *testing.T, id string) supporters.PlanView {
 // user adds an eligible user.
 func (e *supporterEnv) user(name string) string {
 	id := e.ids.NewID()
-	e.users.put(supporters.User{ID: id, AccountID: "acct-" + name, Handle: "@" + name, Email: name + "@example.com", EmailVerified: true, Locale: "en"})
+	e.users.put(supporters.User{ID: id, AccountID: NamedID("acct-" + name), Handle: "@" + name, Email: name + "@example.com", EmailVerified: true, Locale: "en"})
 	return id
 }
 
@@ -590,7 +590,7 @@ func supporterCancel(t *testing.T, e *supporterEnv) {
 	if counts, _ := e.svc.PlanCounts(ctx); len(counts) != 1 || counts[0].Members != 1 {
 		t.Errorf("PlanCounts: %v", counts)
 	}
-	if users, _ := e.svc.SubscriptionUsers(ctx, []string{id, "unknown"}); len(users) != 1 || users[0].UserID != alice {
+	if users, _ := e.svc.SubscriptionUsers(ctx, []string{id, NamedID("unknown")}); len(users) != 1 || users[0].UserID != alice {
 		t.Errorf("SubscriptionUsers: %v", users)
 	}
 	if _, err := e.svc.Cancel(ctx, alice); err != nil {
@@ -836,15 +836,15 @@ func supporterEligibility(t *testing.T, e *supporterEnv) {
 		}
 		return ""
 	}
-	if got := reason(start("nobody")); got != supporters.IneligibleNotLocal {
+	if got := reason(start(NamedID("nobody"))); got != supporters.IneligibleNotLocal {
 		t.Errorf("an unknown user: %s", got)
 	}
-	e.users.put(supporters.User{ID: "unverified", Handle: "@u", Email: "u@example.com"})
-	if got := reason(start("unverified")); got != supporters.IneligibleEmail {
+	e.users.put(supporters.User{ID: NamedID("unverified"), Handle: "@u", Email: "u@example.com"})
+	if got := reason(start(NamedID("unverified"))); got != supporters.IneligibleEmail {
 		t.Errorf("an unverified address: %s", got)
 	}
-	e.users.put(supporters.User{ID: "suspended", Handle: "@s", Email: "s@example.com", EmailVerified: true, Suspended: true})
-	if got := reason(start("suspended")); got != supporters.IneligibleRestricted {
+	e.users.put(supporters.User{ID: NamedID("suspended"), Handle: "@s", Email: "s@example.com", EmailVerified: true, Suspended: true})
+	if got := reason(start(NamedID("suspended"))); got != supporters.IneligibleRestricted {
 		t.Errorf("a suspended account: %s", got)
 	}
 	alice := e.user("alice")
@@ -1024,7 +1024,7 @@ func supporterListings(t *testing.T, e *supporterEnv) {
 	if _, err := e.svc.StartCheckout(ctx, supporters.CheckoutInput{UserID: dave, PlanID: small.ID, Interval: domain.IntervalMonth}); err != nil {
 		t.Fatal(err)
 	}
-	for _, id := range []string{dave, "nobody"} {
+	for _, id := range []string{dave, NamedID("nobody")} {
 		if _, err := e.svc.SetListed(ctx, id, true); !errors.Is(err, supporters.ErrNotMember) {
 			t.Errorf("SetListed(%s) = %v, want ErrNotMember", id, err)
 		}
@@ -1049,7 +1049,7 @@ func supporterListings(t *testing.T, e *supporterEnv) {
 		}
 		var out []string
 		for _, m := range l.Members {
-			if want := "acct-" + names[m.UserID]; m.AccountID != want {
+			if want := NamedID("acct-" + names[m.UserID]); m.AccountID != want {
 				t.Errorf("the account of %s: %q, want %q", m.UserID, m.AccountID, want)
 			}
 			out = append(out, m.UserID)

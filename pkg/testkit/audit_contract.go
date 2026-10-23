@@ -139,7 +139,7 @@ func checkAudit(t *testing.T, got []moderation.AuditEntry, want []auditWant) {
 func auditRecordsOperations(t *testing.T, e *auditEnv) {
 	ctx := t.Context()
 	issued, err := e.svc.IssueDomainAction(ctx, appmoderation.DomainActionInput{
-		Domain: "bad.example", Kind: moderation.DomainSuspend, PrivateNote: "not copied", IssuedByUserID: "mod-1",
+		Domain: "bad.example", Kind: moderation.DomainSuspend, PrivateNote: "not copied", IssuedByUserID: NamedID("mod-1"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -151,7 +151,7 @@ func auditRecordsOperations(t *testing.T, e *auditEnv) {
 	liftedAt := e.clock.Now()
 	// Lifting again changes nothing, so it records nothing.
 	e.clock.Advance(time.Second)
-	if err := e.svc.LiftDomainAction(ctx, issued.ID, "mod-1"); err != nil {
+	if err := e.svc.LiftDomainAction(ctx, issued.ID, NamedID("mod-1")); err != nil {
 		t.Fatal(err)
 	}
 	report, _, err := e.svc.FileRemoteReport(ctx, appmoderation.RemoteReportInput{
@@ -162,8 +162,8 @@ func auditRecordsOperations(t *testing.T, e *auditEnv) {
 	}
 	e.clock.Advance(time.Second)
 	assignedAt := e.clock.Now()
-	for _, by := range []string{"mod-1", ""} { // the second assignment changes nothing
-		if _, err := e.svc.AssignReport(ctx, report.ID, "mod-1", by); err != nil {
+	for _, by := range []string{NamedID("mod-1"), ""} { // the second assignment changes nothing
+		if _, err := e.svc.AssignReport(ctx, report.ID, NamedID("mod-1"), by); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -175,7 +175,7 @@ func auditRecordsOperations(t *testing.T, e *auditEnv) {
 	e.clock.Advance(time.Second)
 	resolvedAt := e.clock.Now()
 	for range 2 { // resolving a resolved report changes nothing
-		if _, err := e.svc.ResolveReport(ctx, report.ID, moderation.OutcomeDismissed, "mod-1"); err != nil {
+		if _, err := e.svc.ResolveReport(ctx, report.ID, moderation.OutcomeDismissed, NamedID("mod-1")); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -184,11 +184,11 @@ func auditRecordsOperations(t *testing.T, e *auditEnv) {
 		t.Fatalf("audit log = %+v, want 5 entries", got)
 	}
 	checkAudit(t, got, []auditWant{
-		{moderation.AuditActorUser, "mod-1", moderation.AuditReportResolved, moderation.AuditTargetReport, report.ID, "@bob@remote.example", got[0].SourceEventID, resolvedAt},
+		{moderation.AuditActorUser, NamedID("mod-1"), moderation.AuditReportResolved, moderation.AuditTargetReport, report.ID, "@bob@remote.example", got[0].SourceEventID, resolvedAt},
 		{moderation.AuditActorCLI, "", moderation.AuditReportUnassigned, moderation.AuditTargetReport, report.ID, "@bob@remote.example", got[1].SourceEventID, unassignedAt},
-		{moderation.AuditActorUser, "mod-1", moderation.AuditReportAssigned, moderation.AuditTargetReport, report.ID, "@bob@remote.example", got[2].SourceEventID, assignedAt},
+		{moderation.AuditActorUser, NamedID("mod-1"), moderation.AuditReportAssigned, moderation.AuditTargetReport, report.ID, "@bob@remote.example", got[2].SourceEventID, assignedAt},
 		{moderation.AuditActorCLI, "", moderation.AuditDomainActionLifted, moderation.AuditTargetDomain, "bad.example", "bad.example", issued.ID, liftedAt},
-		{moderation.AuditActorUser, "mod-1", moderation.AuditDomainActionIssued, moderation.AuditTargetDomain, "bad.example", "bad.example", issued.ID, issued.IssuedAt},
+		{moderation.AuditActorUser, NamedID("mod-1"), moderation.AuditDomainActionIssued, moderation.AuditTargetDomain, "bad.example", "bad.example", issued.ID, issued.IssuedAt},
 	})
 	for i := range 3 {
 		if got[i].SourceEventID == "" || got[i].SourceEventID == report.ID {
@@ -196,7 +196,7 @@ func auditRecordsOperations(t *testing.T, e *auditEnv) {
 		}
 	}
 	// An operation on an unknown report fails before it records anything.
-	if _, err := e.svc.ResolveReport(ctx, e.ids.NewID(), moderation.OutcomeDismissed, "mod-1"); !errors.Is(err, appmoderation.ErrNotFound) {
+	if _, err := e.svc.ResolveReport(ctx, e.ids.NewID(), moderation.OutcomeDismissed, NamedID("mod-1")); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("ResolveReport(unknown) = %v, want ErrNotFound", err)
 	}
 	if n := len(e.list(t, appmoderation.AuditQuery{}, 10)); n != 5 {
@@ -206,20 +206,20 @@ func auditRecordsOperations(t *testing.T, e *auditEnv) {
 	// An action on an account and its lift, once.
 	e.clock.Advance(time.Second)
 	acted, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
-		TargetAccountID: e.remote, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategorySpam, IssuedByUserID: "mod-2",
+		TargetAccountID: e.remote, Kind: moderation.ActionSuspend, ReasonCategory: moderation.CategorySpam, IssuedByUserID: NamedID("mod-2"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	e.clock.Advance(time.Second)
-	for _, by := range []string{"mod-1", "mod-2"} {
+	for _, by := range []string{NamedID("mod-1"), NamedID("mod-2")} {
 		if err := e.svc.LiftAccountAction(ctx, acted.ID, by, ""); err != nil {
 			t.Fatal(err)
 		}
 	}
 	checkAudit(t, e.list(t, appmoderation.AuditQuery{TargetKind: moderation.AuditTargetAccount, TargetID: e.remote}, 10), []auditWant{
-		{moderation.AuditActorUser, "mod-1", moderation.AuditAccountActionLifted, moderation.AuditTargetAccount, e.remote, "@bob@remote.example", acted.ID, e.clock.Now()},
-		{moderation.AuditActorUser, "mod-2", moderation.AuditAccountActionIssued, moderation.AuditTargetAccount, e.remote, "@bob@remote.example", acted.ID, acted.IssuedAt},
+		{moderation.AuditActorUser, NamedID("mod-1"), moderation.AuditAccountActionLifted, moderation.AuditTargetAccount, e.remote, "@bob@remote.example", acted.ID, e.clock.Now()},
+		{moderation.AuditActorUser, NamedID("mod-2"), moderation.AuditAccountActionIssued, moderation.AuditTargetAccount, e.remote, "@bob@remote.example", acted.ID, acted.IssuedAt},
 	})
 }
 
@@ -244,7 +244,7 @@ func auditRollsBack(t *testing.T, e *auditEnv) {
 	}
 	// An entry that the domain rejects fails the transaction that emits it.
 	bad := entry
-	bad.ActorUserID = "mod-1"
+	bad.ActorUserID = NamedID("mod-1")
 	err = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return tx.Emit(ctx, appmoderation.AuditRecorded{Entry: bad}) })
 	if !errors.Is(err, moderation.ErrInvalidAuditEntry) {
 		t.Errorf("Tx with an invalid entry = %v, want ErrInvalidAuditEntry", err)
@@ -265,7 +265,7 @@ func auditLists(t *testing.T, e *auditEnv) {
 	// One entry per action, by two users and the CLI, on targets that do not exist in any table
 	// (as after their erasure): the labels the entries recorded are what they list.
 	var all []moderation.AuditEntry
-	actors := []string{"mod-1", "mod-2", ""}
+	actors := []string{NamedID("mod-1"), NamedID("mod-2"), ""}
 	for i, a := range moderation.AuditActions() {
 		kind, _ := a.Target()
 		actor, user := moderation.AuditActor(actors[i%len(actors)])
@@ -312,13 +312,13 @@ func auditLists(t *testing.T, e *auditEnv) {
 			}
 		}
 	}
-	check("by mod-1", appmoderation.AuditQuery{ActorUserID: "mod-1"}, newest(func(x moderation.AuditEntry) bool { return x.ActorUserID == "mod-1" }))
+	check("by mod-1", appmoderation.AuditQuery{ActorUserID: NamedID("mod-1")}, newest(func(x moderation.AuditEntry) bool { return x.ActorUserID == NamedID("mod-1") }))
 	check("by action", appmoderation.AuditQuery{Action: moderation.AuditRuleMoved}, newest(func(x moderation.AuditEntry) bool { return x.Action == moderation.AuditRuleMoved }))
 	check("on rules", appmoderation.AuditQuery{TargetKind: moderation.AuditTargetRule, TargetID: "target-1"}, newest(func(x moderation.AuditEntry) bool {
 		return x.TargetKind == moderation.AuditTargetRule && x.TargetID == "target-1"
 	}))
-	check("by mod-2 on settings", appmoderation.AuditQuery{ActorUserID: "mod-2", TargetKind: moderation.AuditTargetSetting}, newest(func(x moderation.AuditEntry) bool {
-		return x.ActorUserID == "mod-2" && x.TargetKind == moderation.AuditTargetSetting
+	check("by mod-2 on settings", appmoderation.AuditQuery{ActorUserID: NamedID("mod-2"), TargetKind: moderation.AuditTargetSetting}, newest(func(x moderation.AuditEntry) bool {
+		return x.ActorUserID == NamedID("mod-2") && x.TargetKind == moderation.AuditTargetSetting
 	}))
 
 	// Keyset pages, newest first.

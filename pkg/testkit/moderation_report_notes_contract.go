@@ -43,8 +43,8 @@ func moderationNotesAndReopenings(t *testing.T, e *moderationEnv) {
 	a, b := file("1"), file("2")
 
 	// Notes list oldest first, each audited; an invalid note is refused.
-	n1, err := e.svc.AddReportNote(ctx, a.ID, "first look", "mod-1")
-	if err != nil || n1.AuthorUserID != "mod-1" || n1.Body != "first look" || n1.ReportID != a.ID {
+	n1, err := e.svc.AddReportNote(ctx, a.ID, "first look", NamedID("mod-1"))
+	if err != nil || n1.AuthorUserID != NamedID("mod-1") || n1.Body != "first look" || n1.ReportID != a.ID {
 		t.Fatalf("AddReportNote = %+v, %v", n1, err)
 	}
 	e.clock.Advance(time.Second)
@@ -53,17 +53,17 @@ func moderationNotesAndReopenings(t *testing.T, e *moderationEnv) {
 		t.Fatal(err)
 	}
 	for _, body := range []string{"", "  \n", strings.Repeat("x", moderation.MaxReportNote+1), "a\x00b"} {
-		if _, err := e.svc.AddReportNote(ctx, a.ID, body, "mod-1"); !errors.Is(err, moderation.ErrInvalidReportNote) {
+		if _, err := e.svc.AddReportNote(ctx, a.ID, body, NamedID("mod-1")); !errors.Is(err, moderation.ErrInvalidReportNote) {
 			t.Errorf("AddReportNote(%.10q) = %v, want ErrInvalidReportNote", body, err)
 		}
 	}
-	if _, err := e.svc.AddReportNote(ctx, e.ids.NewID(), "lost", "mod-1"); !errors.Is(err, appmoderation.ErrNotFound) {
+	if _, err := e.svc.AddReportNote(ctx, e.ids.NewID(), "lost", NamedID("mod-1")); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("AddReportNote(unknown) = %v, want ErrNotFound", err)
 	}
 
 	// The detail shows the notes and the target's other reports and actions.
 	if _, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
-		TargetAccountID: e.local, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategorySpam, IssuedByUserID: "mod-1",
+		TargetAccountID: e.local, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategorySpam, IssuedByUserID: NamedID("mod-1"),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -80,23 +80,23 @@ func moderationNotesAndReopenings(t *testing.T, e *moderationEnv) {
 	}
 
 	// Only a resolved report reopens.
-	if _, err := e.svc.ReopenReport(ctx, a.ID, "mod-1"); !errors.Is(err, appmoderation.ErrReportNotResolved) {
+	if _, err := e.svc.ReopenReport(ctx, a.ID, NamedID("mod-1")); !errors.Is(err, appmoderation.ErrReportNotResolved) {
 		t.Errorf("ReopenReport(open) = %v, want ErrReportNotResolved", err)
 	}
-	if _, err := e.svc.ReopenReport(ctx, e.ids.NewID(), "mod-1"); !errors.Is(err, appmoderation.ErrNotFound) {
+	if _, err := e.svc.ReopenReport(ctx, e.ids.NewID(), NamedID("mod-1")); !errors.Is(err, appmoderation.ErrNotFound) {
 		t.Errorf("ReopenReport(unknown) = %v, want ErrNotFound", err)
 	}
-	if _, err := e.svc.AssignReport(ctx, a.ID, "mod-1", "mod-1"); err != nil {
+	if _, err := e.svc.AssignReport(ctx, a.ID, NamedID("mod-1"), NamedID("mod-1")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.svc.ResolveReport(ctx, a.ID, moderation.OutcomeDismissed, "mod-1"); err != nil {
+	if _, err := e.svc.ResolveReport(ctx, a.ID, moderation.OutcomeDismissed, NamedID("mod-1")); err != nil {
 		t.Fatal(err)
 	}
 	e.events.take()
 	e.clock.Advance(time.Minute)
 	reopenedAt := e.clock.Now()
-	r, err := e.svc.ReopenReport(ctx, a.ID, "mod-2")
-	if err != nil || r.Status.State != moderation.ReportOpen || r.Status.Outcome != "" || r.Status.AssigneeUserID != "mod-1" ||
+	r, err := e.svc.ReopenReport(ctx, a.ID, NamedID("mod-2"))
+	if err != nil || r.Status.State != moderation.ReportOpen || r.Status.Outcome != "" || r.Status.AssigneeUserID != NamedID("mod-1") ||
 		!r.Status.Since.Equal(reopenedAt) {
 		t.Errorf("ReopenReport = %+v, %v; want open since %v, still assigned to mod-1", r.Status, err, reopenedAt)
 	}
@@ -108,7 +108,7 @@ func moderationNotesAndReopenings(t *testing.T, e *moderationEnv) {
 	e.clock.Advance(time.Minute)
 	actedAt := e.clock.Now()
 	act, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
-		TargetAccountID: e.local, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam, ReportID: a.ID, IssuedByUserID: "mod-2",
+		TargetAccountID: e.local, Kind: moderation.ActionLimit, ReasonCategory: moderation.CategorySpam, ReportID: a.ID, IssuedByUserID: NamedID("mod-2"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +121,7 @@ func moderationNotesAndReopenings(t *testing.T, e *moderationEnv) {
 	for _, ev := range e.events.take() {
 		if res, ok := ev.(appmoderation.ReportResolved); ok {
 			resolutions++
-			if res.Resolution.Outcome != moderation.OutcomeActioned || res.Resolution.ResolvedByUserID != "mod-2" || res.Report.ID != a.ID {
+			if res.Resolution.Outcome != moderation.OutcomeActioned || res.Resolution.ResolvedByUserID != NamedID("mod-2") || res.Report.ID != a.ID {
 				t.Errorf("ReportResolved = %+v, want actioned by mod-2", res)
 			}
 		}
@@ -131,7 +131,7 @@ func moderationNotesAndReopenings(t *testing.T, e *moderationEnv) {
 	}
 	e.clock.Advance(time.Minute)
 	if _, err := e.svc.IssueAccountAction(ctx, appmoderation.AccountActionInput{
-		TargetAccountID: e.local, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategorySpam, ReportID: a.ID, IssuedByUserID: "mod-2",
+		TargetAccountID: e.local, Kind: moderation.ActionWarn, ReasonCategory: moderation.CategorySpam, ReportID: a.ID, IssuedByUserID: NamedID("mod-2"),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func moderationNotesAndReopenings(t *testing.T, e *moderationEnv) {
 		}
 	}
 	got, err := e.svc.AuditLog(ctx, appmoderation.AuditQuery{Action: moderation.AuditReportResolved, TargetKind: moderation.AuditTargetReport, TargetID: a.ID}, 10)
-	if err != nil || len(got) != 2 || got[0].ActorUserID != "mod-2" || got[0].OccurredAt != actedAt {
+	if err != nil || len(got) != 2 || got[0].ActorUserID != NamedID("mod-2") || got[0].OccurredAt != actedAt {
 		t.Errorf("audit log of the resolutions = %+v, %v; want the action's by mod-2 first", got, err)
 	}
 	if acts, err := e.svc.AccountActions(ctx, appmoderation.AccountActionFilter{AccountID: e.local}, 10); err != nil || len(acts) != 3 || acts[1].Action.ID != act.ID {

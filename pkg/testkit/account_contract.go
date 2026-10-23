@@ -352,7 +352,7 @@ func checkKeys(t *testing.T, e *accountEnv, actor appaccount.Actor) {
 	if _, rsaKey := signer.(*rsa.PrivateKey); err != nil || keyID != account.KeyIRI(actor.Account.URI, account.KeyRSASHA256) || !rsaKey {
 		t.Errorf("SigningKey = %q, %T, %v; want the RSA key", keyID, signer, err)
 	}
-	if _, _, err := e.accounts.SigningKey(t.Context(), "no-such-account"); !errors.Is(err, appaccount.ErrNotFound) {
+	if _, _, err := e.accounts.SigningKey(t.Context(), NamedID("no-such-account")); !errors.Is(err, appaccount.ErrNotFound) {
 		t.Errorf("SigningKey(unknown) = %v, want ErrNotFound", err)
 	}
 }

@@ -86,22 +86,22 @@ func wantKeys(t *testing.T, h UnitOfWorkHarness, want ...string) {
 func uowCommitsOnSuccess(t *testing.T, newHarness UnitOfWorkFactory) {
 	h := newHarness(t, uow.Options{Retry: fastRetry})
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
-		return h.Insert(t.Context(), tx, "b")
+		return h.Insert(t.Context(), tx, NamedID("b"))
 	})
 	if err != nil {
 		t.Fatalf("Tx = %v", err)
 	}
-	wantKeys(t, h, "a", "b")
+	wantKeys(t, h, NamedID("a"), NamedID("b"))
 }
 
 func uowRollsBackOnError(t *testing.T, newHarness UnitOfWorkFactory) {
 	h := newHarness(t, uow.Options{Retry: fastRetry})
 	boom := errors.New("boom")
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
 		return fmt.Errorf("wrapped: %w", boom)
@@ -117,7 +117,7 @@ func uowRollsBackOnPanic(t *testing.T, newHarness UnitOfWorkFactory) {
 	recovered := func() (r any) {
 		defer func() { r = recover() }()
 		_ = h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-			if err := h.Insert(t.Context(), tx, "a"); err != nil {
+			if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 				return err
 			}
 			panic("boom")
@@ -129,10 +129,10 @@ func uowRollsBackOnPanic(t *testing.T, newHarness UnitOfWorkFactory) {
 	}
 	wantKeys(t, h)
 	// The rollback must also have released the connection and its locks.
-	if err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error { return h.Insert(t.Context(), tx, "b") }); err != nil {
+	if err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error { return h.Insert(t.Context(), tx, NamedID("b")) }); err != nil {
 		t.Fatalf("Tx after a panic = %v", err)
 	}
-	wantKeys(t, h, "b")
+	wantKeys(t, h, NamedID("b"))
 }
 
 func uowRetriesInFreshTransactions(t *testing.T, newHarness UnitOfWorkFactory) {
@@ -144,7 +144,7 @@ func uowRetriesInFreshTransactions(t *testing.T, newHarness UnitOfWorkFactory) {
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
 		attempts++
 		// The same key every attempt: this fails unless the previous attempt was rolled back.
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
 		if attempts < 3 {
@@ -158,7 +158,7 @@ func uowRetriesInFreshTransactions(t *testing.T, newHarness UnitOfWorkFactory) {
 	if !slices.Equal(retried, []int{1, 2}) {
 		t.Errorf("OnRetry attempts = %v, want [1 2]", retried)
 	}
-	wantKeys(t, h, "a")
+	wantKeys(t, h, NamedID("a"))
 }
 
 func uowGivesUpAfterMaxAttempts(t *testing.T, newHarness UnitOfWorkFactory) {
@@ -168,7 +168,7 @@ func uowGivesUpAfterMaxAttempts(t *testing.T, newHarness UnitOfWorkFactory) {
 	attempts := 0
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
 		attempts++
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
 		return uow.MarkRetryable(errors.New("conflict"))
@@ -194,10 +194,10 @@ func uowDoesNotRetryOtherErrors(t *testing.T, newHarness UnitOfWorkFactory) {
 	attempts = 0
 	err = h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
 		attempts++
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
-		return h.Insert(t.Context(), tx, "a")
+		return h.Insert(t.Context(), tx, NamedID("a"))
 	})
 	if err == nil || errors.Is(err, uow.ErrRetryable) || attempts != 1 {
 		t.Fatalf("duplicate key: Tx = %v after %d attempts, want a non-retryable error after 1", err, attempts)
@@ -233,7 +233,7 @@ func uowStopsWhenContextEnds(t *testing.T, newHarness UnitOfWorkFactory) {
 func uowHidesUncommittedWrites(t *testing.T, newHarness UnitOfWorkFactory) {
 	h := newHarness(t, uow.Options{Retry: fastRetry})
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
 		got, err := h.Keys(t.Context())
@@ -248,7 +248,7 @@ func uowHidesUncommittedWrites(t *testing.T, newHarness UnitOfWorkFactory) {
 	if err != nil {
 		t.Fatalf("Tx = %v", err)
 	}
-	wantKeys(t, h, "a")
+	wantKeys(t, h, NamedID("a"))
 }
 
 func uowConcurrentWriters(t *testing.T, newHarness UnitOfWorkFactory) {
@@ -258,14 +258,14 @@ func uowConcurrentWriters(t *testing.T, newHarness UnitOfWorkFactory) {
 	var wg sync.WaitGroup
 	want := make([]string, writers)
 	for i := range writers {
-		key := fmt.Sprintf("k%02d", i)
+		key := NamedID(fmt.Sprintf("k%02d", i))
 		want[i] = key
 		wg.Go(func() {
 			errs <- h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
 				if err := h.Insert(t.Context(), tx, key); err != nil {
 					return err
 				}
-				return h.Insert(t.Context(), tx, key+"-2")
+				return h.Insert(t.Context(), tx, NamedID(key+"-2"))
 			})
 		})
 	}
@@ -277,15 +277,18 @@ func uowConcurrentWriters(t *testing.T, newHarness UnitOfWorkFactory) {
 		}
 	}
 	for i := range writers {
-		want = append(want, want[i]+"-2")
+		want = append(want, NamedID(want[i]+"-2"))
 	}
 	wantKeys(t, h, want...)
 }
 
-// projectInto registers a projector that writes "<key>-projected" for every probe event.
+// projectedKey is the key the projector writes for the probe event with key.
+func projectedKey(key string) string { return NamedID(key + "-projected") }
+
+// projectInto registers a projector that writes projectedKey(key) for every probe event.
 func projectInto(h UnitOfWorkHarness, r *uow.Projectors, fail error) {
 	r.Register(probeEvent{}.EventType(), func(ctx context.Context, tx uow.Tx, e uow.Event) error {
-		if err := h.Insert(ctx, tx, e.(probeEvent).key+"-projected"); err != nil {
+		if err := h.Insert(ctx, tx, projectedKey(e.(probeEvent).key)); err != nil {
 			return err
 		}
 		return fail
@@ -298,15 +301,15 @@ func uowRunsProjectors(t *testing.T, newHarness UnitOfWorkFactory) {
 	projectInto(h, &projectors, nil)
 
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
-		return tx.Emit(t.Context(), probeEvent{key: "a"})
+		return tx.Emit(t.Context(), probeEvent{key: NamedID("a")})
 	})
 	if err != nil {
 		t.Fatalf("Tx = %v", err)
 	}
-	wantKeys(t, h, "a", "a-projected")
+	wantKeys(t, h, NamedID("a"), projectedKey(NamedID("a")))
 }
 
 func uowRollsBackOnProjectorError(t *testing.T, newHarness UnitOfWorkFactory) {
@@ -316,10 +319,10 @@ func uowRollsBackOnProjectorError(t *testing.T, newHarness UnitOfWorkFactory) {
 	projectInto(h, &projectors, boom)
 
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		if err := h.Insert(t.Context(), tx, "a"); err != nil {
+		if err := h.Insert(t.Context(), tx, NamedID("a")); err != nil {
 			return err
 		}
-		return tx.Emit(t.Context(), probeEvent{key: "a"})
+		return tx.Emit(t.Context(), probeEvent{key: NamedID("a")})
 	})
 	if !errors.Is(err, boom) {
 		t.Fatalf("Tx = %v, want %v", err, boom)
@@ -349,7 +352,7 @@ func uowRunsCommitHooks(t *testing.T, newHarness UnitOfWorkFactory) {
 	seen := hookInto(t, h, &projectors)
 
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		for _, key := range []string{"a", "b"} {
+		for _, key := range []string{NamedID("a"), NamedID("b")} {
 			if err := h.Insert(t.Context(), tx, key); err != nil {
 				return err
 			}
@@ -366,7 +369,9 @@ func uowRunsCommitHooks(t *testing.T, newHarness UnitOfWorkFactory) {
 		t.Fatalf("Tx = %v", err)
 	}
 	// Each hook sees the whole commit, in the order the events were emitted.
-	want := []string{`a["a" "b"]`, `b["a" "b"]`}
+	a, b := NamedID("a"), NamedID("b")
+	both := fmt.Sprintf("%q", slices.Sorted(slices.Values([]string{a, b})))
+	want := []string{a + both, b + both}
 	if !slices.Equal(*seen, want) {
 		t.Errorf("commit hooks saw %q, want %q", *seen, want)
 	}
@@ -379,7 +384,7 @@ func uowRunsNoCommitHooksOnRollback(t *testing.T, newHarness UnitOfWorkFactory) 
 	boom := errors.New("command failed")
 
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		if err := tx.Emit(t.Context(), probeEvent{key: "a"}); err != nil {
+		if err := tx.Emit(t.Context(), probeEvent{key: NamedID("a")}); err != nil {
 			return err
 		}
 		return boom
@@ -400,7 +405,7 @@ func uowRunsCommitHooksOnce(t *testing.T, newHarness UnitOfWorkFactory) {
 	attempts := 0
 	err := h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
 		attempts++
-		key := fmt.Sprintf("attempt-%d", attempts)
+		key := NamedID(fmt.Sprintf("attempt-%d", attempts))
 		if err := h.Insert(t.Context(), tx, key); err != nil {
 			return err
 		}
@@ -415,7 +420,7 @@ func uowRunsCommitHooksOnce(t *testing.T, newHarness UnitOfWorkFactory) {
 	if err != nil {
 		t.Fatalf("Tx = %v", err)
 	}
-	if want := []string{`attempt-2["attempt-2"]`}; !slices.Equal(*seen, want) {
+	if want := []string{fmt.Sprintf("%[1]s[%[1]q]", NamedID("attempt-2"))}; !slices.Equal(*seen, want) {
 		t.Errorf("commit hooks saw %q, want %q", *seen, want)
 	}
 }

@@ -121,7 +121,7 @@ func inboxHandlesModeration(t *testing.T, e *inboxProcessEnv) {
 	ctx := t.Context()
 	e.processor = e.newProcessor()
 	m := e.wireModeration(t)
-	alice := "account:" + inboxAlice
+	alice := NamedID("account:" + inboxAlice)
 
 	// A Block of a local actor is recorded; one of a remote or unknown actor is dropped.
 	block := inboxAlice + "#block-1"

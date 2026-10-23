@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -421,7 +422,8 @@ func TestRetriesDeadlocks(t *testing.T) {
 		retries = append(retries, err)
 	}}})
 	setup := postgresgen.New(db.pool)
-	for _, name := range []string{"x", "y"} {
+	x, y := testkit.NamedID("x"), testkit.NamedID("y")
+	for _, name := range []string{x, y} {
 		if err := insertProbe(t.Context(), setup, name); err != nil {
 			t.Fatal(err)
 		}
@@ -455,12 +457,12 @@ func TestRetriesDeadlocks(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			return insertProbe(t.Context(), q, first+"-done")
+			return insertProbe(t.Context(), q, testkit.NamedID(first+"-done"))
 		})
 	}
 	errs := make(chan error, 2)
-	go func() { errs <- lockBoth("x", "y") }()
-	go func() { errs <- lockBoth("y", "x") }()
+	go func() { errs <- lockBoth(x, y) }()
+	go func() { errs <- lockBoth(y, x) }()
 	for range 2 {
 		if err := <-errs; err != nil {
 			t.Fatalf("Tx = %v", err)
@@ -475,7 +477,9 @@ func TestRetriesDeadlocks(t *testing.T) {
 		t.Errorf("retried error = %v, want a retryable deadlock_detected (40P01)", retries[0])
 	}
 	got, err := probeKeys(t.Context(), db)
-	if err != nil || strings.Join(got, ",") != "x,x-done,y,y-done" {
+	want := []string{x, y, testkit.NamedID(x + "-done"), testkit.NamedID(y + "-done")}
+	slices.Sort(want)
+	if err != nil || !slices.Equal(got, want) {
 		t.Errorf("committed keys = %q (%v), want both transactions committed", got, err)
 	}
 }

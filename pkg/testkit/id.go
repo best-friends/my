@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"sync"
 	"time"
@@ -62,5 +63,43 @@ func stamp(t time.Time, seq uint64) string {
 	u := uuid.MustParse(kernel.UUIDv7Floor(t))
 	// Keep the variant bits (0b10) of byte 8 and put the sequence number in rand_b.
 	binary.BigEndian.PutUint64(u[8:16], 1<<63|seq&seqMask)
+	return u.String()
+}
+
+// fixedIDTime is the timestamp every NamedID carries: 2020-01-01T00:00:00Z.
+const fixedIDTime = 1577836800000
+
+// NamedID returns a canonical UUIDv7 (36 lowercase characters, version 7, variant 10) that is
+// derived from name, so a test can write NamedID("alice") wherever it needs the same stable ID.
+// The same name always yields the same ID and different names yield different IDs.
+// The IDs share one timestamp, so their order says nothing: use OrderedID when a test depends on it.
+func NamedID(name string) string {
+	sum := sha256.Sum256([]byte(name))
+	var u uuid.UUID
+	copy(u[:], sum[:16])
+	putTimestamp(&u, fixedIDTime)
+	return finish(u)
+}
+
+// OrderedID returns the canonical UUIDv7 for position n: for n < m, OrderedID(n) sorts before
+// OrderedID(m), both as bytes and as strings.
+func OrderedID(n uint32) string {
+	var u uuid.UUID
+	putTimestamp(&u, fixedIDTime+uint64(n))
+	binary.BigEndian.PutUint64(u[8:16], uint64(n))
+	return finish(u)
+}
+
+// putTimestamp writes the 48-bit millisecond timestamp into the first six bytes of u.
+func putTimestamp(u *uuid.UUID, ms uint64) {
+	var b [8]byte
+	binary.BigEndian.PutUint64(b[:], ms)
+	copy(u[:6], b[2:])
+}
+
+// finish sets the version (7) and variant (0b10) bits of u and returns its string form.
+func finish(u uuid.UUID) string {
+	u[6] = 0x70 | u[6]&0x0f
+	u[8] = 0x80 | u[8]&0x3f
 	return u.String()
 }

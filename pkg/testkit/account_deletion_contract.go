@@ -41,20 +41,20 @@ func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 	}
 	day := 24 * time.Hour
 	due := e.clock.Now().Add(30 * day)
-	schedule(banned.AccountID, "action-1", due)
+	schedule(banned.AccountID, NamedID("action-1"), due)
 	// A later due time keeps the earlier one; an earlier one replaces it.
-	schedule(banned.AccountID, "action-2", due.Add(day))
+	schedule(banned.AccountID, NamedID("action-2"), due.Add(day))
 	if s := state(banned.AccountID); s.State != account.StateDeletionScheduled || s.DeletionDueAt == nil || !s.DeletionDueAt.Equal(due) {
 		t.Errorf("state after a later schedule = %+v, want due %v", s, due)
 	}
-	schedule(later.AccountID, "action-3", due.Add(day))
-	schedule(cancelled.AccountID, "action-4", due)
+	schedule(later.AccountID, NamedID("action-3"), due.Add(day))
+	schedule(cancelled.AccountID, NamedID("action-4"), due)
 	cancel := func(id string) (bool, error) {
 		t.Helper()
 		var ok bool
 		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 			var err error
-			ok, err = e.accounts.CancelDeletionByModeration(ctx, tx, id, "action-4", e.ids.NewID())
+			ok, err = e.accounts.CancelDeletionByModeration(ctx, tx, id, NamedID("action-4"), e.ids.NewID())
 			return err
 		})
 		return ok, err
@@ -70,7 +70,7 @@ func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		events, err := e.h.Accounts.ListLifecycleEvents(ctx, tx)
 		for _, ev := range events {
-			if ev.AccountID == banned.AccountID && (ev.ModerationActionID != "action-1" || ev.InitiatedBy != account.InitiatedByModerator) {
+			if ev.AccountID == banned.AccountID && (ev.ModerationActionID != NamedID("action-1") || ev.InitiatedBy != account.InitiatedByModerator) {
 				t.Errorf("event of the ban = %+v, want one by a moderator naming action-1", ev)
 			}
 		}
@@ -105,14 +105,14 @@ func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 	if _, err := cancel(banned.AccountID); !errors.Is(err, appaccount.ErrAlreadyDeleted) {
 		t.Errorf("CancelDeletionByModeration(deleted) = %v, want ErrAlreadyDeleted", err)
 	}
-	schedule(banned.AccountID, "action-5", e.clock.Now().Add(day))
+	schedule(banned.AccountID, NamedID("action-5"), e.clock.Now().Add(day))
 	if s := state(banned.AccountID); s.State != account.StateDeleted {
 		t.Errorf("deleted account after a schedule = %+v, want deleted", s)
 	}
 
 	// A cancellation that races the deletion job: exactly one of them wins.
 	racing := e.register(t, "racing")
-	schedule(racing.AccountID, "action-7", e.clock.Now())
+	schedule(racing.AccountID, NamedID("action-7"), e.clock.Now())
 	var (
 		wg       sync.WaitGroup
 		n        int
@@ -126,7 +126,7 @@ func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 		defer wg.Done()
 		cancelEr = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 			var err error
-			ok, err = e.accounts.CancelDeletionByModeration(ctx, tx, racing.AccountID, "action-7", e.ids.NewID())
+			ok, err = e.accounts.CancelDeletionByModeration(ctx, tx, racing.AccountID, NamedID("action-7"), e.ids.NewID())
 			return err
 		})
 	}()
@@ -150,7 +150,7 @@ func accountExecutesDeletions(t *testing.T, e *accountEnv) {
 		if err := e.h.Accounts.InsertAccount(ctx, tx, remote); err != nil {
 			return err
 		}
-		return e.accounts.ScheduleDeletionByModeration(ctx, tx, remote.ID, "action-6", e.clock.Now().Add(day))
+		return e.accounts.ScheduleDeletionByModeration(ctx, tx, remote.ID, NamedID("action-6"), e.clock.Now().Add(day))
 	})
 	if !errors.Is(err, appaccount.ErrNotLocal) {
 		t.Errorf("ScheduleDeletionByModeration(remote) = %v, want ErrNotLocal", err)

@@ -193,7 +193,7 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 	if err := e.svc.RecordIncome(ctx, incomeScenario(t)); err != nil {
 		t.Fatal(err)
 	}
-	e.dir.Accounts = map[string]appfinance.Subscriber{"sub_yearly": {AccountID: "acct_1", Username: "alice"}}
+	e.dir.Accounts = map[string]appfinance.Subscriber{"sub_yearly": {AccountID: NamedID("acct_1"), Username: "alice"}}
 	var ids []string
 	before := ""
 	for {
@@ -205,7 +205,7 @@ func financeIncomeList(t *testing.T, e *financeEnv) {
 			ids = append(ids, m.ProviderID)
 			switch m.ProviderID {
 			case "txn_refund":
-				if m.ParentProviderID != "txn_yearly" || m.Subscriber != (appfinance.Subscriber{AccountID: "acct_1", Username: "alice"}) || m.Net != financeJPY(-12000) || m.Covers != nil {
+				if m.ParentProviderID != "txn_yearly" || m.Subscriber != (appfinance.Subscriber{AccountID: NamedID("acct_1"), Username: "alice"}) || m.Net != financeJPY(-12000) || m.Covers != nil {
 					t.Errorf("refund = %+v, want its payment, account, and net", m)
 				}
 			case "txn_yearly":

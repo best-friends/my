@@ -1188,7 +1188,7 @@ func remoteResolvesHandlesAndURLs(t *testing.T, e *remoteEnv) {
 		t.Errorf("RemoteProfileURL of a local account = %v, want ErrNotFound", err)
 	}
 	// A page of accounts reads the profile pages together; local accounts have none.
-	urls, err := e.accounts.RemoteProfileURLs(ctx, []string{a.Account.ID, e.instance.Account.ID, "unknown"})
+	urls, err := e.accounts.RemoteProfileURLs(ctx, []string{a.Account.ID, e.instance.Account.ID, NamedID("unknown")})
 	if want := map[string]string{a.Account.ID: "https://mastodon.example/@alice"}; err != nil || !maps.Equal(urls, want) {
 		t.Errorf("RemoteProfileURLs = %v, %v; want %v", urls, err, want)
 	}

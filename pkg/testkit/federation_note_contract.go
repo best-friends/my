@@ -111,7 +111,7 @@ func fedBuildsTheNote(t *testing.T, e *fedEnv) {
 		r.Language, r.SpoilerText = "ja", "spoiler"
 		r.Bodies = []content.Body{{Language: "en", ContentHTML: "<p>hello</p>"}, {Language: "ja", ContentHTML: "<p>こんにちは</p>"}}
 		r.MentionedAccountIDs, r.TagIDs = []string{a.mentioned, a.localMentioned}, []string{tag.ID}
-		r.Attachments = []content.Attachment{{MediaID: "m1", Description: "a cat"}}
+		r.Attachments = []content.Attachment{{MediaID: NamedID("m1"), Description: "a cat"}}
 		e.parts.media[r.ID] = []appcontent.MediaView{media}
 	})
 	e.drain(t)
@@ -297,7 +297,7 @@ func fedSendsVideoAndAudio(t *testing.T, e *fedEnv) {
 		Image: appcontent.Image{Media: &appcontent.ImageVariant{URL: "https://files.social.example/media/a/large-animated.ogg", ContentType: "audio/ogg"}},
 	}
 	s := e.postWith(t, a.author, content.VisibilityPublic, func(r *content.Revision) {
-		r.Attachments = []content.Attachment{{MediaID: "v1", Description: "a cat jumps"}, {Position: 1, MediaID: "a1"}}
+		r.Attachments = []content.Attachment{{MediaID: NamedID("v1"), Description: "a cat jumps"}, {Position: 1, MediaID: NamedID("a1")}}
 		e.parts.media[r.ID] = []appcontent.MediaView{video, audio}
 	})
 	e.drain(t)
