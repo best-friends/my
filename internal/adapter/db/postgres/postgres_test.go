@@ -279,6 +279,51 @@ func TestAdminAccountContract(t *testing.T) {
 	})
 }
 
+func TestAccountSearchContract(t *testing.T) {
+	testkit.AccountSearchContract(t, func(t *testing.T, opts uow.Options) testkit.AccountSearchHarness {
+		db := newTestDB(t, opts)
+		return testkit.AccountSearchHarness{
+			UnitOfWork: db, Identity: db.IdentityRepository(), Accounts: db.AccountRepository(),
+			Graph: db.GraphRepository(), Moderation: db.ModerationRepository(),
+		}
+	})
+}
+
+// TestAccountSearchUsesTermIndex checks that the range of the prefix search (SearchAccountTerms
+// in queries/postgres/account_search.sql) can read account_search_terms through its term index
+// in order (ADR-0092 §1): term is COLLATE "C", so the range and the order are the index's.
+// Sequential and bitmap scans are off, since the planner prefers them on an empty table.
+func TestAccountSearchUsesTermIndex(t *testing.T) {
+	db := newTestDB(t, uow.Options{})
+	ctx := t.Context()
+	conn, err := db.pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Release()
+	if _, err := conn.Exec(ctx, "SET enable_seqscan = off; SET enable_bitmapscan = off"); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := conn.Query(ctx, `EXPLAIN
+SELECT t.account_id, t.kind, t.term, t.is_local, a.domain
+FROM account_search_terms t JOIN accounts a ON a.id = t.account_id
+WHERE t.term >= $1::text AND t.term < $2::text
+ORDER BY t.term, t.account_id
+LIMIT $3`, "al", "al\U0010FFFF", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(plan, "\n")
+	t.Logf("plan:\n%s", joined)
+	if !strings.Contains(joined, "account_search_terms_term_account_id") || strings.Contains(joined, "Sort") {
+		t.Errorf("plan =\n%s\nwant a range of account_search_terms_term_account_id without sorting", joined)
+	}
+}
+
 func TestModerationContract(t *testing.T) {
 	testkit.ModerationContract(t, func(t *testing.T, opts uow.Options) testkit.ModerationHarness {
 		db := newTestDB(t, opts)

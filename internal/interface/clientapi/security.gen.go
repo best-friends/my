@@ -25,6 +25,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/accounts/lookup":                                         {Operation: "lookupAccount", Anonymous: true, Scopes: []string{"read:accounts"}},
 	"GET /api/v1/accounts/password":                                       {Operation: "getPasswordStatus", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/accounts/relationships":                                  {Operation: "getRelationships", Scopes: []string{"read:follows"}},
+	"GET /api/v1/accounts/search":                                         {Operation: "searchAccounts", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/accounts/verify_credentials":                             {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/accounts/{id}":                                           {Operation: "getAccount", Anonymous: true, Scopes: []string{"read:accounts"}},
 	"GET /api/v1/accounts/{id}/followers":                                 {Operation: "listAccountFollowers", Anonymous: true, Scopes: []string{"read:accounts"}},

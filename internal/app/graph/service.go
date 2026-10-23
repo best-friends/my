@@ -460,3 +460,46 @@ func (s *Service) Counters(ctx context.Context, accountID string) (graph.Counter
 	}
 	return c, err
 }
+
+// CandidateRelation is the relation of a viewer with a candidate of the prefix search of
+// accounts (ADR-0092 §1): Hidden when either blocks the other or the viewer mutes the candidate
+// now, Following when the viewer actively follows it, and the number of its active followers.
+type CandidateRelation struct {
+	Hidden    bool
+	Following bool
+	Followers int64
+}
+
+// CandidateRelations returns the relations of viewerID with the accounts ids, by account ID;
+// every account in ids has an entry. It reads each relation for all of ids at once.
+func (s *Service) CandidateRelations(ctx context.Context, viewerID string, ids []string) (map[string]CandidateRelation, error) {
+	out := make(map[string]CandidateRelation, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	r, err := s.d.Repository.RelationsAmong(ctx, viewerID, ids, s.d.Clock.Now())
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range ids {
+		out[id] = CandidateRelation{}
+	}
+	for _, list := range [][]string{r.Blocked, r.BlockedBy, r.Muted} {
+		for _, id := range list {
+			c := out[id]
+			c.Hidden = true
+			out[id] = c
+		}
+	}
+	for _, id := range r.Following {
+		c := out[id]
+		c.Following = true
+		out[id] = c
+	}
+	for _, n := range r.Counters {
+		c := out[n.AccountID]
+		c.Followers = n.FollowersCount
+		out[n.AccountID] = c
+	}
+	return out, nil
+}

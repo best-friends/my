@@ -1529,6 +1529,60 @@ paths:
                   $ref: '#/components/schemas/Relationship'
         default:
           $ref: '#/components/responses/Problem'
+  /accounts/search:
+    get:
+      operationId: searchAccounts
+      summary: Search accounts by prefix
+      description: |
+        The accounts whose username, `username@domain`, or a word of the display name starts
+        with `q`, for the autocomplete of mentions and the account search (FR-119, FR-306,
+        ADR-0092). The search covers the local accounts and the remote accounts that the
+        instance knows with a handle WebFinger confirmed; it fetches nothing from other servers
+        (look an unknown `username@domain` up with `GET /api/v1/accounts/lookup` and
+        `resolve=true`).
+
+        `q` is compared under NFKC and lowercase. A display name is matched whole and word by
+        word, split at white space and without its `:shortcode:`s, so a display name in a script
+        without spaces (Chinese, Japanese) matches from its start.
+
+        Accounts that the viewer blocks, mutes, or is blocked by, accounts that are deactivated,
+        deleted, or suspended, and accounts of a suspended domain are left out. An account's
+        `indexable` does not matter. The results come in this order: an exact match of the
+        username or `username@domain`, then the accounts that the viewer follows, then the local
+        accounts, then those with more followers. There is no paging.
+      tags:
+        - accounts
+      security:
+        - oauth2:
+            - read:accounts
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: |
+            The start of a username, a `username@domain`, or a word of a display name: 1 to 100
+            characters after a leading `@`, which is ignored. Anything else is a 400.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 101
+        - $ref: '#/components/parameters/SearchLimit'
+      responses:
+        '200':
+          description: The accounts, best match first.
+          headers:
+            Cache-Control:
+              description: '`private, max-age=30`: the results depend on the viewer.'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+        default:
+          $ref: '#/components/responses/Problem'
   /accounts/{id}:
     get:
       operationId: getAccount
@@ -7192,6 +7246,16 @@ components:
       description: The ID of the rule.
       schema:
         $ref: '#/components/schemas/Id'
+    SearchLimit:
+      name: limit
+      in: query
+      description: The maximum number of results of a prefix search for the autocomplete (ADR-0092).
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 20
+        default: 8
     SignupBlockId:
       name: id
       in: path

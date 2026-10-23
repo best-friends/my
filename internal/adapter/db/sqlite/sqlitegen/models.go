@@ -94,6 +94,13 @@ type AccountRestriction struct {
 	EffectiveUntil sql.NullInt64
 }
 
+type AccountSearchTerm struct {
+	AccountID string
+	Kind      string
+	Term      string
+	IsLocal   int64
+}
+
 type AnnouncementHead struct {
 	AnnouncementID string
 	RevisionID     string
