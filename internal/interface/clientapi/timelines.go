@@ -188,8 +188,8 @@ func (s *Server) GetHomeTimeline(ctx context.Context, req GetHomeTimelineRequest
 	if v == nil {
 		return nil, errNoViewer
 	}
-	if _, ok := pageLimit(req.Params.Limit); !ok {
-		return GetHomeTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	if p := s.plainPageProblem(ctx, req.Params.Cursor, req.Params.Limit); p != nil {
+		return GetHomeTimelinedefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
@@ -215,8 +215,8 @@ func (s *Server) GetLocalTimeline(ctx context.Context, req GetLocalTimelineReque
 		return GetLocalTimelinedefaultApplicationProblemPlusJSONResponse(*denied), nil
 	}
 	cv, v := timelineViewer(ctx)
-	if _, ok := pageLimit(req.Params.Limit); !ok {
-		return GetLocalTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	if p := s.plainPageProblem(ctx, req.Params.Cursor, req.Params.Limit); p != nil {
+		return GetLocalTimelinedefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
@@ -270,8 +270,8 @@ func (s *Server) GetPublicTimeline(ctx context.Context, req GetPublicTimelineReq
 		return GetPublicTimelinedefaultApplicationProblemPlusJSONResponse(*denied), nil
 	}
 	cv, v := timelineViewer(ctx)
-	if _, ok := pageLimit(req.Params.Limit); !ok {
-		return GetPublicTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	if p := s.plainPageProblem(ctx, req.Params.Cursor, req.Params.Limit); p != nil {
+		return GetPublicTimelinedefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
@@ -289,8 +289,8 @@ func (s *Server) GetPublicTimeline(ctx context.Context, req GetPublicTimelineReq
 // has an empty timeline.
 func (s *Server) GetHashtagTimeline(ctx context.Context, req GetHashtagTimelineRequestObject) (GetHashtagTimelineResponseObject, error) {
 	cv, v := timelineViewer(ctx)
-	if _, ok := pageLimit(req.Params.Limit); !ok {
-		return GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	if p := s.plainPageProblem(ctx, req.Params.Cursor, req.Params.Limit); p != nil {
+		return GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	q, err := s.timelineQuery(ctx, v, req.Params.Cursor, req.Params.Limit, true)
 	if err != nil {
@@ -317,8 +317,8 @@ func (s *Server) GetHashtagTimeline(ctx context.Context, req GetHashtagTimelineR
 // (Options.Outboxes, ADR-0044).
 func (s *Server) ListAccountStatuses(ctx context.Context, req ListAccountStatusesRequestObject) (ListAccountStatusesResponseObject, error) {
 	cv, v := timelineViewer(ctx)
-	if _, ok := pageLimit(req.Params.Limit); !ok {
-		return ListAccountStatusesdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
+	if p := s.plainPageProblem(ctx, req.Params.Cursor, req.Params.Limit); p != nil {
+		return ListAccountStatusesdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	account, err := s.o.Accounts.FindByID(ctx, req.Id)
 	if errors.Is(err, appaccount.ErrNotFound) {

@@ -58,7 +58,7 @@ func (s *Server) ListAuditLog(ctx context.Context, req ListAuditLogRequestObject
 	}
 	empty := false
 	if params.ActorAccountId != nil {
-		a, err := s.o.Accounts.FindByID(ctx, *params.ActorAccountId)
+		a, err := s.o.Accounts.FindByID(ctx, knownID(*params.ActorAccountId))
 		switch {
 		case errors.Is(err, appaccount.ErrNotFound) || (err == nil && a.Local == nil):
 			empty = true // only local users perform operations

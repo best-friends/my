@@ -116,7 +116,7 @@ func (s *Server) ListAdminJobs(ctx context.Context, req ListAdminJobsRequestObje
 		after string
 	)
 	if req.Params.Cursor != nil {
-		if at, after, ok = decodeTimeCursor(*req.Params.Cursor); !ok {
+		if at, after, ok = decodeTimeCursor(*req.Params.Cursor); !ok || !kernel.ValidID(after) {
 			return ListAdminJobsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "cursor")), nil
 		}
 	}

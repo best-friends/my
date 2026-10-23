@@ -51,8 +51,8 @@ func (s *Server) CreateReport(ctx context.Context, req CreateReportRequestObject
 			s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsUnprocessable(), detail)), nil
 	}
 	r, err := s.o.Reports.File(ctx, appmoderation.LocalReportInput{
-		ReporterAccountID: v.AccountID, TargetAccountID: b.AccountId, StatusIDs: deref(b.StatusIds),
-		Category: moderation.Category(b.Category), RuleIDs: deref(b.RuleIds), Comment: deref(b.Comment),
+		ReporterAccountID: v.AccountID, TargetAccountID: knownID(b.AccountId), StatusIDs: knownIDs(deref(b.StatusIds)),
+		Category: moderation.Category(b.Category), RuleIDs: knownIDs(deref(b.RuleIds)), Comment: deref(b.Comment),
 		Forward: deref(b.Forward),
 	})
 	var (

@@ -375,7 +375,10 @@ func (h *QuoteHandlers) quoteRequestStatus(id federation.IRI) (string, bool) {
 		return "", false
 	}
 	statusID, ok := strings.CutSuffix(rest, "/"+quoteRequestSegment)
-	return statusID, ok && statusID != "" && !strings.Contains(statusID, "/")
+	if !ok || !kernel.ValidID(statusID) {
+		return "", false
+	}
+	return statusID, true
 }
 
 // quoteError drops an answer about a status that is deleted meanwhile.

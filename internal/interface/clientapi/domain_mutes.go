@@ -28,7 +28,7 @@ func (s *Server) ListDomainMutes(ctx context.Context, req ListDomainMutesRequest
 	if err != nil {
 		return nil, err
 	}
-	q := s.parsePage(ctx, req.Params.Cursor, req.Params.Limit)
+	q := s.parseOpaquePage(ctx, req.Params.Cursor, req.Params.Limit)
 	if q.problem != nil {
 		return ListDomainMutesdefaultApplicationProblemPlusJSONResponse(*q.problem), nil
 	}

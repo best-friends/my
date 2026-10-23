@@ -436,7 +436,7 @@ func (s *Server) ListSupporterSubscriptions(ctx context.Context, req ListSupport
 	}
 	f := appsupporters.SubscriptionFilter{Before: q.before, Limit: q.limit + 1}
 	if req.Params.PlanId != nil {
-		f.PlanID = *req.Params.PlanId
+		f.PlanID = knownID(*req.Params.PlanId)
 	}
 	if req.Params.State != nil {
 		if !req.Params.State.Valid() {

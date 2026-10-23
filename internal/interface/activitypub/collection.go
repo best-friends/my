@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/best-friends/my/internal/app/kernel"
+
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/domain/graph"
@@ -72,7 +74,7 @@ func (h *Handler) collection(w http.ResponseWriter, r *http.Request) {
 	id := a.Account.URI + "/" + name
 	q := r.URL.Query()
 	before := q.Get(paramMaxID)
-	if before != "" && !validID(before) {
+	if before != "" && !kernel.ValidID(before) {
 		h.notFound(w, r)
 		return
 	}

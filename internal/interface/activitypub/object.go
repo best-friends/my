@@ -5,6 +5,8 @@ package activitypub
 import (
 	"net/http"
 	"strings"
+
+	"github.com/best-friends/my/internal/app/kernel"
 )
 
 // object serves GET /ap/objects/{id} (the Note of a local status) and GET
@@ -16,7 +18,7 @@ import (
 func (h *Handler) object(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Vary", "Accept")
 	id := r.PathValue("id")
-	if !validID(id) {
+	if !kernel.ValidID(id) {
 		h.notFound(w, r)
 		return
 	}
@@ -65,7 +67,7 @@ func (h *Handler) object(w http.ResponseWriter, r *http.Request) {
 // with a Tombstone. Authorized fetch still asks for a signature.
 func (h *Handler) quoteAuthorization(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if !validID(id) {
+	if !kernel.ValidID(id) {
 		h.notFound(w, r)
 		return
 	}

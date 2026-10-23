@@ -321,11 +321,11 @@ func TestSupporterListingChoice(t *testing.T) {
 // interval, a date, or a count; and its pages are never for search engines.
 func TestInstanceSupporters(t *testing.T) {
 	listedAt := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
-	last := appsupporters.Listing{UserID: "user-" + bobAccountID, PlanID: largePlanID, Rank: 2, ListedAt: listedAt}
+	last := appsupporters.Listing{UserID: bobAccountID, PlanID: largePlanID, Rank: 2, ListedAt: listedAt}
 	f := &fakeOwnSupporters{listed: map[string]bool{}, list: appsupporters.SupporterList{
 		Plans: []appsupporters.PlanRecord{plan(smallPlanID, "Small", 1), plan(largePlanID, "Large", 2)},
 		Members: []appsupporters.ListedSupporter{
-			{Listing: appsupporters.Listing{UserID: "user-" + aliceAccountID, PlanID: smallPlanID, Rank: 1, ListedAt: listedAt}, AccountID: aliceAccountID},
+			{Listing: appsupporters.Listing{UserID: aliceAccountID, PlanID: smallPlanID, Rank: 1, ListedAt: listedAt}, AccountID: aliceAccountID},
 			// An account that is gone is left out.
 			{Listing: last, AccountID: bobAccountID},
 		},

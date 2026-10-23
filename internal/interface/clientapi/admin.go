@@ -106,7 +106,7 @@ func (s *Server) ListInstanceHealth(ctx context.Context, req ListInstanceHealthR
 	} else if p != nil {
 		return ListInstanceHealthdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
-	q := s.parsePage(ctx, req.Params.Cursor, req.Params.Limit)
+	q := s.parseOpaquePage(ctx, req.Params.Cursor, req.Params.Limit)
 	if q.problem != nil {
 		return ListInstanceHealthdefaultApplicationProblemPlusJSONResponse(*q.problem), nil
 	}

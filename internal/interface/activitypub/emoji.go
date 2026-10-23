@@ -5,6 +5,8 @@ package activitypub
 import (
 	"net/http"
 
+	"github.com/best-friends/my/internal/app/kernel"
+
 	appfederation "github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/domain/federation"
 )
@@ -19,7 +21,7 @@ const emojisPrefix = "/ap/emojis/"
 func (h *Handler) emoji(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Vary", "Accept")
 	id := r.PathValue("id")
-	if !validID(id) || h.o.EmojiTags == nil || parseAccept(r.Header.Get("Accept")).prefersHTML() {
+	if !kernel.ValidID(id) || h.o.EmojiTags == nil || parseAccept(r.Header.Get("Accept")).prefersHTML() {
 		h.notFound(w, r)
 		return
 	}

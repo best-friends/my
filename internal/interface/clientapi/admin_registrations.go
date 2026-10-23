@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	appidentity "github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/domain/identity"
 )
 
@@ -37,7 +38,7 @@ func encodeRegistrationCursor(p appidentity.RegistrationPosition) *Cursor {
 
 func decodeRegistrationCursor(position string) (appidentity.RegistrationPosition, bool) {
 	at, user, ok := strings.Cut(position, registrationCursorSeparator)
-	if !ok || user == "" {
+	if !ok || !kernel.ValidID(user) {
 		return appidentity.RegistrationPosition{}, false
 	}
 	t, err := time.Parse(time.RFC3339Nano, at)
@@ -76,7 +77,7 @@ func (s *Server) ListPendingRegistrations(ctx context.Context, req ListPendingRe
 	} else if p != nil {
 		return ListPendingRegistrationsdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
-	q := s.parsePage(ctx, req.Params.Cursor, req.Params.Limit)
+	q := s.parseOpaquePage(ctx, req.Params.Cursor, req.Params.Limit)
 	if q.problem != nil {
 		return ListPendingRegistrationsdefaultApplicationProblemPlusJSONResponse(*q.problem), nil
 	}

@@ -223,12 +223,12 @@ func decodePage(t *testing.T, res *http.Response) clientapi.StatusPage {
 
 func TestHomeTimelineRendersPostsAndBoosts(t *testing.T) {
 	e := newTimelineEnv(t)
-	res := e.get(t, "/timelines/home?cursor=abc&limit=3", map[string]string{"Authorization": "Bearer read"})
+	res := e.get(t, "/timelines/home?cursor="+postID+"&limit=3", map[string]string{"Authorization": "Bearer read"})
 	page := decodePage(t, res)
 
 	want := []timelineCall{{
 		timeline: "home", viewer: appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: aliceAccountID},
-		query: apptimeline.Query{Before: "abc", Limit: 3, Languages: []string{"ja"}},
+		query: apptimeline.Query{Before: postID, Limit: 3, Languages: []string{"ja"}},
 	}}
 	if !slices.EqualFunc(e.timelines.calls, want, equalCall) {
 		t.Errorf("calls = %+v, want %+v", e.timelines.calls, want)

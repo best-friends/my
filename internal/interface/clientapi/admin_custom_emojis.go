@@ -251,7 +251,7 @@ func (s *Server) CreateCustomEmoji(ctx context.Context, req CreateCustomEmojiReq
 		return CreateCustomEmojidefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "body")), nil
 	}
 	in := appcontent.CreateCustomEmojiInput{
-		Shortcode: req.Body.Shortcode, MediaID: req.Body.MediaId, OwnerAccountID: v.AccountID, VisibleInPicker: true, ByUserID: v.UserID,
+		Shortcode: req.Body.Shortcode, MediaID: knownID(req.Body.MediaId), OwnerAccountID: v.AccountID, VisibleInPicker: true, ByUserID: v.UserID,
 	}
 	if c := req.Body.Category; c != nil {
 		in.Category = *c
@@ -324,7 +324,7 @@ func (s *Server) ReplaceCustomEmojiImage(ctx context.Context, req ReplaceCustomE
 	if req.Body == nil {
 		return ReplaceCustomEmojiImagedefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "body")), nil
 	}
-	e, err := s.o.CustomEmojis.ReplaceImage(ctx, req.Id, v.AccountID, req.Body.MediaId, v.UserID)
+	e, err := s.o.CustomEmojis.ReplaceImage(ctx, req.Id, v.AccountID, knownID(req.Body.MediaId), v.UserID)
 	if p, ok := s.customEmojiProblem(ctx, err); ok {
 		return ReplaceCustomEmojiImage422ApplicationProblemPlusJSONResponse{p}, nil
 	}

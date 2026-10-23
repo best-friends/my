@@ -103,7 +103,7 @@ func (s *Server) UpdateAccountCredentials(ctx context.Context, req UpdateAccount
 	in := appaccount.ProfileUpdate{}
 	if b := req.Body; b != nil {
 		in = appaccount.ProfileUpdate{
-			DisplayName: b.DisplayName, Note: b.Note, AvatarMediaID: b.AvatarMediaId, HeaderMediaID: b.HeaderMediaId,
+			DisplayName: b.DisplayName, Note: b.Note, AvatarMediaID: knownIDPtr(b.AvatarMediaId), HeaderMediaID: knownIDPtr(b.HeaderMediaId),
 			Locked: b.Locked, Bot: b.Bot, Discoverable: b.Discoverable, Indexable: b.Indexable, AIOptOut: b.AiOptOut,
 		}
 		if b.Fields != nil {
