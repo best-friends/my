@@ -131,10 +131,10 @@ tasks:
         vars: { SHARD: "{{.SHARD}}" }
 
   ci:repo:
-    desc: "CI repo: agentkit and its context map, and the ADR index"
+    desc: "CI repo: agentkit and its context map, and the ADR numbers"
     deps:
       - agentkit:check
-      - docs:adr-index-check
+      - docs:adr-numbers
 
   ci:docker:
     desc: "CI docker: the Dockerfile image versions and the Docker Compose smoke test (needs Docker)"

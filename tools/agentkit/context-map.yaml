@@ -57,7 +57,7 @@ entries:
     checks: [docs]
     shared: true
     notes:
-      - "Never set Accepted/Rejected yourself; run `scripts/task.sh docs:adr-index` after adding or renaming an ADR."
+      - "Never set Accepted/Rejected yourself; create ADRs with `scripts/task.sh docs:adr-new`, which avoids the numbers of open PRs."
   - name: requirements
     paths: ["docs/requirements/**"]
     docs: ["docs/requirements/00-vision.md"]

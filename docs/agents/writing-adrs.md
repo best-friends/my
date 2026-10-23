@@ -8,7 +8,10 @@ Policy: [ADR-0000](../adr/0000-record-architecture-decisions.md). Template: [tem
 scripts/task.sh docs:adr-new TITLE="RDB の抽象化と対応方言" SLUG=database-abstraction
 ```
 
-The script picks the next number, fills in the date and `Status: Proposed`, and updates the index.
+The script picks the next number, one past the largest ADR number on the working tree and in the files the open pull requests
+add (it warns and uses the working tree only when `gh` is unavailable), and fills in the date and `Status: Proposed`.
+If another pull request takes the same number first, `docs:adr-numbers` fails in the merge queue: renumber yours.
+`scripts/agentkit.sh adr list [--status Proposed]` lists the existing ADRs.
 
 ## Quality bar
 

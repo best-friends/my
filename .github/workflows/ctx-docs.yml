@@ -1,6 +1,6 @@
 name: "Context: docs"
 
-# The docs context of `scripts/task.sh check` (scripts/changed-contexts.sh): markdownlint and the ADR index (docs:check).
+# The docs context of `scripts/task.sh check` (scripts/changed-contexts.sh): markdownlint and the ADR numbers (docs:check).
 # Called by ci.yml when a pull request or a merge group touches the context, and runnable by hand (ADR-0047).
 
 on:
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-task
       # markdownlint is decided file by file, so two pull requests stacked in the merge queue cannot break it; the
-      # ADR index can go stale or collide when two of them add an ADR, so the queue keeps adr-index-check (ADR-0047).
+      # ADR numbers can collide when two of them add an ADR, so the queue keeps docs:adr-numbers (ADR-0081).
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         if: inputs.scope == 'pr'
         with:
@@ -43,5 +43,5 @@ jobs:
       - name: markdownlint
         if: inputs.scope == 'pr'
         run: scripts/task.sh docs:lint
-      - name: docs:adr-index-check
-        run: scripts/task.sh docs:adr-index-check
+      - name: docs:adr-numbers
+        run: scripts/task.sh docs:adr-numbers

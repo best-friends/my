@@ -21,5 +21,5 @@ Closes #
 ## Checklist
 
 - [ ] `scripts/task.sh check` passes locally
-- [ ] Docs / ADR index / i18n catalogs updated where needed
+- [ ] Docs / i18n catalogs updated where needed
 - [ ] No secrets, no unrelated changes

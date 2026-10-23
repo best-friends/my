@@ -77,7 +77,7 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
 - **Every file in the repo describes the present, never its history** ([ADR-0021](docs/adr/0021-documents-describe-present-state.md)).
   No changelog sections, no "previously / in the first draft / old proposal" wording, no `[x]` resolved items in Open Questions —
   fold resolved answers into the body. Explain *why it changed* in the commit message and PR description instead.
-- After adding/renaming an ADR, run `scripts/task.sh docs:adr-index`.
+- Create ADRs with `scripts/task.sh docs:adr-new`, which picks a number no open PR uses; list them with `scripts/agentkit.sh adr list`.
 - v0 allows breaking changes everywhere ([ADR-0012](docs/adr/0012-v0-breaking-change-policy.md)) — no migrations, no compat shims.
   Exception: ActivityPub wire formats and federated URIs must stay spec-compliant.
 - Do not add Mastodon *client* API compatibility code ([ADR-0007](docs/adr/0007-client-api.md)). Federation with Mastodon servers is still required.
@@ -141,4 +141,4 @@ Tasks run with go-task through `scripts/task.sh <task>` ([ADR-0080](docs/adr/008
 the task names are `<area>:<task>` from `tasks/<area>.yml`. Every task and the pinned toolchain:
 [docs/reference/commands.md](docs/reference/commands.md). The common ones (each prefixed with `scripts/task.sh`):
 `check:changed`, `check`, `go:check`, `web:check`, `generate`, `api:generate`, `go:sqlc`, `i18n:gen`,
-`docs:adr-new TITLE=... SLUG=...`, `docs:adr-index`, `db:check`, `web:e2e`.
+`docs:adr-new TITLE=... SLUG=...`, `db:check`, `web:e2e`.

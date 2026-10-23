@@ -113,7 +113,7 @@ EOF
 ```sh
 git fetch origin && git merge origin/main
 scripts/agentkit.sh regen              # runs the generators whose sources changed: api:generate, go:sqlc, i18n:gen,
-                                       # web:dist (app/web/src/routeTree.gen.ts), go:config-docs, docs:adr-index
+                                       # web:dist (app/web/src/routeTree.gen.ts), go:config-docs
 scripts/agentkit.sh check
 ```
 
@@ -139,7 +139,7 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 - For each candidate issue, list the shared files it is likely to touch:
   - the sources of generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components), `locales/`, `schema/<dialect>.sql` and the sqlc queries,
     the web route tree (`app/web/src/routes/`), the config schema;
-  - the indexes and tables many changes edit: the ADR index in `docs/adr/README.md`, the FR table in
+  - the tables many changes edit: the FR table in
     [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`. In
     `docs/architecture/web-client/` and `docs/architecture/data-model/`, each section is a file of its own: two issues
     that edit different sections do not share a file.

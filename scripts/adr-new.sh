@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Creates a new ADR from docs/adr/template.md and refreshes the index.
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Creates a new ADR from docs/adr/template.md. Its number is one more than the largest number of the ADRs in the
+# working tree and of the ADR files the open pull requests of best-friends/my add, so that parallel pull requests
+# do not pick the same number (ADR-0081). Without a working gh, it uses the working tree only and says so.
 # Usage: scripts/adr-new.sh "Title of the decision" [kebab-slug]
 set -euo pipefail
 
@@ -10,6 +14,7 @@ fi
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 dir="$root/docs/adr"
+repo="best-friends/my"
 title="$1"
 # Non-ASCII titles cannot be slugified reliably; pass an explicit slug for them.
 slug="${2:-$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')}"
@@ -18,7 +23,26 @@ if [[ -z "$slug" ]]; then
   exit 2
 fi
 
-last="$(find "$dir" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]-*.md' -printf '%f\n' | sort | tail -n1 | cut -c1-4)"
+# open_pr_adrs prints the ADR file names the open pull requests change, one per line; it fails when gh does.
+open_pr_adrs() {
+  local prs files
+  prs="$(gh pr list -R "$repo" --state open --limit 500 --json number --jq '.[].number')" || return 1
+  [[ -z "$prs" ]] && return 0
+  # One gh call per pull request, eight at a time; xargs fails when any of them fails.
+  files="$(printf '%s\n' "$prs" | xargs -P 8 -I{} gh pr diff {} -R "$repo" --name-only)" || return 1
+  printf '%s\n' "$files" | sed -n 's|^docs/adr/\([0-9]\{4\}-[^/]*\.md\)$|\1|p'
+}
+
+names="$(find "$dir" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]-*.md' -printf '%f\n')"
+if ! command -v gh >/dev/null 2>&1; then
+  echo "warning: gh is not installed; the number ignores the ADRs of open pull requests" >&2
+elif pr_names="$(open_pr_adrs)"; then
+  names+=$'\n'"$pr_names"
+else
+  echo "warning: could not list the open pull requests with gh; the number ignores their ADRs" >&2
+fi
+
+last="$(printf '%s\n' "$names" | grep -E '^[0-9]{4}-' | cut -c1-4 | sort | tail -n1 || true)"
 next="$(printf '%04d' $((10#${last:-0} + 1)))"
 file="$dir/${next}-${slug}.md"
 
@@ -27,5 +51,4 @@ sed -e "1s/.*/# ADR-${next}: ${title//\//\\/}/" \
     -e "s/^- Date: .*/- Date: $(date +%F)/" \
     "$dir/template.md" >"$file"
 
-"$root/scripts/adr-index.sh"
 echo "$file"

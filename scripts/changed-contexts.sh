@@ -11,7 +11,7 @@
 #   scripts/changed-contexts.sh --files FILE  the paths listed in FILE, one per line (CI and tests)
 #
 # Contexts:
-#   docs    Markdown lint and the ADR index                     (docs:check)
+#   docs    Markdown lint and the ADR numbers                   (docs:check)
 #   go      the Go module, sqlc, and the Go tests                (go:check)
 #   i18n    the catalogs and their generated accessors           (i18n:check)
 #   api     the OpenAPI spec and the code generated from it      (api:check)
@@ -94,7 +94,7 @@ classify() {
       ;;
   esac
   case "$path" in
-    *.md | .markdownlint-cli2.jsonc | docs/* | scripts/adr-index.sh | scripts/adr-new.sh)
+    *.md | .markdownlint-cli2.jsonc | docs/* | scripts/adr-new.sh | scripts/adr-numbers.sh)
       select_contexts docs
       known=1
       ;;
