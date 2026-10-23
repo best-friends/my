@@ -1,0 +1,150 @@
+{
+  "admin.invites.copied": {
+    "defaultMessage": "招待 {code} のリンクをコピーしました。",
+    "description": "Toast after an invite's link was copied. {code} is its code."
+  },
+  "admin.invites.copy": {
+    "defaultMessage": "リンクをコピー",
+    "description": "Button that copies an invite's sign-up link."
+  },
+  "admin.invites.copy_failed": {
+    "defaultMessage": "リンクをコピーできませんでした。",
+    "description": "Toast when copying an invite's link failed."
+  },
+  "admin.invites.copy_invite": {
+    "defaultMessage": "招待 {code} のリンクをコピー",
+    "description": "Accessible name of the copy button of an invite. {code} is its code."
+  },
+  "admin.invites.create": {
+    "defaultMessage": "招待を作成する",
+    "description": "Button that creates an invite."
+  },
+  "admin.invites.create_failed": {
+    "defaultMessage": "招待を作成できませんでした：{reason}",
+    "description": "Error when creating an invite failed. {reason} is why."
+  },
+  "admin.invites.created": {
+    "defaultMessage": "招待 {code} を作成しました。",
+    "description": "Status after an invite was created. {code} is its code."
+  },
+  "admin.invites.created_at": {
+    "defaultMessage": "作成日時",
+    "description": "Term of when an invite was created."
+  },
+  "admin.invites.duration.minutes": {
+    "defaultMessage": "{count, plural, other {# 分}}",
+    "description": "An option of how long an invite works, in minutes."
+  },
+  "admin.invites.empty": {
+    "defaultMessage": "招待はまだありません",
+    "description": "Heading of the empty list of invites."
+  },
+  "admin.invites.empty.description": {
+    "defaultMessage": "上のフォームから作成してください。",
+    "description": "Description of the empty list of invites."
+  },
+  "admin.invites.expires_at": {
+    "defaultMessage": "期限",
+    "description": "Term of when an invite expires."
+  },
+  "admin.invites.expires_in": {
+    "defaultMessage": "有効期間",
+    "description": "Label of the select of how long an invite works."
+  },
+  "admin.invites.link": {
+    "defaultMessage": "招待する人に次のリンクを送ってください：",
+    "description": "Text before the sign-up link of a new invite."
+  },
+  "admin.invites.list.title": {
+    "defaultMessage": "招待の一覧",
+    "description": "Heading of the list of invites."
+  },
+  "admin.invites.max_uses": {
+    "defaultMessage": "登録できる人数",
+    "description": "Label of the select of how many sign-ups an invite allows."
+  },
+  "admin.invites.max_uses.description": {
+    "defaultMessage": "このコードで登録できる人数です。",
+    "description": "Help of the number of sign-ups of an invite."
+  },
+  "admin.invites.mode_notice": {
+    "defaultMessage": "いまサーバーは招待制ではないので、招待では誰も登録できません。登録できる人は、管理者がサーバーの設定で変えます。",
+    "description": "Notice on the invites screen when the registration mode is not invite."
+  },
+  "admin.invites.never": {
+    "defaultMessage": "無期限",
+    "description": "An invite that never expires: an option and a value."
+  },
+  "admin.invites.new.title": {
+    "defaultMessage": "招待を作成する",
+    "description": "Heading of the form of a new invite."
+  },
+  "admin.invites.revoke": {
+    "defaultMessage": "失効",
+    "description": "Button that revokes an invite."
+  },
+  "admin.invites.revoke_failed": {
+    "defaultMessage": "招待を失効させられませんでした：{reason}",
+    "description": "Toast when revoking an invite failed. {reason} is why."
+  },
+  "admin.invites.revoke_invite": {
+    "defaultMessage": "失効：招待 {code}（{date} に作成）",
+    "description": "Accessible name of the revoke button of an invite. {code} is its code; {date} when it was created, formatted."
+  },
+  "admin.invites.revoked": {
+    "defaultMessage": "招待 {code} を失効させました。このコードではもう登録できません。",
+    "description": "Status after an invite was revoked. {code} is its code."
+  },
+  "admin.invites.state": {
+    "defaultMessage": "状態",
+    "description": "Term of an invite's state."
+  },
+  "admin.invites.state.exhausted": {
+    "defaultMessage": "使い切り",
+    "description": "State of an invite used as many times as it allows."
+  },
+  "admin.invites.state.expired": {
+    "defaultMessage": "期限切れ",
+    "description": "State of an expired invite."
+  },
+  "admin.invites.state.revoked": {
+    "defaultMessage": "失効",
+    "description": "State of a revoked invite."
+  },
+  "admin.invites.state.usable": {
+    "defaultMessage": "使える",
+    "description": "State of an invite that people may sign up with."
+  },
+  "admin.invites.summary": {
+    "defaultMessage": "招待制のときに登録できるようにするコード。",
+    "description": "Description of the invites screen in the moderation menu."
+  },
+  "admin.invites.title": {
+    "defaultMessage": "招待",
+    "description": "Title of the invites screen, in the moderation menu and as its heading."
+  },
+  "admin.invites.unlimited": {
+    "defaultMessage": "制限なし",
+    "description": "Option of an invite that any number of people may use."
+  },
+  "admin.invites.used": {
+    "defaultMessage": "登録した人数",
+    "description": "Term of how many people signed up with an invite."
+  },
+  "admin.invites.used.limited": {
+    "defaultMessage": "{max, number} 人中 {uses, number} 人",
+    "description": "How many people signed up with an invite, and how many it allows."
+  },
+  "admin.invites.used.unlimited": {
+    "defaultMessage": "{uses, number} 人（制限なし）",
+    "description": "How many people signed up with an invite without a limit. {uses} is the number."
+  },
+  "admin.invites.uses": {
+    "defaultMessage": "{count, plural, other {# 人}}",
+    "description": "An option of the number of sign-ups of an invite."
+  },
+  "admin.invites.column.invite": {
+    "defaultMessage": "招待コード",
+    "description": "Header of the column of the invites table that holds the invite's code."
+  }
+}

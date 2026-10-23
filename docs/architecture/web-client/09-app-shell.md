@@ -71,7 +71,7 @@
   パスキーに対応していないブラウザではフォームの代わりにその旨を出す。各行は名前（`dir="auto"`）と追加した日時を出し、「削除」（アクセシブルネームに名前を含める）を `ConfirmDialog`（`danger`）で確かめてから `DELETE /passkeys/{id}` を送る。
   削除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。パスワードのない利用者の最後のパスキーはサーバーが断り（409 `last-sign-in-method`）、その理由をダイアログに出す。パスキーでのログインはサーバーのログインの画面が行う（§8）。
 - **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、表示のロケール、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、セッションと API クライアント（`lib/auth/SessionProvider`、§10）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
-- **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client.json` にあり、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
+- **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client/<area>.json`（領域ごとのファイル、ADR-0082）にある。`vite-plugins/client-catalogs.ts` がロケールごとに 1 つのモジュールにまとめ、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
   ID の型は `tools/i18n` が生成する `MessageArgs` から作る（`ClientMessageKey`）。文字列にするときは `useT()` の `t("client:…", 引数)` を使い、ID と引数の型を検査する。
 - **ルーティング**（`router.ts`）: TanStack Router のファイルルート。Vite のプラグインが `routes/` から `routeTree.gen.ts` を生成する（自動コード分割）。生成物はコミットしない（ADR-0081）。
   `tsc`・Oxlint・knip・テストの前には、`scripts/task.sh web:routes-gen`（`app/web/scripts/routes.ts`）が Vite を通さず同じ設定で生成する。

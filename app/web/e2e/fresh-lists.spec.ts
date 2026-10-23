@@ -7,15 +7,13 @@
 // that a stale list replaced only when a refetch ended would be seen.
 // The user is new to the test (a random name), created with `my admin create` (e2e/server-cli.ts).
 import { randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, openFromNavigation, test } from "./fixtures";
 import { ownsServer, runMy } from "./server-cli.ts";
 import { serverURL } from "./server-origin.ts";
+import { readCatalog } from "./catalog.ts";
 
 test.use({ baseURL: serverURL, reducedMotion: "reduce" });
-
-type Catalog = Record<string, { defaultMessage: string }>;
 
 /** The project's locale. */
 function projectLocale(): string {
@@ -25,7 +23,7 @@ function projectLocale(): string {
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
   const locale = projectLocale();
-  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const catalog = readCatalog(locale);
   const text = catalog[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text;

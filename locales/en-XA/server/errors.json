@@ -1,0 +1,482 @@
+{
+  "errors.account_unavailable": {
+    "defaultMessage": "[Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞƞǿǿŧ ŭŭşḗḗ ŧħḗḗ ȧȧƥƥ řīɠħŧ ƞǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.appeal.already_appealed": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧŀřḗḗȧȧḓẏ ȧȧƥƥḗḗȧȧŀḗḗḓ ŧħīş ȧȧƈŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.appeal.decided": {
+    "defaultMessage": "[Ŧħīş ȧȧƥƥḗḗȧȧŀ ħȧȧş ȧȧŀřḗḗȧȧḓẏ ƀḗḗḗḗƞ ḓḗḗƈīḓḗḗḓ ǿǿŧħḗḗřẇīşḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.appeal.not_appealable": {
+    "defaultMessage": "[Ŧħīş ȧȧƈŧīǿǿƞ ƈȧȧƞƞǿǿŧ ƀḗḗ ȧȧƥƥḗḗȧȧŀḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.appeal.window_closed": {
+    "defaultMessage": "[Ŧħḗḗ ŧīḿḗḗ ŧǿǿ ȧȧƥƥḗḗȧȧŀ ŧħīş ȧȧƈŧīǿǿƞ ħȧȧş ƥȧȧşşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.bad_gateway": {
+    "defaultMessage": "[Ȧ řḗḗḿǿǿŧḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ řḗḗȧȧƈħḗḗḓ ǿǿř ȧȧƞşẇḗḗřḗḗḓ ẇīŧħ ȧȧƞ ḗḗřřǿǿř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.bad_request": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş īƞṽȧȧŀīḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.blocking": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƀŀǿǿƈķ ŧħīş ȧȧƈƈǿǿŭŭƞŧ. Ŭƞƀŀǿǿƈķ īŧ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.conflict": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈǿǿƞƒŀīƈŧş ẇīŧħ ŧħḗḗ ƈŭŭřřḗḗƞŧ şŧȧȧŧḗḗ ǿǿƒ ŧħḗḗ řḗḗşǿǿŭŭřƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.custom_emoji_request_conflict": {
+    "defaultMessage": "[Ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī řḗḗɋŭŭḗḗşŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗƈīḓḗḗḓ ȧȧş īŧ īş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.custom_emoji_request_conflict_detail": {
+    "defaultMessage": "[{reason,select,not_pending{Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ẇȧȧş ȧȧŀřḗḗȧȧḓẏ ȧȧƥƥřǿǿṽḗḗḓ, řḗḗĵḗḗƈŧḗḗḓ, ǿǿř ẇīŧħḓřȧȧẇƞ.} other{Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗƈīḓḗḗḓ ȧȧş īŧ īş.} requester_cannot_create{Ŧħḗḗ řḗḗɋŭŭḗḗşŧḗḗř ƈȧȧƞ ƞǿǿ ŀǿǿƞɠḗḗř ƈřḗḗȧȧŧḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī. Řḗḗĵḗḗƈŧ ŧħḗḗ řḗḗɋŭŭḗḗşŧ īƞşŧḗḗȧȧḓ.} shortcode_taken{Ȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ħȧȧş ŧħīş şħǿǿřŧƈǿǿḓḗḗ. Řḗḗĵḗḗƈŧ ŧħḗḗ řḗḗɋŭŭḗḗşŧ īƞşŧḗḗȧȧḓ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.domain_mutes.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧŀřḗḗȧȧḓẏ ḿŭŭŧḗḗ ŧħḗḗ ḿǿǿşŧ ḓǿǿḿȧȧīƞş ȧȧŀŀǿǿẇḗḗḓ. Ŭƞḿŭŭŧḗḗ ǿǿƞḗḗ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.export.in_progress": {
+    "defaultMessage": "[Ȧƞ ȧȧřƈħīṽḗḗ ǿǿƒ ẏǿǿŭŭř ḓȧȧŧȧȧ īş ȧȧŀřḗḗȧȧḓẏ ƀḗḗīƞɠ ƥřḗḗƥȧȧřḗḗḓ. Ẇȧȧīŧ ŭŭƞŧīŀ īŧ īş řḗḗȧȧḓẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.export.not_ready": {
+    "defaultMessage": "[Ŧħīş ȧȧřƈħīṽḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓǿǿẇƞŀǿǿȧȧḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.federation_restricted": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ ƒḗḗḓḗḗřȧȧŧḗḗ īƞ ŧħḗḗ ḓīřḗḗƈŧīǿǿƞ ŧħȧȧŧ ŧħīş ƞḗḗḗḗḓş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.forbidden": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ŧǿǿ ḓǿǿ ŧħīş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.import.in_progress": {
+    "defaultMessage": "[Ȧƞǿǿŧħḗḗř īḿƥǿǿřŧ īş īƞ ƥřǿǿɠřḗḗşş. Ẇȧȧīŧ ŭŭƞŧīŀ īŧ ƒīƞīşħḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ řḗḗȧȧḓ ȧȧş ƇŞṼ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.insufficient_scope": {
+    "defaultMessage": "[Ŧħīş ȧȧƥƥ īş ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ŧǿǿ ḓǿǿ ŧħīş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.insufficient_scope_detail": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƈƈḗḗşş ŧǿǿķḗḗƞ ƞḗḗḗḗḓş ŧħḗḗ şƈǿǿƥḗḗ {scope}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.interaction_restricted": {
+    "defaultMessage": "[Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ḿȧȧẏ ƞǿǿŧ ƒǿǿŀŀǿǿẇ, ƒȧȧṽǿǿŭŭřīŧḗḗ, ƀǿǿǿǿşŧ, ǿǿř řḗḗƥŀẏ řīɠħŧ ƞǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.internal": {
+    "defaultMessage": "[Ȧƞ ŭŭƞḗḗẋƥḗḗƈŧḗḗḓ ḗḗřřǿǿř ǿǿƈƈŭŭřřḗḗḓ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.invalid_custom_emoji": {
+    "defaultMessage": "[Ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.invalid_custom_emoji_detail": {
+    "defaultMessage": "[{reason,select,fetch_failed{Ŧħḗḗ īḿȧȧɠḗḗ ǿǿƒ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ƒḗḗŧƈħḗḗḓ ƒřǿǿḿ īŧş şḗḗřṽḗḗř.} invalid_alias{Ȧƞ ȧȧŀīȧȧş īş 2 ŧǿǿ 30 ŀḗḗŧŧḗḗřş (Ȧ ŧǿǿ Ẑ), ḓīɠīŧş, ȧȧƞḓ ŭŭƞḓḗḗřşƈǿǿřḗḗş, ȧȧƞḓ ȧȧƞ ḗḗḿǿǿĵī ħȧȧş ȧȧŧ ḿǿǿşŧ 10.} invalid_category{Ȧ ƈȧȧŧḗḗɠǿǿřẏ īş ȧȧŧ ḿǿǿşŧ 64 ƈħȧȧřȧȧƈŧḗḗřş.} invalid_reason{Ȧ řḗḗȧȧşǿǿƞ īş ȧȧŧ ḿǿǿşŧ 500 ƈħȧȧřȧȧƈŧḗḗřş.} invalid_shortcode{Ȧ şħǿǿřŧƈǿǿḓḗḗ īş 2 ŧǿǿ 30 ŀḗḗŧŧḗḗřş (Ȧ ŧǿǿ Ẑ), ḓīɠīŧş, ȧȧƞḓ ŭŭƞḓḗḗřşƈǿǿřḗḗş.} limit_reached{Ẏǿǿŭŭ ȧȧŀřḗḗȧȧḓẏ ħȧȧṽḗḗ ȧȧş ḿȧȧƞẏ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ȧȧƞḓ ƥḗḗƞḓīƞɠ řḗḗɋŭŭḗḗşŧş ȧȧş ẏǿǿŭŭř ŀīḿīŧ.} local_emoji{Ŧħīş ƈȧȧƞ ƀḗḗ ḓǿǿƞḗḗ ǿǿƞŀẏ ẇīŧħ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ǿǿŧħḗḗř şḗḗřṽḗḗřş.} media_not_found{Ŧħḗḗ īḿȧȧɠḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ ȧȧḿǿǿƞɠ ẏǿǿŭŭř ŭŭƥŀǿǿȧȧḓş.} media_not_ready{Ŧħḗḗ īḿȧȧɠḗḗ īş şŧīŀŀ ƀḗḗīƞɠ ƥřǿǿƈḗḗşşḗḗḓ. Ŧřẏ ȧȧɠȧȧīƞ īƞ ȧȧ ḿǿǿḿḗḗƞŧ.} other{Ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} remote_emoji{Ŧħīş ƈȧȧƞ ƀḗḗ ḓǿǿƞḗḗ ǿǿƞŀẏ ẇīŧħ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř.} request_pending{Ŧħīş ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ȧȧŀřḗḗȧȧḓẏ ħȧȧş ȧȧ ƥḗḗƞḓīƞɠ řḗḗɋŭŭḗḗşŧ ƒǿǿř ȧȧ ƞḗḗẇ īḿȧȧɠḗḗ.} shortcode_taken{Ȧ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ħȧȧş ŧħīş şħǿǿřŧƈǿǿḓḗḗ.} too_big{Ŧħḗḗ īḿȧȧɠḗḗ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ 1,024 ƥīẋḗḗŀş ǿǿƞ ḗḗȧȧƈħ şīḓḗḗ.} too_large{Ŧħḗḗ īḿȧȧɠḗḗ īş ŀȧȧřɠḗḗř ŧħȧȧƞ ŧħḗḗ ŀīḿīŧ ǿǿƒ ŧħīş şḗḗřṽḗḗř.} unsupported_format{Ŧħḗḗ īḿȧȧɠḗḗ ḿŭŭşŧ ƀḗḗ ȧȧ ƤȠƓ, ȧȧ ƓĪƑ, ǿǿř ȧȧ ẆḗḗƀƤ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.invalid_parameter": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧřȧȧḿḗḗŧḗḗř {name} ħȧȧş ȧȧƞ īƞṽȧȧŀīḓ ṽȧȧŀŭŭḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.invalid_theme": {
+    "defaultMessage": "[Ŧħḗḗ ŧħḗḗḿḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.invalid_token": {
+    "defaultMessage": "[Ẏǿǿŭŭř şīɠƞ-īƞ ħȧȧş ḗḗẋƥīřḗḗḓ ǿǿř ẇȧȧş řḗḗṽǿǿķḗḗḓ. Şīɠƞ īƞ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.invalid_value": {
+    "defaultMessage": "[Ŧħḗḗ ṽȧȧŀŭŭḗḗ ǿǿƒ {name} īş īƞṽȧȧŀīḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_attached": {
+    "defaultMessage": "[Ŧħīş ḿḗḗḓīȧȧ īş ȧȧŧŧȧȧƈħḗḗḓ ŧǿǿ ȧȧ ƥǿǿşŧ ȧȧƞḓ ƈȧȧƞ ƞǿǿ ŀǿǿƞɠḗḗř ƀḗḗ ƈħȧȧƞɠḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_attached_detail": {
+    "defaultMessage": "[Ḗḓīŧ ŧħḗḗ ƥǿǿşŧ ŧǿǿ ƈħȧȧƞɠḗḗ īŧş ḓḗḗşƈřīƥŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_corrupt": {
+    "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ řḗḗȧȧḓ ȧȧş ȧȧƞ īḿȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_description_too_long": {
+    "defaultMessage": "[Ŧħḗḗ ḓḗḗşƈřīƥŧīǿǿƞ īş ŧǿǿǿǿ ŀǿǿƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_description_too_long_detail": {
+    "defaultMessage": "[{max,plural,one{Ȧ ḓḗḗşƈřīƥŧīǿǿƞ ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗř.} other{Ȧ ḓḗḗşƈřīƥŧīǿǿƞ ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗřş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_dimensions": {
+    "defaultMessage": "[Ŧħḗḗ īḿȧȧɠḗḗ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ īƞ ẇīḓŧħ, ħḗḗīɠħŧ, ǿǿř ƞŭŭḿƀḗḗř ǿǿƒ ƒřȧȧḿḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_invalid_focus": {
+    "defaultMessage": "[Ŧħḗḗ ƒǿǿƈȧȧŀ ƥǿǿīƞŧ ḿŭŭşŧ ƀḗḗ ƀḗḗŧẇḗḗḗḗƞ -1.0 ȧȧƞḓ 1.0 ǿǿƞ ḗḗȧȧƈħ ȧȧẋīş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_too_large": {
+    "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_too_long": {
+    "defaultMessage": "[Ŧħḗḗ ṽīḓḗḗǿǿ ǿǿř ȧȧŭŭḓīǿǿ īş ŧǿǿǿǿ ŀǿǿƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_unsupported_codec": {
+    "defaultMessage": "[Ŧħīş ṽīḓḗḗǿǿ ǿǿř ȧȧŭŭḓīǿǿ ƈǿǿḓḗḗƈ īş ƞǿǿŧ şŭŭƥƥǿǿřŧḗḗḓ. ĦḖṼƇ (Ħīɠħ Ḗƒƒīƈīḗḗƞƈẏ) ṽīḓḗḗǿǿ ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭƥŀǿǿȧȧḓḗḗḓ: řḗḗƈǿǿřḓ īƞ Ħ.264 (Ḿǿǿşŧ Ƈǿǿḿƥȧȧŧīƀŀḗḗ) īƞşŧḗḗȧȧḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_unsupported_format": {
+    "defaultMessage": "[Ŧħīş ƒīŀḗḗ ƒǿǿřḿȧȧŧ īş ƞǿǿŧ şŭŭƥƥǿǿřŧḗḗḓ. Ŭƥŀǿǿȧȧḓ ȧȧ ĴƤḖƓ, ƤȠƓ, ƓĪƑ, ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗ, ȧȧƞ ḾƤ4 ǿǿř ẆḗḗƀḾ ṽīḓḗḗǿǿ, ǿǿř ȧȧƞ ḾƤ3, Ǿɠɠ, ǿǿř Ḿ4Ȧ ȧȧŭŭḓīǿǿ ƒīŀḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.method_not_allowed": {
+    "defaultMessage": "[Ŧħḗḗ {method} ḿḗḗŧħǿǿḓ īş ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ƒǿǿř ŧħīş řḗḗşǿǿŭŭřƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.missing_permission_detail": {
+    "defaultMessage": "[Ẏǿǿŭŭř řǿǿŀḗḗş ƞḗḗḗḗḓ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞ {permission}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.not_found": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧḗḗḓ řḗḗşǿǿŭŭřƈḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.confirmation_expired": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿƞƒīřḿȧȧŧīǿǿƞ ẇīŧħ ŧħḗḗ ƥȧȧşşķḗḗẏ ḗḗẋƥīřḗḗḓ. Ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.invalid": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşķḗḗẏ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ṽḗḗřīƒīḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.last_sign_in_method": {
+    "defaultMessage": "[Ŧħīş īş ẏǿǿŭŭř ŀȧȧşŧ ẇȧȧẏ ŧǿǿ şīɠƞ īƞ. Ȧḓḓ ȧȧ ƥȧȧşşķḗḗẏ ǿǿř şḗḗŧ ȧȧ ƥȧȧşşẇǿǿřḓ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.registration_expired": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɠīşŧřȧȧŧīǿǿƞ ǿǿƒ ŧħḗḗ ƥȧȧşşķḗḗẏ ḗḗẋƥīřḗḗḓ. Şŧȧȧřŧ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧş ḿȧȧƞẏ ƥȧȧşşķḗḗẏş ȧȧş ȧȧŀŀǿǿẇḗḗḓ. Řḗḗḿǿǿṽḗḗ ǿǿƞḗḗ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.rate_limited": {
+    "defaultMessage": "[Ŧǿǿǿǿ ḿȧȧƞẏ řḗḗɋŭŭḗḗşŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.rate_limited_detail": {
+    "defaultMessage": "[{seconds,plural,one{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓ.} other{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.refetch.not_remote": {
+    "defaultMessage": "[Ǿƞŀẏ řḗḗḿǿǿŧḗḗ ƥǿǿşŧş, řḗḗḿǿǿŧḗḗ ȧȧƈƈǿǿŭŭƞŧş, ȧȧƞḓ ǿǿŧħḗḗř şḗḗřṽḗḗřş ƈȧȧƞ ƀḗḗ řḗḗƒḗḗŧƈħḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.relay.invalid": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗŀȧȧẏ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ŧħȧȧŧ ẇȧȧẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.relay.invalid_detail": {
+    "defaultMessage": "[{reason,select,domain_suspended{Ŧħḗḗ řḗḗŀȧȧẏ'ş şḗḗřṽḗḗř īş şŭŭşƥḗḗƞḓḗḗḓ ƀẏ ȧȧ ḓǿǿḿȧȧīƞ ȧȧƈŧīǿǿƞ.} exists{Ȧ řḗḗŀȧȧẏ ẇīŧħ ŧħīş ŬŘĿ īş ȧȧŀřḗḗȧȧḓẏ řḗḗɠīşŧḗḗřḗḗḓ.} not_actor{Ŧħḗḗ ŬŘĿ ḓǿǿḗḗş ƞǿǿŧ şḗḗřṽḗḗ ŧħḗḗ ȧȧƈŧǿǿř ǿǿƒ ȧȧ řḗḗŀȧȧẏ ẇīŧħ ȧȧƞ īƞƀǿǿẋ.} other{Ŧħḗḗ řḗḗŀȧȧẏ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ŧħȧȧŧ ẇȧȧẏ.} state{Ŧħḗḗ řḗḗŀȧȧẏ īş ƞǿǿŧ īƞ ȧȧ şŧȧȧŧḗḗ ŧħȧȧŧ ȧȧŀŀǿǿẇş ŧħīş: ŀḗḗȧȧṽḗḗ ȧȧ řḗḗŀȧȧẏ ƀḗḗƒǿǿřḗḗ ẏǿǿŭŭ ḓḗḗŀḗḗŧḗḗ īŧ, ȧȧƞḓ ĵǿǿīƞ ǿǿƞŀẏ ǿǿƞḗḗ ŧħȧȧŧ ẏǿǿŭŭ ŀḗḗƒŧ ǿǿř ŧħȧȧŧ řḗḗĵḗḗƈŧḗḗḓ ẏǿǿŭŭ.} url{Ŧħḗḗ ŬŘĿ ḿŭŭşŧ ƀḗḗ ȧȧƞ ħŧŧƥş ŬŘĿ ǿǿƒ ȧȧŧ ḿǿǿşŧ 2048 ƀẏŧḗḗş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.remote_account": {
+    "defaultMessage": "[Ŧħīş īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ ƒǿǿř ȧȧƈƈǿǿŭŭƞŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.report.not_resolved": {
+    "defaultMessage": "[Ǿƞŀẏ ȧȧ řḗḗşǿǿŀṽḗḗḓ řḗḗƥǿǿřŧ ƈȧȧƞ ƀḗḗ řḗḗǿǿƥḗḗƞḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.request_too_large": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.breaks_supporter_roles": {
+    "defaultMessage": "[Şŧȧȧƒƒ řǿǿŀḗḗş ḿŭŭşŧ şŧȧȧẏ ȧȧƀǿǿṽḗḗ ŧħḗḗ řǿǿŀḗḗş ǿǿƒ ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.invalid": {
+    "defaultMessage": "[Ŧħḗḗ řǿǿŀḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.invalid_detail": {
+    "defaultMessage": "[{reason,select,badge_color{Ƈħǿǿǿǿşḗḗ ǿǿƞḗḗ ǿǿƒ ŧħḗḗ ƀȧȧḓɠḗḗ ƈǿǿŀǿǿřş.} badge_label{Ŧħḗḗ ƀȧȧḓɠḗḗ ƞȧȧḿḗḗ ḿŭŭşŧ ƀḗḗ 1 ŧǿǿ 32 ƈħȧȧřȧȧƈŧḗḗřş ǿǿƞ ǿǿƞḗḗ ŀīƞḗḗ.} builtin{Ŧħḗḗ ȧȧḓḿīƞ řǿǿŀḗḗ ƈȧȧƞƞǿǿŧ ƈħȧȧƞɠḗḗ, ȧȧƞḓ ŧħḗḗ ƀŭŭīŀŧ-īƞ řǿǿŀḗḗş ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ.} held{Řḗḗṽǿǿķḗḗ ŧħḗḗ řǿǿŀḗḗ ƒřǿǿḿ ḗḗṽḗḗřẏǿǿƞḗḗ ẇħǿǿ ħǿǿŀḓş īŧ ƒīřşŧ.} key{Ŧħḗḗ ķḗḗẏ ḿŭŭşŧ ƀḗḗ 1 ŧǿǿ 64 ŀǿǿẇḗḗřƈȧȧşḗḗ ŀḗḗŧŧḗḗřş, ḓīɠīŧş, ŭŭƞḓḗḗřşƈǿǿřḗḗş, ǿǿř ħẏƥħḗḗƞş.} key_taken{Ȧƞǿǿŧħḗḗř řǿǿŀḗḗ ħȧȧş ŧħīş ķḗḗẏ.} missing_permission{Ẏǿǿŭŭ ƈȧȧƞ ɠīṽḗḗ ǿǿř ŧȧȧķḗḗ ǿǿƞŀẏ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ẏǿǿŭŭ ħǿǿŀḓ.} other{Ŧħḗḗ ƈħȧȧƞɠḗḗ ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} permissions{Ƈħǿǿǿǿşḗḗ ḗḗȧȧƈħ ƥḗḗřḿīşşīǿǿƞ ȧȧŧ ḿǿǿşŧ ǿǿƞƈḗḗ.} position{Ŧħḗḗ ƥǿǿşīŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 999.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.managed_by_plan": {
+    "defaultMessage": "[Ŧħḗḗ řǿǿŀḗḗ ƀḗḗŀǿǿƞɠş ŧǿǿ ȧȧ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.managed_by_plan_detail": {
+    "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ƥŀȧȧƞ'ş şŭŭƀşƈřīƥŧīǿǿƞş ɠřȧȧƞŧ ȧȧƞḓ řḗḗṽǿǿķḗḗ īŧ, ȧȧƞḓ īŧş ƥḗḗřḿīşşīǿǿƞş ȧȧƞḓ ƥǿǿşīŧīǿǿƞ ƈħȧȧƞɠḗḗ ƒřǿǿḿ ŧħḗḗ ƥŀȧȧƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.self_relationship": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ḓǿǿ ŧħīş ŧǿǿ ẏǿǿŭŭř ǿǿẇƞ ȧȧƈƈǿǿŭŭƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.service_unavailable": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽīƈḗḗ īş ŧḗḗḿƥǿǿřȧȧřīŀẏ ŭŭƞȧȧṽȧȧīŀȧȧƀŀḗḗ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.signature_required": {
+    "defaultMessage": "[Ŧħīş řḗḗɋŭŭḗḗşŧ ƞḗḗḗḗḓş ȧȧ ṽȧȧŀīḓ ĦŦŦƤ şīɠƞȧȧŧŭŭřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.already_deleted": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧ ƈřḗḗȧȧŧḗḗḓ ẇīŧħ ŧħīş Īḓḗḗḿƥǿǿŧḗḗƞƈẏ-Ķḗḗẏ ħȧȧş ƀḗḗḗḗƞ ḓḗḗŀḗḗŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.empty_text": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧ ħȧȧş ƞǿǿ ŧḗḗẋŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_language": {
+    "defaultMessage": "[Ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗ īş ƞǿǿŧ ȧȧ ṽȧȧŀīḓ ŀȧȧƞɠŭŭȧȧɠḗḗ ŧȧȧɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_media_description": {
+    "defaultMessage": "[{max,plural,one{Ȧƞ īḿȧȧɠḗḗ ḓḗḗşƈřīƥŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗř.} other{Ȧƞ īḿȧȧɠḗḗ ḓḗḗşƈřīƥŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗřş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_reaction": {
+    "defaultMessage": "[Ǿƞŀẏ ȧȧ Ŭƞīƈǿǿḓḗḗ ḗḗḿǿǿĵī ǿǿř ȧȧƞ ḗḗƞȧȧƀŀḗḗḓ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ǿǿƒ ŧħīş şḗḗřṽḗḗř ƈȧȧƞ ƀḗḗ ŭŭşḗḗḓ ŧǿǿ řḗḗȧȧƈŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_text": {
+    "defaultMessage": "[Ŧħḗḗ ŧḗḗẋŧ ƈǿǿƞŧȧȧīƞş ƈħȧȧřȧȧƈŧḗḗřş ŧħȧȧŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ƥǿǿşŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.media_not_found": {
+    "defaultMessage": "[Ȧƞ ȧȧŧŧȧȧƈħḗḗḓ ƒīŀḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ ȧȧḿǿǿƞɠ ẏǿǿŭŭř ŭŭƥŀǿǿȧȧḓş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.media_not_ready": {
+    "defaultMessage": "[Ȧƞ ȧȧŧŧȧȧƈħḗḗḓ ƒīŀḗḗ īş şŧīŀŀ ƀḗḗīƞɠ ƥřǿǿƈḗḗşşḗḗḓ ǿǿř ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ƥřǿǿƈḗḗşşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.missing_media_description": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř řḗḗɋŭŭīřḗḗş ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ (ȧȧŀŧ ŧḗḗẋŧ) ƒǿǿř ḗḗṽḗḗřẏ īḿȧȧɠḗḗ. Ȧḓḓ ǿǿƞḗḗ ŧǿǿ ḗḗȧȧƈħ īḿȧȧɠḗḗ ƀḗḗƒǿǿřḗḗ ƥǿǿşŧīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.not_author": {
+    "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ȧȧŭŭŧħǿǿř ƈȧȧƞ ƈħȧȧƞɠḗḗ ŧħīş ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.not_boostable": {
+    "defaultMessage": "[Ŧħīş ƥǿǿşŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ƀǿǿǿǿşŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.not_pinnable": {
+    "defaultMessage": "[Ǿƞŀẏ ẏǿǿŭŭř ǿǿẇƞ ƥǿǿşŧş ŧħȧȧŧ ȧȧřḗḗ ƞǿǿŧ ḓīřḗḗƈŧ ƈȧȧƞ ƀḗḗ ƥīƞƞḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.pin_limit": {
+    "defaultMessage": "[{max,plural,one{Ẏǿǿŭŭ ƈȧȧƞ ƥīƞ ȧȧŧ ḿǿǿşŧ # ƥǿǿşŧ.} other{Ẏǿǿŭŭ ƈȧȧƞ ƥīƞ ȧȧŧ ḿǿǿşŧ # ƥǿǿşŧş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_already_voted": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧŀřḗḗȧȧḓẏ ṽǿǿŧḗḗḓ īƞ ŧħīş ƥǿǿŀŀ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_changed": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿŀŀ ẇȧȧş ƈħȧȧƞɠḗḗḓ ƀẏ ȧȧƞ ḗḗḓīŧ ǿǿƒ ŧħḗḗ ƥǿǿşŧ. Řḗḗŀǿǿȧȧḓ īŧ ȧȧƞḓ ṽǿǿŧḗḗ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_closed": {
+    "defaultMessage": "[Ŧħīş ƥǿǿŀŀ ħȧȧş ḗḗƞḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_invalid": {
+    "defaultMessage": "[Ȧ ƥǿǿŀŀ ƞḗḗḗḗḓş {min} ŧǿǿ {max} ḓīƒƒḗḗřḗḗƞŧ ǿǿƥŧīǿǿƞş ǿǿƒ ȧȧŧ ḿǿǿşŧ {length} ƈħȧȧřȧȧƈŧḗḗřş ḗḗȧȧƈħ, ȧȧƞḓ ḿŭŭşŧ ŀȧȧşŧ ƒřǿǿḿ 5 ḿīƞŭŭŧḗḗş ŧǿǿ 30 ḓȧȧẏş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_invalid_choices": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ǿǿƞḗḗ ǿǿƒ ŧħḗḗ ƥǿǿŀŀ'ş ǿǿƥŧīǿǿƞş, ǿǿř şḗḗṽḗḗřȧȧŀ ǿǿƞŀẏ ẇħḗḗƞ ŧħḗḗ ƥǿǿŀŀ ȧȧŀŀǿǿẇş īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_missing": {
+    "defaultMessage": "[Ŧħīş ƥǿǿşŧ ħȧȧş ƞǿǿ ƥǿǿŀŀ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_not_editable": {
+    "defaultMessage": "[Ȧ ƥǿǿşŧ ẇīŧħ ȧȧ ƥǿǿŀŀ ƈȧȧƞƞǿǿŧ ƀḗḗ ḗḗḓīŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_with_media": {
+    "defaultMessage": "[Ȧ ƥǿǿşŧ ẇīŧħ ȧȧ ƥǿǿŀŀ ƈȧȧƞƞǿǿŧ ȧȧŧŧȧȧƈħ ƒīŀḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.posting_restricted": {
+    "defaultMessage": "[Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ḿȧȧẏ ƞǿǿŧ ƥǿǿşŧ řīɠħŧ ƞǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.quote_not_allowed": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ɋŭŭǿǿŧḗḗ ŧħīş ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.quote_not_found": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧ ẏǿǿŭŭ ȧȧřḗḗ ɋŭŭǿǿŧīƞɠ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.reply_not_found": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧ ẏǿǿŭŭ ȧȧřḗḗ řḗḗƥŀẏīƞɠ ŧǿǿ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.text_too_long": {
+    "defaultMessage": "[{max,plural,one{Ŧħḗḗ ŧḗḗẋŧ ȧȧƞḓ ƈǿǿƞŧḗḗƞŧ ẇȧȧřƞīƞɠ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗř.} other{Ŧħḗḗ ŧḗḗẋŧ ȧȧƞḓ ƈǿǿƞŧḗḗƞŧ ẇȧȧřƞīƞɠ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗřş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.too_many_media": {
+    "defaultMessage": "[{max,plural,one{Ȧ ƥǿǿşŧ ƈȧȧƞ ȧȧŧŧȧȧƈħ ȧȧŧ ḿǿǿşŧ # ḓīşŧīƞƈŧ ƒīŀḗḗ.} other{Ȧ ƥǿǿşŧ ƈȧȧƞ ȧȧŧŧȧȧƈħ ȧȧŧ ḿǿǿşŧ # ḓīşŧīƞƈŧ ƒīŀḗḗş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.streaming.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ŧǿǿǿǿ ḿȧȧƞẏ şŧřḗḗȧȧḿş ǿǿƥḗḗƞ. Ƈŀǿǿşḗḗ ǿǿƞḗḗ ȧȧƞḓ ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.streaming.unavailable": {
+    "defaultMessage": "[Řḗḗȧȧŀ-ŧīḿḗḗ ŭŭƥḓȧȧŧḗḗş ȧȧřḗḗ ŭŭƞȧȧṽȧȧīŀȧȧƀŀḗḗ řīɠħŧ ƞǿǿẇ. Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.ineligible": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ şŭŭƀşƈřīƀḗḗ ŧǿǿ ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.ineligible_detail": {
+    "defaultMessage": "[{reason,select,email_unverified{Ṽḗḗřīƒẏ ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ƒīřşŧ.} not_local{Ǿƞŀẏ ŧħḗḗ ŭŭşḗḗřş ǿǿƒ ŧħīş şḗḗřṽḗḗř ƈȧȧƞ şŭŭƀşƈřīƀḗḗ.} other{Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ şŭŭƀşƈřīƀḗḗ ƞǿǿẇ.} restricted{Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ īş řḗḗşŧřīƈŧḗḗḓ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.live_subscriptions": {
+    "defaultMessage": "[Şŭŭƀşƈřīƥŧīǿǿƞş ŧǿǿ ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞş ɠǿǿ ǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.live_subscriptions_detail": {
+    "defaultMessage": "[Řḗḗŧīřḗḗ ŧħḗḗ ƥŀȧȧƞş ȧȧƞḓ ẇȧȧīŧ ƒǿǿř ŧħḗḗīř şŭŭƀşƈřīƥŧīǿǿƞş ŧǿǿ ḗḗƞḓ ƀḗḗƒǿǿřḗḗ ḓīşȧȧƀŀīƞɠ ŧħḗḗ ƥřǿǿɠřȧȧḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_invalid": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_invalid_detail": {
+    "defaultMessage": "[{reason,select,annual_discount_percent{Ŧħḗḗ ẏḗḗȧȧřŀẏ ḓīşƈǿǿŭŭƞŧ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 90 ƥḗḗřƈḗḗƞŧ.} currency{Ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř ḓǿǿḗḗş ƞǿǿŧ ŧȧȧķḗḗ ŧħīş ƈŭŭřřḗḗƞƈẏ.} description{Ŧħḗḗ ḓḗḗşƈřīƥŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ 1,000 ƈħȧȧřȧȧƈŧḗḗřş.} emoji_limit{Ŧħḗḗ ḗḗḿǿǿĵī ŀīḿīŧ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 10,000.} monthly_price{Ŧħḗḗ ƥřīƈḗḗ ḿŭŭşŧ ƀḗḗ ȧȧŧ ŀḗḗȧȧşŧ ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř'ş ḿīƞīḿŭŭḿ ƈħȧȧřɠḗḗ, ƒǿǿř ŧħḗḗ ẏḗḗȧȧřŀẏ ƥřīƈḗḗ ŧǿǿǿǿ.} name{Ŧħḗḗ ƞȧȧḿḗḗ ḿŭŭşŧ ƀḗḗ 1 ŧǿǿ 50 ƈħȧȧřȧȧƈŧḗḗřş ǿǿƞ ǿǿƞḗḗ ŀīƞḗḗ.} order_emoji_limit{Ȧ ħīɠħḗḗř ƥŀȧȧƞ ḿŭŭşŧ ŀḗḗŧ īŧş ḿḗḗḿƀḗḗřş ƈřḗḗȧȧŧḗḗ ȧȧŧ ŀḗḗȧȧşŧ ȧȧş ḿȧȧƞẏ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ȧȧş ŧħḗḗ ƥŀȧȧƞ ƀḗḗŀǿǿẇ īŧ.} order_permissions{Ȧ ħīɠħḗḗř ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿŭŭşŧ ħȧȧṽḗḗ ḗḗṽḗḗřẏ ƥḗḗřḿīşşīǿǿƞ ǿǿƒ ŧħḗḗ ƥŀȧȧƞ ƀḗḗŀǿǿẇ īŧ.} order_position{Ȧ ħīɠħḗḗř ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿŭŭşŧ ƀḗḗ ȧȧƀǿǿṽḗḗ ŧħḗḗ řǿǿŀḗḗ ǿǿƒ ŧħḗḗ ƥŀȧȧƞ ƀḗḗŀǿǿẇ īŧ.} order_rank{Ȧƞǿǿŧħḗḗř ƥŀȧȧƞ ħȧȧş ŧħīş řȧȧƞķ.} other{Ŧħḗḗ ƥŀȧȧƞ ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} rank{Ŧħḗḗ řȧȧƞķ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 1,000,000.} role_builtin{Ŧħḗḗ ƀŭŭīŀŧ-īƞ řǿǿŀḗḗş ƈȧȧƞƞǿǿŧ ƀḗḗ ȧȧ ƥŀȧȧƞ'ş řǿǿŀḗḗ.} role_held{Ƈħǿǿǿǿşḗḗ ȧȧ řǿǿŀḗḗ ŧħȧȧŧ ƞǿǿƀǿǿḓẏ ħǿǿŀḓş.} role_permissions{Ȧ ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿȧȧẏ ħȧȧṽḗḗ ǿǿƞŀẏ ḿḗḗḿƀḗḗř ƥḗḗřḿīşşīǿǿƞş.} role_position{Ȧ ƥŀȧȧƞ'ş řǿǿŀḗḗ ḿŭŭşŧ ƀḗḗ ƀḗḗŀǿǿẇ ḗḗṽḗḗřẏ şŧȧȧƒƒ řǿǿŀḗḗ.} role_taken{Ȧƞǿǿŧħḗḗř ƥŀȧȧƞ ħȧȧş ŧħīş řǿǿŀḗḗ.} visibility{Ƈħǿǿǿǿşḗḗ ƥŭŭƀŀīƈ ǿǿř ħīḓḓḗḗƞ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_retired": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞ īş řḗḗŧīřḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_unavailable": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥŀȧȧƞ ŧȧȧķḗḗş ƞǿǿ şŭŭƀşƈřīƥŧīǿǿƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.same_plan": {
+    "defaultMessage": "[Ẏǿǿŭŭř şŭŭƀşƈřīƥŧīǿǿƞ ħȧȧş ŧħīş ƥŀȧȧƞ ȧȧƞḓ īƞŧḗḗřṽȧȧŀ ȧȧŀřḗḗȧȧḓẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.subscribed": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧ şŭŭƀşƈřīƥŧīǿǿƞ ȧȧŀřḗḗȧȧḓẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.subscribed_detail": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗ ŧħḗḗ ƥŀȧȧƞ ǿǿƒ ẏǿǿŭŭř şŭŭƀşƈřīƥŧīǿǿƞ īƞşŧḗḗȧȧḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.subscription_ended": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƀşƈřīƥŧīǿǿƞ ħȧȧş ḗḗƞḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.subscription_state": {
+    "defaultMessage": "[Ẏǿǿŭŭř şŭŭƀşƈřīƥŧīǿǿƞ ƈȧȧƞƞǿǿŧ ḓǿǿ ŧħȧȧŧ īƞ īŧş ƈŭŭřřḗḗƞŧ şŧȧȧŧḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.unavailable": {
+    "defaultMessage": "[Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥřǿǿɠřȧȧḿ īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ ǿǿƞ ŧħīş şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.unavailable_detail": {
+    "defaultMessage": "[{reason,select,no_email{Ŧħḗḗ şḗḗřṽḗḗř ḿŭŭşŧ şḗḗƞḓ ḗḗḿȧȧīŀ, şǿǿ ŧħȧȧŧ şŭŭƀşƈřīƀḗḗřş ƈȧȧƞ ṽḗḗřīƒẏ ŧħḗḗīř ȧȧḓḓřḗḗşş.} no_provider{Ƈǿǿƞƒīɠŭŭřḗḗ ȧȧ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř īƞ ŧħḗḗ şḗḗřṽḗḗř'ş ƈǿǿƞƒīɠŭŭřȧȧŧīǿǿƞ ƒīřşŧ.} other{Ŧħḗḗ şŭŭƥƥǿǿřŧḗḗř ƥřǿǿɠřȧȧḿ ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭşḗḗḓ ƞǿǿẇ.} provider_mismatch{Ŧħḗḗ ƈǿǿƞƒīɠŭŭřḗḗḓ ƥȧȧẏḿḗḗƞŧ ƥřǿǿṽīḓḗḗř īş ƞǿǿŧ ŧħḗḗ ǿǿƞḗḗ ŧħḗḗ ƥřǿǿɠřȧȧḿ ẇȧȧş ḗḗƞȧȧƀŀḗḗḓ ẇīŧħ. Ḓīşȧȧƀŀḗḗ ŧħḗḗ ƥřǿǿɠřȧȧḿ ȧȧƞḓ ḗḗƞȧȧƀŀḗḗ īŧ ȧȧɠȧȧīƞ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.too_long": {
+    "defaultMessage": "[{max,plural,one{{name} ƈȧȧƞ ƀḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗř ŀǿǿƞɠ.} other{{name} ƈȧȧƞ ƀḗḗ ȧȧŧ ḿǿǿşŧ # ƈħȧȧřȧȧƈŧḗḗřş ŀǿǿƞɠ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.too_many": {
+    "defaultMessage": "[{max,plural,one{{name} ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # īŧḗḗḿ.} other{{name} ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # īŧḗḗḿş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.code_invalid": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿḓḗḗ īş īƞƈǿǿřřḗḗƈŧ ǿǿř ẇȧȧş ȧȧŀřḗḗȧȧḓẏ ŭŭşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.enabled": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ īş ȧȧŀřḗḗȧȧḓẏ ḗḗƞȧȧƀŀḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.not_enabled": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ īş ƞǿǿŧ ḗḗƞȧȧƀŀḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.setup_expired": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗŧŭŭƥ ǿǿƒ ŧħḗḗ ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ ḗḗẋƥīřḗḗḓ. Şŧȧȧřŧ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unauthenticated": {
+    "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ ḓǿǿ ŧħīş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unprocessable": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ƥřǿǿƈḗḗşşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unsupported_media_type": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƀǿǿḓẏ ħȧȧş ȧȧƞ ŭŭƞşŭŭƥƥǿǿřŧḗḗḓ ƈǿǿƞŧḗḗƞŧ ŧẏƥḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.unusable_image": {
+    "defaultMessage": "[{name} ḿŭŭşŧ ƀḗḗ ȧȧƞ īḿȧȧɠḗḗ ŧħȧȧŧ ẏǿǿŭŭ ŭŭƥŀǿǿȧȧḓḗḗḓ ȧȧƞḓ ŧħȧȧŧ ħȧȧş ƒīƞīşħḗḗḓ ƥřǿǿƈḗḗşşīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.webhook.invalid": {
+    "defaultMessage": "[Ŧħḗḗ ẇḗḗƀħǿǿǿǿķ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.webhook.invalid_detail": {
+    "defaultMessage": "[{reason,select,description{Ŧħḗḗ ḓḗḗşƈřīƥŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ 200 ƈħȧȧřȧȧƈŧḗḗřş, ẇīŧħǿǿŭŭŧ ƈǿǿƞŧřǿǿŀ ƈħȧȧřȧȧƈŧḗḗřş.} events{Ƈħǿǿǿǿşḗḗ ȧȧŧ ŀḗḗȧȧşŧ ǿǿƞḗḗ ḗḗṽḗḗƞŧ, ḗḗȧȧƈħ ǿǿƞƈḗḗ.} missing_permission{Ẏǿǿŭŭ ƞḗḗḗḗḓ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ǿǿƒ ḗḗṽḗḗřẏ ḗḗṽḗḗƞŧ ẏǿǿŭŭ ƈħǿǿǿǿşḗḗ.} other{Ŧħḗḗ şḗḗŧŧīƞɠş ƀřḗḗȧȧķ ȧȧ řŭŭŀḗḗ.} url{Ŧħḗḗ ŬŘĿ ḿŭŭşŧ ƀḗḗ ȧȧƞ ȧȧƀşǿǿŀŭŭŧḗḗ ħŧŧƥ ǿǿř ħŧŧƥş ŬŘĿ ǿǿƒ ȧȧŧ ḿǿǿşŧ 2048 ƀẏŧḗḗş, ẇīŧħǿǿŭŭŧ ŭŭşḗḗř īƞƒǿǿ ǿǿř ȧȧ ƒřȧȧɠḿḗḗƞŧ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.wrong_password": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşẇǿǿřḓ īş ẇřǿǿƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  }
+}

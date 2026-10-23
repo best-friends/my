@@ -178,14 +178,22 @@ func TestOpenAPIAndTS(t *testing.T) {
 	}
 }
 
+func TestLocale(t *testing.T) {
+	src := "{\n  \"admin.report.title\": {\n    \"defaultMessage\": \"Report\",\n    \"description\": \"d\"\n  }\n}\n"
+	r := Locale("locales/ja/client/admin/report.json", []byte(src))
+	if len(r.Nodes) != 1 || r.Nodes[0].ID != "msg:client:admin.report.title@ja" || r.Nodes[0].Title != "Report" {
+		t.Errorf("Locale nodes = %+v", r.Nodes)
+	}
+}
+
 func TestKind(t *testing.T) {
 	for p, want := range map[string]string{
 		"internal/interface/clientapi/api.gen.go":              "",
 		"internal/adapter/db/sqlite/sqlitegen/queries.go":      "",
 		"app/web/src/routeTree.gen.ts":                         "",
 		"app/web/src/App.tsx":                                  "ts",
-		"locales/en-XA/client.json":                            "",
-		"locales/ja/client.json":                               "locale",
+		"locales/en-XA/client/settings.json":                   "",
+		"locales/ja/client/admin/report.json":                  "locale",
 		"queries/sqlite/queue/jobs.sql":                        "query",
 		"docs/architecture/data-model/04-tables/04-content.md": "md",
 		"internal/app/content/custom_emoji_request_test.go":    "go",

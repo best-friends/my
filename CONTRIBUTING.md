@@ -173,7 +173,10 @@ ADR を `Accepted` にするのはメンテナです。
 
 ## 翻訳・メッセージ
 
-利用者向けの文言は `locales/<locale>/<namespace>.json`（FormatJS JSON 形式）に追加し、`en` と `ja` を同時に更新します（[ADR-0009](docs/adr/0009-internationalization.md)）。
+利用者向けの文言は `locales/<locale>/<namespace>/<area>.json`（FormatJS JSON 形式）に追加し、`en` と `ja` を同時に更新します（[ADR-0009](docs/adr/0009-internationalization.md)）。
+キーは、その領域のファイルに書きます（[ADR-0082](docs/adr/0082-conflict-free-file-layout.md)）。領域はキーの先頭の区切りで、`admin` だけは 2 つ目の区切りまでです。
+`settings.profile.title` は `locales/en/client/settings.json` に、`admin.report.title` は `locales/en/client/admin/report.json` に入ります。
+新しい領域のキーは、そのファイルを新しく作って書きます（ファイルを束ねる側の変更は要りません）。違うファイルに書いたキーは `scripts/task.sh i18n:check` が報告します。
 編集したら `scripts/task.sh i18n:gen` で疑似ロケール（`en-XA` / `ar-XB`）と型付きアクセサを再生成し、Go が読むもの（`server` の疑似ロケール・
 `internal/i18n/messages_gen.go`・`internal/i18n/testdata/golden.json`）をコミットします。`client` の疑似ロケールと TS のアクセサはコミットしません。
 サーバーが描画する画面を疑似ロケールで見るときは `my serve -pseudo-locales` で起動し、ブラウザの言語を `en-XA` / `ar-XB` にします（このフラグがなければ選べません）。

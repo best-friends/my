@@ -50,21 +50,31 @@ type Bundle struct {
 // Load compiles the catalogs embedded from locales/.
 func Load(opts ...Option) (*Bundle, error) { return NewBundle(locales.FS, opts...) }
 
-// NewBundle compiles every <locale>/<namespace>.json catalog in fsys.
+// NewBundle compiles every <locale>/<namespace>/<area>.json catalog file in fsys (ADR-0082): the
+// files of a namespace together hold its keys, each key in the file of its area.
 func NewBundle(fsys fs.FS, opts ...Option) (*Bundle, error) {
 	var o options
 	for _, opt := range opts {
 		opt(&o)
 	}
-	files, err := fs.Glob(fsys, "*/*.json")
+	var files []string
+	err := fs.WalkDir(fsys, ".", func(file string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && path.Ext(file) == ".json" {
+			files = append(files, file)
+		}
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
 	b := &Bundle{messages: map[string]map[string]compiledMessage{}}
 	compilers := map[string]compiler{}
 	for _, file := range files {
-		locale, name := path.Split(file)
-		locale = strings.TrimSuffix(locale, "/")
+		segments := strings.Split(file, "/")
+		if len(segments) < 3 {
+			return nil, fmt.Errorf("i18n: %s: a catalog file is <locale>/<namespace>/<area>.json", file)
+		}
+		locale, ns := segments[0], segments[1]
 		if Canonicalize(locale) != locale {
 			return nil, fmt.Errorf("i18n: %s: directory %q is not a canonical BCP 47 tag", file, locale)
 		}
@@ -87,7 +97,6 @@ func NewBundle(fsys fs.FS, opts ...Option) (*Bundle, error) {
 			compilers[locale] = c
 			b.messages[locale] = map[string]compiledMessage{}
 		}
-		ns := strings.TrimSuffix(name, ".json")
 		for key, e := range catalog {
 			m, err := c.compile(e.DefaultMessage)
 			if err != nil {

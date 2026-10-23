@@ -142,8 +142,10 @@ once the milestone's implementation issues are done. Single-issue work keeps the
 - Keep about 4–5 agents running, capped by the load of the machine. Whenever an agent finishes and a slot frees,
   start the next issue; there is no barrier between groups of issues.
 - For each candidate issue, list the shared files it is likely to touch:
-  - the sources of committed generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components), `locales/`, the module files of `schema/<dialect>/` and the sqlc queries,
-    the config schema;
+  - the sources of committed generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components),
+    the area files of `locales/<locale>/<namespace>/` (a key goes in the file of its area: its first segment, or its first two under
+    `admin`, such as `client/settings.json` and `client/admin/report.json`; a new area is a new file), the module files of
+    `schema/<dialect>/` and the sqlc queries, the config schema;
   - the tables many changes edit: the FR table in
     [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`. In
     `docs/architecture/web-client/` and `docs/architecture/data-model/`, each section is a file of its own: two issues

@@ -1,0 +1,1410 @@
+{
+  "settings.push.type.supporter": {
+    "defaultMessage": "サポーターのプラン",
+    "description": "Checkbox of the push notification kinds: a failed payment for the user's supporter plan, its end, and its retirement. Not shown in the mobile app."
+  },
+  "settings.account.delete.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button in the dialog that closes it without deleting the account."
+  },
+  "settings.account.delete.confirm": {
+    "defaultMessage": "アカウントを削除",
+    "description": "Button in the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description": {
+    "defaultMessage": "確認のためパスワードを入力してください。アカウントはすぐに削除され、ログアウトします。元に戻すことはできません。",
+    "description": "Description of the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description_passkey": {
+    "defaultMessage": "確認のため、ブラウザがパスキーを求めます。アカウントはすぐに削除され、ログアウトします。元に戻すことはできません。",
+    "description": "Description of the dialog that deletes the account of a user who has no password: pressing the delete button opens the browser's passkey prompt, which confirms the deletion."
+  },
+  "settings.account.delete.confirm.title": {
+    "defaultMessage": "アカウントを削除しますか？",
+    "description": "Title of the dialog that asks the user to confirm deleting their account."
+  },
+  "settings.account.delete.description": {
+    "defaultMessage": "アカウント・投稿・プロフィールはすぐに見えなくなり、ほかのサーバーにも削除を依頼します。元に戻すことはできず、ユーザー名は再び使えません。データを残したい場合は先にダウンロードしてください。",
+    "description": "Explains what deleting the account does, above the button that starts it."
+  },
+  "settings.account.delete.open": {
+    "defaultMessage": "アカウントを削除…",
+    "description": "Button that opens the dialog that deletes the user's account."
+  },
+  "settings.account.delete.password": {
+    "defaultMessage": "パスワード",
+    "description": "Label of the field in which the user types their password to confirm deleting the account."
+  },
+  "settings.account.delete.password.required": {
+    "defaultMessage": "パスワードを入力してください。",
+    "description": "Error under the password field when the user confirms the deletion without typing the password."
+  },
+  "settings.account.delete.title": {
+    "defaultMessage": "アカウントの削除",
+    "description": "Heading of the section of the account page about deleting the account."
+  },
+  "settings.account.delete.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error in the deletion dialog when the password the user typed is not their current password."
+  },
+  "settings.account.export.description": {
+    "defaultMessage": "投稿（ActivityStreams 形式）、プロフィール、アカウントへのモデレーションの処分と、フォロー・ブロック・ミュート・ブックマークの CSV を ZIP のアーカイブにまとめます。作成には時間がかかり、7 日間ダウンロードできます。",
+    "description": "Explains the archive of the user's data, above the button that asks for one."
+  },
+  "settings.account.export.download": {
+    "defaultMessage": "ダウンロード",
+    "description": "Button that downloads an archive of the user's data."
+  },
+  "settings.account.export.download_of": {
+    "defaultMessage": "{date} のアーカイブをダウンロード",
+    "description": "Accessible name of the button that downloads one archive. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.empty": {
+    "defaultMessage": "アーカイブはありません",
+    "description": "Shown when the user has no archive of their data."
+  },
+  "settings.account.export.expires_at": {
+    "defaultMessage": "ダウンロード期限",
+    "description": "Label of the date until which an archive of the user's data can be downloaded."
+  },
+  "settings.account.export.item": {
+    "defaultMessage": "{date} のアーカイブ",
+    "description": "Heading of one archive of the user's data. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.request": {
+    "defaultMessage": "アーカイブを作成",
+    "description": "Button that asks the server to prepare an archive of the user's data."
+  },
+  "settings.account.export.requested": {
+    "defaultMessage": "アーカイブを作成しています。完了すると下に表示されます。",
+    "description": "Announced after the user asked for an archive of their data."
+  },
+  "settings.account.export.size": {
+    "defaultMessage": "サイズ",
+    "description": "Label of the file size of an archive of the user's data."
+  },
+  "settings.account.export.state": {
+    "defaultMessage": "状態",
+    "description": "Label of the state of an archive of the user's data (being prepared, ready, failed)."
+  },
+  "settings.account.export.state.failed": {
+    "defaultMessage": "失敗しました。もう一度作成してください。",
+    "description": "State of an archive of the user's data that the server could not prepare; the user can ask for another."
+  },
+  "settings.account.export.state.pending": {
+    "defaultMessage": "作成中",
+    "description": "State of an archive of the user's data that the server is still preparing."
+  },
+  "settings.account.export.state.ready": {
+    "defaultMessage": "ダウンロードできます",
+    "description": "State of an archive of the user's data that can be downloaded."
+  },
+  "settings.account.export.title": {
+    "defaultMessage": "データのダウンロード",
+    "description": "Heading of the section of the account page about archives of the user's data."
+  },
+  "settings.account.title": {
+    "defaultMessage": "アカウント",
+    "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
+  },
+  "settings.autoplay.description": {
+    "defaultMessage": "アニメーション画像（GIF）を自動で動かします。オフにすると、ポインタを重ねるか触れている間だけ動きます。どちらでも、端末で視差効果を減らす設定にしていれば止まります。このブラウザーに保存します。",
+    "description": "Help text of the switch that turns the autoplay of animated images on or off."
+  },
+  "settings.autoplay.label": {
+    "defaultMessage": "アニメーションを自動で再生する",
+    "description": "Label of the switch on the preferences page that turns the autoplay of animated images on or off."
+  },
+  "settings.back": {
+    "defaultMessage": "設定に戻る",
+    "description": "Link under the heading of a settings page that opens the list of settings pages."
+  },
+  "settings.blocks.empty": {
+    "defaultMessage": "ブロックしているアカウントはありません",
+    "description": "Shown when the user blocks no account."
+  },
+  "settings.blocks.title": {
+    "defaultMessage": "ブロックしたアカウント",
+    "description": "Heading and document title of the settings page with the blocked accounts."
+  },
+  "settings.blocks.unblock": {
+    "defaultMessage": "ブロックを解除",
+    "description": "Button that unblocks an account."
+  },
+  "settings.blocks.unblocked": {
+    "defaultMessage": "{name} さんのブロックを解除しました。",
+    "description": "Announced after an account was unblocked. {name} is the account's display name."
+  },
+  "settings.default_post_language.description": {
+    "defaultMessage": "新しい投稿はこの言語で始まります。投稿ごとに変えることもできます。",
+    "description": "Help text of the default post language select."
+  },
+  "settings.default_post_language.label": {
+    "defaultMessage": "投稿の既定の言語",
+    "description": "Label of the select of the language new posts start with."
+  },
+  "settings.default_visibility.description": {
+    "defaultMessage": "投稿ごとに変えることもできます。",
+    "description": "Help text of the default visibility radio group."
+  },
+  "settings.default_visibility.label": {
+    "defaultMessage": "投稿の既定の公開範囲",
+    "description": "Label of the radio group of the visibility new posts start with."
+  },
+  "settings.follow_requests.accept": {
+    "defaultMessage": "承認",
+    "description": "Button that accepts a follow request."
+  },
+  "settings.follow_requests.accepted": {
+    "defaultMessage": "{name} さんのフォローを承認しました。",
+    "description": "Announced after a follow request was accepted. {name} is the account's display name."
+  },
+  "settings.follow_requests.empty": {
+    "defaultMessage": "フォローリクエストはありません",
+    "description": "Shown when no follow request awaits approval."
+  },
+  "settings.follow_requests.reject": {
+    "defaultMessage": "拒否",
+    "description": "Button that rejects a follow request."
+  },
+  "settings.follow_requests.rejected": {
+    "defaultMessage": "{name} さんのフォローリクエストを拒否しました。",
+    "description": "Announced after a follow request was rejected. {name} is the account's display name."
+  },
+  "settings.follow_requests.title": {
+    "defaultMessage": "フォローリクエスト",
+    "description": "Heading and document title of the settings page with the follow requests awaiting approval."
+  },
+  "settings.import_export.export.description": {
+    "defaultMessage": "Mastodon と同じ形式の CSV ファイルをダウンロードします。Mastodon や、この形式を読めるほかのサーバーでインポートできます。",
+    "description": "Explains the CSV files the user can download, above the list of them."
+  },
+  "settings.import_export.export.download": {
+    "defaultMessage": "ダウンロード",
+    "description": "Button that downloads one CSV file."
+  },
+  "settings.import_export.export.download_of": {
+    "defaultMessage": "{kind}を CSV でダウンロード",
+    "description": "Accessible name of the button that downloads one CSV file. {kind} is the name of the list, e.g. Blocked accounts."
+  },
+  "settings.import_export.export.title": {
+    "defaultMessage": "エクスポート",
+    "description": "Heading of the section of the import and export page that downloads CSV files."
+  },
+  "settings.import_export.history.empty": {
+    "defaultMessage": "インポートはありません",
+    "description": "Shown when the user has no recent import."
+  },
+  "settings.import_export.history.failed": {
+    "defaultMessage": "インポートできなかったもの",
+    "description": "Label of the number of entries of an import that could not be carried out, e.g. accounts that no longer exist."
+  },
+  "settings.import_export.history.item": {
+    "defaultMessage": "{kind}（{date}）",
+    "description": "Heading of one import in the list. {kind} is the name of the list, e.g. Follows; {date} is when the import started, a formatted date and time."
+  },
+  "settings.import_export.history.mode": {
+    "defaultMessage": "方法",
+    "description": "Label of how an import was done (merge or overwrite)."
+  },
+  "settings.import_export.history.progress": {
+    "defaultMessage": "進み具合",
+    "description": "Label of how many entries of an import are done."
+  },
+  "settings.import_export.history.progress_value": {
+    "defaultMessage": "{total, number} 件中 {processed, number} 件",
+    "description": "How many entries of an import are done. {processed} and {total} are numbers."
+  },
+  "settings.import_export.history.state": {
+    "defaultMessage": "状態",
+    "description": "Label of the state of an import (in progress, finished)."
+  },
+  "settings.import_export.history.state.finished": {
+    "defaultMessage": "完了",
+    "description": "State of an import that the server has carried out."
+  },
+  "settings.import_export.history.state.in_progress": {
+    "defaultMessage": "処理中",
+    "description": "State of an import that the server is still carrying out."
+  },
+  "settings.import_export.history.title": {
+    "defaultMessage": "最近のインポート",
+    "description": "Heading of the list of the user's latest imports on the import and export page."
+  },
+  "settings.import_export.import.choose": {
+    "defaultMessage": "CSV ファイルを選ぶ",
+    "description": "Button that opens the file picker to choose the CSV file to import."
+  },
+  "settings.import_export.import.chosen": {
+    "defaultMessage": "選んだファイル：{name}",
+    "description": "Shows the name of the CSV file the user chose to import. {name} is the file name."
+  },
+  "settings.import_export.import.description": {
+    "defaultMessage": "Mastodon やこのサーバーからエクスポートした CSV ファイルをインポートします。ほかのサーバーのアカウントと投稿はバックグラウンドで探すので、時間がかかることがあります。",
+    "description": "Explains importing a CSV file, above the form."
+  },
+  "settings.import_export.import.file": {
+    "defaultMessage": "CSV ファイル",
+    "description": "Heading of the part of the import form where the user chooses the file."
+  },
+  "settings.import_export.import.file_too_large": {
+    "defaultMessage": "ファイルが大きすぎてインポートできません。小さなファイルに分けてください。",
+    "description": "Error in the import form when the chosen CSV file is larger than the server accepts."
+  },
+  "settings.import_export.import.file_unreadable": {
+    "defaultMessage": "ファイルを読み込めません。もう一度選んでください。",
+    "description": "Error in the import form when the browser could not read the chosen file."
+  },
+  "settings.import_export.import.kind": {
+    "defaultMessage": "インポートするもの",
+    "description": "Label of the radio group that chooses the kind of CSV file to import (follows, blocked accounts, muted accounts, bookmarks)."
+  },
+  "settings.import_export.import.mode": {
+    "defaultMessage": "インポートの方法",
+    "description": "Label of the radio group that chooses whether the import merges with or overwrites what the user has."
+  },
+  "settings.import_export.import.mode.merge": {
+    "defaultMessage": "統合",
+    "description": "Option of an import that keeps what the user has and adds what the file lists."
+  },
+  "settings.import_export.import.mode.merge.description": {
+    "defaultMessage": "今あるものを残し、ファイルにあるものを追加します。",
+    "description": "Description of the merge option of an import."
+  },
+  "settings.import_export.import.mode.overwrite": {
+    "defaultMessage": "置き換え",
+    "description": "Option of an import that makes the user's list exactly what the file lists."
+  },
+  "settings.import_export.import.mode.overwrite.description": {
+    "defaultMessage": "ファイルの内容と同じにします。ファイルにないものは削除します。",
+    "description": "Description of the overwrite option of an import."
+  },
+  "settings.import_export.import.no_file": {
+    "defaultMessage": "ファイルを選んでいません",
+    "description": "Shown in the import form before the user chooses a CSV file."
+  },
+  "settings.import_export.import.preview": {
+    "defaultMessage": "ファイルを確認する",
+    "description": "Button that asks the server what importing the chosen file would do, without importing it."
+  },
+  "settings.import_export.import.preview.entries": {
+    "defaultMessage": "ファイルの項目",
+    "description": "Label of the number of accounts or posts that the file to import lists."
+  },
+  "settings.import_export.import.preview.present": {
+    "defaultMessage": "登録済み",
+    "description": "Label of the number of entries of the file to import that the user already has."
+  },
+  "settings.import_export.import.preview.removals": {
+    "defaultMessage": "削除されるもの",
+    "description": "Label of the number of accounts or posts that an overwrite removes because the file does not list them."
+  },
+  "settings.import_export.import.preview.skip.duplicate": {
+    "defaultMessage": "前の行と重複しています",
+    "description": "Why a line of the file to import is skipped: an earlier line names the same account or post."
+  },
+  "settings.import_export.import.preview.skip.invalid": {
+    "defaultMessage": "アカウントのアドレスでも投稿の URL でもありません",
+    "description": "Why a line of the file to import is skipped: it names no account (user@domain) or post URL."
+  },
+  "settings.import_export.import.preview.skipped": {
+    "defaultMessage": "読み飛ばす行",
+    "description": "Heading of the list of lines of the file that the import skips."
+  },
+  "settings.import_export.import.preview.skipped_line": {
+    "defaultMessage": "{line, number} 行目：{value}",
+    "description": "One line of the file that the import skips. {line} is the line number, {value} the line as written."
+  },
+  "settings.import_export.import.preview.title": {
+    "defaultMessage": "インポートの内容",
+    "description": "Heading of the result of checking the file to import."
+  },
+  "settings.import_export.import.start": {
+    "defaultMessage": "インポートを始める",
+    "description": "Button that starts importing the checked file."
+  },
+  "settings.import_export.import.started": {
+    "defaultMessage": "{total, plural, other {# 件}}のインポートを始めました。進み具合は下に表示されます。",
+    "description": "Announced after the user started an import. {total} is the number of accounts or posts to add or remove."
+  },
+  "settings.import_export.import.title": {
+    "defaultMessage": "インポート",
+    "description": "Heading of the section of the import and export page that imports a CSV file."
+  },
+  "settings.import_export.kind.blocks": {
+    "defaultMessage": "ブロックしたアカウント",
+    "description": "Name of the list of accounts the user blocks, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.bookmarks": {
+    "defaultMessage": "ブックマーク",
+    "description": "Name of the list of posts the user bookmarked, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.following": {
+    "defaultMessage": "フォロー",
+    "description": "Name of the list of accounts the user follows, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.mutes": {
+    "defaultMessage": "ミュートしたアカウント",
+    "description": "Name of the list of accounts the user mutes, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.title": {
+    "defaultMessage": "インポートとエクスポート",
+    "description": "Heading and document title of the settings page for exporting and importing the user's follows, blocks, mutes, and bookmarks as CSV files."
+  },
+  "settings.list.action": {
+    "defaultMessage": "{action}：{name}",
+    "description": "Accessible name of a button in a list of accounts. {action} is the button's visible text (for example 'Unblock'), {name} the account's display name."
+  },
+  "settings.list.more": {
+    "defaultMessage": "さらに表示",
+    "description": "Button under a list of accounts in the settings that loads more of them."
+  },
+  "settings.locale.description": {
+    "defaultMessage": "選ぶとすぐに切り替わります。",
+    "description": "Help text of the display language select."
+  },
+  "settings.locale.label": {
+    "defaultMessage": "表示言語",
+    "description": "Label of the select of the language the app is shown in."
+  },
+  "settings.menu.title": {
+    "defaultMessage": "設定の項目",
+    "description": "Heading of the list of links to the pages of the settings."
+  },
+  "settings.moderator_notifications.email": {
+    "defaultMessage": "メールでも受け取る",
+    "description": "Label of the switch that also sends the moderator notifications by email."
+  },
+  "settings.moderator_notifications.email.description": {
+    "defaultMessage": "あなたのロールが扱う新しい通報・承認待ちの登録・異議申し立ての通知を、メールアドレスにも送ります。",
+    "description": "Help text of the switch that also sends the moderator notifications by email."
+  },
+  "settings.moderator_notifications.no_email": {
+    "defaultMessage": "このサーバーはメールを送らない設定のため、モデレーターへの通知はアプリの中にだけ届きます。",
+    "description": "Shown instead of the email switch of the moderator notifications when the server is set up to send no email."
+  },
+  "settings.moderator_notifications.title": {
+    "defaultMessage": "モデレーターへの通知",
+    "description": "Heading of the section of the preferences about the notifications of new reports, sign-ups awaiting approval and appeals, shown only to moderators."
+  },
+  "settings.mutes.empty": {
+    "defaultMessage": "ミュートしているアカウントはありません",
+    "description": "Shown when the user mutes no account."
+  },
+  "settings.mutes.notifications": {
+    "defaultMessage": "通知も非表示",
+    "description": "Under a muted account whose mute also hides its notifications."
+  },
+  "settings.mutes.title": {
+    "defaultMessage": "ミュートしたアカウント",
+    "description": "Heading and document title of the settings page with the muted accounts."
+  },
+  "settings.mutes.unmute": {
+    "defaultMessage": "ミュートを解除",
+    "description": "Button that unmutes an account."
+  },
+  "settings.mutes.unmuted": {
+    "defaultMessage": "{name} さんのミュートを解除しました。",
+    "description": "Announced after an account was unmuted. {name} is the account's display name."
+  },
+  "settings.mutes.until": {
+    "defaultMessage": "{date} まで",
+    "description": "When a mute ends, under the muted account. {date} is a formatted date and time."
+  },
+  "settings.navigation.description": {
+    "defaultMessage": "ナビゲーションに出す項目とその順番を選びます。電話では、表示する項目の{count, plural, other {最初の # つ}}がタブバーに、残りがメニューに入ります。設定は常に表示します。このブラウザーに保存します。",
+    "description": "Help text of the navigation section. {count} is how many shown items the bottom tab bar of phones holds (5); the name of the Settings item is shell.nav.settings."
+  },
+  "settings.navigation.hidden": {
+    "defaultMessage": "表示しない",
+    "description": "Help text under an item of the navigation section whose checkbox is off: it is not in the navigation."
+  },
+  "settings.navigation.in_menu": {
+    "defaultMessage": "電話ではメニューに表示",
+    "description": "Help text under an item of the navigation section: the item is shown in the menu (the sheet opened by the Menu button) on phones, and in the side rail on larger screens."
+  },
+  "settings.navigation.in_tab_bar": {
+    "defaultMessage": "電話ではタブバーに表示",
+    "description": "Help text under an item of the navigation section: the item is shown in the bottom tab bar on phones."
+  },
+  "settings.navigation.move_down": {
+    "defaultMessage": "{name}を下へ移動",
+    "description": "Accessible name and tooltip of the icon button that moves an item of the navigation one place down (later). {name} is the item's label (shell.nav.*)."
+  },
+  "settings.navigation.move_up": {
+    "defaultMessage": "{name}を上へ移動",
+    "description": "Accessible name and tooltip of the icon button that moves an item of the navigation one place up (earlier). {name} is the item's label (shell.nav.*)."
+  },
+  "settings.navigation.moved": {
+    "defaultMessage": "{name}を {count, number} 項目中 {position, number} 番目に移動しました",
+    "description": "Announced to screen readers after an item of the navigation moved. {name} is the item's label, {position} its new place counted from 1, {count} the number of items."
+  },
+  "settings.navigation.reset": {
+    "defaultMessage": "初期状態に戻す",
+    "description": "Button of the navigation section that puts back the default items and order."
+  },
+  "settings.navigation.reset_done": {
+    "defaultMessage": "ナビゲーションを初期状態に戻しました",
+    "description": "Announced to screen readers after the navigation went back to the default items and order."
+  },
+  "settings.navigation.title": {
+    "defaultMessage": "ナビゲーション",
+    "description": "Heading of the section of the preferences page where the user chooses the items of the navigation and their order."
+  },
+  "settings.navigation.unavailable": {
+    "defaultMessage": "このサーバーでは提供されていません",
+    "description": "Help text under the local or federated timeline item of the navigation section when this server has turned that timeline off, so it does not show whatever is chosen."
+  },
+  "settings.preferences.autosave": {
+    "defaultMessage": "変更はすぐに保存されます。",
+    "description": "Text at the top of the preferences page."
+  },
+  "settings.preferences.title": {
+    "defaultMessage": "表示と投稿",
+    "description": "Heading and document title of the settings page with the language, time zone, theme, post defaults and timeline languages."
+  },
+  "settings.profile.avatar": {
+    "defaultMessage": "アイコン",
+    "description": "Heading of the part of the profile form for the user's profile picture."
+  },
+  "settings.profile.bot": {
+    "defaultMessage": "このアカウントは bot です",
+    "description": "Checkbox of the profile form: the account is automated."
+  },
+  "settings.profile.bot.description": {
+    "defaultMessage": "自動で投稿するアカウントであることを、ほかの人に示します。",
+    "description": "Help text of the 'This is a bot' checkbox."
+  },
+  "settings.profile.crawlers": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the part of the profile form about search engines and AI."
+  },
+  "settings.profile.indexable": {
+    "defaultMessage": "プロフィールと公開投稿を検索に載せる",
+    "description": "Label of the checkbox that lets the profile and public posts appear in search."
+  },
+  "settings.profile.indexable.description": {
+    "defaultMessage": "このサーバーの検索と、サーバーが許可していれば検索エンジンが、索引に載せられます。この選択に従うほかのサーバーにも伝わります。",
+    "description": "Help text of the indexable checkbox."
+  },
+  "settings.profile.indexable.server_denies": {
+    "defaultMessage": "このサーバーはすべてのページを検索エンジンの索引に載せないよう求めているため、許可しても検索エンジンには載りません。",
+    "description": "Note shown when the server denies search engines, so the user's choice does not reach them."
+  },
+  "settings.profile.ai_opt_out": {
+    "defaultMessage": "AI の学習と利用を拒否する",
+    "description": "Label of the checkbox that denies AI training on and use of the user's pages."
+  },
+  "settings.profile.ai_opt_out.description": {
+    "defaultMessage": "このサーバーにあるプロフィールと投稿のページで、AI に学習や利用をしないよう求めます。メディアのファイルと、ほかのサーバーにある投稿の写しには及びません。",
+    "description": "Help text of the AI opt-out checkbox, with its limits."
+  },
+  "settings.profile.ai_opt_out.server_denies": {
+    "defaultMessage": "{usage, select, deny_training {このサーバーはすべてのページで AI の学習を拒否しています。この設定では、AI の検索やアシスタントによる利用も拒否します。} other {このサーバーはすべてのページで AI の学習と利用を拒否しています。}}",
+    "description": "Note shown when the server already denies AI training (deny_training) or both training and use (deny)."
+  },
+  "settings.profile.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under the bio field while the text is within the limit."
+  },
+  "settings.profile.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under the bio field when the text is longer than the limit."
+  },
+  "settings.profile.display_name": {
+    "defaultMessage": "表示名",
+    "description": "Label of the display name field of the profile form."
+  },
+  "settings.profile.display_name.description": {
+    "defaultMessage": "{max} 文字まで。空にするとユーザー名を表示します。",
+    "description": "Help text of the display name field. {max} is the character limit, for example 30."
+  },
+  "settings.profile.field": {
+    "defaultMessage": "補足情報 {number}",
+    "description": "Caption of one field of the profile form. {number} is its position, starting at 1."
+  },
+  "settings.profile.field.name": {
+    "defaultMessage": "ラベル",
+    "description": "Label of the name part of a profile field."
+  },
+  "settings.profile.field.name_required": {
+    "defaultMessage": "この補足情報にラベルを付けてください。",
+    "description": "Error of a profile field that has content but no label."
+  },
+  "settings.profile.field.remove": {
+    "defaultMessage": "補足情報 {number} を削除",
+    "description": "Button that removes one field from the profile form. {number} is its position, starting at 1."
+  },
+  "settings.profile.field.value": {
+    "defaultMessage": "内容",
+    "description": "Label of the value part of a profile field."
+  },
+  "settings.profile.fields": {
+    "defaultMessage": "補足情報",
+    "description": "Heading of the part of the profile form with the label and content pairs shown on the profile."
+  },
+  "settings.profile.fields.add": {
+    "defaultMessage": "補足情報を追加",
+    "description": "Button that adds an empty field to the profile form."
+  },
+  "settings.profile.fields.description": {
+    "defaultMessage": "プロフィールに表示するラベルと内容の組。{max} 組まで。内容のリンクは有効になります。",
+    "description": "Help text of the profile fields. {max} is how many fields a profile can have, for example 4."
+  },
+  "settings.profile.header": {
+    "defaultMessage": "ヘッダー画像",
+    "description": "Heading of the part of the profile form for the wide image at the top of the profile."
+  },
+  "settings.profile.image.choose": {
+    "defaultMessage": "画像を選ぶ",
+    "description": "Button that opens the file picker to choose a new avatar or header image."
+  },
+  "settings.profile.image.failed": {
+    "defaultMessage": "サーバーがこの画像を処理できませんでした。別の画像を試してください。",
+    "description": "Error under an avatar or header image whose upload failed during processing."
+  },
+  "settings.profile.image.remove": {
+    "defaultMessage": "画像を外す",
+    "description": "Button that removes the avatar or header image when the profile is saved."
+  },
+  "settings.profile.locked": {
+    "defaultMessage": "フォローを承認制にする",
+    "description": "Checkbox of the profile form: follow requests need the user's approval."
+  },
+  "settings.profile.locked.description": {
+    "defaultMessage": "フォローするにはリクエストが必要になり、承認する相手を選べます。",
+    "description": "Help text of the 'Approve followers' checkbox."
+  },
+  "settings.profile.note": {
+    "defaultMessage": "自己紹介",
+    "description": "Label of the profile text field of the profile form."
+  },
+  "settings.profile.save": {
+    "defaultMessage": "プロフィールを保存",
+    "description": "Submit button of the profile form."
+  },
+  "settings.profile.saved": {
+    "defaultMessage": "プロフィールを保存しました。",
+    "description": "Notification after the profile was saved."
+  },
+  "settings.profile.title": {
+    "defaultMessage": "プロフィール",
+    "description": "Heading and document title of the settings page that edits the user's profile."
+  },
+  "settings.profile.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of a profile field whose text is longer than its limit. {max} is the limit."
+  },
+  "settings.profile.unsaved.description": {
+    "defaultMessage": "プロフィールへの変更は失われます。",
+    "description": "Body of the dialog shown when the user leaves the profile settings with unsaved changes: what happens if they leave."
+  },
+  "settings.profile.unsaved.leave": {
+    "defaultMessage": "変更を破棄する",
+    "description": "Button of the unsaved-changes dialog that leaves the profile settings and drops the changes."
+  },
+  "settings.profile.unsaved.stay": {
+    "defaultMessage": "編集を続ける",
+    "description": "Button of the unsaved-changes dialog that stays on the profile settings with the changes kept."
+  },
+  "settings.profile.unsaved.title": {
+    "defaultMessage": "プロフィールを保存せずに移動しますか？",
+    "description": "Title (a question) of the dialog shown when the user leaves the profile settings with changes that are not saved."
+  },
+  "settings.push.denied": {
+    "defaultMessage": "このサイトの通知はブラウザでブロックされています。プッシュ通知を使うには、ブラウザのサイトの設定で通知を許可してください。",
+    "description": "Shown in the push notification settings when the user blocked notifications for this site in the browser."
+  },
+  "settings.push.enable": {
+    "defaultMessage": "この端末に通知する",
+    "description": "Label of the switch that turns on Web Push notifications for this browser and signed-in session."
+  },
+  "settings.push.enable.description": {
+    "defaultMessage": "アプリを閉じているときも、新しい通知がこの端末に表示されます。",
+    "description": "Help text of the switch that turns on Web Push notifications."
+  },
+  "settings.push.failed": {
+    "defaultMessage": "この端末でプッシュ通知を設定できませんでした。しばらくしてからもう一度試してください。",
+    "description": "Error shown when the browser failed to subscribe to push notifications."
+  },
+  "settings.push.not_allowed": {
+    "defaultMessage": "ブラウザで通知が許可されなかったため、プッシュ通知はオフのままです。",
+    "description": "Error shown when the user did not allow notifications in the browser's permission prompt after turning on push notifications."
+  },
+  "settings.push.title": {
+    "defaultMessage": "プッシュ通知",
+    "description": "Heading of the section of the preferences about Web Push notifications on this device."
+  },
+  "settings.push.type.admin": {
+    "defaultMessage": "モデレーター向けの通知",
+    "description": "Checkbox of the push notification kinds, shown to moderators only: new reports, sign-ups awaiting approval and appeals."
+  },
+  "settings.push.type.boost": {
+    "defaultMessage": "ブースト",
+    "description": "Checkbox of the push notification kinds: someone boosted the user's post."
+  },
+  "settings.push.type.favourite": {
+    "defaultMessage": "お気に入り",
+    "description": "Checkbox of the push notification kinds: someone favourited the user's post."
+  },
+  "settings.push.type.follow": {
+    "defaultMessage": "新しいフォロワー",
+    "description": "Checkbox of the push notification kinds: someone followed the user."
+  },
+  "settings.push.type.follow_accepted": {
+    "defaultMessage": "承認されたフォローリクエスト",
+    "description": "Checkbox of the push notification kinds: someone accepted the user's follow request."
+  },
+  "settings.push.type.follow_request": {
+    "defaultMessage": "フォローリクエスト",
+    "description": "Checkbox of the push notification kinds: someone asked to follow the user."
+  },
+  "settings.push.type.mention": {
+    "defaultMessage": "メンション",
+    "description": "Checkbox of the push notification kinds: a post mentions the user."
+  },
+  "settings.push.type.moderation": {
+    "defaultMessage": "モデレーターからのお知らせ",
+    "description": "Checkbox of the push notification kinds: notices and decisions of the moderators about the user's account, appeals and reports, and follows ended by a suspension."
+  },
+  "settings.push.type.reaction": {
+    "defaultMessage": "絵文字リアクション",
+    "description": "Checkbox of the push notification kinds: someone reacted to the user's post with an emoji."
+  },
+  "settings.push.types.description": {
+    "defaultMessage": "この端末に通知する内容を選びます。",
+    "description": "Help text of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.types.label": {
+    "defaultMessage": "通知する内容",
+    "description": "Label of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.unsupported": {
+    "defaultMessage": "このブラウザはプッシュ通知を受け取れません。iPhone と iPad では、このサイトをホーム画面に追加して、そこから開いてください。",
+    "description": "Shown in the push notification settings when the browser has no Push API."
+  },
+  "settings.require_media_description.description": {
+    "defaultMessage": "投稿する前に、説明（代替テキスト）のない画像・動画・音声に説明を付けるよう求めます。見られない人・聞こえない人もあなたの投稿を追えるようにするためです。",
+    "description": "Help text of the switch that asks for a description of every attachment."
+  },
+  "settings.require_media_description.label": {
+    "defaultMessage": "すべての添付に説明を求める",
+    "description": "Label of the switch that makes the post form ask for an alternative text of every attached file before posting."
+  },
+  "settings.saved": {
+    "defaultMessage": "保存しました",
+    "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
+  },
+  "settings.theme.dark": {
+    "defaultMessage": "ダーク",
+    "description": "Option of the color theme radio group: always the dark theme."
+  },
+  "settings.theme.description": {
+    "defaultMessage": "選ぶとすぐに切り替わり、このブラウザに保存されます。",
+    "description": "Help text of the color theme radio group on the preferences page."
+  },
+  "settings.theme.label": {
+    "defaultMessage": "テーマ",
+    "description": "Label of the radio group that chooses the app's color theme, on the preferences page and in the navigation menu's sheet."
+  },
+  "settings.theme.light": {
+    "defaultMessage": "ライト",
+    "description": "Option of the color theme radio group: always the light theme."
+  },
+  "settings.theme.system": {
+    "defaultMessage": "システムに合わせる",
+    "description": "Option of the color theme radio group: follow the device's light or dark setting."
+  },
+  "settings.time_zone.device_differs": {
+    "defaultMessage": "この端末のタイムゾーンは設定と違います：{zone}",
+    "description": "Note under the time zone select when the chosen zone is not the time zone of the device in use. {zone} is that device zone as the select names it, like (UTC+09:00) Japan Standard Time."
+  },
+  "settings.time_zone.description": {
+    "defaultMessage": "日時をこのタイムゾーンで表示します。",
+    "description": "Help text of the time zone select."
+  },
+  "settings.time_zone.label": {
+    "defaultMessage": "タイムゾーン",
+    "description": "Label of the select of the user's time zone."
+  },
+  "settings.time_zone.offset": {
+    "defaultMessage": "UTC{offset}",
+    "description": "Option of the time zone select for a zone that has no name, only its difference from UTC. {offset} is like +05:00 or −05:00."
+  },
+  "settings.time_zone.option": {
+    "defaultMessage": "（UTC{offset}）{name}",
+    "description": "Option of the time zone select. {offset} is the zone's difference from UTC, like +09:00 or −05:00; {name} is the zone's name in the display language, like Japan Standard Time."
+  },
+  "settings.time_zone.use_device": {
+    "defaultMessage": "この端末のタイムゾーンにする",
+    "description": "Button under the time zone select that changes the setting to the time zone of the device in use; shown only when they differ."
+  },
+  "settings.timeline_auto_insert.description": {
+    "defaultMessage": "ホームタイムラインの先頭に新しい投稿が自動で入ります。読んでいる投稿は動きません。タイムラインの中にフォーカスがある間や文字を選択している間は、「新しい投稿」ボタンの後ろで待ちます。",
+    "description": "Help text of the switch that inserts new posts into the home timeline on their own."
+  },
+  "settings.timeline_auto_insert.label": {
+    "defaultMessage": "新しい投稿を自動で表示する",
+    "description": "Label of the switch that makes the home timeline insert new posts on their own instead of waiting behind a button."
+  },
+  "settings.timeline_languages.description": {
+    "defaultMessage": "チェックした言語の投稿だけをタイムラインに表示します。何もチェックしなければすべての言語を表示します。",
+    "description": "Help text of the timeline languages."
+  },
+  "settings.timeline_languages.label": {
+    "defaultMessage": "タイムラインの言語",
+    "description": "Caption of the group of checkboxes of the languages timelines show."
+  },
+  "settings.title": {
+    "defaultMessage": "設定",
+    "description": "Heading and document title of the settings page."
+  },
+  "settings.two_factor.title": {
+    "defaultMessage": "二要素認証",
+    "description": "Heading and document title of the settings page of two-factor authentication with an authenticator app, and its item in the settings menu."
+  },
+  "settings.auto_delete.title": {
+    "defaultMessage": "古い投稿の自動削除",
+    "description": "Heading and document title of the settings page of the automatic deletion of the user's own old posts, and its item in the settings menu."
+  },
+  "settings.auto_delete.description": {
+    "defaultMessage": "選んだ日数より古くなった自分の投稿を、自分で削除したときと同じく、このサーバーと投稿が届いたサーバーから削除します。削除した投稿は元に戻せません。ブーストは削除しません。",
+    "description": "Explanation at the top of the automatic deletion settings page."
+  },
+  "settings.auto_delete.enabled": {
+    "defaultMessage": "古い投稿を自動で削除する",
+    "description": "Label of the switch that turns the automatic deletion of old posts on."
+  },
+  "settings.auto_delete.enabled.description": {
+    "defaultMessage": "サーバーが 1 時間ごとに確かめ、1 回に 100 件まで削除します。古い投稿が多いときは、消し終えるまで数時間かかります。",
+    "description": "Help of the switch of the automatic deletion of old posts."
+  },
+  "settings.auto_delete.age": {
+    "defaultMessage": "削除する投稿の古さ",
+    "description": "Label of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.description": {
+    "defaultMessage": "投稿した日時から数えます。",
+    "description": "Help of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.days": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "An age of posts in days, an option of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.keep": {
+    "defaultMessage": "残す投稿",
+    "description": "Legend of the checkboxes of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.description": {
+    "defaultMessage": "チェックした項目のどれかに当てはまる投稿は、自動では削除しません。",
+    "description": "Help of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.pinned": {
+    "defaultMessage": "プロフィールにピン留めした投稿",
+    "description": "Exception of the automatic deletion: posts pinned to the profile."
+  },
+  "settings.auto_delete.keep.bookmarked": {
+    "defaultMessage": "自分がブックマークした投稿",
+    "description": "Exception of the automatic deletion: posts the user bookmarked."
+  },
+  "settings.auto_delete.keep.favourited": {
+    "defaultMessage": "自分がお気に入りにした投稿",
+    "description": "Exception of the automatic deletion: posts the user favourited."
+  },
+  "settings.auto_delete.keep.media": {
+    "defaultMessage": "画像などのメディアが付いた投稿",
+    "description": "Exception of the automatic deletion: posts with media attachments."
+  },
+  "settings.auto_delete.keep.polls": {
+    "defaultMessage": "投票が付いた投稿",
+    "description": "Exception of the automatic deletion: posts with a poll."
+  },
+  "settings.auto_delete.visibilities": {
+    "defaultMessage": "残す公開範囲",
+    "description": "Legend of the checkboxes of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.visibilities.description": {
+    "defaultMessage": "チェックした公開範囲の投稿は、自動では削除しません。",
+    "description": "Help of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.min_boosts": {
+    "defaultMessage": "これ以上ブーストされた投稿を残す",
+    "description": "Label of the select of the number of boosts that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.min_favourites": {
+    "defaultMessage": "これ以上お気に入りにされた投稿を残す",
+    "description": "Label of the select of the number of favourites that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.threshold.off": {
+    "defaultMessage": "この条件では残さない",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion that keeps no post for it."
+  },
+  "settings.auto_delete.threshold.count": {
+    "defaultMessage": "{count, plural, other {# 回}}",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion: a number of boosts or favourites."
+  },
+  "settings.auto_delete.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves the automatic deletion settings."
+  },
+  "settings.auto_delete.saved_on": {
+    "defaultMessage": "保存しました。{days, plural, other {# 日}}より古い投稿を、残すものを除いて削除します。",
+    "description": "Status after the automatic deletion settings were saved turned on."
+  },
+  "settings.auto_delete.saved_off": {
+    "defaultMessage": "保存しました。投稿は自動では削除しません。",
+    "description": "Status after the automatic deletion settings were saved turned off."
+  },
+  "settings.auto_delete.save_failed": {
+    "defaultMessage": "設定を保存できませんでした：{reason}",
+    "description": "Error after saving the automatic deletion settings failed. {reason} is the localized reason."
+  },
+  "settings.auto_delete.unsaved.title": {
+    "defaultMessage": "保存せずに移動しますか？",
+    "description": "Title of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.description": {
+    "defaultMessage": "自動削除の設定の変更は失われます。",
+    "description": "Description of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.leave": {
+    "defaultMessage": "変更を破棄する",
+    "description": "Button that leaves the automatic deletion settings without saving."
+  },
+  "settings.auto_delete.unsaved.stay": {
+    "defaultMessage": "編集を続ける",
+    "description": "Button that stays on the automatic deletion settings."
+  },
+  "settings.two_factor.status.title": {
+    "defaultMessage": "現在の設定",
+    "description": "Heading of the region of the two-factor authentication page that says whether it is on."
+  },
+  "settings.two_factor.status": {
+    "defaultMessage": "二要素認証",
+    "description": "Term of the description list: whether two-factor authentication is on."
+  },
+  "settings.two_factor.status.on": {
+    "defaultMessage": "有効",
+    "description": "Value of the two-factor authentication term while it is on."
+  },
+  "settings.two_factor.status.off": {
+    "defaultMessage": "無効です。ログインにはパスワードだけを使います。",
+    "description": "Text of the two-factor authentication page while it is off."
+  },
+  "settings.two_factor.enrolled_at": {
+    "defaultMessage": "有効にした日時",
+    "description": "Term of the description list: when two-factor authentication was turned on; the value is a date and time."
+  },
+  "settings.two_factor.recovery_codes.remaining": {
+    "defaultMessage": "未使用のリカバリーコード",
+    "description": "Term of the description list: how many recovery codes are left; the value is a number."
+  },
+  "settings.two_factor.setup.title": {
+    "defaultMessage": "認証アプリを設定",
+    "description": "Heading of the region that enrolls an authenticator app while two-factor authentication is off."
+  },
+  "settings.two_factor.setup.description": {
+    "defaultMessage": "スマートフォンの認証アプリにこのアカウントを追加します。以降のログインでは、アプリに表示される 6 桁のコードも求められます。",
+    "description": "Explanation above the button that starts setting up an authenticator app."
+  },
+  "settings.two_factor.setup.start": {
+    "defaultMessage": "設定を始める",
+    "description": "Button that generates a new secret to add to an authenticator app."
+  },
+  "settings.two_factor.setup.step.scan": {
+    "defaultMessage": "認証アプリで QR コードを読み取るか、下のキーを入力してください。",
+    "description": "First step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.step.confirm": {
+    "defaultMessage": "アプリに表示される 6 桁のコードを入力して、二要素認証を有効にしてください。",
+    "description": "Second step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.qr_code": {
+    "defaultMessage": "認証アプリ用の QR コード",
+    "description": "Accessible name of the QR code image that holds the secret for the authenticator app."
+  },
+  "settings.two_factor.setup.secret": {
+    "defaultMessage": "キー",
+    "description": "Label of the secret shown as text, for typing it into an authenticator app instead of scanning the QR code."
+  },
+  "settings.two_factor.setup.code.description": {
+    "defaultMessage": "アプリにいま表示されている 6 桁のコードです。",
+    "description": "Help under the code field that confirms the setup of an authenticator app."
+  },
+  "settings.two_factor.setup.submit": {
+    "defaultMessage": "有効にする",
+    "description": "Button that turns two-factor authentication on with the code of the app."
+  },
+  "settings.two_factor.setup.expired": {
+    "defaultMessage": "設定に時間がかかりすぎました。もう一度始めてください。",
+    "description": "Error when the setup of an authenticator app expired (after 15 minutes) before its code was entered."
+  },
+  "settings.two_factor.code": {
+    "defaultMessage": "認証コード",
+    "description": "Label of the field for a code of the authenticator app or a recovery code."
+  },
+  "settings.two_factor.code.description": {
+    "defaultMessage": "認証アプリのコードか、リカバリーコードを 1 つ入力してください。",
+    "description": "Help under the code field that confirms replacing the recovery codes or turning two-factor authentication off."
+  },
+  "settings.two_factor.code.required": {
+    "defaultMessage": "コードを入力してください。",
+    "description": "Error of an empty code field."
+  },
+  "settings.two_factor.code.invalid": {
+    "defaultMessage": "コードが正しくないか、すでに使われています。",
+    "description": "Error of the code field when the server refused the code."
+  },
+  "settings.two_factor.state_changed": {
+    "defaultMessage": "二要素認証の設定がほかの場所で変更されました。現在の設定を表示しています。",
+    "description": "Error when two-factor authentication was turned on or off in another tab or device meanwhile."
+  },
+  "settings.two_factor.rate_limited": {
+    "defaultMessage": "間違ったコードが多すぎます：{reason}",
+    "description": "Error after too many wrong codes. {reason} is the server's explanation of when to try again."
+  },
+  "settings.two_factor.failed": {
+    "defaultMessage": "二要素認証を変更できませんでした：{reason}",
+    "description": "Error when a change of two-factor authentication failed. {reason} is the server's explanation."
+  },
+  "settings.two_factor.enabled": {
+    "defaultMessage": "二要素認証を有効にしました。",
+    "description": "Status message after turning two-factor authentication on."
+  },
+  "settings.two_factor.disabled": {
+    "defaultMessage": "二要素認証を無効にしました。",
+    "description": "Status message after turning two-factor authentication off."
+  },
+  "settings.two_factor.recovery_codes.title": {
+    "defaultMessage": "リカバリーコード",
+    "description": "Heading of the region that replaces the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.description": {
+    "defaultMessage": "認証アプリを使えなくなったときは、代わりにリカバリーコードでログインできます。それぞれのコードは 1 回だけ使えます。作り直すと、前のコードは使えなくなります。",
+    "description": "Explanation of the recovery codes above the form that replaces them."
+  },
+  "settings.two_factor.recovery_codes.replace": {
+    "defaultMessage": "リカバリーコードを作り直す",
+    "description": "Button that replaces the recovery codes with new ones."
+  },
+  "settings.two_factor.recovery_codes.replaced": {
+    "defaultMessage": "新しいリカバリーコードを作りました。前のコードは使えなくなりました。",
+    "description": "Status message after replacing the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.new.title": {
+    "defaultMessage": "リカバリーコードを保存してください",
+    "description": "Heading of the list of new recovery codes, which is shown only once."
+  },
+  "settings.two_factor.recovery_codes.new.description": {
+    "defaultMessage": "パスワードマネージャーなど、安全な場所に保管してください。表示されるのはこの 1 回だけです。それぞれのコードで、アプリなしで 1 回ログインできます。",
+    "description": "Text above the list of new recovery codes."
+  },
+  "settings.two_factor.disable.title": {
+    "defaultMessage": "二要素認証を無効にする",
+    "description": "Heading of the region that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.description": {
+    "defaultMessage": "ログインにはパスワードだけを使うようになります。確認のためにコードを入力してください。",
+    "description": "Explanation above the form that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.submit": {
+    "defaultMessage": "無効にする",
+    "description": "Button that turns two-factor authentication off."
+  },
+  "settings.passkeys.title": {
+    "defaultMessage": "パスキー",
+    "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "パスキーを使うと、パスワードの代わりに、端末やパスワードマネージャーのロックを解除する指紋・顔・PIN でログインできます。二要素認証を有効にしている場合は、パスキーでログインしたあとにも認証コードを求められます。パスキーがあれば、パスワードのページでパスワードを削除できます。",
+    "description": "Explanation at the top of the passkeys settings page."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "パスキーを追加",
+    "description": "Heading of the form that adds a passkey on the passkeys settings page."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "見分けられるようにパスキーに名前を付け、確認のためにパスワードを入力してください。続いて、ブラウザがパスキーの保存先を尋ねます。",
+    "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.add.description_passkey": {
+    "defaultMessage": "見分けられるようにパスキーに名前を付けてください。確認のためにブラウザが登録済みのパスキーを求め、続いて新しいパスキーの保存先を尋ねます。",
+    "description": "Explanation of the form that adds a passkey for a user who has no password: an existing passkey confirms adding the new one."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "名前",
+    "description": "Label of the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "保存する端末やパスワードマネージャーの名前など。",
+    "description": "Hint under the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "名前を入力してください。",
+    "description": "Error of the empty name field of a new passkey."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "現在のパスワード",
+    "description": "Label of the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "ログインの方法を追加するには、パスワードが必要です。",
+    "description": "Hint under the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "パスワードを入力してください。",
+    "description": "Error of the empty password field when adding a passkey."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "パスキーを追加",
+    "description": "Button that adds a passkey: it checks the password and opens the browser's prompt."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error of the password field when the server refused the password that confirms adding a passkey."
+  },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "パスキーは追加されませんでした。ブラウザの確認が閉じられたか、時間切れになりました。もう一度お試しください。",
+    "description": "Alert when the user dismissed the browser's passkey prompt or it timed out."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "この端末またはパスワードマネージャーには、このアカウントのパスキーがすでにあります。",
+    "description": "Alert when the authenticator already holds a passkey of the account."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "ブラウザがこのサイトのパスキーを作成できませんでした。",
+    "description": "Alert when the browser refused to create a passkey for another reason (unsupported, or the site's address does not allow it)."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "パスキーを確認できませんでした。別の端末やパスワードマネージャーでお試しください。",
+    "description": "Alert when the server could not verify the new passkey (for example, the device has no screen lock)."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "パスキーの追加に時間がかかりすぎました。もう一度お試しください。",
+    "description": "Alert when the passkey was created after the registration expired (5 minutes)."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "登録できるパスキーの数の上限に達しています。先にどれかを削除してください。",
+    "description": "Alert when the user already has the most passkeys allowed (20)."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "間違ったパスワードが多すぎます：{reason}",
+    "description": "Alert when too many wrong passwords were entered to add a passkey. {reason} is the server's message, which says when to try again."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "パスキーを追加できませんでした：{reason}",
+    "description": "Alert when adding a passkey failed for another reason. {reason} is the error's message."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "パスキー「{name}」を追加しました。",
+    "description": "Status after a passkey was added. {name} is the name the user gave it."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "このブラウザではパスキーを作成できません。追加するには、パスキーに対応したブラウザでこのページを開いてください。",
+    "description": "Note instead of the form that adds a passkey, in a browser without passkey support."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "登録済みのパスキー",
+    "description": "Heading of the list of the user's passkeys."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "パスキーはまだありません",
+    "description": "Empty state of the list of the user's passkeys."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "{date} に追加",
+    "description": "When a passkey was added, under its name. {date} is a formatted date and time."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "削除",
+    "description": "Button that removes a passkey, and the confirm button of its dialog."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "パスキー「{name}」を削除しますか？",
+    "description": "Title of the dialog that confirms removing a passkey. {name} is its name."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "このパスキーではログインできなくなります。端末やパスワードマネージャーからも削除してください。",
+    "description": "Explanation in the dialog that confirms removing a passkey."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes the dialog without removing the passkey."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "パスキーを削除できませんでした：{reason}",
+    "description": "Alert in the dialog when removing a passkey failed. {reason} is the error's message."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "パスキー「{name}」を削除しました。",
+    "description": "Announcement after a passkey was removed. {name} is its name."
+  },
+  "settings.password.title": {
+    "defaultMessage": "パスワード",
+    "description": "Title of the settings page that changes the password, and its entry in the settings menu."
+  },
+  "settings.password.description": {
+    "defaultMessage": "パスワードを変えると、ほかのすべてのブラウザーとアプリからログアウトします。パスキーと二要素認証はそのまま残ります。",
+    "description": "Text at the top of the settings page that changes the password."
+  },
+  "settings.password.change.title": {
+    "defaultMessage": "パスワードを変更",
+    "description": "Heading of the form that changes the password with the current one, on the password settings page."
+  },
+  "settings.password.current": {
+    "defaultMessage": "現在のパスワード",
+    "description": "Label of the field of the current password, which confirms a password change."
+  },
+  "settings.password.current.required": {
+    "defaultMessage": "現在のパスワードを入力してください。",
+    "description": "Error of the empty current password field when changing the password."
+  },
+  "settings.password.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error of the current password field when the server refused it."
+  },
+  "settings.password.new": {
+    "defaultMessage": "新しいパスワード",
+    "description": "Label of the field of the new password."
+  },
+  "settings.password.new.description": {
+    "defaultMessage": "{min, number}〜{max, number} 文字。",
+    "description": "Hint under the new password field. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.new.invalid": {
+    "defaultMessage": "{min, number}〜{max, number} 文字にしてください。",
+    "description": "Error of the new password field when it is empty, too short, or too long. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.submit": {
+    "defaultMessage": "パスワードを変更",
+    "description": "Button that changes the password."
+  },
+  "settings.password.changed": {
+    "defaultMessage": "パスワードを変更しました。ほかのブラウザーとアプリはログアウトしました。",
+    "description": "Status after the password was changed."
+  },
+  "settings.password.rate_limited": {
+    "defaultMessage": "間違ったパスワードが多すぎます：{reason}",
+    "description": "Alert when too many wrong current passwords were entered to change the password. {reason} is the server's message, which says when to try again."
+  },
+  "settings.password.failed": {
+    "defaultMessage": "パスワードを変更できませんでした：{reason}",
+    "description": "Alert when changing the password failed for another reason. {reason} is the error's message."
+  },
+  "settings.password.remove.title": {
+    "defaultMessage": "パスワードを削除",
+    "description": "Heading of the section that removes the password, so that only passkeys sign in, on the password settings page."
+  },
+  "settings.password.remove.description": {
+    "defaultMessage": "パスキーだけでログインするようにします。確認には登録済みのパスキーを使い、ほかのすべてのブラウザーとアプリからはログアウトします。パスワードは、このページかパスワードリセットのリンクで設定し直せます。",
+    "description": "Explanation of the section that removes the password."
+  },
+  "settings.password.remove.no_passkey": {
+    "defaultMessage": "ログインできなくならないように、パスワードを削除する前にパスキーを追加してください。",
+    "description": "Note instead of the button that removes the password, for a user who has no passkey."
+  },
+  "settings.password.remove.open": {
+    "defaultMessage": "パスワードを削除…",
+    "description": "Button that opens the dialog that removes the password."
+  },
+  "settings.password.remove.confirm.title": {
+    "defaultMessage": "パスワードを削除しますか？",
+    "description": "Title of the dialog that confirms removing the password."
+  },
+  "settings.password.remove.confirm.description": {
+    "defaultMessage": "これからはパスキーだけでログインします。確認のため、ブラウザがパスキーを求めます。",
+    "description": "Description of the dialog that removes the password: the confirm button opens the browser's passkey prompt."
+  },
+  "settings.password.remove.confirm": {
+    "defaultMessage": "パスワードを削除",
+    "description": "Button in the dialog that removes the password after the browser's passkey prompt."
+  },
+  "settings.password.remove.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes the dialog without removing the password."
+  },
+  "settings.password.removed": {
+    "defaultMessage": "パスワードを削除しました。これからはパスキーでログインしてください。ほかのブラウザーとアプリはログアウトしました。",
+    "description": "Status after the password was removed."
+  },
+  "settings.password.remove.failed": {
+    "defaultMessage": "パスワードを削除できませんでした：{reason}",
+    "description": "Alert in the dialog when removing the password failed. {reason} is the error's message."
+  },
+  "settings.password.set.title": {
+    "defaultMessage": "パスワードを設定",
+    "description": "Heading of the form that sets a password for a user who removed theirs and signs in with passkeys only."
+  },
+  "settings.password.set.description": {
+    "defaultMessage": "いまはパスキーでログインしています。パスワードを設定すると、メールアドレスとパスワードでもログインできます。確認のためブラウザがパスキーを求め、ほかのすべてのブラウザーとアプリからはログアウトします。",
+    "description": "Explanation of the form that sets a password for a user who has none."
+  },
+  "settings.password.set.submit": {
+    "defaultMessage": "パスワードを設定",
+    "description": "Button that sets a password after the browser's passkey prompt, for a user who has none."
+  },
+  "settings.password.set.done": {
+    "defaultMessage": "パスワードを設定しました。ほかのブラウザーとアプリはログアウトしました。",
+    "description": "Status after a user who had no password set one."
+  },
+  "settings.password.passkeys_unsupported": {
+    "defaultMessage": "このブラウザではパスキーを使えないため、確認できません。パスキーに対応したブラウザでこのページを開いてください。",
+    "description": "Note instead of a form or button of the password page that a passkey confirms (removing or setting the password), in a browser without passkey support."
+  },
+  "settings.passkey_confirmation.cancelled": {
+    "defaultMessage": "パスキーは使われませんでした。ブラウザの確認が閉じられたか、時間切れになりました。もう一度お試しください。",
+    "description": "Alert when the user dismissed the browser's passkey prompt that confirms an operation (deleting the account, setting or removing the password, adding a passkey), or it timed out."
+  },
+  "settings.passkey_confirmation.unavailable": {
+    "defaultMessage": "ブラウザがこのサイトのパスキーを使えませんでした。",
+    "description": "Alert when the browser refused the passkey prompt that confirms an operation for another reason (unsupported, or the site's address)."
+  },
+  "settings.passkey_confirmation.invalid": {
+    "defaultMessage": "パスキーを確認できませんでした。このアカウントのパスキーを使ってください。",
+    "description": "Alert when the server did not accept the passkey that confirms an operation (another account's passkey, a removed one, or one that does not verify)."
+  },
+  "settings.passkey_confirmation.expired": {
+    "defaultMessage": "パスキーでの確認に時間がかかりすぎました。もう一度お試しください。",
+    "description": "Alert when the passkey that confirms an operation was given after the confirmation expired (5 minutes)."
+  },
+  "settings.visibility.direct": {
+    "defaultMessage": "メンションした相手",
+    "description": "Visibility option: only the mentioned accounts."
+  },
+  "settings.visibility.direct.description": {
+    "defaultMessage": "メンションした相手だけ",
+    "description": "Description of the 'Mentioned people' visibility option."
+  },
+  "settings.visibility.local": {
+    "defaultMessage": "このサーバー",
+    "description": "Visibility option: signed-in users of this server and followers."
+  },
+  "settings.visibility.local.description": {
+    "defaultMessage": "このサーバーにログインしている人と、フォロワー",
+    "description": "Description of the 'This server' visibility option."
+  },
+  "settings.visibility.private": {
+    "defaultMessage": "フォロワー",
+    "description": "Visibility option: followers and mentioned accounts."
+  },
+  "settings.visibility.private.description": {
+    "defaultMessage": "フォロワーと、メンションした相手",
+    "description": "Description of the 'Followers' visibility option."
+  },
+  "settings.visibility.public": {
+    "defaultMessage": "公開",
+    "description": "Visibility option: everyone, listed on public timelines."
+  },
+  "settings.visibility.public.description": {
+    "defaultMessage": "誰でも見られ、公開タイムラインにも載ります",
+    "description": "Description of the 'Public' visibility option."
+  },
+  "settings.visibility.unlisted": {
+    "defaultMessage": "未収載",
+    "description": "Visibility option: everyone, but kept off public timelines."
+  },
+  "settings.visibility.unlisted.description": {
+    "defaultMessage": "誰でも見られますが、公開タイムラインには載りません",
+    "description": "Description of the 'Unlisted' visibility option."
+  },
+  "settings.profile.display_name.emoji": {
+    "defaultMessage": "表示名に絵文字を入れる",
+    "description": "Accessible name and tooltip of the button that opens the custom emoji picker for the display name."
+  },
+  "settings.profile.note.emoji": {
+    "defaultMessage": "自己紹介に絵文字を入れる",
+    "description": "Accessible name and tooltip of the button that opens the custom emoji picker for the bio."
+  },
+  "settings.profile.badges": {
+    "defaultMessage": "バッジ",
+    "description": "Heading of the section of the profile settings that chooses which role badges the profile shows (ADR-0071)."
+  },
+  "settings.profile.badges.description": {
+    "defaultMessage": "ロールのバッジのうち、プロフィールに出すものを選びます。出すと選ぶまでは出ず、出るのはプロフィールだけです。",
+    "description": "Explanation of the badges section."
+  },
+  "settings.profile.badges.shown": {
+    "defaultMessage": "{badge} をプロフィールに出しました。",
+    "description": "Announced when a badge is shown. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.hidden": {
+    "defaultMessage": "{badge} をプロフィールから外しました。",
+    "description": "Announced when a badge is hidden. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.failed": {
+    "defaultMessage": "バッジを変えられませんでした：{reason}",
+    "description": "Error under a badge's switch when the change was not saved. {reason} is the localized reason."
+  },
+  "settings.domain_mutes.title": {
+    "defaultMessage": "ミュートしたドメイン",
+    "description": "Heading and document title of the settings page with the domains the user mutes."
+  },
+  "settings.domain_mutes.description": {
+    "defaultMessage": "ドメインをミュートすると、そのドメインとサブドメインのアカウントの投稿をホーム以外のタイムラインから、そのブーストをホームから、その通知を隠します。フォローしているアカウントはホームに残ります。変わるのはあなたの表示だけで、相手のサーバーには伝わりません。",
+    "description": "Explains what muting a domain does, at the top of the muted domains page."
+  },
+  "settings.domain_mutes.new.title": {
+    "defaultMessage": "ドメインをミュートする",
+    "description": "Heading of the section of the muted domains page with the form that mutes a domain."
+  },
+  "settings.domain_mutes.list.title": {
+    "defaultMessage": "ミュートしているドメイン",
+    "description": "Heading of the section of the muted domains page that lists them."
+  },
+  "settings.domain_mutes.domain": {
+    "defaultMessage": "ドメイン",
+    "description": "Label of the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.description": {
+    "defaultMessage": "mastodon.example のようなサーバーのドメインです。サブドメインもミュートします。",
+    "description": "Help under the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.required": {
+    "defaultMessage": "ドメインを入力してください。",
+    "description": "Error under the domain field when the user mutes without entering a domain."
+  },
+  "settings.domain_mutes.mute": {
+    "defaultMessage": "ミュートする",
+    "description": "Button that mutes the domain entered in the field."
+  },
+  "settings.domain_mutes.mute_failed": {
+    "defaultMessage": "ドメインをミュートできませんでした：{reason}",
+    "description": "Shown under the form when muting a domain fails. {reason} is the server's explanation."
+  },
+  "settings.domain_mutes.muted": {
+    "defaultMessage": "{domain} をミュートしました。",
+    "description": "Shown under the form after a domain was muted. {domain} is the domain."
+  },
+  "settings.domain_mutes.empty": {
+    "defaultMessage": "ミュートしているドメインはありません",
+    "description": "Shown when the user mutes no domain."
+  },
+  "settings.domain_mutes.since": {
+    "defaultMessage": "{date} にミュート",
+    "description": "When the domain was muted, under a muted domain. {date} is a formatted date and time."
+  },
+  "settings.domain_mutes.unmute": {
+    "defaultMessage": "ミュートを解除",
+    "description": "Button that unmutes a domain."
+  },
+  "settings.domain_mutes.unmuted": {
+    "defaultMessage": "{domain} のミュートを解除しました。",
+    "description": "Announced after a domain was unmuted. {domain} is the domain."
+  },
+  "settings.import_export.kind.domain_mutes": {
+    "defaultMessage": "ミュートしたドメイン",
+    "description": "Name of the list of domains the user mutes, as one kind of CSV file to export or import."
+  },
+  "settings.default_quote_policy.label": {
+    "defaultMessage": "新しい投稿を引用できる人",
+    "description": "Label of the setting of who may quote the user's new posts."
+  },
+  "settings.default_quote_policy.description": {
+    "defaultMessage": "投稿ごとにも選べます。",
+    "description": "Description of the setting of who may quote the user's new posts."
+  },
+  "settings.push.type.quote": {
+    "defaultMessage": "引用",
+    "description": "Checkbox of the push notification settings: notifications when someone quotes the user's post."
+  }
+}

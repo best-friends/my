@@ -13,12 +13,12 @@
 // or follows. The pages are in the project's locale: the app shows itself in the user's locale, which the
 // test sets through the client API once the user has signed in.
 import { randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { crc32, deflateSync } from "node:zlib";
 import type { Page } from "@playwright/test";
 import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, openFromNavigation, test as base } from "./fixtures";
 import { ownsServer, runMy } from "./server-cli.ts";
 import { serverURL } from "./server-origin.ts";
+import { readCatalog } from "./catalog.ts";
 
 /** The second user's page, in a browser context of its own with the project's options. */
 const test = base.extend<{ secondPage: Page }>({
@@ -33,10 +33,6 @@ const test = base.extend<{ secondPage: Page }>({
 // of changing its colors, such as the follow button right after it was pressed.
 test.use({ baseURL: serverURL, reducedMotion: "reduce" });
 
-type Catalog = Record<string, { defaultMessage: string }>;
-
-const catalogs = new Map<string, Catalog>();
-
 /** The project's locale. */
 function projectLocale(): string {
   return test.info().project.use.locale ?? "en";
@@ -45,12 +41,7 @@ function projectLocale(): string {
 /** The client message `key` in the project's locale, with its `{name}` arguments replaced. */
 function message(key: string, values: Record<string, string> = {}): string {
   const locale = projectLocale();
-  let catalog = catalogs.get(locale);
-  if (catalog === undefined) {
-    catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
-    catalogs.set(locale, catalog);
-  }
-  const text = catalog[key]?.defaultMessage;
+  const text = readCatalog(locale)[key]?.defaultMessage;
   if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
   return text.replaceAll(/\{(\w+)\}/g, (_, name: string) => values[name] ?? `{${name}}`);
 }

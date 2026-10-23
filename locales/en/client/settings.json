@@ -1,0 +1,1410 @@
+{
+  "settings.push.type.supporter": {
+    "defaultMessage": "Your supporter plan",
+    "description": "Checkbox of the push notification kinds: a failed payment for the user's supporter plan, its end, and its retirement. Not shown in the mobile app."
+  },
+  "settings.account.delete.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button in the dialog that closes it without deleting the account."
+  },
+  "settings.account.delete.confirm": {
+    "defaultMessage": "Delete account",
+    "description": "Button in the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description": {
+    "defaultMessage": "Enter your password to confirm. Your account is deleted at once, and you are signed out. This cannot be undone.",
+    "description": "Description of the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description_passkey": {
+    "defaultMessage": "Your browser asks for one of your passkeys to confirm. Your account is deleted at once, and you are signed out. This cannot be undone.",
+    "description": "Description of the dialog that deletes the account of a user who has no password: pressing the delete button opens the browser's passkey prompt, which confirms the deletion."
+  },
+  "settings.account.delete.confirm.title": {
+    "defaultMessage": "Delete your account?",
+    "description": "Title of the dialog that asks the user to confirm deleting their account."
+  },
+  "settings.account.delete.description": {
+    "defaultMessage": "Your account, posts and profile disappear at once, and other servers are asked to delete their copies. You cannot undo this, and your username cannot be used again. Download your data first if you want to keep it.",
+    "description": "Explains what deleting the account does, above the button that starts it."
+  },
+  "settings.account.delete.open": {
+    "defaultMessage": "Delete account…",
+    "description": "Button that opens the dialog that deletes the user's account."
+  },
+  "settings.account.delete.password": {
+    "defaultMessage": "Password",
+    "description": "Label of the field in which the user types their password to confirm deleting the account."
+  },
+  "settings.account.delete.password.required": {
+    "defaultMessage": "Enter your password.",
+    "description": "Error under the password field when the user confirms the deletion without typing the password."
+  },
+  "settings.account.delete.title": {
+    "defaultMessage": "Delete your account",
+    "description": "Heading of the section of the account page about deleting the account."
+  },
+  "settings.account.delete.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error in the deletion dialog when the password the user typed is not their current password."
+  },
+  "settings.account.export.description": {
+    "defaultMessage": "Get a ZIP archive of your posts in ActivityStreams format, your profile, the moderation actions on your account, and your follows, blocks, mutes, and bookmarks as CSV files. It takes a while to prepare, and you can download it for 7 days.",
+    "description": "Explains the archive of the user's data, above the button that asks for one."
+  },
+  "settings.account.export.download": {
+    "defaultMessage": "Download",
+    "description": "Button that downloads an archive of the user's data."
+  },
+  "settings.account.export.download_of": {
+    "defaultMessage": "Download the archive of {date}",
+    "description": "Accessible name of the button that downloads one archive. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.empty": {
+    "defaultMessage": "You have no archives",
+    "description": "Shown when the user has no archive of their data."
+  },
+  "settings.account.export.expires_at": {
+    "defaultMessage": "Available until",
+    "description": "Label of the date until which an archive of the user's data can be downloaded."
+  },
+  "settings.account.export.item": {
+    "defaultMessage": "Archive of {date}",
+    "description": "Heading of one archive of the user's data. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.request": {
+    "defaultMessage": "Prepare an archive",
+    "description": "Button that asks the server to prepare an archive of the user's data."
+  },
+  "settings.account.export.requested": {
+    "defaultMessage": "The archive is being prepared. It appears below when it is ready.",
+    "description": "Announced after the user asked for an archive of their data."
+  },
+  "settings.account.export.size": {
+    "defaultMessage": "Size",
+    "description": "Label of the file size of an archive of the user's data."
+  },
+  "settings.account.export.state": {
+    "defaultMessage": "State",
+    "description": "Label of the state of an archive of the user's data (being prepared, ready, failed)."
+  },
+  "settings.account.export.state.failed": {
+    "defaultMessage": "Failed. Prepare another one.",
+    "description": "State of an archive of the user's data that the server could not prepare; the user can ask for another."
+  },
+  "settings.account.export.state.pending": {
+    "defaultMessage": "Being prepared",
+    "description": "State of an archive of the user's data that the server is still preparing."
+  },
+  "settings.account.export.state.ready": {
+    "defaultMessage": "Ready",
+    "description": "State of an archive of the user's data that can be downloaded."
+  },
+  "settings.account.export.title": {
+    "defaultMessage": "Download your data",
+    "description": "Heading of the section of the account page about archives of the user's data."
+  },
+  "settings.account.title": {
+    "defaultMessage": "Your account",
+    "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
+  },
+  "settings.autoplay.description": {
+    "defaultMessage": "Animated images (GIF) move by themselves; off, they move only while you point at or touch them. Either way they stay still when your device asks for reduced motion. Kept on this browser.",
+    "description": "Help text of the switch that turns the autoplay of animated images on or off."
+  },
+  "settings.autoplay.label": {
+    "defaultMessage": "Play animations automatically",
+    "description": "Label of the switch on the preferences page that turns the autoplay of animated images on or off."
+  },
+  "settings.back": {
+    "defaultMessage": "Back to settings",
+    "description": "Link under the heading of a settings page that opens the list of settings pages."
+  },
+  "settings.blocks.empty": {
+    "defaultMessage": "You have not blocked anyone",
+    "description": "Shown when the user blocks no account."
+  },
+  "settings.blocks.title": {
+    "defaultMessage": "Blocked accounts",
+    "description": "Heading and document title of the settings page with the blocked accounts."
+  },
+  "settings.blocks.unblock": {
+    "defaultMessage": "Unblock",
+    "description": "Button that unblocks an account."
+  },
+  "settings.blocks.unblocked": {
+    "defaultMessage": "You unblocked {name}.",
+    "description": "Announced after an account was unblocked. {name} is the account's display name."
+  },
+  "settings.default_post_language.description": {
+    "defaultMessage": "New posts start in it. You can still choose for each post.",
+    "description": "Help text of the default post language select."
+  },
+  "settings.default_post_language.label": {
+    "defaultMessage": "Default language of your posts",
+    "description": "Label of the select of the language new posts start with."
+  },
+  "settings.default_visibility.description": {
+    "defaultMessage": "You can still choose for each post.",
+    "description": "Help text of the default visibility radio group."
+  },
+  "settings.default_visibility.label": {
+    "defaultMessage": "Who sees your posts by default",
+    "description": "Label of the radio group of the visibility new posts start with."
+  },
+  "settings.follow_requests.accept": {
+    "defaultMessage": "Accept",
+    "description": "Button that accepts a follow request."
+  },
+  "settings.follow_requests.accepted": {
+    "defaultMessage": "{name} now follows you.",
+    "description": "Announced after a follow request was accepted. {name} is the account's display name."
+  },
+  "settings.follow_requests.empty": {
+    "defaultMessage": "No follow requests",
+    "description": "Shown when no follow request awaits approval."
+  },
+  "settings.follow_requests.reject": {
+    "defaultMessage": "Reject",
+    "description": "Button that rejects a follow request."
+  },
+  "settings.follow_requests.rejected": {
+    "defaultMessage": "You rejected the follow request of {name}.",
+    "description": "Announced after a follow request was rejected. {name} is the account's display name."
+  },
+  "settings.follow_requests.title": {
+    "defaultMessage": "Follow requests",
+    "description": "Heading and document title of the settings page with the follow requests awaiting approval."
+  },
+  "settings.import_export.export.description": {
+    "defaultMessage": "Download CSV files in the format Mastodon uses. Mastodon and other servers that read this format can import them.",
+    "description": "Explains the CSV files the user can download, above the list of them."
+  },
+  "settings.import_export.export.download": {
+    "defaultMessage": "Download",
+    "description": "Button that downloads one CSV file."
+  },
+  "settings.import_export.export.download_of": {
+    "defaultMessage": "Download {kind} as CSV",
+    "description": "Accessible name of the button that downloads one CSV file. {kind} is the name of the list, e.g. Blocked accounts."
+  },
+  "settings.import_export.export.title": {
+    "defaultMessage": "Export",
+    "description": "Heading of the section of the import and export page that downloads CSV files."
+  },
+  "settings.import_export.history.empty": {
+    "defaultMessage": "You have no imports",
+    "description": "Shown when the user has no recent import."
+  },
+  "settings.import_export.history.failed": {
+    "defaultMessage": "Could not be imported",
+    "description": "Label of the number of entries of an import that could not be carried out, e.g. accounts that no longer exist."
+  },
+  "settings.import_export.history.item": {
+    "defaultMessage": "{kind}, {date}",
+    "description": "Heading of one import in the list. {kind} is the name of the list, e.g. Follows; {date} is when the import started, a formatted date and time."
+  },
+  "settings.import_export.history.mode": {
+    "defaultMessage": "Method",
+    "description": "Label of how an import was done (merge or overwrite)."
+  },
+  "settings.import_export.history.progress": {
+    "defaultMessage": "Progress",
+    "description": "Label of how many entries of an import are done."
+  },
+  "settings.import_export.history.progress_value": {
+    "defaultMessage": "{processed, number} of {total, number}",
+    "description": "How many entries of an import are done. {processed} and {total} are numbers."
+  },
+  "settings.import_export.history.state": {
+    "defaultMessage": "State",
+    "description": "Label of the state of an import (in progress, finished)."
+  },
+  "settings.import_export.history.state.finished": {
+    "defaultMessage": "Finished",
+    "description": "State of an import that the server has carried out."
+  },
+  "settings.import_export.history.state.in_progress": {
+    "defaultMessage": "In progress",
+    "description": "State of an import that the server is still carrying out."
+  },
+  "settings.import_export.history.title": {
+    "defaultMessage": "Recent imports",
+    "description": "Heading of the list of the user's latest imports on the import and export page."
+  },
+  "settings.import_export.import.choose": {
+    "defaultMessage": "Choose a CSV file",
+    "description": "Button that opens the file picker to choose the CSV file to import."
+  },
+  "settings.import_export.import.chosen": {
+    "defaultMessage": "Chosen file: {name}",
+    "description": "Shows the name of the CSV file the user chose to import. {name} is the file name."
+  },
+  "settings.import_export.import.description": {
+    "defaultMessage": "Import a CSV file exported from Mastodon or from this server. Accounts and posts on other servers are looked up in the background, which can take a while.",
+    "description": "Explains importing a CSV file, above the form."
+  },
+  "settings.import_export.import.file": {
+    "defaultMessage": "CSV file",
+    "description": "Heading of the part of the import form where the user chooses the file."
+  },
+  "settings.import_export.import.file_too_large": {
+    "defaultMessage": "The file is too large to import. Split it into smaller files.",
+    "description": "Error in the import form when the chosen CSV file is larger than the server accepts."
+  },
+  "settings.import_export.import.file_unreadable": {
+    "defaultMessage": "The file cannot be read. Choose it again.",
+    "description": "Error in the import form when the browser could not read the chosen file."
+  },
+  "settings.import_export.import.kind": {
+    "defaultMessage": "What to import",
+    "description": "Label of the radio group that chooses the kind of CSV file to import (follows, blocked accounts, muted accounts, bookmarks)."
+  },
+  "settings.import_export.import.mode": {
+    "defaultMessage": "How to import",
+    "description": "Label of the radio group that chooses whether the import merges with or overwrites what the user has."
+  },
+  "settings.import_export.import.mode.merge": {
+    "defaultMessage": "Merge",
+    "description": "Option of an import that keeps what the user has and adds what the file lists."
+  },
+  "settings.import_export.import.mode.merge.description": {
+    "defaultMessage": "Keep what you have and add what the file lists.",
+    "description": "Description of the merge option of an import."
+  },
+  "settings.import_export.import.mode.overwrite": {
+    "defaultMessage": "Overwrite",
+    "description": "Option of an import that makes the user's list exactly what the file lists."
+  },
+  "settings.import_export.import.mode.overwrite.description": {
+    "defaultMessage": "Make it exactly what the file lists. Anything the file does not list is removed.",
+    "description": "Description of the overwrite option of an import."
+  },
+  "settings.import_export.import.no_file": {
+    "defaultMessage": "No file chosen",
+    "description": "Shown in the import form before the user chooses a CSV file."
+  },
+  "settings.import_export.import.preview": {
+    "defaultMessage": "Check the file",
+    "description": "Button that asks the server what importing the chosen file would do, without importing it."
+  },
+  "settings.import_export.import.preview.entries": {
+    "defaultMessage": "Entries in the file",
+    "description": "Label of the number of accounts or posts that the file to import lists."
+  },
+  "settings.import_export.import.preview.present": {
+    "defaultMessage": "Already on your list",
+    "description": "Label of the number of entries of the file to import that the user already has."
+  },
+  "settings.import_export.import.preview.removals": {
+    "defaultMessage": "To be removed",
+    "description": "Label of the number of accounts or posts that an overwrite removes because the file does not list them."
+  },
+  "settings.import_export.import.preview.skip.duplicate": {
+    "defaultMessage": "Repeats an earlier line",
+    "description": "Why a line of the file to import is skipped: an earlier line names the same account or post."
+  },
+  "settings.import_export.import.preview.skip.invalid": {
+    "defaultMessage": "Not an account address or a post URL",
+    "description": "Why a line of the file to import is skipped: it names no account (user@domain) or post URL."
+  },
+  "settings.import_export.import.preview.skipped": {
+    "defaultMessage": "Skipped lines",
+    "description": "Heading of the list of lines of the file that the import skips."
+  },
+  "settings.import_export.import.preview.skipped_line": {
+    "defaultMessage": "Line {line, number}: {value}",
+    "description": "One line of the file that the import skips. {line} is the line number, {value} the line as written."
+  },
+  "settings.import_export.import.preview.title": {
+    "defaultMessage": "What the import does",
+    "description": "Heading of the result of checking the file to import."
+  },
+  "settings.import_export.import.start": {
+    "defaultMessage": "Start the import",
+    "description": "Button that starts importing the checked file."
+  },
+  "settings.import_export.import.started": {
+    "defaultMessage": "The import has started with {total, plural, one {# entry} other {# entries}}. Its progress appears below.",
+    "description": "Announced after the user started an import. {total} is the number of accounts or posts to add or remove."
+  },
+  "settings.import_export.import.title": {
+    "defaultMessage": "Import",
+    "description": "Heading of the section of the import and export page that imports a CSV file."
+  },
+  "settings.import_export.kind.blocks": {
+    "defaultMessage": "Blocked accounts",
+    "description": "Name of the list of accounts the user blocks, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.bookmarks": {
+    "defaultMessage": "Bookmarks",
+    "description": "Name of the list of posts the user bookmarked, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.following": {
+    "defaultMessage": "Follows",
+    "description": "Name of the list of accounts the user follows, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.mutes": {
+    "defaultMessage": "Muted accounts",
+    "description": "Name of the list of accounts the user mutes, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.title": {
+    "defaultMessage": "Import and export",
+    "description": "Heading and document title of the settings page for exporting and importing the user's follows, blocks, mutes, and bookmarks as CSV files."
+  },
+  "settings.list.action": {
+    "defaultMessage": "{action}: {name}",
+    "description": "Accessible name of a button in a list of accounts. {action} is the button's visible text (for example 'Unblock'), {name} the account's display name."
+  },
+  "settings.list.more": {
+    "defaultMessage": "Show more",
+    "description": "Button under a list of accounts in the settings that loads more of them."
+  },
+  "settings.locale.description": {
+    "defaultMessage": "The app switches to it at once.",
+    "description": "Help text of the display language select."
+  },
+  "settings.locale.label": {
+    "defaultMessage": "Display language",
+    "description": "Label of the select of the language the app is shown in."
+  },
+  "settings.menu.title": {
+    "defaultMessage": "Settings pages",
+    "description": "Heading of the list of links to the pages of the settings."
+  },
+  "settings.moderator_notifications.email": {
+    "defaultMessage": "Also send them by email",
+    "description": "Label of the switch that also sends the moderator notifications by email."
+  },
+  "settings.moderator_notifications.email.description": {
+    "defaultMessage": "The notifications of new reports, sign-ups awaiting approval and appeals that your role handles also come to your email address.",
+    "description": "Help text of the switch that also sends the moderator notifications by email."
+  },
+  "settings.moderator_notifications.no_email": {
+    "defaultMessage": "This server does not send email, so the moderator notifications come only in the app.",
+    "description": "Shown instead of the email switch of the moderator notifications when the server is set up to send no email."
+  },
+  "settings.moderator_notifications.title": {
+    "defaultMessage": "Moderator notifications",
+    "description": "Heading of the section of the preferences about the notifications of new reports, sign-ups awaiting approval and appeals, shown only to moderators."
+  },
+  "settings.mutes.empty": {
+    "defaultMessage": "You have not muted anyone",
+    "description": "Shown when the user mutes no account."
+  },
+  "settings.mutes.notifications": {
+    "defaultMessage": "Notifications hidden too",
+    "description": "Under a muted account whose mute also hides its notifications."
+  },
+  "settings.mutes.title": {
+    "defaultMessage": "Muted accounts",
+    "description": "Heading and document title of the settings page with the muted accounts."
+  },
+  "settings.mutes.unmute": {
+    "defaultMessage": "Unmute",
+    "description": "Button that unmutes an account."
+  },
+  "settings.mutes.unmuted": {
+    "defaultMessage": "You unmuted {name}.",
+    "description": "Announced after an account was unmuted. {name} is the account's display name."
+  },
+  "settings.mutes.until": {
+    "defaultMessage": "Until {date}",
+    "description": "When a mute ends, under the muted account. {date} is a formatted date and time."
+  },
+  "settings.navigation.description": {
+    "defaultMessage": "Choose the items of the navigation and their order. On phones, the first {count, plural, one {# shown item is} other {# shown items are}} in the tab bar and the others in the menu. Settings always shows. Kept on this browser.",
+    "description": "Help text of the navigation section. {count} is how many shown items the bottom tab bar of phones holds (5); the name of the Settings item is shell.nav.settings."
+  },
+  "settings.navigation.hidden": {
+    "defaultMessage": "Hidden",
+    "description": "Help text under an item of the navigation section whose checkbox is off: it is not in the navigation."
+  },
+  "settings.navigation.in_menu": {
+    "defaultMessage": "In the menu on phones",
+    "description": "Help text under an item of the navigation section: the item is shown in the menu (the sheet opened by the Menu button) on phones, and in the side rail on larger screens."
+  },
+  "settings.navigation.in_tab_bar": {
+    "defaultMessage": "In the tab bar on phones",
+    "description": "Help text under an item of the navigation section: the item is shown in the bottom tab bar on phones."
+  },
+  "settings.navigation.move_down": {
+    "defaultMessage": "Move {name} down",
+    "description": "Accessible name and tooltip of the icon button that moves an item of the navigation one place down (later). {name} is the item's label (shell.nav.*)."
+  },
+  "settings.navigation.move_up": {
+    "defaultMessage": "Move {name} up",
+    "description": "Accessible name and tooltip of the icon button that moves an item of the navigation one place up (earlier). {name} is the item's label (shell.nav.*)."
+  },
+  "settings.navigation.moved": {
+    "defaultMessage": "{name} moved to position {position, number} of {count, number}",
+    "description": "Announced to screen readers after an item of the navigation moved. {name} is the item's label, {position} its new place counted from 1, {count} the number of items."
+  },
+  "settings.navigation.reset": {
+    "defaultMessage": "Restore the default",
+    "description": "Button of the navigation section that puts back the default items and order."
+  },
+  "settings.navigation.reset_done": {
+    "defaultMessage": "Restored the default navigation",
+    "description": "Announced to screen readers after the navigation went back to the default items and order."
+  },
+  "settings.navigation.title": {
+    "defaultMessage": "Navigation",
+    "description": "Heading of the section of the preferences page where the user chooses the items of the navigation and their order."
+  },
+  "settings.navigation.unavailable": {
+    "defaultMessage": "Not offered by this server",
+    "description": "Help text under the local or federated timeline item of the navigation section when this server has turned that timeline off, so it does not show whatever is chosen."
+  },
+  "settings.preferences.autosave": {
+    "defaultMessage": "Changes are saved as soon as you make them.",
+    "description": "Text at the top of the preferences page."
+  },
+  "settings.preferences.title": {
+    "defaultMessage": "Preferences",
+    "description": "Heading and document title of the settings page with the language, time zone, theme, post defaults and timeline languages."
+  },
+  "settings.profile.avatar": {
+    "defaultMessage": "Avatar",
+    "description": "Heading of the part of the profile form for the user's profile picture."
+  },
+  "settings.profile.bot": {
+    "defaultMessage": "This is a bot",
+    "description": "Checkbox of the profile form: the account is automated."
+  },
+  "settings.profile.bot.description": {
+    "defaultMessage": "The account posts automatically, and others see that it may not be watched.",
+    "description": "Help text of the 'This is a bot' checkbox."
+  },
+  "settings.profile.crawlers": {
+    "defaultMessage": "Search engines and AI",
+    "description": "Heading of the part of the profile form about search engines and AI."
+  },
+  "settings.profile.indexable": {
+    "defaultMessage": "Show my profile and public posts in search",
+    "description": "Label of the checkbox that lets the profile and public posts appear in search."
+  },
+  "settings.profile.indexable.description": {
+    "defaultMessage": "Search on this server and, when the server allows it, search engines may index them. Other servers that follow this choice see it too.",
+    "description": "Help text of the indexable checkbox."
+  },
+  "settings.profile.indexable.server_denies": {
+    "defaultMessage": "This server asks search engines not to index any page, so they do not index yours even if you allow it.",
+    "description": "Note shown when the server denies search engines, so the user's choice does not reach them."
+  },
+  "settings.profile.ai_opt_out": {
+    "defaultMessage": "Deny AI training and use",
+    "description": "Label of the checkbox that denies AI training on and use of the user's pages."
+  },
+  "settings.profile.ai_opt_out.description": {
+    "defaultMessage": "Your profile and post pages on this server ask AI not to train on or use them. Media files and the copies of your posts on other servers do not carry it.",
+    "description": "Help text of the AI opt-out checkbox, with its limits."
+  },
+  "settings.profile.ai_opt_out.server_denies": {
+    "defaultMessage": "{usage, select, deny_training {This server already denies AI training on every page; this also denies the use by AI search and assistants.} other {This server already denies AI training and use on every page.}}",
+    "description": "Note shown when the server already denies AI training (deny_training) or both training and use (deny)."
+  },
+  "settings.profile.characters_left": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Character count under the bio field while the text is within the limit."
+  },
+  "settings.profile.characters_over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Character count under the bio field when the text is longer than the limit."
+  },
+  "settings.profile.display_name": {
+    "defaultMessage": "Display name",
+    "description": "Label of the display name field of the profile form."
+  },
+  "settings.profile.display_name.description": {
+    "defaultMessage": "Up to {max} characters. Leave it empty to show your username.",
+    "description": "Help text of the display name field. {max} is the character limit, for example 30."
+  },
+  "settings.profile.field": {
+    "defaultMessage": "Field {number}",
+    "description": "Caption of one field of the profile form. {number} is its position, starting at 1."
+  },
+  "settings.profile.field.name": {
+    "defaultMessage": "Label",
+    "description": "Label of the name part of a profile field."
+  },
+  "settings.profile.field.name_required": {
+    "defaultMessage": "Give this field a label.",
+    "description": "Error of a profile field that has content but no label."
+  },
+  "settings.profile.field.remove": {
+    "defaultMessage": "Remove field {number}",
+    "description": "Button that removes one field from the profile form. {number} is its position, starting at 1."
+  },
+  "settings.profile.field.value": {
+    "defaultMessage": "Content",
+    "description": "Label of the value part of a profile field."
+  },
+  "settings.profile.fields": {
+    "defaultMessage": "Fields",
+    "description": "Heading of the part of the profile form with the label and content pairs shown on the profile."
+  },
+  "settings.profile.fields.add": {
+    "defaultMessage": "Add a field",
+    "description": "Button that adds an empty field to the profile form."
+  },
+  "settings.profile.fields.description": {
+    "defaultMessage": "Up to {max} pairs of a label and content, shown on your profile. Links in the content work.",
+    "description": "Help text of the profile fields. {max} is how many fields a profile can have, for example 4."
+  },
+  "settings.profile.header": {
+    "defaultMessage": "Header image",
+    "description": "Heading of the part of the profile form for the wide image at the top of the profile."
+  },
+  "settings.profile.image.choose": {
+    "defaultMessage": "Choose an image",
+    "description": "Button that opens the file picker to choose a new avatar or header image."
+  },
+  "settings.profile.image.failed": {
+    "defaultMessage": "The server could not process this image. Try another one.",
+    "description": "Error under an avatar or header image whose upload failed during processing."
+  },
+  "settings.profile.image.remove": {
+    "defaultMessage": "Remove image",
+    "description": "Button that removes the avatar or header image when the profile is saved."
+  },
+  "settings.profile.locked": {
+    "defaultMessage": "Approve followers",
+    "description": "Checkbox of the profile form: follow requests need the user's approval."
+  },
+  "settings.profile.locked.description": {
+    "defaultMessage": "People must ask to follow you, and you choose whom to accept.",
+    "description": "Help text of the 'Approve followers' checkbox."
+  },
+  "settings.profile.note": {
+    "defaultMessage": "Bio",
+    "description": "Label of the profile text field of the profile form."
+  },
+  "settings.profile.save": {
+    "defaultMessage": "Save profile",
+    "description": "Submit button of the profile form."
+  },
+  "settings.profile.saved": {
+    "defaultMessage": "Your profile has been saved.",
+    "description": "Notification after the profile was saved."
+  },
+  "settings.profile.title": {
+    "defaultMessage": "Profile",
+    "description": "Heading and document title of the settings page that edits the user's profile."
+  },
+  "settings.profile.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of a profile field whose text is longer than its limit. {max} is the limit."
+  },
+  "settings.profile.unsaved.description": {
+    "defaultMessage": "Your changes to your profile will be lost.",
+    "description": "Body of the dialog shown when the user leaves the profile settings with unsaved changes: what happens if they leave."
+  },
+  "settings.profile.unsaved.leave": {
+    "defaultMessage": "Discard changes",
+    "description": "Button of the unsaved-changes dialog that leaves the profile settings and drops the changes."
+  },
+  "settings.profile.unsaved.stay": {
+    "defaultMessage": "Keep editing",
+    "description": "Button of the unsaved-changes dialog that stays on the profile settings with the changes kept."
+  },
+  "settings.profile.unsaved.title": {
+    "defaultMessage": "Leave without saving your profile?",
+    "description": "Title (a question) of the dialog shown when the user leaves the profile settings with changes that are not saved."
+  },
+  "settings.push.denied": {
+    "defaultMessage": "Notifications are blocked for this site. To turn on push notifications, allow them in the browser's settings for this site.",
+    "description": "Shown in the push notification settings when the user blocked notifications for this site in the browser."
+  },
+  "settings.push.enable": {
+    "defaultMessage": "Notify me on this device",
+    "description": "Label of the switch that turns on Web Push notifications for this browser and signed-in session."
+  },
+  "settings.push.enable.description": {
+    "defaultMessage": "New notifications appear on this device even when the app is closed.",
+    "description": "Help text of the switch that turns on Web Push notifications."
+  },
+  "settings.push.failed": {
+    "defaultMessage": "Push notifications could not be set up on this device. Try again later.",
+    "description": "Error shown when the browser failed to subscribe to push notifications."
+  },
+  "settings.push.not_allowed": {
+    "defaultMessage": "Push notifications are off because the browser did not allow notifications.",
+    "description": "Error shown when the user did not allow notifications in the browser's permission prompt after turning on push notifications."
+  },
+  "settings.push.title": {
+    "defaultMessage": "Push notifications",
+    "description": "Heading of the section of the preferences about Web Push notifications on this device."
+  },
+  "settings.push.type.admin": {
+    "defaultMessage": "Moderator notifications",
+    "description": "Checkbox of the push notification kinds, shown to moderators only: new reports, sign-ups awaiting approval and appeals."
+  },
+  "settings.push.type.boost": {
+    "defaultMessage": "Boosts",
+    "description": "Checkbox of the push notification kinds: someone boosted the user's post."
+  },
+  "settings.push.type.favourite": {
+    "defaultMessage": "Favourites",
+    "description": "Checkbox of the push notification kinds: someone favourited the user's post."
+  },
+  "settings.push.type.follow": {
+    "defaultMessage": "New followers",
+    "description": "Checkbox of the push notification kinds: someone followed the user."
+  },
+  "settings.push.type.follow_accepted": {
+    "defaultMessage": "Accepted follow requests",
+    "description": "Checkbox of the push notification kinds: someone accepted the user's follow request."
+  },
+  "settings.push.type.follow_request": {
+    "defaultMessage": "Follow requests",
+    "description": "Checkbox of the push notification kinds: someone asked to follow the user."
+  },
+  "settings.push.type.mention": {
+    "defaultMessage": "Mentions",
+    "description": "Checkbox of the push notification kinds: a post mentions the user."
+  },
+  "settings.push.type.moderation": {
+    "defaultMessage": "Notices from the moderators",
+    "description": "Checkbox of the push notification kinds: notices and decisions of the moderators about the user's account, appeals and reports, and follows ended by a suspension."
+  },
+  "settings.push.type.reaction": {
+    "defaultMessage": "Emoji reactions",
+    "description": "Checkbox of the push notification kinds: someone reacted to the user's post with an emoji."
+  },
+  "settings.push.types.description": {
+    "defaultMessage": "Choose what this device notifies you of.",
+    "description": "Help text of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.types.label": {
+    "defaultMessage": "Notify me of",
+    "description": "Label of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.unsupported": {
+    "defaultMessage": "This browser cannot receive push notifications. On iPhone and iPad, add this site to the Home Screen and open it from there.",
+    "description": "Shown in the push notification settings when the browser has no Push API."
+  },
+  "settings.require_media_description.description": {
+    "defaultMessage": "Before you post, the post form asks for a description (alt text) of each image, video or audio file without one, so that people who cannot see or hear them can follow your posts.",
+    "description": "Help text of the switch that asks for a description of every attachment."
+  },
+  "settings.require_media_description.label": {
+    "defaultMessage": "Ask me for a description of every attachment",
+    "description": "Label of the switch that makes the post form ask for an alternative text of every attached file before posting."
+  },
+  "settings.saved": {
+    "defaultMessage": "Saved",
+    "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
+  },
+  "settings.theme.dark": {
+    "defaultMessage": "Dark",
+    "description": "Option of the color theme radio group: always the dark theme."
+  },
+  "settings.theme.description": {
+    "defaultMessage": "Applies at once and is kept on this browser.",
+    "description": "Help text of the color theme radio group on the preferences page."
+  },
+  "settings.theme.label": {
+    "defaultMessage": "Theme",
+    "description": "Label of the radio group that chooses the app's color theme, on the preferences page and in the navigation menu's sheet."
+  },
+  "settings.theme.light": {
+    "defaultMessage": "Light",
+    "description": "Option of the color theme radio group: always the light theme."
+  },
+  "settings.theme.system": {
+    "defaultMessage": "Match the system",
+    "description": "Option of the color theme radio group: follow the device's light or dark setting."
+  },
+  "settings.time_zone.device_differs": {
+    "defaultMessage": "This device is in a different time zone: {zone}.",
+    "description": "Note under the time zone select when the chosen zone is not the time zone of the device in use. {zone} is that device zone as the select names it, like (UTC+09:00) Japan Standard Time."
+  },
+  "settings.time_zone.description": {
+    "defaultMessage": "Dates and times are shown in this time zone.",
+    "description": "Help text of the time zone select."
+  },
+  "settings.time_zone.label": {
+    "defaultMessage": "Time zone",
+    "description": "Label of the select of the user's time zone."
+  },
+  "settings.time_zone.offset": {
+    "defaultMessage": "UTC{offset}",
+    "description": "Option of the time zone select for a zone that has no name, only its difference from UTC. {offset} is like +05:00 or −05:00."
+  },
+  "settings.time_zone.option": {
+    "defaultMessage": "(UTC{offset}) {name}",
+    "description": "Option of the time zone select. {offset} is the zone's difference from UTC, like +09:00 or −05:00; {name} is the zone's name in the display language, like Japan Standard Time."
+  },
+  "settings.time_zone.use_device": {
+    "defaultMessage": "Use this device's time zone",
+    "description": "Button under the time zone select that changes the setting to the time zone of the device in use; shown only when they differ."
+  },
+  "settings.timeline_auto_insert.description": {
+    "defaultMessage": "New posts appear at the top of your home timeline by themselves, and the post you are reading stays where it is. While you have focus or selected text in the timeline, they wait behind the \"new posts\" button instead.",
+    "description": "Help text of the switch that inserts new posts into the home timeline on their own."
+  },
+  "settings.timeline_auto_insert.label": {
+    "defaultMessage": "Show new posts automatically",
+    "description": "Label of the switch that makes the home timeline insert new posts on their own instead of waiting behind a button."
+  },
+  "settings.timeline_languages.description": {
+    "defaultMessage": "Timelines show posts in the languages you check. Check none to see every language.",
+    "description": "Help text of the timeline languages."
+  },
+  "settings.timeline_languages.label": {
+    "defaultMessage": "Languages of your timelines",
+    "description": "Caption of the group of checkboxes of the languages timelines show."
+  },
+  "settings.title": {
+    "defaultMessage": "Settings",
+    "description": "Heading and document title of the settings page."
+  },
+  "settings.two_factor.title": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Heading and document title of the settings page of two-factor authentication with an authenticator app, and its item in the settings menu."
+  },
+  "settings.auto_delete.title": {
+    "defaultMessage": "Delete old posts",
+    "description": "Heading and document title of the settings page of the automatic deletion of the user's own old posts, and its item in the settings menu."
+  },
+  "settings.auto_delete.description": {
+    "defaultMessage": "Once a post of yours is older than the age you choose, it is deleted here and on the servers it was sent to, as if you had deleted it. Deleted posts cannot be restored. Your boosts are not deleted.",
+    "description": "Explanation at the top of the automatic deletion settings page."
+  },
+  "settings.auto_delete.enabled": {
+    "defaultMessage": "Delete old posts automatically",
+    "description": "Label of the switch that turns the automatic deletion of old posts on."
+  },
+  "settings.auto_delete.enabled.description": {
+    "defaultMessage": "The server checks every hour and deletes at most 100 posts each time, so many old posts take several hours to go.",
+    "description": "Help of the switch of the automatic deletion of old posts."
+  },
+  "settings.auto_delete.age": {
+    "defaultMessage": "Delete posts older than",
+    "description": "Label of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.description": {
+    "defaultMessage": "Counted from when each post was published.",
+    "description": "Help of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.days": {
+    "defaultMessage": "{count, plural, one {# day} other {# days}}",
+    "description": "An age of posts in days, an option of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.keep": {
+    "defaultMessage": "Keep these posts",
+    "description": "Legend of the checkboxes of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.description": {
+    "defaultMessage": "Posts that match any checked item are never deleted automatically.",
+    "description": "Help of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.pinned": {
+    "defaultMessage": "Pinned to your profile",
+    "description": "Exception of the automatic deletion: posts pinned to the profile."
+  },
+  "settings.auto_delete.keep.bookmarked": {
+    "defaultMessage": "Bookmarked by you",
+    "description": "Exception of the automatic deletion: posts the user bookmarked."
+  },
+  "settings.auto_delete.keep.favourited": {
+    "defaultMessage": "Favourited by you",
+    "description": "Exception of the automatic deletion: posts the user favourited."
+  },
+  "settings.auto_delete.keep.media": {
+    "defaultMessage": "With images or other media",
+    "description": "Exception of the automatic deletion: posts with media attachments."
+  },
+  "settings.auto_delete.keep.polls": {
+    "defaultMessage": "With a poll",
+    "description": "Exception of the automatic deletion: posts with a poll."
+  },
+  "settings.auto_delete.visibilities": {
+    "defaultMessage": "Keep posts with these visibilities",
+    "description": "Legend of the checkboxes of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.visibilities.description": {
+    "defaultMessage": "Posts with a checked visibility are never deleted automatically.",
+    "description": "Help of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.min_boosts": {
+    "defaultMessage": "Keep posts boosted at least",
+    "description": "Label of the select of the number of boosts that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.min_favourites": {
+    "defaultMessage": "Keep posts favourited at least",
+    "description": "Label of the select of the number of favourites that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.threshold.off": {
+    "defaultMessage": "Don't keep posts for this",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion that keeps no post for it."
+  },
+  "settings.auto_delete.threshold.count": {
+    "defaultMessage": "{count, plural, one {# time} other {# times}}",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion: a number of boosts or favourites."
+  },
+  "settings.auto_delete.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the automatic deletion settings."
+  },
+  "settings.auto_delete.saved_on": {
+    "defaultMessage": "Saved. Posts older than {days, plural, one {# day} other {# days}} will be deleted, except those you keep.",
+    "description": "Status after the automatic deletion settings were saved turned on."
+  },
+  "settings.auto_delete.saved_off": {
+    "defaultMessage": "Saved. Your posts are not deleted automatically.",
+    "description": "Status after the automatic deletion settings were saved turned off."
+  },
+  "settings.auto_delete.save_failed": {
+    "defaultMessage": "The settings could not be saved: {reason}",
+    "description": "Error after saving the automatic deletion settings failed. {reason} is the localized reason."
+  },
+  "settings.auto_delete.unsaved.title": {
+    "defaultMessage": "Leave without saving?",
+    "description": "Title of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.description": {
+    "defaultMessage": "Your changes to the automatic deletion will be lost.",
+    "description": "Description of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.leave": {
+    "defaultMessage": "Discard changes",
+    "description": "Button that leaves the automatic deletion settings without saving."
+  },
+  "settings.auto_delete.unsaved.stay": {
+    "defaultMessage": "Keep editing",
+    "description": "Button that stays on the automatic deletion settings."
+  },
+  "settings.two_factor.status.title": {
+    "defaultMessage": "Current setting",
+    "description": "Heading of the region of the two-factor authentication page that says whether it is on."
+  },
+  "settings.two_factor.status": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Term of the description list: whether two-factor authentication is on."
+  },
+  "settings.two_factor.status.on": {
+    "defaultMessage": "On",
+    "description": "Value of the two-factor authentication term while it is on."
+  },
+  "settings.two_factor.status.off": {
+    "defaultMessage": "Off. Signing in asks only for your password.",
+    "description": "Text of the two-factor authentication page while it is off."
+  },
+  "settings.two_factor.enrolled_at": {
+    "defaultMessage": "Turned on",
+    "description": "Term of the description list: when two-factor authentication was turned on; the value is a date and time."
+  },
+  "settings.two_factor.recovery_codes.remaining": {
+    "defaultMessage": "Unused recovery codes",
+    "description": "Term of the description list: how many recovery codes are left; the value is a number."
+  },
+  "settings.two_factor.setup.title": {
+    "defaultMessage": "Set up an authenticator app",
+    "description": "Heading of the region that enrolls an authenticator app while two-factor authentication is off."
+  },
+  "settings.two_factor.setup.description": {
+    "defaultMessage": "Add this account to an authenticator app on your phone. From then on, signing in also asks for the six-digit code that the app shows.",
+    "description": "Explanation above the button that starts setting up an authenticator app."
+  },
+  "settings.two_factor.setup.start": {
+    "defaultMessage": "Set up",
+    "description": "Button that generates a new secret to add to an authenticator app."
+  },
+  "settings.two_factor.setup.step.scan": {
+    "defaultMessage": "Scan the QR code with your authenticator app, or type the key below into it.",
+    "description": "First step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.step.confirm": {
+    "defaultMessage": "Enter the six-digit code that the app shows to turn on two-factor authentication.",
+    "description": "Second step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.qr_code": {
+    "defaultMessage": "QR code for your authenticator app",
+    "description": "Accessible name of the QR code image that holds the secret for the authenticator app."
+  },
+  "settings.two_factor.setup.secret": {
+    "defaultMessage": "Key",
+    "description": "Label of the secret shown as text, for typing it into an authenticator app instead of scanning the QR code."
+  },
+  "settings.two_factor.setup.code.description": {
+    "defaultMessage": "The six-digit code that the app shows now.",
+    "description": "Help under the code field that confirms the setup of an authenticator app."
+  },
+  "settings.two_factor.setup.submit": {
+    "defaultMessage": "Turn on",
+    "description": "Button that turns two-factor authentication on with the code of the app."
+  },
+  "settings.two_factor.setup.expired": {
+    "defaultMessage": "The setup took too long. Start again.",
+    "description": "Error when the setup of an authenticator app expired (after 15 minutes) before its code was entered."
+  },
+  "settings.two_factor.code": {
+    "defaultMessage": "Authentication code",
+    "description": "Label of the field for a code of the authenticator app or a recovery code."
+  },
+  "settings.two_factor.code.description": {
+    "defaultMessage": "A code from your authenticator app, or one of your recovery codes.",
+    "description": "Help under the code field that confirms replacing the recovery codes or turning two-factor authentication off."
+  },
+  "settings.two_factor.code.required": {
+    "defaultMessage": "Enter the code.",
+    "description": "Error of an empty code field."
+  },
+  "settings.two_factor.code.invalid": {
+    "defaultMessage": "The code is incorrect or was already used.",
+    "description": "Error of the code field when the server refused the code."
+  },
+  "settings.two_factor.state_changed": {
+    "defaultMessage": "Two-factor authentication was changed elsewhere. The page now shows its current setting.",
+    "description": "Error when two-factor authentication was turned on or off in another tab or device meanwhile."
+  },
+  "settings.two_factor.rate_limited": {
+    "defaultMessage": "Too many incorrect codes: {reason}",
+    "description": "Error after too many wrong codes. {reason} is the server's explanation of when to try again."
+  },
+  "settings.two_factor.failed": {
+    "defaultMessage": "Could not change two-factor authentication: {reason}",
+    "description": "Error when a change of two-factor authentication failed. {reason} is the server's explanation."
+  },
+  "settings.two_factor.enabled": {
+    "defaultMessage": "Two-factor authentication is on.",
+    "description": "Status message after turning two-factor authentication on."
+  },
+  "settings.two_factor.disabled": {
+    "defaultMessage": "Two-factor authentication is off.",
+    "description": "Status message after turning two-factor authentication off."
+  },
+  "settings.two_factor.recovery_codes.title": {
+    "defaultMessage": "Recovery codes",
+    "description": "Heading of the region that replaces the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.description": {
+    "defaultMessage": "If you lose your authenticator app, sign in with a recovery code instead. Each code works once. New codes replace the old ones, which stop working.",
+    "description": "Explanation of the recovery codes above the form that replaces them."
+  },
+  "settings.two_factor.recovery_codes.replace": {
+    "defaultMessage": "Replace recovery codes",
+    "description": "Button that replaces the recovery codes with new ones."
+  },
+  "settings.two_factor.recovery_codes.replaced": {
+    "defaultMessage": "New recovery codes are ready. The old ones no longer work.",
+    "description": "Status message after replacing the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.new.title": {
+    "defaultMessage": "Save your recovery codes",
+    "description": "Heading of the list of new recovery codes, which is shown only once."
+  },
+  "settings.two_factor.recovery_codes.new.description": {
+    "defaultMessage": "Keep these codes somewhere safe, such as a password manager. They are shown only now. Each one signs you in once without the app.",
+    "description": "Text above the list of new recovery codes."
+  },
+  "settings.two_factor.disable.title": {
+    "defaultMessage": "Turn off two-factor authentication",
+    "description": "Heading of the region that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.description": {
+    "defaultMessage": "Signing in will ask only for your password. Enter a code to confirm.",
+    "description": "Explanation above the form that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.submit": {
+    "defaultMessage": "Turn off",
+    "description": "Button that turns two-factor authentication off."
+  },
+  "settings.passkeys.title": {
+    "defaultMessage": "Passkeys",
+    "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Once you have a passkey, you can remove your password on the password page.",
+    "description": "Explanation at the top of the passkeys settings page."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "Add a passkey",
+    "description": "Heading of the form that adds a passkey on the passkeys settings page."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "Name the passkey so that you can tell it apart, and enter your password to confirm. Your browser then asks where to save the passkey.",
+    "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.add.description_passkey": {
+    "defaultMessage": "Name the passkey so that you can tell it apart. Your browser asks for one of your passkeys to confirm, then where to save the new one.",
+    "description": "Explanation of the form that adds a passkey for a user who has no password: an existing passkey confirms adding the new one."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "Name",
+    "description": "Label of the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "Such as the device or password manager that keeps it.",
+    "description": "Hint under the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "Enter a name.",
+    "description": "Error of the empty name field of a new passkey."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "Current password",
+    "description": "Label of the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "Adding a way to sign in needs your password.",
+    "description": "Hint under the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "Enter your password.",
+    "description": "Error of the empty password field when adding a passkey."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "Add passkey",
+    "description": "Button that adds a passkey: it checks the password and opens the browser's prompt."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error of the password field when the server refused the password that confirms adding a passkey."
+  },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "No passkey was added: the browser's prompt was closed or timed out. Try again.",
+    "description": "Alert when the user dismissed the browser's passkey prompt or it timed out."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "This device or password manager already has a passkey for your account.",
+    "description": "Alert when the authenticator already holds a passkey of the account."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "The browser could not create a passkey for this site.",
+    "description": "Alert when the browser refused to create a passkey for another reason (unsupported, or the site's address does not allow it)."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "The passkey could not be verified. Try again with another device or password manager.",
+    "description": "Alert when the server could not verify the new passkey (for example, the device has no screen lock)."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "Adding the passkey took too long. Try again.",
+    "description": "Alert when the passkey was created after the registration expired (5 minutes)."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "You have as many passkeys as allowed. Remove one first.",
+    "description": "Alert when the user already has the most passkeys allowed (20)."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "Too many incorrect passwords: {reason}",
+    "description": "Alert when too many wrong passwords were entered to add a passkey. {reason} is the server's message, which says when to try again."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "Could not add the passkey: {reason}",
+    "description": "Alert when adding a passkey failed for another reason. {reason} is the error's message."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "The passkey “{name}” was added.",
+    "description": "Status after a passkey was added. {name} is the name the user gave it."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "This browser cannot create passkeys. Open this page in a browser that supports them to add one.",
+    "description": "Note instead of the form that adds a passkey, in a browser without passkey support."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "Your passkeys",
+    "description": "Heading of the list of the user's passkeys."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "No passkeys yet",
+    "description": "Empty state of the list of the user's passkeys."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "Added {date}",
+    "description": "When a passkey was added, under its name. {date} is a formatted date and time."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "Remove",
+    "description": "Button that removes a passkey, and the confirm button of its dialog."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "Remove the passkey “{name}”?",
+    "description": "Title of the dialog that confirms removing a passkey. {name} is its name."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "You will no longer be able to sign in with it. Delete it from your device or password manager too.",
+    "description": "Explanation in the dialog that confirms removing a passkey."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the dialog without removing the passkey."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "Could not remove the passkey: {reason}",
+    "description": "Alert in the dialog when removing a passkey failed. {reason} is the error's message."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "The passkey “{name}” was removed.",
+    "description": "Announcement after a passkey was removed. {name} is its name."
+  },
+  "settings.password.title": {
+    "defaultMessage": "Password",
+    "description": "Title of the settings page that changes the password, and its entry in the settings menu."
+  },
+  "settings.password.description": {
+    "defaultMessage": "Changing the password signs you out of every other browser and app. Your passkeys and two-factor authentication stay as they are.",
+    "description": "Text at the top of the settings page that changes the password."
+  },
+  "settings.password.change.title": {
+    "defaultMessage": "Change the password",
+    "description": "Heading of the form that changes the password with the current one, on the password settings page."
+  },
+  "settings.password.current": {
+    "defaultMessage": "Current password",
+    "description": "Label of the field of the current password, which confirms a password change."
+  },
+  "settings.password.current.required": {
+    "defaultMessage": "Enter your current password.",
+    "description": "Error of the empty current password field when changing the password."
+  },
+  "settings.password.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error of the current password field when the server refused it."
+  },
+  "settings.password.new": {
+    "defaultMessage": "New password",
+    "description": "Label of the field of the new password."
+  },
+  "settings.password.new.description": {
+    "defaultMessage": "{min, number} to {max, number} characters.",
+    "description": "Hint under the new password field. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.new.invalid": {
+    "defaultMessage": "Use {min, number} to {max, number} characters.",
+    "description": "Error of the new password field when it is empty, too short, or too long. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.submit": {
+    "defaultMessage": "Change password",
+    "description": "Button that changes the password."
+  },
+  "settings.password.changed": {
+    "defaultMessage": "Your password is changed. Other browsers and apps are signed out.",
+    "description": "Status after the password was changed."
+  },
+  "settings.password.rate_limited": {
+    "defaultMessage": "Too many incorrect passwords: {reason}",
+    "description": "Alert when too many wrong current passwords were entered to change the password. {reason} is the server's message, which says when to try again."
+  },
+  "settings.password.failed": {
+    "defaultMessage": "Could not change the password: {reason}",
+    "description": "Alert when changing the password failed for another reason. {reason} is the error's message."
+  },
+  "settings.password.remove.title": {
+    "defaultMessage": "Remove the password",
+    "description": "Heading of the section that removes the password, so that only passkeys sign in, on the password settings page."
+  },
+  "settings.password.remove.description": {
+    "defaultMessage": "Sign in with your passkeys only. One of your passkeys confirms the removal, and you are signed out of every other browser and app. You can set a password again on this page or with a password reset link.",
+    "description": "Explanation of the section that removes the password."
+  },
+  "settings.password.remove.no_passkey": {
+    "defaultMessage": "Add a passkey before you remove the password, so that you can still sign in.",
+    "description": "Note instead of the button that removes the password, for a user who has no passkey."
+  },
+  "settings.password.remove.open": {
+    "defaultMessage": "Remove password…",
+    "description": "Button that opens the dialog that removes the password."
+  },
+  "settings.password.remove.confirm.title": {
+    "defaultMessage": "Remove your password?",
+    "description": "Title of the dialog that confirms removing the password."
+  },
+  "settings.password.remove.confirm.description": {
+    "defaultMessage": "From now on you sign in with your passkeys only. Your browser asks for one of them to confirm.",
+    "description": "Description of the dialog that removes the password: the confirm button opens the browser's passkey prompt."
+  },
+  "settings.password.remove.confirm": {
+    "defaultMessage": "Remove password",
+    "description": "Button in the dialog that removes the password after the browser's passkey prompt."
+  },
+  "settings.password.remove.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the dialog without removing the password."
+  },
+  "settings.password.removed": {
+    "defaultMessage": "Your password is removed. Sign in with your passkeys from now on. Other browsers and apps are signed out.",
+    "description": "Status after the password was removed."
+  },
+  "settings.password.remove.failed": {
+    "defaultMessage": "Could not remove the password: {reason}",
+    "description": "Alert in the dialog when removing the password failed. {reason} is the error's message."
+  },
+  "settings.password.set.title": {
+    "defaultMessage": "Set a password",
+    "description": "Heading of the form that sets a password for a user who removed theirs and signs in with passkeys only."
+  },
+  "settings.password.set.description": {
+    "defaultMessage": "You sign in with your passkeys. Set a password to sign in with your email address and password too. Your browser asks for one of your passkeys to confirm, and you are signed out of every other browser and app.",
+    "description": "Explanation of the form that sets a password for a user who has none."
+  },
+  "settings.password.set.submit": {
+    "defaultMessage": "Set password",
+    "description": "Button that sets a password after the browser's passkey prompt, for a user who has none."
+  },
+  "settings.password.set.done": {
+    "defaultMessage": "Your password is set. Other browsers and apps are signed out.",
+    "description": "Status after a user who had no password set one."
+  },
+  "settings.password.passkeys_unsupported": {
+    "defaultMessage": "This browser cannot use passkeys, which confirm this. Open this page in a browser that supports them.",
+    "description": "Note instead of a form or button of the password page that a passkey confirms (removing or setting the password), in a browser without passkey support."
+  },
+  "settings.passkey_confirmation.cancelled": {
+    "defaultMessage": "Your passkey was not used: the browser's prompt was closed or timed out. Try again.",
+    "description": "Alert when the user dismissed the browser's passkey prompt that confirms an operation (deleting the account, setting or removing the password, adding a passkey), or it timed out."
+  },
+  "settings.passkey_confirmation.unavailable": {
+    "defaultMessage": "The browser could not use a passkey for this site.",
+    "description": "Alert when the browser refused the passkey prompt that confirms an operation for another reason (unsupported, or the site's address)."
+  },
+  "settings.passkey_confirmation.invalid": {
+    "defaultMessage": "The passkey could not be verified. Use a passkey of this account.",
+    "description": "Alert when the server did not accept the passkey that confirms an operation (another account's passkey, a removed one, or one that does not verify)."
+  },
+  "settings.passkey_confirmation.expired": {
+    "defaultMessage": "Confirming with the passkey took too long. Try again.",
+    "description": "Alert when the passkey that confirms an operation was given after the confirmation expired (5 minutes)."
+  },
+  "settings.visibility.direct": {
+    "defaultMessage": "Mentioned people",
+    "description": "Visibility option: only the mentioned accounts."
+  },
+  "settings.visibility.direct.description": {
+    "defaultMessage": "Only the people you mention",
+    "description": "Description of the 'Mentioned people' visibility option."
+  },
+  "settings.visibility.local": {
+    "defaultMessage": "This server",
+    "description": "Visibility option: signed-in users of this server and followers."
+  },
+  "settings.visibility.local.description": {
+    "defaultMessage": "People signed in to this server, and your followers",
+    "description": "Description of the 'This server' visibility option."
+  },
+  "settings.visibility.private": {
+    "defaultMessage": "Followers",
+    "description": "Visibility option: followers and mentioned accounts."
+  },
+  "settings.visibility.private.description": {
+    "defaultMessage": "Your followers and the people you mention",
+    "description": "Description of the 'Followers' visibility option."
+  },
+  "settings.visibility.public": {
+    "defaultMessage": "Public",
+    "description": "Visibility option: everyone, listed on public timelines."
+  },
+  "settings.visibility.public.description": {
+    "defaultMessage": "Everyone, and shown on public timelines",
+    "description": "Description of the 'Public' visibility option."
+  },
+  "settings.visibility.unlisted": {
+    "defaultMessage": "Unlisted",
+    "description": "Visibility option: everyone, but kept off public timelines."
+  },
+  "settings.visibility.unlisted.description": {
+    "defaultMessage": "Everyone, but kept off public timelines",
+    "description": "Description of the 'Unlisted' visibility option."
+  },
+  "settings.profile.display_name.emoji": {
+    "defaultMessage": "Add emoji to the display name",
+    "description": "Accessible name and tooltip of the button that opens the custom emoji picker for the display name."
+  },
+  "settings.profile.note.emoji": {
+    "defaultMessage": "Add emoji to the bio",
+    "description": "Accessible name and tooltip of the button that opens the custom emoji picker for the bio."
+  },
+  "settings.profile.badges": {
+    "defaultMessage": "Badges",
+    "description": "Heading of the section of the profile settings that chooses which role badges the profile shows (ADR-0071)."
+  },
+  "settings.profile.badges.description": {
+    "defaultMessage": "Choose which badges of your roles to show on your profile. A badge stays hidden until you show it, and shows on your profile only.",
+    "description": "Explanation of the badges section."
+  },
+  "settings.profile.badges.shown": {
+    "defaultMessage": "{badge} is shown on your profile.",
+    "description": "Announced when a badge is shown. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.hidden": {
+    "defaultMessage": "{badge} is no longer shown on your profile.",
+    "description": "Announced when a badge is hidden. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.failed": {
+    "defaultMessage": "Could not change the badge: {reason}",
+    "description": "Error under a badge's switch when the change was not saved. {reason} is the localized reason."
+  },
+  "settings.domain_mutes.title": {
+    "defaultMessage": "Muted domains",
+    "description": "Heading and document title of the settings page with the domains the user mutes."
+  },
+  "settings.domain_mutes.description": {
+    "defaultMessage": "Muting a domain hides the posts of its accounts, and of its subdomains' accounts, from your timelines other than home, their boosts from your home timeline, and their notifications. The accounts you follow stay on your home timeline. Only you are affected, and the server is not told.",
+    "description": "Explains what muting a domain does, at the top of the muted domains page."
+  },
+  "settings.domain_mutes.new.title": {
+    "defaultMessage": "Mute a domain",
+    "description": "Heading of the section of the muted domains page with the form that mutes a domain."
+  },
+  "settings.domain_mutes.list.title": {
+    "defaultMessage": "Domains you mute",
+    "description": "Heading of the section of the muted domains page that lists them."
+  },
+  "settings.domain_mutes.domain": {
+    "defaultMessage": "Domain",
+    "description": "Label of the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.description": {
+    "defaultMessage": "The domain of the server, such as mastodon.example. Its subdomains are muted too.",
+    "description": "Help under the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.required": {
+    "defaultMessage": "Enter a domain.",
+    "description": "Error under the domain field when the user mutes without entering a domain."
+  },
+  "settings.domain_mutes.mute": {
+    "defaultMessage": "Mute",
+    "description": "Button that mutes the domain entered in the field."
+  },
+  "settings.domain_mutes.mute_failed": {
+    "defaultMessage": "Could not mute the domain: {reason}",
+    "description": "Shown under the form when muting a domain fails. {reason} is the server's explanation."
+  },
+  "settings.domain_mutes.muted": {
+    "defaultMessage": "You muted {domain}.",
+    "description": "Shown under the form after a domain was muted. {domain} is the domain."
+  },
+  "settings.domain_mutes.empty": {
+    "defaultMessage": "You do not mute any domain",
+    "description": "Shown when the user mutes no domain."
+  },
+  "settings.domain_mutes.since": {
+    "defaultMessage": "Muted on {date}",
+    "description": "When the domain was muted, under a muted domain. {date} is a formatted date and time."
+  },
+  "settings.domain_mutes.unmute": {
+    "defaultMessage": "Unmute",
+    "description": "Button that unmutes a domain."
+  },
+  "settings.domain_mutes.unmuted": {
+    "defaultMessage": "You unmuted {domain}.",
+    "description": "Announced after a domain was unmuted. {domain} is the domain."
+  },
+  "settings.import_export.kind.domain_mutes": {
+    "defaultMessage": "Muted domains",
+    "description": "Name of the list of domains the user mutes, as one kind of CSV file to export or import."
+  },
+  "settings.default_quote_policy.label": {
+    "defaultMessage": "Who can quote your new posts",
+    "description": "Label of the setting of who may quote the user's new posts."
+  },
+  "settings.default_quote_policy.description": {
+    "defaultMessage": "You can choose it for each post too.",
+    "description": "Description of the setting of who may quote the user's new posts."
+  },
+  "settings.push.type.quote": {
+    "defaultMessage": "Quotes",
+    "description": "Checkbox of the push notification settings: notifications when someone quotes the user's post."
+  }
+}
