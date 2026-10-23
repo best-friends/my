@@ -1,0 +1,168 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The web client and the client workspace (ADR-0025, ADR-0026; the web context of scripts/changed-contexts.sh).
+# app/ is the Bun workspace of the TypeScript clients (app/ui = @my/ui, app/web). Bun installs the packages and runs
+# their scripts; Vite runs on Node.js from .tool-versions, because the scripts' `vite` is a `#!/usr/bin/env node`
+# bin. Do not add --bun (ADR-0025).
+version: "3"
+
+vars:
+  # internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its .gitkeep is
+  # committed, so Go builds and tests need no Bun; go:bin embeds the real build.
+  WEB_EMBED_DIR: internal/interface/web/dist
+
+tasks:
+  # web:lint-rules copies its violation fixtures into app/web/src while it runs, so the tasks that read app/web/src
+  # (tsc, Oxlint, knip, the build, Vitest, the token scan) run after it, never beside it.
+  check:
+    desc: Run the offline checks of app/web and the workspace-wide client checks (Oxlint, knip, licenses, tokens), in parallel
+    deps: [lint-rules]
+    cmds:
+      - task: check-after-lint-rules
+
+  check-after-lint-rules:
+    internal: true
+    deps: [static, lint-css, licenses, tokens, test, playwright-image-check]
+
+  static:
+    desc: Run tsc, Oxlint, knip, and the Vite build with its route tree check in parallel (without web:lint-rules, which must not run beside them)
+    deps: [typecheck, oxlint, knip, routes-check]
+
+  install:
+    desc: Install the pinned client workspace dependencies (app/bun.lock)
+    run: once
+    dir: app
+    cmds:
+      - bun install --frozen-lockfile
+
+  typecheck:
+    desc: Type-check app/web with tsc (incremental, node_modules/.cache/tsc)
+    deps: [install]
+    dir: app/web
+    cmds:
+      - bun run typecheck
+
+  # web:check builds into app/web/dist only, never into internal/interface/web/dist that the Go builds embed.
+  dist:
+    desc: Build app/web into app/web/dist (fails when React Compiler compiled nothing or skipped a function)
+    deps: [install]
+    run: once
+    dir: app
+    cmds:
+      - bun run build
+
+  build:
+    desc: Build app/web and copy the build to internal/interface/web/dist for embedding
+    deps: [dist]
+    cmds:
+      - find {{.WEB_EMBED_DIR}} -mindepth 1 ! -name .gitkeep -delete
+      - cp -R app/web/dist/. {{.WEB_EMBED_DIR}}/
+
+  routes-check:
+    desc: Fail when the committed app/web/src/routeTree.gen.ts differs from the one the build generates
+    deps: [dist]
+    cmds:
+      - >-
+        git diff --exit-code --quiet -- app/web/src/routeTree.gen.ts
+        || { echo 'app/web/src/routeTree.gen.ts was stale and the build regenerated it; commit it (docs/architecture/web-client.md §9)' >&2; exit 1; }
+
+  licenses:
+    desc: Fail on client npm dependency licenses incompatible with AGPL-3.0
+    deps: [install, ":i18n:install"]
+    dir: tools/i18n
+    cmds:
+      - bun run src/licenses.ts {{.NPM_ALLOWED_LICENSES}} ../../app/node_modules
+
+  lint:
+    desc: Lint the client workspace, the tests of the Oxlint restrictions first, then Oxlint, knip, and no 100vh in CSS in parallel
+    deps: [lint-rules]
+    cmds:
+      - task: lint-after-lint-rules
+
+  lint-after-lint-rules:
+    internal: true
+    deps: [oxlint, knip, lint-css]
+
+  oxlint:
+    desc: Run Oxlint on the client workspace (app/.oxlintrc.json)
+    deps: [install]
+    dir: app
+    cmds:
+      - bun run lint
+
+  lint-rules:
+    desc: Test the Oxlint restrictions and their violation fixtures (app/oxlint), which it copies into app/web/src
+    deps: [install]
+    run: once
+    dir: app
+    cmds:
+      - bun run lint:rules
+
+  knip:
+    desc: Find unused files, exports, and dependencies of the client workspace with knip
+    deps: [install]
+    dir: app
+    cmds:
+      - bun run knip
+
+  lint-css:
+    desc: Fail when CSS uses 100vh (docs/architecture/web-client.md D5)
+    cmds:
+      - >-
+        ! grep -rn --include='*.css' '100vh' app/ui/src app/web/src
+        || { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
+
+  tokens:
+    desc: Check the @my/ui design tokens, WCAG AA contrast of every token pair, no palette / arbitrary colors or token values, motion only under motion-safe, the generated token list up to date
+    deps: [install]
+    dir: app/ui
+    cmds:
+      - bun run check-tokens
+
+  tokens-gen:
+    desc: Regenerate the list of the tokens a server theme may override (ADR-0059) from app/ui/src/theme.css and tokens.ts
+    deps: [install]
+    sources:
+      - app/ui/src/theme.css
+      - app/ui/src/tokens.ts
+      - app/ui/scripts/theme-tokens.ts
+    generates:
+      - app/ui/src/themeTokens.gen.ts
+      - internal/domain/instance/theme_tokens.gen.go
+    cmds:
+      - cd app/ui && bun run scripts/theme-tokens.ts
+
+  test:
+    desc: Run the app/web component tests with Vitest (jsdom + MSW); SHARD=1/2 runs one of two shards
+    deps: [install]
+    dir: app/web
+    cmds:
+      - bun run test{{if .SHARD}} --shard={{.SHARD}}{{end}}
+
+  # Playwright runs against `vite preview` of the fresh build, and the server-rendered pages against `my serve` on
+  # SQLite from the fresh bin/my (app/web/e2e/server.ts). E2E_MATRIX=full runs every width × locale project
+  # (nightly); the default is the default subset (app/web/playwright.config.ts). It runs every test in one go; CI
+  # (web-e2e.yml) builds once and runs the tests as Playwright shards in the pinned Playwright image. Locally,
+  # install the browser once with web:e2e-install. Both servers listen on free ports picked per run
+  # (E2E_PREVIEW_PORT / E2E_SERVER_PORT fix them), so parallel runs in several worktrees stay apart;
+  # E2E_BASE_URL / E2E_SERVER_URL test servers started elsewhere instead.
+  e2e:
+    desc: Run the web E2E tests with Playwright (E2E_MATRIX=full for the whole matrix)
+    deps: [":go:bin"]
+    dir: app/web
+    cmds:
+      - bun run e2e
+
+  e2e-install:
+    desc: Download the Playwright browser that web:e2e uses (local runs only)
+    deps: [install]
+    dir: app/web
+    cmds:
+      - bun run playwright install chromium
+
+  playwright-image-check:
+    desc: Fail if a workflow's Playwright image or a playwright package version differs from PLAYWRIGHT_IMAGE
+    env:
+      PLAYWRIGHT_IMAGE: "{{.PLAYWRIGHT_IMAGE}}"
+    cmds:
+      - scripts/playwright-image-check.sh

@@ -60,6 +60,7 @@ jobs:
           echo "total=$total" >> "$GITHUB_OUTPUT"
           echo "list=$(jq -nc --argjson n "$total" '[range(1; $n + 1)]')" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-task
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
@@ -79,10 +80,10 @@ jobs:
           cache-dependency-path: |
             go.mod
             go.sum
-      # `make build` builds app/web/dist (vite preview serves it) and bin/my with it embedded (e2e/server.ts
+      # go:bin builds app/web/dist (vite preview serves it) and bin/my with it embedded (e2e/server.ts
       # starts it).
-      - name: make build
-        run: make build
+      - name: go:bin
+        run: scripts/task.sh go:bin
       # Artifacts drop file modes, so the build travels as a tarball that keeps bin/my executable.
       - name: Pack the build
         run: tar -cf "$RUNNER_TEMP/e2e-build.tar" bin/my app/web/dist
@@ -101,8 +102,8 @@ jobs:
         shard: ${{ fromJSON(needs.build.outputs.shards) }}
     name: shard ${{ matrix.shard }}/${{ needs.build.outputs.total }}
     # The official Playwright image, pinned by digest, provides the browsers and their system libraries.
-    # Its tag must match @playwright/test in app/web/package.json, and it must equal PLAYWRIGHT_IMAGE in the Makefile
-    # (`make playwright-image-check`).
+    # Its tag must match @playwright/test in app/web/package.json, and it must equal PLAYWRIGHT_IMAGE in Taskfile.yml
+    # (`scripts/task.sh web:playwright-image-check`).
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host

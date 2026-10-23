@@ -35,7 +35,7 @@ jobs:
       matrix:
         include:
           # Go is analyzed from the CGO_ENABLED=0 build of the main module (manual build mode; Go has no `none` mode,
-          # and autobuild would run the Makefile's default target first).
+          # and autobuild would guess the build instead of building the main module alone).
           - language: go
             build-mode: manual
           # Read without building: app/ (the Bun workspace) and tools/i18n, as configured in the config file.

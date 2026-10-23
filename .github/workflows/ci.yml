@@ -1,6 +1,6 @@
 name: CI
 
-# The entry of the pull request and merge queue checks (ADR-0047): `changes` selects the contexts of `make check` the
+# The entry of the pull request and merge queue checks (ADR-0047): `changes` selects the contexts of `scripts/task.sh check` the
 # change touches, one job per context calls that context's reusable workflow (ctx-<context>.yml), and `check`
 # collects their results into the single required status check. The workflow has no path filter, so it always runs
 # and `check` always reports. Pushes to main run main.yml instead.
@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # `make check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request or
+  # `scripts/task.sh check` split by context (scripts/changed-contexts.sh): a context's job runs only when the pull request or
   # the merge group touches that context or one it depends on. A change to shared configuration runs them all.
   changes:
     runs-on: ubuntu-latest

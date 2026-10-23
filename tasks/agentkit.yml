@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# agentkit (tools/agentkit): the context and workflow tools for coding agents, a Go module of its own
+# (tools/agentkit/README.md). Its dependencies stay within the server's go.sum, so go:licenses covers their licenses.
+version: "3"
+
+tasks:
+  build:
+    desc: Build bin/agentkit, the context and workflow tools for coding agents (scripts/agentkit.sh builds it on demand)
+    dir: tools/agentkit
+    sources: ["**/*.go", go.mod, go.sum]
+    generates: [../../bin/agentkit]
+    cmds:
+      - CGO_ENABLED=0 go build -o ../../bin/agentkit ./cmd/agentkit
+
+  check:
+    desc: Check tools/agentkit (tidy, vet, lint, tests, dependencies) and that its context map covers every path
+    deps: [mod-check, vet, lint, test, deps-check, map-check]
+
+  mod-check:
+    desc: Fail if tools/agentkit/go.mod and go.sum are not tidy
+    dir: tools/agentkit
+    cmds:
+      - go mod tidy -diff
+
+  vet:
+    desc: Run go vet on tools/agentkit
+    dir: tools/agentkit
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint on tools/agentkit
+    dir: tools/agentkit
+    cmds:
+      # golangci-lint holds a lock while it runs: wait for it rather than fail beside go:lint or agentkit:lint.
+      - golangci-lint run --allow-serial-runners ./...
+
+  test:
+    desc: Run the tools/agentkit tests
+    dir: tools/agentkit
+    cmds:
+      - go test ./...
+
+  deps-check:
+    desc: Fail when tools/agentkit uses a module version the server module does not
+    cmds:
+      - scripts/agentkit-deps-check.sh
+
+  map-check:
+    desc: Fail when tools/agentkit/context-map.yaml does not cover every path
+    deps: [build]
+    cmds:
+      - bin/agentkit map check

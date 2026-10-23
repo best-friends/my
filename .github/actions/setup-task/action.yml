@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Set up go-task
+description: >-
+  Restore bin/task, the go-task that scripts/task.sh runs (ADR-0080), from the cache keyed on tools/go.mod and
+  tools/go.sum, or build it with the Go of .tool-versions on a miss. Run it after actions/checkout.
+
+runs:
+  using: composite
+  steps:
+    - name: Restore bin/task
+      id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          bin/task
+          bin/task.sum
+        key: go-task-${{ runner.os }}-${{ hashFiles('tools/go.mod', 'tools/go.sum') }}
+    # Only a miss needs Go; a job that runs Go itself sets it up on its own.
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: .tool-versions
+        cache: false
+    - name: Build bin/task
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GOTOOLCHAIN: local
+      run: scripts/task.sh --version
