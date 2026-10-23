@@ -5,10 +5,15 @@ package valkey_test
 import (
 	"bufio"
 	"context"
+	"io"
+	"net"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	valkeygo "github.com/valkey-io/valkey-go"
@@ -90,6 +95,119 @@ func TestStreamBrokerContractRelay(t *testing.T) {
 			},
 		}
 	})
+}
+
+// Send delivers its payload when the pooled connection it uses was cut and the client has not
+// noticed yet, as right after a server restart: the PUBLISH on it fails, and Send sends it
+// again on a new connection.
+func TestSendOnCutConnection(t *testing.T) {
+	m := miniredis.RunT(t)
+	listening := streamvalkey.New(open(t, "redis://"+m.Addr()), "")
+	const payload = "after the cut"
+	arrived := make(chan struct{}, 1)
+	l, err := listening.Listen(t.Context(), func(p []byte) {
+		if string(p) == payload {
+			arrived <- struct{}{}
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = l.Close(context.Background()) })
+
+	// The sender reaches the server through a proxy that cuts its open connections, the way a
+	// restarted server does before the client notices. The client is a single one, which keeps
+	// to the proxy's address instead of the node addresses that CLUSTER SHARDS reports.
+	p := newCutProxy(t, m.Addr())
+	opt, err := valkeygo.ParseURL("redis://" + p.addr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	opt.DisableCache, opt.ForceSingleClient = true, true
+	c, err := valkeygo.NewClient(opt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(c.Close)
+	sending := streamvalkey.New(c, "")
+	if err := sending.Send(t.Context(), []byte("before the cut")); err != nil {
+		t.Fatal(err)
+	}
+	p.cut()
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	if err := sending.Send(ctx, []byte(payload)); err != nil {
+		t.Fatalf("Send on a cut connection: %v", err)
+	}
+	select {
+	case <-arrived:
+	case <-ctx.Done():
+		t.Error("the payload sent on a cut connection did not arrive")
+	}
+}
+
+// cutProxy forwards TCP connections to a server; cut makes every connection open at that
+// time close, without forwarding, as soon as its client writes again.
+type cutProxy struct {
+	ln     net.Listener
+	mu     sync.Mutex
+	doomed []*atomic.Bool
+}
+
+func newCutProxy(t *testing.T, target string) *cutProxy {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := &cutProxy{ln: ln}
+	t.Cleanup(func() { _ = ln.Close() })
+	go func() {
+		for {
+			client, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			server, err := net.Dial("tcp", target)
+			if err != nil {
+				_ = client.Close()
+				continue
+			}
+			doomed := new(atomic.Bool)
+			p.mu.Lock()
+			p.doomed = append(p.doomed, doomed)
+			p.mu.Unlock()
+			closeBoth := func() { _ = client.Close(); _ = server.Close() }
+			go func() {
+				_, _ = io.Copy(client, server)
+				closeBoth()
+			}()
+			go func() {
+				defer closeBoth()
+				buf := make([]byte, 4096)
+				for {
+					n, err := client.Read(buf)
+					if err != nil || doomed.Load() {
+						return
+					}
+					if _, err := server.Write(buf[:n]); err != nil {
+						return
+					}
+				}
+			}()
+		}
+	}()
+	return p
+}
+
+func (p *cutProxy) addr() string { return p.ln.Addr().String() }
+
+func (p *cutProxy) cut() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for _, d := range p.doomed {
+		d.Store(true)
+	}
 }
 
 // Buses with different key prefixes on one server do not receive each other's payloads.

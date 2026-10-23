@@ -43,9 +43,15 @@ func New(client valkey.Client, keyPrefix string) *Bus {
 	return &Bus{client: client, channel: Channel(keyPrefix)}
 }
 
-// Send implements stream.Bus with a PUBLISH on a pooled connection.
+// Send implements stream.Bus with a PUBLISH on a pooled connection. valkey-go retries no
+// PUBLISH by itself, so a pooled connection that the server cut (a restart, a failover) and
+// that the client has not noticed yet would fail the first PUBLISH on it and lose the payload
+// although the server is back. The PUBLISH is marked retryable instead: valkey-go sends it
+// again on a new connection until ctx's deadline. A PUBLISH that reached the server before
+// its reply was lost then arrives twice, which stream.Bus allows.
 func (b *Bus) Send(ctx context.Context, payload []byte) error {
-	if err := b.client.Do(ctx, b.client.B().Publish().Channel(b.channel).Message(string(payload)).Build()).Error(); err != nil {
+	cmd := b.client.B().Publish().Channel(b.channel).Message(string(payload)).Build().ToRetryable()
+	if err := b.client.Do(ctx, cmd).Error(); err != nil {
 		return fmt.Errorf("stream/valkey: publish: %w", err)
 	}
 	return nil
