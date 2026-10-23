@@ -28,7 +28,7 @@ const (
 	// so that a slow database never gets the process restarted.
 	PathLiveness = "/healthz"
 	// PathReadiness answers 200 when the database is reachable and its schema is applied
-	// (every table of schema/<dialect>.sql exists), and 503 with a problem document otherwise.
+	// (every table of schema/<dialect> exists), and 503 with a problem document otherwise.
 	PathReadiness = "/readyz"
 )
 

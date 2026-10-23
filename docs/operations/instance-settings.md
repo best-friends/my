@@ -21,7 +21,7 @@
 ## 前提
 
 - 設定が [設定リファレンス](../reference/configuration.md) どおりに与えられている（`my config check`）。
-- DB にスキーマが適用済み（Atlas で `schema/<dialect>.sql` を適用する。[ADR-0023](../adr/0023-declarative-schema-management.md)）。
+- DB にスキーマが適用済み（Atlas で `schema/<dialect>/` を適用する。[ADR-0023](../adr/0023-declarative-schema-management.md)）。
 
 ## キー
 

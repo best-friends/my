@@ -219,7 +219,7 @@ entries:
     checks: [schema, go]
     shared: true
     notes:
-      - "Edit schema/<dialect>.sql for every dialect together; never hand-write migrations; `scripts/task.sh go:sqlc` after query changes. Query files stay ASCII-only."
+      - "Edit the owning module's file schema/<dialect>/<NN>-<module>.sql in every dialect together (schema/README.md); never hand-write migrations; `scripts/task.sh go:sqlc` after query changes. Query files stay ASCII-only."
 
   # --- Test kits ------------------------------------------------------------------------------------------
   - name: testkit

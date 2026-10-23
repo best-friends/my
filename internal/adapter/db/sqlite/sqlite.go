@@ -105,8 +105,8 @@ func normalizeDSN(dsn string) (string, error) {
 func (d *DB) Close() error { return d.db.Close() }
 
 // Ready reports whether the database is reachable and its schema is applied, for the
-// readiness check. The schema counts as applied when every table that schema/sqlite.sql
-// declares exists; Atlas applies the file as a whole (ADR-0023), so a missing table means the
+// readiness check. The schema counts as applied when every table that schema/sqlite
+// declares exists; Atlas applies the schema as a whole (ADR-0023), so a missing table means the
 // schema was never applied or is out of date.
 func (d *DB) Ready(ctx context.Context) error {
 	rows, err := d.db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type = 'table'")

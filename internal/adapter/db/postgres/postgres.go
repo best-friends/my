@@ -71,8 +71,8 @@ func (d *DB) Close() { d.pool.Close() }
 func (d *DB) Pool() *pgxpool.Pool { return d.pool }
 
 // Ready reports whether the database is reachable and its schema is applied, for the
-// readiness check. The schema counts as applied when every table that schema/postgres.sql
-// declares exists in the connection's current schema; Atlas applies the file as a whole
+// readiness check. The schema counts as applied when every table that schema/postgres
+// declares exists in the connection's current schema; Atlas applies the schema as a whole
 // (ADR-0023), so a missing table means the schema was never applied or is out of date.
 func (d *DB) Ready(ctx context.Context) error {
 	want := schema.Tables(schema.Postgres)

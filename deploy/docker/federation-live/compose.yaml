@@ -111,7 +111,7 @@ services:
       - schema
       - apply
       - --url=postgres://my:my@db:5432/my?sslmode=disable&search_path=public
-      - --to=file:///schema/postgres.sql
+      - --to=file:///schema/postgres
       - --dev-url=postgres://my:my@db:5432/my_dev?sslmode=disable&search_path=public
       - --auto-approve
     depends_on:

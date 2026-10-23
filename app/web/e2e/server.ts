@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Starts the real server for the E2E of the server-rendered pages (ADR-0030) and of the main flow: a fresh
-// SQLite database in the run's temporary directory (e2e/server-origin.ts) with schema/sqlite.sql applied,
+// SQLite database in the run's temporary directory (e2e/server-origin.ts) with schema/sqlite applied,
 // the admin, the documents, and the third-party OAuth client of e2e/server-origin.ts, then
 // `my serve -pseudo-locales` (so that the en-XA and ar-XB projects get their locale) until Playwright stops it.
 // Playwright runs it as a
@@ -8,7 +8,7 @@
 // E2E_MY_BIN), in the environment of e2e/server-cli.ts.
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { myBin, runMy, serverDatabase, serverEnv } from "./server-cli.ts";
@@ -19,9 +19,12 @@ const database = serverDatabase;
 const env = serverEnv();
 mkdirSync(env["MY_BLOB_FS_DIR"] ?? "", { recursive: true });
 
-// The schema file is plain SQL; Atlas applies the same file in production (ADR-0023).
+// The schema files are plain SQL, executed in name order as Atlas does in production (ADR-0023, ADR-0082).
+const schemaDir = join(root, "schema/sqlite");
 const db = new DatabaseSync(database);
-db.exec(readFileSync(join(root, "schema/sqlite.sql"), "utf8"));
+for (const name of readdirSync(schemaDir).filter((n) => n.endsWith(".sql")).toSorted()) {
+  db.exec(readFileSync(join(schemaDir, name), "utf8"));
+}
 db.close();
 
 runMy(["admin", "create", "-username", "alice", "-email", admin.email], `${admin.password}\n`);

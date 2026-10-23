@@ -20,11 +20,12 @@ vars:
   # For a database outside the db:up container: PG_BOOTSTRAP='psql -v ON_ERROR_STOP=1 -q "postgres://..."'
   PG_BOOTSTRAP: >-
     {{.PG_BOOTSTRAP | default (printf "docker exec -i -e PGOPTIONS=--client-min-messages=warning %s psql -v ON_ERROR_STOP=1 -q -U my -d my" .PG_CONTAINER)}}
-  DB_SCHEMA: schema/{{.DB_DIALECT}}.sql
+  # The dialect's schema: one file per module, which Atlas executes in name order (ADR-0082).
+  DB_SCHEMA: schema/{{.DB_DIALECT}}
 
 tasks:
   check:
-    desc: Reset DB_URL, apply schema/<DB_DIALECT>.sql, and fail if any diff remains
+    desc: Reset DB_URL, apply schema/<DB_DIALECT>/, and fail if any diff remains
     deps: [reset]
     cmds:
       - |
@@ -82,7 +83,7 @@ tasks:
         if: '[ "{{.DB_DIALECT}}" = postgres ]'
 
   apply:
-    desc: Apply schema/<DB_DIALECT>.sql to DB_URL (DB_DIALECT=sqlite|postgres)
+    desc: Apply schema/<DB_DIALECT>/ to DB_URL (DB_DIALECT=sqlite|postgres)
     preconditions: *dialect
     cmds:
       - task: atlas
@@ -90,7 +91,7 @@ tasks:
       - "{{.ATLAS}} schema apply --url '{{.DB_URL}}' --to 'file://{{.DB_SCHEMA}}' --dev-url '{{.DB_DEV_URL}}' --auto-approve"
 
   diff:
-    desc: Print the SQL that would bring DB_URL to schema/<DB_DIALECT>.sql
+    desc: Print the SQL that would bring DB_URL to schema/<DB_DIALECT>/
     deps: [atlas]
     preconditions: *dialect
     cmds:

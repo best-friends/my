@@ -15,7 +15,7 @@ import (
 	"github.com/best-friends/my/schema"
 )
 
-// ProjectionStore implements projection.Store on the tables of schema/sqlite.sql. Its queries
+// ProjectionStore implements projection.Store on the tables of schema/sqlite. Its queries
 // are built at run time, since they serve any table; table names come from the schema and
 // column names from the table, and both are quoted.
 type ProjectionStore struct {

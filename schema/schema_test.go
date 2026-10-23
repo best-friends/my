@@ -3,8 +3,12 @@
 package schema_test
 
 import (
+	"io/fs"
+	"os"
+	"path"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/best-friends/my/internal/app/supporters"
@@ -25,10 +29,64 @@ func TestTables(t *testing.T) {
 func TestTablesMatchAcrossDialects(t *testing.T) {
 	sqlite, postgres := schema.Tables(schema.SQLite), schema.Tables(schema.Postgres)
 	if len(sqlite) == 0 {
-		t.Fatal("schema/sqlite.sql declares no tables")
+		t.Fatal("schema/sqlite declares no tables")
 	}
 	if !slices.Equal(sqlite, postgres) {
 		t.Errorf("tables differ:\n sqlite:   %v\n postgres: %v", sqlite, postgres)
+	}
+}
+
+// SQLite and Postgres are the files of their directories concatenated in name order, the order in
+// which Atlas executes them.
+func TestDialectsConcatenateTheirFilesInNameOrder(t *testing.T) {
+	dirFS := os.DirFS(".")
+	for dir, got := range map[string]string{"sqlite": schema.SQLite, "postgres": schema.Postgres} {
+		names, err := fs.Glob(dirFS, dir+"/*.sql")
+		if err != nil || len(names) == 0 {
+			t.Fatalf("%s: no files (%v)", dir, err)
+		}
+		slices.Sort(names)
+		var want strings.Builder
+		for _, name := range names {
+			data, err := fs.ReadFile(dirFS, name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want.Write(data)
+		}
+		if got != want.String() {
+			t.Errorf("%s: the embedded schema is not the files concatenated in name order", dir)
+		}
+	}
+}
+
+// Every dialect has the same files, and each file declares the same tables in every dialect, so
+// that a module's tables are in the file of the same name.
+func TestFilesMatchAcrossDialects(t *testing.T) {
+	dirFS := os.DirFS(".")
+	sqlite, _ := fs.Glob(dirFS, "sqlite/*.sql")
+	postgres, _ := fs.Glob(dirFS, "postgres/*.sql")
+	for i := range sqlite {
+		sqlite[i] = path.Base(sqlite[i])
+	}
+	for i := range postgres {
+		postgres[i] = path.Base(postgres[i])
+	}
+	if !slices.Equal(sqlite, postgres) {
+		t.Fatalf("files differ:\n sqlite:   %v\n postgres: %v", sqlite, postgres)
+	}
+	for _, name := range sqlite {
+		s, err := fs.ReadFile(dirFS, "sqlite/"+name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p, err := fs.ReadFile(dirFS, "postgres/"+name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if a, b := schema.Tables(string(s)), schema.Tables(string(p)); !slices.Equal(a, b) {
+			t.Errorf("%s: tables differ:\n sqlite:   %v\n postgres: %v", name, a, b)
+		}
 	}
 }
 

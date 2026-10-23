@@ -249,8 +249,8 @@ my job delete <id> [<id>...] # 実行せずに消す
 - readiness が満たされないときは 503 と RFC 9457 の `application/problem+json`（[ADR-0016](../adr/0016-client-api-style.md)）を返す。
   `title` は `Accept-Language` に合わせて翻訳され、内部の詳細は含めない。原因（接続エラー、足りないテーブル名）はログに出る。
 - 1 回の readiness 判定は 3 秒で打ち切る。
-- **スキーマが適用済み** とは、`schema/<dialect>.sql` が `CREATE TABLE` で宣言するテーブルがすべて存在すること
-  （SQLite は `sqlite_schema`、PostgreSQL は接続の `current_schema()` で調べる）。Atlas はファイル全体を適用するので、
+- **スキーマが適用済み** とは、`schema/<dialect>/` のファイルが `CREATE TABLE` で宣言するテーブルがすべて存在すること
+  （SQLite は `sqlite_schema`、PostgreSQL は接続の `current_schema()` で調べる）。Atlas はスキーマ全体を適用するので、
   テーブルが欠けていれば未適用か、バイナリより古いスキーマである。列や索引の差分までは見ない。差分の検出は `scripts/task.sh db:check` の役割。
 
 ## セキュリティヘッダ

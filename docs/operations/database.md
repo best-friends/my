@@ -2,7 +2,7 @@
 
 運営者向けの手順です。要件は FR-801（[機能要件](../requirements/01-functional.md)）、方針は [ADR-0023](../adr/0023-declarative-schema-management.md) です。
 
-DB の初期化は `my` のコマンドではなく、Atlas Community Edition でスキーマ `schema/<dialect>.sql` を適用して行います。
+DB の初期化は `my` のコマンドではなく、Atlas Community Edition でスキーマ `schema/<dialect>/`（モジュールごとのファイル）を適用して行います。
 サーバーの単一バイナリには Atlas を組み込まず（ADR-0023）、Atlas とスキーマは別のイメージ（`Dockerfile` の target `schema`）に入っています。
 `my serve` はスキーマを適用しません。未適用のまま起動すると readiness が 503 を返します（[起動する](running.md#起動する)）。
 
@@ -18,7 +18,7 @@ DB の初期化は `my` のコマンドではなく、Atlas Community Edition �
 
 ```sh
 cd deploy/docker
-docker compose up -d --build     # schema が schema/sqlite.sql を /data/my.db に適用して終わり、その後に my が起動する
+docker compose up -d --build     # schema が schema/sqlite/ を /data/my.db に適用して終わり、その後に my が起動する
 curl -fsS localhost:8080/readyz  # {"status":"ok"} なら準備完了
 docker compose exec -T my my admin create -username alice -email alice@example.com < password.txt
 ```
@@ -29,14 +29,14 @@ docker compose exec -T my my admin create -username alice -email alice@example.c
 ### スキーマのイメージを直接使う
 
 Compose を使わない構成でも、同じイメージを一回限りのジョブ（Kubernetes の Job・initContainer、Cloud Run のジョブなど）として動かします。
-イメージの入口は `atlas` で、スキーマは `/schema/sqlite.sql` と `/schema/postgres.sql` にあります。
+イメージの入口は `atlas` で、スキーマはディレクトリ `/schema/sqlite` と `/schema/postgres` にあります（`--to` にディレクトリを渡すと、Atlas は中のファイルを名前の順に読みます）。
 
 ```sh
 docker build -t my-schema --target schema .
 
 # SQLite: DB のファイルを置くボリュームを /data にマウントする
 docker run --rm -v my_data:/data my-schema schema apply \
-  --url sqlite:///data/my.db --to file:///schema/sqlite.sql \
+  --url sqlite:///data/my.db --to file:///schema/sqlite \
   --dev-url 'sqlite://dev?mode=memory' --auto-approve
 ```
 
@@ -50,7 +50,7 @@ PostgreSQL では、次の 2 つが要ります。
 psql -v ON_ERROR_STOP=1 "postgres://my:...@db.example/my" < schema/postgres.bootstrap.sql
 psql -v ON_ERROR_STOP=1 "postgres://my:...@db.example/my_dev" < schema/postgres.bootstrap.sql
 docker run --rm my-schema schema apply \
-  --url 'postgres://my:...@db.example/my?search_path=public' --to file:///schema/postgres.sql \
+  --url 'postgres://my:...@db.example/my?search_path=public' --to file:///schema/postgres \
   --dev-url 'postgres://my:...@db.example/my_dev?search_path=public' --auto-approve
 ```
 

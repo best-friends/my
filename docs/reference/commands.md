@@ -48,7 +48,7 @@ Coding agents run the workflow steps through agentkit ([tools/agentkit/README.md
 | `go:licenses` | Fail on Go dependency licenses incompatible with AGPL-3.0 (allowlist `GO_ALLOWED_LICENSES` in `Taskfile.yml`) |
 | `api:check` | `api:spec-check` (the root `api/spec/openapi.yaml` lists every file of `api/spec/`), `api:lint` (Redocly CLI with `api/redocly.yaml`), `api:generate-check` (the bundle and the generated code are up to date) |
 | `api:generate` | Bundle the split spec `api/spec/` (the source of truth, one file per path and per component) into the generated `api/openapi.yaml` with Redocly CLI and regenerate the client API code from the bundle ([ADR-0066](../adr/0066-openapi-split-and-bundle.md)). Edit `api/spec/`, never `api/openapi.yaml`. Follow [docs/architecture/client-api.md](../architecture/client-api.md) to add an endpoint |
-| `db:apply` / `db:diff` / `db:reset` [`DB_DIALECT=sqlite\|postgres`] | Apply / preview / reset-and-apply `schema/<dialect>.sql` with Atlas (override `DB_URL`, `DB_DEV_URL`) |
+| `db:apply` / `db:diff` / `db:reset` [`DB_DIALECT=sqlite\|postgres`] | Apply / preview / reset-and-apply the directory `schema/<dialect>/` (one file per module, read in name order) with Atlas (override `DB_URL`, `DB_DEV_URL`) |
 | `db:check` [`DB_DIALECT=...`] / `db:check-all` | Reset the DB, apply the schema, and fail if a diff remains / both dialects, PostgreSQL on the `db:up` container (CI runs it) |
 | `db:up` / `db:down` | Start / remove the dev PostgreSQL container (`my` and dev DB `my_dev`, bootstrapped) |
 | `db:atlas` | Install the pinned Atlas Community Edition into `bin/atlas` |

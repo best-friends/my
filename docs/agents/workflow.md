@@ -137,7 +137,7 @@ milestone's implementation issues are done. Single-issue work keeps the per-PR w
 - Keep about 4–5 agents running, capped by the load of the machine. Whenever an agent finishes and a slot frees,
   start the next issue; there is no barrier between groups of issues.
 - For each candidate issue, list the shared files it is likely to touch:
-  - the sources of generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components), `locales/`, `schema/<dialect>.sql` and the sqlc queries,
+  - the sources of generated code: `api/spec/` (its root `api/spec/openapi.yaml` and the files of the paths and components), `locales/`, the module files of `schema/<dialect>/` and the sqlc queries,
     the web route tree (`app/web/src/routes/`), the config schema;
   - the indexes and tables many changes edit: the ADR index in `docs/adr/README.md`, the FR table in
     [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`. In
