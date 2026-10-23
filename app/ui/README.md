@@ -298,7 +298,8 @@ the utilities refer to the variables, so no token is declared in `@theme inline`
 [scripts/theme-tokens.ts](scripts/theme-tokens.ts) (`scripts/task.sh web:tokens-gen`) generates the list of the overridable tokens from `theme.css`, with
 each token's kind, defaults (colors resolved to `#rrggbb` per theme), and bounds from `tokenRules` in [src/tokens.ts](src/tokens.ts), and the
 contrast pairs whose two colors are overridable (`themeColorPairs`): `src/themeTokens.gen.ts` for the theme editor and `internal/domain/instance/theme_tokens.gen.go` for the server, which checks
-every theme against them. A token that matches no rule (and is not in `fixedTokens`) fails the generator.
+every theme against them. A token that matches no rule (and is not in `fixedTokens`) fails the generator. Only the Go file is committed (ADR-0081):
+the tasks that read `src/themeTokens.gen.ts` (type checks, tests, builds, Storybook) generate it first with `scripts/task.sh web:tokens-gen-ts`.
 
 | Tokens | Kind | Override |
 | --- | --- | --- |
@@ -325,7 +326,7 @@ responsibility. `themeContrast` computes what the server checks, with the same f
 - a source file Tailwind scans for `src/storybook.css` or `app/web/src/index.css` uses a default-palette color (`text-gray-500`),
   an arbitrary color (`bg-[#fff]`, `text-(--palette-gray-50)`, `[color:red]`), motion outside `motion-safe:`, an arbitrary radius, shadow,
   duration, or easing (`rounded-[3px]`), or a padding or gap step outside the list under "Spacing, radius, shadow";
-- the generated list of the overridable tokens (`src/themeTokens.gen.ts`, `internal/domain/instance/theme_tokens.gen.go`) differs from what
+- the committed list of the overridable tokens (`internal/domain/instance/theme_tokens.gen.go`) differs from what
   `scripts/task.sh web:tokens-gen` writes from `theme.css` and `tokens.ts`, or `theme.css` uses `@theme inline`;
 - the Storybook's sample theme (`.storybook/sampleTheme.ts`) fails what the server checks of a saved theme: a token that is not overridable,
   a color that is not `#rrggbb`, a length out of its bounds, or a contrast pair below AA in either theme.

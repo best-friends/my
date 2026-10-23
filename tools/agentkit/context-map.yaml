@@ -110,7 +110,7 @@ entries:
     checks: [i18n, go, web]
     shared: true
     notes:
-      - "Add messages to locales/en and locales/ja, then `scripts/task.sh i18n:gen` and commit the result."
+      - "Add messages to locales/en and locales/ja, then `scripts/task.sh i18n:gen` and commit the files Go reads (client pseudo-locales and TS accessors are not committed)."
   - name: platform
     paths: ["internal/platform/**", "cmd/my/**"]
     docs: ["docs/architecture/overview.md#6-リポジトリ構成", "docs/adr/0010-configuration-and-packaging.md"]
@@ -249,11 +249,11 @@ entries:
     paths: ["app/web/e2e/**", "app/web/src/test/**", "app/web/**/*.test.ts", "app/web/**/*.test.tsx"]
     docs: ["docs/architecture/web-client/README.md#テストの置き場所と道具"]
   - name: web-shell
-    paths: ["app/web/src/*", "app/web/src/routes/**", "app/web/sw/**", "app/web/public/**", "app/web/vite-plugins/**", "app/web/*"]
+    paths: ["app/web/src/*", "app/web/src/routes/**", "app/web/sw/**", "app/web/public/**", "app/web/vite-plugins/**", "app/web/scripts/**", "app/web/*"]
     docs: ["docs/architecture/web-client/09-app-shell.md#9-アプリの外枠", "docs/architecture/web-client/11-pwa.md#11-pwa"]
     shared: true
     notes:
-      - "A new route regenerates app/web/src/routeTree.gen.ts (`scripts/task.sh web:dist`)."
+      - "app/web/src/routeTree.gen.ts is generated from src/routes before every task that reads it and is not committed (ADR-0081)."
   - name: web-server-pages
     paths: ["app/web/src/server-pages/**", "app/web/src/server-pages.css"]
     docs: ["docs/architecture/web-client/08-server-rendered-pages.md#8-サーバーが描画する画面"]

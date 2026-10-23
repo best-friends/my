@@ -94,7 +94,8 @@ var generators = []struct {
 	{"queries/", "go:sqlc"},
 	{"sqlc.yaml", "go:sqlc"},
 	{"locales/", "i18n:gen"},
-	{"app/web/src/routes/", "web:dist"},
+	{"app/ui/src/theme.css", "web:tokens-gen"},
+	{"app/ui/src/tokens.ts", "web:tokens-gen"},
 	{"internal/platform/config/", "go:config-docs"},
 }
 

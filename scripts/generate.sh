@@ -7,9 +7,11 @@
 # per-operation security metadata that the client API enforces
 # (internal/interface/clientapi/internal/securitygen), and the TypeScript types of the web client with
 # the openapi-typescript version pinned in app/web/package.json (needs `scripts/task.sh web:install`).
+# The bundle and the Go code are committed; the TypeScript types are not (ADR-0081).
 #
 #   scripts/generate.sh          regenerate every target in place
-#   scripts/generate.sh --check  generate into a scratch directory and fail if the committed code differs
+#   scripts/generate.sh --ts     regenerate only the TypeScript types, from the committed bundle
+#   scripts/generate.sh --check  generate the committed targets into a scratch directory and fail if they differ
 #
 # Generated files get the SPDX header that the generators omit.
 set -euo pipefail
@@ -82,6 +84,11 @@ generate_security() {
 }
 
 # The generators read the bundle at $spec.
+if [ "${1:-}" = "--ts" ]; then
+  spec="$root/$bundle_out"
+  generate_ts "$root/$ts_out"
+  exit 0
+fi
 if [ "${1:-}" != "--check" ]; then
   bundle "$root/$bundle_out"
   spec="$root/$bundle_out"
@@ -111,10 +118,6 @@ for target in "${targets[@]}"; do
 done
 generate_security "$scratch/$security_out"
 if ! diff -u "$root/$security_out" "$scratch/$security_out"; then
-  stale=1
-fi
-generate_ts "$scratch/$ts_out"
-if ! diff -u "$root/$ts_out" "$scratch/$ts_out"; then
   stale=1
 fi
 if [ "$stale" -ne 0 ]; then

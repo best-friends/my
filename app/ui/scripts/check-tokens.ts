@@ -11,8 +11,8 @@
 //    (`text-[#333]`, `bg-(--palette-gray-50)`), a transition / animation outside `motion-safe:`, an
 //    arbitrary radius, shadow, duration, or easing (`rounded-[3px]`), or a padding or gap step
 //    that app/ui/README.md does not list.
-// 3. Generated files: fails when the overridable token list generated from theme.css and tokens.ts
-//    (scripts/theme-tokens.ts) differs from the committed one.
+// 3. Generated file: fails when the Go list of the overridable tokens generated from theme.css and
+//    tokens.ts (scripts/theme-tokens.ts) differs from the committed one.
 // 4. Sample theme: checks the Storybook's sample server theme (.storybook/sampleTheme.ts) as the server
 //    checks a saved theme: every token is overridable, colors and lengths have their kind's form and
 //    bounds, and every pair in src/tokens.ts meets AA with the overrides over the defaults.

@@ -8,7 +8,9 @@ package locales
 
 import "embed"
 
-// FS holds every <locale>/<namespace>.json catalog file.
+// FS holds the <locale>/<namespace>.json catalog files of the namespaces Go formats: every namespace
+// but client*, which only the TypeScript clients read and whose pseudo-locales are not committed
+// (ADR-0081). A new namespace Go formats needs its pattern here; TestFS fails until it has one.
 //
-//go:embed */*.json
+//go:embed */server.json
 var FS embed.FS

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The router (ADR-0025): file-based routes from src/routes, compiled into routeTree.gen.ts by the
-// TanStack Router Vite plugin. Navigations commit inside React's startTransition (the router's
-// Transitioner), so the current page stays on screen while the next one loads (web-client/README.md E4); the
-// pending component appears only when a load takes longer than defaultPendingMs.
+// TanStack Router Vite plugin, and by scripts/routes.ts before tsc and the tests. Navigations commit inside
+// React's startTransition (the router's Transitioner), so the current page stays on screen while the next one
+// loads (web-client/README.md E4); the pending component appears only when a load takes longer than defaultPendingMs.
 import { createRouter, type RouterHistory } from "@tanstack/react-router";
 import type { PlainClientMessageKey } from "./lib/i18n";
 import type { RouterContext } from "./lib/query";
