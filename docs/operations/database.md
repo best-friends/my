@@ -54,7 +54,7 @@ docker run --rm my-schema schema apply \
   --dev-url 'postgres://my:...@db.example/my_dev?search_path=public' --auto-approve
 ```
 
-ここでの `--auto-approve` は、計算した差分の適用を確かめずに進めるフラグです。v0 では、カラムの削除などデータを失う差分も適用します（ADR-0012、ADR-0023）。
+ここでの `--auto-approve` は、計算した差分の適用を確かめずに進めるフラグです。`v0.1.0` より前の版では、カラムの削除などデータを失う差分も適用します。`v0.1.0` 以降の版の間の更新では、データを失う差分は入りません（ADR-0087、ADR-0023）。
 流れる SQL を先に見るには、`--auto-approve` の代わりに `--dry-run` を付けます。
 
 ### リポジトリから（開発）
