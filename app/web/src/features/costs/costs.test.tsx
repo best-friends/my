@@ -119,6 +119,28 @@ describe("a server that publishes the breakdown", () => {
     expect(screen.queryByText("This server publishes the totals only, not what they are spent on.")).not.toBeInTheDocument();
   });
 
+  test("shows each provider as the server spells it, as entered (ADR-0098)", async () => {
+    serveCosts("breakdown");
+    server.use(
+      http.get(`${apiBase}/instance/cost_totals`, ({ request }) => {
+        const totals = publicTotalsFixture(new URL(request.url));
+        const breakdown: Schemas["CostBreakdownLine"][] = [
+          { provider: "ConoHa", category: "compute", amount: { amount: "1650", currency: "JPY" } },
+          { provider: "Amazon SES", category: "email", amount: { amount: "0.10", currency: "USD" } },
+          { provider: "Cloudflare R2", category: "storage", amount: { amount: "1.50", currency: "USD" } },
+        ];
+        return HttpResponse.json({ ...totals, periods: totals.periods.map((period) => ({ ...period, breakdown })) });
+      }),
+    );
+    await renderApp({ path: "/about/costs" });
+
+    const breakdown = await screen.findByRole("region", { name: /^Breakdown of/u });
+    for (const provider of ["ConoHa", "Amazon SES", "Cloudflare R2"]) {
+      expect(within(breakdown).getByText(provider)).toHaveAttribute("dir", "auto");
+    }
+    expect(within(breakdown).queryByText("conoha")).not.toBeInTheDocument();
+  });
+
   test("says what it publishes on its information page", async () => {
     serveCosts("breakdown");
     await renderApp({ path: "/about" });

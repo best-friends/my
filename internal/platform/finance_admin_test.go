@@ -110,7 +110,7 @@ func TestCostItemsAdmin(t *testing.T) {
 		t.Errorf("April amortized = %+v", april)
 	}
 	if !slices.ContainsFunc(april.Breakdown, func(l clientapi.CostBreakdownLine) bool {
-		return l.Provider == "cloud" && l.Category == clientapi.CostCategoryCompute && l.Amount.Amount == "12.34"
+		return l.Provider == "Ｃｌｏｕｄ" && l.Category == clientapi.CostCategoryCompute && l.Amount.Amount == "12.34"
 	}) {
 		t.Errorf("April breakdown = %+v", april.Breakdown)
 	}

@@ -5207,8 +5207,8 @@ type CopyCustomEmojiRequest struct {
 // usage charges spread by day over their billing period under both.
 type CostBasis string
 
-// CostBreakdownLine The amount of a provider (in NFKC and lower case, which groups the costs), category, and
-// currency in a period.
+// CostBreakdownLine The amount of a provider, category, and currency in a period. The costs group by the provider
+// in NFKC and lower case, so `ConoHa`, `conoha`, and `ＣｏｎｏＨａ` share a line.
 type CostBreakdownLine struct {
 	// Amount An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
 	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
@@ -5216,7 +5216,12 @@ type CostBreakdownLine struct {
 
 	// Category The fixed category of a cost (ADR-0067 §2); clients translate its name.
 	Category CostCategory `json:"category"`
-	Provider string       `json:"provider"`
+
+	// Provider The provider as entered (ADR-0098), one spelling for every line of the same grouped provider
+	// in the period: the provider of the cost item whose current label was revised last among the
+	// items with payments in the period (the larger revision ID on a tie), or, for a provider of
+	// imported costs only, the import's provider name (`AWS`, `Google Cloud`).
+	Provider string `json:"provider"`
 }
 
 // CostCategory The fixed category of a cost (ADR-0067 §2); clients translate its name.
@@ -6193,7 +6198,8 @@ type EnableTotpRequest struct {
 }
 
 // FinanceCostItemLine The amount of a cost item, or of a service of the imported costs, in a currency over a
-// period, with the provider (in NFKC and lower case) and the category of its breakdown line.
+// period, with the provider and the category of its breakdown line. `provider` is the spelling
+// that the period's breakdown lines of the item's grouped provider show (`CostBreakdownLine`).
 // `name` is the item's name or the service, present only while the instance shows the names;
 // `memo` is the item's memo, present only while the instance shows the memos and the item has
 // one (an imported cost has none).

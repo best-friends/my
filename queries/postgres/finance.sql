@@ -41,7 +41,7 @@ FOR UPDATE OF h;
 -- unless it is empty.
 -- name: ListCostItems :many
 SELECT i.id, i.schedule, i.interval, i.starts_on, i.created_by_user_id, i.created_at, h.ends_on,
-  l.name, l.provider, l.provider_normalized, l.category, l.memo
+  l.name, l.provider, l.provider_normalized, l.category, l.memo, h.label_revision_id, l.revised_at AS label_revised_at
 FROM cost_item_heads h
 JOIN cost_items i ON i.id = h.cost_item_id
 JOIN cost_item_label_revisions l ON l.id = h.label_revision_id

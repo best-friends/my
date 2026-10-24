@@ -108,7 +108,7 @@ func (s *Server) GetFinanceCostTotals(ctx context.Context, req GetFinanceCostTot
 // newFinanceCostItemLine presents an item line, with its name when names is true and its memo
 // when memos is true and it has one.
 func newFinanceCostItemLine(line finance.ItemLine, names, memos bool) FinanceCostItemLine {
-	out := FinanceCostItemLine{Provider: line.Provider, Category: CostCategory(line.Category), Amount: newMoney(line.Amount)}
+	out := FinanceCostItemLine{Provider: line.ProviderName, Category: CostCategory(line.Category), Amount: newMoney(line.Amount)}
 	if names {
 		name := line.Item.Name
 		out.Name = &name

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 )
 
 // ErrInvalidBasis reports an unknown basis.
@@ -40,6 +41,8 @@ type Entry struct {
 	// Provider is the normalized provider that groups the breakdown, and Category its category.
 	Provider string
 	Category Category
+	// Spelling is the provider as entered, which a breakdown line of Provider may show (ADR-0098).
+	Spelling Spelling
 	// Estimated marks an imported cost of a month that its provider has not closed (ADR-0068 §3).
 	Estimated bool
 	// Item is what the entry is a payment of: a cost item or a service of an imported cost. The
@@ -64,6 +67,54 @@ func (e Entry) amountIn(part DateRange) int64 {
 	return Spread(e.Amount.Minor, *e.Span, in)
 }
 
+// Spelling is a provider as entered, which the lines of its normalized provider in a period may
+// show (ADR-0098): the provider of a cost item's current label revision, recorded at RevisedAt as
+// the revision RevisionID, or the provider's name of an imported cost, with no revision.
+type Spelling struct {
+	Name       string
+	RevisedAt  time.Time
+	RevisionID string
+}
+
+// newer reports whether s wins over o as the spelling of a period's lines: a cost item's spelling
+// over an imported cost's, then the newer label revision, then the larger revision ID.
+func (s Spelling) newer(o Spelling) bool {
+	if (s.RevisionID != "") != (o.RevisionID != "") {
+		return s.RevisionID != ""
+	}
+	if !s.RevisedAt.Equal(o.RevisedAt) {
+		return s.RevisedAt.After(o.RevisedAt)
+	}
+	return s.RevisionID > o.RevisionID
+}
+
+// spellings returns the spelling of each normalized provider among the entries that meet part:
+// the newest one (Spelling.newer). A provider whose entries carry no spelling has none.
+func spellings(entries []Entry, part DateRange) map[string]string {
+	best := map[string]Spelling{}
+	for _, e := range entries {
+		if _, ok := e.Range.Intersect(part); !ok || e.Spelling.Name == "" {
+			continue
+		}
+		if cur, ok := best[e.Provider]; !ok || e.Spelling.newer(cur) {
+			best[e.Provider] = e.Spelling
+		}
+	}
+	out := make(map[string]string, len(best))
+	for k, v := range best {
+		out[k] = v.Name
+	}
+	return out
+}
+
+// spellingOf returns the spelling of provider in names, or provider itself without one.
+func spellingOf(names map[string]string, provider string) string {
+	if name, ok := names[provider]; ok {
+		return name
+	}
+	return provider
+}
+
 // ItemRef is what an entry is a payment of: Key tells the cost item or the service of an
 // imported cost apart from every other one, Name is the item's name or the service, and Memo is
 // the item's memo ("" for an imported cost).
@@ -74,12 +125,14 @@ type ItemRef struct {
 }
 
 // ItemLine is the amount of an item in a currency over a period: the cost item or the service
-// of an imported cost of Item, with the provider and category that group its breakdown.
+// of an imported cost of Item, with the provider and category that group its breakdown, and the
+// spelling of the provider that the period's lines show (ADR-0098).
 type ItemLine struct {
-	Item     ItemRef
-	Provider string
-	Category Category
-	Amount   Money
+	Item         ItemRef
+	Provider     string
+	ProviderName string
+	Category     Category
+	Amount       Money
 }
 
 // Entries returns the entries of the item's payments that meet window under basis: on the
@@ -97,7 +150,8 @@ func (c CostItem) Entries(basis Basis, window DateRange) []Entry {
 		}
 		out = append(out, Entry{
 			Range: r, Amount: p.Price, Provider: c.ProviderNormalized, Category: c.Label.Category,
-			Item: ItemRef{Key: "item:" + c.ID, Name: c.Label.Name, Memo: c.Label.Memo},
+			Spelling: Spelling{Name: c.Label.Provider, RevisedAt: c.LabelRevisedAt, RevisionID: c.LabelRevisionID},
+			Item:     ItemRef{Key: "item:" + c.ID, Name: c.Label.Name, Memo: c.Label.Memo},
 		})
 	}
 	return out
@@ -110,10 +164,12 @@ type BreakdownKey struct {
 	Currency Currency
 }
 
-// Line is an amount of a breakdown key.
+// Line is an amount of a breakdown key, with the spelling of its provider that the period's lines
+// of the key's provider show (ADR-0098).
 type Line struct {
-	Key    BreakdownKey
-	Amount int64
+	Key          BreakdownKey
+	ProviderName string
+	Amount       int64
 }
 
 // PeriodTotal is what a period carries: the total of each currency, by currency code, and the
@@ -151,8 +207,9 @@ func Summarize(entries []Entry, periods []Period) []PeriodTotal {
 			t.Totals = append(t.Totals, Money{Minor: amount, Currency: c})
 		}
 		slices.SortFunc(t.Totals, func(a, b Money) int { return cmp.Compare(a.Currency, b.Currency) })
+		names := spellings(entries, p.Range)
 		for k, amount := range lines {
-			t.Breakdown = append(t.Breakdown, Line{Key: k, Amount: amount})
+			t.Breakdown = append(t.Breakdown, Line{Key: k, ProviderName: spellingOf(names, k.Provider), Amount: amount})
 		}
 		slices.SortFunc(t.Breakdown, func(a, b Line) int {
 			return cmp.Or(cmp.Compare(a.Key.Provider, b.Key.Provider), cmp.Compare(a.Key.Category, b.Key.Category),
@@ -188,6 +245,7 @@ func ItemizedTotals(items []CostItem, imported []Entry, basis Basis, periods []P
 		currency Currency
 	}
 	for i, p := range periods {
+		names := spellings(entries, p.Range)
 		lines := map[key]*ItemLine{}
 		for _, e := range entries {
 			if _, ok := e.Range.Intersect(p.Range); !ok {
@@ -196,7 +254,10 @@ func ItemizedTotals(items []CostItem, imported []Entry, basis Basis, periods []P
 			k := key{item: e.Item.Key, currency: e.Amount.Currency}
 			line, ok := lines[k]
 			if !ok {
-				line = &ItemLine{Item: e.Item, Provider: e.Provider, Category: e.Category, Amount: Money{Currency: e.Amount.Currency}}
+				line = &ItemLine{
+					Item: e.Item, Provider: e.Provider, ProviderName: spellingOf(names, e.Provider), Category: e.Category,
+					Amount: Money{Currency: e.Amount.Currency},
+				}
 				lines[k] = line
 			}
 			line.Amount.Minor += e.amountIn(p.Range)
