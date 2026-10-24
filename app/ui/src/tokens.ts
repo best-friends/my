@@ -36,7 +36,10 @@ export const avatarTints = ["lilac", "peach", "mint", "lavender", "yellow"] as c
 
 export type AvatarTint = (typeof avatarTints)[number];
 
-const onEverySurface = (fg: string, use: ContrastUse): ColorPair[] => surfaces.map((bg) => ({ fg, bg, use }));
+/** The kinds of the highlight layer behind a text field (ADR-0092 §4); each is a token `highlight-<kind>` under fg text. */
+const highlightKinds = ["mention", "hashtag", "url", "shortcode", "over"] as const;
+
+const onEverySurface =(fg: string, use: ContrastUse): ColorPair[] => surfaces.map((bg) => ({ fg, bg, use }));
 
 export const colorPairs: readonly ColorPair[] = [
   ...onEverySurface("fg", "text"),
@@ -66,6 +69,7 @@ export const colorPairs: readonly ColorPair[] = [
   { fg: "fg", bg: "warning-bg", use: "text" },
   { fg: "warning", bg: "warning-bg", use: "text" },
   { fg: "pressed-fg", bg: "pressed", use: "text" },
+  ...highlightKinds.map((k): ColorPair => ({ fg: "fg", bg: `highlight-${k}`, use: "text" })),
   { fg: "toast-fg", bg: "toast", use: "text" },
   { fg: "toast-action", bg: "toast", use: "text" },
   { fg: "toast-muted", bg: "toast", use: "ui" },

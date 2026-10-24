@@ -184,6 +184,15 @@
   --color-avatar-yellow: #ffebbd;
   --color-avatar-yellow-fg: #856631;
 
+  /* The highlight layer behind a text field (ADR-0092 §4): the background of a mention, hashtag, URL or :shortcode:
+     while it is typed, and of the text over the character limit, under the field's own fg text. A pale step of a hue
+     in light, a dark step in dark. Forced-colors mode underlines the ranges instead. */
+  --color-highlight-mention: light-dark(var(--palette-badge-blue-200), var(--palette-badge-blue-900));
+  --color-highlight-hashtag: light-dark(var(--palette-badge-teal-200), var(--palette-badge-teal-900));
+  --color-highlight-url: light-dark(var(--palette-badge-purple-200), var(--palette-badge-purple-900));
+  --color-highlight-shortcode: light-dark(var(--palette-badge-yellow-200), var(--palette-badge-yellow-900));
+  --color-highlight-over: light-dark(var(--palette-badge-red-200), var(--palette-badge-red-900));
+
   /* The pressed button of a Segmented: charcoal with white in light, the brand coral with charcoal in dark. */
   --color-pressed: light-dark(var(--palette-charcoal-900), var(--palette-coral-500));
   --color-pressed-fg: light-dark(var(--palette-white), var(--palette-charcoal-900));

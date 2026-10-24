@@ -30,6 +30,7 @@ export {
   type TextAutocompleteSuggestion,
   type TextAutocompleteWord,
 } from "./TextAreaAutocomplete";
+export type { TextHighlight, TextHighlightKind } from "./TextAreaMirror";
 export { TextField, type TextFieldProps } from "./TextField";
 export { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
 export { Segmented, SegmentedItem, type SegmentedItemProps, type SegmentedProps } from "./Segmented";

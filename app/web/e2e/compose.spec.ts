@@ -103,6 +103,9 @@ async function serveApi(page: Page): Promise<Posted[]> {
     if (path === "/api/v1/instance") {
       return json(route, { domain: "my.example", name: "my example", version: "0.0.0-e2e", source_url: "https://github.com/mycroblog/my", registrations: { mode: "open" }, federation: { mode: "both" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: "everyone", federated: "everyone" }, rules: [] });
     }
+    if (path === "/api/v1/custom_emojis") {
+      return json(route, { items: [{ shortcode: "blobcat", url: `${apiOrigin}/emoji/blobcat.png`, static_url: `${apiOrigin}/emoji/blobcat.png`, aliases: [] }] });
+    }
     if (path === "/api/v1/preferences") {
       // The user's locale is the project's: the app displays itself in the signed-in user's locale.
       return json(route, { locale: test.info().project.use.locale ?? "en", time_zone: "UTC", default_visibility: "public", default_post_language: "en", require_media_description: false, timeline_languages: [] });
@@ -174,6 +177,10 @@ test.describe("the new-post form", () => {
     const form = await openForm(page, hasTouch);
     await form.getByRole("button", { name: message("compose.warning.toggle") }).click();
     await expect(form.getByRole("textbox", { name: message("compose.warning.label") })).toBeVisible();
+    // Text with highlighted ranges, so axe and the scroll check see the layers behind the CW and the text too.
+    await form.getByRole("textbox", { name: message("compose.warning.label") }).fill("Spoilers :blobcat:");
+    await form.getByRole("textbox", { name: message("compose.text.label") }).fill("#tag https://example.com/a/long/path/that/wraps/at/320/px :blobcat:");
+    await expect(form.locator("[data-highlight]")).toHaveCount(4);
 
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
@@ -200,6 +207,29 @@ test.describe("the new-post form", () => {
         - ${ariaNode(`button ${JSON.stringify(message("compose.visibility.button", { visibility: message("compose.visibility.public") }))}`)}
         - ${ariaNode(`button /${endingWith(message("compose.language.label"))}/`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.submit"))} [disabled]`)}
+    `);
+  });
+
+  test("keeps the highlight layer behind the text out of the accessibility tree", async ({ page, hasTouch }) => {
+    await serveApi(page);
+    await page.goto("/");
+    const form = await openForm(page, hasTouch);
+    const textbox = form.getByRole("textbox", { name: message("compose.text.label") });
+    await textbox.fill("#tag :blobcat: https://example.com/ :unknown:");
+    // The layer paints the hashtag, the known shortcode and the URL (ADR-0092 §4), and adds nothing to the tree.
+    await expect(form.locator("[data-highlight]")).toHaveCount(3);
+
+    await expect(form).toMatchAriaSnapshot(`
+      - form:
+        - /children: equal
+        - ${ariaNode(`textbox ${JSON.stringify(message("compose.text.label"))}`)}
+        - ${ariaNode(`button ${JSON.stringify(message("emoji.picker.button"))}`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.media.add"))}`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.poll.toggle"))} [pressed=false]`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.warning.toggle"))} [pressed=false]`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.visibility.button", { visibility: message("compose.visibility.public") }))}`)}
+        - ${ariaNode(`button /${endingWith(message("compose.language.label"))}/`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.submit"))}`)}
     `);
   });
 

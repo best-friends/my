@@ -350,7 +350,7 @@ string through props or children.
 | --- | --- | --- |
 | `Button` | `Button` | `variant`: `primary` / `secondary` (default) / `ghost` / `danger`; `size`: `sm` / `md` (default); `isPending` |
 | `Link` | `Link` | `variant`: `inline` (default, underlined in running text) / `standalone` |
-| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder`; `grow` takes the room left in a row |
+| `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder`; `grow` takes the room left in a row; `highlights` (below) |
 | `TextArea` | `TextField` + `TextArea` | as `TextField`, plus `rows` and the character count below |
 | `TextAreaAutocomplete` | `Autocomplete` + `TextField` + `TextArea`, `Popover` + `ListBox` | as `TextArea`, plus the completion of the word after a trigger character (below) |
 | `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
@@ -392,6 +392,15 @@ string through props or children.
     below. The caret's line comes from `TextAreaMirror`, an `aria-hidden` copy of the text laid out with the textarea's own
     font, spacing, line height, padding and borders behind the transparent textarea, which the highlight layer also uses.
     The mirrored textarea is `dir="auto"` and has a whole-pixel line height, so the scrolled mirror lines up in every engine.
+- `TextArea`, `TextField` and `TextAreaAutocomplete` take `highlights`, the ranges to highlight while typing
+  ([ADR-0092](../../docs/adr/0092-composer-autocomplete-highlight.md) §4): `{ kind, start, end }` in UTF-16 units, where `kind`
+  is `mention`, `hashtag`, `url`, `shortcode` or `over` (text over the limit, which wins where it overlaps a token). The kit
+  knows no rules; the web builds the ranges (`lib/textHighlights.ts`).
+  - They are painted as backgrounds (`highlight-<kind>` tokens) on `TextAreaMirror`, the `aria-hidden` layer behind the
+    transparent control, which draws the text itself. The control becomes `dir="auto"` with a whole-pixel line height; an
+    input's layer lays out one line (`white-space: pre`), centred, and follows its sideways scroll.
+  - Forced-colors mode drops backgrounds, so the ranges are underlined with `CanvasText` there (dashed over the limit). The
+    layer opts out of forced colors and moves in front of the control, whose text Chromium backs with a `Canvas` plate.
 
 ## Overlays and announcements
 

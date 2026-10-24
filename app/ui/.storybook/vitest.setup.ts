@@ -7,7 +7,8 @@
 // (`scripts/task.sh ui:snapshots-update`), because fonts and anti-aliasing differ between machines.
 // The capture runs with prefers-reduced-motion: reduce, and first checks that nothing in the frame
 // still animates then: every animation sits under motion-safe: (web-client/README.md D6), and a spinner
-// cannot keep the screenshot from settling. Stories render and run play functions without it.
+// cannot keep the screenshot from settling. Stories render and run play functions without it. A story tagged
+// `forced-colors` is captured in forced-colors mode too.
 // The Playwright provider types cdp() with Chromium's DevTools protocol.
 import type {} from "@vitest/browser-playwright";
 import { afterEach, expect } from "vitest";
@@ -19,9 +20,17 @@ const widths = [320, 640, 1024] as const;
 const viewportWidth = 1200;
 const viewportHeight = 900;
 
-/** Sets Chromium's prefers-reduced-motion to reduce, or back to the browser's default. */
-async function emulateReducedMotion(reduce: boolean) {
-  await cdp().send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduce ? "reduce" : "" }] });
+/**
+ * Sets Chromium's prefers-reduced-motion to reduce and, for a story tagged `forced-colors`, turns forced-colors mode on
+ * (the look of Windows contrast themes); or both back to the browser's default.
+ */
+async function emulateCaptureMedia(capture: boolean, forcedColors = false) {
+  await cdp().send("Emulation.setEmulatedMedia", {
+    features: [
+      { name: "prefers-reduced-motion", value: capture ? "reduce" : "" },
+      { name: "forced-colors", value: capture && forcedColors ? "active" : "" },
+    ],
+  });
 }
 
 /**
@@ -83,7 +92,7 @@ afterEach(async (context) => {
   const frame = document.querySelector<HTMLElement>("[data-story-frame]");
   if (frame === null) throw new Error(`story ${story.id} rendered no [data-story-frame]; is the preview decorator missing?`);
   const { locale, theme } = story.globals;
-  await emulateReducedMotion(true);
+  await emulateCaptureMedia(true, story.tags.includes("forced-colors"));
   try {
     await moveThePointerAway(frame);
     // Transitions already in flight (such as the color change when the preview applies the theme)
@@ -113,6 +122,6 @@ afterEach(async (context) => {
     }
   } finally {
     frame.style.inlineSize = "";
-    await emulateReducedMotion(false);
+    await emulateCaptureMedia(false);
   }
 });

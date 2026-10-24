@@ -55,6 +55,19 @@
   選択肢は 2 つの空の欄から始まり、「選択肢を追加」で 4 つまで足し、3 つ目からは欄ごとの削除のボタン（アイコンとツールチップ）で外す。各欄は 50 文字まで。期間（5 分〜7 日の `Select`。既定は 1 日）、複数選択と締め切りまで票数を隠すのチェックボックスを持つ。
   空の選択肢があるか、前後の空白を除いて同じ選択肢が 2 つあるときは送信できず、同じ選択肢は欄の下に理由を出す。投票は下書きに入り、本文と一緒に `POST /statuses` の `poll` で送る。投票のある投稿は編集できない（API）。
 - **文字数**: `GET /instance` の `limits.max_post_characters` から CW の文字数を引いたものを本文の上限にし、`TextArea` の文字数カウンタで示す。数え方はサーバーと同じコードポイント。上限を超えると送信できない。
+- **強調表示**（ADR-0092 §4・§5、FR-119）: 入力中のメンション・ハッシュタグ・URL・`:shortcode:`・文字数の上限を超えた部分の背景を、入力欄の後ろの層に塗る。
+  - **区間**: `lib/textHighlights.ts` の `textHighlights` が、`lib/textTokens.ts` の `textTokens`（サーバーの `ParseText`・`ScanShortcodes` と同じ規則）から作り、`@my/ui` の `TextArea`・`TextField`（と `TextAreaAutocomplete`）の `highlights` に渡す。
+    `:shortcode:` は、手元のカスタム絵文字（ピッカーと同じ `GET /custom_emojis` の query。`features/emoji` の `useCustomEmojiShortcodes`）の shortcode にあるものだけを塗る。
+    上限を超えた部分は、上限のコードポイントの後ろから終わりまでで、トークンと重なればそちらを上限の色で塗る。本文の上限は上の「文字数」の値（`max_post_characters` から CW を引いたもの）、プロフィールの自己紹介と補足情報の値はそれぞれの上限。
+    メンションの解決の結果では見た目を変えず、絵文字を画像にもしない。
+  - **対象**: 投稿フォームと投稿の編集のダイアログの本文、プロフィールの自己紹介と補足情報の値はすべての種類、CW とプロフィールの表示名は `:shortcode:` だけ（ADR-0092 §5 の表）。投票の選択肢には付けない。
+  - **層**（`@my/ui` の `TextAreaMirror`）: `aria-hidden` の層を入力欄と同じ箱の中の前に置き、入力欄の計算済みのフォント・字間・行の高さ・内側の余白・枠の幅を写し、`white-space: pre-wrap`（`input` は `pre` で縦の中央）・`overflow-wrap: break-word`・`dir="auto"` で同じ文字を並べる。
+    層の文字は透明で、区間の `<span>` の背景だけを塗る。文字は入力欄が描き、層は描かない（二重に描かない）。入力欄の背景は透明にし、箱が入力欄の背景を塗る。入力欄も `dir="auto"` にする。
+    入力欄の `scroll`（`input` はカーソルの移動の `selectionchange` の後も）でスクロールを、`ResizeObserver` で大きさを、`document.fonts` の `loadingdone`（Noto Color Emoji の `font-display: swap` の入れ替え）で位置を合わせ直す。
+    層を持つ入力欄の行の高さは整数の px（`round(calc(var(--text-base--line-height) * 1em), 1px)`）にする。小数の px だと、スクロールした層が Chromium と WebKit で 1 px ずれる（#1152 の spike、決定者の決定）。
+  - **見た目**: 色は種類ごとのトークン `highlight-mention`・`highlight-hashtag`・`highlight-url`・`highlight-shortcode`・`highlight-over`（ライトとダークの組。上の文字の `fg` と WCAG AA のコントラスト）。
+    強制カラーモードでは背景が消えるので、区間の下に `CanvasText` の線（上限を超えた部分は破線）を引く。層は強制カラーから外れ（`forced-color-adjust: none`。透明の文字を透明のまま保つ）、強制カラーのときだけ入力欄の前に出る（Chromium が入力欄の文字の行の後ろに `Canvas` の色の板を塗り、後ろの線を隠すため）。
+  - **テスト**: `lib/textHighlights.test.ts` が共通のテストベクタで区間が `textTokens` と一致することを、`compose.test.tsx` が本文の層の区間と `aria-hidden` を検査する。`@my/ui` の `TextHighlight` のストーリーが、折り返し・スクロール・RTL・1 行の欄の位置をスクリーンショット（3 幅 × ライト / ダーク × LTR / RTL）で、強制カラーモードの線を `forced-colors` のタグのスクリーンショットで確かめる。
 - **画像・動画・音声**: 1 投稿 4 件まで。画像は JPEG・PNG・GIF・WebP、動画は MP4・QuickTime・WebM、音声は MP3・Ogg・M4A・WebM（申告された型で選び、ほかは知らせて外す）。選んだファイルは `prepareMedia` が用意する。
   画像は `prepareImage` が `createImageBitmap`（EXIF の向きを適用）と `OffscreenCanvas` で 3840 × 2160 ピクセルの面積以内に縮め、描き直して EXIF などのメタデータを捨ててから送る。
   GIF はアニメーションを保つためそのまま送る（GIF に EXIF はなく、残りはサーバーが除く）。

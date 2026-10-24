@@ -2,7 +2,8 @@
 import { Box, Button, Checkbox, Cluster, Dialog, DialogActions, Hint, InlineError, Spinner, Stack, Text, TextArea, TextField } from "@my/ui";
 import type { SubmitEvent } from "react";
 import { useLocale, useT } from "../../../lib/i18n";
-import { EmojiPickerButton } from "../../emoji";
+import { textHighlights } from "../../../lib/textHighlights";
+import { EmojiPickerButton, useCustomEmojiShortcodes } from "../../emoji";
 import { maxAttachments } from "../hooks/policy";
 import { type ComposeController, composeTextId } from "../hooks/useCompose";
 import { type ReadyComposeForm, useComposeForm } from "../hooks/useComposeForm";
@@ -48,6 +49,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
   const t = useT();
   const locale = useLocale();
   const formatRemaining = useFormatRemaining();
+  const shortcodes = useCustomEmojiShortcodes();
   const { draft, attachments } = form;
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,6 +68,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
             onChange={(spoilerText) => {
               form.edit({ spoilerText });
             }}
+            highlights={textHighlights(draft.spoilerText, { tokens: "shortcodes", shortcodes })}
           />
         )}
         <TextArea
@@ -78,6 +81,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
           rows={4}
           characterLimit={form.textLimit}
           formatRemaining={formatRemaining}
+          highlights={textHighlights(draft.text, { tokens: "all", shortcodes, limit: form.textLimit })}
           autoFocus={autoFocus}
           endAction={
             <EmojiPickerButton

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import type { ReactNode } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import {
   composeRenderProps,
   Input,
@@ -9,6 +9,7 @@ import {
 } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { FieldDescription, FieldError, FieldLabel, type FieldTextProps, fieldControl } from "./Field";
+import { type TextHighlight, TextAreaMirror } from "./TextAreaMirror";
 
 const textField = tv({
   slots: {
@@ -25,7 +26,30 @@ const textField = tv({
     shrink: { true: { root: "min-w-0" } },
     // The text keeps clear of the end action, so that it does not run under its button (a button of size `icon`).
     withAction: { true: { input: "pe-(--end-action-room)" } },
+    // An input with the highlight layer behind it (ADR-0092 §4): the box paints the field's background, so the layer
+    // behind the transparent input shows. The input is a block, so the box is exactly its size, and its line height is
+    // whole pixels, like the layered text area's (TextArea.tsx, #1152).
+    layered: {
+      true: {
+        control: "rounded-md bg-surface-sunken",
+        input: "relative block bg-transparent leading-[round(calc(var(--text-base--line-height)*1em),1px)]",
+      },
+    },
   },
+  compoundVariants: [
+    // The layered input is `dir="auto"`, so its own inline end is the other side from the box's when its text runs
+    // against the page (English in an Arabic page); the room for the end action then goes on its inline start.
+    {
+      layered: true,
+      withAction: true,
+      class: {
+        input: [
+          "[:dir(ltr)>&:dir(rtl)]:ps-(--end-action-room) [:dir(ltr)>&:dir(rtl)]:pe-3",
+          "[:dir(rtl)>&:dir(ltr)]:ps-(--end-action-room) [:dir(rtl)>&:dir(ltr)]:pe-3",
+        ],
+      },
+    },
+  ],
 });
 
 export interface TextFieldProps extends Omit<RACTextFieldProps, "children">, FieldTextProps {
@@ -39,25 +63,71 @@ export interface TextFieldProps extends Omit<RACTextFieldProps, "children">, Fie
    * ADR-0091 §4). The text keeps clear of it on the end side.
    */
   endAction?: ReactNode;
+  /**
+   * Ranges of the text to highlight while typing (ADR-0092 §4), as on TextArea: painted on an `aria-hidden` layer behind
+   * the transparent input, which is then `dir="auto"` with a whole-pixel line height.
+   */
+  highlights?: readonly TextHighlight[];
 }
 
 /**
  * A single-line text field (React Aria TextField). The label, description and error message are linked
  * to the input; it is controlled with `value` / `onChange` or uncontrolled with `defaultValue`. With `endAction`, that
- * control sits at the end of the input (inset-inline-end), and the text keeps clear of it.
+ * control sits at the end of the input (inset-inline-end), and the text keeps clear of it. With `highlights`, their
+ * ranges are painted behind the text.
  */
-export function TextField({ label, description, errorMessage, placeholder, className, grow, shrink, endAction, ...props }: TextFieldProps) {
-  const { root, input, control, action } = textField({ grow, shrink, withAction: endAction !== undefined });
-  const field = <Input className={input()} {...(placeholder === undefined ? {} : { placeholder })} />;
+export function TextField({
+  label,
+  description,
+  errorMessage,
+  placeholder,
+  className,
+  grow,
+  shrink,
+  endAction,
+  highlights,
+  value,
+  defaultValue,
+  onChange,
+  ...props
+}: TextFieldProps) {
+  const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const layered = highlights !== undefined;
+  const { root, input, control, action } = textField({ grow, shrink, withAction: endAction !== undefined, layered });
+  const field = (
+    <Input
+      ref={inputRef}
+      className={input()}
+      {...(layered ? { dir: "auto" } : {})}
+      {...(placeholder === undefined ? {} : { placeholder })}
+    />
+  );
+  // The layer needs the text, so a field with highlights keeps an uncontrolled value itself.
+  const text = value ?? uncontrolledValue;
+  const valueProps: Pick<RACTextFieldProps, "value" | "defaultValue" | "onChange"> = layered
+    ? {
+        value: text,
+        onChange: (next) => {
+          if (value === undefined) setUncontrolledValue(next);
+          onChange?.(next);
+        },
+      }
+    : {
+        ...(value === undefined ? {} : { value }),
+        ...(defaultValue === undefined ? {} : { defaultValue }),
+        ...(onChange === undefined ? {} : { onChange }),
+      };
   return (
-    <RACTextField {...props} className={composeRenderProps(className, (className) => root({ className }))}>
+    <RACTextField {...props} {...valueProps} className={composeRenderProps(className, (className) => root({ className }))}>
       {label !== undefined && <FieldLabel>{label}</FieldLabel>}
-      {endAction === undefined ? (
+      {endAction === undefined && !layered ? (
         field
       ) : (
         <div className={control()}>
+          {layered && <TextAreaMirror textareaRef={inputRef} text={text} caret={null} highlights={highlights} singleLine />}
           {field}
-          <div className={action()}>{endAction}</div>
+          {endAction !== undefined && <div className={action()}>{endAction}</div>}
         </div>
       )}
       {description !== undefined && <FieldDescription>{description}</FieldDescription>}
