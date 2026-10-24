@@ -82,6 +82,8 @@ type Options struct {
 	TwoFactor TwoFactorSettings
 	// Passkeys runs the viewer's passkeys; nil answers their operations 404.
 	Passkeys PasskeySettings
+	// AuthorizedApps runs the viewer's authorized OAuth apps; nil answers their operations 404.
+	AuthorizedApps AuthorizedApps
 	// OAuthApps runs the OAuth apps that the viewer registers; nil answers their operations 404.
 	OAuthApps OAuthAppSettings
 	// Media runs the media use cases and presents profile images; nil serves no media
