@@ -33,7 +33,8 @@ type ServeOptions struct {
 //
 //   - every role serves HTTP on the listen address (the worker role only the health checks);
 //   - with metrics_exporter = prometheus, every role serves GET /metrics on metrics_listen;
-//   - the worker and all roles run the job runner and the scheduler of periodic jobs.
+//   - the worker and all roles run the job runner and the scheduler of periodic jobs;
+//   - every role first ensures the built-in roles, giving admin every permission.
 //
 // When ctx ends, Serve stops accepting connections and claiming jobs, and waits up to
 // ShutdownTimeout for the requests and the job in progress to finish. After the timeout it
@@ -75,6 +76,12 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 			defer cancel()
 			a.shutDownStreams(closeCtx)
 		})
+	}
+	// A new version may add permissions that the built-in admin role must hold (ADR-0058 §4).
+	// Every role does this, so an upgrade needs no manual step whichever process starts first;
+	// the transaction is short and idempotent, and concurrent starts converge on the same rows.
+	if err := a.Identity.EnsureBuiltinRoles(ctx); err != nil {
+		a.Logger.WarnContext(ctx, "built-in roles not ensured yet", slog.Any("error", err))
 	}
 	if a.Config.Role != config.RoleWorker {
 		// The authorization server also registers the web client on its first request, so a

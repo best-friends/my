@@ -48,12 +48,16 @@ func runAdminRole(args []string, stdout, stderr io.Writer) int {
 		return code
 	}
 	defer func() { _ = app.Close() }()
-	var err error
-	switch sub {
-	case "list":
-		err = listRoles(ctx, app, stdout, user)
-	default:
-		err = changeRole(ctx, app, stdout, sub, c.fs.Arg(0), c.fs.Arg(1))
+	// The command may run before my serve has started on a new version: show and grant the
+	// built-in roles with the permissions this version gives them.
+	err := app.Identity.EnsureBuiltinRoles(ctx)
+	if err == nil {
+		switch sub {
+		case "list":
+			err = listRoles(ctx, app, stdout, user)
+		default:
+			err = changeRole(ctx, app, stdout, sub, c.fs.Arg(0), c.fs.Arg(1))
+		}
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "%s: %v\n", c.name, err)
