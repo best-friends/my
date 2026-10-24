@@ -149,4 +149,15 @@ describe("TextArea", () => {
       expect(screen.getByRole("textbox", { name: "Post" })).toHaveAccessibleDescription("Be kind. 5 left");
     });
   });
+
+  it("puts the end action after the text area in the tab order, without changing its name or description", async () => {
+    const user = userEvent.setup();
+    render(<TextArea label="Post" characterLimit={5} formatRemaining={formatRemaining} endAction={<button type="button">Add emoji</button>} />);
+    await user.tab();
+    const textArea = screen.getByRole("textbox", { name: "Post" });
+    expect(textArea).toHaveFocus();
+    expect(textArea).toHaveAccessibleDescription("5 left");
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Add emoji" })).toHaveFocus();
+  });
 });

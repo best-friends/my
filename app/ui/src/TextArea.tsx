@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useEffect, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import {
   composeRenderProps,
   TextArea as RACTextArea,
@@ -14,11 +14,18 @@ const textArea = tv({
   slots: {
     root: "flex flex-col gap-1",
     input: [fieldControl(), "min-h-24 resize-y"],
+    // The box of the text area and its end action (endAction): the action sits in the top end corner. The room the
+    // text leaves for it is geometry, not a spacing step: the button of size `icon` (32 px, 44 px wide on a coarse
+    // pointer) and its inset.
+    control: "relative min-w-0 [--end-action-room:--spacing(10)] pointer-coarse:[--end-action-room:--spacing(12)]",
+    action: "absolute inset-e-1 top-1",
     count: "text-sm text-fg-muted",
     status: "sr-only",
   },
   variants: {
     over: { true: { count: "font-medium text-danger" } },
+    // The text keeps clear of the end action, so that no line runs under its button (a button of size `icon`).
+    withAction: { true: { input: "pe-(--end-action-room)" } },
   },
 });
 
@@ -55,6 +62,11 @@ export type TextAreaProps = Omit<RACTextFieldProps, "children"> &
   CharacterCountProps & {
     placeholder?: RACTextAreaProps["placeholder"];
     rows?: RACTextAreaProps["rows"];
+    /**
+     * A control in the top end corner of the text area: an icon button of size `icon` that adds to the text (the
+     * emoji picker's, ADR-0091 §4). The text keeps clear of it on the end side.
+     */
+    endAction?: ReactNode;
   };
 
 /**
@@ -65,6 +77,9 @@ export type TextAreaProps = Omit<RACTextFieldProps, "children"> &
  * count is linked to the text area with aria-describedby (hidden from the reading order so it is not
  * read twice), and a separate `role="status"` region announces it when typing pauses for
  * `countAnnounceDelay` ms, or at once when the remaining count reaches 50, 20 or 0.
+ *
+ * With `endAction`, that control sits in the top end corner of the text area (inset-inline-end), and the text keeps
+ * clear of it.
  */
 export function TextArea({
   label,
@@ -80,6 +95,7 @@ export function TextArea({
   onChange,
   isInvalid,
   "aria-describedby": ariaDescribedBy,
+  endAction,
   ...props
 }: TextAreaProps) {
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "");
@@ -117,7 +133,8 @@ export function TextArea({
     onChange?.(next);
   }
 
-  const styles = textArea({ over });
+  const styles = textArea({ over, withAction: endAction !== undefined });
+  const input = <RACTextArea className={styles.input()} {...(placeholder === undefined ? {} : { placeholder })} {...(rows === undefined ? {} : { rows })} />;
   const describedBy = [ariaDescribedBy, remaining === undefined ? undefined : countId].filter((id) => id !== undefined).join(" ");
 
   return (
@@ -132,7 +149,14 @@ export function TextArea({
       className={composeRenderProps(className, (className) => styles.root({ className }))}
     >
       {label !== undefined && <FieldLabel>{label}</FieldLabel>}
-      <RACTextArea className={styles.input()} {...(placeholder === undefined ? {} : { placeholder })} {...(rows === undefined ? {} : { rows })} />
+      {endAction === undefined ? (
+        input
+      ) : (
+        <div className={styles.control()}>
+          {input}
+          <div className={styles.action()}>{endAction}</div>
+        </div>
+      )}
       {description !== undefined && <FieldDescription>{description}</FieldDescription>}
       {remaining !== undefined && formatRemaining !== undefined && (
         <>
