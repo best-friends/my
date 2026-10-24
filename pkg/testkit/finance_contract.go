@@ -49,6 +49,7 @@ func FinanceRepositoryContract(t *testing.T, newHarness FinanceFactory) {
 		{"TotalsFollowTheRules", financeTotals},
 		{"SplitsSumToThePayments", financeSplits},
 		{"RelabelsRevisesAndEnds", financeChanges},
+		{"ShowsTheProviderAsEntered", financeProviderSpelling},
 		{"CancelsFromEveryPeriod", financeCancel},
 		{"RebuildsItsProjection", financeRebuild},
 		{"ImportsWithoutDuplicates", financeImportIdempotent},
@@ -446,12 +447,64 @@ func financeChanges(t *testing.T, e *financeEnv) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []finance.Line{{Key: finance.BreakdownKey{Provider: "other cloud", Category: finance.CategoryCompute, Currency: "JPY"}, Amount: 900*2 + 1300*10}}
+	want := []finance.Line{{
+		Key: finance.BreakdownKey{Provider: "other cloud", Category: finance.CategoryCompute, Currency: "JPY"}, ProviderName: "Other Cloud",
+		Amount: 900*2 + 1300*10,
+	}}
 	if len(totals) != 1 || !slices.Equal(totals[0].Breakdown, want) {
 		t.Errorf("Breakdown = %+v, want %v", totals, want)
 	}
 	if len(got.Prices) != 4 {
 		t.Errorf("prices = %+v, want the 4 revisions", got.Prices)
+	}
+}
+
+// financeProviderSpelling checks that the spellings of a provider share one breakdown line, which
+// shows the provider of the newest label revision among the items of the period (ADR-0098).
+func financeProviderSpelling(t *testing.T, e *financeEnv) {
+	ctx := t.Context()
+	monthly := finance.Recurrence{Schedule: finance.ScheduleMonths, Interval: 1}
+	var ids []string
+	for _, provider := range []string{"ConoHa", "conoha", "ＣｏｎｏＨａ"} {
+		c, err := e.svc.Create(ctx, appfinance.CreateInput{
+			Recurrence: monthly, StartsOn: financeDate(t, "2026-01-05"), Price: financeJPY(1000),
+			Label: finance.Label{Name: "VPS " + provider, Provider: provider, Category: finance.CategoryCompute},
+		}, "")
+		if err != nil {
+			t.Fatalf("Create(%s) = %v", provider, err)
+		}
+		ids = append(ids, c.ID)
+		e.clock.Advance(time.Second)
+	}
+	breakdown := func() []finance.Line {
+		t.Helper()
+		got, err := e.svc.Totals(ctx, appfinance.TotalsQuery{
+			Granularity: finance.GranularityMonth, From: financeDate(t, "2026-01-01"), To: financeDate(t, "2026-01-31"), Basis: finance.BasisCash, Items: true,
+		})
+		if err != nil || len(got) != 1 {
+			t.Fatalf("Totals = %+v, %v", got, err)
+		}
+		for _, line := range got[0].Items {
+			if line.ProviderName != got[0].Breakdown[0].ProviderName {
+				t.Errorf("item line %+v, breakdown %+v", line, got[0].Breakdown)
+			}
+		}
+		return got[0].Breakdown
+	}
+	line := func(name string) []finance.Line {
+		return []finance.Line{{
+			Key: finance.BreakdownKey{Provider: "conoha", Category: finance.CategoryCompute, Currency: "JPY"}, ProviderName: name, Amount: 3000,
+		}}
+	}
+	if got := breakdown(); !slices.Equal(got, line("ＣｏｎｏＨａ")) {
+		t.Errorf("breakdown = %+v, want the newest label's spelling", got)
+	}
+	// Relabeling an item makes its label the newest.
+	if _, err := e.svc.Relabel(ctx, ids[0], finance.Label{Name: "VPS", Provider: "ConoHa", Category: finance.CategoryCompute}, ""); err != nil {
+		t.Fatal(err)
+	}
+	if got := breakdown(); !slices.Equal(got, line("ConoHa")) {
+		t.Errorf("breakdown after the relabel = %+v", got)
 	}
 }
 

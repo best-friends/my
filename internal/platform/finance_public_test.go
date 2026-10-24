@@ -74,7 +74,7 @@ func TestPublicCostTotals(t *testing.T) {
 
 	set(admin.token, "breakdown", http.StatusOK)
 	totals = read(path)
-	if len(totals.Periods) != 2 || len(totals.Periods[0].Breakdown) != 1 || totals.Periods[0].Breakdown[0].Provider != "cloud" ||
+	if len(totals.Periods) != 2 || len(totals.Periods[0].Breakdown) != 1 || totals.Periods[0].Breakdown[0].Provider != "Cloud" ||
 		totals.Periods[0].Breakdown[0].Category != clientapi.CostCategoryCompute {
 		t.Errorf("breakdown = %+v", totals)
 	}

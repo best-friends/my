@@ -532,6 +532,7 @@ func (s *Service) importedEntries(ctx context.Context) ([]finance.Entry, error) 
 	for i, h := range heads {
 		out[i] = finance.Entry{
 			Range: h.Covered, Amount: h.Amount, Provider: NormalizeProvider(SourceProvider(h.Key.Source)), Category: h.Category,
+			Spelling:  finance.Spelling{Name: SourceProvider(h.Key.Source)},
 			Estimated: h.Kind == finance.KindEstimate,
 			Item:      finance.ItemRef{Key: "import:" + h.Key.Source + ":" + h.Key.Service, Name: h.Key.Service},
 		}

@@ -434,7 +434,7 @@ func newCostPeriodTotal(t finance.PeriodTotal, breakdown bool) CostPeriodTotal {
 	if breakdown {
 		for _, line := range t.Breakdown {
 			p.Breakdown = append(p.Breakdown, CostBreakdownLine{
-				Provider: line.Key.Provider, Category: CostCategory(line.Key.Category),
+				Provider: line.ProviderName, Category: CostCategory(line.Key.Category),
 				Amount: newMoney(finance.Money{Minor: line.Amount, Currency: line.Key.Currency}),
 			})
 		}

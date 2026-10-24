@@ -208,7 +208,8 @@ func (r *FinanceRepository) items(ctx context.Context, id, before string, limit 
 			Label: finance.Label{
 				Name: row.Name, Provider: row.Provider, Category: finance.Category(row.Category), Memo: row.Memo,
 			},
-			ProviderNormalized: row.ProviderNormalized, CreatedByUserID: row.CreatedByUserID.String, CreatedAt: fromMillis(row.CreatedAt),
+			ProviderNormalized: row.ProviderNormalized, LabelRevisionID: row.LabelRevisionID, LabelRevisedAt: fromMillis(row.LabelRevisedAt),
+			CreatedByUserID: row.CreatedByUserID.String, CreatedAt: fromMillis(row.CreatedAt),
 		}
 		ids[i] = row.ID
 		byID[row.ID] = i

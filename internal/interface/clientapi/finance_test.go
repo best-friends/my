@@ -52,7 +52,7 @@ func TestFinanceCostTotals(t *testing.T) {
 			Prices:             []finance.PriceRevision{{EffectiveOn: start, Price: finance.Money{Minor: 500, Currency: "EUR"}}},
 		}},
 		imported: []finance.Entry{{
-			Range: month, Amount: finance.Money{Minor: 1200, Currency: "USD"}, Provider: "google cloud", Category: finance.CategoryStorage,
+			Range: month, Amount: finance.Money{Minor: 1200, Currency: "USD"}, Provider: "google cloud", Spelling: finance.Spelling{Name: "Google Cloud"}, Category: finance.CategoryStorage,
 			Item: finance.ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"},
 		}},
 	}
@@ -155,7 +155,7 @@ func TestFinanceCostTotals(t *testing.T) {
 	set(`"finance_viewer_item_names":"true"`)
 	out, body := read("carol-read")
 	got := lines(out)
-	if len(got) != 2 || got[0].Name == nil || *got[0].Name != "Cloud Storage" || got[0].Provider != "google cloud" || got[0].Amount.Amount != "12.00" ||
+	if len(got) != 2 || got[0].Name == nil || *got[0].Name != "Cloud Storage" || got[0].Provider != "Google Cloud" || got[0].Amount.Amount != "12.00" ||
 		got[1].Name == nil || *got[1].Name != "Main VPS" || got[1].Category != clientapi.CostCategoryCompute || got[1].Amount.Amount != "5.00" {
 		t.Errorf("lines with names = %s", body)
 	}
@@ -174,7 +174,7 @@ func TestFinanceCostTotals(t *testing.T) {
 	for _, line := range got {
 		if line.Memo != nil {
 			memos++
-			if *line.Memo != "fsn1-a" || line.Provider != "hetzner" {
+			if *line.Memo != "fsn1-a" || line.Provider != "Hetzner" {
 				t.Errorf("memo line = %+v", line)
 			}
 		}

@@ -435,8 +435,8 @@ func TestTotals(t *testing.T) {
 	periods, _ := GranularityYear.Periods(date(t, "2026-01-01"), date(t, "2026-12-31"))
 	got := Totals([]CostItem{domain, vps}, nil, BasisCash, periods)
 	wantLines := []Line{
-		{Key: BreakdownKey{Provider: "provider domain", Category: CategoryDomain, Currency: "JPY"}, Amount: 1650},
-		{Key: BreakdownKey{Provider: "provider vps", Category: CategoryCompute, Currency: "USD"}, Amount: 4 * 1234},
+		{Key: BreakdownKey{Provider: "provider domain", Category: CategoryDomain, Currency: "JPY"}, ProviderName: "Provider domain", Amount: 1650},
+		{Key: BreakdownKey{Provider: "provider vps", Category: CategoryCompute, Currency: "USD"}, ProviderName: "Provider vps", Amount: 4 * 1234},
 	}
 	if !slices.Equal(got[0].Breakdown, wantLines) {
 		t.Errorf("Breakdown = %v, want %v", got[0].Breakdown, wantLines)
@@ -526,19 +526,82 @@ func TestItemizedTotals(t *testing.T) {
 	}
 	want := [][]ItemLine{
 		{
-			{Item: ItemRef{Key: "item:" + testID(1), Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
-			{Item: ItemRef{Key: "item:" + testID(2), Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
+			{Item: ItemRef{Key: "item:" + testID(1), Name: "Backup"}, Provider: "hetzner", ProviderName: "Hetzner", Category: CategoryCompute, Amount: jpy(300)},
+			{Item: ItemRef{Key: "item:" + testID(2), Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", ProviderName: "Hetzner", Category: CategoryCompute, Amount: jpy(1000)},
 		},
 		{
-			{Item: ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"}, Provider: "google cloud", Category: CategoryStorage, Amount: Money{Minor: 200, Currency: "USD"}},
-			{Item: ItemRef{Key: "item:" + testID(1), Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
-			{Item: ItemRef{Key: "item:" + testID(2), Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
+			{Item: ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"}, Provider: "google cloud", ProviderName: "google cloud", Category: CategoryStorage, Amount: Money{Minor: 200, Currency: "USD"}},
+			{Item: ItemRef{Key: "item:" + testID(1), Name: "Backup"}, Provider: "hetzner", ProviderName: "Hetzner", Category: CategoryCompute, Amount: jpy(300)},
+			{Item: ItemRef{Key: "item:" + testID(2), Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", ProviderName: "Hetzner", Category: CategoryCompute, Amount: jpy(1000)},
 		},
 	}
 	for i := range want {
 		if !slices.Equal(got[i].Items, want[i]) {
 			t.Errorf("period %s items = %+v, want %+v", got[i].Period.Label, got[i].Items, want[i])
 		}
+	}
+}
+
+// A breakdown line shows its provider as entered: the provider of the newest label revision
+// among the cost items of the line's normalized provider that meet the period, then the larger
+// revision ID, and an imported cost's provider name only without such an item (ADR-0098).
+func TestBreakdownSpelling(t *testing.T) {
+	at := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	item := func(id int, provider string, start string, end *Date, revisedAt time.Time, category Category) CostItem {
+		return CostItem{
+			ID: testID(id), Recurrence: Recurrence{ScheduleMonths, 1}, StartsOn: date(t, start), EndsOn: end, ProviderNormalized: "conoha",
+			LabelRevisionID: testID(100 + id), LabelRevisedAt: revisedAt,
+			Label:  Label{Name: "VPS", Provider: provider, Category: category},
+			Prices: []PriceRevision{{EffectiveOn: date(t, start), Price: jpy(1000)}},
+		}
+	}
+	// ＣｏｎｏＨａ has the newest label but stops in January; conoha and ConoHa share a time, and
+	// ConoHa's revision ID is the larger.
+	upper := item(1, "ConoHa", "2026-01-05", nil, at, CategoryCompute)
+	lower := item(2, "conoha", "2026-01-10", nil, at, CategoryStorage)
+	upper.LabelRevisionID, lower.LabelRevisionID = testID(200), testID(150)
+	wide := item(3, "ＣｏｎｏＨａ", "2026-01-15", datePtr(t, "2026-01-31"), at.Add(time.Hour), CategoryCompute)
+	imported := []Entry{{
+		Range: DateRange{Start: date(t, "2026-01-01"), End: date(t, "2026-03-31")}, Amount: Money{Minor: 500, Currency: "USD"},
+		Provider: "google cloud", Category: CategoryStorage, Spelling: Spelling{Name: "Google Cloud"},
+		Item: ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"},
+	}, {
+		Range: DateRange{Start: date(t, "2026-01-01"), End: date(t, "2026-01-31")}, Amount: Money{Minor: 100, Currency: "USD"},
+		Provider: "conoha", Category: CategoryOther, Spelling: Spelling{Name: "CONOHA"},
+		Item: ItemRef{Key: "import:x:VPS", Name: "VPS"},
+	}}
+	periods, err := GranularityMonth.Periods(date(t, "2026-01-01"), date(t, "2026-02-28"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := ItemizedTotals([]CostItem{upper, lower, wide}, imported, BasisCash, periods)
+	want := [][]Line{
+		{
+			{Key: BreakdownKey{Provider: "conoha", Category: CategoryCompute, Currency: "JPY"}, ProviderName: "ＣｏｎｏＨａ", Amount: 2000},
+			{Key: BreakdownKey{Provider: "conoha", Category: CategoryOther, Currency: "USD"}, ProviderName: "ＣｏｎｏＨａ", Amount: 100},
+			{Key: BreakdownKey{Provider: "conoha", Category: CategoryStorage, Currency: "JPY"}, ProviderName: "ＣｏｎｏＨａ", Amount: 1000},
+			{Key: BreakdownKey{Provider: "google cloud", Category: CategoryStorage, Currency: "USD"}, ProviderName: "Google Cloud", Amount: 500 * 31 / 90},
+		},
+		{
+			{Key: BreakdownKey{Provider: "conoha", Category: CategoryCompute, Currency: "JPY"}, ProviderName: "ConoHa", Amount: 1000},
+			{Key: BreakdownKey{Provider: "conoha", Category: CategoryStorage, Currency: "JPY"}, ProviderName: "ConoHa", Amount: 1000},
+			{Key: BreakdownKey{Provider: "google cloud", Category: CategoryStorage, Currency: "USD"}, ProviderName: "Google Cloud", Amount: 500*59/90 - 500*31/90},
+		},
+	}
+	for i := range want {
+		if !slices.Equal(got[i].Breakdown, want[i]) {
+			t.Errorf("period %s breakdown = %+v, want %+v", got[i].Period.Label, got[i].Breakdown, want[i])
+		}
+		for _, line := range got[i].Items {
+			if line.Provider == "conoha" && line.ProviderName != want[i][0].ProviderName {
+				t.Errorf("period %s item %+v, want the spelling %q", got[i].Period.Label, line, want[i][0].ProviderName)
+			}
+		}
+	}
+	// Without a cost item, an imported cost shows its provider name.
+	got = Totals(nil, imported[1:], BasisCash, periods[:1])
+	if len(got[0].Breakdown) != 1 || got[0].Breakdown[0].ProviderName != "CONOHA" {
+		t.Errorf("imported only = %+v", got[0].Breakdown)
 	}
 }
 

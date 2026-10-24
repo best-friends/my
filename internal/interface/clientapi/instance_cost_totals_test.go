@@ -28,8 +28,9 @@ func (f *publicCosts) Totals(ctx context.Context, q appfinance.TotalsQuery) ([]f
 	out, err := f.fakeCosts.Totals(ctx, q)
 	for i := range out {
 		out[i].Breakdown = []finance.Line{{
-			Key:    finance.BreakdownKey{Provider: "registrar", Category: finance.CategoryDomain, Currency: "USD"},
-			Amount: 1234,
+			Key:          finance.BreakdownKey{Provider: "registrar", Category: finance.CategoryDomain, Currency: "USD"},
+			ProviderName: "Registrar",
+			Amount:       1234,
 		}}
 	}
 	return out, err
@@ -151,7 +152,7 @@ func TestInstanceCostTotals(t *testing.T) {
 	if len(totals.Periods) != 2 || len(totals.Periods[0].Breakdown) != 1 {
 		t.Fatalf("totals with breakdown = %+v", totals)
 	}
-	if line := totals.Periods[0].Breakdown[0]; line.Provider != "registrar" || line.Category != clientapi.CostCategoryDomain ||
+	if line := totals.Periods[0].Breakdown[0]; line.Provider != "Registrar" || line.Category != clientapi.CostCategoryDomain ||
 		line.Amount != (clientapi.Money{Amount: "12.34", Currency: "USD"}) {
 		t.Errorf("breakdown line = %+v", line)
 	}

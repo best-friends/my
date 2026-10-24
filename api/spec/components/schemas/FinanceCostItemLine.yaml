@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 description: |
   The amount of a cost item, or of a service of the imported costs, in a currency over a
-  period, with the provider (in NFKC and lower case) and the category of its breakdown line.
+  period, with the provider and the category of its breakdown line. `provider` is the spelling
+  that the period's breakdown lines of the item's grouped provider show (`CostBreakdownLine`).
   `name` is the item's name or the service, present only while the instance shows the names;
   `memo` is the item's memo, present only while the instance shows the memos and the item has
   one (an imported cost has none).
