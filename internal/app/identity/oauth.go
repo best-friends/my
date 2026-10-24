@@ -138,6 +138,20 @@ type OAuthRepository interface {
 	// started from, unless the session has a revocation already or the code had no session.
 	RevokeSessionOfTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.RevocationReason, at time.Time) error
 
+	// UpsertOAuthClientMetadataDocument stores the last fetch of a client's metadata document.
+	UpsertOAuthClientMetadataDocument(ctx context.Context, tx uow.Tx, d identity.ClientMetadataDocument) error
+	// FindOAuthClientMetadataDocument returns the last fetch of the metadata document of the
+	// client with the ID; ErrNotFound when there is none.
+	FindOAuthClientMetadataDocument(ctx context.Context, clientID string) (identity.ClientMetadataDocument, error)
+	// InsertOAuthClientHostDenial records d and reports whether it did; false means the host was
+	// denied already.
+	InsertOAuthClientHostDenial(ctx context.Context, tx uow.Tx, d identity.OAuthClientHostDenial) (bool, error)
+	// LiftOAuthClientHostDenials lifts every denial of a host that has no lift yet and reports
+	// whether there was one. byUserID is "" for the CLI.
+	LiftOAuthClientHostDenials(ctx context.Context, tx uow.Tx, host, byUserID string, at time.Time) (bool, error)
+	// OAuthClientHostDenied reports whether a host has a denial without a lift.
+	OAuthClientHostDenied(ctx context.Context, host string) (bool, error)
+
 	// FindOAuthClient returns the client with the public client_id and its redirect URIs,
 	// sorted.
 	FindOAuthClient(ctx context.Context, clientID string) (identity.OAuthClient, []string, error)
@@ -186,7 +200,9 @@ func (s *Service) EnsureWebClient(ctx context.Context) error {
 
 // client returns the client with the public client_id and its redirect URIs. A disabled or
 // deleted client, and one whose owner cannot use the app, is ErrNotFound, as an unknown one: it
-// may not be authorized, get tokens, or revoke them (ADR-0090 §1). It registers the web client first when the start-up registration
+// may not be authorized, get tokens, or revoke them (ADR-0090 §1), and so is a metadata document
+// client while the instance does not accept them or its host is denied; its name, website, and
+// scope are those of its stored document. It registers the web client first when the start-up registration
 // has not succeeded yet (for example because the schema was applied after the server started).
 func (s *Service) client(ctx context.Context, clientID string) (identity.OAuthClient, []string, error) {
 	if clientID == "" {
@@ -208,12 +224,17 @@ func (s *Service) client(ctx context.Context, clientID string) (identity.OAuthCl
 	if !state.Usable() {
 		return identity.OAuthClient{}, nil, ErrNotFound
 	}
-	if c.Registration == identity.ClientRegisteredByUser {
+	switch c.Registration {
+	case identity.ClientRegisteredByUser:
 		switch ok, err := s.ownerCanUseApps(ctx, c.OwnerUserID); {
 		case err != nil:
 			return identity.OAuthClient{}, nil, err
 		case !ok:
 			return identity.OAuthClient{}, nil, ErrNotFound
+		}
+	case identity.ClientRegisteredByMetadataDocument:
+		if c, err = s.metadataDocumentClient(ctx, c); err != nil {
+			return identity.OAuthClient{}, nil, err
 		}
 	}
 	return c, uris, nil
@@ -321,13 +342,25 @@ type Authorization struct {
 // maxStateLength bounds the state the server echoes back.
 const maxStateLength = 1024
 
-// ValidateAuthorization checks an authorization request. It fails with ErrUnknownClient or
+// ValidateAuthorization checks an authorization request. A client_id that is an https URL is a
+// Client ID Metadata Document, fetched first unless a fresh copy is stored
+// (refreshMetadataDocument); a document that cannot be fetched or is refused makes the client
+// unknown. It fails with ErrUnknownClient or
 // ErrInvalidRedirectURI when the client is unknown or the redirect_uri is missing or not one
 // of the client's registered URIs (compared exactly); the caller shows an error page. Other
 // problems are an *OAuthError for the caller to send to the redirect URI: an unsupported
 // response_type, a missing or malformed code_challenge, a code_challenge_method other than
 // S256, or a scope the client may not have. An empty scope means the client's whole scope.
 func (s *Service) ValidateAuthorization(ctx context.Context, req AuthorizationRequest) (Authorization, error) {
+	if identity.IsMetadataDocumentClientID(req.ClientID) {
+		err := s.refreshMetadataDocument(ctx, req.ClientID)
+		if errors.Is(err, errMetadataDocumentClient) {
+			return Authorization{}, fmt.Errorf("%w: %w", ErrUnknownClient, err)
+		}
+		if err != nil {
+			return Authorization{}, err
+		}
+	}
 	client, uris, err := s.client(ctx, req.ClientID)
 	if errors.Is(err, ErrNotFound) {
 		return Authorization{}, ErrUnknownClient

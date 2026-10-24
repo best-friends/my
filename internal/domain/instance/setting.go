@@ -92,6 +92,9 @@ const (
 	SettingFederationMode SettingKey = "federation_mode"
 	// SettingUserAppRegistration is whether users may register OAuth apps (ADR-0090 §1).
 	SettingUserAppRegistration SettingKey = "user_app_registration"
+	// SettingOAuthMetadataDocumentClients is whether OAuth clients may use the https URL of a
+	// Client ID Metadata Document as their client_id without registering (ADR-0090 §1).
+	SettingOAuthMetadataDocumentClients SettingKey = "oauth_metadata_document_clients"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -403,6 +406,10 @@ var definitions = []Definition{
 	{
 		Key: SettingRequireMediaDescription, Kind: KindBool, Default: "false",
 		Doc: "Whether every media file attached to a local post needs an alt text; posts and edits without one are rejected (FR-105).",
+	},
+	{
+		Key: SettingOAuthMetadataDocumentClients, Kind: KindBool, Default: "true",
+		Doc: "Whether OAuth clients may use the https URL of a Client ID Metadata Document as their client_id; the server fetches the document instead of a registration (ADR-0090 §1).",
 	},
 	{
 		Key: SettingLinkCardsEnabled, Kind: KindBool, Default: "true",
@@ -807,6 +814,11 @@ func (s Settings) AIUsage() AIUsage {
 		return AIDenyTraining
 	}
 	return AIDeny
+}
+
+// OAuthMetadataDocumentClients returns the value of SettingOAuthMetadataDocumentClients.
+func (s Settings) OAuthMetadataDocumentClients() bool {
+	return s.boolValue(SettingOAuthMetadataDocumentClients)
 }
 
 // IndexableDefault returns the value of SettingIndexableDefault.

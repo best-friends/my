@@ -618,6 +618,16 @@ type OauthClient struct {
 	CreatedAt        time.Time
 }
 
+type OauthClientMetadataDocument struct {
+	ClientID   string
+	ClientName string
+	ClientUri  string
+	LogoUri    string
+	Scope      string
+	FetchedAt  time.Time
+	ExpiresAt  time.Time
+}
+
 type OauthClientRevision struct {
 	ID        string
 	ClientID  string

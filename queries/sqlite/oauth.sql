@@ -161,3 +161,40 @@ SELECT t.id, sqlc.arg(reason), sqlc.arg(revoked_at) FROM oauth_access_tokens t
 WHERE t.client_id = sqlc.arg(client_id)
   AND (t.expires_at > sqlc.arg(revoked_at) OR t.refresh_expires_at > sqlc.arg(revoked_at))
 ON CONFLICT (token_id) DO NOTHING;
+
+-- UpsertOAuthClientMetadataDocument stores the last fetch of a client's metadata document.
+-- name: UpsertOAuthClientMetadataDocument :exec
+INSERT INTO oauth_client_metadata_documents (client_id, client_name, client_uri, logo_uri, scope, fetched_at, expires_at)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (client_id) DO UPDATE SET
+  client_name = excluded.client_name, client_uri = excluded.client_uri, logo_uri = excluded.logo_uri,
+  scope = excluded.scope, fetched_at = excluded.fetched_at, expires_at = excluded.expires_at;
+
+-- name: GetOAuthClientMetadataDocument :one
+SELECT client_id, client_name, client_uri, logo_uri, scope, fetched_at, expires_at
+FROM oauth_client_metadata_documents
+WHERE client_id = ?;
+
+-- InsertOAuthClientHostDenialIfAllowed records a denial unless the host is denied already, so
+-- that repeating it adds nothing.
+-- name: InsertOAuthClientHostDenialIfAllowed :execrows
+INSERT INTO oauth_client_host_denials (id, host, denied_by_user_id, denied_at)
+SELECT sqlc.arg(id), sqlc.arg(host), sqlc.narg(denied_by_user_id), sqlc.arg(denied_at)
+WHERE NOT EXISTS (
+    SELECT 1 FROM oauth_client_host_denials d
+    WHERE d.host = sqlc.arg(host) AND NOT EXISTS (SELECT 1 FROM oauth_client_host_denial_lifts l WHERE l.denial_id = d.id)
+  );
+
+-- LiftOAuthClientHostDenials lifts every denial of a host that has no lift yet.
+-- name: LiftOAuthClientHostDenials :execrows
+INSERT INTO oauth_client_host_denial_lifts (denial_id, lifted_by_user_id, lifted_at)
+SELECT d.id, sqlc.narg(lifted_by_user_id), sqlc.arg(lifted_at) FROM oauth_client_host_denials d
+WHERE d.host = sqlc.arg(host)
+ON CONFLICT (denial_id) DO NOTHING;
+
+-- OAuthClientHostDenied reports whether a host has a denial without a lift.
+-- name: OAuthClientHostDenied :one
+SELECT EXISTS (
+  SELECT 1 FROM oauth_client_host_denials d
+  WHERE d.host = sqlc.arg(host) AND NOT EXISTS (SELECT 1 FROM oauth_client_host_denial_lifts l WHERE l.denial_id = d.id)
+) AS denied;

@@ -313,6 +313,38 @@ CREATE TABLE oauth_client_secret_rotations (
   rotated_at INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX oauth_client_secret_rotations_client_id ON oauth_client_secret_rotations (client_id, id);
+-- Current value (cache): the Client ID Metadata Document of a client whose registration is
+-- metadata_document (ADR-0090 §1), as last fetched from its client_id URL. Every fetch replaces the
+-- row and the client's oauth_client_redirect_uris; refetching rebuilds it. client_uri and logo_uri
+-- are '' when the document has none. expires_at is when the HTTP cache directives of the response
+-- let the document be reused until (fetched_at for no-store and no-cache).
+CREATE TABLE oauth_client_metadata_documents (
+  client_id TEXT NOT NULL PRIMARY KEY,
+  client_name TEXT NOT NULL,
+  client_uri TEXT NOT NULL,
+  logo_uri TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  fetched_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+) STRICT;
+
+-- Event: an administrator denied the Client ID Metadata Documents of a host (ADR-0090 §1): no
+-- client_id URL on the host is fetched or used while one of its denials has no lift. host is the
+-- lowercase host name without the port. denied_by_user_id is NULL for the CLI.
+CREATE TABLE oauth_client_host_denials (
+  id TEXT NOT NULL PRIMARY KEY,
+  host TEXT NOT NULL,
+  denied_by_user_id TEXT,
+  denied_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX oauth_client_host_denials_host ON oauth_client_host_denials (host);
+
+-- Event: a host denial was lifted, at most once. lifted_by_user_id is NULL for the CLI.
+CREATE TABLE oauth_client_host_denial_lifts (
+  denial_id TEXT NOT NULL PRIMARY KEY,
+  lifted_by_user_id TEXT,
+  lifted_at INTEGER NOT NULL
+) STRICT;
 
 -- Resource: an authorization code, keyed by its SHA-256 digest. session_id is the browser session
 -- that authorized it (NULL when it was issued outside one).

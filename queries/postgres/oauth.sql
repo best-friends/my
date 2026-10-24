@@ -161,3 +161,40 @@ SELECT t.id, sqlc.arg(reason)::text, sqlc.arg(revoked_at)::timestamptz FROM oaut
 WHERE t.client_id = sqlc.arg(client_id)::text
   AND (t.expires_at > sqlc.arg(revoked_at)::timestamptz OR t.refresh_expires_at > sqlc.arg(revoked_at)::timestamptz)
 ON CONFLICT (token_id) DO NOTHING;
+
+-- UpsertOAuthClientMetadataDocument stores the last fetch of a client's metadata document.
+-- name: UpsertOAuthClientMetadataDocument :exec
+INSERT INTO oauth_client_metadata_documents (client_id, client_name, client_uri, logo_uri, scope, fetched_at, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (client_id) DO UPDATE SET
+  client_name = excluded.client_name, client_uri = excluded.client_uri, logo_uri = excluded.logo_uri,
+  scope = excluded.scope, fetched_at = excluded.fetched_at, expires_at = excluded.expires_at;
+
+-- name: GetOAuthClientMetadataDocument :one
+SELECT client_id, client_name, client_uri, logo_uri, scope, fetched_at, expires_at
+FROM oauth_client_metadata_documents
+WHERE client_id = $1;
+
+-- InsertOAuthClientHostDenialIfAllowed records a denial unless the host is denied already, so
+-- that repeating it adds nothing.
+-- name: InsertOAuthClientHostDenialIfAllowed :execrows
+INSERT INTO oauth_client_host_denials (id, host, denied_by_user_id, denied_at)
+SELECT sqlc.arg(id)::uuid, sqlc.arg(host)::text, sqlc.narg(denied_by_user_id)::uuid, sqlc.arg(denied_at)::timestamptz
+WHERE NOT EXISTS (
+    SELECT 1 FROM oauth_client_host_denials d
+    WHERE d.host = sqlc.arg(host)::text AND NOT EXISTS (SELECT 1 FROM oauth_client_host_denial_lifts l WHERE l.denial_id = d.id)
+  );
+
+-- LiftOAuthClientHostDenials lifts every denial of a host that has no lift yet.
+-- name: LiftOAuthClientHostDenials :execrows
+INSERT INTO oauth_client_host_denial_lifts (denial_id, lifted_by_user_id, lifted_at)
+SELECT d.id, sqlc.narg(lifted_by_user_id)::uuid, sqlc.arg(lifted_at)::timestamptz FROM oauth_client_host_denials d
+WHERE d.host = sqlc.arg(host)::text
+ON CONFLICT (denial_id) DO NOTHING;
+
+-- OAuthClientHostDenied reports whether a host has a denial without a lift.
+-- name: OAuthClientHostDenied :one
+SELECT EXISTS (
+  SELECT 1 FROM oauth_client_host_denials d
+  WHERE d.host = sqlc.arg(host)::text AND NOT EXISTS (SELECT 1 FROM oauth_client_host_denial_lifts l WHERE l.denial_id = d.id)
+) AS denied;
