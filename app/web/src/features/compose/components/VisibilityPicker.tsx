@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Box, Button, EyeIcon, Popover, PopoverTrigger, Radio, RadioGroup, VisuallyHidden } from "@my/ui";
-import { useId } from "react";
+import { Box, Button, EyeIcon, Popover, PopoverTrigger, Radio, RadioGroup, Tooltip, TooltipTrigger, VisuallyHidden } from "@my/ui";
+import { useId, useState } from "react";
 import { useT } from "../../../lib/i18n";
 import type { PostingLimits, Visibility } from "../api/compose";
 import { visibilities } from "../hooks/policy";
@@ -29,21 +29,27 @@ function isVisibility(value: string): value is Visibility {
 export function VisibilityPicker({ value, onChange, limits, isDisabled = false }: VisibilityPickerProps) {
   const t = useT();
   const descriptionId = useId();
+  const [isOpen, setIsOpen] = useState(false);
   const title = t("client:compose.visibility.title");
   const ceilingHint =
     limits === null ? undefined : t("client:compose.visibility.ceiling", { visibility: t(visibilityLabel[limits.visibility_ceiling]) });
+  const buttonLabel = t("client:compose.visibility.button", { visibility: t(visibilityLabel[value]) });
   return (
-    <PopoverTrigger>
-      <Button
-        variant="ghost"
-        size="toolbar"
-        aria-label={t("client:compose.visibility.button", { visibility: t(visibilityLabel[value]) })}
-        aria-describedby={descriptionId}
-        isDisabled={isDisabled}
-      >
-        <EyeIcon />
-        {t(visibilityLabel[value])}
-      </Button>
+    <PopoverTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
+      {/* The tooltip says the control's name and value like the icon buttons' (G12) and stays closed while the popover is open. */}
+      <TooltipTrigger isDisabled={isOpen}>
+        <Button
+          variant="ghost"
+          size="toolbar"
+          aria-label={buttonLabel}
+          aria-describedby={descriptionId}
+          isDisabled={isDisabled}
+        >
+          <EyeIcon />
+          {t(visibilityLabel[value])}
+        </Button>
+        <Tooltip>{buttonLabel}</Tooltip>
+      </TooltipTrigger>
       <VisuallyHidden id={descriptionId}>{t(visibilityDescription[value])}</VisuallyHidden>
       <Popover aria-label={title} placement="bottom start">
         {({ close }) => (

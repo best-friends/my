@@ -118,4 +118,32 @@ describe("Select", () => {
     // The icon comes first and stays out of the name.
     expect(trigger).toHaveTextContent(/^★日本語/);
   });
+
+  it("with a tooltip, shows it on keyboard focus, hides it on Esc, and keeps it closed while the list is open", async () => {
+    const user = userEvent.setup();
+    render(
+      <Select variant="toolbar" aria-label="Language" tooltip="Language: English" items={languages} defaultValue="en">
+        {(language) => <SelectItem id={language.id}>{language.name}</SelectItem>}
+      </Select>,
+    );
+    const trigger = screen.getByRole("button", { name: "English Language" });
+    await user.tab();
+    expect(trigger).toHaveFocus();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Language: English");
+    // The tooltip describes the button; the name stays the option and the aria-label.
+    expect(trigger).toHaveAccessibleDescription("Language: English");
+    await user.keyboard("{Escape}");
+    await waitFor(() => {
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    });
+    // The select's own keys still open the list, and no tooltip comes with it.
+    await user.keyboard("{Enter}");
+    expect(await screen.findByRole("listbox")).toBeInTheDocument();
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    await user.keyboard("{ArrowDown}{Enter}");
+    await waitFor(() => {
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveTextContent("日本語");
+  });
 });

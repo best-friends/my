@@ -147,6 +147,44 @@ describe("the new-post form", () => {
     expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add a content warning");
   });
 
+  test("shows the name and current value of the visibility, quote policy and language as tooltips on keyboard focus, and not while the list is open", async () => {
+    signedIn();
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+    await within(sheet).findByRole("textbox", { name: "Your post" });
+
+    const visibility = within(sheet).getByRole("button", { name: "Visibility: Public" });
+    // From the text: the emoji button, images, poll and content warning come first.
+    for (let i = 0; i < 5; i++) await user.tab();
+    expect(visibility).toHaveFocus();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Visibility: Public");
+    // Opening the popover hides it, and the choice updates it.
+    await user.click(visibility);
+    await waitFor(() => {
+      expect(screen.queryByRole("tooltip", { hidden: true })).not.toBeInTheDocument();
+    });
+    await user.click(await screen.findByRole("radio", { name: /Followers/ }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    // Focus returns to the button; leave and come back to see the new value.
+    await waitFor(() => {
+      expect(within(sheet).getByRole("button", { name: "Visibility: Followers" })).toHaveFocus();
+    });
+    await user.tab();
+    await user.tab({ shift: true });
+    expect(within(sheet).getByRole("button", { name: "Visibility: Followers" })).toHaveFocus();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Visibility: Followers");
+
+    await user.tab();
+    expect(within(sheet).getByRole("button", { name: /Who can quote/ })).toHaveFocus();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent(/^Quote: /);
+    await user.tab();
+    expect(within(sheet).getByRole("button", { name: "English Language" })).toHaveFocus();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Language: English");
+    await user.keyboard("{Enter}");
+    expect(await screen.findByRole("listbox")).toBeInTheDocument();
+    expect(screen.queryByRole("tooltip", { hidden: true })).not.toBeInTheDocument();
+  });
+
   test("posts a poll, and attaches no files to a post with one (FR-112)", async () => {
     signedIn();
     const sent = recordPosts();

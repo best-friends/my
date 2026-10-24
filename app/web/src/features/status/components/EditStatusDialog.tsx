@@ -157,6 +157,7 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
           <Select
             variant="toolbar"
             aria-label={t("client:compose.language.label")}
+            tooltip={t("client:compose.language.tooltip", { value: form.languages.find((option) => option.id === form.language)?.name ?? form.language })}
             icon={<LanguageIcon />}
             items={form.languages}
             value={form.language}

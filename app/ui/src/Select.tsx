@@ -14,6 +14,7 @@ import {
   Text,
 } from "react-aria-components";
 import { tv } from "tailwind-variants";
+import { Tooltip, TooltipTrigger } from "./Tooltip";
 import { FieldDescription, FieldError, FieldLabel, type FieldTextProps, fieldControl } from "./Field";
 
 const select = tv({
@@ -59,6 +60,12 @@ export interface SelectProps<T extends object> extends Omit<RACSelectProps<T>, "
   variant?: "field" | "toolbar";
   /** A decorative icon before the value, for the `toolbar` variant. */
   icon?: ReactNode;
+  /**
+   * A tooltip on the trigger button, for the `toolbar` variant: it shows on hover and keyboard focus like the
+   * tooltips of the icon buttons beside it, closes on Esc, and stays closed while the list is open. It does not
+   * replace the accessible name (`aria-label` and the chosen option).
+   */
+  tooltip?: ReactNode;
 }
 
 /**
@@ -66,18 +73,30 @@ export interface SelectProps<T extends object> extends Omit<RACSelectProps<T>, "
  * list, typing jumps to an option. Controlled with `value` / `onChange` or uncontrolled with `defaultValue`;
  * the value is the selected `SelectItem`'s `id`.
  */
-export function Select<T extends object>({ label, description, errorMessage, items, children, className, variant, icon, ...props }: SelectProps<T>) {
+export function Select<T extends object>({ label, description, errorMessage, items, children, className, variant, icon, tooltip, ...props }: SelectProps<T>) {
   const styles = select({ variant });
+  const trigger = (
+    <Button className={styles.trigger()}>
+      {icon}
+      <SelectValue className={styles.value()} />
+      <svg viewBox="0 0 24 24" aria-hidden className={styles.chevron()}>
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </Button>
+  );
   return (
     <RACSelect {...props} className={composeRenderProps(className, (className) => styles.root({ className }))}>
-      {label !== undefined && <FieldLabel>{label}</FieldLabel>}
-      <Button className={styles.trigger()}>
-        {icon}
-        <SelectValue className={styles.value()} />
-        <svg viewBox="0 0 24 24" aria-hidden className={styles.chevron()}>
-          <path d="m6 9 6 6 6-6" />
-        </svg>
-      </Button>
+      {({ isOpen }) => (
+        <>
+          {label !== undefined && <FieldLabel>{label}</FieldLabel>}
+          {tooltip === undefined ? (
+            trigger
+          ) : (
+            <TooltipTrigger isDisabled={isOpen}>
+              {trigger}
+              <Tooltip>{tooltip}</Tooltip>
+            </TooltipTrigger>
+          )}
       {description !== undefined && <FieldDescription>{description}</FieldDescription>}
       <FieldError>{errorMessage}</FieldError>
       <Popover className={styles.popover()}>
@@ -85,6 +104,8 @@ export function Select<T extends object>({ label, description, errorMessage, ite
           {children}
         </ListBox>
       </Popover>
+        </>
+      )}
     </RACSelect>
   );
 }
