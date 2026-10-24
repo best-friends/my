@@ -147,6 +147,9 @@
 | `oauth_client_disablement_lifts` | イベント | `disablement_id`（PK）, `lifted_by_user_id`（NULL 可 = CLI）, `lifted_at` | 無効化の取り消し |
 | `oauth_client_deletions` | イベント | `client_id`（PK）, `reason`（`enum(owner, unused)`）, `deleted_by_user_id`（NULL 可 = 使われないクライアントの自動の削除）, `deleted_at` | 削除したクライアントは二度と使えない |
 | `oauth_client_redirect_uris` | 現在値 | `client_id`, `redirect_uri` | PK `(client_id, redirect_uri)`。完全一致で照合する |
+| `oauth_client_metadata_documents` | 現在値（キャッシュ） | `client_id`（PK）, `client_name`, `client_uri`（無ければ空）, `logo_uri`（無ければ空）, `scope`, `fetched_at`, `expires_at` | 経路が `metadata_document` のクライアントの、最後に取得した Client ID Metadata Document。取得のたびに UPSERT し、`oauth_client_redirect_uris` も文書の `redirect_uris` に置き換える |
+| `oauth_client_host_denials` | イベント | `id`, `host`, `denied_by_user_id`（NULL 可 = CLI）, `denied_at` | インデックス `(host)`。取り消しのない行があれば、そのホストの `client_id` の URL は取得も利用もしない |
+| `oauth_client_host_denial_lifts` | イベント | `denial_id`（PK）, `lifted_by_user_id`（NULL 可 = CLI）, `lifted_at` | ホストの拒否の取り消し |
 | `oauth_authorization_codes` | リソース | `code_hash`（PK）, `client_id`, `user_id`, `redirect_uri`, `scope`, `code_challenge`, `session_id`（NULL 可 = セッションの外で発行）, `issued_at`, `expires_at` | `session_id` は認可した画面のセッション |
 | `oauth_authorization_code_redemptions` | イベント | `code_hash`（PK）, `token_id`, `redeemed_at` | 一意 `(token_id)`。`token_id` は交換で発行した系列の最初のトークン |
 | `oauth_access_tokens` | リソース | `id`, `family_id`, `client_id`, `user_id`, `access_token_hash`, `refresh_token_hash`（NULL 可）, `scope`, `rotated_from_token_id`（NULL 可）, `issued_at`, `expires_at`, `refresh_expires_at`（NULL 可） | 一意 `(access_token_hash)`, `(refresh_token_hash)`。インデックス `(family_id)`, `(user_id)`（処分による失効）, `(client_id)`（クライアントの無効化・削除による失効）。`refresh_token_hash` と `refresh_expires_at` は同時に NULL |
@@ -171,6 +174,14 @@
   - 無効なクライアント = 取り消しのない `oauth_client_disablements` の行があるもの、削除済みのクライアント = `oauth_client_deletions` の行があるものです。どちらも認可要求・トークンの交換と更新・トークンの失効の要求を未知のクライアントと同じに断り、API の認証ではそのクライアントのアクセストークンを受けません。
   - 無効化・削除は、同じトランザクションでそのクライアントの全トークン系列を `client_disabled` / `client_deleted` で失効させます。無効化を取り消しても、失効したトークンは戻りません（利用者が認可しなおす）。
   - 無効化は無効でないときだけ行を足し、取り消しは取り消しのない無効化すべてに行を足し、削除は 1 度だけ記録するので、どれも繰り返して安全です。一次のクライアントは無効化・削除しません。
+- Client ID Metadata Document のクライアント（[ADR-0090](../../../adr/0090-third-party-oauth-apps.md) §1、経路 `metadata_document`）は、`client_id` が `https` の URL の認可要求で作ります。
+  - `oauth_clients` の行は最初の取得のときに 1 度だけ作り（`client_id` = URL、`name` = URL のホスト名、`scope` = 一次専用を除くすべてのスコープ、シークレットなし）、以後は変えません。
+    名前・サイトの URL・ロゴ・要求できるスコープの上限は自己申告で変わり得るので、`oauth_client_metadata_documents` に持ち、クライアントを読むときにこちらを使います。
+  - 取得は認可要求のときだけ、`expires_at` を過ぎていれば行います（トークンの交換と更新は取得しません）。取得はトランザクションの外で行い、成功したときだけ同じトランザクションで `oauth_clients`（無ければ）・`oauth_client_metadata_documents`・`oauth_client_redirect_uris` を書きます。失敗はキャッシュしません。
+  - `expires_at` は応答の HTTP のキャッシュ指示から決めます: `no-store`・`no-cache` は `fetched_at`（次の認可要求で取り直す）、`s-maxage`・`max-age`・`Expires` があればそれ、無ければ 1 時間。上限は 24 時間です。
+  - 行は取得し直せば作り直せるキャッシュで、消しても次の認可要求で戻ります。
+  - 管理者の無効化は、URL ごとにはクライアント（`oauth_client_disablements`）に、ホストごとには `oauth_client_host_denials` に記録し、キャッシュには持ちません。
+    拒否したホストの `client_id` は取得の前に断り、認可要求・トークンの交換と更新・失効の要求を未知のクライアントと同じに断ります。ホストは小文字のホスト名（ポートなし）で照合します。
 - ファーストパーティの Web クライアント（`client_id` は `my-web`、経路は `first_party`）は起動時に冪等に登録します。リダイレクト URI は設定 `web_origin` から導くので、`oauth_client_redirect_uris` は起動のたびに設定値へ置き換える【現在値】です。
 - 認可コード・アクセストークン・リフレッシュトークンは、DB には SHA-256 ハッシュだけを保存します（ADR-0019 §4）。認可コードの 1 回性は `oauth_authorization_code_redemptions` の PK で保証します。
 - `oauth_access_tokens` の 1 行は 1 回の発行（アクセストークンと、あればリフレッシュトークン）です。`expires_at` はアクセストークンの、`refresh_expires_at` はリフレッシュトークンの期限です。

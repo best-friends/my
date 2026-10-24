@@ -37,3 +37,4 @@ enum:
   - supporter_list_visibility
   - income_visibility
   - federation_mode
+  - oauth_metadata_document_clients
