@@ -123,6 +123,8 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RefreshesThirdPartyTokens", oauthRefreshesThirdPartyTokens},
 		{"RevokesTokens", oauthRevokesTokens},
 		{"DisablesAndDeletesClients", oauthDisablesAndDeletesClients},
+		{"RegistersDynamicClients", oauthRegistersDynamicClients},
+		{"DeletesUnusedDynamicClients", oauthDeletesUnusedDynamicClients},
 		{"UsesClientMetadataDocuments", oauthUsesClientMetadataDocuments},
 		{"EndsTheBrowserSessionOnWebSignOut", oauthWebSignOutEndsTheBrowserSession},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},

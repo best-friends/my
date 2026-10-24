@@ -701,6 +701,20 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.JobAttemptRetention, _ = time.ParseDuration(v) },
 	},
 	{
+		key:   "dynamic_client_unredeemed_ttl",
+		doc:   "How long a dynamically registered OAuth client (RFC 7591, `POST /oauth/register`; ADR-0090 §1) may wait for the exchange of its first authorization code: the hourly clean-up deletes a client that is older than this and had no code exchanged. A Go duration such as `24h`.",
+		def:   "24h",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.DynamicClientUnredeemedTTL, _ = time.ParseDuration(v) },
+	},
+	{
+		key:   "dynamic_client_idle_ttl",
+		doc:   "How long a dynamically registered OAuth client without a usable token may go unused before the hourly clean-up deletes it (ADR-0090 §1). Until the last use of a token is recorded, the time the client's newest token was issued stands for it. A Go duration such as `2160h` (90 days).",
+		def:   "2160h",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.DynamicClientIdleTTL, _ = time.ParseDuration(v) },
+	},
+	{
 		key: "metrics_exporter",
 		doc: "Where the service metrics go (ADR-0055 §2): the request, federation, delivery, job, and stream metrics, named after the OpenTelemetry semantic conventions or with the prefix `my.`. Labels never carry a remote domain, an account, a URL, or a client IP.",
 		def: "none",

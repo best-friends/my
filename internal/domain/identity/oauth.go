@@ -347,6 +347,23 @@ func (s Scope) HasFirstPartyOnly() bool {
 	return slices.ContainsFunc(s.Tokens(), FirstPartyOnlyScope)
 }
 
+// WithoutFirstPartyOnly returns s without the scopes that only a first-party client may hold.
+// A broad scope stays: the client API still refuses the operations behind a first-party-only
+// scope that it grants (FirstPartyOnlyScope).
+func (s Scope) WithoutFirstPartyOnly() Scope {
+	var keep []string
+	for _, t := range s.Tokens() {
+		if !FirstPartyOnlyScope(t) {
+			keep = append(keep, t)
+		}
+	}
+	return Scope(strings.Join(keep, " "))
+}
+
+// ThirdPartyScopes returns the scope that grants everything a third-party client may hold: the
+// broad scopes without the first-party-only ones.
+func ThirdPartyScopes() Scope { return AllScopes().WithoutFirstPartyOnly() }
+
 // Within reports whether outer grants every scope of s.
 func (s Scope) Within(outer Scope) bool {
 	for _, t := range s.Tokens() {
