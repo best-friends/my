@@ -24,6 +24,12 @@ export { ReasonField, type ReasonFieldProps } from "./ReasonField";
 export { Select, SelectItem, type SelectItemProps, type SelectProps } from "./Select";
 export { Switch, type SwitchProps } from "./Switch";
 export { TextArea, type TextAreaProps } from "./TextArea";
+export {
+  TextAreaAutocomplete,
+  type TextAreaAutocompleteProps,
+  type TextAutocompleteSuggestion,
+  type TextAutocompleteWord,
+} from "./TextAreaAutocomplete";
 export { TextField, type TextFieldProps } from "./TextField";
 export { ToggleButton, type ToggleButtonProps } from "./ToggleButton";
 export { Segmented, SegmentedItem, type SegmentedItemProps, type SegmentedProps } from "./Segmented";
