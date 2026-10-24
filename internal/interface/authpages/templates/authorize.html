@@ -1,8 +1,12 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
-<p>{{.L.ServerAuthAuthorizeLead .Consent.ClientName}}</p>
+<p class="notice">{{.Consent.Unverified}}</p>
+<p dir="auto">{{.Consent.Origin}}</p>
+{{with .Consent.Website}}<p dir="auto">{{.}}</p>
+{{end}}{{with .Consent.Impersonation}}<p class="alert">{{.}}</p>
+{{end}}<p>{{.L.ServerAuthAuthorizeLead .Consent.ClientName}}</p>
 <ul class="scopes">
-{{range .Consent.Scopes}}<li>{{.}}</li>
+{{range .Consent.Scopes}}<li>{{.Text}}{{range .Cautions}}<br><strong class="caution">{{.}}</strong>{{end}}</li>
 {{end}}</ul>
 <p class="hint">{{.L.ServerAuthAuthorizeRedirectNotice .Consent.RedirectHost}}</p>
 <form class="form" method="post" action="/oauth/authorize">

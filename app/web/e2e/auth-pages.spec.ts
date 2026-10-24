@@ -493,10 +493,22 @@ test.describe("OAuth consent page", () => {
     `);
   });
 
+  test("says the app is unverified, where it comes from, and warns of impersonation", async ({ page }) => {
+    // The seeded client is a dynamic registration whose redirect URI is not https, so the page shows the
+    // unverified notice, the origin, the impersonation alert, and the redirect host.
+    const main = page.getByRole("main");
+    const host = new URL(thirdPartyClient.redirectURI).host;
+    await expect(main.locator("p.notice")).toHaveCount(1);
+    await expect(main.locator("p.alert")).toHaveCount(1);
+    await expect(main.locator("p.alert")).toContainText(host);
+    await expect(main.locator("p.hint")).toContainText(host);
+  });
+
   test.describe("without JavaScript", () => {
     test.use({ javaScriptEnabled: false });
 
-    test("approving redirects to the client with a code", async ({ page }) => {
+    test("shows the unverified notice, and approving redirects to the client with a code", async ({ page }) => {
+      await expect(page.getByRole("main").locator("p.notice")).toHaveCount(1);
       await page.locator('button[name="decision"][value="approve"]').click();
       await expect(page).toHaveURL((url) => `${url.origin}${url.pathname}` === thirdPartyClient.redirectURI);
       const query = new URL(page.url()).searchParams;
