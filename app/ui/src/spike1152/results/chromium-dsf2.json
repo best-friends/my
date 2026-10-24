@@ -1,0 +1,804 @@
+{
+  "engine": "chromium",
+  "devicePixelRatio": 2,
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+  "ime.synthetic.raw": {
+    "openDuringComposition": false,
+    "enterIsComposing": {
+      "accepts": [],
+      "defaultPrevented": false
+    },
+    "openAfterCompositionEnd": {
+      "open": true,
+      "options": [
+        "#日本語",
+        "#日本"
+      ],
+      "active": "#日本語"
+    },
+    "safariEnter229": {
+      "accepts": [
+        "#日本語"
+      ],
+      "defaultPrevented": true,
+      "value": "#日本語 "
+    },
+    "plainEnterAfter": {
+      "accepts": [
+        "#日本語"
+      ],
+      "defaultPrevented": false,
+      "value": "#日本語 "
+    }
+  },
+  "ime.whileOpen.raw": {
+    "openBefore": true,
+    "openDuring": false,
+    "accepts": [],
+    "defaultPrevented": false
+  },
+  "ime.synthetic.b1": {
+    "openDuringComposition": false,
+    "enterIsComposing": {
+      "accepts": [],
+      "defaultPrevented": false
+    },
+    "openAfterCompositionEnd": {
+      "open": true,
+      "options": [
+        "#日本語",
+        "#日本"
+      ],
+      "active": "#日本語"
+    },
+    "safariEnter229": {
+      "accepts": [],
+      "defaultPrevented": false,
+      "value": "#日本"
+    },
+    "plainEnterAfter": {
+      "accepts": [
+        "#日本語"
+      ],
+      "defaultPrevented": true,
+      "value": "#日本語 "
+    }
+  },
+  "ime.whileOpen.b1": {
+    "openBefore": true,
+    "openDuring": false,
+    "accepts": [],
+    "defaultPrevented": false
+  },
+  "position.popover-true": {
+    "caretLine3": {
+      "listTop": 92,
+      "markerBottom": 92.40625,
+      "delta": -0.40625,
+      "lineHeight": 27.2,
+      "listWidth": 584,
+      "textareaWidth": 584
+    },
+    "caretLine5": {
+      "listTop": 146,
+      "markerBottom": 146.8125,
+      "delta": -0.8125
+    }
+  },
+  "position.popover-false": {
+    "caretLine3": {
+      "listTop": 92.40625,
+      "markerBottom": 92.40625,
+      "delta": 0,
+      "lineHeight": 27.2,
+      "listWidth": 584,
+      "textareaWidth": 584
+    },
+    "caretLine5": {
+      "listTop": 146.8125,
+      "markerBottom": 146.8125,
+      "delta": 0
+    }
+  },
+  "position.320": {
+    "listLeft": 12,
+    "listRight": 284,
+    "textareaLeft": 8,
+    "textareaRight": 280,
+    "viewport": 320,
+    "horizontalScroll": false
+  },
+  "alignment.base": {
+    "latinWrap": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.0001317812431363936
+      },
+      "ink": 22765,
+      "diff": 3,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "control-letterSpacing": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 1,
+        "dy": 0,
+        "ratio": 0.634
+      },
+      "ink": 32758,
+      "diff": 21347,
+      "ratio": 0.652,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf2-control-letterSpacing.png"
+    },
+    "latinWrap-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 342,
+        "layerHeight": 342,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.000177767243422612
+      },
+      "ink": 16876,
+      "diff": 3,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 29750,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 234,
+        "layerHeight": 234,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 22283,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 22619,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 21789,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.008565163765931205
+      },
+      "ink": 29188,
+      "diff": 250,
+      "ratio": 0.009,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 21649,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "bidi": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 24592,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "bidi-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 23601,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "tabsAndSpaces": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5945,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "tabsAndSpaces-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5113,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll": {
+      "scroll": {
+        "taTop": 967,
+        "layerTop": 967,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.19844721949394323
+      },
+      "ink": 21381,
+      "diff": 4243,
+      "ratio": 0.198,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf2-scroll.png"
+    },
+    "scroll-bottom": {
+      "scroll": {
+        "taTop": 1740,
+        "layerTop": 1740,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 2,
+        "ratio": 0.071
+      },
+      "ink": 24368,
+      "diff": 11728,
+      "ratio": 0.481,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf2-scroll-bottom.png"
+    },
+    "scroll-transform": {
+      "scroll": {
+        "taTop": 967,
+        "layerTop": 0,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.1982032565974172
+      },
+      "ink": 21372,
+      "diff": 4236,
+      "ratio": 0.198,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf2-scroll-transform.png"
+    },
+    "scroll-bottom-transform": {
+      "scroll": {
+        "taTop": 1740,
+        "layerTop": 0,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 2,
+        "ratio": 0.071
+      },
+      "ink": 24368,
+      "diff": 11728,
+      "ratio": 0.481,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf2-scroll-bottom-transform.png"
+    },
+    "scroll-integerLineHeight": {
+      "scroll": {
+        "taTop": 960,
+        "layerTop": 960,
+        "taHeight": 1906,
+        "layerHeight": 1906,
+        "taClient": 178,
+        "layerClient": 178,
+        "taClientWidth": 384,
+        "layerClientWidth": 384
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.0018538544724239147
+      },
+      "ink": 19419,
+      "diff": 36,
+      "ratio": 0.002,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll-bottom-integerLineHeight": {
+      "scroll": {
+        "taTop": 1728,
+        "layerTop": 1728,
+        "taHeight": 1906,
+        "layerHeight": 1906,
+        "taClient": 178,
+        "layerClient": 178,
+        "taClientWidth": 384,
+        "layerClientWidth": 384
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.0018978333069745374
+      },
+      "ink": 18969,
+      "diff": 36,
+      "ratio": 0.002,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll-resized": {
+      "scroll": {
+        "taTop": 1728,
+        "layerTop": 1728,
+        "taHeight": 2191,
+        "layerHeight": 2192,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 2,
+        "ratio": 0.05
+      },
+      "ink": 25678,
+      "diff": 12992,
+      "ratio": 0.506,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf2-scroll-resized.png"
+    }
+  },
+  "alignment.320": {
+    "latinWrap": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 397,
+        "layerHeight": 397,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.00013511687609782462
+      },
+      "ink": 14802,
+      "diff": 2,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 25295,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 20728,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 288,
+        "layerHeight": 288,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.006557893080111222
+      },
+      "ink": 19061,
+      "diff": 125,
+      "ratio": 0.007,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "horizontalScroll": false
+  },
+  "alignment.cssZoom2": {
+    "latinWrap": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 102427,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 115327,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 88686,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 115033,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll": {
+      "scroll": {
+        "taTop": 333,
+        "layerTop": 333,
+        "taHeight": 1920,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.1767136694820024
+      },
+      "ink": 82761,
+      "diff": 14625,
+      "ratio": 0.177,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf2-zoom-scroll.png"
+    }
+  },
+  "alignment.fontSwap": {
+    "early": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 26087,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "loaded": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 26087,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "fontsStatus": "loaded",
+    "height": 206
+  }
+}

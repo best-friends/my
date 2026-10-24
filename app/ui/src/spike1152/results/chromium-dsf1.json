@@ -1,0 +1,1298 @@
+{
+  "engine": "chromium",
+  "devicePixelRatio": 1,
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+  "triggers.raw": {
+    "@": {
+      "open": true,
+      "options": [
+        "@alice",
+        "@alicia"
+      ],
+      "active": "@alice"
+    },
+    "#": {
+      "open": true,
+      "options": [
+        "#golang",
+        "#go",
+        "#goodnight"
+      ],
+      "active": "#golang"
+    },
+    ":": {
+      "open": true,
+      "options": [
+        ":blobcat:",
+        ":blush:",
+        ":blobfox:"
+      ],
+      "active": ":blobcat:"
+    },
+    "fullwidth＠": {
+      "open": false,
+      "options": [],
+      "active": null
+    },
+    "email-like": {
+      "open": false,
+      "options": [],
+      "active": null
+    },
+    "aria": {
+      "textareaRole": null,
+      "ariaAutocomplete": "list",
+      "ariaControlsMatchesListbox": true,
+      "ariaActivedescendant": "@alice",
+      "ariaExpanded": null,
+      "optionSelected": [
+        "@alice:null",
+        "@alicia:null"
+      ],
+      "listboxLabel": "Suggestions",
+      "status": "2 suggestions",
+      "spellcheck": "false",
+      "autocorrect": "off",
+      "enterkeyhint": "go",
+      "autocomplete": "off",
+      "popoverRole": null,
+      "focusStaysInTextarea": true
+    },
+    "axTree": {
+      "textbox": [
+        {
+          "name": "Post",
+          "props": {
+            "invalid": "false",
+            "focusable": true,
+            "focused": true,
+            "editable": "plaintext",
+            "settable": true,
+            "autocomplete": "list",
+            "multiline": true,
+            "readonly": false,
+            "required": false,
+            "activedescendant": 1,
+            "controls": "react-aria-_r_0_"
+          }
+        }
+      ],
+      "combobox": [],
+      "listbox": [
+        {
+          "name": "Suggestions",
+          "props": {
+            "multiselectable": false,
+            "orientation": "vertical",
+            "required": false
+          }
+        }
+      ],
+      "option": [
+        {
+          "name": "@alice",
+          "props": {
+            "selected": true
+          }
+        },
+        {
+          "name": "@alicia",
+          "props": {
+            "selected": false
+          }
+        }
+      ],
+      "dialog": []
+    }
+  },
+  "triggers.b1": {
+    "@": {
+      "open": true,
+      "options": [
+        "@alice",
+        "@alicia"
+      ],
+      "active": "@alice"
+    },
+    "#": {
+      "open": true,
+      "options": [
+        "#golang",
+        "#go",
+        "#goodnight"
+      ],
+      "active": "#golang"
+    },
+    ":": {
+      "open": true,
+      "options": [
+        ":blobcat:",
+        ":blush:",
+        ":blobfox:"
+      ],
+      "active": ":blobcat:"
+    },
+    "fullwidth＠": {
+      "open": false,
+      "options": [],
+      "active": null
+    },
+    "email-like": {
+      "open": false,
+      "options": [],
+      "active": null
+    },
+    "aria": {
+      "textareaRole": null,
+      "ariaAutocomplete": "list",
+      "ariaControlsMatchesListbox": true,
+      "ariaActivedescendant": "@alice",
+      "ariaExpanded": null,
+      "optionSelected": [
+        "@alice:true",
+        "@alicia:false"
+      ],
+      "listboxLabel": "Suggestions",
+      "status": "2 suggestions",
+      "spellcheck": "true",
+      "autocorrect": "on",
+      "enterkeyhint": "enter",
+      "autocomplete": "off",
+      "popoverRole": null,
+      "focusStaysInTextarea": true
+    },
+    "axTree": {
+      "textbox": [
+        {
+          "name": "Post",
+          "props": {
+            "invalid": "false",
+            "focusable": true,
+            "focused": true,
+            "editable": "plaintext",
+            "settable": true,
+            "autocomplete": "list",
+            "multiline": true,
+            "readonly": false,
+            "required": false,
+            "activedescendant": 1,
+            "controls": "react-aria-_r_2o_"
+          }
+        }
+      ],
+      "combobox": [],
+      "listbox": [
+        {
+          "name": "Suggestions",
+          "props": {
+            "multiselectable": false,
+            "orientation": "vertical",
+            "required": false
+          }
+        }
+      ],
+      "option": [
+        {
+          "name": "@alice",
+          "props": {
+            "selected": true
+          }
+        },
+        {
+          "name": "@alicia",
+          "props": {
+            "selected": false
+          }
+        }
+      ],
+      "dialog": []
+    }
+  },
+  "keyboard.raw": {
+    "openFirstActive": "@alice",
+    "firstArrowDownLagMs": 508,
+    "afterDown": "@alicia",
+    "afterManyDownStopsAtEnd": "@alicia",
+    "afterUp": "@alice",
+    "enter": {
+      "value": "@alice ",
+      "accepts": [
+        "@alice"
+      ],
+      "caret": 7,
+      "open": false
+    },
+    "tab": {
+      "value": "@al",
+      "accepts": [],
+      "focusInTextarea": false
+    },
+    "escape": {
+      "open": true,
+      "escapesReachedSheet": 0,
+      "value": "@al"
+    },
+    "homeWhileOpen": {
+      "caret": 21,
+      "expectedLineStart": 11,
+      "active": "@alice"
+    },
+    "endWhileOpen": {
+      "caret": 21,
+      "expected": 21
+    },
+    "arrowUpAfterEscape": {
+      "before": 21,
+      "after": 21,
+      "movedToFirstLine": false
+    },
+    "arrowUpNoMatch": {
+      "after": 21,
+      "movedToFirstLine": false
+    },
+    "ctrlEnter": {
+      "submits": 1,
+      "accepts": [
+        "@alice"
+      ],
+      "value": "@alice "
+    },
+    "afterBackspace": {
+      "open": true,
+      "active": null
+    },
+    "enterAfterBackspace": {
+      "value": "@al\n"
+    },
+    "arrowLeft": {
+      "caret": 5,
+      "open": true,
+      "active": null
+    },
+    "click": {
+      "value": "@alicia ",
+      "accepts": [
+        "@alicia"
+      ],
+      "focusInTextarea": true
+    }
+  },
+  "keyboard.b1": {
+    "openFirstActive": "@alice",
+    "firstArrowDownLagMs": 506,
+    "afterDown": "@alicia",
+    "afterManyDownStopsAtEnd": "@alicia",
+    "afterUp": "@alice",
+    "enter": {
+      "value": "@alice ",
+      "accepts": [
+        "@alice"
+      ],
+      "caret": 7,
+      "open": false
+    },
+    "tab": {
+      "value": "@alice ",
+      "accepts": [
+        "@alice"
+      ],
+      "focusInTextarea": true
+    },
+    "escape": {
+      "open": false,
+      "escapesReachedSheet": 0,
+      "value": "@al"
+    },
+    "homeWhileOpen": {
+      "caret": 11,
+      "expectedLineStart": 11,
+      "active": null
+    },
+    "endWhileOpen": {
+      "caret": 21,
+      "expected": 21
+    },
+    "arrowUpAfterEscape": {
+      "before": 21,
+      "after": 10,
+      "movedToFirstLine": true
+    },
+    "arrowUpNoMatch": {
+      "after": 10,
+      "movedToFirstLine": true
+    },
+    "ctrlEnter": {
+      "submits": 1,
+      "accepts": [],
+      "value": "@al"
+    },
+    "afterBackspace": {
+      "open": true,
+      "active": null
+    },
+    "enterAfterBackspace": {
+      "value": "@al\n"
+    },
+    "arrowLeft": {
+      "caret": 5,
+      "open": true,
+      "active": null
+    },
+    "click": {
+      "value": "@alicia ",
+      "accepts": [
+        "@alicia"
+      ],
+      "focusInTextarea": true
+    }
+  },
+  "keyboard.b1-refocusAfterDelete": {
+    "afterBackspace": {
+      "open": true,
+      "active": "@alice"
+    },
+    "enterAfterBackspace": {
+      "value": "@alice "
+    }
+  },
+  "ime.synthetic.raw": {
+    "openDuringComposition": false,
+    "enterIsComposing": {
+      "accepts": [],
+      "defaultPrevented": false
+    },
+    "openAfterCompositionEnd": {
+      "open": true,
+      "options": [
+        "#日本語",
+        "#日本"
+      ],
+      "active": "#日本語"
+    },
+    "safariEnter229": {
+      "accepts": [
+        "#日本語"
+      ],
+      "defaultPrevented": true,
+      "value": "#日本語 "
+    },
+    "plainEnterAfter": {
+      "accepts": [
+        "#日本語"
+      ],
+      "defaultPrevented": false,
+      "value": "#日本語 "
+    }
+  },
+  "ime.whileOpen.raw": {
+    "openBefore": true,
+    "openDuring": false,
+    "accepts": [],
+    "defaultPrevented": false
+  },
+  "ime.cdp.raw": {
+    "openDuringComposition": false,
+    "enterDuringComposition": {
+      "accepts": [],
+      "value": "#にほん"
+    },
+    "afterCommit": {
+      "value": "#日本",
+      "open": true,
+      "options": [
+        "#日本語",
+        "#日本"
+      ],
+      "active": "#日本語"
+    },
+    "trusted229": {
+      "accepts": [
+        "#日本語"
+      ],
+      "value": "#日本語 "
+    },
+    "enterAfter": {
+      "accepts": [
+        "#日本語"
+      ],
+      "value": "#日本語 \n"
+    },
+    "log": [
+      "keydown:#:composing=false:keyCode=51",
+      "beforeinput:insertText:false",
+      "compositionstart:",
+      "compositionupdate:にほん",
+      "beforeinput:insertCompositionText:true",
+      "keydown:Enter:composing=true:keyCode=13",
+      "compositionupdate:日本",
+      "beforeinput:insertCompositionText:true",
+      "compositionupdate:日本",
+      "beforeinput:insertCompositionText:true",
+      "compositionend:日本",
+      "keydown:Enter:composing=false:keyCode=229",
+      "keydown:Enter:composing=false:keyCode=13",
+      "beforeinput:insertLineBreak:false"
+    ]
+  },
+  "ime.synthetic.b1": {
+    "openDuringComposition": false,
+    "enterIsComposing": {
+      "accepts": [],
+      "defaultPrevented": false
+    },
+    "openAfterCompositionEnd": {
+      "open": true,
+      "options": [
+        "#日本語",
+        "#日本"
+      ],
+      "active": "#日本語"
+    },
+    "safariEnter229": {
+      "accepts": [],
+      "defaultPrevented": false,
+      "value": "#日本"
+    },
+    "plainEnterAfter": {
+      "accepts": [
+        "#日本語"
+      ],
+      "defaultPrevented": true,
+      "value": "#日本語 "
+    }
+  },
+  "ime.whileOpen.b1": {
+    "openBefore": true,
+    "openDuring": false,
+    "accepts": [],
+    "defaultPrevented": false
+  },
+  "ime.cdp.b1": {
+    "openDuringComposition": false,
+    "enterDuringComposition": {
+      "accepts": [],
+      "value": "#にほん"
+    },
+    "afterCommit": {
+      "value": "#日本",
+      "open": true,
+      "options": [
+        "#日本語",
+        "#日本"
+      ],
+      "active": "#日本語"
+    },
+    "trusted229": {
+      "accepts": [],
+      "value": "#日本"
+    },
+    "enterAfter": {
+      "accepts": [
+        "#日本語"
+      ],
+      "value": "#日本語 "
+    },
+    "log": [
+      "keydown:#:composing=false:keyCode=51",
+      "beforeinput:insertText:false",
+      "compositionstart:",
+      "compositionupdate:にほん",
+      "beforeinput:insertCompositionText:true",
+      "keydown:Enter:composing=true:keyCode=13",
+      "compositionupdate:日本",
+      "beforeinput:insertCompositionText:true",
+      "compositionupdate:日本",
+      "beforeinput:insertCompositionText:true",
+      "compositionend:日本",
+      "keydown:Enter:composing=false:keyCode=229",
+      "keydown:Enter:composing=false:keyCode=13"
+    ]
+  },
+  "undo.raw": {
+    "accepted": {
+      "value": "hi @alice ",
+      "caret": 10,
+      "path": "execCommand"
+    },
+    "afterOneUndoKey": {
+      "value": "hi @al",
+      "caret": 3,
+      "selectionEnd": 6
+    },
+    "afterRedoKey": {
+      "value": "hi @alice "
+    },
+    "afterExecUndo": {
+      "value": "hi @al"
+    },
+    "afterExecRedo": {
+      "value": "hi @alice "
+    },
+    "typingAfterRedo": {
+      "value": "hi @alice ok"
+    },
+    "setRangeTextUndo": {
+      "before": "hi @al",
+      "after": "hi @alice "
+    }
+  },
+  "undo.b1": {
+    "accepted": {
+      "value": "hi @alice ",
+      "caret": 10,
+      "path": "execCommand"
+    },
+    "afterOneUndoKey": {
+      "value": "hi @al",
+      "caret": 3,
+      "selectionEnd": 6
+    },
+    "afterRedoKey": {
+      "value": "hi @alice "
+    },
+    "afterExecUndo": {
+      "value": "hi @al"
+    },
+    "afterExecRedo": {
+      "value": "hi @alice "
+    },
+    "typingAfterRedo": {
+      "value": "hi @alice ok"
+    },
+    "setRangeTextUndo": {
+      "before": "hi @al",
+      "after": "hi @alice "
+    }
+  },
+  "position.popover-true": {
+    "caretLine3": {
+      "listTop": 92,
+      "markerBottom": 92.40625,
+      "delta": -0.40625,
+      "lineHeight": 27.2,
+      "listWidth": 584,
+      "textareaWidth": 584
+    },
+    "caretLine5": {
+      "listTop": 146,
+      "markerBottom": 146.8125,
+      "delta": -0.8125
+    }
+  },
+  "position.popover-false": {
+    "caretLine3": {
+      "listTop": 92.40625,
+      "markerBottom": 92.40625,
+      "delta": 0,
+      "lineHeight": 27.2,
+      "listWidth": 584,
+      "textareaWidth": 584
+    },
+    "caretLine5": {
+      "listTop": 146.8125,
+      "markerBottom": 146.8125,
+      "delta": 0
+    }
+  },
+  "position.320": {
+    "listLeft": 12,
+    "listRight": 284,
+    "textareaLeft": 8,
+    "textareaRight": 280,
+    "viewport": 320,
+    "horizontalScroll": false
+  },
+  "alignment.base": {
+    "latinWrap": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5796,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "control-letterSpacing": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 1,
+        "dy": 0,
+        "ratio": 0.573
+      },
+      "ink": 8317,
+      "diff": 4998,
+      "ratio": 0.601,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf1-control-letterSpacing.png"
+    },
+    "latinWrap-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 342,
+        "layerHeight": 342,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 4348,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 7853,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 234,
+        "layerHeight": 234,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5833,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5765,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5657,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 7920,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5894,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "bidi": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 6487,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "bidi-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 6352,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "tabsAndSpaces": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 1447,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "tabsAndSpaces-resized": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 1239,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll": {
+      "scroll": {
+        "taTop": 967,
+        "layerTop": 967,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.16507306512718745
+      },
+      "ink": 5543,
+      "diff": 915,
+      "ratio": 0.165,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf1-scroll.png"
+    },
+    "scroll-bottom": {
+      "scroll": {
+        "taTop": 1740,
+        "layerTop": 1740,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 1,
+        "ratio": 0.003
+      },
+      "ink": 6179,
+      "diff": 2529,
+      "ratio": 0.409,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf1-scroll-bottom.png"
+    },
+    "scroll-transform": {
+      "scroll": {
+        "taTop": 967,
+        "layerTop": 0,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0.16470588235294117
+      },
+      "ink": 5525,
+      "diff": 910,
+      "ratio": 0.165,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf1-scroll-transform.png"
+    },
+    "scroll-bottom-transform": {
+      "scroll": {
+        "taTop": 1740,
+        "layerTop": 0,
+        "taHeight": 1919,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 1,
+        "ratio": 0.003
+      },
+      "ink": 6179,
+      "diff": 2529,
+      "ratio": 0.409,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf1-scroll-bottom-transform.png"
+    },
+    "scroll-integerLineHeight": {
+      "scroll": {
+        "taTop": 960,
+        "layerTop": 960,
+        "taHeight": 1906,
+        "layerHeight": 1906,
+        "taClient": 178,
+        "layerClient": 178,
+        "taClientWidth": 384,
+        "layerClientWidth": 384
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5066,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll-bottom-integerLineHeight": {
+      "scroll": {
+        "taTop": 1728,
+        "layerTop": 1728,
+        "taHeight": 1906,
+        "layerHeight": 1906,
+        "taClient": 178,
+        "layerClient": 178,
+        "taClientWidth": 384,
+        "layerClientWidth": 384
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 4909,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll-resized": {
+      "scroll": {
+        "taTop": 1728,
+        "layerTop": 1728,
+        "taHeight": 2191,
+        "layerHeight": 2192,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 283,
+        "layerClientWidth": 283
+      },
+      "best": {
+        "dx": 0,
+        "dy": 1,
+        "ratio": 0.003
+      },
+      "ink": 6551,
+      "diff": 2779,
+      "ratio": 0.424,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf1-scroll-resized.png"
+    }
+  },
+  "alignment.320": {
+    "latinWrap": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 397,
+        "layerHeight": 397,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 3795,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 6736,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5294,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 288,
+        "layerHeight": 288,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 255,
+        "layerClientWidth": 255
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 5192,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "horizontalScroll": false
+  },
+  "alignment.cssZoom2": {
+    "latinWrap": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 261,
+        "layerHeight": 261,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 27270,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "cjk": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 29639,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "emoji": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 22598,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "rtl": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 179,
+        "layerHeight": 179,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 29325,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "scroll": {
+      "scroll": {
+        "taTop": 333,
+        "layerTop": 333,
+        "taHeight": 1920,
+        "layerHeight": 1920,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 395,
+        "layerClientWidth": 395
+      },
+      "best": {
+        "dx": 0,
+        "dy": 1,
+        "ratio": 0.137
+      },
+      "ink": 21848,
+      "diff": 3271,
+      "ratio": 0.15,
+      "sizeMismatch": false,
+      "screenshot": "chromium-dsf1-zoom-scroll.png"
+    }
+  },
+  "alignment.fontSwap": {
+    "early": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 6144,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "loaded": {
+      "scroll": {
+        "taTop": 0,
+        "layerTop": 0,
+        "taHeight": 206,
+        "layerHeight": 206,
+        "taClient": 179,
+        "layerClient": 179,
+        "taClientWidth": 387,
+        "layerClientWidth": 387
+      },
+      "best": {
+        "dx": 0,
+        "dy": 0,
+        "ratio": 0
+      },
+      "ink": 6144,
+      "diff": 0,
+      "ratio": 0,
+      "sizeMismatch": false,
+      "screenshot": null
+    },
+    "fontsStatus": "loaded",
+    "height": 206
+  }
+}
