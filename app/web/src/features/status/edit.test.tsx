@@ -286,7 +286,7 @@ describe("the emoji picker of the edit dialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Add emoji" }));
     const picker = await screen.findByRole("dialog", { name: "Emoji" });
     await user.type(await within(picker).findByRole("searchbox", { name: "Search emoji" }, { timeout: 5000 }), "thumbs up");
-    await user.click(within(picker).getByRole("row", { name: "thumbs up" }));
+    await user.click(within(picker).getByRole("gridcell", { name: "thumbs up" }));
 
     await waitFor(() => {
       expect(text).toHaveValue("Ok👍");

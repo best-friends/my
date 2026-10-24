@@ -166,11 +166,11 @@ test.describe("the emoji picker of the new-post form", () => {
     const search = picker.getByRole("searchbox", { name: message("emoji.picker.search") });
     await expect(search).toBeFocused();
     await search.fill("blob");
-    await tabTo(page, picker.getByRole("row", { name: ":blobcat:" }));
+    await tabTo(page, picker.getByRole("gridcell", { name: ":blobcat:" }));
     // The next emoji is at the end of the line in the writing direction.
     const rtl = (await page.evaluate(() => document.documentElement.dir)) === "rtl";
     await page.keyboard.press(rtl ? "ArrowLeft" : "ArrowRight");
-    await expect(picker.getByRole("row", { name: ":blobfox:" })).toBeFocused();
+    await expect(picker.getByRole("gridcell", { name: ":blobfox:" })).toBeFocused();
     await page.keyboard.press("Enter");
 
     await expect(picker).toBeHidden();
@@ -187,13 +187,13 @@ test.describe("the emoji picker of the new-post form", () => {
     const search = picker.getByRole("searchbox", { name: message("emoji.picker.search") });
     await search.fill("fox");
 
-    await expect(picker.getByRole("row", { name: ":blobfox:" })).toBeVisible();
-    await expect(picker.getByRole("row", { name: ":wave:" })).toHaveCount(0);
+    await expect(picker.getByRole("gridcell", { name: ":blobfox:" })).toBeVisible();
+    await expect(picker.getByRole("gridcell", { name: ":wave:" })).toHaveCount(0);
     await expectNoHorizontalScroll(page);
 
     const name = emojiName("😀");
     await search.fill(name);
-    await picker.getByRole("row", { name, exact: true }).first().click();
+    await picker.getByRole("gridcell", { name, exact: true }).first().click();
     await expect(picker).toBeHidden();
     // A Unicode emoji goes in as it is, without spaces.
     await expect(text).toHaveValue("😀");

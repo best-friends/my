@@ -43,7 +43,7 @@ type WebClient struct {
 	// ClientID is the client's public identifier; "" registers no web client.
 	ClientID string
 	Name     string
-	// RedirectURIs are the URIs the client may redirect to, matched exactly.
+	// RedirectURIs are the URIs the client may redirect to, matched exactly (a loopback URI ignores the port).
 	RedirectURIs []string
 }
 
@@ -226,12 +226,17 @@ func (s *Service) ValidateAuthorization(ctx context.Context, req AuthorizationRe
 	if err != nil {
 		return Authorization{}, err
 	}
-	registered := slices.Index(uris, req.RedirectURI)
+	registered := slices.IndexFunc(uris, func(u string) bool { return identity.MatchRedirectURI(u, req.RedirectURI) })
 	if req.RedirectURI == "" || registered < 0 {
 		return Authorization{}, ErrInvalidRedirectURI
 	}
-	// The redirect goes to the registered URI, not to the request's copy of it.
+	// The redirect goes to the registered URI, not to the request's copy of it. A loopback
+	// registration matches any port, so then the request's value (which matched) is used and
+	// the code exchange compares it exactly (RFC 8252 §7.3).
 	a := Authorization{Client: client, RedirectURI: uris[registered], State: req.State, CodeChallenge: req.CodeChallenge}
+	if uris[registered] != req.RedirectURI {
+		a.RedirectURI = req.RedirectURI
+	}
 	switch {
 	case req.ResponseType != "code":
 		return a, oauthError(OAuthUnsupportedResponseType, "response_type must be code")
