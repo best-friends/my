@@ -47,6 +47,10 @@
     "defaultMessage": "このサーバーの連合の向きの設定では、この操作はできません。",
     "description": "API error title for HTTP 403 when the instance's federation mode (off, inbound only, or outbound only) does not let the operation through: following or resolving a remote account, or quoting a remote post."
   },
+  "errors.first_party_only": {
+    "defaultMessage": "この操作はこのサーバー自身のアプリだけが行えます。",
+    "description": "API error title for HTTP 403 when an app that is not this server's own client calls an account security operation (password, two-factor authentication, passkeys, deleting the account)."
+  },
   "errors.forbidden": {
     "defaultMessage": "この操作は許可されていません。",
     "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."

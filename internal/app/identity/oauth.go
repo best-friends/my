@@ -128,6 +128,9 @@ type OAuthRepository interface {
 	// FindOAuthClient returns the client with the public client_id and its redirect URIs,
 	// sorted.
 	FindOAuthClient(ctx context.Context, clientID string) (identity.OAuthClient, []string, error)
+	// FindOAuthClientByID returns the client with the row ID that tokens refer to, failing
+	// with ErrNotFound when there is none.
+	FindOAuthClientByID(ctx context.Context, id string) (identity.OAuthClient, error)
 	FindAuthorizationCode(ctx context.Context, codeHash []byte) (identity.AuthorizationCode, error)
 	FindAuthorizationCodeRedemption(ctx context.Context, codeHash []byte) (identity.AuthorizationCodeRedemption, error)
 	// FindAccessTokenByAccessHash and FindAccessTokenByRefreshHash return the token whose
@@ -254,6 +257,9 @@ func (s *Service) ValidateAuthorization(ctx context.Context, req AuthorizationRe
 	}
 	if !scope.Within(client.Scope) {
 		return a, oauthError(OAuthInvalidScope, "the client may not request this scope")
+	}
+	if scope.HasFirstPartyOnly() && !client.IsFirstParty() {
+		return a, oauthError(OAuthInvalidScope, "the scope is for first-party clients only")
 	}
 	a.Scope = scope
 	return a, nil

@@ -36,6 +36,7 @@ const (
 	ProblemTypeInvalidToken       = "/api/v1/problems/invalid-token"
 	ProblemTypeInsufficientScope  = "/api/v1/problems/insufficient-scope"
 	ProblemTypeAccountUnavailable = "/api/v1/problems/account-unavailable"
+	ProblemTypeFirstPartyOnly     = "/api/v1/problems/first-party-only"
 )
 
 // Authenticator authenticates the bearer access tokens of client API requests.
@@ -68,6 +69,9 @@ type Viewer struct {
 	// Scope is the token's scope. The operation's scopes are checked before its handler runs;
 	// a handler checks Scope.Grants itself only for what depends on more than the operation.
 	Scope identity.Scope
+	// FirstParty is true when the token's client is this server's own. Only such a client may
+	// use the first-party-only scopes and the account security operations (ADR-0090 §4).
+	FirstParty bool
 }
 
 type viewerKey struct{}
@@ -105,6 +109,10 @@ type operationAccess struct {
 	Anonymous bool
 	// Scopes must all be granted by the access token of an authenticated request.
 	Scopes []string
+	// FirstPartyOnly operations (the account security operations: password, two-factor
+	// authentication, passkeys, deleting the account) take only the token of a first-party
+	// client, whatever its scopes (x-first-party-only in api/openapi.yaml).
+	FirstPartyOnly bool
 }
 
 // bearerToken parses the Authorization header (RFC 6750 §2.1). present is false when there
@@ -180,7 +188,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) (*Viewer, 
 	}
 	switch {
 	case err == nil:
-		return &Viewer{UserID: b.UserID, AccountID: b.AccountID, TokenID: b.TokenID, ClientID: b.ClientID, FamilyID: b.FamilyID, Scope: b.Scope}, true
+		return &Viewer{UserID: b.UserID, AccountID: b.AccountID, TokenID: b.TokenID, ClientID: b.ClientID, FamilyID: b.FamilyID, Scope: b.Scope, FirstParty: b.FirstParty}, true
 	case errors.Is(err, appidentity.ErrInvalidAccessToken):
 		if s.limit(w, r, policyIP, s.o.AnonymousLimit, s.clientKey(r)) {
 			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
@@ -207,8 +215,15 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request, a operationAc
 		s.writeProblem(w, r, http.StatusUnauthorized, ProblemTypeUnauthenticated, s.localizer(r).ServerErrorsUnauthenticated(), "")
 		return false
 	}
+	if a.FirstPartyOnly && !v.FirstParty {
+		l := s.localizer(r)
+		s.writeProblem(w, r, http.StatusForbidden, ProblemTypeFirstPartyOnly, l.ServerErrorsFirstPartyOnly(), "")
+		return false
+	}
 	for _, scope := range a.Scopes {
-		if v.Scope.Grants(scope) {
+		// A first-party-only scope is never granted to a third party, also not through a broad
+		// scope such as write.
+		if v.Scope.Grants(scope) && (v.FirstParty || !identity.FirstPartyOnlyScope(scope)) {
 			continue
 		}
 		l := s.localizer(r)

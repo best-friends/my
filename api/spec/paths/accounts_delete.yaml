@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 post:
   operationId: deleteOwnAccount
+  x-first-party-only: true
   summary: Delete the authenticated user's account
   description: |
     Deletes the user's own account at once, after checking the user's current `password`

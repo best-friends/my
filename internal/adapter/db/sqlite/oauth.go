@@ -158,6 +158,15 @@ func (r *IdentityRepository) FindOAuthClient(ctx context.Context, clientID strin
 	return oauthClientFromRow(row), uris, nil
 }
 
+// FindOAuthClientByID implements identity.Repository.
+func (r *IdentityRepository) FindOAuthClientByID(ctx context.Context, id string) (identity.OAuthClient, error) {
+	row, err := r.db.reader().GetOAuthClientByID(ctx, id)
+	if err != nil {
+		return identity.OAuthClient{}, notFound(err, appidentity.ErrNotFound, "oauth client")
+	}
+	return oauthClientFromRow(row), nil
+}
+
 // FindAuthorizationCode implements identity.Repository.
 func (r *IdentityRepository) FindAuthorizationCode(ctx context.Context, codeHash []byte) (identity.AuthorizationCode, error) {
 	row, err := r.db.reader().GetAuthorizationCode(ctx, codeHash)

@@ -105,7 +105,13 @@ type authEnv struct {
 var createdAt = time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 
 func bearer(scope identity.Scope, accountID string) appidentity.Bearer {
-	return appidentity.Bearer{TokenID: testkit.NamedID("tok-" + string(scope)), FamilyID: testkit.NamedID("fam-" + string(scope)), ClientID: "client-1", UserID: userOf(accountID), AccountID: accountID, Scope: scope}
+	return appidentity.Bearer{TokenID: testkit.NamedID("tok-" + string(scope)), FamilyID: testkit.NamedID("fam-" + string(scope)), ClientID: "client-1", UserID: userOf(accountID), AccountID: accountID, Scope: scope, FirstParty: true}
+}
+
+// thirdParty returns b as the token of a client that is not this server's own.
+func thirdParty(b appidentity.Bearer) appidentity.Bearer {
+	b.FirstParty = false
+	return b
 }
 
 func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
@@ -122,6 +128,9 @@ func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {
 				"write":         bearer("write", aliceAccountID),
 				"follow-push":   bearer("follow push", aliceAccountID),
 				"bob":           bearer("read", "01890a5d-ac96-774b-bcce-b302099a8058"),
+				"read-statuses": bearer("read:statuses", aliceAccountID),
+				"read-direct":   bearer("read:direct read:statuses", aliceAccountID),
+				"third-party":   thirdParty(bearer("admin read write", aliceAccountID)),
 			},
 			errs: map[string]error{"pending": appidentity.ErrAccountUnavailable},
 		},
@@ -252,6 +261,17 @@ func TestAuthenticationProblems(t *testing.T) {
 		{name: "follow does not grant read:accounts", path: "/accounts/verify_credentials", authorization: []string{"Bearer follow-push"},
 			wantStatus: 403, wantType: clientapi.ProblemTypeInsufficientScope,
 			wantChallenge: `Bearer error="insufficient_scope", scope="read:accounts"`, wantLanguage: "ja"},
+		// ADR-0090 §4: the account security operations take only a first-party client's token,
+		// and a third-party client's token never holds the first-party-only scopes.
+		{name: "password status for a third-party client", path: "/accounts/password", authorization: []string{"Bearer third-party"},
+			wantStatus: 403, wantType: clientapi.ProblemTypeFirstPartyOnly, wantLanguage: "ja"},
+		{name: "two-factor status for a third-party client", path: "/two_factor", authorization: []string{"Bearer third-party"},
+			wantStatus: 403, wantType: clientapi.ProblemTypeFirstPartyOnly, wantLanguage: "ja"},
+		{name: "passkeys for a third-party client", path: "/passkeys", authorization: []string{"Bearer third-party"},
+			wantStatus: 403, wantType: clientapi.ProblemTypeFirstPartyOnly, wantLanguage: "ja"},
+		{name: "admin for a third-party client", path: "/admin/accounts", authorization: []string{"Bearer third-party"},
+			wantStatus: 403, wantType: clientapi.ProblemTypeInsufficientScope,
+			wantChallenge: `Bearer error="insufficient_scope", scope="admin:read"`, wantLanguage: "ja"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

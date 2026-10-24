@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 post:
   operationId: disableTotp
+  x-first-party-only: true
   summary: Disable two-factor authentication
   description: |
     Ends the enrollment once `code`, a code of the app or an unused recovery code, confirms

@@ -506,15 +506,27 @@ components:
         under them (`read` grants `read:accounts`; `follow` grants `read:follows`, `read:blocks`,
         `read:mutes`, `write:follows`, `write:blocks`, and `write:mutes`; `admin` grants
         `admin:read` and `admin:write`). `read` and `write` do not grant the admin scopes.
+
+        `read:statuses` does not show posts whose visibility is `direct`, in timelines, in a post's
+        thread, or in a post's own response, nor in the posts of a notification; `read:direct` (which
+        `read` grants) does. Sending a `direct` post needs only `write:statuses`.
+
+        Only the server's own (first-party) clients may hold `admin`, `admin:read`, `admin:write`,
+        and `write:supporters`: an authorization request of any other client that asks for one is
+        refused with `invalid_scope`, and a broad scope such as `write` does not give such a client
+        `write:supporters`. The operations that change how the user signs in or ends the account
+        (password, two-factor authentication, passkeys, deleting the account) are marked
+        `x-first-party-only: true`; whatever its scopes, the token of another client gets a 403
+        `/api/v1/problems/first-party-only` from them.
       flows:
         authorizationCode:
           authorizationUrl: /oauth/authorize
           tokenUrl: /oauth/token
           refreshUrl: /oauth/token
           scopes:
-            admin: Administer the instance, as far as the user's roles allow.
-            "admin:read": Read the instance's administration data, as far as the user's roles allow.
-            "admin:write": Change the instance's administration data, as far as the user's roles allow.
+            admin: Administer the instance, as far as the user's roles allow (first-party clients only).
+            "admin:read": Read the instance's administration data, as far as the user's roles allow (first-party clients only).
+            "admin:write": Change the instance's administration data, as far as the user's roles allow (first-party clients only).
             read: Read everything the user can read.
             write: Change everything the user can change.
             follow: Read and change follows, blocks, and mutes.
@@ -524,6 +536,7 @@ components:
             "read:bookmarks": Read the user's bookmarks.
             "read:favourites": Read the user's favourites.
             "read:custom_emojis": Read the custom emoji the user made and their requests for new ones.
+            "read:direct": Read the direct posts the user sends and receives (`read:statuses` does not show them).
             "read:finance": Read the totals of the instance's costs, as far as the user's roles allow.
             "read:follows": Read follows and follow requests.
             "read:mutes": Read the accounts and domains the user mutes.
@@ -542,7 +555,7 @@ components:
             "write:notifications": Mark notifications read and dismiss them.
             "write:reports": Report accounts and posts to the moderators.
             "write:statuses": Post, edit, delete, boost, and pin posts.
-            "write:supporters": Subscribe to the supporter plans, and change, cancel, and resume the subscription.
+            "write:supporters": Subscribe to the supporter plans, and change, cancel, and resume the subscription (first-party clients only).
   headers:
     CacheControl:
       $ref: ./components/headers/CacheControl.yaml

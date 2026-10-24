@@ -26,7 +26,7 @@ func (r clientRepo) FindOAuthClient(context.Context, string) (domain.OAuthClient
 func TestValidateAuthorizationRedirectURI(t *testing.T) {
 	verifier := strings.Repeat("v", 43)
 	svc := identity.NewService(identity.Deps{Repository: clientRepo{
-		client: domain.OAuthClient{ID: "c1", ClientID: "app", Scope: domain.AllScopes()},
+		client: domain.OAuthClient{ID: "c1", ClientID: "app", Scope: "read write"},
 		uris:   []string{"http://127.0.0.1/cb", "https://example.com/cb"},
 	}})
 	for _, c := range []struct {

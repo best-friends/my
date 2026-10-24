@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 get:
   operationId: listPasskeys
+  x-first-party-only: true
   summary: List the authenticated user's passkeys
   description: The passkeys that sign the user in, oldest first; there are at most 20.
   tags: [passkeys]
@@ -20,6 +21,7 @@ get:
       $ref: ../components/responses/Problem.yaml
 post:
   operationId: createPasskey
+  x-first-party-only: true
   summary: Register a passkey with the browser's response to a registration
   description: |
     Verifies `credential`, the browser's answer to the `options` of

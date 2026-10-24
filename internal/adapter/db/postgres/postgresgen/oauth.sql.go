@@ -169,6 +169,29 @@ func (q *Queries) GetOAuthClientByClientID(ctx context.Context, clientID string)
 	return i, err
 }
 
+const getOAuthClientByID = `-- name: GetOAuthClientByID :one
+SELECT id, client_id, client_secret_hash, name, website, scope, is_first_party, owner_user_id, created_at
+FROM oauth_clients
+WHERE id = $1
+`
+
+func (q *Queries) GetOAuthClientByID(ctx context.Context, id string) (OauthClient, error) {
+	row := q.db.QueryRow(ctx, getOAuthClientByID, id)
+	var i OauthClient
+	err := row.Scan(
+		&i.ID,
+		&i.ClientID,
+		&i.ClientSecretHash,
+		&i.Name,
+		&i.Website,
+		&i.Scope,
+		&i.IsFirstParty,
+		&i.OwnerUserID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const insertAccessToken = `-- name: InsertAccessToken :exec
 INSERT INTO oauth_access_tokens (
   id, family_id, client_id, user_id, access_token_hash, refresh_token_hash, scope, rotated_from_token_id,

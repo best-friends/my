@@ -32,6 +32,10 @@ type Viewer struct {
 	// see the posts of an author restricted by profile_view on the status and profile pages; it
 	// never widens the visibility rules themselves.
 	Moderator bool
+	// DirectDenied hides every direct post from the viewer, the author's own included: the
+	// viewer is a client API token that lacks the read:direct scope (ADR-0090 §4). It narrows
+	// what the visibility rules allow and never widens them.
+	DirectDenied bool
 }
 
 // FollowState is the viewer's follow of the author (follow_edges.state).
@@ -130,6 +134,9 @@ func (c ViewContext) String() string {
 // visibility, viewer kind, or context, or a local visibility on a remote status, is denied.
 func CanView(ctx ViewContext, viewer Viewer, status StatusFacts, author AuthorRestrictions, rel Relation) bool {
 	if !status.Visibility.Valid() || (status.Visibility == VisibilityLocal && !status.AuthorIsLocal) {
+		return false
+	}
+	if viewer.DirectDenied && status.Visibility == VisibilityDirect {
 		return false
 	}
 	if !contextAdmits(ctx, viewer.Kind, status) {

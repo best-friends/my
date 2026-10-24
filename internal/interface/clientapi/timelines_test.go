@@ -463,6 +463,21 @@ func TestTimelinesForLoggedInUsers(t *testing.T) {
 	}
 }
 
+// TestDirectPostsNeedReadDirect checks that read:statuses alone does not show direct posts: the
+// timeline is read for a viewer that the visibility policy then denies them (ADR-0090 §4).
+func TestDirectPostsNeedReadDirect(t *testing.T) {
+	for token, denied := range map[string]bool{"read-statuses": true, "read-direct": false, "read": false} {
+		te := newTimelineEnv(t)
+		decodePage(t, te.get(t, "/timelines/home", map[string]string{"Authorization": "Bearer " + token}))
+		if len(te.timelines.calls) != 1 {
+			t.Fatalf("%s: calls = %+v, want one", token, te.timelines.calls)
+		}
+		if got := te.timelines.calls[0].viewer.DirectDenied; got != denied {
+			t.Errorf("%s: DirectDenied = %v, want %v", token, got, denied)
+		}
+	}
+}
+
 func TestHashtagTimeline(t *testing.T) {
 	e := newTimelineEnv(t)
 	page := decodePage(t, e.get(t, "/timelines/tag/nobody-uses-this", nil))

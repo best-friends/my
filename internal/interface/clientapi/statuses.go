@@ -15,6 +15,7 @@ import (
 	appaccount "github.com/mycroblog/my/internal/app/account"
 	appcontent "github.com/mycroblog/my/internal/app/content"
 	"github.com/mycroblog/my/internal/domain/content"
+	"github.com/mycroblog/my/internal/domain/identity"
 )
 
 // Statuses runs the posting use cases of local statuses. *appcontent.Service implements it.
@@ -71,12 +72,19 @@ type Interactions interface {
 const defaultLimit = 20
 
 // contentViewer returns the viewer of ctx for the content module: the authenticated local
-// account, or an anonymous visitor.
+// account, or an anonymous visitor. A token without read:direct does not see direct posts.
 func contentViewer(ctx context.Context) appcontent.Viewer {
 	if v, ok := ViewerFrom(ctx); ok {
-		return appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: v.AccountID}
+		return localContentViewer(v)
 	}
 	return appcontent.Viewer{Kind: appcontent.ViewerAnonymous}
+}
+
+// localContentViewer returns the content viewer of an authenticated request, which sees direct
+// posts only when its token grants read:direct (ADR-0090 §4). The visibility itself is still
+// decided by the single policy function.
+func localContentViewer(v Viewer) appcontent.Viewer {
+	return appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: v.AccountID, DirectDenied: !v.Scope.Grants(identity.ScopeReadDirect)}
 }
 
 // statusCache returns the Cache-Control of a successful response about statuses. An anonymous
@@ -200,9 +208,18 @@ func (s *Server) authorProblem(ctx context.Context, v Viewer, statusID string, e
 
 // viewStatus returns the status as the viewer of ctx sees it, for the response of a command.
 func (s *Server) viewStatus(ctx context.Context, statusID string) (Status, error) {
-	view, err := s.o.StatusReader.View(ctx, contentViewer(ctx), statusID)
+	viewer := contentViewer(ctx)
+	// The response to a command shows the post it acted on, the author's own direct post
+	// included, so write:statuses alone can send one. Another account's direct post stays
+	// hidden from a token without read:direct.
+	viewer.DirectDenied = false
+	view, err := s.o.StatusReader.View(ctx, viewer, statusID)
 	if err != nil {
 		return Status{}, err
+	}
+	if v, ok := ViewerFrom(ctx); ok && contentViewer(ctx).DirectDenied &&
+		view.Status.Visibility == appcontent.VisibilityDirect && view.Status.AuthorAccountID != v.AccountID {
+		return Status{}, appcontent.ErrNotFound
 	}
 	return s.presentStatus(ctx, view)
 }
