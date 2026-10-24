@@ -1,7 +1,11 @@
 # クライアント API の規約と追加手順
 
 独自クライアント API（`/api/v1`）を設計・実装するときの規約と、エンドポイントを追加する手順です。
-根拠は [ADR-0007](../adr/0007-client-api.md)（独自 API）、[ADR-0016](../adr/0016-client-api-style.md)（様式）、[ADR-0019](../adr/0019-security-baseline.md)（認証・レート制限・ヘッダ・CORS）、[ADR-0029](../adr/0029-api-code-generation.md)（コード生成）です。
+根拠は [ADR-0007](../adr/0007-client-api.md)（独自 API）、[ADR-0016](../adr/0016-client-api-style.md)（様式）、[ADR-0019](../adr/0019-security-baseline.md)（認証・レート制限・ヘッダ・CORS）、[ADR-0029](../adr/0029-api-code-generation.md)（コード生成）、[ADR-0090](../adr/0090-third-party-oauth-apps.md) §8（安定性）です。
+
+`/api/v1` は追加を既定にします。サードパーティのアプリは、応答の未知のフィールドと列挙型の未知の値を無視してください（エラーにしない）。
+サーバーは、フィールド・列挙値・操作・スコープの追加を非推奨の手続きなしに行います。削除・名前や型の変更・必須の追加・スコープの意味の変更は破壊的変更で、§2.6 の手続きを踏みます。
+バンドルした OpenAPI は `GET /api/v1/openapi.yaml` で配ります。
 
 ## 1. ファイルの配置
 
@@ -18,6 +22,7 @@
 | `internal/interface/clientapi/security.gen.go` | 生成物。spec の `security` から作る操作ごとの認証・スコープの表（`internal/securitygen`）。手で編集しない |
 | `internal/interface/clientapi/auth.go`, `ratelimit.go` | 認証・認可・レート制限（§4.2） |
 | `internal/interface/clientapi/*.go` | 生成された `StrictServerInterface` の実装。アプリケーション層のユースケースを呼ぶ |
+| `internal/interface/clientapi/openapi.go` | 手書きの `GET /openapi.yaml`。バンドルした spec（`api.Spec`）をそのまま返す（§2.6） |
 | `internal/interface/clientapi/streaming.go` | 手書きの `GET /streaming`（SSE、§5） |
 | `internal/interface/clientapi/apitest` | ハンドラの応答を spec と照合するテストヘルパー |
 | `app/web/src/lib/api/schema.gen.ts` | 生成物。Web クライアントの型（openapi-typescript）。コミットせず（ADR-0081）、型を読むタスクが先に `scripts/task.sh api:generate-ts` で作る |
@@ -137,6 +142,16 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
   `patternProperties`、`propertyNames`、`contentEncoding`、`contentMediaType`、`contentSchema`、`not`
 - 配列の `type` と `null` 型。値のないプロパティは `null` にせず、オブジェクトから省きます（`required` に入れない）。
 - `webhooks`、`jsonSchemaDialect`、`callbacks`
+
+### 2.6 安定性と非推奨
+
+- 破壊的変更をするときは、spec の操作に `deprecated: true` と `x-sunset: {deprecated: "YYYY-MM-DD", sunset: "YYYY-MM-DD"}` を書き、代わりの操作があれば `description` に書きます。
+  `deprecated` は非推奨にした日、`sunset` は削除してよい日（UTC の 0 時）で、`sunset` を `deprecated` より前にはできません。
+  `deprecated: true` と `x-sunset` はどちらか一方だけでは `scripts/task.sh api:generate`（`securitygen`）が失敗します。
+- 非推奨の操作の応答には、成功も guard のエラー（401・403・429）も、`Deprecation: @<UNIX 秒>`（[RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)、Structured Fields の Date）と
+  `Sunset: <HTTP-date>`（[RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)）が付きます。ほかの操作には付きません。ヘッダは `security.gen.go` の `Deprecated`・`Sunset` から `guard` が付けます。
+- 削除は、非推奨にした版から少なくとも 1 つ後の v0.x のマイナーリリースで行います。リリースの手順は [releasing.md](../operations/releasing.md#api-の変更) にあります。
+  セキュリティの修正は猶予なしに変えてよく、その場合もリリースノートに書きます。
 
 ## 3. エンドポイントを追加する手順
 

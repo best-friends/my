@@ -449,6 +449,8 @@ func TestRegisterRefusesUnguardedOperations(t *testing.T) {
 	r := &patternRouter{}
 	s.Register(r)
 	want := clientapi.GuardedPatterns()
+	// The bundled OpenAPI document is static and public: it is not an operation of the spec.
+	r.patterns = slices.DeleteFunc(r.patterns, func(p string) bool { return p == "GET "+clientapi.BasePath+"/openapi.yaml" })
 	slices.Sort(r.patterns)
 	if !slices.Equal(r.patterns, want) {
 		t.Errorf("registered %q, want the patterns of security.gen.go %q", r.patterns, want)
