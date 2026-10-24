@@ -69,6 +69,9 @@ const (
 	// SettingLinkCardsEnabled is whether statuses show the cards of their links, fetched from
 	// the linked pages (FR-117, ADR-0062).
 	SettingLinkCardsEnabled SettingKey = "link_cards_enabled"
+	// SettingDynamicClientRegistration is whether OAuth clients may register themselves
+	// without authentication at POST /oauth/register (RFC 7591, ADR-0090 §1).
+	SettingDynamicClientRegistration SettingKey = "dynamic_client_registration"
 	// SettingRequireMediaDescription makes every media file attached to a local post need an
 	// alt text (FR-105).
 	SettingRequireMediaDescription SettingKey = "require_media_description"
@@ -389,6 +392,10 @@ var definitions = []Definition{
 		Key: SettingAIUsage, Kind: KindEnum, Default: string(AIDeny),
 		Choices: []string{string(AIAllow), string(AIDenyTraining), string(AIDeny)},
 		Doc:     "What the instance states to AI crawlers: allow, deny_training (no training of AI models), or deny (no training and no use by AI search, assistants, and agents) (FR-725, ADR-0057).",
+	},
+	{
+		Key: SettingDynamicClientRegistration, Kind: KindBool, Default: "true",
+		Doc: "Whether OAuth clients may register themselves at POST /oauth/register without authentication (RFC 7591); when off, the endpoint refuses every request (ADR-0090 §1).",
 	},
 	{
 		Key: SettingIndexableDefault, Kind: KindBool, Default: "false",
@@ -801,6 +808,11 @@ func (s Settings) AIUsage() AIUsage {
 		return AIDenyTraining
 	}
 	return AIDeny
+}
+
+// DynamicClientRegistration returns the value of SettingDynamicClientRegistration.
+func (s Settings) DynamicClientRegistration() bool {
+	return s.boolValue(SettingDynamicClientRegistration)
 }
 
 // IndexableDefault returns the value of SettingIndexableDefault.

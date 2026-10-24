@@ -57,6 +57,16 @@ type Deps struct {
 	// registers none.
 	WebClient WebClient
 
+	// DynamicClientRegistration returns whether OAuth clients may register themselves at
+	// POST /oauth/register (the dynamic_client_registration setting); nil refuses every
+	// registration. It is called once per registration.
+	DynamicClientRegistration func(ctx context.Context) (bool, error)
+	// DynamicClientUnredeemedTTL and DynamicClientIdleTTL are when the clean-up deletes an unused
+	// dynamically registered client; zero means DefaultDynamicClientUnredeemedTTL and
+	// DefaultDynamicClientIdleTTL.
+	DynamicClientUnredeemedTTL time.Duration
+	DynamicClientIdleTTL       time.Duration
+
 	// RegistrationMode returns the instance's registration mode (the registration_mode
 	// setting). SignUp calls it once per sign-up, so a change applies to the next one. Nil
 	// means identity.RegistrationClosed.

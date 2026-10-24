@@ -112,6 +112,8 @@ An instance setting that has never been set reads as its default, which is defin
 | [`payments_reconcile_max_requests`](#payments_reconcile_max_requests) | `MY_PAYMENTS_RECONCILE_MAX_REQUESTS` | `1000` | no | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
 | [`job_attempt_retention`](#job_attempt_retention) | `MY_JOB_ATTEMPT_RETENTION` | `720h` | no | no |
+| [`dynamic_client_unredeemed_ttl`](#dynamic_client_unredeemed_ttl) | `MY_DYNAMIC_CLIENT_UNREDEEMED_TTL` | `24h` | no | no |
+| [`dynamic_client_idle_ttl`](#dynamic_client_idle_ttl) | `MY_DYNAMIC_CLIENT_IDLE_TTL` | `2160h` | no | no |
 | [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
 | [`metrics_listen`](#metrics_listen) | `MY_METRICS_LISTEN` | `127.0.0.1:9464` | no | no |
 | [`metrics_emf_namespace`](#metrics_emf_namespace) | `MY_METRICS_EMF_NAMESPACE` | `my` | no | no |
@@ -828,6 +830,22 @@ How long the record of a job's run that did not succeed (a retry, or the run tha
 
 - Environment variable: `MY_JOB_ATTEMPT_RETENTION`
 - Default: `720h`
+- Required: no
+
+### `dynamic_client_unredeemed_ttl`
+
+How long a dynamically registered OAuth client (RFC 7591, `POST /oauth/register`; ADR-0090 §1) may wait for the exchange of its first authorization code: the hourly clean-up deletes a client that is older than this and had no code exchanged. A Go duration such as `24h`.
+
+- Environment variable: `MY_DYNAMIC_CLIENT_UNREDEEMED_TTL`
+- Default: `24h`
+- Required: no
+
+### `dynamic_client_idle_ttl`
+
+How long a dynamically registered OAuth client without a usable token may go unused before the hourly clean-up deletes it (ADR-0090 §1). Until the last use of a token is recorded, the time the client's newest token was issued stands for it. A Go duration such as `2160h` (90 days).
+
+- Environment variable: `MY_DYNAMIC_CLIENT_IDLE_TTL`
+- Default: `2160h`
 - Required: no
 
 ### `metrics_exporter`

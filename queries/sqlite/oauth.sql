@@ -161,3 +161,28 @@ SELECT t.id, sqlc.arg(reason), sqlc.arg(revoked_at) FROM oauth_access_tokens t
 WHERE t.client_id = sqlc.arg(client_id)
   AND (t.expires_at > sqlc.arg(revoked_at) OR t.refresh_expires_at > sqlc.arg(revoked_at))
 ON CONFLICT (token_id) DO NOTHING;
+
+-- ListUnusedDynamicOAuthClients returns the IDs of the dynamically registered clients that have no
+-- deletion and are unused (ADR-0090 section 1), oldest first: no authorization code was exchanged
+-- and the client was registered before unredeemed_before, or it has no token that was issued after
+-- idle_before or that is still usable at now (until the last use of a token family is recorded,
+-- the issue time of its newest token stands for it).
+-- name: ListUnusedDynamicOAuthClients :many
+SELECT c.id FROM oauth_clients c
+WHERE c.registration = 'dynamic'
+  AND NOT EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = c.id)
+  AND (
+    (c.created_at < sqlc.arg(unredeemed_before) AND NOT EXISTS (
+      SELECT 1 FROM oauth_authorization_codes a
+      JOIN oauth_authorization_code_redemptions r ON r.code_hash = a.code_hash
+      WHERE a.client_id = c.id))
+    OR
+    (c.created_at < sqlc.arg(idle_before) AND NOT EXISTS (
+      SELECT 1 FROM oauth_access_tokens t
+      WHERE t.client_id = c.id
+        AND (t.issued_at >= sqlc.arg(idle_before)
+          OR ((t.expires_at > sqlc.arg(now) OR t.refresh_expires_at > sqlc.arg(now))
+            AND NOT EXISTS (SELECT 1 FROM oauth_token_revocations v WHERE v.token_id = t.id)))))
+  )
+ORDER BY c.created_at, c.id
+LIMIT sqlc.arg(batch_limit);

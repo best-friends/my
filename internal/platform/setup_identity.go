@@ -46,7 +46,15 @@ func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error 
 			s, err := a.Instance.Settings(ctx)
 			return s.IndexableDefault(), err
 		},
-		Mailer: a.Mailer,
+		// OAuth clients register themselves at POST /oauth/register unless the administrator
+		// turned it off; the clean-up deletes the ones that are not used (ADR-0090 §1).
+		DynamicClientRegistration: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.DynamicClientRegistration(), err
+		},
+		DynamicClientUnredeemedTTL: cfg.DynamicClientUnredeemedTTL,
+		DynamicClientIdleTTL:       cfg.DynamicClientIdleTTL,
+		Mailer:                     a.Mailer,
 		// The registration page screens sign-ups against the sign-up block list (FR-719).
 		SignupBlocks: a.Moderation,
 		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).
@@ -57,6 +65,8 @@ func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error 
 		BaseURL:       cfg.ServerOrigin(),
 		InstanceName:  a.instanceName,
 	})
+	// The dynamically registered clients that nobody uses are deleted (ADR-0090 §1).
+	a.Identity.RegisterClientJobs(a.Handlers, a.Scheduler)
 	a.AccountAdmin = identity.NewAccountAdmin(identity.AccountAdminDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Restrictions: a.AccountPolicy,
 		Clock: a.Clock, IDs: a.IDs,
