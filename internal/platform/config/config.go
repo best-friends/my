@@ -150,6 +150,11 @@ type Config struct {
 	// JobAttemptRetention is how long the record of a job's run that did not succeed is kept
 	// after the run (ADR-0064 §2).
 	JobAttemptRetention time.Duration
+	// DynamicClientUnredeemedTTL is how long a dynamically registered OAuth client may wait for
+	// the exchange of its first authorization code, and DynamicClientIdleTTL how long one
+	// without a usable token may go unused, before the clean-up deletes it (ADR-0090 §1).
+	DynamicClientUnredeemedTTL time.Duration
+	DynamicClientIdleTTL       time.Duration
 	// MetricsExporter is the Meter adapter (ADR-0055 §2); MetricsListen is the address of the
 	// scrape of prometheus, and the EMF fields configure emf.
 	MetricsExporter      string
@@ -259,6 +264,8 @@ func (c *Config) LogValue() slog.Value {
 		slog.Int("payments_reconcile_max_requests", c.PaymentsReconcileMaxRequests),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
 		slog.Duration("job_attempt_retention", c.JobAttemptRetention),
+		slog.Duration("dynamic_client_unredeemed_ttl", c.DynamicClientUnredeemedTTL),
+		slog.Duration("dynamic_client_idle_ttl", c.DynamicClientIdleTTL),
 		slog.String("metrics_exporter", c.MetricsExporter),
 		slog.String("metrics_listen", c.MetricsListen),
 		slog.String("metrics_emf_namespace", c.MetricsEMFNamespace),

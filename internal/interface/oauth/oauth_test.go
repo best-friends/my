@@ -24,6 +24,9 @@ type fakeIdentity struct {
 	refreshes []appidentity.RefreshRequest
 	web       []string
 	revokes   []appidentity.RevokeRequest
+
+	registrations []appidentity.DynamicRegistrationRequest
+	registerErr   error
 }
 
 func issued(rt string) appidentity.IssuedTokens {
