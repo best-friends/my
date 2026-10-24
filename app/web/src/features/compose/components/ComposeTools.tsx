@@ -41,6 +41,8 @@ export function ComposeTools({ form }: ComposeToolsProps) {
   const addLabel = t("client:compose.media.add");
   const warningLabel = t("client:compose.warning.toggle");
   const pollLabel = t("client:compose.poll.toggle");
+  const quotePolicyName = t(quotePolicyLabel[form.quotePolicy]);
+  const languageName = form.languages.find((option) => option.id === form.language)?.name ?? form.language;
   return (
     <Cluster align="center" gap="1" shrink>
       <TooltipTrigger>
@@ -98,6 +100,7 @@ export function ComposeTools({ form }: ComposeToolsProps) {
       <Select
         variant="toolbar"
         aria-label={t("client:compose.quote_policy.label")}
+        tooltip={t("client:compose.quote_policy.tooltip", { value: quotePolicyName })}
         icon={<QuoteIcon />}
         items={quotePolicies.map((id) => ({ id, name: t(quotePolicyLabel[id]) }))}
         value={form.quotePolicy}
@@ -114,6 +117,7 @@ export function ComposeTools({ form }: ComposeToolsProps) {
       <Select
         variant="toolbar"
         aria-label={t("client:compose.language.label")}
+        tooltip={t("client:compose.language.tooltip", { value: languageName })}
         icon={<LanguageIcon />}
         items={form.languages}
         value={form.language}

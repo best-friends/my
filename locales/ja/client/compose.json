@@ -338,5 +338,13 @@
   "compose.quote_policy.nobody.description": {
     "defaultMessage": "あなた以外は引用できません。",
     "description": "Description of the quote policy 'Only you'."
+  },
+  "compose.quote_policy.tooltip": {
+    "defaultMessage": "引用：{value}",
+    "description": "Tooltip of the select that chooses who may quote the post, shown on hover and keyboard focus. {value} is the current choice, for example 'Followers'."
+  },
+  "compose.language.tooltip": {
+    "defaultMessage": "言語：{value}",
+    "description": "Tooltip of the select that chooses the language of the post, shown on hover and keyboard focus. {value} is the current language, for example 'English'."
   }
 }

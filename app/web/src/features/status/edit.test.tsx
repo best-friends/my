@@ -132,6 +132,20 @@ describe("editing a post", () => {
     expect(within(article).getByText("Dogs")).toBeInTheDocument();
   });
 
+  test("names the language and its current value in a tooltip on keyboard focus", async () => {
+    signedIn();
+    serveOwnPost();
+    const { user } = await renderApp({ path: "/local" });
+
+    const dialog = await openEditor(user, "My first words");
+    const language = await within(dialog).findByRole("button", { name: "English Language" });
+    language.focus();
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+    await user.tab();
+    expect(language).toHaveFocus();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Language: English");
+  });
+
   test("keeps the dialog and the text when the server refuses", async () => {
     signedIn();
     serveOwnPost();

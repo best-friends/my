@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect } from "storybook/test";
 import { Button } from "./Button";
 import { ImageIcon, LanguageIcon } from "./Icons";
 import { Select, SelectItem } from "./Select";
@@ -47,6 +48,30 @@ export const Toolbar: Story = {
       <Select {...args} />
     </div>
   ),
+};
+
+/**
+ * The toolbar select with a tooltip like the icon buttons beside it: it names the control and its current value
+ * on hover and keyboard focus, closes on Esc and stays closed while the list is open. The accessible name does
+ * not change.
+ */
+export const ToolbarTooltip: Story = {
+  args: { label: undefined, "aria-label": "Post language", variant: "toolbar", icon: <LanguageIcon />, defaultValue: "ja", tooltip: "Post language: Japanese" },
+  render: (args) => (
+    <div className="flex flex-wrap items-center gap-1">
+      <Button variant="ghost" size="toolbar" aria-label="Add images">
+        <ImageIcon />
+      </Button>
+      <Select {...args} />
+    </div>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    // The first stop is the button before the select.
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(canvas.getByRole("button", { name: /Post language/ })).toHaveFocus();
+    await expect(await canvas.findByRole("tooltip")).toHaveTextContent("Post language: Japanese");
+  },
 };
 
 /** The open list, for the accessibility check of the options; it renders in a popover outside the frame. */
