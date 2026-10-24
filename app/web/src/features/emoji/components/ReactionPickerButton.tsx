@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, EmojiIcon, EmojiPicker, Popover, PopoverTrigger, Tooltip, TooltipTrigger } from "@my/ui";
+import { Button, EmojiIcon, Popover, PopoverTrigger, Tooltip, TooltipTrigger } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { type ReactionChoice, useReactionPicker } from "../hooks/useReactionPicker";
+import { EmojiPickerPanel } from "./EmojiPickerPanel";
 
 export type ReactionPickerButtonProps = {
   /** Called with the emoji picked; the popover is closed by then. */
@@ -11,9 +12,12 @@ export type ReactionPickerButtonProps = {
 
 /**
  * An icon button of a post's action bar that opens the picker of reactions in a popover (WAI-ARIA APG, dialog
- * pattern): common Unicode emoji and the custom emoji of this server (ADR-0052 §2). The search field takes focus;
- * picking an emoji closes the popover, which returns focus to the button, and reacts with it. The button is named by
- * aria-label and shows the same words as a tooltip (web-client/16-look-states-and-wording.md G12).
+ * pattern): the post form's emoji picker (ADR-0091 §7), with the emoji used often, the custom emoji of this server
+ * and every Unicode emoji in the skin tone chosen here. Hovering or focusing it starts loading the Unicode emoji, and
+ * the popover shows a spinner until they arrive. The search field takes focus; picking an emoji closes the popover,
+ * which returns focus to the button, and reacts with it, also when Shift is held (one reaction per post, ADR-0052 §1).
+ * The button is named by aria-label and shows the same words as a tooltip
+ * (web-client/16-look-states-and-wording.md G12).
  */
 export function ReactionPickerButton({ onSelect, isDisabled = false }: ReactionPickerButtonProps) {
   const t = useT();
@@ -21,25 +25,20 @@ export function ReactionPickerButton({ onSelect, isDisabled = false }: ReactionP
   const name = t("client:reaction.picker.button");
   return (
     <TooltipTrigger>
-      <PopoverTrigger>
-        <Button variant="subtle" size="toolbar" aria-label={name} isDisabled={isDisabled}>
+      <PopoverTrigger
+        onOpenChange={(isOpen) => {
+          if (isOpen) picker.preload();
+        }}
+      >
+        <Button variant="subtle" size="toolbar" aria-label={name} isDisabled={isDisabled} onHoverStart={picker.preload} onFocus={picker.preload}>
           <EmojiIcon />
         </Button>
         <Popover aria-label={t("client:reaction.picker.title")} placement="bottom start">
           {({ close }) => (
-            <EmojiPicker
-              sections={picker.sections}
-              labels={picker.labels}
-              autoFocus
+            <EmojiPickerPanel
+              picker={picker}
               onSelect={(selection) => {
-                // A post takes one reaction, so the picker closes even when Shift asks to keep it open.
-                close();
-                if (selection.kind === "custom") {
-                  picker.remember(selection.emoji);
-                  onSelect({ custom: selection.emoji });
-                } else {
-                  onSelect({ unicode: selection.text });
-                }
+                picker.select(selection, close, onSelect);
               }}
             />
           )}

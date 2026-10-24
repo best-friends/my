@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, EmojiIcon, EmojiPicker, InlineError, Popover, PopoverTrigger, Spinner, Tooltip, TooltipTrigger } from "@my/ui";
+import { Button, EmojiIcon, Popover, PopoverTrigger, Tooltip, TooltipTrigger } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { type EmojiTarget, useEmojiPicker } from "../hooks/useEmojiPicker";
+import { EmojiPickerPanel } from "./EmojiPickerPanel";
 
 export type EmojiPickerButtonProps = EmojiTarget & {
   /** The accessible name of the button, which says what field it adds to; the default is "Add emoji". */
@@ -31,25 +32,14 @@ export function EmojiPickerButton({ label, isDisabled = false, ...target }: Emoj
           <EmojiIcon />
         </Button>
         <Popover aria-label={t("client:emoji.picker.title")} placement="bottom end">
-          {({ close }) =>
-            picker.status === "loading" ? (
-              <Spinner label={t("client:emoji.picker.loading")} />
-            ) : (
-              <>
-                {picker.status === "error" && <InlineError>{t("client:emoji.picker.load_failed")}</InlineError>}
-                <EmojiPicker
-                  sections={picker.sections}
-                  labels={picker.labels}
-                  skinTone={picker.skinTone}
-                  onSkinToneChange={picker.setSkinTone}
-                  autoFocus
-                  onSelect={(selection) => {
-                    picker.select(selection, close);
-                  }}
-                />
-              </>
-            )
-          }
+          {({ close }) => (
+            <EmojiPickerPanel
+              picker={picker}
+              onSelect={(selection) => {
+                picker.select(selection, close);
+              }}
+            />
+          )}
         </Popover>
       </PopoverTrigger>
       <Tooltip>{name}</Tooltip>

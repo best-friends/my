@@ -28,7 +28,7 @@
   - **保存**: よく使う絵文字は端末ごとに localStorage（`my:emoji:recent`。版 2、`hooks/frequentEmojis.ts`）に 32 個まで持つ。Unicode 絵文字は肌の色を外した基の列、カスタム絵文字は `:shortcode:` を 1 つの列に混ぜ、使った回数を 1 週間で半分になるように減衰させた値の順に並べる（減衰はどの絵文字にも同じ率で効くので、使ったときに並べた順がそのまま次に使うまで正しい）。
     まだ無いときは、リアクションの既定の群（👍 ❤️ 😆 …）を出す。版 1（最近使ったカスタム絵文字の shortcode の配列）は読み替えず、既定として読む。ADR-0092 の補完が使う `useFrequentEmojis` を `index.ts` から出す。
     肌の色は localStorage（`my:emoji:skin-tone`）に保存し、異体のある絵文字はその色で表示して入れる（複数の人の絵文字は全員に同じ色）。
-  - **リアクション**（ADR-0052、§13）も同じ `EmojiPicker` を、Unicode 絵文字の既定の群と、よく使う絵文字のうちのカスタム絵文字で使う。
+  - **リアクション**（ADR-0091 §7、ADR-0052、§13）も同じピッカー（節の組み立て・データの読み込み・よく使う・肌の色を `hooks/emojiPickerContent.ts` で共有し、ポップオーバーの中身は `components/EmojiPickerPanel.tsx`）を使い、選んだ絵文字を入れる代わりにリアクションする。
 - **Unicode 絵文字の表示**（ADR-0095）: ピッカー・補完・リアクション・投稿の本文・名前の Unicode 絵文字は、どれも `--font-sans` の先頭の `my Noto Color Emoji`（`@my/ui/emoji.css`）で描き、OS のフォントで描けるかを canvas で判定して隠すことはしない（フォントは `EMOJI_VERSION` のすべてを描くことを生成のときに確かめる）。
   フォントは `emoji-test.txt` のグループごとに分けてあり、画面に出た絵文字のグループの分だけを読む。読み込み中は `font-display: swap` で OS の絵文字で描き、届いたら入れ替わる。このため、字の幅に合わせて位置を測る層（ADR-0092 の強調の層）は、`document.fonts` の `loadingdone` の後にも測り直す。
 - **下書き**（`hooks/draftStore.ts`）: フォームの外のストア（`useSyncExternalStore`）に置き、シート・返信ボタンが同じ下書きを共有する。
