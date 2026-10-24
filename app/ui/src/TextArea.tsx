@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { type ReactNode, useEffect, useId, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useId, useState } from "react";
 import {
   composeRenderProps,
   TextArea as RACTextArea,
@@ -26,7 +26,31 @@ const textArea = tv({
     over: { true: { count: "font-medium text-danger" } },
     // The text keeps clear of the end action, so that no line runs under its button (a button of size `icon`).
     withAction: { true: { input: "pe-(--end-action-room)" } },
+    // A text area with layers in its box (TextAreaAutocomplete's mirror, which is also the highlight layer): the box
+    // paints the field's background, so the layer behind the transparent textarea shows. The textarea is a block, so
+    // the box is exactly its size, and its line height is rounded to whole pixels, so the scrolled layer lines up
+    // with it in Chromium and WebKit too (#1152).
+    layered: {
+      true: {
+        control: "rounded-md bg-surface-sunken",
+        input: "relative block bg-transparent leading-[round(calc(var(--text-base--line-height)*1em),1px)]",
+      },
+    },
   },
+  compoundVariants: [
+    // The layered textarea is `dir="auto"`, so its own inline end is the other side from the box's when its text runs
+    // against the page (English in an Arabic page); the room for the end action then goes on its inline start.
+    {
+      layered: true,
+      withAction: true,
+      class: {
+        input: [
+          "[:dir(ltr)>&:dir(rtl)]:ps-(--end-action-room) [:dir(ltr)>&:dir(rtl)]:pe-3",
+          "[:dir(rtl)>&:dir(ltr)]:ps-(--end-action-room) [:dir(rtl)>&:dir(ltr)]:pe-3",
+        ],
+      },
+    },
+  ],
 });
 
 /** Remaining counts that are announced at once when typing reaches them (ADR-0027). */
@@ -69,6 +93,16 @@ export type TextAreaProps = Omit<RACTextFieldProps, "children"> &
     endAction?: ReactNode;
   };
 
+/** What TextAreaAutocomplete adds to the text area: props of the textarea and the layers of its box (kit-internal). */
+export type TextAreaLayers = {
+  inputRef: Ref<HTMLTextAreaElement>;
+  inputProps: Omit<RACTextAreaProps, "className" | "placeholder" | "rows">;
+  /** Rendered in the textarea's box before it, so it sits behind the textarea (the mirror). */
+  behind: ReactNode;
+  /** Rendered in the textarea's box after it (the anchor of the suggestions). */
+  after: ReactNode;
+};
+
 /**
  * A multi-line text field (React Aria TextField with a TextArea), controlled with `value` / `onChange`
  * or uncontrolled with `defaultValue`.
@@ -81,7 +115,12 @@ export type TextAreaProps = Omit<RACTextFieldProps, "children"> &
  * With `endAction`, that control sits in the top end corner of the text area (inset-inline-end), and the text keeps
  * clear of it.
  */
-export function TextArea({
+export function TextArea(props: TextAreaProps) {
+  return <TextAreaField {...props} />;
+}
+
+/** TextArea with the layers that TextAreaAutocomplete adds (kit-internal; not exported from the package). */
+export function TextAreaField({
   label,
   description,
   errorMessage,
@@ -96,8 +135,9 @@ export function TextArea({
   isInvalid,
   "aria-describedby": ariaDescribedBy,
   endAction,
+  layers,
   ...props
-}: TextAreaProps) {
+}: TextAreaProps & { layers?: TextAreaLayers }) {
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "");
   const text = value ?? uncontrolledValue;
   // The remaining count to announce after the pause, and the one the status region says now.
@@ -133,8 +173,16 @@ export function TextArea({
     onChange?.(next);
   }
 
-  const styles = textArea({ over, withAction: endAction !== undefined });
-  const input = <RACTextArea className={styles.input()} {...(placeholder === undefined ? {} : { placeholder })} {...(rows === undefined ? {} : { rows })} />;
+  const styles = textArea({ over, withAction: endAction !== undefined, layered: layers !== undefined });
+  const input = (
+    <RACTextArea
+      {...layers?.inputProps}
+      {...(layers === undefined ? {} : { ref: layers.inputRef })}
+      className={styles.input()}
+      {...(placeholder === undefined ? {} : { placeholder })}
+      {...(rows === undefined ? {} : { rows })}
+    />
+  );
   const describedBy = [ariaDescribedBy, remaining === undefined ? undefined : countId].filter((id) => id !== undefined).join(" ");
 
   return (
@@ -149,12 +197,14 @@ export function TextArea({
       className={composeRenderProps(className, (className) => styles.root({ className }))}
     >
       {label !== undefined && <FieldLabel>{label}</FieldLabel>}
-      {endAction === undefined ? (
+      {endAction === undefined && layers === undefined ? (
         input
       ) : (
         <div className={styles.control()}>
+          {layers?.behind}
           {input}
-          <div className={styles.action()}>{endAction}</div>
+          {layers?.after}
+          {endAction !== undefined && <div className={styles.action()}>{endAction}</div>}
         </div>
       )}
       {description !== undefined && <FieldDescription>{description}</FieldDescription>}

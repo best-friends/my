@@ -352,6 +352,7 @@ string through props or children.
 | `Link` | `Link` | `variant`: `inline` (default, underlined in running text) / `standalone` |
 | `TextField` | `TextField` + `Input` | `label`, `description`, `errorMessage`, `placeholder`; `grow` takes the room left in a row |
 | `TextArea` | `TextField` + `TextArea` | as `TextField`, plus `rows` and the character count below |
+| `TextAreaAutocomplete` | `Autocomplete` + `TextField` + `TextArea`, `Popover` + `ListBox` | as `TextArea`, plus the completion of the word after a trigger character (below) |
 | `Checkbox` | `CheckboxField` + `CheckboxButton` | children as the label, `description`, `errorMessage`, `isIndeterminate` |
 | `Switch` | `SwitchField` + `SwitchButton` | children as the label, `description`, `errorMessage` |
 | `RadioGroup`, `Radio` | `RadioGroup`, `RadioField` + `RadioButton` | `orientation`: `vertical` (default) / `horizontal`; a `description` per `Radio` |
@@ -373,6 +374,24 @@ string through props or children.
   - a visually hidden `role="status"` region announces it when typing pauses for a second, and at once when the remaining count
     reaches 50, 20 or 0 ([ADR-0027](../../docs/adr/0027-ui-quality-gates.md));
   - longer text is kept, not cut off: the count turns `danger` and the field becomes invalid.
+- `TextAreaAutocomplete` completes the word after a trigger character (`@`, `#`, `:`) in a native textarea
+  ([ADR-0092](../../docs/adr/0092-composer-autocomplete-highlight.md) §3). It knows no domain: it takes `triggers` (each trigger
+  character with the fewest query characters it needs), `findWord` (the word at the caret; the web passes `activeWord` of
+  `lib/textTokens.ts`), `loadSuggestions(word, signal)` (sync or async; asked after typing pauses for `queryDelay`, 200 ms by
+  default, aborted when the word changes, a rejection just closes the list), `renderSuggestion`, and the strings `suggestionsLabel`,
+  `formatSuggestionCount`, `loadingLabel` and `emptyLabel`. A suggestion is `{ id, value, textValue }`; `value` replaces the word.
+  - The textarea stays a `textbox` with `aria-autocomplete="list"`, `aria-controls` and `aria-activedescendant`; the chosen option
+    has `aria-selected="true"`; a `role="status"` region announces the count, loading (after 300 ms) and no results, which the
+    popover also shows. Spell checking, autocorrect and the return key stay on.
+  - While the list is open: ↑ / ↓ move (stopping at the ends), Enter and Tab accept, Esc closes it without closing an
+    enclosing `Sheet`, and the first option is chosen whenever the options change. Every other key, every key while it is
+    closed and during an IME composition (`isComposing`, `keyCode` 229), and Ctrl / Cmd + Enter reach the textarea and the form.
+  - Accepting replaces the word with `value` and a space (none when whitespace follows) through `execCommand("insertText")`,
+    one undo step, or `setRangeText` where that fails.
+  - The popover is as wide as the text area, under the caret's line, or above it when the visual viewport has no room
+    below. The caret's line comes from `TextAreaMirror`, an `aria-hidden` copy of the text laid out with the textarea's own
+    font, spacing, line height, padding and borders behind the transparent textarea, which the highlight layer also uses.
+    The mirrored textarea is `dir="auto"` and has a whole-pixel line height, so the scrolled mirror lines up in every engine.
 
 ## Overlays and announcements
 
