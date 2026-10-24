@@ -224,6 +224,7 @@ my instance rule list                                 # 有効なルール（-al
 
 - 上書きできるトークンは `app/ui/src/theme.css` の原色（`--palette-*`）以外で、一覧・既定値・範囲は [app/ui/README.md](../../app/ui/README.md#server-themes) にあります。
   色はライト / ダークそれぞれ `#rrggbb`（`color-overlay` は `#rrggbbaa` も可）で、ほかは種類ごとの形（長さ・数・時間・緩急・フォント名の並び・影）と範囲に収まる値です。
+  `font-sans` / `font-mono` を上書きするときは、先頭に `"my Noto Color Emoji"` を残してください。残さないと、Web クライアントの絵文字が OS のフォントで描かれます（[ADR-0096](../adr/0096-emoji-css-import.md)）。
 - 保存のときにサーバーが、値の形と範囲、色のトークンのすべての組のコントラスト（上書きしないトークンは既定値で、ライト / ダークの両方で WCAG 2.2 AA）、カスタム CSS の長さ（64 KiB）を検査し、
   1 つでも満たさなければ何も保存しません。
 - カスタム CSS は、サーバーは中身を読まずに、トークンの規則の後に `@layer` の外で同じスタイルシートに入れて返します。Web クライアントと同じ CSP の下で動くので、別のオリジンの画像・フォント・`@import` は読めません。
