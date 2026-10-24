@@ -106,10 +106,18 @@ func TestAccountSuspensionFederates(t *testing.T) {
 		t.Errorf("actor after the lift = %v, want the profile", doc)
 	}
 
-	// An expired suspension is told by the expiry job.
-	issue(map[string]any{"kind": "suspend", "expires_in": 1})
+	// An expired suspension is told by the expiry job. The test moves the end of the suspension
+	// into the past instead of sleeping past it: the server compares wall-clock times, which a
+	// clock adjustment (NTP, the WSL2 host sync) can move back across a short sleep.
+	a = issue(map[string]any{"kind": "suspend", "expires_in": 3600})
 	wantUpdates("after the second suspension", 3)
-	time.Sleep(1100 * time.Millisecond)
+	if doc := actor(); doc["suspended"] != true {
+		t.Errorf("actor while the expiring suspension lasts = %v, want it marked suspended", doc)
+	}
+	past := time.Now().Add(-time.Hour).UnixMilli()
+	if _, err := db.ExecContext(t.Context(), `UPDATE account_restrictions SET effective_until = ? WHERE source_action_id = ?`, past, a.Id); err != nil {
+		t.Fatal(err)
+	}
 	if doc := actor(); doc["name"] != "Alice" || doc["suspended"] != nil {
 		t.Errorf("actor after the expiry = %v, want the profile", doc)
 	}
