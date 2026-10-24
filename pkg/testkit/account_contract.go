@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -715,6 +716,33 @@ func accountEnsuresBuiltinRoles(t *testing.T, e *accountEnv) {
 		if !reflect.DeepEqual(got, want) || len(perms) != len(b.Permissions) {
 			t.Errorf("role %s permissions = %v, want %v", b.Key, perms, b.Permissions)
 		}
+	}
+
+	// An admin role created by an older version lacks the permissions added since; ensuring the
+	// built-in roles again, from several processes starting at once, gives it all of them.
+	admin := first[identity.RoleAdmin]
+	if err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		return e.h.Identity.SetRolePermissions(ctx, tx, admin.ID, identity.AllPermissions()[:1])
+	}); err != nil {
+		t.Fatalf("SetRolePermissions(admin) = %v", err)
+	}
+	var wg sync.WaitGroup
+	errs := make([]error, 4)
+	for i := range errs {
+		wg.Go(func() { errs[i] = e.identity.EnsureBuiltinRoles(ctx) })
+	}
+	wg.Wait()
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("concurrent EnsureBuiltinRoles %d = %v", i, err)
+		}
+	}
+	_, perms, err := e.h.Identity.FindRole(ctx, identity.RoleAdmin)
+	if err != nil {
+		t.Fatalf("FindRole(admin) = %v", err)
+	}
+	if got := slices.Sorted(slices.Values(perms)); !reflect.DeepEqual(got, slices.Sorted(slices.Values(identity.AllPermissions()))) {
+		t.Errorf("admin permissions after an upgrade = %v, want %v", perms, identity.AllPermissions())
 	}
 }
 

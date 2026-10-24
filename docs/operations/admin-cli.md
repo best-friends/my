@@ -32,6 +32,8 @@ my admin create -username alice -email alice@example.com
 
 権限はロールが持ちます（[data-model §4.1](../architecture/data-model/README.md)）。組み込みのロールは `admin`（`position` 1000、すべての権限）と
 `moderator`（`position` 100、`manage_reports`・`manage_accounts`・`view_audit`）です（FR-720）。
+`my serve` は起動のたびに（どの `role` のプロセスでも）、`my admin role` は実行のたびに組み込みロールを確かめ、無いものを作って `admin` にその版のすべての権限を持たせます。
+版を上げて権限が増えても手作業は要りません。`moderator` の権限と位置は管理者が変えたまま残ります。
 
 ```sh
 my admin role list                 # ロールごとの position・権限（モデレーション・サーバー管理・利用者の機能に分けて）・持っている利用者
