@@ -110,6 +110,15 @@ func oauthAppsRegisterAndChange(t *testing.T, e *accountEnv) {
 		}
 	}
 
+	// The consent screen names the user who registered the app.
+	a, err := e.identity.ValidateAuthorization(ctx, appidentity.AuthorizationRequest{
+		ResponseType: "code", ClientID: c.ClientID, RedirectURI: contractOwnAppRedirect,
+		CodeChallenge: identity.S256Challenge(contractCodeVerifier), CodeChallengeMethod: "S256",
+	})
+	if err != nil || a.OwnerUsername != "alice" {
+		t.Errorf("ValidateAuthorization = owner %q, %v; want alice", a.OwnerUsername, err)
+	}
+
 	// Another user authorizes the app; the client authenticates with its secret.
 	creds := appidentity.ClientCredentials{ClientID: c.ClientID, ClientSecret: conf.ClientSecret}
 	bobTokens := e.ownAppTokensFor(t, conf.OAuthApp, creds, bob)
