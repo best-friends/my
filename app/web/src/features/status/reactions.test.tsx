@@ -125,10 +125,10 @@ describe("the reactions of a post", () => {
 
     const picker = await openPicker(user, article);
     // Nothing used yet: the default reactions come first, then the nine groups of every Unicode emoji.
-    expect(within(picker).getAllByRole("row")[1]).toHaveAccessibleName("thumbs up");
+    expect(within(picker).getAllByRole("gridcell")[0]).toHaveAccessibleName("thumbs up");
     expect(within(picker).getByRole("toolbar", { name: "Emoji categories" })).toBeInTheDocument();
     await user.type(within(picker).getByRole("searchbox", { name: "Search emoji" }), "party popper");
-    await user.click(within(picker).getByRole("row", { name: "party popper" }));
+    await user.click(within(picker).getByRole("gridcell", { name: "party popper" }));
 
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "Emoji to react with" })).not.toBeInTheDocument();
@@ -153,7 +153,7 @@ describe("the reactions of a post", () => {
     await user.click(within(toolbar).getByRole("button", { name: "Activities" }));
     // The button moves focus to the first emoji of its section.
     await waitFor(() => {
-      expect(within(picker).getByRole("row", { name: "jack-o-lantern" })).toHaveFocus();
+      expect(within(picker).getByRole("gridcell", { name: "jack-o-lantern" })).toHaveFocus();
     });
     await user.keyboard("{Enter}");
 
@@ -175,7 +175,7 @@ describe("the reactions of a post", () => {
     await user.click(await screen.findByRole("menuitemradio", { name: "Medium skin tone" }));
     expect(skinToneKey.read()).toBe("medium");
     await user.type(within(picker).getByRole("searchbox", { name: "Search emoji" }), "waving hand");
-    await user.click(within(picker).getByRole("row", { name: "waving hand: medium skin tone" }));
+    await user.click(within(picker).getByRole("gridcell", { name: "waving hand: medium skin tone" }));
 
     await waitFor(() => {
       expect(sent).toEqual(["👋🏽"]);
@@ -197,7 +197,7 @@ describe("the reactions of a post", () => {
 
     const picker = await openPicker(user, article);
     await user.keyboard("{Shift>}");
-    await user.click(within(picker).getAllByRole("row", { name: "party popper" })[0] as HTMLElement);
+    await user.click(within(picker).getAllByRole("gridcell", { name: "party popper" })[0] as HTMLElement);
     await user.keyboard("{/Shift}");
 
     await waitFor(() => {
@@ -219,7 +219,7 @@ describe("the reactions of a post", () => {
 
     const picker = await openPicker(user, article);
     await user.type(within(picker).getByRole("searchbox", { name: "Search emoji" }), "partyblob");
-    await user.click(await within(picker).findByRole("row", { name: ":partyblob:" }));
+    await user.click(await within(picker).findByRole("gridcell", { name: ":partyblob:" }));
 
     await waitFor(() => {
       expect(sent).toEqual(["partyblob"]);

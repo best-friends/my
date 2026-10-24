@@ -43,6 +43,10 @@ func TestScopeGrants(t *testing.T) {
 		{"read:accounts", identity.ScopeReadAccounts, true},
 		{"read:accounts", identity.ScopeRead, false},
 		{"read:accounts", identity.ScopeReadStatuses, false},
+		{"read", identity.ScopeReadDirect, true},
+		{"read:statuses", identity.ScopeReadDirect, false},
+		{"read:direct", identity.ScopeReadStatuses, false},
+		{"write", identity.ScopeReadDirect, false},
 		{"push", identity.ScopeReadNotifications, false},
 		{"", identity.ScopeReadAccounts, false},
 	}
@@ -64,5 +68,24 @@ func TestScopeWithinFollowsBroadScopes(t *testing.T) {
 		if !identity.Scope(s).Within(identity.AllScopes()) {
 			t.Errorf("%s is not within AllScopes", s)
 		}
+	}
+}
+
+func TestFirstPartyOnlyScopes(t *testing.T) {
+	for _, s := range []string{"admin", "admin:read", "admin:write", "write:supporters"} {
+		if !identity.FirstPartyOnlyScope(s) {
+			t.Errorf("FirstPartyOnlyScope(%q) = false, want true", s)
+		}
+	}
+	for _, s := range []string{"read", "write", "write:statuses", "read:supporters", "read:direct", "follow"} {
+		if identity.FirstPartyOnlyScope(s) {
+			t.Errorf("FirstPartyOnlyScope(%q) = true, want false", s)
+		}
+	}
+	if identity.Scope("read write").HasFirstPartyOnly() {
+		t.Error("read write names no first-party-only scope itself")
+	}
+	if !identity.Scope("read admin:read").HasFirstPartyOnly() {
+		t.Error("read admin:read names a first-party-only scope")
 	}
 }

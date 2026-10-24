@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 post:
   operationId: enableTotp
+  x-first-party-only: true
   summary: Enable two-factor authentication with the secret of a setup
   description: |
     Enrolls the secret of `setup_token` once `code` shows that the app has it, and returns

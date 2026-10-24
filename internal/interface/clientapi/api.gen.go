@@ -7778,6 +7778,9 @@ type PreviewDomainBlockImportRequest struct {
 //     expired, or revoked. Refresh it or sign in again.
 //   - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
 //     `WWW-Authenticate` names.
+//   - `/api/v1/problems/first-party-only` (403): the operation (password, two-factor
+//     authentication, passkeys, deleting the account) takes only the token of one of the
+//     server's own clients, whatever its scopes.
 //   - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
 //     use the app (registration pending or rejected, email unverified, the account
 //     deactivated or deleted, or a moderation action that disables its login). The user

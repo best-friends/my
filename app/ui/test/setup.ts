@@ -13,6 +13,15 @@ configure({ asyncUtilTimeout: 10_000 });
 // jsdom has no layout and does not implement scrolling; the Feed's virtualizer scrolls the window when
 // articles are measured. A no-op keeps jsdom from logging "Not implemented" for every test.
 window.scrollTo = () => undefined;
+// Nor does it give elements scrollTo, which the EmojiPicker's virtualizer scrolls its grid with; jsdom keeps an
+// element's scrollTop, so this one sets it and tells the listeners, as a browser's instant scroll does.
+Element.prototype.scrollTo = function scrollTo(this: Element, options?: ScrollToOptions | number) {
+  if (typeof options === "object") {
+    if (options.top !== undefined) this.scrollTop = options.top;
+    if (options.left !== undefined) this.scrollLeft = options.left;
+  }
+  this.dispatchEvent(new Event("scroll"));
+};
 // Nor does jsdom draw: without the canvas package, getContext logs "Not implemented". A canvas without a context
 // is what a browser without a 2D canvas gives, and Blurhash then draws nothing.
 Object.defineProperty(HTMLCanvasElement.prototype, "getContext", { configurable: true, writable: true, value: () => null });

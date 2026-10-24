@@ -816,6 +816,7 @@ paths:
   /accounts/delete:
     post:
       operationId: deleteOwnAccount
+      x-first-party-only: true
       summary: Delete the authenticated user's account
       description: |
         Deletes the user's own account at once, after checking the user's current `password`
@@ -846,6 +847,7 @@ paths:
   /accounts/password:
     get:
       operationId: getPasswordStatus
+      x-first-party-only: true
       summary: Get whether the authenticated user has a password
       description: |
         Whether the user signs in with a password, or with passkeys only after removing it
@@ -869,6 +871,7 @@ paths:
           $ref: '#/components/responses/Problem'
     post:
       operationId: changePassword
+      x-first-party-only: true
       summary: Change or set the authenticated user's password
       description: |
         Replaces the user's password with `new_password` after checking `current_password` or
@@ -901,6 +904,7 @@ paths:
   /accounts/password/remove:
     post:
       operationId: removePassword
+      x-first-party-only: true
       summary: Remove the authenticated user's password
       description: |
         Removes the password of a user who has a passkey, after checking a `passkey` of the
@@ -1160,6 +1164,7 @@ paths:
   /two_factor:
     get:
       operationId: getTwoFactor
+      x-first-party-only: true
       summary: Get where the authenticated user's two-factor authentication stands
       tags:
         - two_factor
@@ -1181,6 +1186,7 @@ paths:
   /two_factor/totp/setup:
     post:
       operationId: setUpTotp
+      x-first-party-only: true
       summary: Generate a TOTP secret for the authenticated user to add to an authenticator app
       description: |
         A new secret (RFC 6238: HMAC-SHA-1, six digits, 30-second steps) as text, as an
@@ -1208,6 +1214,7 @@ paths:
   /two_factor/totp:
     post:
       operationId: enableTotp
+      x-first-party-only: true
       summary: Enable two-factor authentication with the secret of a setup
       description: |
         Enrolls the secret of `setup_token` once `code` shows that the app has it, and returns
@@ -1241,6 +1248,7 @@ paths:
   /two_factor/totp/disable:
     post:
       operationId: disableTotp
+      x-first-party-only: true
       summary: Disable two-factor authentication
       description: |
         Ends the enrollment once `code`, a code of the app or an unused recovery code, confirms
@@ -1273,6 +1281,7 @@ paths:
   /two_factor/recovery_codes:
     post:
       operationId: regenerateRecoveryCodes
+      x-first-party-only: true
       summary: Replace the recovery codes
       description: |
         Returns new recovery codes, shown only this once, once `code` confirms it; the previous
@@ -1304,6 +1313,7 @@ paths:
   /passkeys:
     get:
       operationId: listPasskeys
+      x-first-party-only: true
       summary: List the authenticated user's passkeys
       description: The passkeys that sign the user in, oldest first; there are at most 20.
       tags:
@@ -1325,6 +1335,7 @@ paths:
           $ref: '#/components/responses/Problem'
     post:
       operationId: createPasskey
+      x-first-party-only: true
       summary: Register a passkey with the browser's response to a registration
       description: |
         Verifies `credential`, the browser's answer to the `options` of
@@ -1358,6 +1369,7 @@ paths:
   /passkeys/registration:
     post:
       operationId: beginPasskeyRegistration
+      x-first-party-only: true
       summary: Start the registration of a passkey
       description: |
         Checks the user's current `password` or a `passkey` of the user (a user without a
@@ -1396,6 +1408,7 @@ paths:
   /passkeys/confirmation:
     post:
       operationId: beginPasskeyConfirmation
+      x-first-party-only: true
       summary: Start a confirmation with a passkey
       description: |
         Returns the options of a WebAuthn authentication (with user verification) for the
@@ -1423,6 +1436,7 @@ paths:
   /passkeys/{id}:
     delete:
       operationId: deletePasskey
+      x-first-party-only: true
       summary: Remove a passkey
       description: |
         The passkey no longer signs in. An unknown or removed passkey is a 404, and the last
@@ -7079,15 +7093,27 @@ components:
         under them (`read` grants `read:accounts`; `follow` grants `read:follows`, `read:blocks`,
         `read:mutes`, `write:follows`, `write:blocks`, and `write:mutes`; `admin` grants
         `admin:read` and `admin:write`). `read` and `write` do not grant the admin scopes.
+
+        `read:statuses` does not show posts whose visibility is `direct`, in timelines, in a post's
+        thread, or in a post's own response, nor in the posts of a notification; `read:direct` (which
+        `read` grants) does. Sending a `direct` post needs only `write:statuses`.
+
+        Only the server's own (first-party) clients may hold `admin`, `admin:read`, `admin:write`,
+        and `write:supporters`: an authorization request of any other client that asks for one is
+        refused with `invalid_scope`, and a broad scope such as `write` does not give such a client
+        `write:supporters`. The operations that change how the user signs in or ends the account
+        (password, two-factor authentication, passkeys, deleting the account) are marked
+        `x-first-party-only: true`; whatever its scopes, the token of another client gets a 403
+        `/api/v1/problems/first-party-only` from them.
       flows:
         authorizationCode:
           authorizationUrl: /oauth/authorize
           tokenUrl: /oauth/token
           refreshUrl: /oauth/token
           scopes:
-            admin: Administer the instance, as far as the user's roles allow.
-            admin:read: Read the instance's administration data, as far as the user's roles allow.
-            admin:write: Change the instance's administration data, as far as the user's roles allow.
+            admin: Administer the instance, as far as the user's roles allow (first-party clients only).
+            admin:read: Read the instance's administration data, as far as the user's roles allow (first-party clients only).
+            admin:write: Change the instance's administration data, as far as the user's roles allow (first-party clients only).
             read: Read everything the user can read.
             write: Change everything the user can change.
             follow: Read and change follows, blocks, and mutes.
@@ -7097,6 +7123,7 @@ components:
             read:bookmarks: Read the user's bookmarks.
             read:favourites: Read the user's favourites.
             read:custom_emojis: Read the custom emoji the user made and their requests for new ones.
+            read:direct: Read the direct posts the user sends and receives (`read:statuses` does not show them).
             read:finance: Read the totals of the instance's costs, as far as the user's roles allow.
             read:follows: Read follows and follow requests.
             read:mutes: Read the accounts and domains the user mutes.
@@ -7115,7 +7142,7 @@ components:
             write:notifications: Mark notifications read and dismiss them.
             write:reports: Report accounts and posts to the moderators.
             write:statuses: Post, edit, delete, boost, and pin posts.
-            write:supporters: Subscribe to the supporter plans, and change, cancel, and resume the subscription.
+            write:supporters: Subscribe to the supporter plans, and change, cancel, and resume the subscription (first-party clients only).
   headers:
     CacheControl:
       description: The caching policy. Anonymous public GETs are cacheable by shared caches (ADR-0016).
@@ -13886,6 +13913,9 @@ components:
           expired, or revoked. Refresh it or sign in again.
         - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
           `WWW-Authenticate` names.
+        - `/api/v1/problems/first-party-only` (403): the operation (password, two-factor
+          authentication, passkeys, deleting the account) takes only the token of one of the
+          server's own clients, whatever its scopes.
         - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
           use the app (registration pending or rejected, email unverified, the account
           deactivated or deleted, or a moderation action that disables its login). The user

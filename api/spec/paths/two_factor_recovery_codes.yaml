@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 post:
   operationId: regenerateRecoveryCodes
+  x-first-party-only: true
   summary: Replace the recovery codes
   description: |
     Returns new recovery codes, shown only this once, once `code` confirms it; the previous

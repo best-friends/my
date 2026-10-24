@@ -22,6 +22,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -43,6 +44,30 @@ type access struct {
 	operation string
 	anonymous bool
 	scopes    []string
+	// firstPartyOnly is the operation's x-first-party-only: only a first-party client's token
+	// may call it.
+	firstPartyOnly bool
+}
+
+// firstPartyOnlyExtension marks an operation that takes only the token of a first-party client.
+const firstPartyOnlyExtension = "x-first-party-only"
+
+// firstPartyOnly reads the value of x-first-party-only, which must be a boolean.
+func firstPartyOnly(raw any) (bool, error) {
+	var b []byte
+	switch v := raw.(type) {
+	case json.RawMessage:
+		b = v
+	case bool:
+		return v, nil
+	default:
+		return false, fmt.Errorf("%s must be a boolean", firstPartyOnlyExtension)
+	}
+	var v bool
+	if err := json.Unmarshal(b, &v); err != nil {
+		return false, fmt.Errorf("%s must be a boolean", firstPartyOnlyExtension)
+	}
+	return v, nil
 }
 
 func main() {
@@ -101,6 +126,12 @@ func operations(doc *openapi3.T) (map[string]access, error) {
 				continue
 			}
 			a.operation = op.OperationID
+			if raw, ok := op.Extensions[firstPartyOnlyExtension]; ok {
+				if a.firstPartyOnly, err = firstPartyOnly(raw); err != nil {
+					errs = append(errs, fmt.Errorf("%s %s (%s): %w", method, path, op.OperationID, err))
+					continue
+				}
+			}
 			ops[strings.ToUpper(method)+" "+base+path] = a
 		}
 	}
@@ -174,6 +205,9 @@ func render(ops map[string]access) ([]byte, error) {
 		fields := []string{"Operation: " + strconv.Quote(a.operation)}
 		if a.anonymous {
 			fields = append(fields, "Anonymous: true")
+		}
+		if a.firstPartyOnly {
+			fields = append(fields, "FirstPartyOnly: true")
 		}
 		if len(a.scopes) > 0 {
 			quoted := make([]string, len(a.scopes))

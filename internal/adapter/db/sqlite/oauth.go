@@ -158,6 +158,15 @@ func (r *IdentityRepository) FindOAuthClient(ctx context.Context, clientID strin
 	return oauthClientFromRow(row), uris, nil
 }
 
+// FindOAuthClientByID implements identity.Repository.
+func (r *IdentityRepository) FindOAuthClientByID(ctx context.Context, id string) (identity.OAuthClient, error) {
+	row, err := r.db.reader().GetOAuthClientByID(ctx, id)
+	if err != nil {
+		return identity.OAuthClient{}, notFound(err, appidentity.ErrNotFound, "oauth client")
+	}
+	return oauthClientFromRow(row), nil
+}
+
 // FindAuthorizationCode implements identity.Repository.
 func (r *IdentityRepository) FindAuthorizationCode(ctx context.Context, codeHash []byte) (identity.AuthorizationCode, error) {
 	row, err := r.db.reader().GetAuthorizationCode(ctx, codeHash)
@@ -244,15 +253,6 @@ func (r *IdentityRepository) RevokeTokensOfUser(ctx context.Context, tx uow.Tx, 
 	}
 	err = q.RevokeTokensOfUser(ctx, sqlitegen.RevokeTokensOfUserParams{Reason: string(reason), RevokedAt: toMillis(at), UserID: userID})
 	return wrap(err, "revoke the tokens of a user")
-}
-
-// FindOAuthClientByID implements identity.Repository.
-func (r *IdentityRepository) FindOAuthClientByID(ctx context.Context, clientID string) (identity.OAuthClient, error) {
-	row, err := r.db.reader().GetOAuthClientByID(ctx, clientID)
-	if err != nil {
-		return identity.OAuthClient{}, notFound(err, appidentity.ErrNotFound, "oauth client")
-	}
-	return oauthClientFromRow(row), nil
 }
 
 // FindOAuthClientState implements identity.Repository.

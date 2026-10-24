@@ -200,6 +200,13 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 - `read` はすべての `read:*` を、`write` はすべての `write:*` を、`follow` は `read:follows`・`read:blocks`・`read:mutes`・`write:follows`・`write:blocks`・`write:mutes` を、`admin` は `admin:read`・`admin:write` を許します（`identity.Scope.Grants`）。
   `read`・`write` は管理のスコープを許しません。
   `push` は Web Push だけです。
+- ダイレクトメッセージ（公開範囲 `direct`）の読み取りは `read:direct`（`read` が許す）に分け、`read:statuses` だけのトークンには、タイムライン・投稿・スレッド・通知の投稿のどれにも `direct` の投稿を出しません
+  （作者自身の投稿も同じ。可視性の判定は `content.CanView` のまま、`Viewer.DirectDenied` で絞ります）。送信は `write:statuses` のままです（[ADR-0090](../adr/0090-third-party-oauth-apps.md) §4）。
+- 一次のクライアントだけのスコープ（`admin`・`admin:read`・`admin:write`・`write:supporters`、`identity.FirstPartyOnlyScope`）は、一次でないクライアントの認可要求に含まれたら `invalid_scope` にし、
+  広いスコープ（`write`）経由でも一次でないクライアントのトークンには許しません。
+  アカウントの保安の操作（パスワード・二要素認証・パスキー・アカウントの削除）は spec の操作に `x-first-party-only: true` を書き、スコープにかかわらず一次のクライアントのトークンだけを受けます。
+  それ以外は 403 `/api/v1/problems/first-party-only` です。
+  クライアントが一次かどうかの判定は `identity.OAuthClient.FirstParty` の 1 か所です。
 - 操作には細かいスコープを書きます（`verifyAccountCredentials` は `read:accounts`）。クライアントは広いスコープでも細かいスコープでも要求できます。
 - スコープを増やすときは、`internal/domain/identity` の定数と `knownScopes`（ソート済み）、spec の `scopes`、同意画面の文言（`server:auth.authorize.scope.*` と `authpages` の `scopeDescriptions`）を同時に変えます。
 
@@ -247,6 +254,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 | `Bearer` でない、形式が違う、未知・失効・期限切れのトークン | 401 | `/api/v1/problems/invalid-token` | `Bearer error="invalid_token"` |
 | トークンは有効だが利用者がアプリを使えない（承認待ち・却下・メール未確認・停止・削除） | 403 | `/api/v1/problems/account-unavailable` | なし |
 | スコープ不足 | 403 | `/api/v1/problems/insufficient-scope` | `Bearer error="insufficient_scope", scope="<操作のスコープ>"` |
+| アカウントの保安の操作を、一次でないクライアントのトークンで呼んだ | 403 | `/api/v1/problems/first-party-only` | なし |
 | 管理の操作で、利用者のロールに権限がない | 403 | `/api/v1/problems/missing-permission` | なし |
 | レート制限の超過 | 429 | `about:blank` | なし（`Retry-After` を付ける） |
 

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 post:
   operationId: beginPasskeyConfirmation
+  x-first-party-only: true
   summary: Start a confirmation with a passkey
   description: |
     Returns the options of a WebAuthn authentication (with user verification) for the
