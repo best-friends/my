@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The picker of custom emoji next to a text field (ADR-0051 §4): the emoji the server offers, those picked recently
 // on this browser, and putting a picked one into the field at its caret.
-import type { EmojiPickerLabels, PickerEmoji } from "@my/ui";
+import type { EmojiPickerLabels, EmojiPickerSection, PickerCustomEmoji } from "@my/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { useT } from "../../../lib/i18n";
 import { customEmojisQueryOptions } from "../api/customEmojis";
 import { insertShortcode } from "./insertShortcode";
+import { customEmojiSections, pickerLabels } from "./pickerSections";
 import { rememberEmoji, useRecentShortcodes } from "./recentEmojis";
 
 export type EmojiTarget = {
@@ -21,11 +22,11 @@ export type EmojiTarget = {
 export type EmojiPickerControl = {
   /** Whether the server offers emoji; without any, the picker is not shown. */
   available: boolean;
-  emojis: readonly PickerEmoji[];
-  recent: readonly PickerEmoji[];
+  /** The emoji picked recently, then the emoji by category. */
+  sections: readonly EmojiPickerSection[];
   labels: EmojiPickerLabels;
   /** Puts `emoji` into the field at its caret, remembers it as recent and closes the picker with `close`. */
-  select: (emoji: PickerEmoji, close: () => void) => void;
+  select: (emoji: PickerCustomEmoji, close: () => void) => void;
 };
 
 /** The field of `fieldId` when it is a text input or a text area. */
@@ -45,15 +46,8 @@ export function useEmojiPicker(target: EmojiTarget): EmojiPickerControl {
   const recent = recentCodes.flatMap((code) => byShortcode.get(code) ?? []);
   return {
     available: emojis.length > 0,
-    emojis,
-    recent,
-    labels: {
-      search: t("client:emoji.picker.search"),
-      grid: t("client:emoji.picker.grid"),
-      recent: t("client:emoji.picker.recent"),
-      uncategorized: t("client:emoji.picker.uncategorized"),
-      empty: t("client:emoji.picker.empty"),
-    },
+    sections: customEmojiSections(emojis, recent, t),
+    labels: pickerLabels(t("client:emoji.picker.grid"), t),
     select: (emoji, close) => {
       const field = textFieldOf(target.fieldId);
       const end = field?.selectionEnd ?? target.value.length;

@@ -12,6 +12,16 @@
 // a direction mirror in right-to-left text with `rtl:-scale-x-100` (Phosphor's `mirrored` ignores the
 // writing direction, so it is not used).
 import {
+  PiAirplaneTilt,
+  PiClockCounterClockwise,
+  PiFlag,
+  PiForkKnife,
+  PiHandWaving,
+  PiHeart,
+  PiLightbulb,
+  PiPawPrint,
+  PiSoccerBall,
+  PiSticker,
   PiArrowBendUpLeft,
   PiArrowLeft,
   PiArrowSquareOut,
@@ -122,6 +132,19 @@ export const iconTable = {
   EyeIcon: { off: glyph(PiEye, "PiEye") },
   LanguageIcon: { off: glyph(PiTranslate, "PiTranslate") },
   EmojiIcon: { off: glyph(PiSmiley, "PiSmiley") },
+  // The category buttons of the emoji picker (ADR-0091 §3): drawn with Phosphor and not with an emoji, whose shape and
+  // color differ between systems and which forced colors flatten. The smiling face of EmojiIcon stands for the smileys.
+  FrequentEmojiIcon: { off: glyph(PiClockCounterClockwise, "PiClockCounterClockwise") },
+  CustomEmojiIcon: { off: glyph(PiSticker, "PiSticker") },
+  PeopleEmojiIcon: { off: glyph(PiHandWaving, "PiHandWaving") },
+  NatureEmojiIcon: { off: glyph(PiPawPrint, "PiPawPrint") },
+  FoodEmojiIcon: { off: glyph(PiForkKnife, "PiForkKnife") },
+  // A picture of a plane and not a direction along the line, so it does not mirror.
+  TravelEmojiIcon: { off: glyph(PiAirplaneTilt, "PiAirplaneTilt") },
+  ActivityEmojiIcon: { off: glyph(PiSoccerBall, "PiSoccerBall") },
+  ObjectEmojiIcon: { off: glyph(PiLightbulb, "PiLightbulb") },
+  SymbolEmojiIcon: { off: glyph(PiHeart, "PiHeart") },
+  FlagEmojiIcon: { off: glyph(PiFlag, "PiFlag") },
   // The bars of the results grow from the start of the line, so they mirror; filled while the post has a poll.
   PollIcon: {
     off: glyph(PiChartBarHorizontal, "PiChartBarHorizontal"),
@@ -285,6 +308,56 @@ export function LanguageIcon() {
 /** A smiling face, for the button that opens the picker of custom emoji. */
 export function EmojiIcon() {
   return renderIcon(iconTable.EmojiIcon);
+}
+
+/** A clock turning back, for the emoji used often, first in the emoji picker. */
+export function FrequentEmojiIcon() {
+  return renderIcon(iconTable.FrequentEmojiIcon);
+}
+
+/** A sticker, for the custom emoji of the server in the emoji picker. */
+export function CustomEmojiIcon() {
+  return renderIcon(iconTable.CustomEmojiIcon);
+}
+
+/** A waving hand, for the people and body emoji in the emoji picker. */
+export function PeopleEmojiIcon() {
+  return renderIcon(iconTable.PeopleEmojiIcon);
+}
+
+/** A paw print, for the animal and nature emoji in the emoji picker. */
+export function NatureEmojiIcon() {
+  return renderIcon(iconTable.NatureEmojiIcon);
+}
+
+/** A fork and a knife, for the food and drink emoji in the emoji picker. */
+export function FoodEmojiIcon() {
+  return renderIcon(iconTable.FoodEmojiIcon);
+}
+
+/** A plane, for the travel and places emoji in the emoji picker. */
+export function TravelEmojiIcon() {
+  return renderIcon(iconTable.TravelEmojiIcon);
+}
+
+/** A ball, for the activity emoji in the emoji picker. */
+export function ActivityEmojiIcon() {
+  return renderIcon(iconTable.ActivityEmojiIcon);
+}
+
+/** A light bulb, for the object emoji in the emoji picker. */
+export function ObjectEmojiIcon() {
+  return renderIcon(iconTable.ObjectEmojiIcon);
+}
+
+/** A heart, for the symbol emoji in the emoji picker. */
+export function SymbolEmojiIcon() {
+  return renderIcon(iconTable.SymbolEmojiIcon);
+}
+
+/** A flag, for the flag emoji in the emoji picker. */
+export function FlagEmojiIcon() {
+  return renderIcon(iconTable.FlagEmojiIcon);
 }
 
 /** Bars of results, for adding a poll to a post; filled while on. */

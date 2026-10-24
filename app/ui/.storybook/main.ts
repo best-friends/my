@@ -7,6 +7,8 @@ const config: StorybookConfig = {
   framework: "@storybook/react-vite",
   stories: ["../src/**/*.stories.tsx"],
   addons: ["@storybook/addon-a11y", "@storybook/addon-vitest"],
+  // The Unicode emoji data of the app, which the EmojiPicker story of every emoji reads (the kit cannot import it).
+  staticDirs: [{ from: "../../web/src/features/emoji/unicode", to: "/unicode-emoji" }],
   core: { disableTelemetry: true },
 };
 

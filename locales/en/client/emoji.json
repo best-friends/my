@@ -26,5 +26,17 @@
   "emoji.picker.empty": {
     "defaultMessage": "No emoji found",
     "description": "What the custom emoji picker shows when nothing matches the search."
+  },
+  "emoji.picker.categories": {
+    "defaultMessage": "Emoji categories",
+    "description": "Accessible name of the row of icon buttons above the emoji grid of the picker; each button scrolls to one section (recently used, a category)."
+  },
+  "emoji.picker.results": {
+    "defaultMessage": "Search results",
+    "description": "Heading of the one section of emoji that match the search in the emoji picker."
+  },
+  "emoji.picker.result_count": {
+    "defaultMessage": "{count, plural, =0 {No emoji found} one {# emoji found} other {# emoji found}}",
+    "description": "Read out by screen readers once typing in the search field of the emoji picker pauses: the number of emoji that match."
   }
 }

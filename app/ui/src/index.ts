@@ -112,7 +112,24 @@ export {
 // Timeline.
 export { ContentWarning, type ContentWarningProps } from "./ContentWarning";
 export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, type EmojiTextProps } from "./CustomEmoji";
-export { EmojiPicker, type EmojiPickerLabels, type EmojiPickerProps, type PickerEmoji } from "./EmojiPicker";
+export {
+  EmojiPicker,
+  emojiMatchRank,
+  normalizeEmojiSearch,
+  searchEmojis,
+  skinTones,
+  skinToneVariant,
+  type EmojiPickerLabels,
+  type EmojiPickerProps,
+  type EmojiPickerSection,
+  type EmojiPickerSelection,
+  type EmojiSectionIcon,
+  type PickerCustomEmoji,
+  type PickerEmoji,
+  type PickerSkinVariant,
+  type PickerUnicodeEmoji,
+  type SkinTone,
+} from "./EmojiPicker";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { LinkCard, type LinkCardImage, type LinkCardProps } from "./LinkCard";
 export { AudioPlayer, type AudioPlayerLabels, type AudioPlayerProps } from "./AudioPlayer";
