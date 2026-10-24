@@ -665,6 +665,7 @@ WHERE c.registration = 'dynamic'
       SELECT 1 FROM oauth_access_tokens t
       WHERE t.client_id = c.id
         AND (t.issued_at >= ?2
+          OR EXISTS (SELECT 1 FROM oauth_token_family_last_used u WHERE u.family_id = t.family_id AND u.last_used_at >= ?2)
           OR ((t.expires_at > ?3 OR t.refresh_expires_at > ?3)
             AND NOT EXISTS (SELECT 1 FROM oauth_token_revocations v WHERE v.token_id = t.id)))))
   )
@@ -682,8 +683,8 @@ type ListUnusedDynamicOAuthClientsParams struct {
 // ListUnusedDynamicOAuthClients returns the IDs of the dynamically registered clients that have no
 // deletion and are unused (ADR-0090 section 1), oldest first: no authorization code was exchanged
 // and the client was registered before unredeemed_before, or it has no token that was issued after
-// idle_before or that is still usable at now (until the last use of a token family is recorded,
-// the issue time of its newest token stands for it).
+// idle_before, whose family was used after idle_before (oauth_token_family_last_used), or that is
+// still usable at now.
 func (q *Queries) ListUnusedDynamicOAuthClients(ctx context.Context, arg ListUnusedDynamicOAuthClientsParams) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, listUnusedDynamicOAuthClients,
 		arg.UnredeemedBefore,
