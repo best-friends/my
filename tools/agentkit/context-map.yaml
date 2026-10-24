@@ -136,7 +136,7 @@ entries:
     notes:
       - "Visibility checks go through the single domain policy function; never re-implement them."
   - name: text-tokens
-    paths: ["pkg/testkit/fixtures/text/**", "internal/app/content/text.go", "internal/domain/content/custom_emoji.go", "app/web/src/lib/textTokens.ts"]
+    paths: ["pkg/testkit/fixtures/text/**", "internal/app/content/text.go", "internal/domain/content/custom_emoji.go", "app/web/src/lib/textTokens.ts", "app/web/src/lib/textHighlights.ts"]
     docs: ["docs/adr/0092-composer-autocomplete-highlight.md#decision決定"]
     checks: [go, web]
     notes:

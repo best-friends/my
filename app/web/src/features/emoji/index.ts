@@ -8,4 +8,6 @@ export { EmojiPickerButton } from "./components/EmojiPickerButton";
 export { ReactionPickerButton } from "./components/ReactionPickerButton";
 /** @public The emoji used often on this browser, which the completion after ":" ranks first (ADR-0092 §2). */
 export { useFrequentEmojis } from "./hooks/frequentEmojis";
+/** The shortcodes of the local custom emoji, which the highlight layer of a text field marks (ADR-0092 §4). */
+export { useCustomEmojiShortcodes } from "./hooks/customEmojiShortcodes";
 export type { ReactionChoice } from "./hooks/useReactionPicker";
