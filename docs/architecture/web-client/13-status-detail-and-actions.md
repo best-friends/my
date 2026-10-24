@@ -47,9 +47,9 @@
   4 秒後にそのアカウントの投稿の一覧に無効化の印を付けて表示中のタブを 1 回だけ取り直し、取り直しの成否にかかわらずキャッシュの最初のページから `remote_fetch_started` を外して表示を消す（`timeline/hooks/useRemoteFetch`）。失敗は知らせない。
   画像は `preview_url` で表示する。アップロードでは `small` の静止版、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。
   アップロードの画像・アバター・ヘッダーは `variants` を `@my/ui` の `Picture`（`lib/images` の `imageSources`）に渡し、表示する大きさに合う版をブラウザーが `srcset` / `sizes` で選ぶ。
-  アニメーションの動く版は `<source media="(prefers-reduced-motion: no-preference)">` にだけ置き、設定「アニメーションを自動で再生する」（このブラウザーの localStorage `my:display:autoplay`、`lib/autoplay`、既定はオン）がオフなら、ポインタを重ねるか触れている間だけ動く版にする（ADR-0054 §3）。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
+  アニメーションの動く版は `<source media="(prefers-reduced-motion: no-preference)">` にだけ置き、設定「アニメーションを自動で再生する」（このブラウザーの localStorage `my:display:autoplay`、`lib/autoplay`、既定はオン）がオフなら、ポインタを重ねるか触れている間だけ動く版にする（ADR-0054 §3）。説明のある画像にはマスの右下（書字方向の末尾側）に飾りのノートのアイコンの小さなバッジが付き、説明のない画像にはバッジを付けない（Y9）。CW はローカルの投稿と同じ disclosure で出す。
   動画と音声（`type` が `video` / `audio` / `gifv`）は `url` を `MediaGrid` のマスで再生する（`MediaItem` の `playback`）。動画は `<video>` にアップロードのポスターの `large`（リモートの添付はポスターなし）を `poster` に、音声はポスターをマスの背景にして下端に `<audio>` を置く。
-  どちらもブラウザーの操作部（`controls`）を持ち、自分では再生を始めない。名前は説明（なければ「説明なし」とバッジ）で、字幕のファイルはない（ADR-0054 は字幕を扱わない）ので、内容は説明が伝える。
+  どちらもブラウザーの操作部（`controls`）を持ち、自分では再生を始めない。名前は説明（なければ、画面には出さない「説明なし」）で、字幕のファイルはない（ADR-0054 は字幕を扱わない）ので、内容は説明が伝える。
   `gifv`（GIF の代わりの音のない短い動画）は、設定「アニメーションを自動で再生する」がオンで `prefers-reduced-motion: reduce` でない間だけ、操作部なしで音を消して繰り返し再生し、それ以外は操作部を出して止めておく。
   センシティブな画像を隠している間と、画像の読み込み中は、添付の `blurhash` のぼかし（`@my/ui` の `Blurhash`。自前の復号器が 32 × 32 ピクセルに復号して `<canvas>` に描き、飾りとして `aria-hidden`）をそのマスに出し、読み込み終えたら外す。`blurhash` のない添付と復号できないものは、マスの地の面（`bg-surface-sunken`）が代わりになる。
 - **連合の向きの注記**（FR-413、[ADR-0076](../../adr/0076-federation-direction.md)、`lib/federation.ts`）: インスタンスが外へ送らないモード（`off` / `inbound`。`useFederation()` の `reachesRemote` が偽）のとき、ほかのサーバーの投稿の操作の列の終わり（ホスト名の隣）に、1 行の注記「連合先には届きません」（`@my/ui` の `Hint`）を常に出す。

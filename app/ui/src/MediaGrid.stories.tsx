@@ -54,7 +54,7 @@ export const Two: Story = { args: { items: pictures.slice(0, 2) } };
 
 export const Three: Story = { args: { items: pictures.slice(0, 3) } };
 
-/** The fourth picture has no description: it is named "No description" and carries the badge. */
+/** The first three pictures have a description and carry the note badge; the fourth has none: it is named "No description" and carries no badge. */
 export const Four: Story = {
   args: { items: pictures },
   play: async ({ canvas }) => {
