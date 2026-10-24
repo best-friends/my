@@ -10,6 +10,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/mycroblog/my/internal/app/account"
 	"github.com/mycroblog/my/internal/app/uow"
 	"github.com/mycroblog/my/internal/domain/identity"
 )
@@ -301,6 +302,9 @@ type Authorization struct {
 	Scope         identity.Scope
 	State         string
 	CodeChallenge string
+	// OwnerUsername is the username of the user who registered the client, for the consent
+	// page; "" when the client has no owner or the owner has no local account.
+	OwnerUsername string
 	// SessionID is the browser session in which the user authorizes the client, recorded with
 	// the code so that the web client's sign-out can end it (RevokeToken); "" for none.
 	SessionID string
@@ -359,6 +363,15 @@ func (s *Service) ValidateAuthorization(ctx context.Context, req AuthorizationRe
 		return a, oauthError(OAuthInvalidScope, "the scope is for first-party clients only")
 	}
 	a.Scope = scope
+	if client.OwnerUserID != "" {
+		la, err := s.d.Accounts.LocalAccountOfUser(ctx, client.OwnerUserID)
+		switch {
+		case err == nil:
+			a.OwnerUsername = la.Username
+		case !errors.Is(err, account.ErrNotFound):
+			return a, err
+		}
+	}
 	return a, nil
 }
 
