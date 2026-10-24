@@ -93,6 +93,8 @@ const (
 	SettingIncomeVisibility SettingKey = "income_visibility"
 	// SettingFederationMode is the direction the instance federates in (FR-413, ADR-0076).
 	SettingFederationMode SettingKey = "federation_mode"
+	// SettingUserAppRegistration is whether users may register OAuth apps (ADR-0090 §1).
+	SettingUserAppRegistration SettingKey = "user_app_registration"
 	// SettingOAuthMetadataDocumentClients is whether OAuth clients may use the https URL of a
 	// Client ID Metadata Document as their client_id without registering (ADR-0090 §1).
 	SettingOAuthMetadataDocumentClients SettingKey = "oauth_metadata_document_clients"
@@ -452,6 +454,10 @@ var definitions = []Definition{
 		Key: SettingFederationMode, Kind: KindEnum, Default: string(FederationBoth),
 		Choices: []string{string(FederationOff), string(FederationInbound), string(FederationOutbound), string(FederationBoth)},
 		Doc:     "The direction the instance federates in: off (neither), inbound (follows and reads remote accounts but sends none of the local posts, profiles, and reactions out), outbound (takes remote followers and delivers the local posts to them but takes none of the remote posts and reactions in), or both; narrowing it keeps the follows, the posts taken in, and the delivery records (FR-413, ADR-0076).",
+	},
+	{
+		Key: SettingUserAppRegistration, Kind: KindBool, Default: "true",
+		Doc: "Whether signed-in users may register their own OAuth apps, public or confidential, through the client API; apps registered earlier keep working when it is off (ADR-0090 §1).",
 	},
 }
 
@@ -879,6 +885,9 @@ func (s Settings) SupporterListVisibility() SupporterListVisibility {
 
 // LinkCardsEnabled returns the value of SettingLinkCardsEnabled.
 func (s Settings) LinkCardsEnabled() bool { return s.boolValue(SettingLinkCardsEnabled) }
+
+// UserAppRegistration returns the value of SettingUserAppRegistration.
+func (s Settings) UserAppRegistration() bool { return s.boolValue(SettingUserAppRegistration) }
 
 // SecurityContact returns the value of SettingSecurityContact, "" when unset.
 func (s Settings) SecurityContact() string {

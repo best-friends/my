@@ -269,6 +269,8 @@ func TestAuthenticationProblems(t *testing.T) {
 			wantStatus: 403, wantType: clientapi.ProblemTypeFirstPartyOnly, wantLanguage: "ja"},
 		{name: "passkeys for a third-party client", path: "/passkeys", authorization: []string{"Bearer third-party"},
 			wantStatus: 403, wantType: clientapi.ProblemTypeFirstPartyOnly, wantLanguage: "ja"},
+		{name: "OAuth apps for a third-party client", path: "/oauth_apps", authorization: []string{"Bearer third-party"},
+			wantStatus: 403, wantType: clientapi.ProblemTypeFirstPartyOnly, wantLanguage: "ja"},
 		{name: "admin for a third-party client", path: "/admin/accounts", authorization: []string{"Bearer third-party"},
 			wantStatus: 403, wantType: clientapi.ProblemTypeInsufficientScope,
 			wantChallenge: `Bearer error="insufficient_scope", scope="admin:read"`, wantLanguage: "ja"},

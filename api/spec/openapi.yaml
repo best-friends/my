@@ -47,6 +47,8 @@ tags:
     description: The authenticated user's two-factor authentication.
   - name: passkeys
     description: The authenticated user's passkeys, which sign in instead of the password.
+  - name: oauth-apps
+    description: The OAuth apps that the authenticated user registered, and tokens of them for the user's own account.
   - name: moderation
     description: The moderation actions on the authenticated user's own account.
   - name: notifications
@@ -168,6 +170,14 @@ paths:
     $ref: ./paths/passkeys_confirmation.yaml
   /passkeys/{id}:
     $ref: ./paths/passkeys_{id}.yaml
+  /oauth_apps:
+    $ref: ./paths/oauth_apps.yaml
+  /oauth_apps/{id}:
+    $ref: ./paths/oauth_apps_{id}.yaml
+  /oauth_apps/{id}/secret:
+    $ref: ./paths/oauth_apps_{id}_secret.yaml
+  /oauth_apps/{id}/tokens:
+    $ref: ./paths/oauth_apps_{id}_tokens.yaml
   /accounts/lookup:
     $ref: ./paths/accounts_lookup.yaml
   /accounts/relationships:
@@ -525,7 +535,8 @@ components:
         and `write:supporters`: an authorization request of any other client that asks for one is
         refused with `invalid_scope`, and a broad scope such as `write` does not give such a client
         `write:supporters`. The operations that change how the user signs in or ends the account
-        (password, two-factor authentication, passkeys, deleting the account) are marked
+        (password, two-factor authentication, passkeys, deleting the account, the user's own OAuth
+        apps) are marked
         `x-first-party-only: true`; whatever its scopes, the token of another client gets a 403
         `/api/v1/problems/first-party-only` from them.
       flows:
@@ -610,6 +621,8 @@ components:
       $ref: ./components/parameters/OAuthClientHost.yaml
     Limit:
       $ref: ./components/parameters/Limit.yaml
+    OAuthAppId:
+      $ref: ./components/parameters/OAuthAppId.yaml
     RegistrationUserId:
       $ref: ./components/parameters/RegistrationUserId.yaml
     RelayId:
@@ -691,6 +704,8 @@ components:
       $ref: ./components/responses/CustomEmojiRequest.yaml
     CustomEmojiRequestProblem:
       $ref: ./components/responses/CustomEmojiRequestProblem.yaml
+    OAuthApp:
+      $ref: ./components/responses/OAuthApp.yaml
     OwnCustomEmoji:
       $ref: ./components/responses/OwnCustomEmoji.yaml
     Problem:
@@ -1008,6 +1023,8 @@ components:
       $ref: ./components/schemas/CreateDomainActionRequest.yaml
     CreateInviteRequest:
       $ref: ./components/schemas/CreateInviteRequest.yaml
+    CreateOAuthAppRequest:
+      $ref: ./components/schemas/CreateOAuthAppRequest.yaml
     CreatePasskeyRequest:
       $ref: ./components/schemas/CreatePasskeyRequest.yaml
     CreateRelayRequest:
@@ -1162,6 +1179,8 @@ components:
       $ref: ./components/schemas/InstanceThumbnail.yaml
     InstanceTimelines:
       $ref: ./components/schemas/InstanceTimelines.yaml
+    IssueOAuthAppTokenRequest:
+      $ref: ./components/schemas/IssueOAuthAppTokenRequest.yaml
     LiftAccountActionRequest:
       $ref: ./components/schemas/LiftAccountActionRequest.yaml
     LinkCard:
@@ -1216,6 +1235,18 @@ components:
       $ref: ./components/schemas/NotificationPage.yaml
     NotificationType:
       $ref: ./components/schemas/NotificationType.yaml
+    OAuthApp:
+      $ref: ./components/schemas/OAuthApp.yaml
+    OAuthAppClientType:
+      $ref: ./components/schemas/OAuthAppClientType.yaml
+    OAuthAppCreated:
+      $ref: ./components/schemas/OAuthAppCreated.yaml
+    OAuthAppList:
+      $ref: ./components/schemas/OAuthAppList.yaml
+    OAuthAppSecret:
+      $ref: ./components/schemas/OAuthAppSecret.yaml
+    OAuthAppToken:
+      $ref: ./components/schemas/OAuthAppToken.yaml
     OwnCustomEmoji:
       $ref: ./components/schemas/OwnCustomEmoji.yaml
     OwnCustomEmojiPage:
@@ -1430,6 +1461,8 @@ components:
       $ref: ./components/schemas/UpdateCustomEmojiRequest.yaml
     UpdateInstanceSettingsRequest:
       $ref: ./components/schemas/UpdateInstanceSettingsRequest.yaml
+    UpdateOAuthAppRequest:
+      $ref: ./components/schemas/UpdateOAuthAppRequest.yaml
     UpdateOwnCustomEmojiRequest:
       $ref: ./components/schemas/UpdateOwnCustomEmojiRequest.yaml
     UpdatePreferencesRequest:

@@ -163,16 +163,18 @@ func (r *IdentityRepository) FindOAuthClient(ctx context.Context, clientID strin
 	if err != nil {
 		return identity.OAuthClient{}, nil, wrap(err, "list oauth client redirect uris")
 	}
-	return oauthClientFromRow(row), uris, nil
+	c, err := currentOAuthClient(ctx, q, oauthClientFromRow(row))
+	return c, uris, err
 }
 
 // FindOAuthClientByID implements identity.Repository.
 func (r *IdentityRepository) FindOAuthClientByID(ctx context.Context, id string) (identity.OAuthClient, error) {
-	row, err := r.db.reader().GetOAuthClientByID(ctx, id)
+	q := r.db.reader()
+	row, err := q.GetOAuthClientByID(ctx, id)
 	if err != nil {
 		return identity.OAuthClient{}, notFound(err, appidentity.ErrNotFound, "oauth client")
 	}
-	return oauthClientFromRow(row), nil
+	return currentOAuthClient(ctx, q, oauthClientFromRow(row))
 }
 
 // FindAuthorizationCode implements identity.Repository.

@@ -30,14 +30,15 @@ var contractWebClient = appidentity.WebClient{
 	ClientID: appidentity.DefaultWebClientID, Name: "Web", RedirectURIs: []string{contractWebRedirect},
 }
 
-// thirdPartyApp registers a confidential client that may read and write.
+// thirdPartyApp registers a confidential client that may read and write, which the user
+// appdev registered.
 func (e *accountEnv) thirdPartyApp(t *testing.T) identity.OAuthClient {
 	t.Helper()
 	ctx := t.Context()
 	c := identity.OAuthClient{
 		ID: e.ids.NewID(), ClientID: contractAppClientID, SecretHash: appidentity.HashToken(contractAppSecret),
 		Name: "App", Website: "https://app.example/", Scope: identity.Scope("read write"),
-		Registration: identity.ClientRegisteredByUser, CreatedAt: e.clock.Now(),
+		Registration: identity.ClientRegisteredByUser, OwnerUserID: e.register(t, "appdev").User.ID, CreatedAt: e.clock.Now(),
 	}
 	var stored identity.OAuthClient
 	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
