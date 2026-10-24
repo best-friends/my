@@ -2,6 +2,7 @@
 import { Box, Button, Checkbox, Cluster, Dialog, DialogActions, Hint, InlineError, Spinner, Stack, Text, TextArea, TextField } from "@my/ui";
 import type { SubmitEvent } from "react";
 import { useLocale, useT } from "../../../lib/i18n";
+import { EmojiPickerButton } from "../../emoji";
 import { maxAttachments } from "../hooks/policy";
 import { type ComposeController, composeTextId } from "../hooks/useCompose";
 import { type ReadyComposeForm, useComposeForm } from "../hooks/useComposeForm";
@@ -78,6 +79,15 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
           characterLimit={form.textLimit}
           formatRemaining={formatRemaining}
           autoFocus={autoFocus}
+          endAction={
+            <EmojiPickerButton
+              fieldId={composeTextId}
+              value={draft.text}
+              onChange={(text) => {
+                form.edit({ text });
+              }}
+            />
+          }
         />
         <AttachmentList
           items={attachments.items}

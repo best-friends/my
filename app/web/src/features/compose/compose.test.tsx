@@ -132,7 +132,11 @@ describe("the new-post form", () => {
 
     // Keyboard focus shows the tooltip of an icon-only button, and the button keeps its description. React
     // Aria hides what is outside the modal sheet from the accessibility tree, the tooltip's container with it.
+    // The emoji picker's button is in the corner of the text, before the tools (ADR-0091 §4).
     expect(text).toHaveFocus();
+    await user.tab();
+    expect(within(sheet).getByRole("button", { name: "Add emoji" })).toHaveFocus();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add emoji");
     await user.tab();
     expect(images).toHaveFocus();
     expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add images, video, or audio");

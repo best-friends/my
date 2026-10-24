@@ -1,12 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The custom emoji picker of the new-post form in every width × locale project (ADR-0051 §4, ADR-0027): open, it
-// passes axe without scrolling sideways, its grid is reached with Tab from the search field and moves with the
-// arrow keys in the writing direction, and the emoji picked with Enter goes into the text. `vite preview` has no
-// API, so the spec answers the client API and the token refresh as a signed-in session (as compose.spec.ts does).
-// Names come from the project's catalog.
+// The emoji picker of the new-post form in every width × locale project (ADR-0091, ADR-0051 §4, ADR-0027): opened
+// from the top end corner of the text, it passes axe without scrolling sideways (also in the 320 px sheet), its grid
+// is reached with Tab from the search field and moves with the arrow keys in the writing direction, and the emoji
+// picked with Enter goes into the text. `vite preview` has no API, so the spec answers the client API and the token
+// refresh as a signed-in session (as compose.spec.ts does). Names come from the project's catalog and, for the
+// Unicode emoji, from the CLDR names of features/emoji/unicode.
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, servedImage, test } from "./fixtures";
 import { readCatalog } from "./catalog.ts";
+
+/** The CLDR short name of the Unicode emoji `emoji` as the project's locale shows it (ja, or else en). */
+function emojiName(emoji: string): string {
+  const locale = test.info().project.use.locale === "ja" ? "ja" : "en";
+  const file = fileURLToPath(new URL(`../src/features/emoji/unicode/${locale}.gen.json`, import.meta.url));
+  const names = JSON.parse(readFileSync(file, "utf8")) as { emoji: Record<string, [string, string[]]> };
+  const name = names.emoji[emoji]?.[0];
+  if (name === undefined) throw new Error(`no name of ${emoji} in ${locale}`);
+  return name;
+}
 
 /** The client message `key` in the project's locale. */
 function message(key: string): string {
@@ -92,16 +105,50 @@ async function openForm(page: Page, hasTouch: boolean) {
   return form;
 }
 
-test.describe("the custom emoji picker of the new-post form", () => {
+/** Opens the picker from the button in the corner of the text, and returns it once its search field has focus. */
+async function openPicker(page: Page, form: Awaited<ReturnType<typeof openForm>>) {
+  await form.getByRole("button", { name: message("emoji.picker.button") }).click();
+  const picker = page.getByRole("dialog", { name: message("emoji.picker.title") });
+  await expect(picker.getByRole("searchbox", { name: message("emoji.picker.search") })).toBeFocused();
+  return picker;
+}
+
+/** Presses Tab until `target` has focus: past the skin tone button and the section buttons, which a search disables. */
+async function tabTo(page: Page, target: ReturnType<Page["getByRole"]>) {
+  for (let presses = 0; presses < 4; presses++) {
+    await page.keyboard.press("Tab");
+    if (await target.evaluate((element) => element === document.activeElement)) return;
+  }
+  await expect(target).toBeFocused();
+}
+
+test.describe("the emoji picker of the new-post form", () => {
   test("has no axe violations and does not scroll horizontally while open", async ({ page, makeAxeBuilder, hasTouch }) => {
     await serveApi(page);
     await page.goto("/");
     const form = await openForm(page, hasTouch);
-    await form.getByRole("button", { name: message("emoji.picker.button") }).click();
-    const picker = page.getByRole("dialog", { name: message("emoji.picker.title") });
+    const picker = await openPicker(page, form);
     await expect(picker.getByRole("grid", { name: message("emoji.picker.grid") })).toBeVisible();
-    await expect(picker.getByRole("searchbox", { name: message("emoji.picker.search") })).toBeFocused();
+    await expect(picker.getByRole("toolbar", { name: message("emoji.picker.categories") })).toBeVisible();
 
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // The skin tone menu too.
+    await picker.getByRole("button", { name: message("emoji.picker.skin_tone") }).click();
+    await expect(page.getByRole("menuitemradio", { name: message("emoji.picker.skin_tone.medium") })).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("stays inside a 320 px sheet, over it, without scrolling sideways", async ({ page, makeAxeBuilder, hasTouch }) => {
+    await serveApi(page);
+    await page.goto("/");
+    await page.setViewportSize({ width: 320, height: 568 });
+    const form = await openForm(page, hasTouch);
+    const picker = await openPicker(page, form);
+
+    await expect(picker).toBeInViewport({ ratio: 1 });
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });
@@ -116,30 +163,40 @@ test.describe("the custom emoji picker of the new-post form", () => {
     await page.keyboard.press("Enter");
 
     const picker = page.getByRole("dialog", { name: message("emoji.picker.title") });
-    await expect(picker.getByRole("searchbox", { name: message("emoji.picker.search") })).toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(picker.getByRole("row", { name: ":wave:" })).toBeFocused();
+    const search = picker.getByRole("searchbox", { name: message("emoji.picker.search") });
+    await expect(search).toBeFocused();
+    await search.fill("blob");
+    await tabTo(page, picker.getByRole("row", { name: ":blobcat:" }));
     // The next emoji is at the end of the line in the writing direction.
     const rtl = (await page.evaluate(() => document.documentElement.dir)) === "rtl";
     await page.keyboard.press(rtl ? "ArrowLeft" : "ArrowRight");
-    await expect(picker.getByRole("row", { name: ":thanks:" })).toBeFocused();
+    await expect(picker.getByRole("row", { name: ":blobfox:" })).toBeFocused();
     await page.keyboard.press("Enter");
 
     await expect(picker).toBeHidden();
-    await expect(text).toHaveValue("Hi :thanks: ");
+    await expect(text).toHaveValue("Hi :blobfox: ");
     await expect(text).toBeFocused();
   });
 
-  test("finds an emoji by another name", async ({ page, hasTouch }) => {
+  test("finds a custom emoji by another name and a Unicode emoji by its name in the locale", async ({ page, hasTouch }) => {
     await serveApi(page);
     await page.goto("/");
     const form = await openForm(page, hasTouch);
-    await form.getByRole("button", { name: message("emoji.picker.button") }).click();
-    const picker = page.getByRole("dialog", { name: message("emoji.picker.title") });
-    await picker.getByRole("searchbox", { name: message("emoji.picker.search") }).fill("fox");
+    const text = form.getByRole("textbox", { name: message("compose.text.label") });
+    const picker = await openPicker(page, form);
+    const search = picker.getByRole("searchbox", { name: message("emoji.picker.search") });
+    await search.fill("fox");
 
     await expect(picker.getByRole("row", { name: ":blobfox:" })).toBeVisible();
     await expect(picker.getByRole("row", { name: ":wave:" })).toHaveCount(0);
     await expectNoHorizontalScroll(page);
+
+    const name = emojiName("😀");
+    await search.fill(name);
+    await picker.getByRole("row", { name, exact: true }).first().click();
+    await expect(picker).toBeHidden();
+    // A Unicode emoji goes in as it is, without spaces.
+    await expect(text).toHaveValue("😀");
   });
 });
+

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The dialog that edits the viewer's own post (FR-109), opened from the post's "More actions" menu. It is a
 // modal dialog (WAI-ARIA APG, dialog pattern) holding the compose form's fields for what an edit may change:
-// the content warning, the text with its counter and the custom emoji picker, the images' descriptions, the
+// the content warning, the text with its counter and the emoji picker in its corner, the images' descriptions, the
 // sensitivity of the media, and the language. The visibility and the reply target stay as they were.
 import { Button, Checkbox, Cluster, Dialog, Hint, InlineError, LanguageIcon, Select, SelectItem, Spinner, Stack, TextArea, TextField, ToggleButton, Tooltip, TooltipTrigger, WarningIcon } from "@my/ui";
 import { type SubmitEvent, useId } from "react";
@@ -101,6 +101,15 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
         characterLimit={form.textLimit}
         formatRemaining={formatRemaining}
         autoFocus
+        endAction={
+          <EmojiPickerButton
+            fieldId={textId}
+            value={form.text}
+            onChange={(text) => {
+              form.edit({ text });
+            }}
+          />
+        }
       />
       <AttachmentList items={form.attachments} onDescribe={form.describe} requireDescriptions={false} isDescriptionRequired={isDescriptionRequired} />
       {form.attachments.length > 0 && (
@@ -145,13 +154,6 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
             </ToggleButton>
             <Tooltip>{warningLabel}</Tooltip>
           </TooltipTrigger>
-          <EmojiPickerButton
-            fieldId={textId}
-            value={form.text}
-            onChange={(text) => {
-              form.edit({ text });
-            }}
-          />
           <Select
             variant="toolbar"
             aria-label={t("client:compose.language.label")}
