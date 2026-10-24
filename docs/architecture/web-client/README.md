@@ -227,6 +227,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     - 描画と axe のあと、ストーリーの枠（コンテナクエリの基準）を幅 320 / 640 / 1024 px にして `toMatchScreenshot` で比較する（`.storybook/vitest.setup.ts`）。
       `play` 関数のためだけにある長いストーリー（仮想化した `Feed`）は `no-screenshot` のタグで比較を外す。同じ部品のほかのストーリーが見た目を検査する。
     - スクリーンショットは `prefers-reduced-motion: reduce` を模擬して撮る。その状態で枠の中に動いているアニメーションが 1 つでもあれば失敗する（D6）。ストーリーの描画と `play` 関数は模擬なしで動く。
+      `forced-colors` のタグのストーリーは、強制カラーモード（`forced-colors: active`）も模擬して撮る（強調表示の層の下線）。
     - `play` 関数（`storybook/test`）で、部品をロールとアクセシブルネームで探して検査する（Y2）。
   - 基準画像は `app/ui/src/__screenshots__/` にあり、固定した Playwright のイメージ（`Taskfile.yml` の `PLAYWRIGHT_IMAGE`）の中でだけ作る。
     手元の OS のフォントや描画では一致しないので、手元で作った画像はコミットしない。

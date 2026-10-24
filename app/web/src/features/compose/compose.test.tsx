@@ -5,7 +5,7 @@
 // browser APIs and check what the client did with them.
 import { Button } from "@my/ui";
 import { createMemoryHistory, createRootRouteWithContext, createRouter, Outlet } from "@tanstack/react-router";
-import { screen, waitFor, within } from "@testing-library/react";
+import { isInaccessible, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -338,6 +338,35 @@ describe("the new-post form", () => {
     expect(within(sheet).getByText("2 characters too many")).toBeInTheDocument();
     expect(within(sheet).getByRole("textbox", { name: "Your post" })).toHaveAttribute("aria-invalid", "true");
     expect(within(sheet).getByRole("button", { name: "Post" })).toBeDisabled();
+  });
+
+  test("highlights mentions, hashtags, URLs, known shortcodes and the text over the limit on a layer hidden from assistive technology", async () => {
+    signedIn();
+    server.use(
+      http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, limits: { max_post_characters: 50, require_media_description: false } })),
+      http.get(`${apiBase}/custom_emojis`, () =>
+        HttpResponse.json({ items: [{ shortcode: "blobcat", url: "https://media.example/blobcat.png", static_url: "https://media.example/blobcat.png", aliases: [] }] }),
+      ),
+    );
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+    const textbox = await within(sheet).findByRole("textbox", { name: "Your post" });
+
+    await user.type(textbox, "@alice #tag :blobcat: :nope: https://example.com/ and more text");
+
+    expect(textbox).toHaveAttribute("dir", "auto");
+    const marks = () => within(sheet).queryAllByText((_, element) => element?.getAttribute("data-highlight") != null);
+    await waitFor(() => {
+      expect(marks().map((mark) => [mark.getAttribute("data-highlight"), mark.textContent])).toEqual([
+        ["mention", "@alice"],
+        ["hashtag", "#tag"],
+        ["shortcode", ":blobcat:"],
+        ["url", "https://example.com/"],
+        ["over", "and more text"],
+      ]);
+    });
+    // The layer is aria-hidden: only the textbox carries the text.
+    for (const mark of marks()) expect(isInaccessible(mark)).toBe(true);
   });
 });
 

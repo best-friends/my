@@ -17,8 +17,18 @@ import (
 type consent struct {
 	ClientName   string
 	RedirectHost string
+	// Unverified is the notice that this server has not verified the application; every
+	// third-party application gets it (ADR-0090 §4).
+	Unverified string
+	// Origin says where the application comes from, by the route it was registered by.
+	Origin string
+	// Website is the home page the application declared, shown as text; "" when none.
+	Website string
+	// Impersonation warns that the answer goes to an address that another app may claim; ""
+	// when the redirect URI is a claimed https URL or the client was registered by a user.
+	Impersonation string
 	// Scopes describes each requested scope.
-	Scopes []string
+	Scopes []consentScope
 
 	ResponseType        string
 	ClientID            string
@@ -27,6 +37,12 @@ type consent struct {
 	State               string
 	CodeChallenge       string
 	CodeChallengeMethod string
+}
+
+// consentScope is a requested permission and the cautions that go with it.
+type consentScope struct {
+	Text     string
+	Cautions []string
 }
 
 // The form's answers to the consent page.
@@ -183,12 +199,67 @@ func (h *Handler) renderConsent(w http.ResponseWriter, r *http.Request, a appide
 	if c.RedirectHost == "" { // a private-use URI scheme of a native app (RFC 8252 §7.1)
 		c.RedirectHost = u.Scheme
 	}
+	c.Unverified = p.L.ServerAuthAuthorizeUnverified()
+	c.Origin = clientOrigin(p.L, a)
+	if w, err := url.Parse(a.Client.Website); err == nil && (w.Scheme == "https" || w.Scheme == "http") && w.Host != "" {
+		c.Website = p.L.ServerAuthAuthorizeWebsite(a.Client.Website)
+	}
+	if impersonable(a.Client, u) {
+		c.Impersonation = p.L.ServerAuthAuthorizeImpersonation(c.RedirectHost)
+	}
 	for _, s := range a.Scope.Tokens() {
-		c.Scopes = append(c.Scopes, scopeDescription(p.L, s))
+		cs := consentScope{Text: scopeDescription(p.L, s)}
+		for _, caution := range scopeCautions[s] {
+			cs.Cautions = append(cs.Cautions, caution(p.L))
+		}
+		c.Scopes = append(c.Scopes, cs)
 	}
 	p.Consent = c
 	p.formAction = []string{redirectSource(u)}
 	h.render(w, r, http.StatusOK, pageAuthorize, p)
+}
+
+// clientOrigin words where the client comes from, by the route it was registered by
+// (ADR-0090 §4): the host of the client ID URL is verified, the name behind a dynamic
+// registration is the application's own claim.
+func clientOrigin(l *i18n.Localizer, a appidentity.Authorization) string {
+	switch a.Client.Registration {
+	case identity.ClientRegisteredByMetadataDocument:
+		host := a.Client.ClientID
+		if u, err := url.Parse(a.Client.ClientID); err == nil && u.Host != "" {
+			host = u.Host
+		}
+		return l.ServerAuthAuthorizeOriginMetadataDocument(host)
+	case identity.ClientRegisteredByUser:
+		if a.OwnerUsername == "" {
+			return l.ServerAuthAuthorizeOriginUserUnknown()
+		}
+		return l.ServerAuthAuthorizeOriginUser("@" + a.OwnerUsername)
+	default:
+		return l.ServerAuthAuthorizeOriginDynamic()
+	}
+}
+
+// impersonable reports whether another app could receive the code meant for the client: the
+// client came from a metadata document or a dynamic registration, where anyone can claim any
+// name, and its redirect URI is not an https URL, which the operating system ties to one app
+// (ADR-0090 §3). A loopback URL and a private-use scheme are the cases.
+func impersonable(c identity.OAuthClient, redirect *url.URL) bool {
+	switch c.Registration {
+	case identity.ClientRegisteredByMetadataDocument, identity.ClientRegisteredDynamically:
+		return redirect.Scheme != "https"
+	}
+	return false
+}
+
+// scopeCautions are the cautions shown with a scope: reading direct messages, writing posts,
+// and changing the profile (ADR-0090 §4).
+var scopeCautions = map[string][]func(*i18n.Localizer) string{
+	identity.ScopeRead:          {(*i18n.Localizer).ServerAuthAuthorizeCautionDm},
+	identity.ScopeReadDirect:    {(*i18n.Localizer).ServerAuthAuthorizeCautionDm},
+	identity.ScopeWrite:         {(*i18n.Localizer).ServerAuthAuthorizeCautionPost, (*i18n.Localizer).ServerAuthAuthorizeCautionProfile},
+	identity.ScopeWriteStatuses: {(*i18n.Localizer).ServerAuthAuthorizeCautionPost},
+	identity.ScopeWriteAccounts: {(*i18n.Localizer).ServerAuthAuthorizeCautionProfile},
 }
 
 // redirectSource is the CSP source expression that matches the redirect URI u.

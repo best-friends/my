@@ -11,11 +11,39 @@ func (l *Localizer) ServerAuthAuthorizeApprove() string {
 	return l.format("server:auth.authorize.approve", nil)
 }
 
+// ServerAuthAuthorizeCautionDm formats "server:auth.authorize.caution.dm". Caution on a permission on the consent page: the application can read direct messages.
+//
+//	en: Can read your direct messages
+func (l *Localizer) ServerAuthAuthorizeCautionDm() string {
+	return l.format("server:auth.authorize.caution.dm", nil)
+}
+
+// ServerAuthAuthorizeCautionPost formats "server:auth.authorize.caution.post". Caution on a permission on the consent page: the application can post, edit or delete posts as the user.
+//
+//	en: Can post, edit and delete posts as you
+func (l *Localizer) ServerAuthAuthorizeCautionPost() string {
+	return l.format("server:auth.authorize.caution.post", nil)
+}
+
+// ServerAuthAuthorizeCautionProfile formats "server:auth.authorize.caution.profile". Caution on a permission on the consent page: the application can change the user's profile.
+//
+//	en: Can change your profile
+func (l *Localizer) ServerAuthAuthorizeCautionProfile() string {
+	return l.format("server:auth.authorize.caution.profile", nil)
+}
+
 // ServerAuthAuthorizeDeny formats "server:auth.authorize.deny". Button on the authorization (consent) page that refuses the application.
 //
 //	en: Deny
 func (l *Localizer) ServerAuthAuthorizeDeny() string {
 	return l.format("server:auth.authorize.deny", nil)
+}
+
+// ServerAuthAuthorizeImpersonation formats "server:auth.authorize.impersonation". Warning on the consent page when the application is sent back to a loopback address or a custom URL scheme, which any app on the device can claim. {target} is that host or scheme.
+//
+//	en: After you allow, the answer goes to {target}, which other apps on your device can also claim. It may be a different app from the one named above. Allow only if you started this from that app.
+func (l *Localizer) ServerAuthAuthorizeImpersonation(target string) string {
+	return l.format("server:auth.authorize.impersonation", map[string]any{"target": target})
 }
 
 // ServerAuthAuthorizeInvalid formats "server:auth.authorize.invalid". Error page (HTTP 400) when an application opened the authorization page with an unknown client or an unregistered redirect address.
@@ -30,6 +58,34 @@ func (l *Localizer) ServerAuthAuthorizeInvalid() string {
 //	en: {app} wants to use your account with these permissions:
 func (l *Localizer) ServerAuthAuthorizeLead(app string) string {
 	return l.format("server:auth.authorize.lead", map[string]any{"app": app})
+}
+
+// ServerAuthAuthorizeOriginDynamic formats "server:auth.authorize.origin.dynamic". Where the application comes from, on the consent page, for an application that registered itself by dynamic client registration.
+//
+//	en: An application that registered itself, with details it declared on its own
+func (l *Localizer) ServerAuthAuthorizeOriginDynamic() string {
+	return l.format("server:auth.authorize.origin.dynamic", nil)
+}
+
+// ServerAuthAuthorizeOriginMetadataDocument formats "server:auth.authorize.origin.metadata_document". Where the application comes from, on the consent page, for an application identified by a client ID URL. {host} is that URL's host name, which the server verified.
+//
+//	en: Comes from {host}
+func (l *Localizer) ServerAuthAuthorizeOriginMetadataDocument(host string) string {
+	return l.format("server:auth.authorize.origin.metadata_document", map[string]any{"host": host})
+}
+
+// ServerAuthAuthorizeOriginUser formats "server:auth.authorize.origin.user". Where the application comes from, on the consent page, for an application a user of this server registered. {owner} is that user's handle.
+//
+//	en: An application registered by {owner}
+func (l *Localizer) ServerAuthAuthorizeOriginUser(owner string) string {
+	return l.format("server:auth.authorize.origin.user", map[string]any{"owner": owner})
+}
+
+// ServerAuthAuthorizeOriginUserUnknown formats "server:auth.authorize.origin.user_unknown". Where the application comes from, on the consent page, for an application a user of this server registered when the user cannot be named.
+//
+//	en: An application registered by a user of this server
+func (l *Localizer) ServerAuthAuthorizeOriginUserUnknown() string {
+	return l.format("server:auth.authorize.origin.user_unknown", nil)
 }
 
 // ServerAuthAuthorizeRedirectNotice formats "server:auth.authorize.redirect_notice". Note under the permissions on the authorization (consent) page. {host} is the host name the application receives the answer at.
@@ -268,6 +324,20 @@ func (l *Localizer) ServerAuthAuthorizeScopeWriteSupporters() string {
 //	en: Authorize {app}
 func (l *Localizer) ServerAuthAuthorizeTitle(app string) string {
 	return l.format("server:auth.authorize.title", map[string]any{"app": app})
+}
+
+// ServerAuthAuthorizeUnverified formats "server:auth.authorize.unverified". Note on the authorization (consent) page of a third-party application: this server has not checked it; the name and logo are the application's own claim.
+//
+//	en: This server has not verified this application. Its name is the application's own claim.
+func (l *Localizer) ServerAuthAuthorizeUnverified() string {
+	return l.format("server:auth.authorize.unverified", nil)
+}
+
+// ServerAuthAuthorizeWebsite formats "server:auth.authorize.website". The application's own home page on the consent page. {url} is the address the application declared.
+//
+//	en: Website it declared: {url}
+func (l *Localizer) ServerAuthAuthorizeWebsite(url string) string {
+	return l.format("server:auth.authorize.website", map[string]any{"url": url})
 }
 
 // ServerAuthCrossOrigin formats "server:auth.cross_origin". Body of the page shown (HTTP 403) when a sign-in or sign-out form was submitted from another origin.

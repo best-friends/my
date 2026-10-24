@@ -21,6 +21,13 @@ func ResponseErrorHandler(s *Server) func(http.ResponseWriter, *http.Request, er
 // GuardedPatterns returns the sorted patterns of security.gen.go.
 func GuardedPatterns() []string { return slices.Sorted(maps.Keys(operationSecurity)) }
 
+// WithOperationAccess registers an operation's security under pattern for the test, so that
+// Guard accepts it. The entry goes when the test ends.
+func WithOperationAccess(t interface{ Cleanup(func()) }, pattern, operation string, anonymous bool, deprecated, sunset int64) {
+	operationSecurity[pattern] = operationAccess{Operation: operation, Anonymous: anonymous, Deprecated: deprecated, Sunset: sunset}
+	t.Cleanup(func() { delete(operationSecurity, pattern) })
+}
+
 // RecentIDs exposes the memory of the home timeline entries a stream sent.
 type RecentIDs = recentIDs
 

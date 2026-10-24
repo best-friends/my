@@ -230,6 +230,7 @@ export function TextAreaAutocomplete<T extends TextAutocompleteSuggestion>({
   loadingLabel,
   emptyLabel,
   queryDelay = suggestionQueryDelay,
+  highlights,
   value,
   defaultValue,
   onChange,
@@ -447,7 +448,16 @@ export function TextAreaAutocomplete<T extends TextAutocompleteSuggestion>({
                 readCaret();
               },
             },
-            behind: <TextAreaMirror textareaRef={inputRef} text={text} caret={caret ?? text.length} caretRef={caretRef} onSync={placeAnchor} />,
+            behind: (
+              <TextAreaMirror
+                textareaRef={inputRef}
+                text={text}
+                caret={caret ?? text.length}
+                caretRef={caretRef}
+                highlights={highlights}
+                onSync={placeAnchor}
+              />
+            ),
             after: (
               <>
                 <div ref={anchorRef} aria-hidden className={styles.anchor()} />

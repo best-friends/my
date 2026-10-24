@@ -297,7 +297,7 @@ type Router interface {
 }
 
 // Register registers every operation of the spec on r under BasePath, the generated ones and
-// the hand-written streaming endpoint (streaming.go), behind authentication and rate limiting, with the security of each operation enforced (auth.go). Requests that
+// the hand-written streaming endpoint (streaming.go) and the bundled OpenAPI document (openapi.go), behind authentication and rate limiting, with the security of each operation enforced (auth.go). Requests that
 // match no operation are left to r, which answers them with its own 404 or 405 problem.
 func (s *Server) Register(r Router) {
 	strict := NewStrictHandlerWithOptions(s, []StrictMiddlewareFunc{s.rejectInvalidBodyText}, StrictHTTPServerOptions{
@@ -311,6 +311,7 @@ func (s *Server) Register(r Router) {
 		ErrorHandlerFunc: s.requestError,
 	})
 	s.registerStreaming(r)
+	s.registerOpenAPI(r)
 }
 
 // routerMux adapts a Router to the ServeMux that the generated code registers on, wrapping
