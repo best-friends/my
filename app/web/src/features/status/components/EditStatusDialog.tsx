@@ -6,8 +6,9 @@
 import { Button, Checkbox, Cluster, Dialog, Hint, InlineError, LanguageIcon, Select, SelectItem, Spinner, Stack, TextArea, TextField, ToggleButton, Tooltip, TooltipTrigger, WarningIcon } from "@my/ui";
 import { type SubmitEvent, useId } from "react";
 import { useT } from "../../../lib/i18n";
+import { textHighlights } from "../../../lib/textHighlights";
 import { AttachmentList, useFormatRemaining } from "../../compose";
-import { EmojiPickerButton } from "../../emoji";
+import { EmojiPickerButton, useCustomEmojiShortcodes } from "../../emoji";
 import type { Status, StatusSource } from "../api/status";
 import { useEditSource, useEditStatusForm } from "../hooks/useEditStatus";
 
@@ -73,6 +74,7 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
   const errorId = useId();
   const textId = useId();
   const form = useEditStatusForm(status, source, maxCharacters);
+  const shortcodes = useCustomEmojiShortcodes();
   const warningLabel = t("client:compose.warning.toggle");
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -88,6 +90,7 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
           onChange={(spoilerText) => {
             form.edit({ spoilerText });
           }}
+          highlights={textHighlights(form.spoilerText, { tokens: "shortcodes", shortcodes })}
         />
       )}
       <TextArea
@@ -100,6 +103,7 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
         rows={4}
         characterLimit={form.textLimit}
         formatRemaining={formatRemaining}
+        highlights={textHighlights(form.text, { tokens: "all", shortcodes, limit: form.textLimit })}
         autoFocus
         endAction={
           <EmojiPickerButton

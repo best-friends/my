@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { type ReactNode, type Ref, useEffect, useId, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useId, useRef, useState } from "react";
 import {
   composeRenderProps,
   TextArea as RACTextArea,
@@ -9,6 +9,7 @@ import {
 } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { FieldDescription, FieldError, FieldLabel, type FieldTextProps, fieldControl } from "./Field";
+import { type TextHighlight, TextAreaMirror } from "./TextAreaMirror";
 
 const textArea = tv({
   slots: {
@@ -26,7 +27,7 @@ const textArea = tv({
     over: { true: { count: "font-medium text-danger" } },
     // The text keeps clear of the end action, so that no line runs under its button (a button of size `icon`).
     withAction: { true: { input: "pe-(--end-action-room)" } },
-    // A text area with layers in its box (TextAreaAutocomplete's mirror, which is also the highlight layer): the box
+    // A text area with layers in its box (the highlight layer, or TextAreaAutocomplete's mirror, which is also it): the box
     // paints the field's background, so the layer behind the transparent textarea shows. The textarea is a block, so
     // the box is exactly its size, and its line height is rounded to whole pixels, so the scrolled layer lines up
     // with it in Chromium and WebKit too (#1152).
@@ -91,6 +92,12 @@ export type TextAreaProps = Omit<RACTextFieldProps, "children"> &
      * emoji picker's, ADR-0091 §4). The text keeps clear of it on the end side.
      */
     endAction?: ReactNode;
+    /**
+     * Ranges of the text to highlight while typing (ADR-0092 §4): their backgrounds are painted on a layer behind the
+     * transparent textarea, which draws the text itself; forced-colors mode underlines them instead. The layer is
+     * `aria-hidden`, and the textarea is `dir="auto"` with a whole-pixel line height, so the layer lines up with it.
+     */
+    highlights?: readonly TextHighlight[];
   };
 
 /** What TextAreaAutocomplete adds to the text area: props of the textarea and the layers of its box (kit-internal). */
@@ -135,11 +142,16 @@ export function TextAreaField({
   isInvalid,
   "aria-describedby": ariaDescribedBy,
   endAction,
+  highlights,
   layers,
   ...props
 }: TextAreaProps & { layers?: TextAreaLayers }) {
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "");
   const text = value ?? uncontrolledValue;
+  // Highlights without TextAreaAutocomplete's layers (whose mirror draws them) bring a mirror of their own.
+  const highlightRef = useRef<HTMLTextAreaElement>(null);
+  const ownMirror = layers === undefined && highlights !== undefined;
+  const layered = layers !== undefined || ownMirror;
   // The remaining count to announce after the pause, and the one the status region says now.
   const [pending, setPending] = useState<number | null>(null);
   const [announced, setAnnounced] = useState<number | null>(null);
@@ -173,11 +185,12 @@ export function TextAreaField({
     onChange?.(next);
   }
 
-  const styles = textArea({ over, withAction: endAction !== undefined, layered: layers !== undefined });
+  const styles = textArea({ over, withAction: endAction !== undefined, layered });
   const input = (
     <RACTextArea
       {...layers?.inputProps}
-      {...(layers === undefined ? {} : { ref: layers.inputRef })}
+      {...(ownMirror ? { dir: "auto" } : {})}
+      ref={layers?.inputRef ?? highlightRef}
       className={styles.input()}
       {...(placeholder === undefined ? {} : { placeholder })}
       {...(rows === undefined ? {} : { rows })}
@@ -197,11 +210,12 @@ export function TextAreaField({
       className={composeRenderProps(className, (className) => styles.root({ className }))}
     >
       {label !== undefined && <FieldLabel>{label}</FieldLabel>}
-      {endAction === undefined && layers === undefined ? (
+      {endAction === undefined && !layered ? (
         input
       ) : (
         <div className={styles.control()}>
           {layers?.behind}
+          {ownMirror && <TextAreaMirror textareaRef={highlightRef} text={text} caret={null} highlights={highlights} />}
           {input}
           {layers?.after}
           {endAction !== undefined && <div className={styles.action()}>{endAction}</div>}

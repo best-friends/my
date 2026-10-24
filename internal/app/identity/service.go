@@ -67,6 +67,14 @@ type Deps struct {
 	DynamicClientUnredeemedTTL time.Duration
 	DynamicClientIdleTTL       time.Duration
 
+	// HTTP fetches the Client ID Metadata Documents of OAuth clients whose client_id is an https
+	// URL (ADR-0090 §1); nil turns such clients off.
+	HTTP kernel.HTTPClient
+	// MetadataDocumentClients returns whether the instance accepts those clients (the
+	// oauth_metadata_document_clients setting); it is read per request, so a change applies to
+	// the next one. Nil means it does.
+	MetadataDocumentClients func(ctx context.Context) (bool, error)
+
 	// RegistrationMode returns the instance's registration mode (the registration_mode
 	// setting). SignUp calls it once per sign-up, so a change applies to the next one. Nil
 	// means identity.RegistrationClosed.

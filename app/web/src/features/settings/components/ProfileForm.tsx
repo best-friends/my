@@ -17,7 +17,8 @@ import {
 } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
-import { EmojiPickerButton } from "../../emoji";
+import { textHighlights } from "../../../lib/textHighlights";
+import { EmojiPickerButton, useCustomEmojiShortcodes } from "../../emoji";
 import { acceptedImageTypes } from "../api/media";
 import { characterCount, type FieldDraft, type ImageControl, profileLimits, type ServerCrawlerPolicy, useProfileForm } from "../hooks/useProfileForm";
 import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
@@ -34,6 +35,7 @@ export function ProfileForm() {
   const form = useProfileForm();
   const displayNameId = useId();
   const noteId = useId();
+  const shortcodes = useCustomEmojiShortcodes();
   // Only an invalid text sets isInvalid: React Aria ignores `validate` once isInvalid is given at all.
   const lengthCheck: LengthCheck = (value, max) =>
     characterCount(value) > max ? { isInvalid: true, errorMessage: t("client:settings.profile.too_long", { max: String(max) }) } : {};
@@ -60,6 +62,7 @@ export function ProfileForm() {
             value={form.displayName.value}
             onChange={form.displayName.onChange}
             {...lengthCheck(form.displayName.value, profileLimits.displayName)}
+            highlights={textHighlights(form.displayName.value, { tokens: "shortcodes", shortcodes })}
             autoComplete="nickname"
             endAction={
               <EmojiPickerButton
@@ -78,6 +81,7 @@ export function ProfileForm() {
             value={form.note.value}
             onChange={form.note.onChange}
             characterLimit={profileLimits.note}
+            highlights={textHighlights(form.note.value, { tokens: "all", shortcodes, limit: profileLimits.note })}
             formatRemaining={(remaining) =>
               remaining < 0 ? t("client:settings.profile.characters_over", { count: -remaining }) : t("client:settings.profile.characters_left", { count: remaining })
             }
@@ -268,6 +272,7 @@ type FieldRowProps = {
 
 function FieldRow({ field, number, onChange, onRemove, lengthCheck }: FieldRowProps) {
   const t = useT();
+  const shortcodes = useCustomEmojiShortcodes();
   return (
     <Stack as="fieldset" shrink gap="2" border="md" padding="3">
       <Text as="legend" inset size="sm" weight="medium" tone="fg">
@@ -290,6 +295,7 @@ function FieldRow({ field, number, onChange, onRemove, lengthCheck }: FieldRowPr
           onChange({ value });
         }}
         {...lengthCheck(field.value, profileLimits.fieldValue)}
+        highlights={textHighlights(field.value, { tokens: "all", shortcodes, limit: profileLimits.fieldValue })}
       />
       <div>
         <Button size="sm" variant="ghost" onPress={onRemove}>

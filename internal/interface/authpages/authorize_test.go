@@ -34,8 +34,11 @@ func (f *fakeOAuth) ValidateAuthorization(_ context.Context, req appidentity.Aut
 		c   identity.OAuthClient
 		uri string
 	}{
-		"web": {identity.OAuthClient{ID: testkit.NamedID("client-web"), ClientID: "web", Name: "Web", Registration: identity.ClientRegisteredFirstParty}, webRedirect},
-		"app": {identity.OAuthClient{ID: testkit.NamedID("client-app"), ClientID: "app", Name: "Example App", Registration: identity.ClientRegisteredByUser}, appRedirect},
+		"web":          {identity.OAuthClient{ID: testkit.NamedID("client-web"), ClientID: "web", Name: "Web", Registration: identity.ClientRegisteredFirstParty}, webRedirect},
+		"app":          {identity.OAuthClient{ID: testkit.NamedID("client-app"), ClientID: "app", Name: "Example App", Website: "https://app.example/about", Registration: identity.ClientRegisteredByUser}, appRedirect},
+		"cimd-native":  {identity.OAuthClient{ID: testkit.NamedID("client-cimd-native"), ClientID: "https://mobile.example/client.json", Name: "Mobile", Registration: identity.ClientRegisteredByMetadataDocument}, "com.example.mobile:/cb"},
+		"cimd-claimed": {identity.OAuthClient{ID: testkit.NamedID("client-cimd-claimed"), ClientID: "https://mobile.example/client.json", Name: "Mobile", Registration: identity.ClientRegisteredByMetadataDocument}, "https://mobile.example/cb"},
+		"dyn-loopback": {identity.OAuthClient{ID: testkit.NamedID("client-dyn"), ClientID: "dyn", Name: "Tool", Registration: identity.ClientRegisteredDynamically}, "http://127.0.0.1/cb"},
 	}
 	c, ok := clients[req.ClientID]
 	if !ok {
@@ -44,7 +47,7 @@ func (f *fakeOAuth) ValidateAuthorization(_ context.Context, req appidentity.Aut
 	if req.RedirectURI != c.uri {
 		return appidentity.Authorization{}, appidentity.ErrInvalidRedirectURI
 	}
-	a := appidentity.Authorization{Client: c.c, RedirectURI: c.uri, State: req.State, CodeChallenge: req.CodeChallenge, Scope: "read write"}
+	a := appidentity.Authorization{Client: c.c, RedirectURI: c.uri, State: req.State, CodeChallenge: req.CodeChallenge, Scope: "read write", OwnerUsername: "carol"}
 	if req.ResponseType != "code" {
 		return a, &appidentity.OAuthError{Code: appidentity.OAuthUnsupportedResponseType}
 	}
@@ -233,3 +236,45 @@ const (
 	decisionApprove = "approve"
 	decisionDeny    = "deny"
 )
+
+func TestConsentShowsProvenanceAndWarnsOfUnverifiedApps(t *testing.T) {
+	b := signedIn(t, newOAuthServer(t, newFakeIdentity(), &fakeOAuth{}))
+	get := func(clientID, redirect string) string {
+		t.Helper()
+		w := b.do(http.MethodGet, authorizeQuery(clientID, redirect), nil, map[string]string{"Accept-Language": "en"})
+		if w.Code != http.StatusOK {
+			t.Fatalf("consent page = %d\n%s", w.Code, w.Body.String())
+		}
+		return w.Body.String()
+	}
+	const unverified = "This server has not verified this application."
+	const impersonation = "which other apps on your device can also claim"
+
+	body := get("app", appRedirect)
+	for _, want := range []string{unverified, "An application registered by @carol", "Website it declared: https://app.example/about", "app.example",
+		"Can read your direct messages", "Can post, edit and delete posts as you", "Can change your profile"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("user-registered app: consent page lacks %q\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, impersonation) {
+		t.Error("a user-registered app with an https redirect got the impersonation warning")
+	}
+
+	body = get("cimd-native", "com.example.mobile:/cb")
+	for _, want := range []string{unverified, "Comes from mobile.example", impersonation, "com.example.mobile"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("CIMD app with a private-use scheme: consent page lacks %q\n%s", want, body)
+		}
+	}
+	body = get("dyn-loopback", "http://127.0.0.1/cb")
+	for _, want := range []string{unverified, "registered itself", impersonation, "127.0.0.1"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("dynamic app with a loopback redirect: consent page lacks %q\n%s", want, body)
+		}
+	}
+	body = get("cimd-claimed", "https://mobile.example/cb")
+	if !strings.Contains(body, "Comes from mobile.example") || strings.Contains(body, impersonation) {
+		t.Errorf("CIMD app with a claimed https redirect: want the origin and no impersonation warning\n%s", body)
+	}
+}

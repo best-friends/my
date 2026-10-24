@@ -616,6 +616,16 @@ type OauthClient struct {
 	CreatedAt        int64
 }
 
+type OauthClientMetadataDocument struct {
+	ClientID   string
+	ClientName string
+	ClientUri  string
+	LogoUri    string
+	Scope      string
+	FetchedAt  int64
+	ExpiresAt  int64
+}
+
 type OutboundActivity struct {
 	ID             string
 	ActivityUri    string

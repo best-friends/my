@@ -214,6 +214,27 @@ func (q *Queries) GetOAuthClientByID(ctx context.Context, id string) (OauthClien
 	return i, err
 }
 
+const getOAuthClientMetadataDocument = `-- name: GetOAuthClientMetadataDocument :one
+SELECT client_id, client_name, client_uri, logo_uri, scope, fetched_at, expires_at
+FROM oauth_client_metadata_documents
+WHERE client_id = $1
+`
+
+func (q *Queries) GetOAuthClientMetadataDocument(ctx context.Context, clientID string) (OauthClientMetadataDocument, error) {
+	row := q.db.QueryRow(ctx, getOAuthClientMetadataDocument, clientID)
+	var i OauthClientMetadataDocument
+	err := row.Scan(
+		&i.ClientID,
+		&i.ClientName,
+		&i.ClientUri,
+		&i.LogoUri,
+		&i.Scope,
+		&i.FetchedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
 const getOAuthClientState = `-- name: GetOAuthClientState :one
 SELECT
   EXISTS (
@@ -384,6 +405,37 @@ func (q *Queries) InsertOAuthClientDisablementIfEnabled(ctx context.Context, arg
 	return result.RowsAffected(), nil
 }
 
+const insertOAuthClientHostDenialIfAllowed = `-- name: InsertOAuthClientHostDenialIfAllowed :execrows
+INSERT INTO oauth_client_host_denials (id, host, denied_by_user_id, denied_at)
+SELECT $1::uuid, $2::text, $3::uuid, $4::timestamptz
+WHERE NOT EXISTS (
+    SELECT 1 FROM oauth_client_host_denials d
+    WHERE d.host = $2::text AND NOT EXISTS (SELECT 1 FROM oauth_client_host_denial_lifts l WHERE l.denial_id = d.id)
+  )
+`
+
+type InsertOAuthClientHostDenialIfAllowedParams struct {
+	ID             string
+	Host           string
+	DeniedByUserID *string
+	DeniedAt       time.Time
+}
+
+// InsertOAuthClientHostDenialIfAllowed records a denial unless the host is denied already, so
+// that repeating it adds nothing.
+func (q *Queries) InsertOAuthClientHostDenialIfAllowed(ctx context.Context, arg InsertOAuthClientHostDenialIfAllowedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertOAuthClientHostDenialIfAllowed,
+		arg.ID,
+		arg.Host,
+		arg.DeniedByUserID,
+		arg.DeniedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const insertOAuthClientIfAbsent = `-- name: InsertOAuthClientIfAbsent :exec
 
 INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at)
@@ -475,6 +527,28 @@ func (q *Queries) LiftOAuthClientDisablements(ctx context.Context, arg LiftOAuth
 	return result.RowsAffected(), nil
 }
 
+const liftOAuthClientHostDenials = `-- name: LiftOAuthClientHostDenials :execrows
+INSERT INTO oauth_client_host_denial_lifts (denial_id, lifted_by_user_id, lifted_at)
+SELECT d.id, $1::uuid, $2::timestamptz FROM oauth_client_host_denials d
+WHERE d.host = $3::text
+ON CONFLICT (denial_id) DO NOTHING
+`
+
+type LiftOAuthClientHostDenialsParams struct {
+	LiftedByUserID *string
+	LiftedAt       time.Time
+	Host           string
+}
+
+// LiftOAuthClientHostDenials lifts every denial of a host that has no lift yet.
+func (q *Queries) LiftOAuthClientHostDenials(ctx context.Context, arg LiftOAuthClientHostDenialsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, liftOAuthClientHostDenials, arg.LiftedByUserID, arg.LiftedAt, arg.Host)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const listOAuthClientRedirectURIs = `-- name: ListOAuthClientRedirectURIs :many
 SELECT redirect_uri FROM oauth_client_redirect_uris WHERE client_id = $1 ORDER BY redirect_uri
 `
@@ -555,6 +629,21 @@ func (q *Queries) ListUnusedDynamicOAuthClients(ctx context.Context, arg ListUnu
 		return nil, err
 	}
 	return items, nil
+}
+
+const oAuthClientHostDenied = `-- name: OAuthClientHostDenied :one
+SELECT EXISTS (
+  SELECT 1 FROM oauth_client_host_denials d
+  WHERE d.host = $1::text AND NOT EXISTS (SELECT 1 FROM oauth_client_host_denial_lifts l WHERE l.denial_id = d.id)
+) AS denied
+`
+
+// OAuthClientHostDenied reports whether a host has a denial without a lift.
+func (q *Queries) OAuthClientHostDenied(ctx context.Context, host string) (bool, error) {
+	row := q.db.QueryRow(ctx, oAuthClientHostDenied, host)
+	var denied bool
+	err := row.Scan(&denied)
+	return denied, err
 }
 
 const revokeOtherTokensOfUser = `-- name: RevokeOtherTokensOfUser :exec
@@ -684,4 +773,36 @@ func (q *Queries) TokenFamilyActive(ctx context.Context, arg TokenFamilyActivePa
 	var active bool
 	err := row.Scan(&active)
 	return active, err
+}
+
+const upsertOAuthClientMetadataDocument = `-- name: UpsertOAuthClientMetadataDocument :exec
+INSERT INTO oauth_client_metadata_documents (client_id, client_name, client_uri, logo_uri, scope, fetched_at, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (client_id) DO UPDATE SET
+  client_name = excluded.client_name, client_uri = excluded.client_uri, logo_uri = excluded.logo_uri,
+  scope = excluded.scope, fetched_at = excluded.fetched_at, expires_at = excluded.expires_at
+`
+
+type UpsertOAuthClientMetadataDocumentParams struct {
+	ClientID   string
+	ClientName string
+	ClientUri  string
+	LogoUri    string
+	Scope      string
+	FetchedAt  time.Time
+	ExpiresAt  time.Time
+}
+
+// UpsertOAuthClientMetadataDocument stores the last fetch of a client's metadata document.
+func (q *Queries) UpsertOAuthClientMetadataDocument(ctx context.Context, arg UpsertOAuthClientMetadataDocumentParams) error {
+	_, err := q.db.Exec(ctx, upsertOAuthClientMetadataDocument,
+		arg.ClientID,
+		arg.ClientName,
+		arg.ClientUri,
+		arg.LogoUri,
+		arg.Scope,
+		arg.FetchedAt,
+		arg.ExpiresAt,
+	)
+	return err
 }

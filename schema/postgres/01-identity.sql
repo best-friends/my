@@ -289,6 +289,39 @@ CREATE TABLE oauth_client_redirect_uris (
   PRIMARY KEY (client_id, redirect_uri)
 );
 
+-- Current value (cache): the Client ID Metadata Document of a client whose registration is
+-- metadata_document (ADR-0090 §1), as last fetched from its client_id URL. Every fetch replaces the
+-- row and the client's oauth_client_redirect_uris; refetching rebuilds it. client_uri and logo_uri
+-- are '' when the document has none. expires_at is when the HTTP cache directives of the response
+-- let the document be reused until (fetched_at for no-store and no-cache).
+CREATE TABLE oauth_client_metadata_documents (
+  client_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  client_name text NOT NULL,
+  client_uri text NOT NULL,
+  logo_uri text NOT NULL,
+  scope text NOT NULL,
+  fetched_at timestamptz NOT NULL,
+  expires_at timestamptz NOT NULL
+);
+
+-- Event: an administrator denied the Client ID Metadata Documents of a host (ADR-0090 §1): no
+-- client_id URL on the host is fetched or used while one of its denials has no lift. host is the
+-- lowercase host name without the port. denied_by_user_id is NULL for the CLI.
+CREATE TABLE oauth_client_host_denials (
+  id uuid NOT NULL PRIMARY KEY,
+  host text COLLATE "C" NOT NULL,
+  denied_by_user_id uuid,
+  denied_at timestamptz NOT NULL
+);
+CREATE INDEX oauth_client_host_denials_host ON oauth_client_host_denials (host);
+
+-- Event: a host denial was lifted, at most once. lifted_by_user_id is NULL for the CLI.
+CREATE TABLE oauth_client_host_denial_lifts (
+  denial_id uuid NOT NULL PRIMARY KEY,
+  lifted_by_user_id uuid,
+  lifted_at timestamptz NOT NULL
+);
+
 -- Resource: an authorization code, keyed by its SHA-256 digest. session_id is the browser session
 -- that authorized it (NULL when it was issued outside one).
 CREATE TABLE oauth_authorization_codes (
