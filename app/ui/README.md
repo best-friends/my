@@ -129,7 +129,7 @@ changes the choice and the attribute together; both use the localStorage key `my
   holds its `@font-face` rules: one per group of `emoji-test.txt`, each with a COLRv1 and an OpenType-SVG WOFF2 of `src/fonts/emoji/`
   that the browser picks with `tech()`, and a `unicode-range` of emoji code points only (not `#`, `*`, the digits, `©`, `®`, `™` and the
   other symbols that body text uses), so a page loads only the splits of the emoji it shows and the OS fonts draw every other character.
-  The app and Storybook import it after `theme.css`; the server-rendered pages do not, and keep the OS emoji. `scripts/task.sh emoji:generate`
+  `theme.css` does not import it: the app and Storybook import it after `theme.css`, and the server-rendered pages do not, and keep the OS emoji ([ADR-0096](../../docs/adr/0096-emoji-css-import.md)). `scripts/task.sh emoji:generate`
   writes the fonts and `emoji.css`, never edit them by hand; the fonts are under the SIL Open Font License 1.1 (`src/fonts/emoji/OFL.txt`).
 - `font-serif` is `Georgia, "Noto Serif JP", serif`, for brand moments only: display headlines, page titles, `EmptyState` headings and avatar
   initials. Body text and controls stay `font-sans`.
@@ -311,7 +311,7 @@ the tasks that read `src/themeTokens.gen.ts` (type checks, tests, builds, Storyb
 | Tokens | Kind | Override |
 | --- | --- | --- |
 | `color-*` (but `color-badge-*`) | color | `#rrggbb` per theme (`#rrggbbaa` for `color-overlay`); every contrast pair must keep AA in both themes |
-| `font-sans`, `font-mono`, `font-serif` | font family | Family names, quoted or plain, comma-separated (at most 30) |
+| `font-sans`, `font-mono`, `font-serif` | font family | Family names, quoted or plain, comma-separated (at most 30); keep `"my Noto Color Emoji"` first in `font-sans` and `font-mono`, or the web client draws emoji with the OS fonts ([ADR-0096](../../docs/adr/0096-emoji-css-import.md)) |
 | `text-*` | length | `0` or rem / px, 0.625rem to 3rem |
 | `text-*--line-height` | number | 1 to 2.5 |
 | `spacing` | length | 0.125rem to 0.5rem (half to twice the default step) |

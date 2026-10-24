@@ -1,6 +1,6 @@
 # ADR-0095: 絵文字を Noto Color Emoji で描く
 
-- Status: Accepted
+- Status: Accepted（§2 の `emoji.css` を読み込む場所（`theme.css` から読む）を ADR-0096（emoji.css をアプリと Storybook から読み込み、theme.css からは読まない）が置き換える）
 - Date: 2026-10-24
 - Deciders: @rosylilly
 - Issue: #1145
