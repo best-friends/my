@@ -435,6 +435,22 @@
     "defaultMessage": "You have as many passkeys as allowed. Remove one first.",
     "description": "Title of the HTTP 409 API error when the user registers a passkey while having the most passkeys allowed (20)."
   },
+  "errors.oauth_app.too_many": {
+    "defaultMessage": "You have as many apps as allowed. Delete one first.",
+    "description": "Title of the HTTP 409 API error when the user registers an OAuth app while having the most apps allowed (25)."
+  },
+  "errors.oauth_app.registration_disabled": {
+    "defaultMessage": "This server does not let users register apps.",
+    "description": "Title of the HTTP 403 API error when the user registers an OAuth app while the server's administrators have turned off app registration by users."
+  },
+  "errors.oauth_app.public": {
+    "defaultMessage": "This app has no secret.",
+    "description": "Title of the HTTP 409 API error when the user asks for a new client secret of a public OAuth app, which has none."
+  },
+  "errors.oauth_app.disabled": {
+    "defaultMessage": "The server's administrators have disabled this app.",
+    "description": "Title of the HTTP 409 API error when the user issues tokens of their own OAuth app that an administrator disabled."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."

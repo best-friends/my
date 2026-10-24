@@ -204,10 +204,10 @@ func (s *Service) EnsureWebClient(ctx context.Context) error {
 }
 
 // client returns the client with the public client_id and its redirect URIs. A disabled or
-// deleted client is ErrNotFound, as an unknown one: it may not be authorized, get tokens, or
-// revoke them (ADR-0090 §1), and so is a metadata document client while the instance does not
-// accept them or its host is denied; its name, website, and scope are those of its stored
-// document. It registers the web client first when the start-up registration
+// deleted client, and one whose owner cannot use the app, is ErrNotFound, as an unknown one: it
+// may not be authorized, get tokens, or revoke them (ADR-0090 §1), and so is a metadata document
+// client while the instance does not accept them or its host is denied; its name, website, and
+// scope are those of its stored document. It registers the web client first when the start-up registration
 // has not succeeded yet (for example because the schema was applied after the server started).
 func (s *Service) client(ctx context.Context, clientID string) (identity.OAuthClient, []string, error) {
 	if clientID == "" {
@@ -229,7 +229,15 @@ func (s *Service) client(ctx context.Context, clientID string) (identity.OAuthCl
 	if !state.Usable() {
 		return identity.OAuthClient{}, nil, ErrNotFound
 	}
-	if c.Registration == identity.ClientRegisteredByMetadataDocument {
+	switch c.Registration {
+	case identity.ClientRegisteredByUser:
+		switch ok, err := s.ownerCanUseApps(ctx, c.OwnerUserID); {
+		case err != nil:
+			return identity.OAuthClient{}, nil, err
+		case !ok:
+			return identity.OAuthClient{}, nil, ErrNotFound
+		}
+	case identity.ClientRegisteredByMetadataDocument:
 		if c, err = s.metadataDocumentClient(ctx, c); err != nil {
 			return identity.OAuthClient{}, nil, err
 		}

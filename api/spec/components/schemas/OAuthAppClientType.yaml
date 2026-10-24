@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `public`: the app has no secret (a single-page, native, or command-line app).
+  `confidential`: the app runs on a server and authenticates with its secret at the token
+  endpoint, by `client_secret_basic` or `client_secret_post`. Both use PKCE (S256). The type
+  never changes.
+type: string
+enum: [public, confidential]

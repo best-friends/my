@@ -171,6 +171,22 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧḗḗḓ řḗḗşǿǿŭŭřƈḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.oauth_app.disabled": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř'ş ȧȧḓḿīƞīşŧřȧȧŧǿǿřş ħȧȧṽḗḗ ḓīşȧȧƀŀḗḗḓ ŧħīş ȧȧƥƥ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.oauth_app.public": {
+    "defaultMessage": "[Ŧħīş ȧȧƥƥ ħȧȧş ƞǿǿ şḗḗƈřḗḗŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.oauth_app.registration_disabled": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ ŀḗḗŧ ŭŭşḗḗřş řḗḗɠīşŧḗḗř ȧȧƥƥş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.oauth_app.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧş ḿȧȧƞẏ ȧȧƥƥş ȧȧş ȧȧŀŀǿǿẇḗḗḓ. Ḓḗḗŀḗḗŧḗḗ ǿǿƞḗḗ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.passkey.confirmation_expired": {
     "defaultMessage": "[Ŧħḗḗ ƈǿǿƞƒīřḿȧȧŧīǿǿƞ ẇīŧħ ŧħḗḗ ƥȧȧşşķḗḗẏ ḗḗẋƥīřḗḗḓ. Ŧřẏ ȧȧɠȧȧīƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."

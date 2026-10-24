@@ -435,6 +435,22 @@
     "defaultMessage": "登録できるパスキーの数の上限に達しています。先にどれかを削除してください。",
     "description": "Title of the HTTP 409 API error when the user registers a passkey while having the most passkeys allowed (20)."
   },
+  "errors.oauth_app.too_many": {
+    "defaultMessage": "登録できるアプリの数の上限に達しています。先にどれかを削除してください。",
+    "description": "Title of the HTTP 409 API error when the user registers an OAuth app while having the most apps allowed (25)."
+  },
+  "errors.oauth_app.registration_disabled": {
+    "defaultMessage": "このサーバーでは、利用者がアプリを登録できません。",
+    "description": "Title of the HTTP 403 API error when the user registers an OAuth app while the server's administrators have turned off app registration by users."
+  },
+  "errors.oauth_app.public": {
+    "defaultMessage": "このアプリにはシークレットがありません。",
+    "description": "Title of the HTTP 409 API error when the user asks for a new client secret of a public OAuth app, which has none."
+  },
+  "errors.oauth_app.disabled": {
+    "defaultMessage": "このアプリはサーバーの管理者によって無効にされています。",
+    "description": "Title of the HTTP 409 API error when the user issues tokens of their own OAuth app that an administrator disabled."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."

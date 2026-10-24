@@ -78,7 +78,8 @@ type Accounts interface {
 // RegisterModerationProjectors subscribes the end of a user's sessions and tokens to the
 // moderation module's events: when the restrictions in effect on a local account include login
 // (disable_login, suspend, ban), every session and token of its user is revoked with the reason
-// moderation in the transaction of the action (data-model §5.2). Lifting the action revokes
+// moderation in the transaction of the action (data-model §5.2), and every token of the clients
+// the user registered with client_disabled (ADR-0090 §1). Lifting the action revokes
 // nothing and restores nothing; the user signs in again.
 func RegisterModerationProjectors(r *uow.Projectors, repo Repository, accounts Accounts, clock kernel.Clock) {
 	r.Register(appmoderation.EventAccountRestrictionsChanged, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
@@ -99,7 +100,10 @@ func RegisterModerationProjectors(r *uow.Projectors, repo Repository, accounts A
 		if err := repo.RevokeSessionsOfUser(ctx, tx, a.Local.UserID, identity.RevokedModeration, now); err != nil {
 			return err
 		}
-		return repo.RevokeTokensOfUser(ctx, tx, a.Local.UserID, identity.TokenRevokedModeration, now)
+		if err := repo.RevokeTokensOfUser(ctx, tx, a.Local.UserID, identity.TokenRevokedModeration, now); err != nil {
+			return err
+		}
+		return revokeTokensOfOwnedClients(ctx, tx, repo, a.Local.UserID, now)
 	})
 }
 
@@ -107,6 +111,7 @@ func RegisterModerationProjectors(r *uow.Projectors, repo Repository, accounts A
 // module's lifecycle: when a local account is deleted, every session and token of its user is
 // revoked with the reason account_deleted in the transaction of the deletion (data-model §4.1),
 // so that a user who signed in while the deletion was scheduled (a ban) is signed out by it.
+// Every token of the clients the user registered is revoked with client_disabled (ADR-0090 §1).
 func RegisterLifecycleProjectors(r *uow.Projectors, repo Repository, accounts Accounts, clock kernel.Clock) {
 	r.Register(account.EventLifecycleEventRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(account.LifecycleEventRecorded)
@@ -126,6 +131,9 @@ func RegisterLifecycleProjectors(r *uow.Projectors, repo Repository, accounts Ac
 		if err := repo.RevokeSessionsOfUser(ctx, tx, a.Local.UserID, identity.RevokedAccountDeleted, now); err != nil {
 			return err
 		}
-		return repo.RevokeTokensOfUser(ctx, tx, a.Local.UserID, identity.TokenRevokedAccountDeleted, now)
+		if err := repo.RevokeTokensOfUser(ctx, tx, a.Local.UserID, identity.TokenRevokedAccountDeleted, now); err != nil {
+			return err
+		}
+		return revokeTokensOfOwnedClients(ctx, tx, repo, a.Local.UserID, now)
 	})
 }

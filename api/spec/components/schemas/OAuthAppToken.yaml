@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  An access token and a refresh token of the app for the authenticated user, as the token
+  endpoint returns them (RFC 6749 §5.1). The access token lasts an hour and the refresh token
+  30 days; refreshing at `POST /oauth/token` (with the app's secret for a confidential app)
+  replaces both, and presenting a used refresh token again revokes the whole grant.
+type: object
+required: [access_token, token_type, expires_in, refresh_token, scope]
+properties:
+  access_token:
+    type: string
+  token_type:
+    type: string
+    enum: [Bearer]
+  expires_in:
+    description: Seconds until the access token expires.
+    type: integer
+  refresh_token:
+    type: string
+  scope:
+    description: The granted scopes, space-separated.
+    type: string
