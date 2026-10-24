@@ -33,9 +33,9 @@ prints the directory's `README.md`.
 | Take an issue (§1) | `issue claim <n> --plan "<one line>"`: refuses when the issue is not `agent:ready`, needs a decision, is assigned to someone else, depends on a non-Accepted ADR, or waits for an open issue |
 | Verify (§5) | `check`: `scripts/task.sh check:changed` with the contexts it checks and only the failing lines |
 | Open the PR (§6) | `pr open [--summary-file f] [--decisions text] [--confirm] [--footer text] [--base <branch>]` |
-| Wait for CI (§6) | `pr wait <pr>` **in the background**: one line when CI passes; the failing lines of the failed jobs otherwise; exit 3 on a conflict |
+| Wait for CI (§6) | `pr wait <pr>` **in the background**: one line when CI passes; the failing lines of the failed jobs otherwise; exit 3 on a conflict; exit 4 when checks were cancelled and no newer run replaced them. Only the latest run of each check counts |
 | Resolve a conflict (§7) | `git merge origin/main`, `regen`, `check`, push |
-| Watch many PRs (§9) | `pr watch [<pr>...]` with the Monitor tool: one line per opened, merged, closed, conflicting, ci-failed, ci-green, dequeued |
+| Watch many PRs (§9) | `pr watch [<pr>...]` with the Monitor tool: one line per opened, merged, closed, conflicting, ci-failed, ci-cancelled, ci-green, dequeued |
 | Stop (§8) | `issue block <n> --reason-file f` |
 
 ## The context map

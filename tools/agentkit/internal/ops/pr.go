@@ -173,14 +173,16 @@ func mark(b bool) string {
 
 // check is one entry of a pull request's statusCheckRollup.
 type check struct {
-	Typename   string `json:"__typename"`
-	Name       string `json:"name"`
-	Context    string `json:"context"`
-	Status     string `json:"status"`
-	Conclusion string `json:"conclusion"`
-	State      string `json:"state"`
-	DetailsURL string `json:"detailsUrl"`
-	TargetURL  string `json:"targetUrl"`
+	Typename     string `json:"__typename"`
+	Name         string `json:"name"`
+	Context      string `json:"context"`
+	WorkflowName string `json:"workflowName"`
+	Status       string `json:"status"`
+	Conclusion   string `json:"conclusion"`
+	State        string `json:"state"`
+	StartedAt    string `json:"startedAt"`
+	DetailsURL   string `json:"detailsUrl"`
+	TargetURL    string `json:"targetUrl"`
 }
 
 func (c check) name() string {
@@ -190,7 +192,18 @@ func (c check) name() string {
 	return c.Context
 }
 
-// result is pending, failed, or passed.
+// jobID is the Actions job of the check, or 0 for a check that is not an Actions job. Job IDs grow with time,
+// so a larger one belongs to a newer run.
+func (c check) jobID() int64 {
+	m := reJob.FindStringSubmatch(c.DetailsURL + c.TargetURL)
+	if m == nil {
+		return 0
+	}
+	id, _ := strconv.ParseInt(m[1], 10, 64)
+	return id
+}
+
+// result is pending, failed, cancelled, or passed.
 func (c check) result() string {
 	if c.Typename == "StatusContext" {
 		switch c.State {
@@ -205,10 +218,33 @@ func (c check) result() string {
 		return "pending"
 	}
 	switch c.Conclusion {
-	case "FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED", "CANCELLED":
+	case "FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED":
 		return "failed"
+	case "CANCELLED":
+		return "cancelled"
 	}
 	return "passed"
+}
+
+// latest keeps, for each workflow and check name, only the check of the newest run. A push or a label starts
+// the workflow again on the same head, and its concurrency group cancels the older run, whose checks stay in
+// the rollup next to the newer ones.
+func latest(cs []check) []check {
+	idx := map[string]int{}
+	var out []check
+	for _, c := range cs {
+		key := c.WorkflowName + "\x00" + c.name()
+		i, ok := idx[key]
+		if !ok {
+			idx[key] = len(out)
+			out = append(out, c)
+			continue
+		}
+		if o := out[i]; c.jobID() > o.jobID() || (c.jobID() == o.jobID() && c.StartedAt >= o.StartedAt) {
+			out[i] = c
+		}
+	}
+	return out
 }
 
 type prState struct {
@@ -233,28 +269,34 @@ func viewPR(n int) (prState, error) {
 	return p, err
 }
 
-// summarize returns the CI result of a pull request (none, failed, pending, passed), the names of the failed
-// checks, and whether any check is still running.
+// summarize returns the CI result of a pull request (none, failed, pending, cancelled, passed) from the latest
+// run of each check, the names of the failed checks (of the cancelled ones for cancelled), and whether any
+// check is still running. Cancelled is a run that someone stopped, or that no newer run replaced.
 func summarize(cs []check) (string, []string, bool) {
 	if len(cs) == 0 {
 		return "none", nil, false
 	}
-	var failed []string
+	var failed, cancelled []string
 	pending := false
-	for _, c := range cs {
+	for _, c := range latest(cs) {
 		switch c.result() {
 		case "failed":
 			failed = append(failed, c.name())
+		case "cancelled":
+			cancelled = append(cancelled, c.name())
 		case "pending":
 			pending = true
 		}
 	}
 	sort.Strings(failed)
+	sort.Strings(cancelled)
 	switch {
 	case len(failed) > 0:
 		return "failed", failed, pending
 	case pending:
 		return "pending", nil, true
+	case len(cancelled) > 0:
+		return "cancelled", cancelled, false
 	}
 	return "passed", nil, false
 }
@@ -293,8 +335,11 @@ func Wait(n int, branch, head string, timeout, interval time.Duration, all bool,
 			if res == "failed" && (!all || !pending) {
 				return WaitResult{1, failureReport(n, p, failed, logDir)}
 			}
+			if res == "cancelled" {
+				return WaitResult{4, []string{fmt.Sprintf("PR #%d: CI cancelled, not failed: %s; no newer run replaced them. Rerun the workflow (gh run rerun) or push", n, strings.Join(failed, ", "))}}
+			}
 			if res == "passed" {
-				return WaitResult{0, []string{fmt.Sprintf("PR #%d: CI passed (%d checks, mergeable %s)", n, len(p.StatusCheckRollup), strings.ToLower(p.Mergeable))}}
+				return WaitResult{0, []string{fmt.Sprintf("PR #%d: CI passed (%d checks, mergeable %s)", n, len(latest(p.StatusCheckRollup)), strings.ToLower(p.Mergeable))}}
 			}
 			if res == "none" && time.Since(started) > 10*time.Minute {
 				return WaitResult{2, []string{fmt.Sprintf("PR #%d: no check started in 10 minutes (mergeable %s); check the PR page %s", n, strings.ToLower(p.Mergeable), p.URL)}}
@@ -310,7 +355,7 @@ func Wait(n int, branch, head string, timeout, interval time.Duration, all bool,
 func failureReport(n int, p prState, failed []string, logDir string) []string {
 	lines := []string{fmt.Sprintf("PR #%d: CI failed: %s", n, strings.Join(failed, ", "))}
 	shown := 0
-	for _, c := range p.StatusCheckRollup {
+	for _, c := range latest(p.StatusCheckRollup) {
 		// `check` only collects the other jobs' results; its log says nothing new.
 		if c.result() != "failed" || c.name() == "check" || shown == 3 {
 			continue
@@ -350,6 +395,8 @@ func transitions(old prSnapshot, had bool, cur prSnapshot) []string {
 		out = append(out, "conflicting")
 	case cur.ci == "failed" && (!had || old.ci != "failed"):
 		out = append(out, "ci-failed "+strings.Join(cur.failed, ","))
+	case cur.ci == "cancelled" && (!had || old.ci != "cancelled"):
+		out = append(out, "ci-cancelled "+strings.Join(cur.failed, ","))
 	case cur.ci == "passed" && had && old.ci != "passed":
 		out = append(out, "ci-green")
 	}
@@ -399,7 +446,7 @@ func queuedPRs() (map[int]bool, error) {
 }
 
 // Watch prints one line per event of the watched pull requests — opened, merged, closed, conflicting,
-// ci-failed, ci-green, queued, dequeued (out of the merge queue, or auto-merge off, while open) — until every
+// ci-failed, ci-cancelled, ci-green, queued, dequeued (out of the merge queue, or auto-merge off, while open) — until every
 // watched pull request is merged or closed. With no numbers it watches every open pull request, including
 // new ones, forever.
 func Watch(w io.Writer, nums []int, interval time.Duration) error {
