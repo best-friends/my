@@ -193,6 +193,7 @@ test.describe("the new-post form", () => {
     await expect(form).toMatchAriaSnapshot(`
       - form:
         - ${ariaNode(`textbox ${JSON.stringify(message("compose.text.label"))}`)}
+        - ${ariaNode(`button ${JSON.stringify(message("emoji.picker.button"))}`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.media.add"))}`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.poll.toggle"))} [pressed=false]`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.warning.toggle"))} [pressed=false]`)}
@@ -220,6 +221,29 @@ test.describe("the new-post form", () => {
 
     await page.setViewportSize({ width: 320, height: 568 });
     await expect(form.getByRole("button", { name: message("compose.submit") })).toBeInViewport({ ratio: 1 });
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("puts the emoji button in the top end corner of the text, whose lines keep clear of it (ADR-0091 §4)", async ({ page, makeAxeBuilder, hasTouch }) => {
+    await serveApi(page);
+    await page.goto("/");
+    await page.setViewportSize({ width: 320, height: 568 });
+    const form = await openForm(page, hasTouch);
+    const text = form.getByRole("textbox", { name: message("compose.text.label") });
+    const button = form.getByRole("button", { name: message("emoji.picker.button") });
+    const [textBox, buttonBox] = await Promise.all([boxOf(text), boxOf(button)]);
+    const rtl = (await page.evaluate(() => document.documentElement.dir)) === "rtl";
+
+    // Inside the text area, at its top and at its end in the writing direction.
+    expect(buttonBox.y - textBox.y).toBeLessThan(8);
+    const endGap = rtl ? buttonBox.x - textBox.x : textBox.x + textBox.width - (buttonBox.x + buttonBox.width);
+    expect(endGap).toBeGreaterThanOrEqual(0);
+    expect(endGap).toBeLessThan(8);
+    // The text's padding on the end side is at least as wide as the button.
+    const padding = await text.evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingInlineEnd));
+    expect(padding).toBeGreaterThanOrEqual(buttonBox.width);
+
+    await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });
 

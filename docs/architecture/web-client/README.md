@@ -85,7 +85,8 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | `my:display:autoplay` | localStorage | アニメーションの自動再生（§13） | いいえ |
 | `my:display:navigation` | localStorage | ナビゲーションの項目の順番と隠した項目（§9） | いいえ |
 | `my:instance:timelines` | localStorage | インスタンスが提供する公開タイムライン（§9） | いいえ |
-| `my:emoji:recent` | localStorage | 最近選んだカスタム絵文字の shortcode（§12、ADR-0051 §4） | いいえ |
+| `my:emoji:recent` | localStorage | よく使う絵文字（Unicode 絵文字の基の列とカスタム絵文字の `:shortcode:`）と、減衰させた回数・最後に使った時刻（§12、ADR-0091 §3） | いいえ |
+| `my:emoji:skin-tone` | localStorage | 絵文字のピッカーで選んだ肌の色（§12、ADR-0091 §3） | いいえ |
 | `my:user:compose:<アカウント ID>` | sessionStorage | 投稿の下書きと送信中の投稿（§12） | はい |
 | `my:user:home-timeline` | localStorage | オフラインで読むホームのタイムラインの新しい投稿（フォロワー限定・ダイレクトを除く）と、それを読み込んだ時刻（§11）。利用者が変わったときも消す | はい |
 | `my:oauth-pending` | sessionStorage | 進行中のサインインの verifier・`state`・戻り先（§10） | いいえ |

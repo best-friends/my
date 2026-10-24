@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { Button } from "./Button";
+import { EmojiIcon } from "./Icons";
 import { TextField } from "./TextField";
+import { Tooltip, TooltipTrigger } from "./Tooltip";
 
 const meta = {
   title: "Forms/TextField",
@@ -34,3 +37,18 @@ export const Disabled: Story = { args: { defaultValue: "Alice Liddell", isDisabl
 export const ReadOnly: Story = { args: { label: "Handle", defaultValue: "@alice@example.com", isReadOnly: true } };
 
 export const Required: Story = { args: { label: "Email", type: "email", isRequired: true } };
+
+/** An icon button at the end of the input (the emoji picker's, ADR-0091 §4); a long value stays clear of it. */
+export const WithEndAction: Story = {
+  args: {
+    defaultValue: "Alice Liddell, who went down the rabbit hole and came back with a story",
+    endAction: (
+      <TooltipTrigger>
+        <Button variant="ghost" size="icon" aria-label="Add emoji">
+          <EmojiIcon />
+        </Button>
+        <Tooltip>Add emoji</Tooltip>
+      </TooltipTrigger>
+    ),
+  },
+};

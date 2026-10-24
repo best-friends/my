@@ -61,15 +61,15 @@ export function ProfileForm() {
             onChange={form.displayName.onChange}
             {...lengthCheck(form.displayName.value, profileLimits.displayName)}
             autoComplete="nickname"
+            endAction={
+              <EmojiPickerButton
+                fieldId={displayNameId}
+                value={form.displayName.value}
+                onChange={form.displayName.onChange}
+                label={t("client:settings.profile.display_name.emoji")}
+              />
+            }
           />
-          <div>
-            <EmojiPickerButton
-              fieldId={displayNameId}
-              value={form.displayName.value}
-              onChange={form.displayName.onChange}
-              label={t("client:settings.profile.display_name.emoji")}
-            />
-          </div>
         </Stack>
         <Stack gap="1">
           <TextArea
@@ -83,10 +83,10 @@ export function ProfileForm() {
             }
             errorMessage={t("client:settings.profile.too_long", { max: String(profileLimits.note) })}
             rows={4}
+            endAction={
+              <EmojiPickerButton fieldId={noteId} value={form.note.value} onChange={form.note.onChange} label={t("client:settings.profile.note.emoji")} />
+            }
           />
-          <div>
-            <EmojiPickerButton fieldId={noteId} value={form.note.value} onChange={form.note.onChange} label={t("client:settings.profile.note.emoji")} />
-          </div>
         </Stack>
         <ProfileFields fields={form.fields} lengthCheck={lengthCheck} />
         <Stack gap="2">

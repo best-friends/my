@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { Button } from "./Button";
+import { EmojiIcon } from "./Icons";
 import { TextArea } from "./TextArea";
+import { Tooltip, TooltipTrigger } from "./Tooltip";
 
 // Stories may spell out English; apps pass a react-intl message instead (web-client/README.md A9).
 const formatRemaining = (remaining: number) =>
@@ -42,5 +45,23 @@ export const OverTheLimit: Story = {
     formatRemaining,
     defaultValue: "This post is longer than the limit allows.",
     errorMessage: "Shorten the post to send it.",
+  },
+};
+
+/** An icon button in the top end corner (the emoji picker's, ADR-0091 §4); the lines stay clear of it. */
+export const WithEndAction: Story = {
+  args: {
+    label: "Post",
+    characterLimit: 500,
+    formatRemaining,
+    defaultValue: "The text wraps before it reaches the button in the corner, so that no line runs under it, however long it gets.",
+    endAction: (
+      <TooltipTrigger>
+        <Button variant="ghost" size="icon" aria-label="Add emoji">
+          <EmojiIcon />
+        </Button>
+        <Tooltip>Add emoji</Tooltip>
+      </TooltipTrigger>
+    ),
   },
 };

@@ -64,4 +64,13 @@ describe("TextField", () => {
     expect(input).toHaveFocus();
     expect(input).toHaveAttribute("placeholder", "Search posts");
   });
+
+  it("puts the end action after the input in the tab order, without changing the input's name", async () => {
+    const user = userEvent.setup();
+    render(<TextField label="Display name" endAction={<button type="button">Add emoji</button>} />);
+    await user.tab();
+    expect(screen.getByRole("textbox", { name: "Display name" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Add emoji" })).toHaveFocus();
+  });
 });

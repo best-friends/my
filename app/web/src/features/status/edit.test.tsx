@@ -258,3 +258,25 @@ describe("a post's edit history", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Post not found" })).toBeInTheDocument();
   });
 });
+
+describe("the emoji picker of the edit dialog", () => {
+  test("opens from the corner of the text and puts a Unicode emoji at the caret", async () => {
+    signedIn();
+    serveOwnPost();
+    const { user } = await renderApp({ path: "/local" });
+    const dialog = await openEditor(user, "My first words");
+    const text = await within(dialog).findByRole("textbox", { name: "Your post" });
+    await user.clear(text);
+    await user.type(text, "Ok");
+
+    await user.click(within(dialog).getByRole("button", { name: "Add emoji" }));
+    const picker = await screen.findByRole("dialog", { name: "Emoji" });
+    await user.type(await within(picker).findByRole("searchbox", { name: "Search emoji" }, { timeout: 5000 }), "thumbs up");
+    await user.click(within(picker).getByRole("row", { name: "thumbs up" }));
+
+    await waitFor(() => {
+      expect(text).toHaveValue("Ok👍");
+    });
+    expect(screen.queryByRole("dialog", { name: "Emoji" })).not.toBeInTheDocument();
+  }, 30_000);
+});

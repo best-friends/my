@@ -325,12 +325,35 @@ export const preloadReloadKey = declareKey<number | null>("my:preload-error-relo
   userData: false,
 });
 
-/** The shortcodes of the custom emoji picked recently on this browser, most recent first (features/emoji, ADR-0051 §4). */
-export const recentEmojisKey = declareKey<readonly string[]>("my:emoji:recent", {
+/**
+ * One emoji used on this browser: a Unicode emoji without its skin tone, or `:shortcode:` for a custom emoji; how often
+ * it was used, decayed by age as of `at`; and when it was used last (milliseconds since the epoch).
+ */
+export type StoredEmojiUse = { emoji: string; score: number; at: number };
+
+/**
+ * The emoji used often on this browser, in the order the picker shows them (features/emoji, ADR-0091 §3). Version 1 held
+ * the shortcodes of the custom emoji picked recently; it is not converted and reads as the default.
+ */
+export const frequentEmojisKey = declareKey<readonly StoredEmojiUse[]>("my:emoji:recent", {
+  area: "local",
+  version: 2,
+  defaultValue: [],
+  parse: schemaParser(
+    z.array(z.object({ emoji: z.string().min(1).max(64), score: z.number().nonnegative(), at: z.number().nonnegative() })).max(64),
+  ),
+  userData: false,
+});
+
+/** The skin tones of the emoji picker: the default yellow and the five Fitzpatrick modifiers (@my/ui `SkinTone`). */
+const skinTone = z.enum(["none", "light", "medium-light", "medium", "medium-dark", "dark"]);
+
+/** The skin tone chosen in the emoji picker on this browser (features/emoji, ADR-0091 §3). */
+export const skinToneKey = declareKey<z.infer<typeof skinTone>>("my:emoji:skin-tone", {
   area: "local",
   version: 1,
-  defaultValue: [],
-  parse: schemaParser(z.array(z.string()).max(64)),
+  defaultValue: "none",
+  parse: schemaParser(skinTone),
   userData: false,
 });
 
