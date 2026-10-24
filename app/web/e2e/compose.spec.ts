@@ -134,6 +134,9 @@ async function serveApi(page: Page): Promise<Posted[]> {
         reactions: [],
       });
     }
+    // The completion's searches (ADR-0092 §1) find Carol and one hashtag whatever is typed.
+    if (path === "/api/v1/accounts/search") return json(route, [carol]);
+    if (path === "/api/v1/tags/search") return json(route, [{ name: "caturday", statuses_count: 3 }]);
     // Carol is found only by resolving her handle, as the server resolves the mentions of a post.
     const query = new URL(request.url()).searchParams;
     if (path === "/api/v1/accounts/lookup" && query.get("acct") === carol.acct && query.get("resolve") === "true") return json(route, carol);
@@ -231,6 +234,40 @@ test.describe("the new-post form", () => {
         - ${ariaNode(`button /${endingWith(message("compose.language.label"))}/`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.submit"))}`)}
     `);
+  });
+
+  test("completes a mention, a hashtag and an emoji from a list under the text, which has no axe violations (ADR-0092)", async ({ page, makeAxeBuilder, hasTouch }) => {
+    await serveApi(page);
+    await page.goto("/");
+    const form = await openForm(page, hasTouch);
+    const text = form.getByRole("textbox", { name: message("compose.text.label") });
+    const suggestions = page.getByRole("listbox", { name: message("compose.completion.suggestions") });
+
+    await text.pressSequentially("Hi @car");
+    await expect(suggestions).toBeVisible();
+    // The text area stays a textbox that points at the list; the first option is chosen.
+    await expect(text).toHaveAttribute("aria-autocomplete", "list");
+    await expect(text).toHaveAttribute("aria-controls", (await suggestions.getAttribute("id")) ?? "");
+    await expect(suggestions).toMatchAriaSnapshot(`
+      - ${ariaNode(`listbox ${JSON.stringify(message("compose.completion.suggestions"))}`)}:
+        - ${ariaNode('option "Carol @carol@remote.example" [selected]')}
+    `);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+    await text.press("Enter");
+    await expect(text).toHaveValue("Hi @carol@remote.example ");
+    await expect(suggestions).toBeHidden();
+
+    await text.pressSequentially("#cat");
+    await expect(suggestions.getByRole("option", { name: `#caturday ${formatted("compose.completion.tag_posts", { count: 3 })}` })).toBeVisible();
+    await text.press("Tab");
+    await expect(text).toHaveValue("Hi @carol@remote.example #caturday ");
+    await expect(text).toBeFocused();
+
+    await text.pressSequentially(":blobc");
+    await expect(suggestions.getByRole("option", { name: ":blobcat:" })).toBeVisible();
+    await text.press("Enter");
+    await expect(text).toHaveValue("Hi @carol@remote.example #caturday :blobcat: ");
   });
 
   test("keeps its tools level, and the submit button on the first screen of a 320 × 568 sheet", async ({ page, hasTouch }) => {
