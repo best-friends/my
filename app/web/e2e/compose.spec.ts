@@ -222,15 +222,24 @@ test.describe("the new-post form", () => {
     // The layer paints the hashtag, the known shortcode and the URL (ADR-0092 §4), and adds nothing to the tree.
     await expect(form.locator("[data-highlight]")).toHaveCount(3);
 
+    // Every child of the form, in order: the label's text, the text area, the completion's status (empty, as no word
+    // is being typed), the emoji button, the count's status, then the tools with their descriptions' text. A layer
+    // exposed to assistive technology would add a child.
     await expect(form).toMatchAriaSnapshot(`
       - form:
         - /children: equal
+        - text: ${JSON.stringify(message("compose.text.label"))}
         - ${ariaNode(`textbox ${JSON.stringify(message("compose.text.label"))}`)}
+        - status
         - ${ariaNode(`button ${JSON.stringify(message("emoji.picker.button"))}`)}
+        - status
         - ${ariaNode(`button ${JSON.stringify(message("compose.media.add"))}`)}
+        - text: /.+/
         - ${ariaNode(`button ${JSON.stringify(message("compose.poll.toggle"))} [pressed=false]`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.warning.toggle"))} [pressed=false]`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.visibility.button", { visibility: message("compose.visibility.public") }))}`)}
+        - text: /.+/
+        - ${ariaNode(`button /${endingWith(message("compose.quote_policy.label"))}/`)}
         - ${ariaNode(`button /${endingWith(message("compose.language.label"))}/`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.submit"))}`)}
     `);
