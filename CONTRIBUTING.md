@@ -24,8 +24,8 @@ TypeScript だけが読む生成物（`app/web/src/routeTree.gen.ts`・`app/web/
 Go のテストは偽サーバー（pstest・`httptest`・pgmem など）を `127.0.0.1:0` で listen し、ポートは OS が選びます。
 テストが `listen tcp 127.0.0.1:0: bind: address already in use` で落ちるのは、同じマシンで並列に流したテストの接続（TIME_WAIT は 60 秒残ります）が
 エフェメラルポートの範囲（`/proc/sys/net/ipv4/ip_local_port_range`）を使い切ったときです。WSL2 の mirrored ネットワーキングでは、Windows とポートを分け合うため
-この範囲が 4,096 ポートしかなく、複数の `check` を同時に流すと使い切ります。`TASK_CONCURRENCY` で並列数を下げるか、Windows の動的ポート（49152 以上）と
-重ならない範囲に広げます（例: `sudo sysctl -w net.ipv4.ip_local_port_range="32768 48715"`）。
+この範囲が 4,096 ポート（44620〜48715）しかなく、複数の `check` を同時に流すと使い切ります。`TASK_CONCURRENCY` で並列数を下げるか、同時に流す `check` の数を減らします。
+mirrored では範囲を広げてはいけません。WSL が Linux に割り当てたこの範囲の外のポートを OS が選ぶと、外への接続（`git`・`gh` など）がタイムアウトします。
 変更したコンテキストとその依存先だけを回すには `scripts/task.sh check:changed`（比較の基準は `BASE=origin/main`）を使います。CI も同じ判定（`scripts/changed-contexts.sh`）で変更のないコンテキストのジョブを飛ばし、必須チェック `check` が各ジョブの結果を集めます（[CI](#ci)）。
 これらはネットワーク不要のチェック（Markdown lint、ADR 索引、Go の `go vet` / golangci-lint / テスト /
 `CGO_ENABLED=0` ビルド / 依存ライセンス検査 / sqlc 生成物の検査、i18n カタログ検査、クライアント API の spec の lint と生成物の検査、`Dockerfile` の Go イメージと `.tool-versions` の一致、Web クライアントの型検査・ビルド・依存ライセンス検査）をすべて実行します。初回のみ Go モジュールとツール、`tools/i18n` と `app/` の npm パッケージのダウンロードが必要です。
