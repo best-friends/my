@@ -25,6 +25,9 @@ const (
 	passkeySignInKey = "src/server-pages/passkey-sign-in.ts" //nolint:gosec // G101: a file name, not a credential
 	// assetsDir holds the content-hashed files of the build (Vite's build.assetsDir).
 	assetsDir = "assets"
+	// licensesDir holds the license notices that the build carries: those of the bundled npm packages
+	// (Vite's build.license) and of the bundled data that is no npm package (app/web/vite-plugins/licenses.ts).
+	licensesDir = "licenses"
 	// iconPath is the instance-independent app icon (app/web/public/icon.svg).
 	iconPath = "icon.svg"
 	// serviceWorkerPath is the Service Worker that vite-plugin-pwa builds from app/web/sw/sw.ts (ADR-0028).

@@ -104,12 +104,13 @@ type Router interface {
 const (
 	PathAssets      = "/" + assetsDir + "/"
 	PathWebManifest = "/manifest.webmanifest"
+	PathLicenses    = "/" + licensesDir + "/"
 )
 
 // reservedPrefixes are the paths of the server's other endpoints. The SPA has no routes under
 // them, so a request there that no endpoint serves is the server's 404, never the shell.
 // /uploads is the blob prefix of media as received, which is never served (it may carry EXIF).
-var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads", "/theme", PathRobots}
+var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads", "/theme", "/" + licensesDir, PathRobots}
 
 // Cache-Control values (ADR-0028).
 const (
@@ -401,6 +402,7 @@ func etag(content []byte) string {
 func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathAssets+"{path...}", http.HandlerFunc(h.asset))
 	r.Handle("GET "+PathWebManifest, http.HandlerFunc(h.webManifest))
+	r.Handle("GET "+PathLicenses+"{file}", http.HandlerFunc(h.license))
 	r.Handle("GET "+PathDefaultImage, http.HandlerFunc(h.serveDefaultImage))
 	r.Handle("GET "+PathTheme+"{file}", http.HandlerFunc(h.serveThemeStylesheet))
 	r.Handle("GET "+PathRobots, http.HandlerFunc(h.serveRobots))
@@ -504,6 +506,19 @@ func (h *Handler) asset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.serveFile(w, r, name, cacheImmutable)
+}
+
+// license serves GET /licenses/{file}: a license notice of the build, as plain text whatever its extension
+// (the npm packages' notices are Markdown), so that the browser shows it as it is. Its URL is fixed, so it is
+// revalidated.
+func (h *Handler) license(w http.ResponseWriter, r *http.Request) {
+	name := licensesDir + "/" + r.PathValue("file")
+	if _, ok := h.files[name]; !ok {
+		h.o.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	h.serveFile(w, r, name, cacheRevalidate)
 }
 
 // serveFile serves a file of the build with its ETag, answering conditional requests.
