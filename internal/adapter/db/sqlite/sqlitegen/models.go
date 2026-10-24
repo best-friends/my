@@ -611,7 +611,7 @@ type OauthClient struct {
 	Name             string
 	Website          sql.NullString
 	Scope            string
-	IsFirstParty     int64
+	Registration     string
 	OwnerUserID      sql.NullString
 	CreatedAt        int64
 }

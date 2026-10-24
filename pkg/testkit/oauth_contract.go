@@ -36,7 +36,8 @@ func (e *accountEnv) thirdPartyApp(t *testing.T) identity.OAuthClient {
 	ctx := t.Context()
 	c := identity.OAuthClient{
 		ID: e.ids.NewID(), ClientID: contractAppClientID, SecretHash: appidentity.HashToken(contractAppSecret),
-		Name: "App", Website: "https://app.example/", Scope: identity.Scope("read write"), CreatedAt: e.clock.Now(),
+		Name: "App", Website: "https://app.example/", Scope: identity.Scope("read write"),
+		Registration: identity.ClientRegisteredByUser, CreatedAt: e.clock.Now(),
 	}
 	var stored identity.OAuthClient
 	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
@@ -121,7 +122,7 @@ func oauthRegistersTheWebClient(t *testing.T, e *accountEnv) {
 	if err != nil {
 		t.Fatalf("FindOAuthClient = %v", err)
 	}
-	if !c.FirstParty || !c.Public() || c.Scope != identity.AllScopes() || c.Name != "Web" || c.OwnerUserID != "" {
+	if !c.FirstParty() || !c.Public() || c.Scope != identity.AllScopes() || c.Name != "Web" || c.OwnerUserID != "" {
 		t.Errorf("web client = %+v, want a public first-party client with every scope", c)
 	}
 	if !reflect.DeepEqual(uris, []string{contractWebRedirect}) {
@@ -164,7 +165,7 @@ func oauthValidatesAuthorizationRequests(t *testing.T, e *accountEnv) {
 	if err != nil {
 		t.Fatalf("ValidateAuthorization = %v", err)
 	}
-	if ok.Scope != identity.AllScopes() || ok.State != "xyz" || ok.RedirectURI != contractWebRedirect || !ok.Client.FirstParty {
+	if ok.Scope != identity.AllScopes() || ok.State != "xyz" || ok.RedirectURI != contractWebRedirect || !ok.Client.FirstParty() {
 		t.Errorf("authorization = %+v, want the client's whole scope", ok)
 	}
 	cases := []struct {
@@ -211,7 +212,7 @@ func oauthValidatesAuthorizationRequests(t *testing.T, e *accountEnv) {
 		ResponseType: "code", ClientID: contractAppClientID, RedirectURI: contractAppRedirect, Scope: "write read write",
 		CodeChallenge: identity.S256Challenge(contractCodeVerifier), CodeChallengeMethod: "S256",
 	}
-	if a, err := e.identity.ValidateAuthorization(ctx, app); err != nil || a.Scope != "read write" || a.Client.FirstParty {
+	if a, err := e.identity.ValidateAuthorization(ctx, app); err != nil || a.Scope != "read write" || a.Client.FirstParty() {
 		t.Errorf("ValidateAuthorization(app) = %+v, %v; want the scope \"read write\"", a, err)
 	}
 	app.Scope = "read follow"
@@ -233,7 +234,7 @@ func oauthValidatesAuthorizationRequests(t *testing.T, e *accountEnv) {
 
 	// Tokens refer to their client by its row ID.
 	byID, err := e.h.Identity.FindOAuthClientByID(ctx, ok.Client.ID)
-	if err != nil || byID.ID != ok.Client.ID || !byID.IsFirstParty() {
+	if err != nil || byID.ID != ok.Client.ID || !byID.FirstParty() {
 		t.Errorf("FindOAuthClientByID = %+v, %v; want the web client", byID, err)
 	}
 	if _, err := e.h.Identity.FindOAuthClientByID(ctx, e.ids.NewID()); !errors.Is(err, appidentity.ErrNotFound) {
@@ -361,8 +362,8 @@ func oauthRotatesRefreshTokens(t *testing.T, e *accountEnv) {
 	}
 	e.wantAccess(t, first.AccessToken, false, "the rotated access token")
 	e.wantAccess(t, second.AccessToken, true, "the new access token")
-	if _, revoked, err := e.h.Identity.FindAccessTokenByRefreshHash(ctx, appidentity.HashToken(first.RefreshToken)); err != nil || !revoked {
-		t.Errorf("the rotated token: revoked = %v, %v; want true", revoked, err)
+	if _, state, err := e.h.Identity.FindAccessTokenByRefreshHash(ctx, appidentity.HashToken(first.RefreshToken)); err != nil || !state.Revoked {
+		t.Errorf("the rotated token: revoked = %v, %v; want true", state.Revoked, err)
 	}
 
 	third, err := e.identity.RefreshWebClient(ctx, second.RefreshToken)

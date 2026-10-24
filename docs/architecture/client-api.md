@@ -206,7 +206,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
   広いスコープ（`write`）経由でも一次でないクライアントのトークンには許しません。
   アカウントの保安の操作（パスワード・二要素認証・パスキー・アカウントの削除）は spec の操作に `x-first-party-only: true` を書き、スコープにかかわらず一次のクライアントのトークンだけを受けます。
   それ以外は 403 `/api/v1/problems/first-party-only` です。
-  クライアントが一次かどうかの判定は `identity.OAuthClient.IsFirstParty` の 1 か所です。
+  クライアントが一次かどうかの判定は `identity.OAuthClient.FirstParty` の 1 か所です。
 - 操作には細かいスコープを書きます（`verifyAccountCredentials` は `read:accounts`）。クライアントは広いスコープでも細かいスコープでも要求できます。
 - スコープを増やすときは、`internal/domain/identity` の定数と `knownScopes`（ソート済み）、spec の `scopes`、同意画面の文言（`server:auth.authorize.scope.*` と `authpages` の `scopeDescriptions`）を同時に変えます。
 

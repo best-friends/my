@@ -59,7 +59,8 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // and stop working when the password changes, limited requests, and the end of the other
 // sessions and grants while passkeys and TOTP stay), the OAuth 2.0
 // authorization server (registering the web client, exact redirect URIs, PKCE S256 only,
-// one-time codes, refresh token rotation that revokes the whole family on reuse, revocation),
+// one-time codes, refresh token rotation that revokes the whole family on reuse, revocation,
+// disabled and deleted clients refused with their token families revoked),
 // and the property that the account module's synchronous projections equal a rebuild from their events.
 func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
@@ -121,6 +122,7 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"ExpiresRefreshTokens", oauthRefreshTokensExpire},
 		{"RefreshesThirdPartyTokens", oauthRefreshesThirdPartyTokens},
 		{"RevokesTokens", oauthRevokesTokens},
+		{"DisablesAndDeletesClients", oauthDisablesAndDeletesClients},
 		{"EndsTheBrowserSessionOnWebSignOut", oauthWebSignOutEndsTheBrowserSession},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},
 		{"ReadsAnAccountInATransaction", accountReadsInTransaction},

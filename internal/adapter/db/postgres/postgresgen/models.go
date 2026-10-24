@@ -613,7 +613,7 @@ type OauthClient struct {
 	Name             string
 	Website          *string
 	Scope            string
-	IsFirstParty     bool
+	Registration     string
 	OwnerUserID      *string
 	CreatedAt        time.Time
 }

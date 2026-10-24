@@ -142,12 +142,15 @@
 | `session_origins` | リソース（子） | `session_id`（PK）, `user_id`, `ip`（NULL 可）, `user_agent`（`string(512)`、NULL 可）, `created_at` | インデックス `(ip)`（同じ IP のアカウントの検索、FR-714）, `(user_id, created_at DESC)`（アカウントの最近のログイン元、FR-714）, `(created_at)`（保持期間による消去）。保持期間（[ADR-0038](../../../adr/0038-moderation-personal-data-retention.md)、既定 180 日）を過ぎた行を消去ジョブが消す |
 | `session_revocations` | イベント | `session_id`（PK）, `reason`（`enum(logout, replaced, password_changed, moderation, expired_cleanup, account_deleted)`）, `revoked_at` | 有効なセッション = 失効イベントが無く `expires_at` を過ぎていないもの。`replaced` は同じブラウザでのログインし直し |
 | `session_activity` | 現在値 | `session_id`（PK）, `last_seen_at` | ログイン時に作り、以後の更新は 1 時間に 1 回に間引く |
-| `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `is_first_party`, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)` |
+| `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `registration`（`enum(first_party, user, metadata_document, dynamic)`）, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)`。`registration` は登録の経路で、変わらない |
+| `oauth_client_disablements` | イベント | `id`, `client_id`, `disabled_by_user_id`（NULL 可 = CLI）, `disabled_at` | インデックス `(client_id)`。取り消しのない行があればクライアントは無効 |
+| `oauth_client_disablement_lifts` | イベント | `disablement_id`（PK）, `lifted_by_user_id`（NULL 可 = CLI）, `lifted_at` | 無効化の取り消し |
+| `oauth_client_deletions` | イベント | `client_id`（PK）, `reason`（`enum(owner, unused)`）, `deleted_by_user_id`（NULL 可 = 使われないクライアントの自動の削除）, `deleted_at` | 削除したクライアントは二度と使えない |
 | `oauth_client_redirect_uris` | 現在値 | `client_id`, `redirect_uri` | PK `(client_id, redirect_uri)`。完全一致で照合する |
 | `oauth_authorization_codes` | リソース | `code_hash`（PK）, `client_id`, `user_id`, `redirect_uri`, `scope`, `code_challenge`, `session_id`（NULL 可 = セッションの外で発行）, `issued_at`, `expires_at` | `session_id` は認可した画面のセッション |
 | `oauth_authorization_code_redemptions` | イベント | `code_hash`（PK）, `token_id`, `redeemed_at` | 一意 `(token_id)`。`token_id` は交換で発行した系列の最初のトークン |
-| `oauth_access_tokens` | リソース | `id`, `family_id`, `client_id`, `user_id`, `access_token_hash`, `refresh_token_hash`（NULL 可）, `scope`, `rotated_from_token_id`（NULL 可）, `issued_at`, `expires_at`, `refresh_expires_at`（NULL 可） | 一意 `(access_token_hash)`, `(refresh_token_hash)`。インデックス `(family_id)`, `(user_id)`（処分による失効）。`refresh_token_hash` と `refresh_expires_at` は同時に NULL |
-| `oauth_token_revocations` | イベント | `token_id`（PK）, `reason`（`enum(user, rotation, refresh_reuse, code_reuse, password_changed, moderation, account_deleted)`）, `revoked_at` | |
+| `oauth_access_tokens` | リソース | `id`, `family_id`, `client_id`, `user_id`, `access_token_hash`, `refresh_token_hash`（NULL 可）, `scope`, `rotated_from_token_id`（NULL 可）, `issued_at`, `expires_at`, `refresh_expires_at`（NULL 可） | 一意 `(access_token_hash)`, `(refresh_token_hash)`。インデックス `(family_id)`, `(user_id)`（処分による失効）, `(client_id)`（クライアントの無効化・削除による失効）。`refresh_token_hash` と `refresh_expires_at` は同時に NULL |
+| `oauth_token_revocations` | イベント | `token_id`（PK）, `reason`（`enum(user, rotation, refresh_reuse, code_reuse, password_changed, moderation, account_deleted, client_disabled, client_deleted)`）, `revoked_at` | |
 
 - セッションは、サーバーが返す画面（ログイン・登録・認可同意）の Cookie `__Host-my_session` です（ADR-0019 §4、ADR-0030）。
   ログインのたびに新しいトークンを発行し、ブラウザが持っていた古いセッションは `replaced` で失効させます。
@@ -162,7 +165,13 @@
   1 ページを埋めるのに読むのは 400 アカウントまでで、埋まらなければ読んだ位置をカーソルにして返します（短い、または空のページにも続きがある）。
 - `scope` は RFC 6749 の scope 文字列（空白区切り・ソート済みの正規形）です。照合は文字列全体で行い、個々のスコープの検索には使わないため、1 カラムで持ちます。
 - `oauth_clients` 以外のテーブルの `client_id` は `oauth_clients.id` を指します。クライアントが送る公開の識別子は `oauth_clients.client_id` です。
-- ファーストパーティの Web クライアント（`client_id` は `my-web`）は起動時に冪等に登録します。リダイレクト URI は設定 `web_origin` から導くので、`oauth_client_redirect_uris` は起動のたびに設定値へ置き換える【現在値】です。
+- 登録の経路（[ADR-0090](../../../adr/0090-third-party-oauth-apps.md) §1）は `first_party`（サーバー自身のクライアント。同意の画面を出さない）・`user`（利用者による登録、`owner_user_id` が登録者）・
+  `metadata_document`（Client ID Metadata Document）・`dynamic`（動的クライアント登録、RFC 7591）です。一次のクライアントかどうかはこの経路だけで決めます（`identity.OAuthClient.FirstParty`）。
+- クライアントの無効化・無効化の取り消し・削除は、`oauth_clients` に状態のカラムを足さず、イベントとして記録します（ADR-0090 §1）。
+  - 無効なクライアント = 取り消しのない `oauth_client_disablements` の行があるもの、削除済みのクライアント = `oauth_client_deletions` の行があるものです。どちらも認可要求・トークンの交換と更新・トークンの失効の要求を未知のクライアントと同じに断り、API の認証ではそのクライアントのアクセストークンを受けません。
+  - 無効化・削除は、同じトランザクションでそのクライアントの全トークン系列を `client_disabled` / `client_deleted` で失効させます。無効化を取り消しても、失効したトークンは戻りません（利用者が認可しなおす）。
+  - 無効化は無効でないときだけ行を足し、取り消しは取り消しのない無効化すべてに行を足し、削除は 1 度だけ記録するので、どれも繰り返して安全です。一次のクライアントは無効化・削除しません。
+- ファーストパーティの Web クライアント（`client_id` は `my-web`、経路は `first_party`）は起動時に冪等に登録します。リダイレクト URI は設定 `web_origin` から導くので、`oauth_client_redirect_uris` は起動のたびに設定値へ置き換える【現在値】です。
 - 認可コード・アクセストークン・リフレッシュトークンは、DB には SHA-256 ハッシュだけを保存します（ADR-0019 §4）。認可コードの 1 回性は `oauth_authorization_code_redemptions` の PK で保証します。
 - `oauth_access_tokens` の 1 行は 1 回の発行（アクセストークンと、あればリフレッシュトークン）です。`expires_at` はアクセストークンの、`refresh_expires_at` はリフレッシュトークンの期限です。
   - リフレッシュのたびに同じ系列（`family_id` = 系列の最初の行の `id`）に新しい行を作り、古い行を `rotation` で失効させます。失効イベントは行のアクセストークンとリフレッシュトークンの両方を無効にします。

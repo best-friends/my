@@ -118,6 +118,18 @@ type OAuthRepository interface {
 	// RevokeOtherTokensOfUser is RevokeTokensOfUser for the tokens outside the family
 	// keepFamilyID, which keeps working.
 	RevokeOtherTokensOfUser(ctx context.Context, tx uow.Tx, userID, keepFamilyID string, reason identity.TokenRevocationReason, at time.Time) error
+	// RevokeTokensOfClient revokes every token of a client whose access or refresh token has
+	// not expired at at and that has no revocation yet.
+	RevokeTokensOfClient(ctx context.Context, tx uow.Tx, clientID string, reason identity.TokenRevocationReason, at time.Time) error
+	// InsertOAuthClientDisablement records d and reports whether it did; false means the client
+	// was disabled already.
+	InsertOAuthClientDisablement(ctx context.Context, tx uow.Tx, d identity.OAuthClientDisablement) (bool, error)
+	// LiftOAuthClientDisablements lifts every disablement of a client that has no lift yet and
+	// reports whether there was one. byUserID is "" for the CLI.
+	LiftOAuthClientDisablements(ctx context.Context, tx uow.Tx, clientID, byUserID string, at time.Time) (bool, error)
+	// InsertOAuthClientDeletion records d and reports whether it did; false means the client
+	// was deleted before.
+	InsertOAuthClientDeletion(ctx context.Context, tx uow.Tx, d identity.OAuthClientDeletion) (bool, error)
 	// TokenFamilyActive reports whether a token of the family has no revocation and an access
 	// or refresh token that has not expired at now.
 	TokenFamilyActive(ctx context.Context, familyID string, now time.Time) (bool, error)
@@ -128,16 +140,18 @@ type OAuthRepository interface {
 	// FindOAuthClient returns the client with the public client_id and its redirect URIs,
 	// sorted.
 	FindOAuthClient(ctx context.Context, clientID string) (identity.OAuthClient, []string, error)
-	// FindOAuthClientByID returns the client with the row ID that tokens refer to, failing
-	// with ErrNotFound when there is none.
-	FindOAuthClientByID(ctx context.Context, id string) (identity.OAuthClient, error)
+	// FindOAuthClientByID returns the client with the ID.
+	FindOAuthClientByID(ctx context.Context, clientID string) (identity.OAuthClient, error)
+	// FindOAuthClientState returns what the disablements and the deletion of a client say about
+	// it; ErrNotFound when there is no such client.
+	FindOAuthClientState(ctx context.Context, clientID string) (identity.OAuthClientState, error)
 	FindAuthorizationCode(ctx context.Context, codeHash []byte) (identity.AuthorizationCode, error)
 	FindAuthorizationCodeRedemption(ctx context.Context, codeHash []byte) (identity.AuthorizationCodeRedemption, error)
 	// FindAccessTokenByAccessHash and FindAccessTokenByRefreshHash return the token whose
-	// access or refresh token hashes to hash, and whether it has a revocation. Expiry is the
-	// caller's to check.
-	FindAccessTokenByAccessHash(ctx context.Context, hash []byte) (identity.AccessToken, bool, error)
-	FindAccessTokenByRefreshHash(ctx context.Context, hash []byte) (identity.AccessToken, bool, error)
+	// access or refresh token hashes to hash, with whether it has a revocation and the state of
+	// its client. Expiry is the caller's to check.
+	FindAccessTokenByAccessHash(ctx context.Context, hash []byte) (identity.AccessToken, identity.TokenState, error)
+	FindAccessTokenByRefreshHash(ctx context.Context, hash []byte) (identity.AccessToken, identity.TokenState, error)
 }
 
 // WebClientID returns the client_id of the first-party web client; "" when there is none.
@@ -152,7 +166,7 @@ func (s *Service) EnsureWebClient(ctx context.Context) error {
 	}
 	c := identity.OAuthClient{
 		ID: s.d.IDs.NewID(), ClientID: w.ClientID, Name: w.Name, Scope: identity.AllScopes(),
-		FirstParty: true, CreatedAt: s.d.Clock.Now(),
+		Registration: identity.ClientRegisteredFirstParty, CreatedAt: s.d.Clock.Now(),
 	}
 	uris := slices.Clone(w.RedirectURIs)
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
@@ -169,9 +183,10 @@ func (s *Service) EnsureWebClient(ctx context.Context) error {
 	return nil
 }
 
-// client returns the client with the public client_id and its redirect URIs. It registers the
-// web client first when the start-up registration has not succeeded yet (for example because
-// the schema was applied after the server started).
+// client returns the client with the public client_id and its redirect URIs. A disabled or
+// deleted client is ErrNotFound, as an unknown one: it may not be authorized, get tokens, or
+// revoke them (ADR-0090 §1). It registers the web client first when the start-up registration
+// has not succeeded yet (for example because the schema was applied after the server started).
 func (s *Service) client(ctx context.Context, clientID string) (identity.OAuthClient, []string, error) {
 	if clientID == "" {
 		return identity.OAuthClient{}, nil, ErrNotFound
@@ -181,7 +196,89 @@ func (s *Service) client(ctx context.Context, clientID string) (identity.OAuthCl
 			return identity.OAuthClient{}, nil, err
 		}
 	}
-	return s.d.Repository.FindOAuthClient(ctx, clientID)
+	c, uris, err := s.d.Repository.FindOAuthClient(ctx, clientID)
+	if err != nil {
+		return identity.OAuthClient{}, nil, err
+	}
+	state, err := s.d.Repository.FindOAuthClientState(ctx, c.ID)
+	if err != nil {
+		return identity.OAuthClient{}, nil, err
+	}
+	if !state.Usable() {
+		return identity.OAuthClient{}, nil, ErrNotFound
+	}
+	return c, uris, nil
+}
+
+// ErrFirstPartyClient refuses to disable or delete one of the server's own clients, which the
+// server needs to work.
+var ErrFirstPartyClient = errors.New("identity: a first-party OAuth client cannot be disabled or deleted")
+
+// clientByID returns the client with the ID for disabling, enabling, or deleting it: ErrNotFound
+// when there is none, ErrFirstPartyClient for one of the server's own clients.
+func (s *Service) clientByID(ctx context.Context, clientID string) (identity.OAuthClient, error) {
+	c, err := s.d.Repository.FindOAuthClientByID(ctx, clientID)
+	if err != nil {
+		return identity.OAuthClient{}, err
+	}
+	if c.FirstParty() {
+		return identity.OAuthClient{}, ErrFirstPartyClient
+	}
+	return c, nil
+}
+
+// DisableOAuthClient records that the client with the ID (not its public client_id) is
+// disabled and revokes every token family of it with client_disabled (ADR-0090 §1): until the
+// disablement is lifted, the client cannot be authorized, exchange or refresh tokens, or use
+// its access tokens. byUserID is the administrator, "" for the CLI. Disabling a disabled
+// client records nothing new but revokes again, so the call is safe to repeat.
+func (s *Service) DisableOAuthClient(ctx context.Context, clientID, byUserID string) error {
+	c, err := s.clientByID(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	now := s.d.Clock.Now()
+	d := identity.OAuthClientDisablement{ID: s.d.IDs.NewID(), ClientID: c.ID, DisabledByUserID: byUserID, DisabledAt: now}
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if _, err := s.d.Repository.InsertOAuthClientDisablement(ctx, tx, d); err != nil {
+			return err
+		}
+		return s.d.Repository.RevokeTokensOfClient(ctx, tx, c.ID, identity.TokenRevokedClientDisabled, now)
+	})
+}
+
+// EnableOAuthClient lifts the disablements of the client with the ID; byUserID is the
+// administrator, "" for the CLI. The tokens that the disablement revoked stay revoked: the
+// users authorize the client again. Enabling a client that is not disabled does nothing.
+func (s *Service) EnableOAuthClient(ctx context.Context, clientID, byUserID string) error {
+	c, err := s.clientByID(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	now := s.d.Clock.Now()
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := s.d.Repository.LiftOAuthClientDisablements(ctx, tx, c.ID, byUserID, now)
+		return err
+	})
+}
+
+// DeleteOAuthClient records that the client with the ID is deleted for the reason and revokes
+// every token family of it with client_deleted (ADR-0090 §1); the client never works again.
+// byUserID is the user who deleted it, "" for the clean-up. The call is safe to repeat: the
+// first deletion keeps its reason.
+func (s *Service) DeleteOAuthClient(ctx context.Context, clientID string, reason identity.OAuthClientDeletionReason, byUserID string) error {
+	c, err := s.clientByID(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	now := s.d.Clock.Now()
+	d := identity.OAuthClientDeletion{ClientID: c.ID, Reason: reason, DeletedByUserID: byUserID, DeletedAt: now}
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if _, err := s.d.Repository.InsertOAuthClientDeletion(ctx, tx, d); err != nil {
+			return err
+		}
+		return s.d.Repository.RevokeTokensOfClient(ctx, tx, c.ID, identity.TokenRevokedClientDeleted, now)
+	})
 }
 
 // AuthorizationRequest is the query of an authorization request (RFC 6749 §4.1.1, RFC 7636 §4.3).
@@ -258,7 +355,7 @@ func (s *Service) ValidateAuthorization(ctx context.Context, req AuthorizationRe
 	if !scope.Within(client.Scope) {
 		return a, oauthError(OAuthInvalidScope, "the client may not request this scope")
 	}
-	if scope.HasFirstPartyOnly() && !client.IsFirstParty() {
+	if scope.HasFirstPartyOnly() && !client.FirstParty() {
 		return a, oauthError(OAuthInvalidScope, "the scope is for first-party clients only")
 	}
 	a.Scope = scope
@@ -425,17 +522,17 @@ func (s *Service) RefreshWebClient(ctx context.Context, refreshToken string) (Is
 }
 
 func (s *Service) rotate(ctx context.Context, client identity.OAuthClient, refreshToken, scope string) (IssuedTokens, error) {
-	old, revoked, err := s.d.Repository.FindAccessTokenByRefreshHash(ctx, HashToken(refreshToken))
+	old, state, err := s.d.Repository.FindAccessTokenByRefreshHash(ctx, HashToken(refreshToken))
 	if errors.Is(err, ErrNotFound) {
 		return IssuedTokens{}, errInvalidGrant
 	}
 	if err != nil {
 		return IssuedTokens{}, err
 	}
-	if old.ClientID != client.ID {
+	if old.ClientID != client.ID || !state.Client.Usable() {
 		return IssuedTokens{}, errInvalidGrant
 	}
-	if revoked {
+	if state.Revoked {
 		return IssuedTokens{}, s.revokeFamily(ctx, old.FamilyID, identity.TokenRevokedRefreshReuse)
 	}
 	now := s.d.Clock.Now()
@@ -531,7 +628,7 @@ func (s *Service) RevokeToken(ctx context.Context, in RevokeRequest) error {
 		return oauthError(OAuthInvalidRequest, "token is required")
 	}
 	hash := HashToken(in.Token)
-	finders := []func(context.Context, []byte) (identity.AccessToken, bool, error){
+	finders := []func(context.Context, []byte) (identity.AccessToken, identity.TokenState, error){
 		s.d.Repository.FindAccessTokenByAccessHash, s.d.Repository.FindAccessTokenByRefreshHash,
 	}
 	if in.TokenTypeHint == "refresh_token" {
@@ -572,19 +669,19 @@ func (s *Service) TokenFamilyActive(ctx context.Context, familyID string) (bool,
 
 // AuthenticateAccessToken returns the token of a bearer access token, for the client API's
 // authentication. It fails with ErrInvalidAccessToken when the token is unknown, revoked, or
-// expired.
+// expired, or its client is disabled or deleted.
 func (s *Service) AuthenticateAccessToken(ctx context.Context, accessToken string) (identity.AccessToken, error) {
 	if accessToken == "" {
 		return identity.AccessToken{}, ErrInvalidAccessToken
 	}
-	tok, revoked, err := s.d.Repository.FindAccessTokenByAccessHash(ctx, HashToken(accessToken))
+	tok, state, err := s.d.Repository.FindAccessTokenByAccessHash(ctx, HashToken(accessToken))
 	if errors.Is(err, ErrNotFound) {
 		return identity.AccessToken{}, ErrInvalidAccessToken
 	}
 	if err != nil {
 		return identity.AccessToken{}, err
 	}
-	if revoked || tok.AccessExpired(s.d.Clock.Now()) {
+	if !state.Usable() || tok.AccessExpired(s.d.Clock.Now()) {
 		return identity.AccessToken{}, ErrInvalidAccessToken
 	}
 	return tok, nil

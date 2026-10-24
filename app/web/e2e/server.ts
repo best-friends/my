@@ -39,7 +39,7 @@ const seed = new DatabaseSync(database);
 const id = randomUUID();
 seed
   .prepare(
-    "INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, website, scope, is_first_party, owner_user_id, created_at) VALUES (?, ?, NULL, ?, NULL, 'read', 0, NULL, ?)",
+    "INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at) VALUES (?, ?, NULL, ?, NULL, 'read', 'dynamic', NULL, ?)",
   )
   .run(id, thirdPartyClient.clientID, thirdPartyClient.name, Date.now());
 seed

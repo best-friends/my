@@ -240,7 +240,8 @@ CREATE TABLE session_activity (
 -- Every client_id column except oauth_clients.client_id refers to oauth_clients.id.
 -- ---------------------------------------------------------------------------------------------
 
--- Resource: a registered client. client_secret_hash is NULL for public clients.
+-- Resource: a registered client. client_secret_hash is NULL for public clients. registration is the
+-- route by which the client was registered (ADR-0090 §1), fixed for its life.
 CREATE TABLE oauth_clients (
   id TEXT NOT NULL PRIMARY KEY,
   client_id TEXT NOT NULL,
@@ -248,11 +249,38 @@ CREATE TABLE oauth_clients (
   name TEXT NOT NULL,
   website TEXT,
   scope TEXT NOT NULL,
-  is_first_party INTEGER NOT NULL CHECK (is_first_party IN (0, 1)),
+  registration TEXT NOT NULL CHECK (registration IN ('first_party', 'user', 'metadata_document', 'dynamic')),
   owner_user_id TEXT,
   created_at INTEGER NOT NULL
 ) STRICT;
 CREATE UNIQUE INDEX oauth_clients_client_id ON oauth_clients (client_id);
+
+-- Event: a client was disabled (ADR-0090 §1, an administrator's decision). disabled_by_user_id is
+-- NULL for the CLI. A client is disabled while one of its disablements has no lift.
+CREATE TABLE oauth_client_disablements (
+  id TEXT NOT NULL PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  disabled_by_user_id TEXT,
+  disabled_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX oauth_client_disablements_client_id ON oauth_client_disablements (client_id);
+
+-- Event: a disablement was lifted, at most once. lifted_by_user_id is NULL for the CLI.
+CREATE TABLE oauth_client_disablement_lifts (
+  disablement_id TEXT NOT NULL PRIMARY KEY,
+  lifted_by_user_id TEXT,
+  lifted_at INTEGER NOT NULL
+) STRICT;
+
+-- Event: a client was deleted, at most once; it never works again. reason is who deleted it: the
+-- user who registered it (owner) or the clean-up of unused dynamically registered clients
+-- (unused). deleted_by_user_id is NULL for the clean-up.
+CREATE TABLE oauth_client_deletions (
+  client_id TEXT NOT NULL PRIMARY KEY,
+  reason TEXT NOT NULL CHECK (reason IN ('owner', 'unused')),
+  deleted_by_user_id TEXT,
+  deleted_at INTEGER NOT NULL
+) STRICT;
 
 -- Current value: the redirect URIs a client may use, matched exactly.
 CREATE TABLE oauth_client_redirect_uris (
@@ -304,11 +332,12 @@ CREATE UNIQUE INDEX oauth_access_tokens_access_token_hash ON oauth_access_tokens
 CREATE UNIQUE INDEX oauth_access_tokens_refresh_token_hash ON oauth_access_tokens (refresh_token_hash);
 CREATE INDEX oauth_access_tokens_family_id ON oauth_access_tokens (family_id);
 CREATE INDEX oauth_access_tokens_user_id ON oauth_access_tokens (user_id);
+CREATE INDEX oauth_access_tokens_client_id ON oauth_access_tokens (client_id);
 
 -- Event: a token row (its access and refresh token) stopped working.
 CREATE TABLE oauth_token_revocations (
   token_id TEXT NOT NULL PRIMARY KEY,
-  reason TEXT NOT NULL CHECK (reason IN ('user', 'rotation', 'refresh_reuse', 'code_reuse', 'password_changed', 'moderation', 'account_deleted')),
+  reason TEXT NOT NULL CHECK (reason IN ('user', 'rotation', 'refresh_reuse', 'code_reuse', 'password_changed', 'moderation', 'account_deleted', 'client_disabled', 'client_deleted')),
   revoked_at INTEGER NOT NULL
 ) STRICT;
 

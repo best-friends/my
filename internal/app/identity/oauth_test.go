@@ -23,6 +23,10 @@ func (r clientRepo) FindOAuthClient(context.Context, string) (domain.OAuthClient
 	return r.client, r.uris, nil
 }
 
+func (r clientRepo) FindOAuthClientState(context.Context, string) (domain.OAuthClientState, error) {
+	return domain.OAuthClientState{}, nil
+}
+
 func TestValidateAuthorizationRedirectURI(t *testing.T) {
 	verifier := strings.Repeat("v", 43)
 	svc := identity.NewService(identity.Deps{Repository: clientRepo{

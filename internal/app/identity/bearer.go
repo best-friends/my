@@ -58,7 +58,7 @@ func (s *Service) AuthenticateBearer(ctx context.Context, accessToken string) (B
 	}
 	return Bearer{
 		TokenID: tok.ID, FamilyID: tok.FamilyID, ClientID: tok.ClientID, UserID: tok.UserID,
-		AccountID: access.AccountID, Scope: tok.Scope, FirstParty: client.IsFirstParty(), ExpiresAt: tok.ExpiresAt,
+		AccountID: access.AccountID, Scope: tok.Scope, FirstParty: client.FirstParty(), ExpiresAt: tok.ExpiresAt,
 	}, nil
 }
 

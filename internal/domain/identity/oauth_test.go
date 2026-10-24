@@ -88,7 +88,4 @@ func TestFirstPartyOnlyScopes(t *testing.T) {
 	if !identity.Scope("read admin:read").HasFirstPartyOnly() {
 		t.Error("read admin:read names a first-party-only scope")
 	}
-	if (identity.OAuthClient{}).IsFirstParty() || !(identity.OAuthClient{FirstParty: true}).IsFirstParty() {
-		t.Error("IsFirstParty does not follow FirstParty")
-	}
 }
