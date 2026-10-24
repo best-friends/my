@@ -153,6 +153,9 @@ jobs:
         env:
           SHARD: ${{ matrix.shard }}/${{ needs.build.outputs.total }}
           WORKERS: ${{ inputs.workers }}
+          # The job runs as root, but the runner sets HOME to /github/home, owned by another user, and Firefox
+          # refuses to start then.
+          HOME: /root
         run: bun run playwright test --shard="$SHARD" --workers="$WORKERS" --reporter=github,blob
       - name: Upload the blob report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
