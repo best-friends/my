@@ -11,6 +11,7 @@ import (
 	"github.com/mycroblog/my/internal/app/kernel"
 	"github.com/mycroblog/my/internal/interface/authpages"
 	"github.com/mycroblog/my/internal/interface/clientapi"
+	"github.com/mycroblog/my/internal/interface/oauth"
 	"github.com/mycroblog/my/internal/interface/web"
 	"github.com/mycroblog/my/internal/platform/config"
 )
@@ -31,9 +32,9 @@ func clientLimits(caps map[string]int64) func(string) (kernel.Limit, bool) {
 // messages the admin API's representation (ADR-0060). It comes after every module it serves.
 func (a *App) setUpClientAPI(cfg *config.Config, version string) {
 	api := clientapi.New(clientapi.Options{
-		Host: cfg.Host, Origin: cfg.ServerOrigin(), WebOrigin: cfg.WebOrigin, SoftwareVersion: version, SourceURL: cfg.SourceURL, Instance: a.Instance,
+		Host: cfg.Host, Origin: cfg.ServerOrigin(), ResourceMetadataURL: cfg.ServerOrigin() + oauth.PathProtectedResourceMetadata, WebOrigin: cfg.WebOrigin, SoftwareVersion: version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Badges: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Passkeys: a.Identity, OAuthApps: a.Identity, Media: a.Media,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Badges: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Passkeys: a.Identity, AuthorizedApps: a.Identity, OAuthApps: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph, InstanceThumbnail: a.instanceThumbnail,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts, AccountSearch: a.AccountSearch, TagSearch: a.TagSearch,
 		Notifications: a.Notifications, Push: a.Push,
