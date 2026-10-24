@@ -108,7 +108,7 @@ async function serveApi(page: Page): Promise<Posted[]> {
     }
     if (path === "/api/v1/preferences") {
       // The user's locale is the project's: the app displays itself in the signed-in user's locale.
-      return json(route, { locale: test.info().project.use.locale ?? "en", time_zone: "UTC", default_visibility: "public", default_post_language: "en", require_media_description: false, timeline_languages: [] });
+      return json(route, { locale: test.info().project.use.locale ?? "en", time_zone: "UTC", time_zone_chosen: true, default_visibility: "public", default_quote_policy: "public", default_post_language: "en", require_media_description: false, email_moderator_notifications: false, timeline_auto_insert: true, timeline_languages: [] });
     }
     if (path === "/api/v1/statuses" && request.method() === "POST") {
       const body = request.postDataJSON() as Record<string, unknown>;
