@@ -576,6 +576,67 @@ func (q *Queries) ListOAuthClientRedirectURIs(ctx context.Context, clientID stri
 	return items, nil
 }
 
+const listUnusedDynamicOAuthClients = `-- name: ListUnusedDynamicOAuthClients :many
+SELECT c.id FROM oauth_clients c
+WHERE c.registration = 'dynamic'
+  AND NOT EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = c.id)
+  AND (
+    (c.created_at < ?1 AND NOT EXISTS (
+      SELECT 1 FROM oauth_authorization_codes a
+      JOIN oauth_authorization_code_redemptions r ON r.code_hash = a.code_hash
+      WHERE a.client_id = c.id))
+    OR
+    (c.created_at < ?2 AND NOT EXISTS (
+      SELECT 1 FROM oauth_access_tokens t
+      WHERE t.client_id = c.id
+        AND (t.issued_at >= ?2
+          OR ((t.expires_at > ?3 OR t.refresh_expires_at > ?3)
+            AND NOT EXISTS (SELECT 1 FROM oauth_token_revocations v WHERE v.token_id = t.id)))))
+  )
+ORDER BY c.created_at, c.id
+LIMIT ?4
+`
+
+type ListUnusedDynamicOAuthClientsParams struct {
+	UnredeemedBefore int64
+	IdleBefore       int64
+	Now              int64
+	BatchLimit       int64
+}
+
+// ListUnusedDynamicOAuthClients returns the IDs of the dynamically registered clients that have no
+// deletion and are unused (ADR-0090 section 1), oldest first: no authorization code was exchanged
+// and the client was registered before unredeemed_before, or it has no token that was issued after
+// idle_before or that is still usable at now (until the last use of a token family is recorded,
+// the issue time of its newest token stands for it).
+func (q *Queries) ListUnusedDynamicOAuthClients(ctx context.Context, arg ListUnusedDynamicOAuthClientsParams) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listUnusedDynamicOAuthClients,
+		arg.UnredeemedBefore,
+		arg.IdleBefore,
+		arg.Now,
+		arg.BatchLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const oAuthClientHostDenied = `-- name: OAuthClientHostDenied :one
 SELECT EXISTS (
   SELECT 1 FROM oauth_client_host_denials d

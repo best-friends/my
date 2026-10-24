@@ -53,6 +53,14 @@ func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error 
 			s, err := a.Instance.Settings(ctx)
 			return s.IndexableDefault(), err
 		},
+		// OAuth clients register themselves at POST /oauth/register unless the administrator
+		// turned it off; the clean-up deletes the ones that are not used (ADR-0090 §1).
+		DynamicClientRegistration: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.DynamicClientRegistration(), err
+		},
+		DynamicClientUnredeemedTTL: cfg.DynamicClientUnredeemedTTL,
+		DynamicClientIdleTTL:       cfg.DynamicClientIdleTTL,
 		// Users register OAuth apps while the instance allows it (ADR-0090 §1).
 		UserAppRegistration: func(ctx context.Context) (bool, error) {
 			s, err := a.Instance.Settings(ctx)
@@ -69,6 +77,8 @@ func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error 
 		BaseURL:       cfg.ServerOrigin(),
 		InstanceName:  a.instanceName,
 	})
+	// The dynamically registered clients that nobody uses are deleted (ADR-0090 §1).
+	a.Identity.RegisterClientJobs(a.Handlers, a.Scheduler)
 	a.AccountAdmin = identity.NewAccountAdmin(identity.AccountAdminDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Accounts: a.Accounts, Restrictions: a.AccountPolicy,
 		Clock: a.Clock, IDs: a.IDs,

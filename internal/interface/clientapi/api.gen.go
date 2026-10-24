@@ -1754,6 +1754,7 @@ const (
 	InstanceSettingKeyDefaultLocale                    InstanceSettingKey = "default_locale"
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
+	InstanceSettingKeyDynamicClientRegistration        InstanceSettingKey = "dynamic_client_registration"
 	InstanceSettingKeyFederatedTimelineAccess          InstanceSettingKey = "federated_timeline_access"
 	InstanceSettingKeyFederationMode                   InstanceSettingKey = "federation_mode"
 	InstanceSettingKeyFinanceViewerIncome              InstanceSettingKey = "finance_viewer_income"
@@ -1801,6 +1802,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyDomainActionsRationaleVisibility:
 		return true
 	case InstanceSettingKeyDomainActionsVisibility:
+		return true
+	case InstanceSettingKeyDynamicClientRegistration:
 		return true
 	case InstanceSettingKeyFederatedTimelineAccess:
 		return true

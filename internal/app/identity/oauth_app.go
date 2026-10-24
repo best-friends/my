@@ -4,8 +4,6 @@ package identity
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -315,13 +313,6 @@ func (s *Service) ownerCanUseApps(ctx context.Context, ownerUserID string) (bool
 		return false, err
 	}
 	return access.Allowed() && access.AccountID != "" && access.AccountActive, nil
-}
-
-// newClientID returns a new public client_id: the base64url of 16 random bytes.
-func newClientID() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b) // crypto/rand.Read never returns an error
-	return base64.RawURLEncoding.EncodeToString(b)
 }
 
 // revokeTokensOfOwnedClients revokes the tokens of every client the user registered, when the

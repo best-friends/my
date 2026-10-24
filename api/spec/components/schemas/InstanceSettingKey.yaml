@@ -38,4 +38,5 @@ enum:
   - income_visibility
   - federation_mode
   - user_app_registration
+  - dynamic_client_registration
   - oauth_metadata_document_clients
