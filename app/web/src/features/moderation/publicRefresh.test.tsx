@@ -12,7 +12,10 @@ import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { adminAccountFixture, newAccountAction, newDomainAction, registrationFixture, reportFixture } from "./test/handlers";
 
-/** How long the server takes to answer a list, in ms. */
+/**
+ * How long the server takes to answer a list, in ms. The waits keep the setup's asyncUtilTimeout
+ * (web-client/README.md T7): a loaded machine stretches this latency well beyond any multiple of it.
+ */
 const latency = 300;
 
 beforeEach(() => {
@@ -39,14 +42,14 @@ describe("a suspension of an account", () => {
       }),
     );
     const { user, router } = await renderApp({ path: "/local" });
-    expect(await within(await screen.findByRole("feed", { name: "Local timeline" }, { timeout: latency * 5 })).findByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
+    expect(await within(await screen.findByRole("feed", { name: "Local timeline" })).findByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
 
     await router.navigate({ to: "/moderation/accounts/$id", params: { id: otherAccountFixture.id } });
     const form = await screen.findByRole("region", { name: "Take action" });
     await user.click(within(form).getByRole("radio", { name: "Suspend" }));
     await user.click(within(form).getByRole("button", { name: "Take action" }));
     // The action is taken once the lists it changes have been fetched again.
-    expect(await within(form).findByText("Action taken (Suspend).", {}, { timeout: latency * 5 })).toBeInTheDocument();
+    expect(await within(form).findByText("Action taken (Suspend).", {})).toBeInTheDocument();
 
     await router.navigate({ to: "/local" });
     expect(await screen.findByRole("heading", { level: 1, name: "Local timeline" })).toBeInTheDocument();
@@ -70,7 +73,7 @@ describe("a limit of a domain", () => {
       }),
     );
     const { user, router } = await renderApp({ path: "/public" });
-    const feed = await screen.findByRole("feed", { name: "Federated timeline" }, { timeout: latency * 5 });
+    const feed = await screen.findByRole("feed", { name: "Federated timeline" });
     expect(await within(feed).findByText("Cats")).toBeInTheDocument();
 
     await router.navigate({ to: "/moderation/domain-actions" });
@@ -78,7 +81,7 @@ describe("a limit of a domain", () => {
     await user.click(screen.getByRole("radio", { name: "Limit" }));
     await user.click(screen.getByRole("button", { name: "Take action" }));
     // The action is taken once the lists it changes have been fetched again.
-    expect(await screen.findByText(`Limit is in effect for ${isolated("remote.example")}.`, {}, { timeout: latency * 5 })).toBeInTheDocument();
+    expect(await screen.findByText(`Limit is in effect for ${isolated("remote.example")}.`, {})).toBeInTheDocument();
 
     await router.navigate({ to: "/public" });
     expect(await screen.findByRole("heading", { level: 1, name: "Federated timeline" })).toBeInTheDocument();
@@ -106,13 +109,13 @@ describe("an approved registration", () => {
     );
     const { user, router } = await renderApp({ path: "/moderation/accounts" });
     const results = await screen.findByRole("region", { name: "Results" });
-    expect((await within(results).findAllByText("Awaiting approval", {}, { timeout: latency * 5 })).length).toBeGreaterThan(0);
+    expect((await within(results).findAllByText("Awaiting approval", {})).length).toBeGreaterThan(0);
 
     await router.navigate({ to: "/moderation/registrations" });
     await user.click(await screen.findByRole("button", { name: `Approve ${isolated("@bob")}` }));
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Approve" }));
     // The decision is done once the searches have been fetched again.
-    expect(await screen.findByText(`${isolated("@bob")} is approved and can sign in.`, {}, { timeout: latency * 5 })).toBeInTheDocument();
+    expect(await screen.findByText(`${isolated("@bob")} is approved and can sign in.`, {})).toBeInTheDocument();
 
     await router.navigate({ to: "/moderation/accounts" });
     expect(await screen.findByRole("heading", { level: 1, name: "Accounts" })).toBeInTheDocument();
@@ -137,7 +140,7 @@ describe("a report filed by a moderator", () => {
       if (request.method === "POST" && new URL(request.url).pathname === `${apiBase}/reports`) reports.push(reportFixture());
     });
     const { user, router } = await renderApp({ path: "/moderation/reports" });
-    expect(await screen.findByRole("heading", { level: 2, name: "No open reports" }, { timeout: latency * 5 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "No open reports" })).toBeInTheDocument();
 
     await router.navigate({ to: "/local" });
     const article = await within(await screen.findByRole("feed", { name: "Local timeline" })).findByRole("article", { description: "Hello from the local timeline!" });
@@ -149,7 +152,7 @@ describe("a report filed by a moderator", () => {
     await user.click(await within(dialog).findByRole("button", { name: "Next" }));
     await user.click(await within(dialog).findByRole("button", { name: "Send report" }));
     // The report is sent once the queue has been fetched again.
-    const sent = await screen.findByRole("heading", { name: "Report sent" }, { timeout: latency * 5 });
+    const sent = await screen.findByRole("heading", { name: "Report sent" });
     await waitFor(() => {
       expect(sent).toHaveFocus();
     });
