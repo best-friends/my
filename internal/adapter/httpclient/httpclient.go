@@ -121,6 +121,9 @@ type Client struct {
 	// its connections may reach the exempt destinations (Options.Webhook) through open.
 	webhook *http.Client
 	open    *net.Dialer
+	// noRedirect sends the requests of kernel.HTTPPurposeClientMetadata through the guarded
+	// transport of http, but never follows a redirect.
+	noRedirect *http.Client
 
 	// duration is nil when opts.Meter records nothing; conns is then nil too.
 	duration kernel.Histogram
@@ -153,6 +156,11 @@ func New(opts Options) *Client {
 	c.dialer = &net.Dialer{Timeout: connectTimeout, Control: c.control}
 	c.open = &net.Dialer{Timeout: connectTimeout}
 	c.http = &http.Client{Transport: c.transport(c.dial), CheckRedirect: c.checkRedirect}
+	c.noRedirect = &http.Client{
+		Transport: c.http.Transport,
+		// Client ID Metadata Documents: a redirect is a failure, never followed (ADR-0090 §1).
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
 	c.webhook = &http.Client{
 		Transport: c.transport(c.dialWebhook),
 		// Standard Webhooks: a redirect is a failure, never followed (ADR-0060).
@@ -208,8 +216,11 @@ func (c *Client) do(ctx context.Context, r *kernel.HTTPRequest) (*kernel.HTTPRes
 		return nil, fmt.Errorf("%w: the URL must be absolute", kernel.ErrInvalidHTTPRequest)
 	}
 	client := c.http
-	if r.Purpose == kernel.HTTPPurposeWebhook {
+	switch r.Purpose {
+	case kernel.HTTPPurposeWebhook:
 		client = c.webhook
+	case kernel.HTTPPurposeClientMetadata:
+		client = c.noRedirect
 	}
 	if r.Purpose == kernel.HTTPPurposeWebhook && c.opts.Webhook.host(u.Hostname()) {
 		if err := checkExemptURL(u); err != nil {

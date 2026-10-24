@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	appidentity "github.com/mycroblog/my/internal/app/identity"
 	"github.com/mycroblog/my/internal/domain/identity"
@@ -113,6 +115,21 @@ type operationAccess struct {
 	// authentication, passkeys, deleting the account) take only the token of a first-party
 	// client, whatever its scopes (x-first-party-only in api/openapi.yaml).
 	FirstPartyOnly bool
+	// Deprecated and Sunset are Unix times, set for a deprecated operation (deprecated: true
+	// and x-sunset in api/openapi.yaml): its responses carry the Deprecation and Sunset
+	// headers (ADR-0090 section 8).
+	Deprecated, Sunset int64
+}
+
+// setDeprecationHeaders adds the Deprecation header (RFC 9745, a Structured Fields Date) and
+// the Sunset header (RFC 8594, an HTTP-date) of a deprecated operation. It does nothing for
+// any other operation.
+func setDeprecationHeaders(h http.Header, a operationAccess) {
+	if a.Deprecated == 0 && a.Sunset == 0 {
+		return
+	}
+	h.Set("Deprecation", "@"+strconv.FormatInt(a.Deprecated, 10))
+	h.Set("Sunset", time.Unix(a.Sunset, 0).UTC().Format(http.TimeFormat))
 }
 
 // bearerToken parses the Authorization header (RFC 6750 §2.1). present is false when there
@@ -143,6 +160,8 @@ func (s *Server) guard(pattern string, next http.Handler) http.Handler {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(withLocale(r))
+		// Every answer, the errors of the guard included, tells a client of a deprecated operation.
+		setDeprecationHeaders(w.Header(), a)
 		// Responses to operations that serve anonymous requests differ with the credential, so
 		// that no cache answers an authenticated request with an anonymous response.
 		w.Header().Add("Vary", "Authorization")

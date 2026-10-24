@@ -41,6 +41,13 @@ func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error 
 			mode, err := a.Instance.RegistrationMode(ctx)
 			return domainidentity.RegistrationMode(mode), err
 		},
+		// A client_id that is an https URL is a Client ID Metadata Document, fetched through the
+		// SSRF guard while the instance setting accepts them (ADR-0090 §1).
+		HTTP: a.HTTPClient,
+		MetadataDocumentClients: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.OAuthMetadataDocumentClients(), err
+		},
 		// New accounts take the instance's indexable default (FR-412, ADR-0057).
 		IndexableDefault: func(ctx context.Context) (bool, error) {
 			s, err := a.Instance.Settings(ctx)

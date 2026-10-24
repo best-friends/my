@@ -12,8 +12,8 @@ import (
 )
 
 // HTTPClient sends every outbound HTTP request of the server: federation fetches and
-// deliveries, WebFinger, NodeInfo, the media proxy, link previews, Web Push, and CAPTCHA
-// verification (ADR-0019 §1, ADR-0042 §3, docs/architecture/federation.md §1.1). The adapter
+// deliveries, WebFinger, NodeInfo, the media proxy, link previews, Web Push, CAPTCHA
+// verification, and the metadata documents of OAuth clients (ADR-0019 §1, ADR-0042 §3, docs/architecture/federation.md §1.1). The adapter
 // lives in internal/adapter/httpclient and passes testkit.HTTPClientContract.
 //
 // The adapter refuses destinations that are not public: addresses outside the global unicast
@@ -54,6 +54,10 @@ const (
 	// follows a redirect for it: the 3xx answer is returned as is. The deployment configuration
 	// may exempt some destinations from the guard for it alone (webhook_allowed_destinations).
 	HTTPPurposeWebhook
+	// HTTPPurposeClientMetadata fetches the Client ID Metadata Document of an OAuth client
+	// (ADR-0090 §1). The client never follows a redirect for it: the 3xx answer is returned as
+	// is, and the caller refuses it. Its body is at most 5 KB, as the draft recommends.
+	HTTPPurposeClientMetadata
 )
 
 // MaxRedirects is the number of redirects the HTTPClient follows for one request.
@@ -69,8 +73,9 @@ type HTTPLimits struct {
 }
 
 // DefaultHTTPLimits returns the limits of ADR-0019 §1 for p (ADR-0042 §3 for
-// HTTPPurposeHumanCheck, ADR-0060 for HTTPPurposeWebhook; HTTPPurposeWebPush reads at most the
-// small error document of a push service), and false for an unknown purpose.
+// HTTPPurposeHumanCheck, ADR-0060 for HTTPPurposeWebhook, ADR-0090 §1 for
+// HTTPPurposeClientMetadata; HTTPPurposeWebPush reads at most the small error document of a push
+// service), and false for an unknown purpose.
 func DefaultHTTPLimits(p HTTPPurpose) (HTTPLimits, bool) {
 	switch p {
 	case HTTPPurposeJSON, HTTPPurposeHTML:
@@ -85,6 +90,8 @@ func DefaultHTTPLimits(p HTTPPurpose) (HTTPLimits, bool) {
 		return HTTPLimits{MaxBodyBytes: 64 << 10, Timeout: 15 * time.Second}, true
 	case HTTPPurposeWebPush:
 		return HTTPLimits{MaxBodyBytes: 64 << 10, Timeout: 30 * time.Second}, true
+	case HTTPPurposeClientMetadata:
+		return HTTPLimits{MaxBodyBytes: 5 << 10, Timeout: 10 * time.Second}, true
 	}
 	return HTTPLimits{}, false
 }

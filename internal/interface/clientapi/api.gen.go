@@ -1765,6 +1765,7 @@ const (
 	InstanceSettingKeyLinkCardsEnabled                 InstanceSettingKey = "link_cards_enabled"
 	InstanceSettingKeyLocalTimelineAccess              InstanceSettingKey = "local_timeline_access"
 	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
+	InstanceSettingKeyOauthMetadataDocumentClients     InstanceSettingKey = "oauth_metadata_document_clients"
 	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
 	InstanceSettingKeyRegistrationMode                 InstanceSettingKey = "registration_mode"
 	InstanceSettingKeyRemoteMediaCacheTtl              InstanceSettingKey = "remote_media_cache_ttl"
@@ -1821,6 +1822,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyLocalTimelineAccess:
 		return true
 	case InstanceSettingKeyMaxStatusLength:
+		return true
+	case InstanceSettingKeyOauthMetadataDocumentClients:
 		return true
 	case InstanceSettingKeyPreviewImage:
 		return true
