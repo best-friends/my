@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -66,6 +67,36 @@ func TestFirstPartyOnlyExtension(t *testing.T) {
 	}
 	if got, err := firstPartyOnly(json.RawMessage(`"yes"`)); err == nil || got {
 		t.Errorf("firstPartyOnly(non-boolean) = %v, %v; want an error", got, err)
+	}
+}
+
+func TestParseDeprecation(t *testing.T) {
+	got, err := parseDeprecation(json.RawMessage(`{"deprecated":"2026-11-01","sunset":"2027-02-01"}`))
+	if err != nil || got.deprecated.Unix() != 1793491200 || got.sunset.Unix() != 1801440000 {
+		t.Errorf("parseDeprecation = %+v, %v", got, err)
+	}
+	for name, raw := range map[string]string{
+		"sunset before deprecated": `{"deprecated":"2027-02-01","sunset":"2026-11-01"}`,
+		"not a date":               `{"deprecated":"soon","sunset":"2027-02-01"}`,
+		"missing sunset":           `{"deprecated":"2026-11-01"}`,
+		"unknown key":              `{"deprecated":"2026-11-01","sunset":"2027-02-01","x":1}`,
+		"not an object":            `true`,
+	} {
+		if got, err := parseDeprecation(json.RawMessage(raw)); err == nil {
+			t.Errorf("%s: parseDeprecation = %+v, want an error", name, got)
+		}
+	}
+}
+
+func TestRenderDeprecation(t *testing.T) {
+	src, err := render(map[string]access{"GET /api/v1/p": {operation: "getP", anonymous: true,
+		deprecation: &deprecation{deprecated: time.Unix(1793491200, 0), sunset: time.Unix(1801440000, 0)}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{Operation: "getP", Anonymous: true, Deprecated: 1793491200, Sunset: 1801440000}`
+	if !strings.Contains(string(src), want) {
+		t.Errorf("render =\n%s\nwant %s", src, want)
 	}
 }
 

@@ -32,6 +32,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -47,6 +48,55 @@ type access struct {
 	// firstPartyOnly is the operation's x-first-party-only: only a first-party client's token
 	// may call it.
 	firstPartyOnly bool
+	// deprecation is the operation's x-sunset, set for a deprecated operation.
+	deprecation *deprecation
+}
+
+// deprecation is the schedule of a deprecated operation: the Deprecation header carries
+// deprecated, the Sunset header carries sunset (ADR-0090 section 8).
+type deprecation struct {
+	deprecated time.Time
+	sunset     time.Time
+}
+
+// sunsetExtension declares when a deprecated operation was deprecated and when it may go:
+//
+//	x-sunset: {deprecated: "2026-11-01", sunset: "2027-02-01"}   # beside deprecated: true
+//
+// Both are dates (UTC midnight); sunset is not before deprecated. An operation with
+// An operation marked deprecated has x-sunset, and no other operation has it.
+const sunsetExtension = "x-sunset"
+
+// parseDeprecation reads the value of x-sunset.
+func parseDeprecation(raw any) (*deprecation, error) {
+	b, ok := raw.(json.RawMessage)
+	if !ok {
+		var err error
+		if b, err = json.Marshal(raw); err != nil {
+			return nil, fmt.Errorf("%s must be an object", sunsetExtension)
+		}
+	}
+	var v struct {
+		Deprecated string `json:"deprecated"`
+		Sunset     string `json:"sunset"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&v); err != nil {
+		return nil, fmt.Errorf("%s must be an object with deprecated and sunset dates: %w", sunsetExtension, err)
+	}
+	d, err := time.Parse(time.DateOnly, v.Deprecated)
+	if err != nil {
+		return nil, fmt.Errorf("%s.deprecated must be a date like 2026-11-01", sunsetExtension)
+	}
+	s, err := time.Parse(time.DateOnly, v.Sunset)
+	if err != nil {
+		return nil, fmt.Errorf("%s.sunset must be a date like 2027-02-01", sunsetExtension)
+	}
+	if s.Before(d) {
+		return nil, fmt.Errorf("%s.sunset is before %s.deprecated", sunsetExtension, sunsetExtension)
+	}
+	return &deprecation{deprecated: d, sunset: s}, nil
 }
 
 // firstPartyOnlyExtension marks an operation that takes only the token of a first-party client.
@@ -132,6 +182,20 @@ func operations(doc *openapi3.T) (map[string]access, error) {
 					continue
 				}
 			}
+			rawSunset, hasSunset := op.Extensions[sunsetExtension]
+			switch {
+			case op.Deprecated && !hasSunset:
+				errs = append(errs, fmt.Errorf("%s %s (%s): a deprecated operation declares %s", method, path, op.OperationID, sunsetExtension))
+				continue
+			case !op.Deprecated && hasSunset:
+				errs = append(errs, fmt.Errorf("%s %s (%s): %s needs deprecated: true", method, path, op.OperationID, sunsetExtension))
+				continue
+			case hasSunset:
+				if a.deprecation, err = parseDeprecation(rawSunset); err != nil {
+					errs = append(errs, fmt.Errorf("%s %s (%s): %w", method, path, op.OperationID, err))
+					continue
+				}
+			}
 			ops[strings.ToUpper(method)+" "+base+path] = a
 		}
 	}
@@ -208,6 +272,9 @@ func render(ops map[string]access) ([]byte, error) {
 		}
 		if a.firstPartyOnly {
 			fields = append(fields, "FirstPartyOnly: true")
+		}
+		if a.deprecation != nil {
+			fields = append(fields, fmt.Sprintf("Deprecated: %d, Sunset: %d", a.deprecation.deprecated.Unix(), a.deprecation.sunset.Unix()))
 		}
 		if len(a.scopes) > 0 {
 			quoted := make([]string, len(a.scopes))
