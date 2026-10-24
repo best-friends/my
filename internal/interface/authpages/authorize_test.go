@@ -34,8 +34,8 @@ func (f *fakeOAuth) ValidateAuthorization(_ context.Context, req appidentity.Aut
 		c   identity.OAuthClient
 		uri string
 	}{
-		"web": {identity.OAuthClient{ID: testkit.NamedID("client-web"), ClientID: "web", Name: "Web", FirstParty: true}, webRedirect},
-		"app": {identity.OAuthClient{ID: testkit.NamedID("client-app"), ClientID: "app", Name: "Example App"}, appRedirect},
+		"web": {identity.OAuthClient{ID: testkit.NamedID("client-web"), ClientID: "web", Name: "Web", Registration: identity.ClientRegisteredFirstParty}, webRedirect},
+		"app": {identity.OAuthClient{ID: testkit.NamedID("client-app"), ClientID: "app", Name: "Example App", Registration: identity.ClientRegisteredByUser}, appRedirect},
 	}
 	c, ok := clients[req.ClientID]
 	if !ok {

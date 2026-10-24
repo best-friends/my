@@ -29,7 +29,12 @@ func (q *Queries) DeleteOAuthClientRedirectURI(ctx context.Context, arg DeleteOA
 const getAccessTokenByAccessHash = `-- name: GetAccessTokenByAccessHash :one
 SELECT t.id, t.family_id, t.client_id, t.user_id, t.access_token_hash, t.refresh_token_hash, t.scope,
   t.rotated_from_token_id, t.issued_at, t.expires_at, t.refresh_expires_at,
-  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked
+  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked,
+  EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = t.client_id AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  ) AS client_disabled,
+  EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = t.client_id) AS client_deleted
 FROM oauth_access_tokens t
 WHERE t.access_token_hash = $1
 `
@@ -47,8 +52,12 @@ type GetAccessTokenByAccessHashRow struct {
 	ExpiresAt          time.Time
 	RefreshExpiresAt   *time.Time
 	Revoked            bool
+	ClientDisabled     bool
+	ClientDeleted      bool
 }
 
+// AccessTokenByAccessHash returns a token, whether it has a revocation, and whether its client is disabled
+// or deleted (ADR-0090 section 1).
 func (q *Queries) GetAccessTokenByAccessHash(ctx context.Context, accessTokenHash []byte) (GetAccessTokenByAccessHashRow, error) {
 	row := q.db.QueryRow(ctx, getAccessTokenByAccessHash, accessTokenHash)
 	var i GetAccessTokenByAccessHashRow
@@ -65,6 +74,8 @@ func (q *Queries) GetAccessTokenByAccessHash(ctx context.Context, accessTokenHas
 		&i.ExpiresAt,
 		&i.RefreshExpiresAt,
 		&i.Revoked,
+		&i.ClientDisabled,
+		&i.ClientDeleted,
 	)
 	return i, err
 }
@@ -72,7 +83,12 @@ func (q *Queries) GetAccessTokenByAccessHash(ctx context.Context, accessTokenHas
 const getAccessTokenByRefreshHash = `-- name: GetAccessTokenByRefreshHash :one
 SELECT t.id, t.family_id, t.client_id, t.user_id, t.access_token_hash, t.refresh_token_hash, t.scope,
   t.rotated_from_token_id, t.issued_at, t.expires_at, t.refresh_expires_at,
-  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked
+  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked,
+  EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = t.client_id AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  ) AS client_disabled,
+  EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = t.client_id) AS client_deleted
 FROM oauth_access_tokens t
 WHERE t.refresh_token_hash = $1
 `
@@ -90,8 +106,12 @@ type GetAccessTokenByRefreshHashRow struct {
 	ExpiresAt          time.Time
 	RefreshExpiresAt   *time.Time
 	Revoked            bool
+	ClientDisabled     bool
+	ClientDeleted      bool
 }
 
+// AccessTokenByRefreshHash returns a token, whether it has a revocation, and whether its client is disabled
+// or deleted (ADR-0090 section 1).
 func (q *Queries) GetAccessTokenByRefreshHash(ctx context.Context, refreshTokenHash []byte) (GetAccessTokenByRefreshHashRow, error) {
 	row := q.db.QueryRow(ctx, getAccessTokenByRefreshHash, refreshTokenHash)
 	var i GetAccessTokenByRefreshHashRow
@@ -108,6 +128,8 @@ func (q *Queries) GetAccessTokenByRefreshHash(ctx context.Context, refreshTokenH
 		&i.ExpiresAt,
 		&i.RefreshExpiresAt,
 		&i.Revoked,
+		&i.ClientDisabled,
+		&i.ClientDeleted,
 	)
 	return i, err
 }
@@ -147,7 +169,7 @@ func (q *Queries) GetAuthorizationCodeRedemption(ctx context.Context, codeHash [
 }
 
 const getOAuthClientByClientID = `-- name: GetOAuthClientByClientID :one
-SELECT id, client_id, client_secret_hash, name, website, scope, is_first_party, owner_user_id, created_at
+SELECT id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at
 FROM oauth_clients
 WHERE client_id = $1
 `
@@ -162,10 +184,58 @@ func (q *Queries) GetOAuthClientByClientID(ctx context.Context, clientID string)
 		&i.Name,
 		&i.Website,
 		&i.Scope,
-		&i.IsFirstParty,
+		&i.Registration,
 		&i.OwnerUserID,
 		&i.CreatedAt,
 	)
+	return i, err
+}
+
+const getOAuthClientByID = `-- name: GetOAuthClientByID :one
+SELECT id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at
+FROM oauth_clients
+WHERE id = $1
+`
+
+func (q *Queries) GetOAuthClientByID(ctx context.Context, id string) (OauthClient, error) {
+	row := q.db.QueryRow(ctx, getOAuthClientByID, id)
+	var i OauthClient
+	err := row.Scan(
+		&i.ID,
+		&i.ClientID,
+		&i.ClientSecretHash,
+		&i.Name,
+		&i.Website,
+		&i.Scope,
+		&i.Registration,
+		&i.OwnerUserID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getOAuthClientState = `-- name: GetOAuthClientState :one
+SELECT
+  EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = c.id::text AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  ) AS disabled,
+  EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = c.id::text) AS deleted
+FROM oauth_clients c
+WHERE c.id = $1
+`
+
+type GetOAuthClientStateRow struct {
+	Disabled bool
+	Deleted  bool
+}
+
+// GetOAuthClientState returns whether a client (by its id) is disabled, that is has a
+// disablement without a lift, and whether it is deleted.
+func (q *Queries) GetOAuthClientState(ctx context.Context, id string) (GetOAuthClientStateRow, error) {
+	row := q.db.QueryRow(ctx, getOAuthClientState, id)
+	var i GetOAuthClientStateRow
+	err := row.Scan(&i.Disabled, &i.Deleted)
 	return i, err
 }
 
@@ -258,9 +328,65 @@ func (q *Queries) InsertAuthorizationCodeRedemptionIfAbsent(ctx context.Context,
 	return result.RowsAffected(), nil
 }
 
+const insertOAuthClientDeletionIfAbsent = `-- name: InsertOAuthClientDeletionIfAbsent :execrows
+INSERT INTO oauth_client_deletions (client_id, reason, deleted_by_user_id, deleted_at) VALUES ($1, $2, $3, $4)
+ON CONFLICT (client_id) DO NOTHING
+`
+
+type InsertOAuthClientDeletionIfAbsentParams struct {
+	ClientID        string
+	Reason          string
+	DeletedByUserID *string
+	DeletedAt       time.Time
+}
+
+func (q *Queries) InsertOAuthClientDeletionIfAbsent(ctx context.Context, arg InsertOAuthClientDeletionIfAbsentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertOAuthClientDeletionIfAbsent,
+		arg.ClientID,
+		arg.Reason,
+		arg.DeletedByUserID,
+		arg.DeletedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const insertOAuthClientDisablementIfEnabled = `-- name: InsertOAuthClientDisablementIfEnabled :execrows
+INSERT INTO oauth_client_disablements (id, client_id, disabled_by_user_id, disabled_at)
+SELECT $1::uuid, $2::text, $3::uuid, $4::timestamptz
+WHERE NOT EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = $2::text AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  )
+`
+
+type InsertOAuthClientDisablementIfEnabledParams struct {
+	ID               string
+	ClientID         string
+	DisabledByUserID *string
+	DisabledAt       time.Time
+}
+
+// InsertOAuthClientDisablementIfEnabled records a disablement unless the client is disabled
+// already, so that repeating it adds nothing.
+func (q *Queries) InsertOAuthClientDisablementIfEnabled(ctx context.Context, arg InsertOAuthClientDisablementIfEnabledParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertOAuthClientDisablementIfEnabled,
+		arg.ID,
+		arg.ClientID,
+		arg.DisabledByUserID,
+		arg.DisabledAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const insertOAuthClientIfAbsent = `-- name: InsertOAuthClientIfAbsent :exec
 
-INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, website, scope, is_first_party, owner_user_id, created_at)
+INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (client_id) DO NOTHING
 `
@@ -272,7 +398,7 @@ type InsertOAuthClientIfAbsentParams struct {
 	Name             string
 	Website          *string
 	Scope            string
-	IsFirstParty     bool
+	Registration     string
 	OwnerUserID      *string
 	CreatedAt        time.Time
 }
@@ -286,7 +412,7 @@ func (q *Queries) InsertOAuthClientIfAbsent(ctx context.Context, arg InsertOAuth
 		arg.Name,
 		arg.Website,
 		arg.Scope,
-		arg.IsFirstParty,
+		arg.Registration,
 		arg.OwnerUserID,
 		arg.CreatedAt,
 	)
@@ -321,6 +447,28 @@ type InsertTokenRevocationIfAbsentParams struct {
 
 func (q *Queries) InsertTokenRevocationIfAbsent(ctx context.Context, arg InsertTokenRevocationIfAbsentParams) (int64, error) {
 	result, err := q.db.Exec(ctx, insertTokenRevocationIfAbsent, arg.TokenID, arg.Reason, arg.RevokedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const liftOAuthClientDisablements = `-- name: LiftOAuthClientDisablements :execrows
+INSERT INTO oauth_client_disablement_lifts (disablement_id, lifted_by_user_id, lifted_at)
+SELECT d.id, $1::uuid, $2::timestamptz FROM oauth_client_disablements d
+WHERE d.client_id = $3::text
+ON CONFLICT (disablement_id) DO NOTHING
+`
+
+type LiftOAuthClientDisablementsParams struct {
+	LiftedByUserID *string
+	LiftedAt       time.Time
+	ClientID       string
+}
+
+// LiftOAuthClientDisablements lifts every disablement of a client that has no lift yet.
+func (q *Queries) LiftOAuthClientDisablements(ctx context.Context, arg LiftOAuthClientDisablementsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, liftOAuthClientDisablements, arg.LiftedByUserID, arg.LiftedAt, arg.ClientID)
 	if err != nil {
 		return 0, err
 	}
@@ -412,6 +560,27 @@ type RevokeTokenFamilyParams struct {
 
 func (q *Queries) RevokeTokenFamily(ctx context.Context, arg RevokeTokenFamilyParams) error {
 	_, err := q.db.Exec(ctx, revokeTokenFamily, arg.Reason, arg.RevokedAt, arg.FamilyID)
+	return err
+}
+
+const revokeTokensOfClient = `-- name: RevokeTokensOfClient :exec
+INSERT INTO oauth_token_revocations (token_id, reason, revoked_at)
+SELECT t.id, $1::text, $2::timestamptz FROM oauth_access_tokens t
+WHERE t.client_id = $3::text
+  AND (t.expires_at > $2::timestamptz OR t.refresh_expires_at > $2::timestamptz)
+ON CONFLICT (token_id) DO NOTHING
+`
+
+type RevokeTokensOfClientParams struct {
+	Reason    string
+	RevokedAt time.Time
+	ClientID  string
+}
+
+// RevokeTokensOfClient revokes every token of a client whose access or refresh token has not
+// expired at revoked_at and that has no revocation yet.
+func (q *Queries) RevokeTokensOfClient(ctx context.Context, arg RevokeTokensOfClientParams) error {
+	_, err := q.db.Exec(ctx, revokeTokensOfClient, arg.Reason, arg.RevokedAt, arg.ClientID)
 	return err
 }
 

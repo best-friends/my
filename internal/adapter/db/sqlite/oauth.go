@@ -21,7 +21,7 @@ func (r *IdentityRepository) EnsureOAuthClient(ctx context.Context, tx uow.Tx, c
 	}
 	err = q.InsertOAuthClientIfAbsent(ctx, sqlitegen.InsertOAuthClientIfAbsentParams{
 		ID: c.ID, ClientID: c.ClientID, ClientSecretHash: c.SecretHash, Name: c.Name, Website: toNullString(c.Website),
-		Scope: string(c.Scope), IsFirstParty: boolToInt(c.FirstParty), OwnerUserID: toNullString(c.OwnerUserID),
+		Scope: string(c.Scope), Registration: string(c.Registration), OwnerUserID: toNullString(c.OwnerUserID),
 		CreatedAt: toMillis(c.CreatedAt),
 	})
 	if err != nil {
@@ -181,27 +181,33 @@ func (r *IdentityRepository) FindAuthorizationCodeRedemption(ctx context.Context
 }
 
 // FindAccessTokenByAccessHash implements identity.Repository.
-func (r *IdentityRepository) FindAccessTokenByAccessHash(ctx context.Context, hash []byte) (identity.AccessToken, bool, error) {
+func (r *IdentityRepository) FindAccessTokenByAccessHash(ctx context.Context, hash []byte) (identity.AccessToken, identity.TokenState, error) {
 	row, err := r.db.reader().GetAccessTokenByAccessHash(ctx, hash)
 	if err != nil {
-		return identity.AccessToken{}, false, notFound(err, appidentity.ErrNotFound, "access token")
+		return identity.AccessToken{}, identity.TokenState{}, notFound(err, appidentity.ErrNotFound, "access token")
 	}
-	return accessTokenFromRow(row), row.Revoked, nil
+	state := identity.TokenState{
+		Revoked: row.Revoked, Client: identity.OAuthClientState{Disabled: row.ClientDisabled, Deleted: row.ClientDeleted},
+	}
+	return accessTokenFromRow(row), state, nil
 }
 
 // FindAccessTokenByRefreshHash implements identity.Repository.
-func (r *IdentityRepository) FindAccessTokenByRefreshHash(ctx context.Context, hash []byte) (identity.AccessToken, bool, error) {
+func (r *IdentityRepository) FindAccessTokenByRefreshHash(ctx context.Context, hash []byte) (identity.AccessToken, identity.TokenState, error) {
 	row, err := r.db.reader().GetAccessTokenByRefreshHash(ctx, hash)
 	if err != nil {
-		return identity.AccessToken{}, false, notFound(err, appidentity.ErrNotFound, "access token")
+		return identity.AccessToken{}, identity.TokenState{}, notFound(err, appidentity.ErrNotFound, "access token")
 	}
-	return accessTokenFromRow(sqlitegen.GetAccessTokenByAccessHashRow(row)), row.Revoked, nil
+	state := identity.TokenState{
+		Revoked: row.Revoked, Client: identity.OAuthClientState{Disabled: row.ClientDisabled, Deleted: row.ClientDeleted},
+	}
+	return accessTokenFromRow(sqlitegen.GetAccessTokenByAccessHashRow(row)), state, nil
 }
 
 func oauthClientFromRow(row sqlitegen.OauthClient) identity.OAuthClient {
 	return identity.OAuthClient{
 		ID: row.ID, ClientID: row.ClientID, SecretHash: row.ClientSecretHash, Name: row.Name, Website: row.Website.String,
-		Scope: identity.Scope(row.Scope), FirstParty: row.IsFirstParty != 0, OwnerUserID: row.OwnerUserID.String,
+		Scope: identity.Scope(row.Scope), Registration: identity.OAuthClientRegistration(row.Registration), OwnerUserID: row.OwnerUserID.String,
 		CreatedAt: fromMillis(row.CreatedAt),
 	}
 }
@@ -238,4 +244,68 @@ func (r *IdentityRepository) RevokeTokensOfUser(ctx context.Context, tx uow.Tx, 
 	}
 	err = q.RevokeTokensOfUser(ctx, sqlitegen.RevokeTokensOfUserParams{Reason: string(reason), RevokedAt: toMillis(at), UserID: userID})
 	return wrap(err, "revoke the tokens of a user")
+}
+
+// FindOAuthClientByID implements identity.Repository.
+func (r *IdentityRepository) FindOAuthClientByID(ctx context.Context, clientID string) (identity.OAuthClient, error) {
+	row, err := r.db.reader().GetOAuthClientByID(ctx, clientID)
+	if err != nil {
+		return identity.OAuthClient{}, notFound(err, appidentity.ErrNotFound, "oauth client")
+	}
+	return oauthClientFromRow(row), nil
+}
+
+// FindOAuthClientState implements identity.Repository.
+func (r *IdentityRepository) FindOAuthClientState(ctx context.Context, clientID string) (identity.OAuthClientState, error) {
+	row, err := r.db.reader().GetOAuthClientState(ctx, clientID)
+	if err != nil {
+		return identity.OAuthClientState{}, notFound(err, appidentity.ErrNotFound, "oauth client")
+	}
+	return identity.OAuthClientState{Disabled: row.Disabled, Deleted: row.Deleted}, nil
+}
+
+// RevokeTokensOfClient implements identity.Repository.
+func (r *IdentityRepository) RevokeTokensOfClient(ctx context.Context, tx uow.Tx, clientID string, reason identity.TokenRevocationReason, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.RevokeTokensOfClient(ctx, sqlitegen.RevokeTokensOfClientParams{Reason: string(reason), RevokedAt: toMillis(at), ClientID: clientID})
+	return wrap(err, "revoke the tokens of a client")
+}
+
+// InsertOAuthClientDisablement implements identity.Repository.
+func (r *IdentityRepository) InsertOAuthClientDisablement(ctx context.Context, tx uow.Tx, dis identity.OAuthClientDisablement) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.InsertOAuthClientDisablementIfEnabled(ctx, sqlitegen.InsertOAuthClientDisablementIfEnabledParams{
+		ID: dis.ID, ClientID: dis.ClientID, DisabledByUserID: toNullString(dis.DisabledByUserID), DisabledAt: toMillis(dis.DisabledAt),
+	})
+	return n == 1, wrap(err, "insert oauth client disablement")
+}
+
+// LiftOAuthClientDisablements implements identity.Repository.
+func (r *IdentityRepository) LiftOAuthClientDisablements(ctx context.Context, tx uow.Tx, clientID, byUserID string, at time.Time) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.LiftOAuthClientDisablements(ctx, sqlitegen.LiftOAuthClientDisablementsParams{
+		LiftedByUserID: toNullString(byUserID), LiftedAt: toMillis(at), ClientID: clientID,
+	})
+	return n > 0, wrap(err, "lift oauth client disablements")
+}
+
+// InsertOAuthClientDeletion implements identity.Repository.
+func (r *IdentityRepository) InsertOAuthClientDeletion(ctx context.Context, tx uow.Tx, del identity.OAuthClientDeletion) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.InsertOAuthClientDeletionIfAbsent(ctx, sqlitegen.InsertOAuthClientDeletionIfAbsentParams{
+		ClientID: del.ClientID, Reason: string(del.Reason), DeletedByUserID: toNullString(del.DeletedByUserID), DeletedAt: toMillis(del.DeletedAt),
+	})
+	return n == 1, wrap(err, "insert oauth client deletion")
 }

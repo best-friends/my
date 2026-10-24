@@ -125,7 +125,7 @@ func (h *Handler) handleAuthorization(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	switch {
-	case a.Client.FirstParty || decision == decisionApprove:
+	case a.Client.FirstParty() || decision == decisionApprove:
 		a.SessionID = session.ID
 		code, err := h.o.OAuth.IssueAuthorizationCode(ctx, a, session.UserID)
 		if err != nil {

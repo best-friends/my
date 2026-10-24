@@ -27,8 +27,8 @@ type OAuthClient struct {
 	Website string
 	// Scope is the most that the client may be granted.
 	Scope Scope
-	// FirstParty clients are this server's own clients; users are not asked to consent to them.
-	FirstParty bool
+	// Registration is the route by which the client was registered; it never changes.
+	Registration OAuthClientRegistration
 	// OwnerUserID is the user who registered the client; "" for clients the server registers.
 	OwnerUserID string
 	CreatedAt   time.Time
@@ -36,6 +36,68 @@ type OAuthClient struct {
 
 // Public reports whether the client has no secret and so cannot authenticate itself.
 func (c OAuthClient) Public() bool { return c.SecretHash == nil }
+
+// FirstParty reports whether the client is one of this server's own clients, which users are not
+// asked to consent to. It is the one place that decides it (ADR-0090 §1).
+func (c OAuthClient) FirstParty() bool { return c.Registration == ClientRegisteredFirstParty }
+
+// OAuthClientRegistration is the route by which a client was registered (ADR-0090 §1,
+// oauth_clients.registration).
+type OAuthClientRegistration string
+
+// Registration routes of OAuth clients.
+const (
+	// ClientRegisteredFirstParty: the server registered its own client (the web client).
+	ClientRegisteredFirstParty OAuthClientRegistration = "first_party"
+	// ClientRegisteredByUser: a signed-in user registered the client; OwnerUserID is that user.
+	ClientRegisteredByUser OAuthClientRegistration = "user"
+	// ClientRegisteredByMetadataDocument: the client_id is the https URL of a Client ID Metadata
+	// Document.
+	ClientRegisteredByMetadataDocument OAuthClientRegistration = "metadata_document"
+	// ClientRegisteredDynamically: the client registered itself through dynamic client
+	// registration (RFC 7591).
+	ClientRegisteredDynamically OAuthClientRegistration = "dynamic"
+)
+
+// OAuthClientState is what the events of a client say about it (ADR-0090 §1): it is disabled
+// while one of its disablements has no lift, and deleted once it has a deletion.
+type OAuthClientState struct {
+	Disabled bool
+	Deleted  bool
+}
+
+// Usable reports whether the client may be authorized, get tokens, and use them.
+func (s OAuthClientState) Usable() bool { return !s.Disabled && !s.Deleted }
+
+// OAuthClientDisablement records that a client was disabled (data-model §4.1,
+// oauth_client_disablements). DisabledByUserID is "" for the CLI.
+type OAuthClientDisablement struct {
+	ID               string
+	ClientID         string
+	DisabledByUserID string
+	DisabledAt       time.Time
+}
+
+// OAuthClientDeletionReason says who deleted a client.
+type OAuthClientDeletionReason string
+
+// Client deletion reasons (data-model §4.1, oauth_client_deletions.reason).
+const (
+	// ClientDeletedByOwner: the user who registered the client deleted it.
+	ClientDeletedByOwner OAuthClientDeletionReason = "owner"
+	// ClientDeletedUnused: the clean-up deleted a dynamically registered client that was not
+	// used (ADR-0090 §1).
+	ClientDeletedUnused OAuthClientDeletionReason = "unused"
+)
+
+// OAuthClientDeletion records that a client was deleted (data-model §4.1,
+// oauth_client_deletions). DeletedByUserID is "" for the clean-up.
+type OAuthClientDeletion struct {
+	ClientID        string
+	Reason          OAuthClientDeletionReason
+	DeletedByUserID string
+	DeletedAt       time.Time
+}
 
 // AuthorizationCode is a one-time code that a client exchanges for tokens (RFC 6749 §4.1).
 // Only the SHA-256 digest of the code is stored.
@@ -117,7 +179,22 @@ const (
 	TokenRevokedModeration TokenRevocationReason = "moderation"
 	// TokenRevokedAccountDeleted: the user's local account was deleted.
 	TokenRevokedAccountDeleted TokenRevocationReason = "account_deleted"
+	// TokenRevokedClientDisabled: the token's client was disabled.
+	TokenRevokedClientDisabled TokenRevocationReason = "client_disabled"
+	// TokenRevokedClientDeleted: the token's client was deleted.
+	TokenRevokedClientDeleted TokenRevocationReason = "client_deleted"
 )
+
+// TokenState is what the events of a token and of its client say about the token.
+type TokenState struct {
+	// Revoked reports whether the token has a revocation.
+	Revoked bool
+	Client  OAuthClientState
+}
+
+// Usable reports whether the token is not revoked and its client is usable. Expiry is the
+// caller's to check.
+func (s TokenState) Usable() bool { return !s.Revoked && s.Client.Usable() }
 
 // TokenRevocation records that a token stopped working, both its access token and its refresh
 // token (data-model §4.1, oauth_token_revocations).

@@ -1,14 +1,52 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 
 -- name: InsertOAuthClientIfAbsent :exec
-INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, website, scope, is_first_party, owner_user_id, created_at)
+INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT (client_id) DO NOTHING;
 
 -- name: GetOAuthClientByClientID :one
-SELECT id, client_id, client_secret_hash, name, website, scope, is_first_party, owner_user_id, created_at
+SELECT id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at
 FROM oauth_clients
 WHERE client_id = ?;
+
+-- name: GetOAuthClientByID :one
+SELECT id, client_id, client_secret_hash, name, website, scope, registration, owner_user_id, created_at
+FROM oauth_clients
+WHERE id = ?;
+
+-- GetOAuthClientState returns whether a client (by its id) is disabled, that is has a
+-- disablement without a lift, and whether it is deleted.
+-- name: GetOAuthClientState :one
+SELECT
+  EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = c.id AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  ) AS disabled,
+  EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = c.id) AS deleted
+FROM oauth_clients c
+WHERE c.id = sqlc.arg(id);
+
+-- InsertOAuthClientDisablementIfEnabled records a disablement unless the client is disabled
+-- already, so that repeating it adds nothing.
+-- name: InsertOAuthClientDisablementIfEnabled :execrows
+INSERT INTO oauth_client_disablements (id, client_id, disabled_by_user_id, disabled_at)
+SELECT sqlc.arg(id), sqlc.arg(client_id), sqlc.narg(disabled_by_user_id), sqlc.arg(disabled_at)
+WHERE NOT EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = sqlc.arg(client_id) AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  );
+
+-- LiftOAuthClientDisablements lifts every disablement of a client that has no lift yet.
+-- name: LiftOAuthClientDisablements :execrows
+INSERT INTO oauth_client_disablement_lifts (disablement_id, lifted_by_user_id, lifted_at)
+SELECT d.id, sqlc.narg(lifted_by_user_id), sqlc.arg(lifted_at) FROM oauth_client_disablements d
+WHERE d.client_id = sqlc.arg(client_id)
+ON CONFLICT (disablement_id) DO NOTHING;
+
+-- name: InsertOAuthClientDeletionIfAbsent :execrows
+INSERT INTO oauth_client_deletions (client_id, reason, deleted_by_user_id, deleted_at) VALUES (?, ?, ?, ?)
+ON CONFLICT (client_id) DO NOTHING;
 
 -- name: ListOAuthClientRedirectURIs :many
 SELECT redirect_uri FROM oauth_client_redirect_uris WHERE client_id = ? ORDER BY redirect_uri;
@@ -42,17 +80,31 @@ INSERT INTO oauth_access_tokens (
   issued_at, expires_at, refresh_expires_at
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+-- AccessTokenByAccessHash returns a token, whether it has a revocation, and whether its client is disabled
+-- or deleted (ADR-0090 section 1).
 -- name: GetAccessTokenByAccessHash :one
 SELECT t.id, t.family_id, t.client_id, t.user_id, t.access_token_hash, t.refresh_token_hash, t.scope,
   t.rotated_from_token_id, t.issued_at, t.expires_at, t.refresh_expires_at,
-  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked
+  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked,
+  EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = t.client_id AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  ) AS client_disabled,
+  EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = t.client_id) AS client_deleted
 FROM oauth_access_tokens t
 WHERE t.access_token_hash = ?;
 
+-- AccessTokenByRefreshHash returns a token, whether it has a revocation, and whether its client is disabled
+-- or deleted (ADR-0090 section 1).
 -- name: GetAccessTokenByRefreshHash :one
 SELECT t.id, t.family_id, t.client_id, t.user_id, t.access_token_hash, t.refresh_token_hash, t.scope,
   t.rotated_from_token_id, t.issued_at, t.expires_at, t.refresh_expires_at,
-  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked
+  EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id) AS revoked,
+  EXISTS (
+    SELECT 1 FROM oauth_client_disablements d
+    WHERE d.client_id = t.client_id AND NOT EXISTS (SELECT 1 FROM oauth_client_disablement_lifts l WHERE l.disablement_id = d.id)
+  ) AS client_disabled,
+  EXISTS (SELECT 1 FROM oauth_client_deletions x WHERE x.client_id = t.client_id) AS client_deleted
 FROM oauth_access_tokens t
 WHERE t.refresh_token_hash = ?;
 
@@ -100,3 +152,12 @@ SELECT EXISTS (
     AND (t.expires_at > sqlc.arg(now) OR t.refresh_expires_at > sqlc.arg(now))
     AND NOT EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id)
 ) AS active;
+
+-- RevokeTokensOfClient revokes every token of a client whose access or refresh token has not
+-- expired at revoked_at and that has no revocation yet.
+-- name: RevokeTokensOfClient :exec
+INSERT INTO oauth_token_revocations (token_id, reason, revoked_at)
+SELECT t.id, sqlc.arg(reason), sqlc.arg(revoked_at) FROM oauth_access_tokens t
+WHERE t.client_id = sqlc.arg(client_id)
+  AND (t.expires_at > sqlc.arg(revoked_at) OR t.refresh_expires_at > sqlc.arg(revoked_at))
+ON CONFLICT (token_id) DO NOTHING;
