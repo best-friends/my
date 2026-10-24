@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  An OAuth app that the authenticated user registered (ADR-0090). Like every third-party app,
+  it gets no first-party-only scope and calls no account security operation.
+type: object
+required: [id, client_id, name, redirect_uris, scope, client_type, disabled, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  client_id:
+    description: The public identifier that the app sends as `client_id`.
+    type: string
+  name:
+    description: The name that the consent screen shows.
+    type: string
+  website:
+    description: The app's home page; absent when it has none.
+    type: string
+  redirect_uris:
+    description: |
+      The URIs the app may redirect to, sorted; matched exactly, except that a loopback URI
+      matches any port.
+    type: array
+    items:
+      type: string
+  scope:
+    description: The most the app may request, space-separated scopes.
+    type: string
+  client_type:
+    $ref: ./OAuthAppClientType.yaml
+  disabled:
+    description: |
+      Whether an administrator disabled the app: it cannot be authorized, get tokens, or use
+      them until the administrator enables it again.
+    type: boolean
+  created_at:
+    description: When the app was registered.
+    type: string
+    format: date-time

@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new OAuth app.
+type: object
+required: [name, redirect_uris, scope, client_type]
+properties:
+  name:
+    description: The app's name, 1 to 100 characters on one line.
+    type: string
+    maxLength: 100
+  website:
+    description: The app's home page, an absolute `https` or `http` URL of at most 2048 bytes.
+    type: string
+    maxLength: 2048
+  redirect_uris:
+    description: |
+      1 to 10 redirect URIs (RFC 8252): an `https` URL, a private-use scheme in reverse domain
+      notation (`com.example.app:/callback`), or an `http` loopback URL on `127.0.0.1` or
+      `[::1]` (not `localhost`), none with a fragment or user info.
+    type: array
+    minItems: 1
+    maxItems: 10
+    items:
+      type: string
+      maxLength: 2048
+  scope:
+    description: |
+      The most the app may request, space-separated scopes: not empty, and without the
+      first-party-only scopes (`admin`, `admin:read`, `admin:write`, `write:supporters`).
+    type: string
+  client_type:
+    $ref: ./OAuthAppClientType.yaml

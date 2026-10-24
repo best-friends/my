@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The changes to an OAuth app, checked as for a new one; what is omitted stays.
+type: object
+properties:
+  name:
+    type: string
+    maxLength: 100
+  website:
+    description: The new home page; empty removes it.
+    type: string
+    maxLength: 2048
+  redirect_uris:
+    type: array
+    minItems: 1
+    maxItems: 10
+    items:
+      type: string
+      maxLength: 2048
+  scope:
+    description: The new most scope. The tokens that the app holds keep the scope they were granted.
+    type: string

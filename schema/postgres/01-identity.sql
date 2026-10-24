@@ -254,6 +254,7 @@ CREATE TABLE oauth_clients (
   created_at timestamptz NOT NULL
 );
 CREATE UNIQUE INDEX oauth_clients_client_id ON oauth_clients (client_id);
+CREATE INDEX oauth_clients_owner_user_id ON oauth_clients (owner_user_id);
 
 -- Event: a client was disabled (ADR-0090 §1, an administrator's decision). disabled_by_user_id is
 -- NULL for the CLI. A client is disabled while one of its disablements has no lift.
@@ -288,6 +289,30 @@ CREATE TABLE oauth_client_redirect_uris (
   redirect_uri text NOT NULL,
   PRIMARY KEY (client_id, redirect_uri)
 );
+
+-- Event: the user who registered a client changed it (ADR-0090 §1). The newest revision (by id)
+-- is the client's name, website, and scope; a client without one keeps those it was registered
+-- with.
+CREATE TABLE oauth_client_revisions (
+  id uuid NOT NULL PRIMARY KEY,
+  client_id text COLLATE "C" NOT NULL,
+  name text NOT NULL,
+  website text,
+  scope text NOT NULL,
+  revised_at timestamptz NOT NULL
+);
+CREATE INDEX oauth_client_revisions_client_id ON oauth_client_revisions (client_id, id);
+
+-- Event: the user who registered a confidential client issued it a new secret (ADR-0090 §2). Only
+-- the newest secret (by id) works; a client without a rotation has the secret it was registered
+-- with.
+CREATE TABLE oauth_client_secret_rotations (
+  id uuid NOT NULL PRIMARY KEY,
+  client_id text COLLATE "C" NOT NULL,
+  secret_hash bytea NOT NULL,
+  rotated_at timestamptz NOT NULL
+);
+CREATE INDEX oauth_client_secret_rotations_client_id ON oauth_client_secret_rotations (client_id, id);
 
 -- Resource: an authorization code, keyed by its SHA-256 digest. session_id is the browser session
 -- that authorized it (NULL when it was issued outside one).

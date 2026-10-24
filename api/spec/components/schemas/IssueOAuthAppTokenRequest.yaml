@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The scope of the tokens of an app for the authenticated user.
+type: object
+properties:
+  scope:
+    description: Space-separated scopes within the app's; omitted or empty, the app's whole scope.
+    type: string

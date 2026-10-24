@@ -46,6 +46,11 @@ func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error 
 			s, err := a.Instance.Settings(ctx)
 			return s.IndexableDefault(), err
 		},
+		// Users register OAuth apps while the instance allows it (ADR-0090 §1).
+		UserAppRegistration: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.UserAppRegistration(), err
+		},
 		Mailer: a.Mailer,
 		// The registration page screens sign-ups against the sign-up block list (FR-719).
 		SignupBlocks: a.Moderation,

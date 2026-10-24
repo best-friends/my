@@ -618,6 +618,22 @@ type OauthClient struct {
 	CreatedAt        time.Time
 }
 
+type OauthClientRevision struct {
+	ID        string
+	ClientID  string
+	Name      string
+	Website   *string
+	Scope     string
+	RevisedAt time.Time
+}
+
+type OauthClientSecretRotation struct {
+	ID         string
+	ClientID   string
+	SecretHash []byte
+	RotatedAt  time.Time
+}
+
 type OutboundActivity struct {
 	ID             string
 	ActivityUri    string

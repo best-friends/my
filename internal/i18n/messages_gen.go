@@ -1341,6 +1341,34 @@ func (l *Localizer) ServerErrorsNotFound() string {
 	return l.format("server:errors.not_found", nil)
 }
 
+// ServerErrorsOauthAppDisabled formats "server:errors.oauth_app.disabled". Title of the HTTP 409 API error when the user issues tokens of their own OAuth app that an administrator disabled.
+//
+//	en: The server's administrators have disabled this app.
+func (l *Localizer) ServerErrorsOauthAppDisabled() string {
+	return l.format("server:errors.oauth_app.disabled", nil)
+}
+
+// ServerErrorsOauthAppPublic formats "server:errors.oauth_app.public". Title of the HTTP 409 API error when the user asks for a new client secret of a public OAuth app, which has none.
+//
+//	en: This app has no secret.
+func (l *Localizer) ServerErrorsOauthAppPublic() string {
+	return l.format("server:errors.oauth_app.public", nil)
+}
+
+// ServerErrorsOauthAppRegistrationDisabled formats "server:errors.oauth_app.registration_disabled". Title of the HTTP 403 API error when the user registers an OAuth app while the server's administrators have turned off app registration by users.
+//
+//	en: This server does not let users register apps.
+func (l *Localizer) ServerErrorsOauthAppRegistrationDisabled() string {
+	return l.format("server:errors.oauth_app.registration_disabled", nil)
+}
+
+// ServerErrorsOauthAppTooMany formats "server:errors.oauth_app.too_many". Title of the HTTP 409 API error when the user registers an OAuth app while having the most apps allowed (25).
+//
+//	en: You have as many apps as allowed. Delete one first.
+func (l *Localizer) ServerErrorsOauthAppTooMany() string {
+	return l.format("server:errors.oauth_app.too_many", nil)
+}
+
 // ServerErrorsPasskeyConfirmationExpired formats "server:errors.passkey.confirmation_expired". Title of the HTTP 422 API error when the user confirms an operation on their own account (such as deleting it or removing the password) with a passkey after the confirmation expired (5 minutes) or was already used.
 //
 //	en: The confirmation with the passkey expired. Try again.

@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/OAuthAppId.yaml
+get:
+  operationId: getOAuthApp
+  x-first-party-only: true
+  summary: Get an OAuth app that the authenticated user registered
+  description: An unknown or deleted app, or one that another user registered, is a 404.
+  tags: [oauth-apps]
+  security:
+    - oauth2: ["read:accounts"]
+  responses:
+    "200":
+      $ref: ../components/responses/OAuthApp.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+patch:
+  operationId: updateOAuthApp
+  x-first-party-only: true
+  summary: Change an OAuth app
+  description: |
+    Changes what the request names and keeps the rest, checked as for a new app; a setting
+    that breaks a rule is a 422 naming it. The type (public or confidential) never changes.
+    The tokens of the app keep working. An unknown or deleted app, or one that another user
+    registered, is a 404.
+  tags: [oauth-apps]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UpdateOAuthAppRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/OAuthApp.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: deleteOAuthApp
+  x-first-party-only: true
+  summary: Delete an OAuth app
+  description: |
+    Deletes the app for good and revokes every token of it, also those of the other users
+    who authorized it. An unknown or deleted app, or one that another user registered, is a
+    404.
+  tags: [oauth-apps]
+  security:
+    - oauth2: ["write:accounts"]
+  responses:
+    "204":
+      description: The app is deleted.
+    default:
+      $ref: ../components/responses/Problem.yaml

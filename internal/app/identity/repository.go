@@ -68,6 +68,7 @@ type Repository interface {
 	PasskeyRepository
 	PreferencesRepository
 	OAuthRepository
+	OAuthAppRepository
 	RegistrationRepository
 	OriginRepository
 	ExportRepository
