@@ -47,6 +47,8 @@ tags:
     description: The authenticated user's passkeys, which sign in instead of the password.
   - name: authorized_apps
     description: The apps the authenticated user authorized with OAuth, and revoking them.
+  - name: oauth-apps
+    description: The OAuth apps that the authenticated user registered, and tokens of them for the user's own account.
   - name: moderation
     description: The moderation actions on the authenticated user's own account.
   - name: notifications
@@ -1512,6 +1514,193 @@ paths:
       responses:
         '204':
           description: The app is revoked.
+        default:
+          $ref: '#/components/responses/Problem'
+  /oauth_apps:
+    get:
+      operationId: listOAuthApps
+      x-first-party-only: true
+      summary: List the OAuth apps that the authenticated user registered
+      description: The apps that the user registered and has not deleted, oldest first.
+      tags:
+        - oauth-apps
+      security:
+        - oauth2:
+            - read:accounts
+      responses:
+        '200':
+          description: The apps.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthAppList'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      operationId: createOAuthApp
+      x-first-party-only: true
+      summary: Register an OAuth app
+      description: |
+        Registers a public or confidential app of the user for a bot, a script, or a client of
+        their own (ADR-0090). A confidential app's `client_secret` is in this response only.
+        Other users authorize the app at `/oauth/authorize` as any third-party app, and the user
+        may issue its tokens to their own account with `POST /oauth_apps/{id}/tokens`. The app
+        stops working while the user cannot use the server (suspended or deleted).
+
+        A setting that breaks a rule is a 422 naming it, a user with 25 apps a 409
+        `/api/v1/problems/too-many-oauth-apps`, and a server that does not let users register
+        apps (the instance setting `user_app_registration`) a 403
+        `/api/v1/problems/oauth-app-registration-disabled`.
+      tags:
+        - oauth-apps
+      security:
+        - oauth2:
+            - write:accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOAuthAppRequest'
+      responses:
+        '201':
+          description: The new app.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthAppCreated'
+        default:
+          $ref: '#/components/responses/Problem'
+  /oauth_apps/{id}:
+    parameters:
+      - $ref: '#/components/parameters/OAuthAppId'
+    get:
+      operationId: getOAuthApp
+      x-first-party-only: true
+      summary: Get an OAuth app that the authenticated user registered
+      description: An unknown or deleted app, or one that another user registered, is a 404.
+      tags:
+        - oauth-apps
+      security:
+        - oauth2:
+            - read:accounts
+      responses:
+        '200':
+          $ref: '#/components/responses/OAuthApp'
+        default:
+          $ref: '#/components/responses/Problem'
+    patch:
+      operationId: updateOAuthApp
+      x-first-party-only: true
+      summary: Change an OAuth app
+      description: |
+        Changes what the request names and keeps the rest, checked as for a new app; a setting
+        that breaks a rule is a 422 naming it. The type (public or confidential) never changes.
+        The tokens of the app keep working. An unknown or deleted app, or one that another user
+        registered, is a 404.
+      tags:
+        - oauth-apps
+      security:
+        - oauth2:
+            - write:accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOAuthAppRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OAuthApp'
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      operationId: deleteOAuthApp
+      x-first-party-only: true
+      summary: Delete an OAuth app
+      description: |
+        Deletes the app for good and revokes every token of it, also those of the other users
+        who authorized it. An unknown or deleted app, or one that another user registered, is a
+        404.
+      tags:
+        - oauth-apps
+      security:
+        - oauth2:
+            - write:accounts
+      responses:
+        '204':
+          description: The app is deleted.
+        default:
+          $ref: '#/components/responses/Problem'
+  /oauth_apps/{id}/secret:
+    parameters:
+      - $ref: '#/components/parameters/OAuthAppId'
+    post:
+      operationId: rotateOAuthAppSecret
+      x-first-party-only: true
+      summary: Issue a new secret to a confidential OAuth app
+      description: |
+        The old secret stops working at once: refreshing the app's tokens takes the new one,
+        which is in this response only. The tokens of the app keep working. A public app is a
+        409 `/api/v1/problems/public-oauth-app`. An unknown or deleted app, or one that another
+        user registered, is a 404.
+      tags:
+        - oauth-apps
+      security:
+        - oauth2:
+            - write:accounts
+      responses:
+        '200':
+          description: The new secret.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthAppSecret'
+        default:
+          $ref: '#/components/responses/Problem'
+  /oauth_apps/{id}/tokens:
+    parameters:
+      - $ref: '#/components/parameters/OAuthAppId'
+    post:
+      operationId: issueOAuthAppToken
+      x-first-party-only: true
+      summary: Issue tokens of an OAuth app to the authenticated user
+      description: |
+        Issues an access token and a refresh token of the app for the user's own account,
+        without the consent screen and a redirect (ADR-0090 §2): the usual pair with the usual
+        lifetimes, refreshed and revoked at the token endpoints as any other. A scope beyond the
+        app's is a 422 naming `scope`, and an app that an administrator disabled a 409
+        `/api/v1/problems/oauth-app-disabled`. An unknown or deleted app, or one that another
+        user registered, is a 404.
+      tags:
+        - oauth-apps
+      security:
+        - oauth2:
+            - write:accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueOAuthAppTokenRequest'
+      responses:
+        '200':
+          description: The tokens.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthAppToken'
         default:
           $ref: '#/components/responses/Problem'
   /accounts/lookup:
@@ -7158,7 +7347,8 @@ components:
         and `write:supporters`: an authorization request of any other client that asks for one is
         refused with `invalid_scope`, and a broad scope such as `write` does not give such a client
         `write:supporters`. The operations that change how the user signs in or ends the account
-        (password, two-factor authentication, passkeys, authorized apps, deleting the account) are marked
+        (password, two-factor authentication, passkeys, authorized apps, deleting the account, the user's own
+        OAuth apps) are marked
         `x-first-party-only: true`; whatever its scopes, the token of another client gets a 403
         `/api/v1/problems/first-party-only` from them.
       flows:
@@ -7338,6 +7528,13 @@ components:
         minimum: 1
         maximum: 40
         default: 20
+    OAuthAppId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the OAuth app (not its `client_id`).
+      schema:
+        $ref: '#/components/schemas/Id'
     RegistrationUserId:
       name: user_id
       in: path
@@ -7681,6 +7878,15 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/CustomEmojiRequestProblem'
+    OAuthApp:
+      description: The OAuth app.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControl'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OAuthApp'
     OwnCustomEmoji:
       description: The custom emoji.
       headers:
@@ -11108,6 +11314,41 @@ components:
           type: integer
           minimum: 1
           maximum: 315360000
+    CreateOAuthAppRequest:
+      description: A new OAuth app.
+      type: object
+      required:
+        - name
+        - redirect_uris
+        - scope
+        - client_type
+      properties:
+        name:
+          description: The app's name, 1 to 100 characters on one line.
+          type: string
+          maxLength: 100
+        website:
+          description: The app's home page, an absolute `https` or `http` URL of at most 2048 bytes.
+          type: string
+          maxLength: 2048
+        redirect_uris:
+          description: |
+            1 to 10 redirect URIs (RFC 8252): an `https` URL, a private-use scheme in reverse domain
+            notation (`com.example.app:/callback`), or an `http` loopback URL on `127.0.0.1` or
+            `[::1]` (not `localhost`), none with a fragment or user info.
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 2048
+        scope:
+          description: |
+            The most the app may request, space-separated scopes: not empty, and without the
+            first-party-only scopes (`admin`, `admin:read`, `admin:write`, `write:supporters`).
+          type: string
+        client_type:
+          $ref: '#/components/schemas/OAuthAppClientType'
     CreatePasskeyRequest:
       description: The browser's answer to a passkey registration.
       type: object
@@ -12626,6 +12867,7 @@ components:
         - supporter_list_visibility
         - income_visibility
         - federation_mode
+        - user_app_registration
         - dynamic_client_registration
         - oauth_metadata_document_clients
     InstanceSettingKind:
@@ -12720,6 +12962,13 @@ components:
           $ref: '#/components/schemas/TimelineAccess'
         federated:
           $ref: '#/components/schemas/TimelineAccess'
+    IssueOAuthAppTokenRequest:
+      description: The scope of the tokens of an app for the authenticated user.
+      type: object
+      properties:
+        scope:
+          description: Space-separated scopes within the app's; omitted or empty, the app's whole scope.
+          type: string
     LiftAccountActionRequest:
       description: Why an action on an account is lifted.
       type: object
@@ -13400,6 +13649,123 @@ components:
         - supporter_payment_failed
         - supporter_subscription_ended
         - supporter_plan_retired
+    OAuthApp:
+      description: |
+        An OAuth app that the authenticated user registered (ADR-0090). Like every third-party app,
+        it gets no first-party-only scope and calls no account security operation.
+      type: object
+      required:
+        - id
+        - client_id
+        - name
+        - redirect_uris
+        - scope
+        - client_type
+        - disabled
+        - created_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        client_id:
+          description: The public identifier that the app sends as `client_id`.
+          type: string
+        name:
+          description: The name that the consent screen shows.
+          type: string
+        website:
+          description: The app's home page; absent when it has none.
+          type: string
+        redirect_uris:
+          description: |
+            The URIs the app may redirect to, sorted; matched exactly, except that a loopback URI
+            matches any port.
+          type: array
+          items:
+            type: string
+        scope:
+          description: The most the app may request, space-separated scopes.
+          type: string
+        client_type:
+          $ref: '#/components/schemas/OAuthAppClientType'
+        disabled:
+          description: |
+            Whether an administrator disabled the app: it cannot be authorized, get tokens, or use
+            them until the administrator enables it again.
+          type: boolean
+        created_at:
+          description: When the app was registered.
+          type: string
+          format: date-time
+    OAuthAppClientType:
+      description: |
+        `public`: the app has no secret (a single-page, native, or command-line app).
+        `confidential`: the app runs on a server and authenticates with its secret at the token
+        endpoint, by `client_secret_basic` or `client_secret_post`. Both use PKCE (S256). The type
+        never changes.
+      type: string
+      enum:
+        - public
+        - confidential
+    OAuthAppCreated:
+      description: A new OAuth app, with the secret of a confidential app.
+      type: object
+      required:
+        - app
+      properties:
+        app:
+          $ref: '#/components/schemas/OAuthApp'
+        client_secret:
+          description: |
+            The secret of a confidential app, `my_cs_` and 43 base64url characters; absent for a
+            public app. It is shown only now: the server keeps only its SHA-256 digest.
+          type: string
+    OAuthAppList:
+      description: The OAuth apps that the authenticated user registered, oldest first; there are at most 25.
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OAuthApp'
+    OAuthAppSecret:
+      description: A new secret of a confidential OAuth app.
+      type: object
+      required:
+        - client_secret
+      properties:
+        client_secret:
+          description: The new secret, as in `OAuthAppCreated`. It is shown only now.
+          type: string
+    OAuthAppToken:
+      description: |
+        An access token and a refresh token of the app for the authenticated user, as the token
+        endpoint returns them (RFC 6749 §5.1). The access token lasts an hour and the refresh token
+        30 days; refreshing at `POST /oauth/token` (with the app's secret for a confidential app)
+        replaces both, and presenting a used refresh token again revokes the whole grant.
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - refresh_token
+        - scope
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum:
+            - Bearer
+        expires_in:
+          description: Seconds until the access token expires.
+          type: integer
+        refresh_token:
+          type: string
+        scope:
+          description: The granted scopes, space-separated.
+          type: string
     OwnCustomEmoji:
       description: A local custom emoji that the user made (ADR-0070 §3).
       type: object
@@ -14104,6 +14470,12 @@ components:
           allowed. Remove one first.
         - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
           way to sign in: the password without a passkey, or the last passkey without a password.
+        - `/api/v1/problems/too-many-oauth-apps` (409): the user already has the most OAuth apps
+          allowed (25). Delete one first.
+        - `/api/v1/problems/oauth-app-registration-disabled` (403): the server does not let users
+          register OAuth apps.
+        - `/api/v1/problems/public-oauth-app` (409): the OAuth app is public and has no secret.
+        - `/api/v1/problems/oauth-app-disabled` (409): an administrator disabled the OAuth app.
         - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
           says which.
         - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -15638,6 +16010,27 @@ components:
           additionalProperties:
             type: string
             maxLength: 320
+    UpdateOAuthAppRequest:
+      description: The changes to an OAuth app, checked as for a new one; what is omitted stays.
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        website:
+          description: The new home page; empty removes it.
+          type: string
+          maxLength: 2048
+        redirect_uris:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 2048
+        scope:
+          description: The new most scope. The tokens that the app holds keep the scope they were granted.
+          type: string
     UpdateOwnCustomEmojiRequest:
       description: The settings of a custom emoji that the user made to change; absent ones stay.
       type: object

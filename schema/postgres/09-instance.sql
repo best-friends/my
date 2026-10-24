@@ -22,7 +22,8 @@ CREATE TABLE instance_setting_revisions (
     'retention_moderation_actions', 'retention_audit_log',
     'search_indexing', 'ai_usage', 'indexable_default', 'security_contact', 'require_media_description', 'link_cards_enabled',
     'finance_visibility', 'finance_viewer_item_names', 'finance_viewer_item_memos', 'finance_viewer_income',
-    'supporter_list_visibility', 'income_visibility', 'federation_mode', 'oauth_metadata_document_clients', 'dynamic_client_registration'
+    'supporter_list_visibility', 'income_visibility', 'federation_mode', 'oauth_metadata_document_clients', 'dynamic_client_registration',
+    'user_app_registration'
   )),
   value text NOT NULL,
   revised_by_user_id uuid,

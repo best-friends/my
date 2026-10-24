@@ -81,6 +81,8 @@ type Options struct {
 	Passkeys PasskeySettings
 	// AuthorizedApps runs the viewer's authorized OAuth apps; nil answers their operations 404.
 	AuthorizedApps AuthorizedApps
+	// OAuthApps runs the OAuth apps that the viewer registers; nil answers their operations 404.
+	OAuthApps OAuthAppSettings
 	// Media runs the media use cases and presents profile images; nil serves no media
 	// operation (they fail with 500) and presents no images.
 	Media MediaFiles

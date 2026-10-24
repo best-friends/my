@@ -1805,6 +1805,7 @@ const (
 	InstanceSettingKeySecurityContact                  InstanceSettingKey = "security_contact"
 	InstanceSettingKeySupporterListVisibility          InstanceSettingKey = "supporter_list_visibility"
 	InstanceSettingKeyThumbnail                        InstanceSettingKey = "thumbnail"
+	InstanceSettingKeyUserAppRegistration              InstanceSettingKey = "user_app_registration"
 )
 
 // Valid indicates whether the value is a known member of the InstanceSettingKey enum.
@@ -1879,6 +1880,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeySupporterListVisibility:
 		return true
 	case InstanceSettingKeyThumbnail:
+		return true
+	case InstanceSettingKeyUserAppRegistration:
 		return true
 	default:
 		return false
@@ -2122,6 +2125,39 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeSupporterPlanRetired:
 		return true
 	case NotificationTypeSupporterSubscriptionEnded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthAppClientType.
+const (
+	OAuthAppClientTypeConfidential OAuthAppClientType = "confidential"
+	OAuthAppClientTypePublic       OAuthAppClientType = "public"
+)
+
+// Valid indicates whether the value is a known member of the OAuthAppClientType enum.
+func (e OAuthAppClientType) Valid() bool {
+	switch e {
+	case OAuthAppClientTypeConfidential:
+		return true
+	case OAuthAppClientTypePublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthAppTokenTokenType.
+const (
+	OAuthAppTokenTokenTypeBearer OAuthAppTokenTokenType = "Bearer"
+)
+
+// Valid indicates whether the value is a known member of the OAuthAppTokenTokenType enum.
+func (e OAuthAppTokenTokenType) Valid() bool {
+	switch e {
+	case OAuthAppTokenTokenTypeBearer:
 		return true
 	default:
 		return false
@@ -5599,6 +5635,30 @@ type CreateInviteRequest struct {
 	MaxUses *int `json:"max_uses,omitempty"`
 }
 
+// CreateOAuthAppRequest A new OAuth app.
+type CreateOAuthAppRequest struct {
+	// ClientType `public`: the app has no secret (a single-page, native, or command-line app).
+	// `confidential`: the app runs on a server and authenticates with its secret at the token
+	// endpoint, by `client_secret_basic` or `client_secret_post`. Both use PKCE (S256). The type
+	// never changes.
+	ClientType OAuthAppClientType `json:"client_type"`
+
+	// Name The app's name, 1 to 100 characters on one line.
+	Name string `json:"name"`
+
+	// RedirectUris 1 to 10 redirect URIs (RFC 8252): an `https` URL, a private-use scheme in reverse domain
+	// notation (`com.example.app:/callback`), or an `http` loopback URL on `127.0.0.1` or
+	// `[::1]` (not `localhost`), none with a fragment or user info.
+	RedirectUris []string `json:"redirect_uris"`
+
+	// Scope The most the app may request, space-separated scopes: not empty, and without the
+	// first-party-only scopes (`admin`, `admin:read`, `admin:write`, `write:supporters`).
+	Scope string `json:"scope"`
+
+	// Website The app's home page, an absolute `https` or `http` URL of at most 2048 bytes.
+	Website *string `json:"website,omitempty"`
+}
+
 // CreatePasskeyRequest The browser's answer to a passkey registration.
 type CreatePasskeyRequest struct {
 	// Credential The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
@@ -6900,6 +6960,12 @@ type InstanceTimelines struct {
 	Local TimelineAccess `json:"local"`
 }
 
+// IssueOAuthAppTokenRequest The scope of the tokens of an app for the authenticated user.
+type IssueOAuthAppTokenRequest struct {
+	// Scope Space-separated scopes within the app's; omitted or empty, the app's whole scope.
+	Scope *string `json:"scope,omitempty"`
+}
+
 // LiftAccountActionRequest Why an action on an account is lifted.
 type LiftAccountActionRequest struct {
 	Reason *string `json:"reason,omitempty"`
@@ -7469,6 +7535,91 @@ type NotificationPage struct {
 // subscribing or paying where it offers no way to subscribe.
 type NotificationType string
 
+// OAuthApp An OAuth app that the authenticated user registered (ADR-0090). Like every third-party app,
+// it gets no first-party-only scope and calls no account security operation.
+type OAuthApp struct {
+	// ClientId The public identifier that the app sends as `client_id`.
+	ClientId string `json:"client_id"`
+
+	// ClientType `public`: the app has no secret (a single-page, native, or command-line app).
+	// `confidential`: the app runs on a server and authenticates with its secret at the token
+	// endpoint, by `client_secret_basic` or `client_secret_post`. Both use PKCE (S256). The type
+	// never changes.
+	ClientType OAuthAppClientType `json:"client_type"`
+
+	// CreatedAt When the app was registered.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Disabled Whether an administrator disabled the app: it cannot be authorized, get tokens, or use
+	// them until the administrator enables it again.
+	Disabled bool `json:"disabled"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Name The name that the consent screen shows.
+	Name string `json:"name"`
+
+	// RedirectUris The URIs the app may redirect to, sorted; matched exactly, except that a loopback URI
+	// matches any port.
+	RedirectUris []string `json:"redirect_uris"`
+
+	// Scope The most the app may request, space-separated scopes.
+	Scope string `json:"scope"`
+
+	// Website The app's home page; absent when it has none.
+	Website *string `json:"website,omitempty"`
+}
+
+// OAuthAppClientType `public`: the app has no secret (a single-page, native, or command-line app).
+// `confidential`: the app runs on a server and authenticates with its secret at the token
+// endpoint, by `client_secret_basic` or `client_secret_post`. Both use PKCE (S256). The type
+// never changes.
+type OAuthAppClientType string
+
+// OAuthAppCreated A new OAuth app, with the secret of a confidential app.
+type OAuthAppCreated struct {
+	// App An OAuth app that the authenticated user registered (ADR-0090). Like every third-party app,
+	// it gets no first-party-only scope and calls no account security operation.
+	App OAuthApp `json:"app"`
+
+	// ClientSecret The secret of a confidential app, `my_cs_` and 43 base64url characters; absent for a
+	// public app. It is shown only now: the server keeps only its SHA-256 digest.
+	ClientSecret *string `json:"client_secret,omitempty"`
+}
+
+// OAuthAppList The OAuth apps that the authenticated user registered, oldest first; there are at most 25.
+type OAuthAppList struct {
+	Items []OAuthApp `json:"items"`
+}
+
+// OAuthAppSecret A new secret of a confidential OAuth app.
+type OAuthAppSecret struct {
+	// ClientSecret The new secret, as in `OAuthAppCreated`. It is shown only now.
+	ClientSecret string `json:"client_secret"`
+}
+
+// OAuthAppToken An access token and a refresh token of the app for the authenticated user, as the token
+// endpoint returns them (RFC 6749 §5.1). The access token lasts an hour and the refresh token
+// 30 days; refreshing at `POST /oauth/token` (with the app's secret for a confidential app)
+// replaces both, and presenting a used refresh token again revokes the whole grant.
+type OAuthAppToken struct {
+	AccessToken string `json:"access_token"`
+
+	// ExpiresIn Seconds until the access token expires.
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+
+	// Scope The granted scopes, space-separated.
+	Scope     string                 `json:"scope"`
+	TokenType OAuthAppTokenTokenType `json:"token_type"`
+}
+
+// OAuthAppTokenTokenType defines model for OAuthAppToken.TokenType.
+type OAuthAppTokenTokenType string
+
 // OwnCustomEmoji A local custom emoji that the user made (ADR-0070 §3).
 type OwnCustomEmoji struct {
 	// Aliases The other names that the picker finds the emoji by.
@@ -7923,6 +8074,12 @@ type PreviewDomainBlockImportRequest struct {
 //     allowed. Remove one first.
 //   - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
 //     way to sign in: the password without a passkey, or the last passkey without a password.
+//   - `/api/v1/problems/too-many-oauth-apps` (409): the user already has the most OAuth apps
+//     allowed (25). Delete one first.
+//   - `/api/v1/problems/oauth-app-registration-disabled` (403): the server does not let users
+//     register OAuth apps.
+//   - `/api/v1/problems/public-oauth-app` (409): the OAuth app is public and has no secret.
+//   - `/api/v1/problems/oauth-app-disabled` (409): an administrator disabled the OAuth app.
 //   - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
 //     says which.
 //   - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -9134,6 +9291,18 @@ type UpdateInstanceSettingsRequest struct {
 	Values map[string]string `json:"values"`
 }
 
+// UpdateOAuthAppRequest The changes to an OAuth app, checked as for a new one; what is omitted stays.
+type UpdateOAuthAppRequest struct {
+	Name         *string   `json:"name,omitempty"`
+	RedirectUris *[]string `json:"redirect_uris,omitempty"`
+
+	// Scope The new most scope. The tokens that the app holds keep the scope they were granted.
+	Scope *string `json:"scope,omitempty"`
+
+	// Website The new home page; empty removes it.
+	Website *string `json:"website,omitempty"`
+}
+
 // UpdateOwnCustomEmojiRequest The settings of a custom emoji that the user made to change; absent ones stay.
 type UpdateOwnCustomEmojiRequest struct {
 	// Aliases The new aliases, each following the rules of a shortcode; at most 10.
@@ -9453,6 +9622,11 @@ type InviteId = Id
 
 // Limit defines model for Limit.
 type Limit = int
+
+// OAuthAppId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type OAuthAppId = Id
 
 // RegistrationUserId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -10293,6 +10467,15 @@ type AppealModerationActionJSONRequestBody = AppealModerationActionRequest
 // UpdateNotificationMarkerJSONRequestBody defines body for UpdateNotificationMarker for application/json ContentType.
 type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
 
+// CreateOAuthAppJSONRequestBody defines body for CreateOAuthApp for application/json ContentType.
+type CreateOAuthAppJSONRequestBody = CreateOAuthAppRequest
+
+// UpdateOAuthAppJSONRequestBody defines body for UpdateOAuthApp for application/json ContentType.
+type UpdateOAuthAppJSONRequestBody = UpdateOAuthAppRequest
+
+// IssueOAuthAppTokenJSONRequestBody defines body for IssueOAuthAppToken for application/json ContentType.
+type IssueOAuthAppTokenJSONRequestBody = IssueOAuthAppTokenRequest
+
 // CreatePasskeyJSONRequestBody defines body for CreatePasskey for application/json ContentType.
 type CreatePasskeyJSONRequestBody = CreatePasskeyRequest
 
@@ -10916,6 +11099,27 @@ type ServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(w http.ResponseWriter, r *http.Request, id Id)
+	// ListOAuthApps List the OAuth apps that the authenticated user registered
+	// (GET /oauth_apps)
+	ListOAuthApps(w http.ResponseWriter, r *http.Request)
+	// CreateOAuthApp Register an OAuth app
+	// (POST /oauth_apps)
+	CreateOAuthApp(w http.ResponseWriter, r *http.Request)
+	// DeleteOAuthApp Delete an OAuth app
+	// (DELETE /oauth_apps/{id})
+	DeleteOAuthApp(w http.ResponseWriter, r *http.Request, id OAuthAppId)
+	// GetOAuthApp Get an OAuth app that the authenticated user registered
+	// (GET /oauth_apps/{id})
+	GetOAuthApp(w http.ResponseWriter, r *http.Request, id OAuthAppId)
+	// UpdateOAuthApp Change an OAuth app
+	// (PATCH /oauth_apps/{id})
+	UpdateOAuthApp(w http.ResponseWriter, r *http.Request, id OAuthAppId)
+	// RotateOAuthAppSecret Issue a new secret to a confidential OAuth app
+	// (POST /oauth_apps/{id}/secret)
+	RotateOAuthAppSecret(w http.ResponseWriter, r *http.Request, id OAuthAppId)
+	// IssueOAuthAppToken Issue tokens of an OAuth app to the authenticated user
+	// (POST /oauth_apps/{id}/tokens)
+	IssueOAuthAppToken(w http.ResponseWriter, r *http.Request, id OAuthAppId)
 	// ListPasskeys List the authenticated user's passkeys
 	// (GET /passkeys)
 	ListPasskeys(w http.ResponseWriter, r *http.Request)
@@ -16927,6 +17131,164 @@ func (siw *ServerInterfaceWrapper) DismissNotification(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// ListOAuthApps operation middleware
+func (siw *ServerInterfaceWrapper) ListOAuthApps(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOAuthApps(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateOAuthApp operation middleware
+func (siw *ServerInterfaceWrapper) CreateOAuthApp(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOAuthApp(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteOAuthApp operation middleware
+func (siw *ServerInterfaceWrapper) DeleteOAuthApp(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id OAuthAppId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteOAuthApp(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOAuthApp operation middleware
+func (siw *ServerInterfaceWrapper) GetOAuthApp(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id OAuthAppId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOAuthApp(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateOAuthApp operation middleware
+func (siw *ServerInterfaceWrapper) UpdateOAuthApp(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id OAuthAppId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateOAuthApp(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RotateOAuthAppSecret operation middleware
+func (siw *ServerInterfaceWrapper) RotateOAuthAppSecret(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id OAuthAppId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RotateOAuthAppSecret(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueOAuthAppToken operation middleware
+func (siw *ServerInterfaceWrapper) IssueOAuthAppToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id OAuthAppId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueOAuthAppToken(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListPasskeys operation middleware
 func (siw *ServerInterfaceWrapper) ListPasskeys(w http.ResponseWriter, r *http.Request) {
 
@@ -18490,6 +18852,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/passkeys/{id}", wrapper.DeletePasskey)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/authorized_apps", wrapper.ListAuthorizedApps)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/authorized_apps/{id}", wrapper.RevokeAuthorizedApp)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/oauth_apps", wrapper.ListOAuthApps)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/oauth_apps", wrapper.CreateOAuthApp)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/oauth_apps/{id}", wrapper.DeleteOAuthApp)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/oauth_apps/{id}", wrapper.GetOAuthApp)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/oauth_apps/{id}", wrapper.UpdateOAuthApp)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/oauth_apps/{id}/secret", wrapper.RotateOAuthAppSecret)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/oauth_apps/{id}/tokens", wrapper.IssueOAuthAppToken)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/search", wrapper.SearchAccounts)
@@ -18946,6 +19315,15 @@ type CustomEmojiRequestProblemApplicationProblemPlusJSONResponse struct {
 	Body CustomEmojiRequestProblem
 
 	Headers CustomEmojiRequestProblemResponseHeaders
+}
+
+type OAuthAppResponseHeaders struct {
+	CacheControl *string
+}
+type OAuthAppJSONResponse struct {
+	Body OAuthApp
+
+	Headers OAuthAppResponseHeaders
 }
 
 type OwnCustomEmojiResponseHeaders struct {
@@ -30391,6 +30769,411 @@ func (response DismissNotificationdefaultApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type ListOAuthAppsRequestObject struct {
+}
+
+type ListOAuthAppsResponseObject interface {
+	VisitListOAuthAppsResponse(w http.ResponseWriter) error
+}
+
+type ListOAuthApps200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListOAuthApps200JSONResponse struct {
+	Body    OAuthAppList
+	Headers ListOAuthApps200ResponseHeaders
+}
+
+func (response ListOAuthApps200JSONResponse) VisitListOAuthAppsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOAuthAppsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListOAuthAppsdefaultApplicationProblemPlusJSONResponse) VisitListOAuthAppsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOAuthAppRequestObject struct {
+	Body *CreateOAuthAppJSONRequestBody
+}
+
+type CreateOAuthAppResponseObject interface {
+	VisitCreateOAuthAppResponse(w http.ResponseWriter) error
+}
+
+type CreateOAuthApp201ResponseHeaders struct {
+	CacheControl *string
+}
+
+type CreateOAuthApp201JSONResponse struct {
+	Body    OAuthAppCreated
+	Headers CreateOAuthApp201ResponseHeaders
+}
+
+func (response CreateOAuthApp201JSONResponse) VisitCreateOAuthAppResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOAuthAppdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateOAuthAppdefaultApplicationProblemPlusJSONResponse) VisitCreateOAuthAppResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOAuthAppRequestObject struct {
+	Id OAuthAppId `json:"id"`
+}
+
+type DeleteOAuthAppResponseObject interface {
+	VisitDeleteOAuthAppResponse(w http.ResponseWriter) error
+}
+
+type DeleteOAuthApp204Response struct {
+}
+
+func (response DeleteOAuthApp204Response) VisitDeleteOAuthAppResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteOAuthAppdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteOAuthAppdefaultApplicationProblemPlusJSONResponse) VisitDeleteOAuthAppResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOAuthAppRequestObject struct {
+	Id OAuthAppId `json:"id"`
+}
+
+type GetOAuthAppResponseObject interface {
+	VisitGetOAuthAppResponse(w http.ResponseWriter) error
+}
+
+type GetOAuthApp200JSONResponse struct{ OAuthAppJSONResponse }
+
+func (response GetOAuthApp200JSONResponse) VisitGetOAuthAppResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOAuthAppdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetOAuthAppdefaultApplicationProblemPlusJSONResponse) VisitGetOAuthAppResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOAuthAppRequestObject struct {
+	Id   OAuthAppId `json:"id"`
+	Body *UpdateOAuthAppJSONRequestBody
+}
+
+type UpdateOAuthAppResponseObject interface {
+	VisitUpdateOAuthAppResponse(w http.ResponseWriter) error
+}
+
+type UpdateOAuthApp200JSONResponse struct{ OAuthAppJSONResponse }
+
+func (response UpdateOAuthApp200JSONResponse) VisitUpdateOAuthAppResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOAuthAppdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateOAuthAppdefaultApplicationProblemPlusJSONResponse) VisitUpdateOAuthAppResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateOAuthAppSecretRequestObject struct {
+	Id OAuthAppId `json:"id"`
+}
+
+type RotateOAuthAppSecretResponseObject interface {
+	VisitRotateOAuthAppSecretResponse(w http.ResponseWriter) error
+}
+
+type RotateOAuthAppSecret200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RotateOAuthAppSecret200JSONResponse struct {
+	Body    OAuthAppSecret
+	Headers RotateOAuthAppSecret200ResponseHeaders
+}
+
+func (response RotateOAuthAppSecret200JSONResponse) VisitRotateOAuthAppSecretResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateOAuthAppSecretdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RotateOAuthAppSecretdefaultApplicationProblemPlusJSONResponse) VisitRotateOAuthAppSecretResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueOAuthAppTokenRequestObject struct {
+	Id   OAuthAppId `json:"id"`
+	Body *IssueOAuthAppTokenJSONRequestBody
+}
+
+type IssueOAuthAppTokenResponseObject interface {
+	VisitIssueOAuthAppTokenResponse(w http.ResponseWriter) error
+}
+
+type IssueOAuthAppToken200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type IssueOAuthAppToken200JSONResponse struct {
+	Body    OAuthAppToken
+	Headers IssueOAuthAppToken200ResponseHeaders
+}
+
+func (response IssueOAuthAppToken200JSONResponse) VisitIssueOAuthAppTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueOAuthAppTokendefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response IssueOAuthAppTokendefaultApplicationProblemPlusJSONResponse) VisitIssueOAuthAppTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPasskeysRequestObject struct {
 }
 
@@ -34357,6 +35140,27 @@ type StrictServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(ctx context.Context, request DismissNotificationRequestObject) (DismissNotificationResponseObject, error)
+	// ListOAuthApps List the OAuth apps that the authenticated user registered
+	// (GET /oauth_apps)
+	ListOAuthApps(ctx context.Context, request ListOAuthAppsRequestObject) (ListOAuthAppsResponseObject, error)
+	// CreateOAuthApp Register an OAuth app
+	// (POST /oauth_apps)
+	CreateOAuthApp(ctx context.Context, request CreateOAuthAppRequestObject) (CreateOAuthAppResponseObject, error)
+	// DeleteOAuthApp Delete an OAuth app
+	// (DELETE /oauth_apps/{id})
+	DeleteOAuthApp(ctx context.Context, request DeleteOAuthAppRequestObject) (DeleteOAuthAppResponseObject, error)
+	// GetOAuthApp Get an OAuth app that the authenticated user registered
+	// (GET /oauth_apps/{id})
+	GetOAuthApp(ctx context.Context, request GetOAuthAppRequestObject) (GetOAuthAppResponseObject, error)
+	// UpdateOAuthApp Change an OAuth app
+	// (PATCH /oauth_apps/{id})
+	UpdateOAuthApp(ctx context.Context, request UpdateOAuthAppRequestObject) (UpdateOAuthAppResponseObject, error)
+	// RotateOAuthAppSecret Issue a new secret to a confidential OAuth app
+	// (POST /oauth_apps/{id}/secret)
+	RotateOAuthAppSecret(ctx context.Context, request RotateOAuthAppSecretRequestObject) (RotateOAuthAppSecretResponseObject, error)
+	// IssueOAuthAppToken Issue tokens of an OAuth app to the authenticated user
+	// (POST /oauth_apps/{id}/tokens)
+	IssueOAuthAppToken(ctx context.Context, request IssueOAuthAppTokenRequestObject) (IssueOAuthAppTokenResponseObject, error)
 	// ListPasskeys List the authenticated user's passkeys
 	// (GET /passkeys)
 	ListPasskeys(ctx context.Context, request ListPasskeysRequestObject) (ListPasskeysResponseObject, error)
@@ -39788,6 +40592,208 @@ func (sh *strictHandler) DismissNotification(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DismissNotificationResponseObject); ok {
 		if err := validResponse.VisitDismissNotificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOAuthApps operation middleware
+func (sh *strictHandler) ListOAuthApps(w http.ResponseWriter, r *http.Request) {
+	var request ListOAuthAppsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOAuthApps(ctx, request.(ListOAuthAppsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOAuthApps")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOAuthAppsResponseObject); ok {
+		if err := validResponse.VisitListOAuthAppsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateOAuthApp operation middleware
+func (sh *strictHandler) CreateOAuthApp(w http.ResponseWriter, r *http.Request) {
+	var request CreateOAuthAppRequestObject
+
+	var body CreateOAuthAppJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOAuthApp(ctx, request.(CreateOAuthAppRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOAuthApp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateOAuthAppResponseObject); ok {
+		if err := validResponse.VisitCreateOAuthAppResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteOAuthApp operation middleware
+func (sh *strictHandler) DeleteOAuthApp(w http.ResponseWriter, r *http.Request, id OAuthAppId) {
+	var request DeleteOAuthAppRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteOAuthApp(ctx, request.(DeleteOAuthAppRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteOAuthApp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteOAuthAppResponseObject); ok {
+		if err := validResponse.VisitDeleteOAuthAppResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOAuthApp operation middleware
+func (sh *strictHandler) GetOAuthApp(w http.ResponseWriter, r *http.Request, id OAuthAppId) {
+	var request GetOAuthAppRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOAuthApp(ctx, request.(GetOAuthAppRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOAuthApp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOAuthAppResponseObject); ok {
+		if err := validResponse.VisitGetOAuthAppResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateOAuthApp operation middleware
+func (sh *strictHandler) UpdateOAuthApp(w http.ResponseWriter, r *http.Request, id OAuthAppId) {
+	var request UpdateOAuthAppRequestObject
+
+	request.Id = id
+
+	var body UpdateOAuthAppJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateOAuthApp(ctx, request.(UpdateOAuthAppRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateOAuthApp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateOAuthAppResponseObject); ok {
+		if err := validResponse.VisitUpdateOAuthAppResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RotateOAuthAppSecret operation middleware
+func (sh *strictHandler) RotateOAuthAppSecret(w http.ResponseWriter, r *http.Request, id OAuthAppId) {
+	var request RotateOAuthAppSecretRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RotateOAuthAppSecret(ctx, request.(RotateOAuthAppSecretRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RotateOAuthAppSecret")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RotateOAuthAppSecretResponseObject); ok {
+		if err := validResponse.VisitRotateOAuthAppSecretResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueOAuthAppToken operation middleware
+func (sh *strictHandler) IssueOAuthAppToken(w http.ResponseWriter, r *http.Request, id OAuthAppId) {
+	var request IssueOAuthAppTokenRequestObject
+
+	request.Id = id
+
+	var body IssueOAuthAppTokenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueOAuthAppToken(ctx, request.(IssueOAuthAppTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueOAuthAppToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueOAuthAppTokenResponseObject); ok {
+		if err := validResponse.VisitIssueOAuthAppTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

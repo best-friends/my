@@ -626,6 +626,22 @@ type OauthClientMetadataDocument struct {
 	ExpiresAt  int64
 }
 
+type OauthClientRevision struct {
+	ID        string
+	ClientID  string
+	Name      string
+	Website   sql.NullString
+	Scope     string
+	RevisedAt int64
+}
+
+type OauthClientSecretRotation struct {
+	ID         string
+	ClientID   string
+	SecretHash []byte
+	RotatedAt  int64
+}
+
 type OutboundActivity struct {
 	ID             string
 	ActivityUri    string

@@ -61,7 +61,12 @@ func (a *App) setUpIdentity(cfg *config.Config, repo identity.Repository) error 
 		},
 		DynamicClientUnredeemedTTL: cfg.DynamicClientUnredeemedTTL,
 		DynamicClientIdleTTL:       cfg.DynamicClientIdleTTL,
-		Mailer:                     a.Mailer,
+		// Users register OAuth apps while the instance allows it (ADR-0090 §1).
+		UserAppRegistration: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.UserAppRegistration(), err
+		},
+		Mailer: a.Mailer,
 		// The registration page screens sign-ups against the sign-up block list (FR-719).
 		SignupBlocks: a.Moderation,
 		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).

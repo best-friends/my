@@ -72,6 +72,12 @@ description: |
     allowed. Remove one first.
   - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
     way to sign in: the password without a passkey, or the last passkey without a password.
+  - `/api/v1/problems/too-many-oauth-apps` (409): the user already has the most OAuth apps
+    allowed (25). Delete one first.
+  - `/api/v1/problems/oauth-app-registration-disabled` (403): the server does not let users
+    register OAuth apps.
+  - `/api/v1/problems/public-oauth-app` (409): the OAuth app is public and has no secret.
+  - `/api/v1/problems/oauth-app-disabled` (409): an administrator disabled the OAuth app.
   - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
     says which.
   - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says

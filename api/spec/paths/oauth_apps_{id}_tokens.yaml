@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/OAuthAppId.yaml
+post:
+  operationId: issueOAuthAppToken
+  x-first-party-only: true
+  summary: Issue tokens of an OAuth app to the authenticated user
+  description: |
+    Issues an access token and a refresh token of the app for the user's own account,
+    without the consent screen and a redirect (ADR-0090 §2): the usual pair with the usual
+    lifetimes, refreshed and revoked at the token endpoints as any other. A scope beyond the
+    app's is a 422 naming `scope`, and an app that an administrator disabled a 409
+    `/api/v1/problems/oauth-app-disabled`. An unknown or deleted app, or one that another
+    user registered, is a 404.
+  tags: [oauth-apps]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/IssueOAuthAppTokenRequest.yaml
+  responses:
+    "200":
+      description: The tokens.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/OAuthAppToken.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

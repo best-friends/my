@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new OAuth app, with the secret of a confidential app.
+type: object
+required: [app]
+properties:
+  app:
+    $ref: ./OAuthApp.yaml
+  client_secret:
+    description: |
+      The secret of a confidential app, `my_cs_` and 43 base64url characters; absent for a
+      public app. It is shown only now: the server keeps only its SHA-256 digest.
+    type: string

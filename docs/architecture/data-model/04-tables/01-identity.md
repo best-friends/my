@@ -142,10 +142,12 @@
 | `session_origins` | リソース（子） | `session_id`（PK）, `user_id`, `ip`（NULL 可）, `user_agent`（`string(512)`、NULL 可）, `created_at` | インデックス `(ip)`（同じ IP のアカウントの検索、FR-714）, `(user_id, created_at DESC)`（アカウントの最近のログイン元、FR-714）, `(created_at)`（保持期間による消去）。保持期間（[ADR-0038](../../../adr/0038-moderation-personal-data-retention.md)、既定 180 日）を過ぎた行を消去ジョブが消す |
 | `session_revocations` | イベント | `session_id`（PK）, `reason`（`enum(logout, replaced, password_changed, moderation, expired_cleanup, account_deleted)`）, `revoked_at` | 有効なセッション = 失効イベントが無く `expires_at` を過ぎていないもの。`replaced` は同じブラウザでのログインし直し |
 | `session_activity` | 現在値 | `session_id`（PK）, `last_seen_at` | ログイン時に作り、以後の更新は 1 時間に 1 回に間引く |
-| `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `registration`（`enum(first_party, user, metadata_document, dynamic)`）, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)`。`registration` は登録の経路で、変わらない |
+| `oauth_clients` | リソース | `id`, `client_id`, `client_secret_hash`（NULL 可 = 公開クライアント）, `name`, `website`（NULL 可）, `scope`, `registration`（`enum(first_party, user, metadata_document, dynamic)`）, `owner_user_id`（NULL 可）, `created_at` | 一意 `(client_id)`。インデックス `(owner_user_id)`。`registration` は登録の経路で、変わらない。`name`・`website`・`scope`・`client_secret_hash` は登録したときの値 |
 | `oauth_client_disablements` | イベント | `id`, `client_id`, `disabled_by_user_id`（NULL 可 = CLI）, `disabled_at` | インデックス `(client_id)`。取り消しのない行があればクライアントは無効 |
 | `oauth_client_disablement_lifts` | イベント | `disablement_id`（PK）, `lifted_by_user_id`（NULL 可 = CLI）, `lifted_at` | 無効化の取り消し |
 | `oauth_client_deletions` | イベント | `client_id`（PK）, `reason`（`enum(owner, unused)`）, `deleted_by_user_id`（NULL 可 = 使われないクライアントの自動の削除）, `deleted_at` | 削除したクライアントは二度と使えない |
+| `oauth_client_revisions` | イベント | `id`, `client_id`, `name`, `website`（NULL 可）, `scope`, `revised_at` | インデックス `(client_id, id)`。登録者による変更。いちばん新しい行がいまの名前・サイト・スコープ |
+| `oauth_client_secret_rotations` | イベント | `id`, `client_id`, `secret_hash`, `rotated_at` | インデックス `(client_id, id)`。シークレットの再発行。いちばん新しい行のシークレットだけが使える |
 | `oauth_client_redirect_uris` | 現在値 | `client_id`, `redirect_uri` | PK `(client_id, redirect_uri)`。完全一致で照合する |
 | `oauth_client_metadata_documents` | 現在値（キャッシュ） | `client_id`（PK）, `client_name`, `client_uri`（無ければ空）, `logo_uri`（無ければ空）, `scope`, `fetched_at`, `expires_at` | 経路が `metadata_document` のクライアントの、最後に取得した Client ID Metadata Document。取得のたびに UPSERT し、`oauth_client_redirect_uris` も文書の `redirect_uris` に置き換える |
 | `oauth_client_host_denials` | イベント | `id`, `host`, `denied_by_user_id`（NULL 可 = CLI）, `denied_at` | インデックス `(host)`。取り消しのない行があれば、そのホストの `client_id` の URL は取得も利用もしない |
@@ -174,6 +176,14 @@
 - `oauth_clients` 以外のテーブルの `client_id` は `oauth_clients.id` を指します。クライアントが送る公開の識別子は `oauth_clients.client_id` です。
 - 登録の経路（[ADR-0090](../../../adr/0090-third-party-oauth-apps.md) §1）は `first_party`（サーバー自身のクライアント。同意の画面を出さない）・`user`（利用者による登録、`owner_user_id` が登録者）・
   `metadata_document`（Client ID Metadata Document）・`dynamic`（動的クライアント登録、RFC 7591）です。一次のクライアントかどうかはこの経路だけで決めます（`identity.OAuthClient.FirstParty`）。
+- 利用者による登録（ADR-0090 §1・§2、client API の `/api/v1/oauth_apps`）は、`oauth_clients` に `registration` が `user`・`owner_user_id` が登録者の行を作ります。
+  - 名前・サイト・リダイレクト URI・スコープの上限を入れ、種類（public / confidential）は登録のときに決まって変わりません。confidential client の `client_secret`（`my_cs_` で始まる）は登録と再発行の応答に 1 度だけ出し、DB には SHA-256 のハッシュだけを保存します。
+  - 変更は `oauth_client_revisions` の行を足し、リダイレクト URI は `oauth_client_redirect_uris` を置き換えます。再発行は `oauth_client_secret_rotations` の行を足し、古いシークレットはその時点で使えなくなります（猶予期間は持たない）。どちらもクライアントのトークンは失効させません。
+    クライアントを読むときは、いちばん新しい変更と再発行を `oauth_clients` の値に重ねます。
+  - 1 利用者あたり、削除していないクライアントは 25 件まで（登録のトランザクションで数える）。インスタンス設定 `user_app_registration` が無効なら登録を断ります（登録済みのものはそのまま使える）。
+  - 登録者は、自分のアカウントへのトークンを redirect なしに発行できます。認可コードの交換を経ない通常のアクセストークンとリフレッシュトークンの組で、更新・失効・再利用の検出はほかのトークンと同じです。
+  - 登録者の削除は `oauth_client_deletions` に理由 `owner` で記録します。登録者がアプリを使えない間（処分でログインできない、アカウントが削除された・削除の予定）は、そのクライアントを無効なクライアントと同じに断ります。
+    ログインを制限する処分とアカウントの削除のトランザクションで、登録者のクライアントの全トークンを `client_disabled` で失効させます。
 - クライアントの無効化・無効化の取り消し・削除は、`oauth_clients` に状態のカラムを足さず、イベントとして記録します（ADR-0090 §1）。
   - 無効なクライアント = 取り消しのない `oauth_client_disablements` の行があるもの、削除済みのクライアント = `oauth_client_deletions` の行があるものです。どちらも認可要求・トークンの交換と更新・トークンの失効の要求を未知のクライアントと同じに断り、API の認証ではそのクライアントのアクセストークンを受けません。
   - 無効化・削除は、同じトランザクションでそのクライアントの全トークン系列を `client_disabled` / `client_deleted` で失効させます。無効化を取り消しても、失効したトークンは戻りません（利用者が認可しなおす）。
