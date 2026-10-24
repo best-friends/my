@@ -17,9 +17,19 @@ describe("MediaGrid", () => {
   it("names each picture by its description, or says it has none", () => {
     const { container } = render(<MediaGrid items={items} noDescriptionLabel="No description" revealLabel="Show sensitive media" audioLabels={audioLabels} />);
     expect(ariaSnapshot(container)).toBe([`- img "A cat on a sofa" [lang=en] [dir=auto]`, `- img "No description"`].join("\n"));
-    // The badge is drawn for sighted users; the image's name already says it to screen readers.
-    expect(screen.getByText("No description")).toHaveAttribute("aria-hidden", "true");
+    // Nothing is drawn for the picture without a description; its name already says it to screen readers.
+    expect(screen.queryByText("No description")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("draws a decorative note badge on a picture that has a description, and on no other", () => {
+    const props = { noDescriptionLabel: "No description", revealLabel: "Show sensitive media", audioLabels };
+    const { container, rerender } = render(<MediaGrid items={items.slice(0, 1)} {...props} />);
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- a decorative icon has no role.
+    expect(container.querySelectorAll('span[aria-hidden="true"] > svg')).toHaveLength(1);
+    rerender(<MediaGrid items={items.slice(1)} {...props} />);
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- a decorative icon has no role.
+    expect(container.querySelector("svg")).toBeNull();
   });
 
   it("shows at most four pictures", () => {

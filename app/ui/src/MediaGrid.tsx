@@ -5,7 +5,7 @@ import { tv } from "tailwind-variants";
 import { AudioPlayer, type AudioPlayerLabels } from "./AudioPlayer";
 import { Blurhash } from "./Blurhash";
 import { formatClock } from "./clock";
-import { HideMediaIcon, PlayIcon } from "./Icons";
+import { AltTextIcon, HideMediaIcon, PlayIcon } from "./Icons";
 import { MediaViewer, type MediaViewerLabels } from "./MediaViewer";
 import { AutoplayContext, type ImageSources, Picture } from "./Picture";
 import { VisuallyHidden } from "./VisuallyHidden";
@@ -29,7 +29,8 @@ const mediaGrid = tv({
     // At the top, clear of the native controls along the bottom edge.
     length: "pointer-events-none absolute inset-e-2 top-2 rounded-md bg-media-chip px-2 py-0.5 text-xs font-bold text-toast-fg tabular-nums",
     blur: "absolute inset-0",
-    badge: "absolute inset-e-1.5 bottom-1.5 rounded-full bg-surface-raised px-2 py-0.5 text-xs font-extrabold text-fg shadow-sm",
+    // Marks a picture that has a description; decorative, and clear of pointer events so the cell's button still gets them.
+    badge: "pointer-events-none absolute inset-e-1.5 bottom-1.5 grid size-6 place-items-center rounded-full bg-media-chip text-toast-fg shadow-sm [&>svg]:size-4",
     toggle: "absolute cursor-default rounded-full bg-surface-raised font-extrabold text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
   },
   variants: {
@@ -67,7 +68,7 @@ export type MediaItem = {
   sources?: ImageSources | undefined;
   /**
    * The author's description of the image, or `null` when there is none. It is required so that a missing
-   * description is always a decision the caller made; a remote image without one gets the "no description" badge.
+   * description is always a decision the caller made; a picture with one gets the note badge.
    */
   alt: string | null;
   /** The language of the description, when known. */
@@ -88,7 +89,7 @@ export type MediaGridProps = Omit<ComponentPropsWithRef<"div">, "children"> & {
   /** One to four pictures; items after the fourth are not shown. */
   items: readonly MediaItem[];
   /**
-   * The text of the badge on a picture that has no description ("No description"). Screen readers read it
+   * The name of a picture that has no description ("No description"). Nothing shows it; screen readers read it
    * as the picture's name, so that the picture is not skipped silently.
    */
   noDescriptionLabel: string;
@@ -147,7 +148,7 @@ function usePrefersReducedMotion(): boolean {
 /**
  * A cell that plays a video or audio file once shown: the blur of its poster while it is concealed or loading, then a
  * `<video>` with its poster, or the poster with an `<audio>` over its bottom edge. The player is named by the
- * description, or by `noDescriptionLabel` with the badge when there is none.
+ * description, or by `noDescriptionLabel` when there is none.
  */
 function PlaybackCell({ item, playback, revealed, count, noDescriptionLabel, audioLabels }: MediaCellProps & { playback: MediaPlayback }) {
   const [loaded, setLoaded] = useState(false);
@@ -221,9 +222,9 @@ function PlaybackCell({ item, playback, revealed, count, noDescriptionLabel, aud
             )}
             </>
           )}
-          {item.alt === null && (
+          {item.alt !== null && (
             <span aria-hidden="true" className={slots.badge()}>
-              {noDescriptionLabel}
+              <AltTextIcon />
             </span>
           )}
         </>
@@ -269,9 +270,9 @@ function MediaCell({ item, revealed, count, noDescriptionLabel, onOpen }: MediaC
               {picture}
             </Button>
           )}
-          {item.alt === null && (
+          {item.alt !== null && (
             <span aria-hidden="true" className={slots.badge()}>
-              {noDescriptionLabel}
+              <AltTextIcon />
             </span>
           )}
         </>
@@ -283,7 +284,7 @@ function MediaCell({ item, revealed, count, noDescriptionLabel, onOpen }: MediaC
 /**
  * The pictures, videos, and audio files of a post in a 16:9 grid of one to four cells. A video plays in
  * its cell with the browser's controls under a play disc and its length, an audio file in an `AudioPlayer`, and neither starts by itself (`MediaPlayback`). An item without a description is
- * named by `noDescriptionLabel` and carries a visible badge saying so (web-client/README.md Y9). Sensitive media are
+ * named by `noDescriptionLabel` for screen readers only, and one with a description carries a small note badge (web-client/README.md Y9). Sensitive media are
  * concealed behind a toggle button (`aria-pressed`): while concealed, the images are neither loaded nor
  * exposed and each cell shows the blur of its picture, and the button keeps its place in the tab order and its focus when it is pressed.
  * With `viewerLabels`, each shown picture that has an `original` is a button that opens it at its original size in a

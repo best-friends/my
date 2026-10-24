@@ -487,8 +487,8 @@ describe("a post of another server", () => {
       "src",
       "https://my.example/media/proxy/0192f0c4-7a8e-7000-8000-0000000003d2",
     );
-    // The badge says so to the eye (web-client/README.md Y9); to a screen reader it is the picture's name.
-    expect(within(article).getByText("No description", { selector: "span" })).toBeVisible();
+    // Nothing is drawn for a picture without a description (web-client/README.md Y9); to a screen reader the name says so.
+    expect(within(article).queryByText("No description", { selector: "span" })).not.toBeInTheDocument();
   });
 
   test("draws the custom emoji of its author's name, its content warning and its text, read as their shortcodes", async () => {

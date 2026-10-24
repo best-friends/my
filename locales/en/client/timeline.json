@@ -73,7 +73,7 @@
   },
   "timeline.media.no_description": {
     "defaultMessage": "No description",
-    "description": "Badge on a picture of a post whose author gave no description (alternative text); screen readers read it as the picture's name."
+    "description": "Name of a picture of a post whose author gave no description (alternative text), read by screen readers and shown under the picture in the viewer; it is not drawn on the thumbnail."
   },
   "timeline.media.reveal": {
     "defaultMessage": "Show sensitive media",
