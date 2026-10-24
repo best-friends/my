@@ -30,6 +30,8 @@ const (
 	PathToken   = "/oauth/token" //nolint:gosec // G101: a path, not a credential
 	PathRefresh = "/oauth/token/refresh"
 	PathRevoke  = "/oauth/revoke"
+	// PathRegister is the dynamic client registration endpoint (RFC 7591).
+	PathRegister = "/oauth/register"
 )
 
 // CookieRefreshToken carries the web client's refresh token. The __Host- prefix makes
@@ -50,6 +52,7 @@ type Identity interface {
 	RefreshAccessToken(ctx context.Context, in appidentity.RefreshRequest) (appidentity.IssuedTokens, error)
 	RefreshWebClient(ctx context.Context, refreshToken string) (appidentity.IssuedTokens, error)
 	RevokeToken(ctx context.Context, in appidentity.RevokeRequest) error
+	RegisterDynamicClient(ctx context.Context, req appidentity.DynamicRegistrationRequest) (appidentity.DynamicRegistration, error)
 }
 
 // Options configure a Handler.
@@ -97,6 +100,8 @@ func (h *Handler) Register(r Router) {
 		r.Handle("POST "+path, h.cors(fn))
 		r.Handle("OPTIONS "+path, h.cors(nil))
 	}
+	r.Handle("POST "+PathRegister, registerCORS(http.HandlerFunc(h.register)))
+	r.Handle("OPTIONS "+PathRegister, registerCORS(nil))
 }
 
 // cors lets the web client's origin call the endpoints with its cookie. next nil answers a

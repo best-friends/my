@@ -12869,6 +12869,7 @@ components:
         - supporter_list_visibility
         - income_visibility
         - federation_mode
+        - dynamic_client_registration
         - oauth_metadata_document_clients
     InstanceSettingKind:
       description: |
