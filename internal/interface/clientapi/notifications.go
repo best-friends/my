@@ -97,7 +97,7 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 		next := ns[limit-1].ID
 		page.NextCursor = &next
 	}
-	items, err := s.newNotifications(ctx, v.AccountID, ns)
+	items, err := s.newNotifications(ctx, v, ns)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,8 @@ func (s *Server) ListNotifications(ctx context.Context, req ListNotificationsReq
 // user's report, which tells only that it is resolved. The account of an
 // admin_sign_up is the local account of the user who signed up, and a relationships_severed
 // carries the follows that the user lost, with the suspended account as its account.
-func (s *Server) newNotifications(ctx context.Context, accountID string, ns []notification.Notification) ([]Notification, error) {
+func (s *Server) newNotifications(ctx context.Context, viewer Viewer, ns []notification.Notification) ([]Notification, error) {
+	accountID := viewer.AccountID
 	severances, err := s.notifiedSeverances(ctx, accountID, ns)
 	if err != nil {
 		return nil, err
@@ -134,7 +135,7 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 	var views []appcontent.StatusView
 	if len(statusIDs) > 0 {
 		var err error
-		views, err = s.o.TimelineReader.Views(ctx, appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: accountID}, statusIDs)
+		views, err = s.o.TimelineReader.Views(ctx, localContentViewer(viewer), statusIDs)
 		if err != nil {
 			return nil, fmt.Errorf("clientapi: the statuses of the notifications of %s: %w", accountID, err)
 		}

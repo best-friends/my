@@ -28,11 +28,17 @@ type OAuthClient struct {
 	// Scope is the most that the client may be granted.
 	Scope Scope
 	// FirstParty clients are this server's own clients; users are not asked to consent to them.
+	// Ask IsFirstParty rather than reading the field.
 	FirstParty bool
 	// OwnerUserID is the user who registered the client; "" for clients the server registers.
 	OwnerUserID string
 	CreatedAt   time.Time
 }
+
+// IsFirstParty reports whether the client is this server's own, which alone may hold the
+// first-party-only scopes and call the account security operations (ADR-0090 §4). It is the
+// one place that decides it.
+func (c OAuthClient) IsFirstParty() bool { return c.FirstParty }
 
 // Public reports whether the client has no secret and so cannot authenticate itself.
 func (c OAuthClient) Public() bool { return c.SecretHash == nil }
@@ -148,6 +154,7 @@ const (
 	ScopeReadBlocks         = "read:blocks"
 	ScopeReadBookmarks      = "read:bookmarks"
 	ScopeReadCustomEmojis   = "read:custom_emojis"
+	ScopeReadDirect         = "read:direct"
 	ScopeReadFavourites     = "read:favourites"
 	ScopeReadFinance        = "read:finance"
 	ScopeReadFollows        = "read:follows"
@@ -177,7 +184,7 @@ var broadScopes = []string{ScopeAdmin, ScopeFollow, ScopePush, ScopeRead, ScopeW
 var knownScopes = []string{
 	ScopeAdmin, ScopeAdminRead, ScopeAdminWrite,
 	ScopeFollow, ScopePush, ScopeRead,
-	ScopeReadAccounts, ScopeReadBlocks, ScopeReadBookmarks, ScopeReadCustomEmojis, ScopeReadFavourites, ScopeReadFinance,
+	ScopeReadAccounts, ScopeReadBlocks, ScopeReadBookmarks, ScopeReadCustomEmojis, ScopeReadDirect, ScopeReadFavourites, ScopeReadFinance,
 	ScopeReadFollows, ScopeReadMutes, ScopeReadNotifications, ScopeReadReports, ScopeReadStatuses, ScopeReadSupporters,
 	ScopeWrite,
 	ScopeWriteAccounts, ScopeWriteBlocks, ScopeWriteBookmarks, ScopeWriteCustomEmojis, ScopeWriteFavourites, ScopeWriteFollows,
@@ -186,6 +193,14 @@ var knownScopes = []string{
 
 // followScopes are the fine-grained scopes that follow grants.
 var followScopes = []string{ScopeReadBlocks, ScopeReadFollows, ScopeReadMutes, ScopeWriteBlocks, ScopeWriteFollows, ScopeWriteMutes}
+
+// firstPartyOnlyScopes are the scopes that only a first-party client may hold (ADR-0090 §4).
+var firstPartyOnlyScopes = []string{ScopeAdmin, ScopeAdminRead, ScopeAdminWrite, ScopeWriteSupporters}
+
+// FirstPartyOnlyScope reports whether t is a scope that only a first-party client may hold. A
+// broad scope that grants one of them, write over write:supporters, does not give a third
+// party the operations behind it: the client API checks the scopes of an operation with this.
+func FirstPartyOnlyScope(t string) bool { return slices.Contains(firstPartyOnlyScopes, t) }
 
 // KnownScopes returns every scope the server knows, sorted.
 func KnownScopes() []string { return slices.Clone(knownScopes) }
@@ -241,6 +256,11 @@ func (s Scope) Grants(t string) bool {
 		return true
 	}
 	return slices.Contains(followScopes, t) && s.Has(ScopeFollow)
+}
+
+// HasFirstPartyOnly reports whether s names a first-party-only scope itself.
+func (s Scope) HasFirstPartyOnly() bool {
+	return slices.ContainsFunc(s.Tokens(), FirstPartyOnlyScope)
 }
 
 // Within reports whether outer grants every scope of s.

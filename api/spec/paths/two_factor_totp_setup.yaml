@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 post:
   operationId: setUpTotp
+  x-first-party-only: true
   summary: Generate a TOTP secret for the authenticated user to add to an authenticator app
   description: |
     A new secret (RFC 6238: HMAC-SHA-1, six digits, 30-second steps) as text, as an

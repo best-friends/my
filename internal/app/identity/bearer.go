@@ -29,6 +29,8 @@ type Bearer struct {
 	// AccountID is the local account the user logs in as.
 	AccountID string
 	Scope     identity.Scope
+	// FirstParty is true when the token's client is this server's own (ADR-0090 §4).
+	FirstParty bool
 	// ExpiresAt is when the access token expires.
 	ExpiresAt time.Time
 }
@@ -50,9 +52,13 @@ func (s *Service) AuthenticateBearer(ctx context.Context, accessToken string) (B
 	if !access.Allowed() || access.AccountID == "" || !access.AccountActive {
 		return Bearer{}, ErrAccountUnavailable
 	}
+	client, err := s.d.Repository.FindOAuthClientByID(ctx, tok.ClientID)
+	if err != nil {
+		return Bearer{}, err
+	}
 	return Bearer{
 		TokenID: tok.ID, FamilyID: tok.FamilyID, ClientID: tok.ClientID, UserID: tok.UserID,
-		AccountID: access.AccountID, Scope: tok.Scope, ExpiresAt: tok.ExpiresAt,
+		AccountID: access.AccountID, Scope: tok.Scope, FirstParty: client.IsFirstParty(), ExpiresAt: tok.ExpiresAt,
 	}, nil
 }
 

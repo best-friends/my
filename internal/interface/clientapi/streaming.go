@@ -227,7 +227,7 @@ func (st *streamState) homeEntry(ctx context.Context, id string) error {
 	if st.s.o.HomeEntries == nil || st.sentEntries.has(id) {
 		return nil
 	}
-	viewer := appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: st.viewer.AccountID}
+	viewer := localContentViewer(st.viewer)
 	entry, ok, err := st.s.o.HomeEntries.HomeEntry(ctx, viewer, id, st.home)
 	if err != nil || !ok {
 		return err
@@ -284,7 +284,7 @@ func (st *streamState) notifications(ctx context.Context) error {
 	}
 	ns = slices.DeleteFunc(ns, func(n notification.Notification) bool { return n.ID <= st.lastNotification })
 	slices.Reverse(ns)
-	items, err := st.s.newNotifications(ctx, st.viewer.AccountID, ns)
+	items, err := st.s.newNotifications(ctx, st.viewer, ns)
 	if err != nil {
 		return err
 	}

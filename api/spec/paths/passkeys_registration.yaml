@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 post:
   operationId: beginPasskeyRegistration
+  x-first-party-only: true
   summary: Start the registration of a passkey
   description: |
     Checks the user's current `password` or a `passkey` of the user (a user without a

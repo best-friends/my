@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 get:
   operationId: getTwoFactor
+  x-first-party-only: true
   summary: Get where the authenticated user's two-factor authentication stands
   tags: [two_factor]
   security:

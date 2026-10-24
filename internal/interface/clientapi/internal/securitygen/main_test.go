@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"slices"
 	"strings"
 	"testing"
@@ -45,6 +46,26 @@ func TestDescribe(t *testing.T) {
 				t.Errorf("describe = %+v, %v; want %+v", got, err, tt.want)
 			}
 		})
+	}
+}
+
+func TestRenderFirstPartyOnly(t *testing.T) {
+	src, err := render(map[string]access{"GET /api/v1/p": {operation: "getP", scopes: []string{"read:accounts"}, firstPartyOnly: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{Operation: "getP", FirstPartyOnly: true, Scopes: []string{"read:accounts"}}`
+	if !strings.Contains(string(src), want) {
+		t.Errorf("render =\n%s\nwant %s", src, want)
+	}
+}
+
+func TestFirstPartyOnlyExtension(t *testing.T) {
+	if got, err := firstPartyOnly(json.RawMessage("true")); err != nil || !got {
+		t.Errorf("firstPartyOnly(true) = %v, %v", got, err)
+	}
+	if got, err := firstPartyOnly(json.RawMessage(`"yes"`)); err == nil || got {
+		t.Errorf("firstPartyOnly(non-boolean) = %v, %v; want an error", got, err)
 	}
 }
 

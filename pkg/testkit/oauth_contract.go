@@ -217,6 +217,28 @@ func oauthValidatesAuthorizationRequests(t *testing.T, e *accountEnv) {
 	app.Scope = "read follow"
 	_, err = e.identity.ValidateAuthorization(ctx, app)
 	wantOAuthError(t, err, appidentity.OAuthInvalidScope, "a scope beyond the client's")
+
+	// A third-party client never gets a first-party-only scope (ADR-0090 §4), though its broad
+	// scope write would grant write:supporters; the first-party web client may have them.
+	for _, scope := range []string{"admin", "admin:read", "admin:write", "write:supporters", "read write:supporters"} {
+		app.Scope = scope
+		_, err = e.identity.ValidateAuthorization(ctx, app)
+		wantOAuthError(t, err, appidentity.OAuthInvalidScope, "the first-party-only scope "+scope+" of a third-party client")
+	}
+	web := webAuthorizationRequest()
+	web.Scope = "admin write:supporters"
+	if _, err := e.identity.ValidateAuthorization(ctx, web); err != nil {
+		t.Errorf("ValidateAuthorization(first-party-only scopes of the web client) = %v", err)
+	}
+
+	// Tokens refer to their client by its row ID.
+	byID, err := e.h.Identity.FindOAuthClientByID(ctx, ok.Client.ID)
+	if err != nil || byID.ID != ok.Client.ID || !byID.IsFirstParty() {
+		t.Errorf("FindOAuthClientByID = %+v, %v; want the web client", byID, err)
+	}
+	if _, err := e.h.Identity.FindOAuthClientByID(ctx, e.ids.NewID()); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("FindOAuthClientByID(unknown) = %v, want ErrNotFound", err)
+	}
 }
 
 func oauthExchangesCodesWithPKCE(t *testing.T, e *accountEnv) {

@@ -109,6 +109,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadCustomEmojis() string {
 	return l.format("server:auth.authorize.scope.read_custom_emojis", nil)
 }
 
+// ServerAuthAuthorizeScopeReadDirect formats "server:auth.authorize.scope.read_direct". Permission (OAuth scope read:direct) listed on the authorization page.
+//
+//	en: Read the direct messages you send and receive
+func (l *Localizer) ServerAuthAuthorizeScopeReadDirect() string {
+	return l.format("server:auth.authorize.scope.read_direct", nil)
+}
+
 // ServerAuthAuthorizeScopeReadFavourites formats "server:auth.authorize.scope.read_favourites". Permission (OAuth scope read:favourites) listed on the authorization page.
 //
 //	en: Read your favourites
@@ -1136,6 +1143,13 @@ func (l *Localizer) ServerErrorsExportNotReady() string {
 //	en: This server does not federate in the direction that this needs.
 func (l *Localizer) ServerErrorsFederationRestricted() string {
 	return l.format("server:errors.federation_restricted", nil)
+}
+
+// ServerErrorsFirstPartyOnly formats "server:errors.first_party_only". API error title for HTTP 403 when an app that is not this server's own client calls an account security operation (password, two-factor authentication, passkeys, deleting the account).
+//
+//	en: Only this server's own apps may do this.
+func (l *Localizer) ServerErrorsFirstPartyOnly() string {
+	return l.format("server:errors.first_party_only", nil)
 }
 
 // ServerErrorsForbidden formats "server:errors.forbidden". API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post.

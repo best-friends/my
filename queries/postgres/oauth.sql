@@ -10,6 +10,11 @@ SELECT id, client_id, client_secret_hash, name, website, scope, is_first_party, 
 FROM oauth_clients
 WHERE client_id = $1;
 
+-- name: GetOAuthClientByID :one
+SELECT id, client_id, client_secret_hash, name, website, scope, is_first_party, owner_user_id, created_at
+FROM oauth_clients
+WHERE id = $1;
+
 -- name: ListOAuthClientRedirectURIs :many
 SELECT redirect_uri FROM oauth_client_redirect_uris WHERE client_id = $1 ORDER BY redirect_uri;
 

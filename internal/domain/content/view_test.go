@@ -490,6 +490,37 @@ func TestCanViewADR0017(t *testing.T) {
 	}
 }
 
+// TestCanViewDirectDenied checks that a viewer without read:direct sees no direct post, its
+// author's own and a mentioned recipient's alike, and that other visibilities are unaffected
+// (ADR-0090 §4).
+func TestCanViewDirectDenied(t *testing.T) {
+	direct := content.StatusFacts{AuthorAccountID: localAuthorID, AuthorIsLocal: true, Visibility: content.VisibilityDirect}
+	public := direct
+	public.Visibility = content.VisibilityPublic
+	author := content.Viewer{Kind: content.ViewerLocal, AccountID: localAuthorID}
+	if !content.CanView(content.ContextStatus, author, direct, content.AuthorRestrictions{}, content.Relation{}) {
+		t.Fatal("the author does not see their own direct post")
+	}
+	author.DirectDenied = true
+	for _, ctx := range content.ViewContexts() {
+		if content.CanView(ctx, author, direct, content.AuthorRestrictions{}, content.Relation{Mentioned: true}) {
+			t.Errorf("%v: a viewer without read:direct sees a direct post", ctx)
+		}
+	}
+	denied := content.Viewer{Kind: content.ViewerLocal, AccountID: "01890a5d-ac96-774b-bcce-b302099a8099", DirectDenied: true}
+	if content.CanView(content.ContextStatus, denied, direct, content.AuthorRestrictions{}, content.Relation{Mentioned: true}) {
+		t.Error("a mentioned viewer without read:direct sees a direct post")
+	}
+	allowed := denied
+	allowed.DirectDenied = false
+	if !content.CanView(content.ContextStatus, allowed, direct, content.AuthorRestrictions{}, content.Relation{Mentioned: true}) {
+		t.Error("a mentioned viewer with read:direct does not see a direct post")
+	}
+	if !content.CanView(content.ContextStatus, denied, public, content.AuthorRestrictions{}, content.Relation{}) {
+		t.Error("DirectDenied hides a public post")
+	}
+}
+
 func TestCanViewFailsClosed(t *testing.T) {
 	author := content.Viewer{Kind: content.ViewerLocal, AccountID: localAuthorID}
 	public := content.StatusFacts{AuthorAccountID: localAuthorID, AuthorIsLocal: true, Visibility: content.VisibilityPublic}
