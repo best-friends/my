@@ -110,8 +110,9 @@
     ]
   },
   // Every file. A disable comment must say why (R5, Y2: the documented escape hatches); R9: the React rules
-  // are never switched off, under either name, except react/incompatible-library in the one hook that opts
-  // out of the compiler (app/ui/src/Feed.tsx), which Oxlint's port reports inside "use no memo" too.
+  // are never switched off, under either name, except react/incompatible-library in the hooks that opt out of
+  // the compiler to read TanStack Virtual (app/ui/src/Feed.tsx, app/ui/src/EmojiPicker.tsx), which Oxlint's
+  // port reports inside "use no memo" too.
   "rules": {
     "constructor-super": "error",
     "for-direction": "error",

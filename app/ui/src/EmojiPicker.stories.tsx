@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// EmojiPicker stories. The play functions test the arrow keys of the grid in the writing direction (which jsdom cannot
-// lay out), the section buttons and aria-current following the scrolling, the ranked search and its announced count,
-// the skin tone menu, picking with Shift held, and the popover. `FullSet` renders every Unicode emoji of the app's data
-// (app/web/src/features/emoji/unicode, served to Storybook by .storybook/main.ts) to see how long the picker takes to
-// open.
+// EmojiPicker stories. The play functions test the arrow keys of the grid in the writing direction with the columns a
+// real layout gives, the section buttons and aria-current following the scrolling, the ranked search and its announced
+// count, the skin tone menu, picking with Shift held, and the popover. `FullSet` virtualizes every Unicode emoji of the
+// app's data (app/web/src/features/emoji/unicode, served to Storybook by .storybook/main.ts) and moves through rows that
+// were not rendered (ADR-0097).
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, fn, waitFor } from "storybook/test";
@@ -173,7 +173,7 @@ type Story = StoryObj<typeof meta>;
 export const Grid: Story = {
   play: async ({ canvas, userEvent, args }) => {
     // The first of the rows named so: the frequent ones come first.
-    const rowOf = (name: string) => canvas.getAllByRole("row", { name })[0];
+    const rowOf = (name: string) => canvas.getAllByRole("gridcell", { name })[0];
     await userEvent.click(canvas.getByRole("searchbox", { name: "Search emoji" }));
     await userEvent.tab();
     await expect(canvas.getByRole("button", { name: "Skin tone" })).toHaveFocus();
@@ -207,7 +207,7 @@ export const SectionButtons: Story = {
     const button = (name: string) => canvas.getByRole("button", { name });
     await expect(button("Frequently used")).toHaveAttribute("aria-current", "true");
     await userEvent.click(button("Animals & nature"));
-    await expect(canvas.getByRole("row", { name: "cat face" })).toHaveFocus();
+    await expect(canvas.getByRole("gridcell", { name: "cat face" })).toHaveFocus();
     // The heading scrolls to the top of the grid, and the button of its section is the current one once it is there.
     await waitFor(async () => {
       await expect(button("Animals & nature")).toHaveAttribute("aria-current", "true");
@@ -231,8 +231,9 @@ export const SectionButtons: Story = {
 export const Searched: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(canvas.getByRole("searchbox", { name: "Search emoji" }), "hand");
-    const names = canvas.getAllByRole("row").map((row) => row.getAttribute("aria-label") ?? row.textContent);
-    await expect(names).toEqual(["Search results", "thumbs up", "waving hand", "raised hand", "folded hands"]);
+    await expect(canvas.getByRole("rowheader", { name: "Search results" })).toBeVisible();
+    const names = canvas.getAllByRole("gridcell").map((cell) => cell.getAttribute("aria-label"));
+    await expect(names).toEqual(["thumbs up", "waving hand", "raised hand", "folded hands"]);
     await expect(canvas.getByRole("button", { name: "People & body" })).toBeDisabled();
     await waitFor(() => expect(canvas.getByRole("status")).toHaveTextContent("4 emoji found"));
   },
@@ -253,9 +254,9 @@ export const SkinTones: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Skin tone" }));
     await userEvent.click(await canvas.findByRole("menuitemradio", { name: "Medium-dark skin tone" }));
     await expect(args.onSkinToneChange).toHaveBeenCalledWith("medium-dark");
-    await expect(canvas.getByRole("row", { name: "waving hand: medium-dark skin tone" })).toHaveTextContent("👋🏾");
+    await expect(canvas.getByRole("gridcell", { name: "waving hand: medium-dark skin tone" })).toHaveTextContent("👋🏾");
     await waitFor(() => expect(canvas.queryByRole("menu")).not.toBeInTheDocument());
-    await userEvent.click(canvas.getAllByRole("row", { name: "thumbs up: medium-dark skin tone" })[0] as HTMLElement);
+    await userEvent.click(canvas.getAllByRole("gridcell", { name: "thumbs up: medium-dark skin tone" })[0] as HTMLElement);
     await expect(args.onSelect).toHaveBeenLastCalledWith({ kind: "unicode", emoji: thumbsUp, text: "👍🏾", keepOpen: false });
   },
 };
@@ -279,15 +280,15 @@ export const SkinToneMenu: Story = {
 /** Picking with Shift held asks the app to keep the picker open, and focus stays on the emoji. */
 export const KeepOpen: Story = {
   play: async ({ canvas, userEvent, args }) => {
-    const party = canvas.getByRole("row", { name: "party popper" });
+    const thinking = canvas.getByRole("gridcell", { name: "thinking face" });
     await userEvent.keyboard("{Shift>}");
-    await userEvent.click(party);
+    await userEvent.click(thinking);
     await userEvent.keyboard("{/Shift}");
-    await expect(args.onSelect).toHaveBeenLastCalledWith(expect.objectContaining({ text: "🎉", keepOpen: true }));
-    await expect(party).toHaveFocus();
+    await expect(args.onSelect).toHaveBeenLastCalledWith(expect.objectContaining({ text: "🤔", keepOpen: true }));
+    await expect(thinking).toHaveFocus();
     await userEvent.keyboard("{Shift>}{Enter}{/Shift}");
     await expect(args.onSelect).toHaveBeenCalledTimes(2);
-    await expect(args.onSelect).toHaveBeenLastCalledWith(expect.objectContaining({ text: "🎉", keepOpen: true }));
+    await expect(args.onSelect).toHaveBeenLastCalledWith(expect.objectContaining({ text: "🤔", keepOpen: true }));
   },
 };
 
@@ -389,15 +390,45 @@ async function loadFullSet(): Promise<EmojiPickerSection[]> {
 }
 
 /**
- * Every Unicode emoji (about 1,900 without the skin tone variants), rendered without virtualization (ADR-0091 §3):
- * open it to see how long the picker takes to render. It has no screenshots, since the emoji fonts load as they scroll
- * into view.
+ * Every Unicode emoji (about 1,900 without the skin tone variants), virtualized (ADR-0097): only the rows in view and
+ * four on each side are rendered, the grid tells its whole size, and the keys, the section buttons and focus work
+ * across rows that were not rendered. It has no screenshots, since the emoji fonts load as rows scroll into view; the
+ * other stories carry the picker's screenshots.
  */
 export const FullSet: Story = {
   tags: ["no-screenshot"],
   loaders: [async () => ({ fullSet: await loadFullSet() })],
   render: (args, { loaded }) => <TonedPicker {...args} sections={loaded["fullSet"] as EmojiPickerSection[]} />,
-  play: async ({ canvas }) => {
-    await expect(canvas.getAllByRole("row").length).toBeGreaterThan(1900);
+  play: async ({ canvas, userEvent }) => {
+    const grid = canvas.getByRole("grid", { name: "Emoji" });
+    const rowCount = Number(grid.getAttribute("aria-rowcount"));
+    const columns = Number(grid.getAttribute("aria-colcount"));
+    // Every emoji is in a row of the count, but only a few rows are rendered.
+    await expect(rowCount * columns).toBeGreaterThan(1900);
+    await expect(canvas.getAllByRole("gridcell").length).toBeLessThan(columns * 16);
+    // A section button scrolls far down, smoothly when motion is allowed, and focuses the section's first emoji.
+    await userEvent.click(canvas.getByRole("button", { name: "Flags" }));
+    await waitFor(() => expect(canvas.getByRole("gridcell", { name: "chequered flag" })).toHaveFocus());
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Flags" })).toHaveAttribute("aria-current", "true"), { timeout: 5000 });
+    await expect(canvas.queryByRole("gridcell", { name: "grinning face" })).not.toBeInTheDocument();
+    // The last emoji of the grid, in the last row.
+    await userEvent.keyboard("{Control>}{End}{/Control}");
+    const last = canvas.getAllByRole("gridcell").at(-1) as HTMLElement;
+    await expect(last).toHaveFocus();
+    await expect(last.closest("[role=row]")).toHaveAttribute("aria-rowindex", String(rowCount));
+    // Back to the first; the grid scrolls to the top, where the focused emoji is.
+    await userEvent.keyboard("{Control>}{Home}{/Control}");
+    await waitFor(() => expect(canvas.getByRole("gridcell", { name: "grinning face" })).toHaveFocus());
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Smileys & emotion" })).toHaveAttribute("aria-current", "true"));
+    // Page Down moves by the rows in view, in the same column.
+    await userEvent.keyboard("{PageDown}");
+    const paged = document.activeElement;
+    await expect(paged).toHaveAttribute("role", "gridcell");
+    await expect(paged).toHaveAttribute("aria-colindex", "1");
+    // Scrolled away with the wheel, the focused emoji stays rendered and focused.
+    grid.scrollTop = grid.scrollHeight;
+    await waitFor(() => expect(canvas.queryByRole("gridcell", { name: "grinning face" })).not.toBeInTheDocument());
+    await expect(paged).toBeInTheDocument();
+    await expect(paged).toHaveFocus();
   },
 };
