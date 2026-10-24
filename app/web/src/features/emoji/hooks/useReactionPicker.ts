@@ -1,50 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The picker of the emoji to react to a post with (ADR-0052 §2, §5): a few common Unicode emoji, and the custom emoji
-// of this server that the post form's picker offers, with the custom emoji used often on this browser first.
-import type { EmojiPickerLabels, EmojiPickerSection, PickerCustomEmoji } from "@my/ui";
-import { useQuery } from "@tanstack/react-query";
-import { useApi } from "../../../lib/auth/SessionProvider";
+// The picker of the emoji to react to a post with (ADR-0091 §7; ADR-0052 §1, §5): the same emoji as the post form's
+// picker (the emoji used often, the custom emoji of this server, every Unicode emoji in the skin tone chosen here).
+// The Unicode data comes from the server's EMOJI_VERSION, so the server accepts every emoji it offers; the custom emoji
+// of other servers are not offered. A post takes one reaction, so picking one always closes the picker.
+import type { EmojiPickerSelection, PickerCustomEmoji } from "@my/ui";
 import { useT } from "../../../lib/i18n";
-import { customEmojisQueryOptions } from "../api/customEmojis";
-import { customEmojiKey, defaultFrequentEmojis, rememberEmoji, shortcodeOf, useFrequentEmojis } from "./frequentEmojis";
-import { customEmojiSections, emojisOfKeys, frequentSection, pickerLabels } from "./pickerSections";
+import { type EmojiPickerContent, useEmojiPickerContent } from "./emojiPickerContent";
 
-/** The emoji that a reaction is made with: a Unicode emoji, or a custom emoji of this server. */
+/** The emoji that a reaction is made with: a Unicode emoji (in its skin tone), or a custom emoji of this server. */
 export type ReactionChoice = { unicode: string } | { custom: PickerCustomEmoji };
 
-export type ReactionPickerControl = {
-  /** The custom emoji used often, the common Unicode emoji, then the custom emoji by category. */
-  sections: readonly EmojiPickerSection[];
-  labels: EmojiPickerLabels;
-  /** Counts a picked custom emoji as used. */
-  remember: (emoji: PickerCustomEmoji) => void;
+export type ReactionPickerControl = Omit<EmojiPickerContent, "remember"> & {
+  /**
+   * Closes the picker with `close`, counts the emoji of `selection` as used and reacts with it through `react`, also
+   * when the selection asks to keep the picker open (one reaction per post, ADR-0052 §1).
+   */
+  select: (selection: EmojiPickerSelection, close: () => void, react: (choice: ReactionChoice) => void) => void;
 };
 
 /** The emoji of the picker of reactions. */
 export function useReactionPicker(): ReactionPickerControl {
-  const api = useApi();
   const t = useT();
-  const { data } = useQuery(customEmojisQueryOptions(api));
-  const frequentKeys = useFrequentEmojis();
-  const emojis = data?.items ?? [];
-  // Only the custom emoji used often come first until the picker of reactions offers every Unicode emoji (ADR-0091 §7).
-  const frequent = emojisOfKeys(
-    frequentKeys.filter((key) => shortcodeOf(key) !== undefined),
-    emojis,
-    undefined,
-  );
-  // Each common emoji is named by itself until then too.
-  const unicode: EmojiPickerSection = {
-    id: "unicode",
-    heading: t("client:reaction.picker.unicode"),
-    icon: "smileys-emotion",
-    emojis: defaultFrequentEmojis.map((emoji) => ({ unicode: emoji, name: emoji })),
-  };
+  const { remember, ...content } = useEmojiPickerContent(t("client:reaction.picker.grid"));
   return {
-    sections: [frequentSection(frequent, t), unicode, ...customEmojiSections(emojis, t)],
-    labels: pickerLabels(t("client:reaction.picker.grid"), t),
-    remember: (emoji) => {
-      rememberEmoji(customEmojiKey(emoji.shortcode));
+    ...content,
+    select: (selection, close, react) => {
+      close();
+      remember(selection);
+      react(selection.kind === "custom" ? { custom: selection.emoji } : { unicode: selection.text });
     },
   };
 }

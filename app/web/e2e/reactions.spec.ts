@@ -116,6 +116,14 @@ function article(page: Page) {
   return page.getByRole("main").getByRole("article").filter({ hasText: "The trail along the river is open again." });
 }
 
+/** Opens the picker of reactions of the post, and returns it once its search field has focus. */
+async function openPicker(page: Page) {
+  await article(page).getByRole("button", { name: message("reaction.picker.button"), exact: true }).click();
+  const picker = page.getByRole("dialog", { name: message("reaction.picker.title") });
+  await expect(picker.getByRole("searchbox", { name: message("emoji.picker.search") })).toBeFocused();
+  return picker;
+}
+
 test.describe("the reactions of a post", () => {
   test.beforeEach(async ({ page }) => {
     await serveApi(page);
@@ -138,17 +146,36 @@ test.describe("the reactions of a post", () => {
     await expectNoHorizontalScroll(page);
   });
 
-  test("take an emoji picked in the picker in place of the favourite", async ({ page, makeAxeBuilder }) => {
-    const post = article(page);
-    await post.getByRole("button", { name: message("reaction.picker.button"), exact: true }).click();
-    const picker = page.getByRole("dialog", { name: message("reaction.picker.title") });
-    await expect(picker.getByRole("searchbox")).toBeFocused();
+  test("offer the post form's emoji picker, axe-clean and without horizontal scrolling", async ({ page, makeAxeBuilder }) => {
+    const picker = await openPicker(page);
+    await expect(picker.getByRole("grid", { name: message("reaction.picker.grid") })).toBeVisible();
+    await expect(picker.getByRole("toolbar", { name: message("emoji.picker.categories") })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
-    await picker.getByRole("row", { name: "🎉" }).click();
+    // The skin tone menu too.
+    await picker.getByRole("button", { name: message("emoji.picker.skin_tone") }).click();
+    await expect(page.getByRole("menuitemradio", { name: message("emoji.picker.skin_tone.medium") })).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("keep the picker inside a 320 px viewport without scrolling sideways", async ({ page, makeAxeBuilder }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    const picker = await openPicker(page);
+    await expect(picker).toBeInViewport({ ratio: 1 });
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("take an emoji picked in the picker in place of the favourite", async ({ page }) => {
+    const post = article(page);
+    const picker = await openPicker(page);
+    // A section's button moves focus to its first emoji, the jack-o-lantern of the activities.
+    await picker.getByRole("button", { name: message("emoji.picker.group.activities"), exact: true }).click();
+    await page.keyboard.press("Enter");
     await expect(picker).toBeHidden();
-    await expect(post.getByRole("button", { name: message("reaction.toggle", "🎉"), exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(post.getByRole("button", { name: message("reaction.toggle", "🎃"), exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(post.getByRole("button", { name: message("status.action.favourite"), exact: true })).toHaveAttribute("aria-pressed", "false");
   });
 

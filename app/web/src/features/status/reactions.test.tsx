@@ -2,8 +2,10 @@
 // The emoji reactions of a post through the whole app (web-client/README.md T4, FR-116, ADR-0052): the counts under the
 // post, joining and leaving one, the picker, the Like slot shared with the favourite, and the accounts that reacted.
 import { screen, waitFor, within } from "@testing-library/react";
+import type { UserEvent } from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { frequentEmojisKey, skinToneKey } from "../../lib/storage";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
 import { type Schemas, statusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
@@ -58,9 +60,21 @@ async function findPost() {
   return screen.findByRole("article", { description: "React to me" });
 }
 
+/** Opens the picker of reactions of `article` and waits for its emoji, with the search field focused. */
+async function openPicker(user: UserEvent, article: HTMLElement) {
+  await user.click(await within(article).findByRole("button", { name: "React" }));
+  const picker = await screen.findByRole("dialog", { name: "Emoji to react with" });
+  const search = await within(picker).findByRole("searchbox", { name: "Search emoji" }, { timeout: 5000 });
+  await waitFor(() => {
+    expect(search).toHaveFocus();
+  });
+  return picker;
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-16T12:00:00Z") });
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 afterEach(() => {
@@ -102,19 +116,19 @@ describe("the reactions of a post", () => {
     expect(within(article).getByRole("button", { name: "React with 👍" })).toHaveAttribute("aria-pressed", "false");
   });
 
-  test("react with an emoji picked in the picker", async () => {
+  test("react with a Unicode emoji found by searching the picker", async () => {
     signedIn();
     const sent: (string | null)[] = [];
     servePost(sent);
     const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const article = await findPost();
 
-    await user.click(await within(article).findByRole("button", { name: "React" }));
-    const picker = await screen.findByRole("dialog", { name: "Emoji to react with" });
-    await waitFor(() => {
-      expect(within(picker).getByRole("searchbox", { name: "Search emoji" })).toHaveFocus();
-    });
-    await user.click(within(picker).getByRole("row", { name: "🎉" }));
+    const picker = await openPicker(user, article);
+    // Nothing used yet: the default reactions come first, then the nine groups of every Unicode emoji.
+    expect(within(picker).getAllByRole("row")[1]).toHaveAccessibleName("thumbs up");
+    expect(within(picker).getByRole("toolbar", { name: "Emoji categories" })).toBeInTheDocument();
+    await user.type(within(picker).getByRole("searchbox", { name: "Search emoji" }), "party popper");
+    await user.click(within(picker).getByRole("row", { name: "party popper" }));
 
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "Emoji to react with" })).not.toBeInTheDocument();
@@ -123,7 +137,95 @@ describe("the reactions of a post", () => {
     await waitFor(() => {
       expect(sent).toEqual(["🎉"]);
     });
-  });
+    // The post form's picker offers it first from now on.
+    expect(frequentEmojisKey.read().map((use) => use.emoji)).toEqual(["🎉"]);
+  }, 30_000);
+
+  test("react with the first emoji of a category moved to with its button", async () => {
+    signedIn();
+    const sent: (string | null)[] = [];
+    servePost(sent);
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
+    const article = await findPost();
+
+    const picker = await openPicker(user, article);
+    const toolbar = within(picker).getByRole("toolbar", { name: "Emoji categories" });
+    await user.click(within(toolbar).getByRole("button", { name: "Activities" }));
+    // The button moves focus to the first emoji of its section.
+    await waitFor(() => {
+      expect(within(picker).getByRole("row", { name: "jack-o-lantern" })).toHaveFocus();
+    });
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(sent).toEqual(["🎃"]);
+    });
+    expect(screen.queryByRole("dialog", { name: "Emoji to react with" })).not.toBeInTheDocument();
+  }, 30_000);
+
+  test("react with an emoji in the skin tone chosen, which the counts then show", async () => {
+    signedIn();
+    const sent: (string | null)[] = [];
+    servePost(sent);
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
+    const article = await findPost();
+
+    const picker = await openPicker(user, article);
+    await user.click(within(picker).getByRole("button", { name: "Skin tone" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Medium skin tone" }));
+    expect(skinToneKey.read()).toBe("medium");
+    await user.type(within(picker).getByRole("searchbox", { name: "Search emoji" }), "waving hand");
+    await user.click(within(picker).getByRole("row", { name: "waving hand: medium skin tone" }));
+
+    await waitFor(() => {
+      expect(sent).toEqual(["👋🏽"]);
+    });
+    const reactions = within(article).getByRole("group", { name: "Reactions" });
+    const waving = await within(reactions).findByRole("button", { name: "React with 👋🏽" });
+    expect(waving).toHaveAttribute("aria-pressed", "true");
+    expect(waving).toHaveAccessibleDescription("1");
+    // It is counted as used without its skin tone.
+    expect(frequentEmojisKey.read().map((use) => use.emoji)).toEqual(["👋"]);
+  }, 30_000);
+
+  test("close the picker after one emoji even when it is picked with Shift held", async () => {
+    signedIn();
+    const sent: (string | null)[] = [];
+    servePost(sent);
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
+    const article = await findPost();
+
+    const picker = await openPicker(user, article);
+    await user.keyboard("{Shift>}");
+    await user.click(within(picker).getAllByRole("row", { name: "party popper" })[0] as HTMLElement);
+    await user.keyboard("{/Shift}");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Emoji to react with" })).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(sent).toEqual(["🎉"]);
+    });
+  }, 30_000);
+
+  test("react with a custom emoji of this server", async () => {
+    signedIn();
+    const sent: (string | null)[] = [];
+    servePost(sent);
+    const partyblob = { shortcode: "partyblob", url: "https://media.example/emoji/partyblob.png", static_url: "https://media.example/emoji/partyblob.png", aliases: [] };
+    server.use(http.get(`${apiBase}/custom_emojis`, () => HttpResponse.json({ items: [partyblob] } satisfies Schemas["PickerCustomEmojiList"])));
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
+    const article = await findPost();
+
+    const picker = await openPicker(user, article);
+    await user.type(within(picker).getByRole("searchbox", { name: "Search emoji" }), "partyblob");
+    await user.click(await within(picker).findByRole("row", { name: ":partyblob:" }));
+
+    await waitFor(() => {
+      expect(sent).toEqual(["partyblob"]);
+    });
+    expect(frequentEmojisKey.read().map((use) => use.emoji)).toEqual([":partyblob:"]);
+  }, 30_000);
 
   test("put the favourite back and say why when the server refuses the reaction", async () => {
     signedIn();
