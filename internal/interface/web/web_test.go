@@ -40,6 +40,8 @@ func fakeBuild() fstest.MapFS {
 		"icon.svg":                     {Data: []byte("<svg xmlns='http://www.w3.org/2000/svg'/>")},
 		"sw.js":                        {Data: []byte("self.addEventListener('fetch', () => {})")},
 		"theme.js":                     {Data: []byte("document.documentElement.dataset.theme = 'dark'")},
+		"licenses/npm-packages.md":     {Data: []byte("# Licenses\n\n## react - 19.3.0 (MIT)\n")},
+		"licenses/LICENSE-Unicode.txt": {Data: []byte("UNICODE LICENSE V3\n")},
 		// The PNG icons except icon-512.png, which the manifest then leaves out.
 		"icon-192.png":          {Data: []byte("png 192")},
 		"icon-maskable-512.png": {Data: []byte("png maskable")},
@@ -274,7 +276,7 @@ func TestReservedPathsAreNotTheShell(t *testing.T) {
 		notFound = append(notFound, r.URL.Path)
 		w.WriteHeader(http.StatusNotFound)
 	}})
-	reserved := []string{"/api", "/api/v1/nope", "/oauth/authorize", "/auth/login", "/.well-known/nope", "/nodeinfo", "/nodeinfo/2.0", "/ap/nope", "/media/x.png", "/uploads/x"}
+	reserved := []string{"/api", "/api/v1/nope", "/oauth/authorize", "/auth/login", "/.well-known/nope", "/nodeinfo", "/nodeinfo/2.0", "/ap/nope", "/media/x.png", "/uploads/x", "/licenses", "/licenses/a/b.txt"}
 	for _, p := range reserved {
 		if rec := get(mux, p, nil); rec.Code != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", p, rec.Code)
@@ -300,6 +302,9 @@ func TestStaticFiles(t *testing.T) {
 		{"/sw.js", "no-cache", "text/javascript; charset=utf-8", "self.addEventListener('fetch', () => {})"},
 		{"/icon.svg", "no-cache", "image/svg+xml", "<svg xmlns='http://www.w3.org/2000/svg'/>"},
 		{"/theme.js", "no-cache", "text/javascript; charset=utf-8", "document.documentElement.dataset.theme = 'dark'"},
+		// License notices are plain text whatever their extension, so a browser shows Markdown as it is.
+		{"/licenses/npm-packages.md", "no-cache", "text/plain; charset=utf-8", "# Licenses\n\n## react - 19.3.0 (MIT)\n"},
+		{"/licenses/LICENSE-Unicode.txt", "no-cache", "text/plain; charset=utf-8", "UNICODE LICENSE V3\n"},
 	}
 	for _, tt := range tests {
 		rec := get(mux, tt.path, nil)
@@ -319,7 +324,7 @@ func TestStaticFiles(t *testing.T) {
 	if csp := get(mux, "/sw.js", nil).Header().Get("Content-Security-Policy"); csp != "default-src 'none'; connect-src 'self'" {
 		t.Errorf("sw.js Content-Security-Policy = %q, want fetches from the origin only", csp)
 	}
-	for _, p := range []string{"/assets/missing.js", "/assets/", "/assets/.vite/manifest.json"} {
+	for _, p := range []string{"/assets/missing.js", "/assets/", "/assets/.vite/manifest.json", "/licenses", "/licenses/", "/licenses/missing.txt", "/licenses/sw.js"} {
 		if rec := get(mux, p, nil); rec.Code != http.StatusNotFound {
 			t.Errorf("GET %s = %d, want 404", p, rec.Code)
 		}

@@ -18,6 +18,7 @@ const passThroughPaths = [
   "/media",
   "/uploads",
   "/theme",
+  "/licenses",
   "/manifest.webmanifest",
 ] as const;
 

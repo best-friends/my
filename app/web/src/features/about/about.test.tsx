@@ -54,7 +54,7 @@ describe("the information page", () => {
     ]);
   });
 
-  test("puts the terms and policies right after the rules, and the operators and the source code last", async () => {
+  test("puts the terms and policies right after the rules, and the operators, the source code and the licenses last", async () => {
     serveInstance({
       description: "We grow vegetables.",
       rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind" }],
@@ -74,6 +74,7 @@ describe("the information page", () => {
       "Search engines and AI",
       "Contact",
       "Source code",
+      "Licenses",
     ]);
   });
 
@@ -107,6 +108,19 @@ describe("the information page", () => {
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
     expect(within(source).queryByRole("term")).not.toBeInTheDocument();
+  });
+
+  test("links to the license notices of what the web app bundles, which load in place of the app", async () => {
+    const { user, leftTo } = await renderApp({ path: "/about" });
+    const licenses = await screen.findByRole("region", { name: "Licenses" });
+    expect(within(licenses).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["npm packages in the app", "/licenses/npm-packages.md"],
+      ["npm packages in the offline support (Service Worker)", "/licenses/npm-packages-sw.md"],
+      ["Unicode emoji data and CLDR emoji names (Unicode License v3)", "/licenses/LICENSE-Unicode.txt"],
+      ["Noto Color Emoji font (SIL Open Font License 1.1)", "/licenses/OFL.txt"],
+    ]);
+    await user.click(within(licenses).getByRole("link", { name: /Unicode License v3/u }));
+    expect(leftTo.map(String)).toEqual(["http://localhost:3000/licenses/LICENSE-Unicode.txt"]);
   });
 
   test("offers to request the source code by email when the server takes requests at an address", async () => {

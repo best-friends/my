@@ -119,6 +119,30 @@
     "defaultMessage": "Read the commerce disclosures",
     "description": "Link from the information page to the server's page of the commerce disclosures of its supporter plans."
   },
+  "about.licenses.title": {
+    "defaultMessage": "Licenses",
+    "description": "Heading of the section of the server's information page that links to the license notices of the third-party software, data and fonts that the web app bundles."
+  },
+  "about.licenses.intro": {
+    "defaultMessage": "The web app bundles software, data and fonts made by others, each under its own license; their license notices follow.",
+    "description": "Paragraph before the list of links to the license notices of the third-party software, data and fonts that the web app bundles, on the server's information page."
+  },
+  "about.licenses.npm": {
+    "defaultMessage": "npm packages in the app",
+    "description": "Link to the plain-text license notices of the npm packages bundled into the web app's code, on the server's information page."
+  },
+  "about.licenses.npm_sw": {
+    "defaultMessage": "npm packages in the offline support (Service Worker)",
+    "description": "Link to the plain-text license notices of the npm packages bundled into the web app's Service Worker, which keeps the app working offline, on the server's information page."
+  },
+  "about.licenses.unicode": {
+    "defaultMessage": "Unicode emoji data and CLDR emoji names (Unicode License v3)",
+    "description": "Link to the plain-text Unicode License v3, under which the emoji list (emoji-test.txt) and the CLDR emoji names and keywords bundled in the emoji picker are distributed, on the server's information page. Keep 'Unicode License v3' and 'CLDR' as they are."
+  },
+  "about.licenses.noto": {
+    "defaultMessage": "Noto Color Emoji font (SIL Open Font License 1.1)",
+    "description": "Link to the plain-text SIL Open Font License 1.1, under which the Noto Color Emoji font that draws emoji is distributed, on the server's information page. Keep 'Noto Color Emoji' and 'SIL Open Font License 1.1' as they are."
+  },
   "about.rules.title": {
     "defaultMessage": "Rules",
     "description": "Heading of the section of the server's information page with the server's rules."

@@ -28,6 +28,9 @@ export default defineConfig({
   base: "./",
   build: {
     manifest: true,
+    // The license notices of the npm packages in the bundle, next to those of the bundled data (licenseFiles); Go
+    // serves both at /licenses/ and the about page links to each (features/about).
+    license: { fileName: "licenses/npm-packages.md" },
     // Emit every asset as a file: the CSP of ADR-0019 §9 has no data: source.
     assetsInlineLimit: 0,
     rolldownOptions: {
@@ -80,6 +83,10 @@ export default defineConfig({
       injectManifest: {
         // A classic script, which every browser registers.
         rollupFormat: "iife",
+        // The worker is a build of its own: its bundled npm packages (Workbox) get their own notices.
+        buildPlugins: {
+          vite: [{ name: "my:sw-licenses", config: () => ({ build: { license: { fileName: "licenses/npm-packages-sw.md" } } }) }],
+        },
         globPatterns: ["**/*.{js,css,svg,png,woff2}"],
         // index.html is the stand-in shell of `vite preview` (the worker precaches the server's shell at /
         // instead), and the stylesheet and the passkey script of the server-rendered pages are never loaded by the app.

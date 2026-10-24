@@ -115,7 +115,25 @@ test.describe("the information page", () => {
           - paragraph
           - paragraph:
             - link
+        - region:
+          - heading [level=2]
+          - paragraph
+          - list:
+            - listitem:
+              - link
+            - listitem:
+              - link
+            - listitem:
+              - link
+            - listitem:
+              - link
     `);
+  });
+
+  test("links to the license notices of what the web app bundles, which open as plain text", async ({ page }) => {
+    await page.getByRole("main").locator('a[href="/licenses/LICENSE-Unicode.txt"]').click();
+    await expect(page).toHaveURL(/\/licenses\/LICENSE-Unicode\.txt$/u);
+    await expect(page.locator("body")).toContainText("UNICODE LICENSE V3");
   });
 
   test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -132,8 +150,8 @@ test("the information page of a server that lists the servers it moderates to no
   await page.goto("/about");
   const main = page.getByRole("main");
   await expect(main.getByRole("region").getByRole("navigation")).toBeVisible();
-  // The description, the rules, the documents, the statement to crawlers, and the source code.
-  await expect(main.getByRole("region")).toHaveCount(5);
+  // The description, the rules, the documents, the statement to crawlers, the source code, and the licenses.
+  await expect(main.getByRole("region")).toHaveCount(6);
   await expect(main.locator("li", { hasText: "spam.example" })).toHaveCount(0);
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);

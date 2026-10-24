@@ -15,7 +15,7 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
  * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
  * description, the rules followed by its terms of service and privacy policy, the remote domains it moderates as far
  * as the instance lists them, what it states to search engines and AI crawlers, what running it costs and what its
- * supporters bring in as far as the instance publishes them, its supporter plans and the supporter list, its commerce disclosures, how to reach the operators, and where to get its source code.
+ * supporters bring in as far as the instance publishes them, its supporter plans and the supporter list, its commerce disclosures, how to reach the operators, where to get its source code, and the license notices of what the web app bundles.
  * Everyone may read it, signed in or not.
  */
 export function About() {
@@ -44,6 +44,7 @@ export function About() {
       {about.commerceDisclosureUrl !== undefined && <CommerceDisclosure url={about.commerceDisclosureUrl} />}
       {about.contact !== undefined && <Contact contact={about.contact} />}
       {about.sourceUrl !== undefined && <SourceCode url={about.sourceUrl} />}
+      <Licenses />
     </Stack>
   );
 }
@@ -254,6 +255,38 @@ function SourceCode({ url }: { url: string }) {
           </Text>
         </Stack>
       )}
+    </Section>
+  );
+}
+
+/**
+ * The license notices of the third-party code, data and fonts that the build bundles, which Go serves as plain text at
+ * /licenses/ (a page of the server, outside the app): those of the npm packages of the app and of its Service Worker
+ * (Vite's build.license) and those of the bundled data that is no npm package (vite-plugins/licenses.ts): the Unicode
+ * emoji data (ADR-0091 §1) and the Noto Color Emoji fonts (ADR-0095 §6). Keep it in step with vite.config.ts.
+ */
+const licenseNotices: readonly { href: string; label: ClientMessageKey }[] = [
+  { href: "/licenses/npm-packages.md", label: "client:about.licenses.npm" },
+  { href: "/licenses/npm-packages-sw.md", label: "client:about.licenses.npm_sw" },
+  { href: "/licenses/LICENSE-Unicode.txt", label: "client:about.licenses.unicode" },
+  { href: "/licenses/OFL.txt", label: "client:about.licenses.noto" },
+];
+
+/** The links to the license notices of what the web app bundles: the same on every server, so always shown. */
+function Licenses() {
+  const t = useT();
+  return (
+    <Section title={t("client:about.licenses.title")}>
+      <p>{t("client:about.licenses.intro")}</p>
+      <Stack as="ul" marker="disc" gap="2">
+        {licenseNotices.map(({ href, label }) => (
+          <li key={href}>
+            <Link href={href} variant="standalone">
+              {t(label)}
+            </Link>
+          </li>
+        ))}
+      </Stack>
     </Section>
   );
 }

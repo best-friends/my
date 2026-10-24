@@ -28,6 +28,7 @@ describe("classify", () => {
     "/ap/users/alice",
     "/media/x/full.jpg",
     "/uploads/x",
+    "/licenses/LICENSE-Unicode.txt",
     "/manifest.webmanifest",
   ])("leaves the navigation to %s to the browser", (path) => {
     expect(classify(navigate(path), origin)).toBe("network");
