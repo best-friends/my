@@ -29,12 +29,11 @@ export function EmojiPickerButton({ label, isDisabled = false, ...target }: Emoj
         <Popover aria-label={t("client:emoji.picker.title")} placement="bottom start">
           {({ close }) => (
             <EmojiPicker
-              emojis={picker.emojis}
-              recent={picker.recent}
+              sections={picker.sections}
               labels={picker.labels}
               autoFocus
-              onSelect={(emoji) => {
-                picker.select(emoji, close);
+              onSelect={(selection) => {
+                if (selection.kind === "custom") picker.select(selection.emoji, close);
               }}
             />
           )}

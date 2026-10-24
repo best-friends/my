@@ -28,19 +28,18 @@ export function ReactionPickerButton({ onSelect, isDisabled = false }: ReactionP
         <Popover aria-label={t("client:reaction.picker.title")} placement="bottom start">
           {({ close }) => (
             <EmojiPicker
-              emojis={picker.emojis}
-              recent={picker.recent}
-              unicode={picker.unicode}
+              sections={picker.sections}
               labels={picker.labels}
               autoFocus
-              onSelect={(emoji) => {
-                picker.remember(emoji);
+              onSelect={(selection) => {
+                // A post takes one reaction, so the picker closes even when Shift asks to keep it open.
                 close();
-                onSelect({ custom: emoji });
-              }}
-              onSelectUnicode={(emoji) => {
-                close();
-                onSelect({ unicode: emoji });
+                if (selection.kind === "custom") {
+                  picker.remember(selection.emoji);
+                  onSelect({ custom: selection.emoji });
+                } else {
+                  onSelect({ unicode: selection.text });
+                }
               }}
             />
           )}

@@ -26,5 +26,17 @@
   "emoji.picker.empty": {
     "defaultMessage": "絵文字が見つかりません",
     "description": "What the custom emoji picker shows when nothing matches the search."
+  },
+  "emoji.picker.categories": {
+    "defaultMessage": "絵文字の分類",
+    "description": "Accessible name of the row of icon buttons above the emoji grid of the picker; each button scrolls to one section (recently used, a category)."
+  },
+  "emoji.picker.results": {
+    "defaultMessage": "検索結果",
+    "description": "Heading of the one section of emoji that match the search in the emoji picker."
+  },
+  "emoji.picker.result_count": {
+    "defaultMessage": "{count, plural, =0 {絵文字が見つかりません} other {絵文字 # 個}}",
+    "description": "Read out by screen readers once typing in the search field of the emoji picker pauses: the number of emoji that match."
   }
 }
