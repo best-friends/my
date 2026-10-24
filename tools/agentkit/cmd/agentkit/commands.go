@@ -33,9 +33,10 @@ Workflow (instead of gh / scripts/task.sh loops):
   pr open [--issue n] [--base b] [--summary-file f] [--decisions text] [--draft]
                                                        push, open the PR from the template, link it on the issue
   pr wait <pr> [--timeout 50m] [--all]                 block until CI ends; print one line, or the failing lines
-                                                       (run it in the background; exit 3 on a conflict)
+                                                       (run it in the background; exit 3 on a conflict,
+                                                       4 when cancelled with no newer run)
   pr watch [<pr>...] [--interval 60s]                  one line per event: merged, closed, conflicting, ci-failed,
-                                                       ci-green, dequeued (for the Monitor tool)
+                                                       ci-cancelled, ci-green, dequeued (for the Monitor tool)
   check [--base origin/main]                           scripts/task.sh check:changed with a summary and the
                                                        failing lines
   regen [--base origin/main] [--dry-run]               run the generators the changed sources need

@@ -4,6 +4,7 @@ package ops
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -20,6 +21,7 @@ func TestTransitions(t *testing.T) {
 		{"first poll, pending", prSnapshot{}, false, pending, nil},
 		{"ci passes", pending, true, prSnapshot{ci: "passed", mergeable: "MERGEABLE"}, []string{"ci-green"}},
 		{"ci fails", pending, true, prSnapshot{ci: "failed", mergeable: "MERGEABLE", failed: []string{"go"}}, []string{"ci-failed go"}},
+		{"ci cancelled", pending, true, prSnapshot{ci: "cancelled", mergeable: "MERGEABLE", failed: []string{"go"}}, []string{"ci-cancelled go"}},
 		{"enters the queue", prSnapshot{ci: "passed", mergeable: "MERGEABLE"}, true, queued, []string{"queued"}},
 		{"leaves the queue open", queued, true, prSnapshot{ci: "passed", mergeable: "CONFLICTING"}, []string{"conflicting", "dequeued (out of the merge queue without merging: a conflict or a failed merge group)"}},
 		{"stays queued", queued, true, queued, nil},
@@ -28,6 +30,63 @@ func TestTransitions(t *testing.T) {
 	for _, c := range cases {
 		if got := transitions(c.old, c.had, c.cur); !reflect.DeepEqual(got, c.want) {
 			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func run(workflow, name, conclusion string, job int) check {
+	status := "COMPLETED"
+	if conclusion == "" {
+		status = "IN_PROGRESS"
+	}
+	return check{
+		Typename:     "CheckRun",
+		Name:         name,
+		WorkflowName: workflow,
+		Status:       status,
+		Conclusion:   conclusion,
+		DetailsURL:   "https://github.com/mycroblog/my/actions/runs/1/job/" + strconv.Itoa(job),
+	}
+}
+
+func TestSummarize(t *testing.T) {
+	cases := []struct {
+		name        string
+		cs          []check
+		want        string
+		wantNames   []string
+		wantPending bool
+	}{
+		{"no checks", nil, "none", nil, false},
+		{"cancelled run replaced by a passing one", []check{
+			run("CI", "lint", "CANCELLED", 10), run("CI", "lint", "SUCCESS", 20),
+		}, "passed", nil, false},
+		{"newer run listed first", []check{
+			run("CI", "lint", "SUCCESS", 20), run("CI", "lint", "CANCELLED", 10),
+		}, "passed", nil, false},
+		{"cancelled run replaced by a running one", []check{
+			run("CI", "lint", "CANCELLED", 10), run("CI", "lint", "", 20),
+		}, "pending", nil, true},
+		{"failure of the newer run", []check{
+			run("CI", "lint", "CANCELLED", 10), run("CI", "lint", "FAILURE", 20), run("CI", "test", "SUCCESS", 21),
+		}, "failed", []string{"lint"}, false},
+		{"failure of an older run replaced by a pass", []check{
+			run("CI", "lint", "FAILURE", 10), run("CI", "lint", "SUCCESS", 20),
+		}, "passed", nil, false},
+		{"only cancelled checks left", []check{
+			run("CI", "test", "CANCELLED", 11), run("CI", "lint", "CANCELLED", 10),
+		}, "cancelled", []string{"lint", "test"}, false},
+		{"same name in two workflows", []check{
+			run("CI", "check", "SUCCESS", 20), run("Nightly", "check", "FAILURE", 10),
+		}, "failed", []string{"check"}, false},
+		{"status context", []check{
+			{Typename: "StatusContext", Context: "ci/legacy", State: "SUCCESS"},
+		}, "passed", nil, false},
+	}
+	for _, c := range cases {
+		got, names, pending := summarize(c.cs)
+		if got != c.want || !reflect.DeepEqual(names, c.wantNames) || pending != c.wantPending {
+			t.Errorf("%s: got (%s, %q, %v), want (%s, %q, %v)", c.name, got, names, pending, c.want, c.wantNames, c.wantPending)
 		}
 	}
 }
