@@ -11,7 +11,10 @@ import { apiBase, resumableSession } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 
-/** How long the server takes to answer a timeline, in ms. */
+/**
+ * How long the server takes to answer a timeline, in ms. The waits keep the setup's asyncUtilTimeout
+ * (web-client/README.md T7): a loaded machine stretches this latency well beyond any multiple of it.
+ */
 const latency = 300;
 
 const japanesePost: Schemas["Status"] = {
@@ -44,13 +47,13 @@ describe("a change of the timeline languages", () => {
       }),
     );
     const { user, router } = await renderApp({ path: "/local" });
-    expect(await within(await screen.findByRole("feed", { name: "Local timeline" }, { timeout: latency * 5 })).findByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
+    expect(await within(await screen.findByRole("feed", { name: "Local timeline" })).findByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
 
     await router.navigate({ to: "/settings/preferences" });
     const languages = await screen.findByRole("group", { name: "Languages of your timelines" });
     await user.click(within(languages).getByRole("checkbox", { name: "Japanese" }));
     // The change is saved once the timelines it filters have been fetched again.
-    expect(await screen.findByText("Saved", {}, { timeout: latency * 5 })).toBeInTheDocument();
+    expect(await screen.findByText("Saved", {})).toBeInTheDocument();
 
     await router.navigate({ to: "/local" });
     expect(await screen.findByRole("heading", { level: 1, name: "Local timeline" })).toBeInTheDocument();
@@ -76,12 +79,12 @@ describe("an unblock from the settings", () => {
       }),
     );
     const { user, router } = await renderApp({ path: "/local" });
-    expect(await screen.findByRole("heading", { level: 2, name: "No posts yet" }, { timeout: latency * 5 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "No posts yet" })).toBeInTheDocument();
 
     await router.navigate({ to: "/settings/blocks" });
     await user.click(await screen.findByRole("button", { name: "Unblock: Bob" }));
     // The unblock is done once the lists it changes have been fetched again.
-    expect(await screen.findByText("You unblocked Bob.", {}, { timeout: latency * 5 })).toBeInTheDocument();
+    expect(await screen.findByText("You unblocked Bob.", {})).toBeInTheDocument();
 
     await router.navigate({ to: "/local" });
     expect(await screen.findByRole("heading", { level: 1, name: "Local timeline" })).toBeInTheDocument();
